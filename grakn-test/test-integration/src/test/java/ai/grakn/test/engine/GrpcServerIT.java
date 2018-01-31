@@ -22,14 +22,13 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.grpc.GrpcTestUtil;
 import ai.grakn.grpc.SynchronousObserver;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.test.rule.EngineContext;
@@ -82,7 +81,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -98,7 +97,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -114,7 +113,7 @@ public class GrpcServerIT {
     public void whenExecutingAQuery_ResultsAreReturned() {
         List<QueryResult> results;
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -141,7 +140,7 @@ public class GrpcServerIT {
         Set<QueryResult> results1;
         Set<QueryResult> results2;
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -155,7 +154,7 @@ public class GrpcServerIT {
 
     @Test // This behaviour is temporary - we should eventually support it correctly
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -170,7 +169,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
@@ -181,11 +180,11 @@ public class GrpcServerIT {
         }
     }
 
-    private SynchronousObserver<TxRequest, TxResponse> startTx() {
+    private SynchronousObserver startTx() {
         return SynchronousObserver.create(stub::tx);
     }
 
-    private static List<QueryResult> queryResults(SynchronousObserver<TxRequest, TxResponse> tx) {
+    private static List<QueryResult> queryResults(SynchronousObserver tx) {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {

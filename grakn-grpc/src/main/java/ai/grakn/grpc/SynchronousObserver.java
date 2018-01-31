@@ -18,6 +18,8 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.stub.StreamObserver;
@@ -30,16 +32,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
- * Wrapper for synchronous bidirectional streaming communication - i.e. when there is a stream of {@link Request}s and
- * a stream of {@link Response}s.
+ * Wrapper for synchronous bidirectional streaming communication - i.e. when there is a stream of {@link TxRequest}s and
+ * a stream of {@link TxResponse}s.
  *
- * A request is sent with the {@link #send(Request)}} method, and you can block for a response with the
+ * A request is sent with the {@link #send(TxRequest)}} method, and you can block for a response with the
  * {@link #receive()} method.
  *
  * <pre>
  * {@code
  *
- *     try (SynchronousObserver<TxRequest, TxResponse> tx = SynchronousObserver.create(stub::tx) {
+ *     try (SynchronousObserver tx = SynchronousObserver.create(stub::tx) {
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().elem();
  *         tx.send(commitMessage);
@@ -49,16 +51,13 @@ import java.util.function.Function;
  * </pre>
  *
  * @author Felix Chapman
- *
- * @param <Request> The type of requests being received
- * @param <Response> The type of responses being sent
  */
-public class SynchronousObserver<Request, Response> implements AutoCloseable {
+public class SynchronousObserver implements AutoCloseable {
 
-    private final StreamObserver<Request> requests;
-    private final QueueingObserver<Response> responses;
+    private final StreamObserver<TxRequest> requests;
+    private final QueueingObserver responses;
 
-    private SynchronousObserver(StreamObserver<Request> requests, QueueingObserver<Response> responses) {
+    private SynchronousObserver(StreamObserver<TxRequest> requests, QueueingObserver responses) {
         this.requests = requests;
         this.responses = responses;
     }
@@ -77,18 +76,18 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      * </p>
      *
      * <p>
-     *     So, we cannot get at the {@link Request} observer until we provide a {@link Response} observer.
+     *     So, we cannot get at the {@link TxRequest} observer until we provide a {@link TxResponse} observer.
      *     Unfortunately the latter is created within this method below - so we must pass in a method reference:
      * </p>
      *
      * {@code SynchronousObserver.create(stub::tx)}
      */
-    public static <Request, Response> SynchronousObserver<Request, Response> create(
-            Function<StreamObserver<Response>, StreamObserver<Request>> createRequestObserver
+    public static SynchronousObserver create(
+            Function<StreamObserver<TxResponse>, StreamObserver<TxRequest>> createRequestObserver
     ) {
-        QueueingObserver<Response> responseListener = new QueueingObserver<>();
-        StreamObserver<Request> requestSender = createRequestObserver.apply(responseListener);
-        return new SynchronousObserver<>(requestSender, responseListener);
+        QueueingObserver responseListener = new QueueingObserver();
+        StreamObserver<TxRequest> requestSender = createRequestObserver.apply(responseListener);
+        return new SynchronousObserver(requestSender, responseListener);
     }
 
     /**
@@ -96,14 +95,14 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      *
      * This method is non-blocking - it returns immediately.
      */
-    public void send(Request request) {
+    public void send(TxRequest request) {
         requests.onNext(request);
     }
 
     /**
      * Block until a response is returned.
      */
-    public QueueElem<Response> receive() {
+    public QueueElem receive() {
         return responses.poll();
     }
 
@@ -118,13 +117,13 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      *
      * A response can be polled with the {@link #poll()} method.
      */
-    static class QueueingObserver<T> implements StreamObserver<T>, AutoCloseable {
+    static class QueueingObserver implements StreamObserver<TxResponse>, AutoCloseable {
 
-        private final BlockingQueue<QueueElem<T>> queue = new LinkedBlockingDeque<>();
+        private final BlockingQueue<QueueElem> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);
 
         @Override
-        public void onNext(T value) {
+        public void onNext(TxResponse value) {
             queue.add(QueueElem.elem(value));
         }
 
@@ -140,7 +139,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
             queue.add(QueueElem.completed());
         }
 
-        QueueElem<T> poll() {
+        QueueElem poll() {
             try {
                 return queue.poll(100, TimeUnit.DAYS);
             } catch (InterruptedException e) {
@@ -159,21 +158,19 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
 
     /**
      * A response, that may be an element, an error or a "completed" message.
-     *
-     * @param <T> The type of response elements
      */
     @AutoValue
-    public abstract static class QueueElem<T> {
+    public abstract static class QueueElem {
 
-        abstract @Nullable T nullableElem();
+        abstract @Nullable TxResponse nullableElem();
         abstract @Nullable Throwable nullableThrowable();
 
         public boolean isCompleted() {
             return nullableElem() == null && nullableThrowable() == null;
         }
 
-        public T elem() {
-            T elem = nullableElem();
+        public TxResponse elem() {
+            TxResponse elem = nullableElem();
             if (elem == null) {
                 throw new IllegalStateException("Expected elem not found: " + toString());
             } else {
@@ -190,20 +187,20 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
             }
         }
 
-        private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
+        private static QueueElem create(@Nullable TxResponse elem, @Nullable Throwable throwable) {
             Preconditions.checkArgument(elem == null || throwable == null);
-            return new AutoValue_SynchronousObserver_QueueElem<>(elem, throwable);
+            return new AutoValue_SynchronousObserver_QueueElem(elem, throwable);
         }
 
-        static <T> QueueElem<T> completed() {
+        static QueueElem completed() {
             return create(null, null);
         }
 
-        static <T> QueueElem<T> error(Throwable throwable) {
+        static QueueElem error(Throwable throwable) {
             return create(null, throwable);
         }
 
-        static <T> QueueElem<T> elem(T elem) {
+        static QueueElem elem(TxResponse elem) {
             return create(elem, null);
         }
     }

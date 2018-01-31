@@ -124,7 +124,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Read));
         }
 
@@ -133,7 +133,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
         }
 
@@ -142,7 +142,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Batch));
         }
 
@@ -151,7 +151,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Read));
             TxResponse response = tx.receive().elem();
 
@@ -161,7 +161,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(commitRequest());
         }
@@ -171,7 +171,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -192,8 +192,8 @@ public class GrpcServerTest {
         });
 
         try (
-                SynchronousObserver<TxRequest, TxResponse> tx1 = startTx();
-                SynchronousObserver<TxRequest, TxResponse> tx2 = startTx()
+                SynchronousObserver tx1 = startTx();
+                SynchronousObserver tx2 = startTx()
         ) {
             tx1.send(openRequest(MYKS, TxType.Write));
             tx2.send(openRequest(MYKS, TxType.Write));
@@ -207,7 +207,7 @@ public class GrpcServerTest {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
@@ -231,7 +231,7 @@ public class GrpcServerTest {
             return null;
         }).when(tx).close();
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
         }
 
@@ -241,7 +241,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
         }
@@ -271,7 +271,7 @@ public class GrpcServerTest {
         when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
         when(query.stream()).thenAnswer(params -> answers.stream());
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -324,7 +324,7 @@ public class GrpcServerTest {
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -344,7 +344,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
             tx.send(nextRequest());
@@ -356,7 +356,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, false));
             tx.send(nextRequest());
@@ -368,7 +368,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, true));
             tx.send(nextRequest());
@@ -380,7 +380,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(commitRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -391,7 +391,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -402,7 +402,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -418,7 +418,7 @@ public class GrpcServerTest {
     public void whenOpeningTxFails_Throw() throws Throwable {
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
@@ -431,7 +431,7 @@ public class GrpcServerTest {
     public void whenCommittingFails_Throw() throws Throwable {
         doThrow(EXCEPTION).when(tx).commit();
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -447,7 +447,7 @@ public class GrpcServerTest {
     public void whenParsingQueryFails_Throw() throws Throwable {
         when(tx.graql().parse(QUERY)).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -463,7 +463,7 @@ public class GrpcServerTest {
     public void whenExecutingQueryFails_Throw() throws Throwable {
         when(query.results(any())).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -477,7 +477,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -491,7 +491,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingStopBeforeQuery_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -505,7 +505,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -525,7 +525,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_Throw() throws Throwable {
-        try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
+        try (SynchronousObserver tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -540,7 +540,7 @@ public class GrpcServerTest {
         }
     }
 
-    private SynchronousObserver<TxRequest, TxResponse> startTx() {
+    private SynchronousObserver startTx() {
         return SynchronousObserver.create(stub::tx);
     }
 }
