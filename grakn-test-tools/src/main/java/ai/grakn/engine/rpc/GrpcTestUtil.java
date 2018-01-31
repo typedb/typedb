@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.isA;
 /**
  * @author Felix Chapman
  */
-public class GrpcUtil {
+public class GrpcTestUtil {
 
     public static Matcher<StatusRuntimeException> hasStatus(Status status) {
 

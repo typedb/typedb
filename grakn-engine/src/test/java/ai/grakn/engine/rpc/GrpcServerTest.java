@@ -35,14 +35,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.Done;
-import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Infer;
-import ai.grakn.rpc.generated.GraknOuterClass.Next;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
@@ -63,7 +56,13 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.rpc.GrpcUtil.hasStatus;
+import static ai.grakn.engine.rpc.GrpcTestUtil.hasStatus;
+import static ai.grakn.grpc.GrpcUtil.commitRequest;
+import static ai.grakn.grpc.GrpcUtil.doneResponse;
+import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
+import static ai.grakn.grpc.GrpcUtil.nextRequest;
+import static ai.grakn.grpc.GrpcUtil.openRequest;
+import static ai.grakn.grpc.GrpcUtil.stopRequest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -538,44 +537,6 @@ public class GrpcServerTest {
 
     private SynchronousObserver<TxRequest, TxResponse> startTx() {
         return SynchronousObserver.create(stub::tx);
-    }
-
-    private static TxRequest openRequest(String keyspaceString, TxType txType) {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
-        return TxRequest.newBuilder().setOpen(open).build();
-    }
-
-    private static TxRequest commitRequest() {
-        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
-    }
-
-    private static TxRequest execQueryRequest(String queryString) {
-        return execQueryRequest(queryString, Infer.getDefaultInstance());
-    }
-
-    private static TxRequest execQueryRequest(String queryString, boolean infer) {
-        Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
-        return execQueryRequest(queryString, inferMessage);
-    }
-
-    private static TxRequest execQueryRequest(String queryString, Infer infer) {
-        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
-        execQueryRequest.setInfer(infer);
-        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
-    }
-
-    private static TxRequest nextRequest() {
-        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
-    }
-
-    private static TxRequest stopRequest() {
-        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
-    }
-
-    private static TxResponse doneResponse() {
-        return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 }
 

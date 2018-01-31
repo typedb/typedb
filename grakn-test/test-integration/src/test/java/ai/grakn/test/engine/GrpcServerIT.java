@@ -22,18 +22,13 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.rpc.GrpcTestUtil;
 import ai.grakn.engine.rpc.SynchronousObserver;
-import ai.grakn.engine.rpc.GrpcUtil;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Next;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
@@ -55,6 +50,10 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.grpc.GrpcUtil.commitRequest;
+import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
+import static ai.grakn.grpc.GrpcUtil.nextRequest;
+import static ai.grakn.grpc.GrpcUtil.openRequest;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -163,7 +162,7 @@ public class GrpcServerIT {
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
 
-            exception.expect(GrpcUtil.hasStatus(Status.FAILED_PRECONDITION));
+            exception.expect(GrpcTestUtil.hasStatus(Status.FAILED_PRECONDITION));
 
             throw tx.receive().throwable();
         }
@@ -176,7 +175,7 @@ public class GrpcServerIT {
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
-            exception.expect(GrpcUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
+            exception.expect(GrpcTestUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
 
             throw tx.receive().throwable();
         }
@@ -184,29 +183,6 @@ public class GrpcServerIT {
 
     private SynchronousObserver<TxRequest, TxResponse> startTx() {
         return SynchronousObserver.create(stub::tx);
-    }
-
-    private static TxRequest openRequest(String keyspaceString, TxType txType) {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
-        return TxRequest.newBuilder().setOpen(open).build();
-    }
-
-    private static TxRequest commitRequest() {
-        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
-    }
-
-    private static TxRequest execQueryRequest(String queryString) {
-        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        return TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(query)).build();
-    }
-
-    private static TxRequest nextRequest() {
-        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
-    }
-
-    private static TxRequest stopRequest() {
-        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
     private static List<QueryResult> queryResults(SynchronousObserver<TxRequest, TxResponse> tx) {

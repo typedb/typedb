@@ -24,8 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Done;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
@@ -45,6 +44,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.grpc.GrpcUtil.doneResponse;
+
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
  * <p>
@@ -63,8 +64,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private @Nullable GraknTx tx = null;
     private @Nullable Iterator<QueryResult> queryResults = null;
-
-    private static final TxResponse DONE = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
 
     private TxObserver(
             EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver, ExecutorService executor) {
@@ -151,12 +150,11 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             throw error(Status.FAILED_PRECONDITION);
         }
 
-        String keyspaceString = request.getKeyspace().getValue();
-        Keyspace keyspace = Keyspace.of(keyspaceString);
-        GraknTxType txType = getTxType(request.getTxType());
+        Keyspace keyspace = GrpcUtil.convert(request.getKeyspace());
+        GraknTxType txType = GrpcUtil.convert(request.getTxType());
         tx = txFactory.tx(keyspace, txType);
 
-        responseObserver.onNext(DONE);
+        responseObserver.onNext(doneResponse());
     }
 
     private void commit() {
@@ -166,7 +164,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         tx.commit();
 
-        responseObserver.onNext(DONE);
+        responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void execQuery(ExecQuery request) {
@@ -198,7 +196,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         queryResults = null;
 
-        responseObserver.onNext(DONE);
+        responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private QueryBuilder setInfer(QueryBuilder queryBuilder, Infer infer) {
@@ -218,25 +216,11 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             QueryResult queryResult = queryResults.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
-            response = DONE;
+            response = GrpcUtil.doneResponse();
             queryResults = null;
         }
 
         responseObserver.onNext(response);
-    }
-
-    private GraknTxType getTxType(GraknOuterClass.TxType txType) {
-        switch (txType) {
-            case Read:
-                return GraknTxType.READ;
-            case Write:
-                return GraknTxType.WRITE;
-            case Batch:
-                return GraknTxType.BATCH;
-            default:
-            case UNRECOGNIZED:
-                throw error(Status.INVALID_ARGUMENT);
-        }
     }
 
     private StatusRuntimeException error(Status status) {
