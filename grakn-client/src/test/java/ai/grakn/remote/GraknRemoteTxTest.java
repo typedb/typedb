@@ -21,14 +21,24 @@ package ai.grakn.remote;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknException;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
+import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -40,8 +50,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
+import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -158,6 +172,117 @@ public class GraknRemoteTxTest {
         }
 
         verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+    }
+
+    @Test
+    public void whenExecutingAQuery_GetAResultBack() {
+        GetQuery query = mock(GetQuery.class);
+        String queryString = "match $x isa person; get $x;";
+        when(query.toString()).thenReturn(queryString);
+
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(response);
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+
+        List<Answer> results;
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            results = tx.graql().execute(query);
+        }
+
+        Answer answer = Iterables.getOnlyElement(results);
+        assertEquals(answer.vars(), ImmutableSet.of(var("x")));
+        assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
+    }
+
+    @Test
+    public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
+        DeleteQuery query = mock(DeleteQuery.class);
+        String queryString = "match $x isa person; delete $x;";
+        when(query.toString()).thenReturn(queryString);
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            assertNull(tx.graql().execute(query));
+        }
+    }
+
+    @Test
+    public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
+        AggregateQuery<Boolean> query = mock(AggregateQuery.class);
+        String queryString = "match $x isa person; aggregate ask;";
+        when(query.toString()).thenReturn(queryString);
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("true")).build());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            assertTrue(tx.graql().execute(query));
+        }
+    }
+
+    @Test
+    public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
+        DefineQuery query = mock(DefineQuery.class);
+        String queryString = "define person sub entity;";
+        when(query.toString()).thenReturn(queryString);
+
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(response);
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+
+        Answer answer;
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            answer = tx.graql().execute(query);
+        }
+
+        assertEquals(answer.vars(), ImmutableSet.of(var("x")));
+        assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
     }
 
     @Test

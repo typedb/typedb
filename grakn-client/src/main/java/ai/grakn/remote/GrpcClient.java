@@ -24,12 +24,16 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.TxGrpcCommunicator;
+import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableList;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -56,16 +60,36 @@ class GrpcClient implements AutoCloseable {
 
     public void open(Keyspace keyspace, GraknTxType txType) {
         communicator.send(GrpcUtil.openRequest(keyspace, txType));
-        waitForDone();
+        responseOrThrow();
     }
 
-    public void execQuery(Query<?> query, @Nullable Boolean infer) {
+    public List<Object> execQuery(Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
+
+        ImmutableList.Builder<Object> results = ImmutableList.builder();
+
+        while (true) {
+            TxResponse response = responseOrThrow();
+
+            switch (response.getResponseCase()) {
+                case QUERYRESULT:
+                    Object result = GrpcUtil.getQueryResult(response.getQueryResult());
+                    results.add(result);
+                    break;
+                case DONE:
+                    return results.build();
+                default:
+                case RESPONSE_NOT_SET:
+                    throw CommonUtil.unreachableStatement("Unexpected " + response);
+            }
+
+            communicator.send(GrpcUtil.nextRequest());
+        }
     }
 
     public void commit() {
         communicator.send(GrpcUtil.commitRequest());
-        waitForDone();
+        responseOrThrow();
     }
 
     @Override
@@ -73,21 +97,22 @@ class GrpcClient implements AutoCloseable {
         communicator.close();
     }
 
-    private void waitForDone() {
-        TxGrpcCommunicator.Response response;
+    private TxResponse responseOrThrow() {
+        Response response;
 
         try {
             response = communicator.receive();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return;
+            throw new MyGraknException("interrupt"); // TODO
         }
 
         switch (response.type()) {
             case OK:
-                return;
+                return response.ok();
             case ERROR:
                 throw convertStatusRuntimeException(response.error());
+            case COMPLETED:
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }

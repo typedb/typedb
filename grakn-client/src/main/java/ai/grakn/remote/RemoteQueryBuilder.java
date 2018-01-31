@@ -117,7 +117,7 @@ class RemoteQueryBuilder implements QueryBuilder {
 
     @Override
     public <T> T execute(Query<T> query) {
-        client.execQuery(query, infer);
-        return null;
+        // If the server is working correctly, then this cast is safe
+        return (T) client.execQuery(query, infer);
     }
 }
