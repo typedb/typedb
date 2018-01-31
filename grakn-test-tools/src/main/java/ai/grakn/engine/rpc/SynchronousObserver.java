@@ -168,9 +168,6 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
         abstract @Nullable T nullableElem();
         abstract @Nullable Throwable nullableThrowable();
 
-        public boolean isCompleted() {
-            return nullableElem() == null && nullableThrowable() == null;
-        }
 
         public T elem() {
             T elem = nullableElem();
