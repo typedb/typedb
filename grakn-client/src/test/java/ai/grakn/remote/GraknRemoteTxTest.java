@@ -69,6 +69,8 @@ public class GraknRemoteTxTest {
     public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
 
     private @Nullable StreamObserver<TxResponse> serverResponses = null;
+
+    @SuppressWarnings("unchecked") // safe because mock
     private StreamObserver<TxRequest> serverRequests = mock(StreamObserver.class);
     private final GraknImplBase server = mock(GraknImplBase.class);
     private final GraknRemoteSession session = mock(GraknRemoteSession.class);
@@ -114,28 +116,28 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
-        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(server).tx(any());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Write));
         }
     }
 
     @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
-        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.BATCH)) {
+        try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.BATCH)) {
             verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Batch));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
-        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests, never()).onCompleted(); // Make sure transaction is still open here
         }
 
