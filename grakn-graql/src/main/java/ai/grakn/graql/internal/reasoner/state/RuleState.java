@@ -47,7 +47,6 @@ public class RuleState extends QueryStateBase{
         this.rule = rule;
     }
 
-    public InferenceRule getRule(){ return rule;}
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){

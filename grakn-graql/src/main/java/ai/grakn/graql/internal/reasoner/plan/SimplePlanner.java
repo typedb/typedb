@@ -18,11 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.plan;
 
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import com.google.common.collect.ImmutableList;
-import java.util.Comparator;
 
 /**
  *
@@ -114,16 +110,4 @@ public class SimplePlanner {
      * NB: atom satisfying this criterion should be resolved last
      */
     public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
-
-    /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    static public ImmutableList<Atom> plan(ReasonerQueryImpl query){
-        return ImmutableList.<Atom>builder().addAll(
-                query.selectAtoms().stream()
-                        .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                        .iterator())
-                .build();
-    }
 }
