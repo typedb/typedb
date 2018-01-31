@@ -125,7 +125,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Read));
+            tx.send(openRequest(MYKS, GraknTxType.READ));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.READ);
@@ -134,7 +134,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.WRITE);
@@ -143,7 +143,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Batch));
+            tx.send(openRequest(MYKS, GraknTxType.BATCH));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.BATCH);
@@ -152,7 +152,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Read));
+            tx.send(openRequest(MYKS, GraknTxType.READ));
             TxResponse response = tx.receive().ok();
 
             assertEquals(doneResponse(), response);
@@ -162,7 +162,7 @@ public class GrpcServerTest {
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.send(commitRequest());
         }
 
@@ -172,7 +172,7 @@ public class GrpcServerTest {
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(commitRequest());
@@ -195,8 +195,8 @@ public class GrpcServerTest {
                 TxGrpcCommunicator tx1 = TxGrpcCommunicator.create(stub);
                 TxGrpcCommunicator tx2 = TxGrpcCommunicator.create(stub)
         ) {
-            tx1.send(openRequest(MYKS, TxType.Write));
-            tx2.send(openRequest(MYKS, TxType.Write));
+            tx1.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx2.send(openRequest(MYKS, GraknTxType.WRITE));
         }
 
         assertNotEquals(threads.get(0), threads.get(1));
@@ -232,7 +232,7 @@ public class GrpcServerTest {
         }).when(tx).close();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
         }
 
         verify(tx).close();
@@ -242,7 +242,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.send(execQueryRequest(QUERY));
         }
 
@@ -272,7 +272,7 @@ public class GrpcServerTest {
         when(query.stream()).thenAnswer(params -> answers.stream());
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
@@ -325,7 +325,7 @@ public class GrpcServerTest {
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
@@ -345,7 +345,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.send(execQueryRequest(QUERY));
             tx.send(nextRequest());
             tx.send(stopRequest());
@@ -357,7 +357,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.send(execQueryRequest(QUERY, false));
             tx.send(nextRequest());
             tx.send(stopRequest());
@@ -369,7 +369,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.send(execQueryRequest(QUERY, true));
             tx.send(nextRequest());
             tx.send(stopRequest());
@@ -403,10 +403,10 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -419,7 +419,7 @@ public class GrpcServerTest {
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(EXCEPTION);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -432,7 +432,7 @@ public class GrpcServerTest {
         doThrow(EXCEPTION).when(tx).commit();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(commitRequest());
@@ -448,7 +448,7 @@ public class GrpcServerTest {
         when(tx.graql().parse(QUERY)).thenThrow(EXCEPTION);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
@@ -464,7 +464,7 @@ public class GrpcServerTest {
         when(query.results(any())).thenThrow(EXCEPTION);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
@@ -478,7 +478,7 @@ public class GrpcServerTest {
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(nextRequest());
@@ -492,7 +492,7 @@ public class GrpcServerTest {
     @Test
     public void whenSendingStopBeforeQuery_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(stopRequest());
@@ -506,7 +506,7 @@ public class GrpcServerTest {
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
@@ -526,7 +526,7 @@ public class GrpcServerTest {
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
