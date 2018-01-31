@@ -125,7 +125,6 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
-    INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors

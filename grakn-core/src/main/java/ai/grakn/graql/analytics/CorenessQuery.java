@@ -51,13 +51,6 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
     CorenessQuery of(String... ofTypeLabels);
 
     /**
-     * @param ofLabels a collection of types in the subgraph to compute coreness of. By default the coreness of all
-     *                 entities and attributes are computed.
-     * @return a CorenessQuery with the subTypeLabels set
-     */
-    CorenessQuery of(Collection<Label> ofLabels);
-
-    /**
      * @param subTypeLabels an array of types to include in the subgraph.
      *                      By default CorenessQuery includes all entities, relationships and attributes.
      * @return a CorenessQuery with the subTypeLabels set
