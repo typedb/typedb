@@ -285,7 +285,7 @@ public class TypeInferenceQueryTest {
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
+        List<Type> relationshipTypes = atom.inferPossibleTypes();
 
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
@@ -304,8 +304,8 @@ public class TypeInferenceQueryTest {
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
         RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
-        List<Type> subbedRelationshipTypes = subbedAtom.inferPossibleTypes(new QueryAnswer());
+        List<Type> relationshipTypes = atom.inferPossibleTypes();
+        List<Type> subbedRelationshipTypes = subbedAtom.inferPossibleTypes();
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(relationshipTypes, subbedRelationshipTypes);

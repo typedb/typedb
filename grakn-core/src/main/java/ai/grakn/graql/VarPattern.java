@@ -321,6 +321,7 @@ public interface VarPattern extends Pattern {
      * @param var the variable that this variable should not be equal to
      * @return this
      */
+    @API
     @CheckReturnValue
     VarPattern neq(String var);
 

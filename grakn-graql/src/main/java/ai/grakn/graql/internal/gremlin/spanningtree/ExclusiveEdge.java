@@ -44,6 +44,7 @@ public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
         return new ExclusiveEdge<>(edge, excluded, weight);
     }
 
+    @SuppressWarnings("unused")//TODO: @Jason, how is this used? I can't find a reference to it?
     public static <T> ExclusiveEdge<T> of(DirectedEdge<T> edge, double weight) {
         return ExclusiveEdge.of(edge, ImmutableList.of(), weight);
     }

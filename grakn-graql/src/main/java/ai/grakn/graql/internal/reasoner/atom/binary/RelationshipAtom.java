@@ -164,7 +164,7 @@ public class RelationshipAtom extends IsaAtom {
     public String toString(){
         String typeString = getSchemaConcept() != null?
                 getSchemaConcept().getLabel().getValue() :
-                "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
+                "{" + inferPossibleTypes().stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
                 getRelationPlayers().toString();
@@ -489,7 +489,7 @@ public class RelationshipAtom extends IsaAtom {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    private Set<Type> inferPossibleEntityTypes(Answer sub){
+    private Set<Type> inferPossibleEntityTypes(){
         return inferPossibleRelationConfigurations().asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
@@ -539,7 +539,7 @@ public class RelationshipAtom extends IsaAtom {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    public ImmutableList<Type> inferPossibleTypes(Answer sub) {
+    public ImmutableList<Type> inferPossibleTypes() {
         if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
         if (possibleRelations == null) {
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations();
@@ -549,12 +549,7 @@ public class RelationshipAtom extends IsaAtom {
                     .collect(toSet());
 
             ImmutableList.Builder<Type> builder = ImmutableList.builder();
-            //prioritise relations with higher chance of yielding answers
             compatibleConfigurations.asMap().entrySet().stream()
-                    //prioritise relations with more allowed roles
-                    .sorted(Comparator.comparing(e -> -e.getValue().size()))
-                    //prioritise relations with number of roles equal to arity
-                    .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
                     //prioritise relations having more instances
                     .sorted(Comparator.comparing(e -> -tx().admin().getShardCount(e.getKey())))
                     //prioritise relations with highest number of possible types played by untyped role players
@@ -562,9 +557,9 @@ public class RelationshipAtom extends IsaAtom {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
                         Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
-                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypes(sub);
+                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypes();
                         while(neighbourIterator.hasNext()){
-                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypes(sub));
+                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypes());
                         }
 
                         Set<Role> rs = e.getKey().relates().collect(toSet());
@@ -574,7 +569,6 @@ public class RelationshipAtom extends IsaAtom {
                                 rs.stream().flatMap(Role::playedByTypes).filter(typesFromNeighbour::contains).count()
                         );
                     })
-                    .sorted(Comparator.comparing(p -> -p.getValue()))
                     //prioritise non-implicit relations
                     .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                     .map(Pair::getKey)
@@ -596,7 +590,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        List<Type> relationshipTypes = inferPossibleTypes(sub);
+        List<Type> relationshipTypes = inferPossibleTypes();
         if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
         return this;
     }
@@ -610,7 +604,7 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public List<Atom> atomOptions(Answer sub) {
-        return this.inferPossibleTypes(sub).stream()
+        return this.inferPossibleTypes().stream()
                 .map(this::addType)
                 .map(at -> at.inferRoles(sub))
                 //order by number of distinct roles
@@ -707,7 +701,7 @@ public class RelationshipAtom extends IsaAtom {
         //TODO make restrictions based on cardinality constraints
         Set<Role> possibleRoles = relType != null?
                 relType.relates().collect(toSet()) :
-                inferPossibleTypes(sub).stream()
+                inferPossibleTypes().stream()
                         .filter(Concept::isRelationshipType)
                         .map(Concept::asRelationshipType)
                         .flatMap(RelationshipType::relates).collect(toSet());
