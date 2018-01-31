@@ -32,7 +32,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.SynchronousObserver;
+import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -124,7 +124,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Read));
         }
 
@@ -133,7 +133,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
         }
 
@@ -142,7 +142,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Batch));
         }
 
@@ -151,9 +151,9 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Read));
-            TxResponse response = tx.receive().elem();
+            TxResponse response = tx.receive().ok();
 
             assertEquals(doneResponse(), response);
         }
@@ -161,7 +161,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(commitRequest());
         }
@@ -171,12 +171,12 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
             tx.send(commitRequest());
-            TxResponse response = tx.receive().elem();
+            TxResponse response = tx.receive().ok();
 
             assertEquals(doneResponse(), response);
         }
@@ -192,8 +192,8 @@ public class GrpcServerTest {
         });
 
         try (
-                SynchronousObserver tx1 = SynchronousObserver.create(stub);
-                SynchronousObserver tx2 = SynchronousObserver.create(stub)
+                TxGrpcCommunicator tx1 = TxGrpcCommunicator.create(stub);
+                TxGrpcCommunicator tx2 = TxGrpcCommunicator.create(stub)
         ) {
             tx1.send(openRequest(MYKS, TxType.Write));
             tx2.send(openRequest(MYKS, TxType.Write));
@@ -207,7 +207,7 @@ public class GrpcServerTest {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
@@ -231,7 +231,7 @@ public class GrpcServerTest {
             return null;
         }).when(tx).close();
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
         }
 
@@ -241,7 +241,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
         }
@@ -271,12 +271,12 @@ public class GrpcServerTest {
         when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
         when(query.stream()).thenAnswer(params -> answers.stream());
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
             tx.send(execQueryRequest(QUERY));
-            TxResponse response1 = tx.receive().elem();
+            TxResponse response1 = tx.receive().ok();
 
             GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
             GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
@@ -284,7 +284,7 @@ public class GrpcServerTest {
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
 
             tx.send(nextRequest());
-            TxResponse response2 = tx.receive().elem();
+            TxResponse response2 = tx.receive().ok();
 
             GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId("V456").build();
             GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
@@ -292,7 +292,7 @@ public class GrpcServerTest {
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
 
             tx.send(nextRequest());
-            TxResponse response3 = tx.receive().elem();
+            TxResponse response3 = tx.receive().ok();
 
             TxResponse expected = doneResponse();
             assertEquals(expected, response3);
@@ -324,7 +324,7 @@ public class GrpcServerTest {
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -332,11 +332,11 @@ public class GrpcServerTest {
             tx.receive();
 
             tx.send(nextRequest());
-            tx.receive().elem();
+            tx.receive().ok();
 
             tx.send(stopRequest());
 
-            TxResponse response = tx.receive().elem();
+            TxResponse response = tx.receive().ok();
 
             assertEquals(doneResponse(), response);
         }
@@ -344,7 +344,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
             tx.send(nextRequest());
@@ -356,7 +356,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, false));
             tx.send(nextRequest());
@@ -368,7 +368,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, true));
             tx.send(nextRequest());
@@ -380,7 +380,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(commitRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -391,7 +391,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -402,7 +402,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -418,7 +418,7 @@ public class GrpcServerTest {
     public void whenOpeningTxFails_Throw() throws Throwable {
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
@@ -431,7 +431,7 @@ public class GrpcServerTest {
     public void whenCommittingFails_Throw() throws Throwable {
         doThrow(EXCEPTION).when(tx).commit();
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -447,7 +447,7 @@ public class GrpcServerTest {
     public void whenParsingQueryFails_Throw() throws Throwable {
         when(tx.graql().parse(QUERY)).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -463,7 +463,7 @@ public class GrpcServerTest {
     public void whenExecutingQueryFails_Throw() throws Throwable {
         when(query.results(any())).thenThrow(EXCEPTION);
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -477,7 +477,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -491,7 +491,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingStopBeforeQuery_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -505,7 +505,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 
@@ -525,7 +525,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
 

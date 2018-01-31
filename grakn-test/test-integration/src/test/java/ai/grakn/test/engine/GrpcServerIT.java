@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.grpc.GrpcTestUtil;
-import ai.grakn.grpc.SynchronousObserver;
+import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -81,7 +81,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -97,7 +97,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -113,7 +113,7 @@ public class GrpcServerIT {
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
         List<QueryResult> results;
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -140,7 +140,7 @@ public class GrpcServerIT {
         Set<QueryResult> results1;
         Set<QueryResult> results2;
 
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -154,7 +154,7 @@ public class GrpcServerIT {
 
     @Test // This behaviour is temporary - we should eventually support it correctly
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -169,7 +169,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
@@ -180,11 +180,11 @@ public class GrpcServerIT {
         }
     }
 
-    private static List<QueryResult> queryResults(SynchronousObserver tx) throws InterruptedException {
+    private static List<QueryResult> queryResults(TxGrpcCommunicator tx) throws InterruptedException {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {
-            TxResponse response = tx.receive().elem();
+            TxResponse response = tx.receive().ok();
             assert response != null;
 
             switch (response.getResponseCase()) {

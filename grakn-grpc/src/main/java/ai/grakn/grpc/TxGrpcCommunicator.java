@@ -32,8 +32,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Wrapper for synchronous bidirectional streaming communication - i.e. when there is a stream of {@link TxRequest}s and
- * a stream of {@link TxResponse}s.
+ * Wrapper for making Tx calls to a gRPC server - handles sending a stream of {@link TxRequest}s and receiving a
+ * stream of {@link TxResponse}s.
  *
  * A request is sent with the {@link #send(TxRequest)}} method, and you can block for a response with the
  * {@link #receive()} method.
@@ -41,31 +41,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <pre>
  * {@code
  *
- *     try (SynchronousObserver tx = SynchronousObserver.create(stub) {
+ *     try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub) {
  *         tx.send(openMessage);
- *         TxResponse doneMessage = tx.receive().elem();
+ *         TxResponse doneMessage = tx.receive().ok();
  *         tx.send(commitMessage);
- *         Throwable validationError = tx.receive.error();
+ *         StatusRuntimeException validationError = tx.receive.error();
  *     }
  * }
  * </pre>
  *
  * @author Felix Chapman
  */
-public class SynchronousObserver implements AutoCloseable {
+public class TxGrpcCommunicator implements AutoCloseable {
 
     private final StreamObserver<TxRequest> requests;
     private final QueueingObserver responses;
 
-    private SynchronousObserver(StreamObserver<TxRequest> requests, QueueingObserver responses) {
+    private TxGrpcCommunicator(StreamObserver<TxRequest> requests, QueueingObserver responses) {
         this.requests = requests;
         this.responses = responses;
     }
 
-    public static SynchronousObserver create(GraknGrpc.GraknStub stub) {
+    public static TxGrpcCommunicator create(GraknGrpc.GraknStub stub) {
         QueueingObserver responseListener = new QueueingObserver();
         StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
-        return new SynchronousObserver(requestSender, responseListener);
+        return new TxGrpcCommunicator(requestSender, responseListener);
     }
 
     /**
@@ -80,7 +80,7 @@ public class SynchronousObserver implements AutoCloseable {
     /**
      * Block until a response is returned.
      */
-    public QueueElem receive() throws InterruptedException {
+    public Response receive() throws InterruptedException {
         return responses.poll();
     }
 
@@ -95,29 +95,29 @@ public class SynchronousObserver implements AutoCloseable {
      *
      * A response can be polled with the {@link #poll()} method.
      */
-    static class QueueingObserver implements StreamObserver<TxResponse>, AutoCloseable {
+    private static class QueueingObserver implements StreamObserver<TxResponse>, AutoCloseable {
 
-        private final BlockingQueue<QueueElem> queue = new LinkedBlockingDeque<>();
+        private final BlockingQueue<Response> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);
 
         @Override
         public void onNext(TxResponse value) {
-            queue.add(QueueElem.elem(value));
+            queue.add(Response.ok(value));
         }
 
         @Override
         public void onError(Throwable throwable) {
             terminated.set(true);
-            queue.add(QueueElem.error((StatusRuntimeException) throwable));
+            queue.add(Response.error((StatusRuntimeException) throwable));
         }
 
         @Override
         public void onCompleted() {
             terminated.set(true);
-            queue.add(QueueElem.completed());
+            queue.add(Response.completed());
         }
 
-        QueueElem poll() throws InterruptedException {
+        Response poll() throws InterruptedException {
             return queue.take();
         }
 
@@ -134,28 +134,52 @@ public class SynchronousObserver implements AutoCloseable {
     }
 
     /**
-     * A response, that may be an element, an error or a "completed" message.
+     * A response from the gRPC server, that may be a successful response {@link #ok(TxResponse), an error
+     * {@link #error(StatusRuntimeException)}} or a "completed" message {@link #completed()}.
      */
     @AutoValue
-    public abstract static class QueueElem {
+    public abstract static class Response {
 
-        abstract @Nullable TxResponse nullableElem();
+        abstract @Nullable TxResponse nullableOk();
         abstract @Nullable StatusRuntimeException nullableError();
 
-        public boolean isCompleted() {
-            return nullableElem() == null && nullableError() == null;
-        }
-
-        public TxResponse elem() {
-            TxResponse elem = nullableElem();
-            if (elem == null) {
-                throw new IllegalStateException("Expected elem not found: " + toString());
+        public final Type type() {
+            if (nullableOk() != null) {
+                return Type.OK;
+            } else if (nullableError() != null) {
+                return Type.ERROR;
             } else {
-                return elem;
+                return Type.COMPLETED;
             }
         }
 
-        public StatusRuntimeException error() {
+        /**
+         * Enum indicating the type of {@link Response}.
+         */
+        public enum Type {
+            OK, ERROR, COMPLETED;
+        }
+
+        /**
+         * If this is a successful response, retrieve it.
+         *
+         * @throws IllegalStateException if this is not a successful response
+         */
+        public final TxResponse ok() {
+            TxResponse response = nullableOk();
+            if (response == null) {
+                throw new IllegalStateException("Expected successful response not found: " + toString());
+            } else {
+                return response;
+            }
+        }
+
+        /**
+         * If this is an error, retrieve it.
+         *
+         * @throws IllegalStateException if this is not an error
+         */
+        public final StatusRuntimeException error() {
             StatusRuntimeException throwable = nullableError();
             if (throwable == null) {
                 throw new IllegalStateException("Expected error not found: " + toString());
@@ -164,21 +188,21 @@ public class SynchronousObserver implements AutoCloseable {
             }
         }
 
-        private static QueueElem create(@Nullable TxResponse elem, @Nullable StatusRuntimeException error) {
-            Preconditions.checkArgument(elem == null || error == null);
-            return new AutoValue_SynchronousObserver_QueueElem(elem, error);
+        private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
+            Preconditions.checkArgument(response == null || error == null);
+            return new AutoValue_SynchronousObserver_Response(response, error);
         }
 
-        static QueueElem completed() {
+        static Response completed() {
             return create(null, null);
         }
 
-        static QueueElem error(StatusRuntimeException error) {
+        static Response error(StatusRuntimeException error) {
             return create(null, error);
         }
 
-        static QueueElem elem(TxResponse elem) {
-            return create(elem, null);
+        static Response ok(TxResponse response) {
+            return create(response, null);
         }
     }
 }
