@@ -51,7 +51,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean>
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
             Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
-    // for internal use
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public ConnectedComponentVertexProgram() {
     }
 
