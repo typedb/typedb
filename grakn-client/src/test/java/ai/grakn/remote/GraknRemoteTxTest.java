@@ -119,7 +119,14 @@ public class GraknRemoteTxTest {
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
-            verify(serverRequests).onNext(TxRequest.newBuilder().setOpen(Open.newBuilder().setKeyspace(GraknOuterClass.Keyspace.newBuilder().setValue(KEYSPACE.getValue())).setTxType(TxType.Write)).build());
+            verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Write));
+        }
+    }
+
+    @Test
+    public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.BATCH)) {
+            verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Batch));
         }
     }
 

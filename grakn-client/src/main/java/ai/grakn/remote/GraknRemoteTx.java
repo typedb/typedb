@@ -34,16 +34,8 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.ComputeQueryBuilder;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 
@@ -200,82 +192,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public QueryBuilder graql() {
-        return new QueryBuilder() {
-
-            private @Nullable Boolean infer = null;
-
-            @Override
-            public Match match(Pattern... patterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Match match(Collection<? extends Pattern> patterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public InsertQuery insert(VarPattern... vars) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public InsertQuery insert(Collection<? extends VarPattern> vars) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public DefineQuery define(VarPattern... varPatterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public UndefineQuery undefine(VarPattern... varPatterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public ComputeQueryBuilder compute() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public QueryParser parser() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public <T extends Query<?>> T parse(String queryString) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public QueryBuilder infer(boolean infer) {
-                this.infer = infer;
-                return this;
-            }
-
-            @Override
-            public QueryBuilder materialise(boolean materialise) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public <T> T execute(Query<T> query) {
-                client.execQuery(query, infer);
-                return null;
-            }
-        };
+        return RemoteQueryBuilder.create(client);
     }
 
     @Override
@@ -292,4 +209,5 @@ public class GraknRemoteTx implements GraknTx {
     public void commit() throws InvalidKBException {
         throw new UnsupportedOperationException();
     }
+
 }
