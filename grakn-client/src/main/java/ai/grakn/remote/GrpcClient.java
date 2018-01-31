@@ -24,6 +24,7 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
@@ -78,6 +79,15 @@ class GrpcClient implements AutoCloseable {
         GraknOuterClass.Query grpcQuery = convertQuery(query);
         ExecQuery execQuery = ExecQuery.newBuilder().setQuery(grpcQuery).setInfer(infer(infer)).build();
         observer.send(TxRequest.newBuilder().setExecQuery(execQuery).build());
+    }
+
+    public void commit() {
+        observer.send(TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build());
+
+        StatusRuntimeException error = observer.receive().throwable();
+        if (error != null) {
+            throw convertStatusRuntimeException(error);
+        }
     }
 
     @Override

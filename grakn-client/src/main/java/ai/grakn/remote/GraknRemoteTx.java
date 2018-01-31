@@ -207,7 +207,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public void commit() throws InvalidKBException {
-        throw new UnsupportedOperationException();
+        client.commit();
     }
 
 }

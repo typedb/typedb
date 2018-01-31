@@ -27,6 +27,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
@@ -59,6 +60,8 @@ import static org.mockito.Mockito.when;
  */
 public class GraknRemoteTxTest {
 
+    private static final String ERROR_DESC = "OH NOES";
+    private static final StatusRuntimeException ERROR = new StatusRuntimeException(Status.UNKNOWN.withDescription(ERROR_DESC));
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -183,6 +186,17 @@ public class GraknRemoteTxTest {
     }
 
     @Test
+    public void whenCommitting_SendACommitMessageToGrpc() {
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+
+            tx.commit();
+        }
+
+        verify(serverRequests).onNext(commitRequest());
+    }
+
+    @Test
     public void whenCreatingAGraknRemoteTxWithKeyspace_SetsKeyspaceOnTx() {
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             assertEquals(KEYSPACE, tx.keyspace());
@@ -191,16 +205,34 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenOpeningATxFails_Throw() {
-        doAnswer(args -> {
-            serverResponses.onError(new StatusRuntimeException(Status.UNKNOWN.withDescription("OH NOES")));
-            return null;
-        }).when(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Write));
+        throwOn(openRequest(KEYSPACE.getValue(), TxType.Write));
 
         exception.expect(GraknException.class);
-        exception.expectMessage("OH NOES");
+        exception.expectMessage(ERROR_DESC);
+
+        GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE);
+        tx.close();
+    }
+
+    @Test
+    public void whenCommittingATxFails_Throw() {
+        throwOn(commitRequest());
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+
+            exception.expect(GraknException.class);
+            exception.expectMessage(ERROR_DESC);
+
+            tx.commit();
         }
+    }
+
+    private void throwOn(TxRequest request) {
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onError(ERROR);
+            return null;
+        }).when(serverRequests).onNext(request);
     }
 
     // TODO: we copied all this too many times
@@ -224,6 +256,10 @@ public class GraknRemoteTxTest {
         ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
         execQueryRequest.setInfer(infer);
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
+    }
+
+    private static TxRequest commitRequest() {
+        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
     private static TxResponse doneResponse() {
