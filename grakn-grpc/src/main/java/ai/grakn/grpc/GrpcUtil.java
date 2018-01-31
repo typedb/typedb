@@ -36,9 +36,9 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxType;
  * @author Felix Chapman
  */
 public class GrpcUtil {
-    public static TxRequest openRequest(String keyspaceString, TxType txType) {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
+
+    public static TxRequest openRequest(Keyspace keyspace, TxType txType) {
+        Open.Builder open = Open.newBuilder().setKeyspace(convert(keyspace)).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
@@ -55,7 +55,7 @@ public class GrpcUtil {
         return execQueryRequest(queryString, inferMessage);
     }
 
-    public static TxRequest execQueryRequest(String queryString, Infer infer) {
+    private static TxRequest execQueryRequest(String queryString, Infer infer) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
         ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
         execQueryRequest.setInfer(infer);
@@ -74,7 +74,15 @@ public class GrpcUtil {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
-    public static GraknTxType convert(TxType txType) {
+    public static Keyspace getKeyspace(Open open) {
+        return convert(open.getKeyspace());
+    }
+
+    public static GraknTxType getTxType(Open open) {
+        return convert(open.getTxType());
+    }
+
+    private static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
                 return GraknTxType.READ;
@@ -88,7 +96,11 @@ public class GrpcUtil {
         }
     }
 
-    public static Keyspace convert(GraknOuterClass.Keyspace keyspace) {
+    private static Keyspace convert(GraknOuterClass.Keyspace keyspace) {
         return Keyspace.of(keyspace.getValue());
+    }
+
+    private static GraknOuterClass.Keyspace convert(Keyspace keyspace) {
+        return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 }

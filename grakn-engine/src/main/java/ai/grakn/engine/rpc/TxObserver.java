@@ -150,8 +150,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             throw error(Status.FAILED_PRECONDITION);
         }
 
-        Keyspace keyspace = GrpcUtil.convert(request.getKeyspace());
-        GraknTxType txType = GrpcUtil.convert(request.getTxType());
+        Keyspace keyspace = GrpcUtil.getKeyspace(request);
+        GraknTxType txType = GrpcUtil.getTxType(request);
         tx = txFactory.tx(keyspace, txType);
 
         responseObserver.onNext(doneResponse());

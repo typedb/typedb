@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
@@ -86,7 +87,7 @@ public class GrpcServerTest {
     };
 
     private static final int PORT = 5555;
-    private static final String MYKS = "myks";
+    private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
@@ -108,7 +109,7 @@ public class GrpcServerTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
-        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenReturn(tx);
+        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
 
@@ -126,7 +127,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Read));
         }
 
-        verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.READ);
+        verify(txFactory).tx(MYKS, GraknTxType.READ);
     }
 
     @Test
@@ -135,7 +136,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Write));
         }
 
-        verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.WRITE);
+        verify(txFactory).tx(MYKS, GraknTxType.WRITE);
     }
 
     @Test
@@ -144,7 +145,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Batch));
         }
 
-        verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.BATCH);
+        verify(txFactory).tx(MYKS, GraknTxType.BATCH);
     }
 
     @Test
@@ -184,7 +185,7 @@ public class GrpcServerTest {
     public void whenOpeningTwoTransactions_TransactionsAreOpenedInDifferentThreads() {
         List<Thread> threads = new ArrayList<>();
 
-        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenAnswer(invocation -> {
+        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenAnswer(invocation -> {
             threads.add(Thread.currentThread());
             return tx;
         });
@@ -202,8 +203,11 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
+        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
+
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest("not!@akeyspace", TxType.Write));
+            tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
 
@@ -216,7 +220,7 @@ public class GrpcServerTest {
         final Thread[] threadOpenedWith = new Thread[1];
         final Thread[] threadClosedWith = new Thread[1];
 
-        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenAnswer(invocation -> {
+        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenAnswer(invocation -> {
             threadOpenedWith[0] = Thread.currentThread();
             return tx;
         });
@@ -411,7 +415,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningTxFails_Throw() throws Throwable {
-        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenThrow(EXCEPTION);
+        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(EXCEPTION);
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
