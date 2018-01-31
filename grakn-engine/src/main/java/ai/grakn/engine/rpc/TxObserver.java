@@ -43,8 +43,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.grpc.GrpcUtil.doneResponse;
-
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
  * <p>
@@ -153,7 +151,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         GraknTxType txType = GrpcUtil.getTxType(request);
         tx = txFactory.tx(keyspace, txType);
 
-        responseObserver.onNext(doneResponse());
+        responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void commit() {
