@@ -35,14 +35,14 @@ public interface UnifierComparison {
     /**
      * @param parent {@link Type} of parent expression
      * @param child {@link Type} of child expression
-     * @return true if {@link Type}s are compatible
+     * @return true if {@link Type}s are compatible - child is a (as or more specific) variant of parent
      */
     boolean typeCompatibility(Type parent, Type child);
 
     /**
      * @param parent {@link Atomic} of parent expression
      * @param child {@link Atomic} of child expression
-     * @return true if {@link Atomic}s compatible
+     * @return true if {@link Atomic}s compatible - child is a (as or more specific) variant of parent
      */
     boolean atomicCompatibility(Atomic parent, Atomic child);
 
