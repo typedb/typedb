@@ -452,14 +452,11 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected void mapResponseToRequests(List<Void> batchResponse,
-                Collection<CollapsedRequest<Void, QueryRequest>> collapsedRequests) {
-            int count = 0;
+        protected void mapResponseToRequests(List<Void> batchResponse, Collection<CollapsedRequest<Void, QueryRequest>> collapsedRequests) {
             for (CollapsedRequest<Void, QueryRequest> request : collapsedRequests) {
-                Void response = batchResponse.get(count++);
-                request.setResponse(response);
+                request.setComplete();
             }
-            metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size")).update(count);
+            metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size")).update(collapsedRequests.size());
         }
     }
 
