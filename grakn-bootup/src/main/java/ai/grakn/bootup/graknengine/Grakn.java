@@ -23,6 +23,7 @@ import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
 import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
 import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public class Grakn {
     public static void main(String[] args) {
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
-                    .orElseThrow(() -> new RuntimeException("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"));
+                    .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
             Path pidfile = Paths.get(graknPidFileProperty);
             GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
             graknPidManager.trackGraknPid();
