@@ -69,11 +69,6 @@ public abstract class GetQueryImpl implements GetQuery {
         return match().stream().map(result -> result.project(vars())).distinct();
     }
 
-    //@Nullable
-    //public Optional<GraknTx> tx() {
-    //    return match().admin().tx();
-    //}
-
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";

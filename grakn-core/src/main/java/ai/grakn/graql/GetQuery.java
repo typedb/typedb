@@ -45,13 +45,6 @@ public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
     GetQuery withTx(GraknTx tx);
 
     /**
-     * Get the transaction this query is running against, if it is set
-     */
-    @SuppressWarnings("unsued") //TODO: @Felix, What's the deal here? Seems totally unused
-    //@CheckReturnValue
-    //Optional<GraknTx> tx();
-
-    /**
      * Get the {@link Match} this {@link GetQuery} contains
      */
     @CheckReturnValue
