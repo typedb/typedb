@@ -37,6 +37,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements ComputeQuery<T> {
 
@@ -124,6 +126,11 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
         return Stream.of(converter.convert(execute()));
     }
 
+    @Override
+    public T convert(Stream<?> results) {
+        return Iterables.getOnlyElement(((Stream<T>) results).collect(toList()));
+    }
+
     void initSubGraph() {
         if (this.isStatisticsQuery()) {
             includeAttribute = true;
@@ -183,7 +190,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
         }
 
         List<Pattern> checkSubtypes = subLabels.stream()
-                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
+                .map(type -> var("x").isa(Graql.label(type))).collect(toList());
         return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 

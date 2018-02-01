@@ -18,12 +18,8 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
@@ -32,8 +28,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.util.CommonUtil;
-import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -125,16 +119,6 @@ class RemoteQueryBuilder implements QueryBuilder {
     @Override
     public <T> T execute(Query<T> query) {
         List<Object> result = client.execQuery(query, infer);
-        // TODO: this is obviously stupid
-        // If the server is working correctly, then these casts are safe
-        if (query instanceof GetQuery || query instanceof InsertQuery) {
-            return (T) result;
-        } else if (query instanceof DefineQuery || query instanceof ComputeQuery || query instanceof AggregateQuery) {
-            return (T) Iterables.getOnlyElement(result);
-        } else if (query instanceof DeleteQuery || query instanceof UndefineQuery) {
-            return null;
-        } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + query);
-        }
+        return query.convert(result.stream());
     }
 }

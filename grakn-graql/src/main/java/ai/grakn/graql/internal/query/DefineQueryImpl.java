@@ -27,12 +27,14 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Implementation for {@link DefineQuery}
@@ -63,6 +65,11 @@ abstract class DefineQueryImpl implements DefineQuery {
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
         
         return QueryOperationExecutor.defineAll(allPatterns, tx);
+    }
+
+    @Override
+    public Answer convert(Stream<?> results) {
+        return Iterables.getOnlyElement(((Stream<Answer>) results).collect(toList()));
     }
 
     @Override

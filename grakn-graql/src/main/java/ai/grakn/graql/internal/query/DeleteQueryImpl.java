@@ -65,6 +65,13 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
+    public Void convert(Stream<?> results) {
+        // Consume whole stream
+        results.forEach(result -> {});
+        return null;
+    }
+
+    @Override
     public <T> Stream<T> results(GraqlConverter<?, T> converter) {
         execute();
         return Stream.empty();

@@ -51,6 +51,7 @@ import org.junit.rules.ExpectedException;
 import javax.annotation.Nullable;
 import java.util.List;
 
+import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -160,9 +161,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
-        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
+        GetQuery query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
@@ -175,9 +176,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_GetAResultBack() {
-        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
+        GetQuery query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -210,9 +211,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
-        DeleteQuery query = mock(DeleteQuery.class);
         String queryString = "match $x isa person; delete $x;";
-        when(query.toString()).thenReturn(queryString);
+        DeleteQuery query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -228,9 +229,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
-        AggregateQuery<Boolean> query = mock(AggregateQuery.class);
         String queryString = "match $x isa person; aggregate ask;";
-        when(query.toString()).thenReturn(queryString);
+        AggregateQuery<Boolean> query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -252,9 +253,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
-        DefineQuery query = mock(DefineQuery.class);
-        String queryString = "define person sub entity;";
-        when(query.toString()).thenReturn(queryString);
+        String queryString = "define label person sub entity;";
+        DefineQuery query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -286,9 +287,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
-        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
+        GetQuery query = parse(queryString);
+        assert query.toString().equals(queryString); // sanity check
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
