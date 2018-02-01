@@ -39,11 +39,11 @@ public class CentralityQueryBuilderImpl implements CentralityQueryBuilder {
         this.tx = tx;
     }
 
-    //@Override
-    //public CentralityQueryBuilder withTx(GraknTx tx) {
-    //    this.tx = Optional.of(tx);
-    //    return this;
-    //}
+    @Override
+    public CentralityQueryBuilder withTx(GraknTx tx) {
+        this.tx = Optional.of(tx);
+        return this;
+    }
 
     @Override
     public CorenessQuery usingKCore() {
