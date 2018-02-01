@@ -321,7 +321,7 @@ public interface GraknTx extends AutoCloseable{
      */
     @CheckReturnValue
     @API
-    boolean isReadOnly();
+    GraknTxType txType();
 
     /**
      * Returns the {@link GraknSession} which was used to create this {@link GraknTx}
