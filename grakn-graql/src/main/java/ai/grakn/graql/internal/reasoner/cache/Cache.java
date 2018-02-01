@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -156,19 +155,8 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @return unified cached answers
      */
     public abstract T getAnswers(Q query);
-    //TODO: @Kasper Is this abstract method on `Cache` really needed?
-    //      It's only ever called through LazyQueryCache
-    @SuppressWarnings("unused")
-    public abstract Pair<T, MultiUnifier> getAnswersWithUnifier(Q query);
+
     public abstract Stream<Answer> getAnswerStream(Q query);
-    //TODO: @Kasper Is this abstract method on `Cache` really needed?
-    //      It's only ever called through LazyQueryCache
-    @SuppressWarnings("unused")
-    public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
-    //TODO: @Kasper Is this abstract method on `Cache` really needed?
-    //      It's only ever called through LazyQueryCache
-    @SuppressWarnings("unused")
-    public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**
      * return an inverse answer map which is more suitable for operations involving concept comparison (joins, filtering, etc.)

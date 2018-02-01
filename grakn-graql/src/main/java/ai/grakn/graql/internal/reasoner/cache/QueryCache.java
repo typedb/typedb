@@ -124,7 +124,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         return getAnswerStreamWithUnifier(query).getKey();
     }
 
-    @Override
     public Pair<QueryAnswers, MultiUnifier> getAnswersWithUnifier(Q query) {
         Pair<Stream<Answer>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(

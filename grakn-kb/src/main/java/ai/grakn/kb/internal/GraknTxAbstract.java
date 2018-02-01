@@ -699,6 +699,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
+    /**
+     * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
+     */
     public void closeSession() {
         try {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
