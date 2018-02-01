@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -58,10 +57,10 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Void execute() {
+    public Stream<?> stream() {
         List<Answer> results = match().stream().collect(toList());
         results.forEach(this::deleteResult);
-        return null;
+        return Stream.empty();
     }
 
     @Override
@@ -69,12 +68,6 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
         // Consume whole stream
         results.forEach(result -> {});
         return null;
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        execute();
-        return Stream.empty();
     }
 
     @Override

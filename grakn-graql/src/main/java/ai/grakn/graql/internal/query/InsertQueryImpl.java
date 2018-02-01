@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
@@ -98,11 +97,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public final List<Answer> convert(Stream<?> results) {
         return ((Stream<Answer>) results).collect(toList());
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        return stream().map(converter::convert);
     }
 
     @Override

@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -49,16 +48,6 @@ public abstract class GetQueryImpl implements GetQuery {
     @Override
     public GetQuery withTx(GraknTx tx) {
         return Queries.get(vars(), match().withTx(tx).admin());
-    }
-
-    @Override
-    public List<Answer> execute() {
-        return convert(stream());
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        return stream().map(converter::convert);
     }
 
     @Override
