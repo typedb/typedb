@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *
  * @author Michele Orsi
  */
-public class GraknProcess extends AbstractProcessHandler implements ProcessHandler {
+public class GraknProcess extends AbstractProcessHandler {
 
     protected final Path homePath;
     protected final Path configPath;

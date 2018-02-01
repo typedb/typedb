@@ -30,7 +30,7 @@ import java.util.Comparator;
  *
  * @author Michele Orsi
  */
-public class StorageProcess extends AbstractProcessHandler implements ProcessHandler {
+public class StorageProcess extends AbstractProcessHandler {
 
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
