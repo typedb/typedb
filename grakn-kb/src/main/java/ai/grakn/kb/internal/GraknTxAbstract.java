@@ -369,7 +369,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     public void checkMutationAllowed() {
-        if (txType().equals(GraknTxType.READ)) throw GraknTxOperationException.transactionReadOnly(this);
+        if (GraknTxType.READ.equals(txType())) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
 
