@@ -27,7 +27,6 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
@@ -161,7 +160,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
-        Query<?> query = mock(Query.class);
+        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
         when(query.toString()).thenReturn(queryString);
 
@@ -287,7 +286,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
-        Query<?> query = mock(Query.class);
+        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
         when(query.toString()).thenReturn(queryString);
 
