@@ -139,7 +139,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
+    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))
