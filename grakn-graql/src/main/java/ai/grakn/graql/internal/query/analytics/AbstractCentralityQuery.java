@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.API;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -62,8 +63,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         includeAttribute = true;
     }
 
-    //TODO: @Jason. This is only ever used by a test. Is it part of the public api? Why do we need this method?
-    @SuppressWarnings("unused")
+    @API
     public V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }
