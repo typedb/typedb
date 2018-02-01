@@ -132,7 +132,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         );
     }
 
-    @Override
     public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
@@ -150,10 +149,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         );
     }
 
-    @Override
-    public LazyIterator<Answer> getAnswerIterator(Q query) {
-        return new LazyIterator<>(getAnswers(query).stream());
-    }
 
     /**
      * find specific answer to a query in the cache

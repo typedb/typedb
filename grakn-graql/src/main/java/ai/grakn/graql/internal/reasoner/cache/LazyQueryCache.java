@@ -88,7 +88,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return getAnswersWithUnifier(query).getKey();
     }
 
-    @Override
     public Pair<LazyAnswerIterator, MultiUnifier> getAnswersWithUnifier(Q query) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
@@ -125,7 +124,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return new Pair<>(answerStream, new MultiUnifierImpl());
     }
 
-    @Override
+
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
     }
