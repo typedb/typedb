@@ -76,12 +76,12 @@ public class GraqlControllerInsertTest {
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, postProcessor, printer, new MetricRegistry());
-    });
+    public static SparkContext sparkContext = SparkContext.withControllers(
+            new GraqlController(mockFactory, postProcessor, printer, new MetricRegistry())
+    );
 
     @Before
-    public void setupMock(){
+    public void setupMock() {
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
         when(tx.keyspace()).thenReturn(keyspace);
         when(printer.graqlString(any())).thenReturn(Json.object().toString());
@@ -99,12 +99,12 @@ public class GraqlControllerInsertTest {
     }
 
     @After
-    public void clearExceptions(){
+    public void clearExceptions() {
         reset(postProcessor);
     }
 
     @Test
-    public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
+    public void POSTGraqlInsert_InsertWasExecutedOnGraph() {
         String queryString = "insert $x isa movie;";
 
         sendRequest(queryString);
@@ -118,7 +118,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
+    public void POSTMalformedGraqlQuery_ResponseStatusIs400() {
         GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
@@ -129,7 +129,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
+    public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError() {
         GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
@@ -140,7 +140,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTWithNoQueryInBody_ResponseIs400(){
+    public void POSTWithNoQueryInBody_ResponseIs400() {
         Response response = RestAssured.with()
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "somekb"));
 
@@ -149,7 +149,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsert_ResponseStatusIs200(){
+    public void POSTGraqlInsert_ResponseStatusIs200() {
         String query = "insert $x isa person;";
         Response response = sendRequest(query);
 
@@ -157,7 +157,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422(){
+    public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422() {
         GraknTxOperationException exception = GraknTxOperationException.invalidCasting(Object.class, Object.class);
         when(tx.graql().parser().parseQuery("define person plays movie;").execute()).thenThrow(exception);
 
@@ -167,7 +167,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage(){
+    public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage() {
         GraknTxOperationException exception = GraknTxOperationException.invalidCasting(Object.class, Object.class);
         when(tx.graql().parser().parseQuery("define person plays movie;").execute()).thenThrow(exception);
 
@@ -177,21 +177,21 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
+    public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson() {
         Response response = sendRequest("insert $x isa person;");
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
-    public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
+    public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson() {
         when(printer.graqlString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("insert $x isa person;");
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }
 
     @Test
-    public void POSTGraqlDefine_GraphCommitNeverCalled(){
+    public void POSTGraqlDefine_GraphCommitNeverCalled() {
         String query = "define thingy sub entity;";
 
         sendRequest(query);
@@ -200,7 +200,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled(){
+    public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled() {
         String query = "define thingy sub entity;";
 
         verify(tx.admin(), times(0)).commitSubmitNoLogs();
@@ -211,7 +211,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsert_CommitLogsAreSubmitted(){
+    public void POSTGraqlInsert_CommitLogsAreSubmitted() {
         String query = "insert $x isa person has name 'Alice';";
 
         CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
@@ -222,7 +222,7 @@ public class GraqlControllerInsertTest {
         verify(postProcessor, times(1)).submit(commitLog);
     }
 
-    private Response sendRequest(String query){
+    private Response sendRequest(String query) {
         return RestAssured.with()
                 .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .body(query)

@@ -95,7 +95,7 @@ import static org.apache.http.HttpStatus.SC_OK;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-public class GraqlController {
+public class GraqlController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
@@ -107,14 +107,17 @@ public class GraqlController {
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
+    }
 
+    @Override
+    public void start(Service spark) {
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
