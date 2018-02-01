@@ -116,7 +116,7 @@ class GraknClientFake implements GraknClient {
     }
 
     @Override
-    public void graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException {
+    public List graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException {
         queriesExecuted.addAll(queryList);
 
         if (exceptionToThrow != null) {
@@ -124,7 +124,7 @@ class GraknClientFake implements GraknClient {
         }
 
         queryList.stream().forEach(query -> {assert query != null;});
-
+        return queryList;
     }
 
     @Override

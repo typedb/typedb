@@ -157,14 +157,14 @@ public class BatchExecutorClientIT {
     @Test
     public void whenEngineRESTFailsWhileLoadingWithRetryTrue_LoaderRetriesAndWaits()
             throws Exception {
-        List<Observable<Void>> all = new ArrayList<>();
+        List<Observable<Object>> all = new ArrayList<>();
         int n = 20;
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             for (int i = 0; i < n; i++) {
                 all.add(
                         loader
                                 .add(query(), keyspace, true)
-                                .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
+                                .doOnError(ex -> System.out.println("Error " + ex)));
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);
