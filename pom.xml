@@ -669,7 +669,7 @@
                     </exclusion>
                     <exclusion>
                         <groupId>io.netty</groupId>
-                        <artifactId>netty-common</artifactId>
+                        <artifactId>netty-handler</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
