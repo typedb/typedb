@@ -62,7 +62,7 @@ public class GraknClientImpl implements GraknClient {
     }
 
     @Override
-    public List graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
+    public List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
             throws GraknClientException {
         LOG.debug("Sending query list size {} to keyspace {}", queryList.size(), keyspace);
 
@@ -85,7 +85,7 @@ public class GraknClientImpl implements GraknClient {
                 throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity + "\nqueries: " + queries, response.getStatusInfo());
             }
             LOG.debug("Received {}", status.getStatusCode());
-            return queryList;
+            return queryList.stream().map(q -> QueryResponse.INSTANCE).collect(Collectors.toList());
         } finally {
             response.close();
         }

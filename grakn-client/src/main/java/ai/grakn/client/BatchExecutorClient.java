@@ -148,7 +148,7 @@ public class BatchExecutorClient implements Closeable {
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
-    private Observable ignoreErrors(Observable<Object> observable) {
+    private Observable ignoreErrors(Observable<QueryResponse> observable) {
         observable = observable
                 .map(Optional::of)
                 .onErrorResumeNext(error -> {
@@ -334,7 +334,7 @@ public class BatchExecutorClient implements Closeable {
      *
      * @author Domenico Corapi
      */
-    private class CommandQueries extends HystrixCommand<List> {
+    private class CommandQueries extends HystrixCommand<List<QueryResponse>> {
 
         static final int QUEUE_MULTIPLIER = 1024;
 
@@ -409,7 +409,7 @@ public class BatchExecutorClient implements Closeable {
      *
      * @author Domenico Corapi
      */
-    private class QueriesObservableCollapser extends HystrixCollapser<List, Object, QueryRequest> {
+    private class QueriesObservableCollapser extends HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
 
         private final QueryRequest query;
         private Keyspace keyspace;
@@ -440,8 +440,8 @@ public class BatchExecutorClient implements Closeable {
          * @return returns a command that executed all the requests
          */
         @Override
-        protected HystrixCommand<List> createCommand(
-                Collection<CollapsedRequest<Object, QueryRequest>> collapsedRequests) {
+        protected HystrixCommand<List<QueryResponse>> createCommand(
+                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
 
             List<QueryRequest> requests =
                     collapsedRequests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
@@ -450,10 +450,10 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected void mapResponseToRequests(List batchResponse, Collection<CollapsedRequest<Object, QueryRequest>> collapsedRequests) {
+        protected void mapResponseToRequests(List<QueryResponse> batchResponse, Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
             int count = 0;
-            for (CollapsedRequest<Object, QueryRequest> request : collapsedRequests) {
-                Object response = batchResponse.get(count++);
+            for (CollapsedRequest<QueryResponse, QueryRequest> request : collapsedRequests) {
+                QueryResponse response = batchResponse.get(count++);
                 request.setResponse(response);
                 request.setComplete();
             }

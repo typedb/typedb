@@ -18,27 +18,16 @@
 
 package ai.grakn.client;
 
-import ai.grakn.Keyspace;
-import ai.grakn.graql.Query;
-import ai.grakn.util.SimpleURI;
-
-import java.util.List;
-import java.util.Optional;
-
 /**
- * Grakn http client. Extend this for more http endpoint.
+ * <p>
+ *     Simple class to encapsulate a query response.
+ *     This is required by the {@link com.netflix.hystrix.Hystrix} framework we use in {@link BatchExecutorClient}
+ * </p>
  *
- * @author Domenico Corapi
+ * @author Filipe Peliz Pinto Teixeira
  */
-public interface GraknClient {
-    int CONNECT_TIMEOUT_MS = 30 * 1000;
-    int DEFAULT_MAX_RETRY = 3;
+public class QueryResponse {
+    public static final QueryResponse INSTANCE = new QueryResponse();
 
-    static GraknClient of(SimpleURI url) {
-        return new GraknClientImpl(url);
-    }
-
-    List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException;
-
-    Optional<Keyspace> keyspace(String keyspace) throws GraknClientException;
+    private QueryResponse(){}
 }
