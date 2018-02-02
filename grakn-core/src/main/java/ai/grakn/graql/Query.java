@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -65,4 +66,9 @@ public interface Query<T> {
      */
     @CheckReturnValue
     boolean isReadOnly();
+
+    /**
+     * Get the transaction associated with this query
+     */
+    Optional<? extends GraknTx> tx();
 }

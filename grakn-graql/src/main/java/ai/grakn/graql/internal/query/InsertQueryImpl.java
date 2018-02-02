@@ -30,7 +30,8 @@ import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableCollection;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -43,12 +44,8 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 /**
  * A query that will insert a collection of variables into a graph
  */
-class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQueryAdmin {
-
-    private final Optional<MatchAdmin> match;
-    private final Optional<GraknTx> tx;
-    private final ImmutableCollection<VarPatternAdmin> originalVars;
-    private final ImmutableCollection<VarPatternAdmin> vars;
+@AutoValue
+abstract class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -57,7 +54,7 @@ class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQ
      * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
+    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
         // match and graph should never both be present (should get graph from inner match)
         assert(!match.isPresent() || !tx.isPresent());
 
@@ -65,25 +62,21 @@ class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQ
             throw GraqlQueryException.noPatterns();
         }
 
-        this.match = match;
-        this.tx = tx;
+        InsertQueryImpl insert = new AutoValue_InsertQueryImpl(tx, match, ImmutableList.copyOf(vars));
 
-        this.originalVars = vars;
-
-        // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
-
-        for (VarPatternAdmin var : this.vars) {
+        insert.allVarPatterns().forEach(var -> {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
-        }
+        });
+
+        return insert;
     }
 
     @Override
     public InsertQuery withTx(GraknTx tx) {
-        return match.map(
-                m -> Queries.insert(vars, m.withTx(tx).admin())
+        return match().map(
+                m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
         ).orElseGet(
-                () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(tx))
+                () -> Queries.insert(varPatterns(), Optional.of(tx))
         );
     }
 
@@ -96,10 +89,12 @@ class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQ
     public Stream<Answer> stream() {
         GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
-        return match.map(
-                query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(vars, theGraph, answer))
+        Collection<VarPatternAdmin> varPatterns = allVarPatterns().collect(toImmutableList());
+
+        return match().map(
+                query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(varPatterns, theGraph, answer))
         ).orElseGet(
-                () -> Stream.of(QueryOperationExecutor.insertAll(vars, theGraph))
+                () -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, theGraph))
         );
     }
 
@@ -109,58 +104,32 @@ class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQ
     }
 
     @Override
-    public Optional<? extends Match> match() {
-        return match;
-    }
-
-    @Override
     public Set<SchemaConcept> getSchemaConcepts() {
         GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
-        Set<SchemaConcept> types = vars.stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+        Set<SchemaConcept> types = allVarPatterns()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        match.ifPresent(mq -> types.addAll(mq.getSchemaConcepts()));
+        match().ifPresent(mq -> types.addAll(mq.admin().getSchemaConcepts()));
 
         return types;
     }
 
-    @Override
-    public Collection<VarPatternAdmin> varPatterns() {
-        return originalVars;
+    private Stream<VarPatternAdmin> allVarPatterns() {
+        return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
     }
 
-    public Optional<GraknTx> getTx() {
-        return match.map(MatchAdmin::tx).orElse(tx);
+    private Optional<? extends GraknTx> getTx() {
+        Optional<Optional<? extends GraknTx>> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
+        return matchTx.orElse(tx());
     }
 
     @Override
     public String toString() {
-        String mq = match.map(match -> match + "\n").orElse("");
-        return mq + "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        InsertQueryImpl maps = (InsertQueryImpl) o;
-
-        if (!match.equals(maps.match)) return false;
-        if (!tx.equals(maps.tx)) return false;
-        return originalVars.equals(maps.originalVars);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = match.hashCode();
-        result = 31 * result + tx.hashCode();
-        result = 31 * result + originalVars.hashCode();
-        return result;
+        String mq = match().map(match -> match + "\n").orElse("");
+        return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }

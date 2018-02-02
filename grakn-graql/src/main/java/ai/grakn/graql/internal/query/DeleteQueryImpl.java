@@ -27,11 +27,11 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -42,17 +42,12 @@ import static java.util.stream.Collectors.toList;
 @AutoValue
 abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryAdmin {
 
-    abstract ImmutableCollection<Var> vars();
-
-    @Override
-    public abstract Match match();
-
     /**
      * @param vars a collection of variables to delete
      * @param match a pattern to match and delete for each result
      */
     static DeleteQueryImpl of(Collection<? extends Var> vars, Match match) {
-        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), match);
+        return new AutoValue_DeleteQueryImpl(match, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -68,6 +63,11 @@ abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryA
     }
 
     @Override
+    public final Optional<? extends GraknTx> tx() {
+        return match().admin().tx();
+    }
+
+    @Override
     public DeleteQuery withTx(GraknTx tx) {
         return Queries.delete(vars(), match().withTx(tx));
     }
@@ -78,7 +78,7 @@ abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryA
     }
 
     private void deleteResult(Answer result) {
-        Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
+        Collection<? extends Var> toDelete = vars().isEmpty() ? result.vars() : vars();
 
         for (Var var : toDelete) {
             Concept concept = result.get(var);

@@ -21,6 +21,8 @@ package ai.grakn.graql;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 
+import java.util.Collection;
+
 /**
  * A query for defining {@link SchemaConcept}s.
  * <p>
@@ -31,4 +33,6 @@ import ai.grakn.graql.admin.Answer;
  * @author Felix Chapman
  */
 public interface DefineQuery extends Query<Answer> {
+
+    Collection<? extends VarPattern> varPatterns();
 }

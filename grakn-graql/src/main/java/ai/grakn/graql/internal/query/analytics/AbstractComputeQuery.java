@@ -69,6 +69,11 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     Set<Type> subTypes = new HashSet<>();
 
     @Override
+    public final Optional<GraknTx> tx() {
+        return tx;
+    }
+
+    @Override
     public V withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
         return (V) this;

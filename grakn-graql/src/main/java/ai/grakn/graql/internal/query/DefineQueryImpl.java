@@ -22,12 +22,16 @@ import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
@@ -40,11 +44,8 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 @AutoValue
 abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
 
-    abstract ImmutableList<VarPatternAdmin> varPatterns();
-    abstract @Nullable GraknTx tx();
-
-    static DefineQueryImpl of(ImmutableList<VarPatternAdmin> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_DefineQueryImpl(varPatterns, tx);
+    static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
+        return new AutoValue_DefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
     }
 
     @Override
@@ -54,11 +55,11 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
 
     @Override
     public Answer execute() {
-        GraknTx tx = tx();
-        if (tx == null) throw GraqlQueryException.noTx();
+        GraknTx tx = tx().orElseThrow(GraqlQueryException::noTx);
 
-        ImmutableList<VarPatternAdmin> allPatterns =
-                varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
+        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(varPatterns()).stream()
+                        .flatMap(v -> v.innerVarPatterns().stream())
+                        .collect(toImmutableList());
 
         return QueryOperationExecutor.defineAll(allPatterns, tx);
     }
