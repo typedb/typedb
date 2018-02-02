@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -44,12 +43,6 @@ public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
      */
     @Override
     GetQuery withTx(GraknTx tx);
-
-    /**
-     * Get the transaction this query is running against, if it is set
-     */
-    @CheckReturnValue
-    Optional<GraknTx> tx();
 
     /**
      * Get the {@link Match} this {@link GetQuery} contains

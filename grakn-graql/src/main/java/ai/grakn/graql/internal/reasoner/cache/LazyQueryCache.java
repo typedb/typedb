@@ -67,7 +67,12 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return recordRetrieveLazy(query, answers).stream();
     }
 
-    @Override
+    /**
+     * record answer stream for a specific query and retrieve the updated stream in a lazy iterator
+     * @param query to be recorded
+     * @param answers answer stream of the query
+     * @return lazy iterator of updated answers
+     */
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match!= null) {
@@ -126,7 +131,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return new Pair<>(answerStream, new MultiUnifierImpl());
     }
 
-    @Override
+
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
     }

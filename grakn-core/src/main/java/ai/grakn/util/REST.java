@@ -147,12 +147,6 @@ public class REST {
             public static final String APPLICATION_ALL ="*/*";
         }
 
-        /**
-         * Json fields used to describe tasks
-         */
-        public static class Task {
-            public static final String STACK_TRACE = "stackTrace";
-        }
     }
 
     /**

@@ -66,6 +66,7 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
         return generator;
     }
 
+    @SuppressWarnings("unused")/** Used through the {@link FromTx} annotation*/
     public final void configure(@SuppressWarnings("unused") FromTx fromTx) {
         fromLastGeneratedTx();
     }

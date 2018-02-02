@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
@@ -45,12 +46,14 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     Set<Label> statisticsResourceLabels = new HashSet<>();
     Set<Type> statisticsResourceTypes = new HashSet<>();
 
+    @API
     public V of(String... statisticsResourceTypeLabels) {
         this.statisticsResourceLabels =
                 Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
         return (V) this;
     }
 
+    @API
     public V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
         return (V) this;

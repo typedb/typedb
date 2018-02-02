@@ -56,17 +56,6 @@ import java.util.stream.Stream;
 public class GraqlTraversalPlanner {
 
     /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    public static ImmutableList<Atom> plan(ReasonerQueryImpl query){
-        List<Atom> atoms = query.getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toList());
-        return planFromTraversal(atoms, query.getPattern(), query.tx());
-    }
-
-    /**
      *
      * Refined plan procedure:
      * - establish a list of starting atom candidates based on their substitutions
@@ -150,7 +139,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
+    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))

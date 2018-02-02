@@ -320,7 +320,8 @@ public interface GraknTx extends AutoCloseable{
      * @return true if the current transaction is read only
      */
     @CheckReturnValue
-    boolean isReadOnly();
+    @API
+    GraknTxType txType();
 
     /**
      * Returns the {@link GraknSession} which was used to create this {@link GraknTx}

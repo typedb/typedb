@@ -41,7 +41,7 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public DegreeStatisticsVertexProgram() {
     }
 

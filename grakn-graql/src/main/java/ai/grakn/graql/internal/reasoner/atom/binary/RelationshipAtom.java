@@ -461,13 +461,13 @@ public class RelationshipAtom extends IsaAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .map(graph::<Role>getSchemaConcept);
     }
-    
+
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof RelationshipAtom)) return false;
-        
+
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
         RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
 
@@ -844,27 +844,27 @@ public class RelationshipAtom extends IsaAtom {
                         compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(role ->
-                                    childRoleRPMap.get(role).stream()
-                                            //check for inter-type compatibility
-                                            .filter(crp -> {
-                                                Var childVar = crp.getRolePlayer().var();
-                                                Type childType = childVarTypeMap.get(childVar);
-                                                return matchType.typePlayability(childQuery, childVar, parentType)
-                                                        && matchType.typeCompatibility(parentType, childType);
-                                            })
-                                            //check for substitution compatibility
-                                            .filter(crp -> {
-                                                IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
-                                                IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
-                                                return matchType.atomicCompatibility(parentId, childId);
-                                            })
-                                            //check for value predicate compatibility
-                                            .filter(crp -> {
-                                                ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
-                                                ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
-                                                return matchType.atomicCompatibility(parentVP, childVP);
-                                            })
-                                            .forEach(compatibleRelationPlayers::add)
+                                        childRoleRPMap.get(role).stream()
+                                                //check for inter-type compatibility
+                                                .filter(crp -> {
+                                                    Var childVar = crp.getRolePlayer().var();
+                                                    Type childType = childVarTypeMap.get(childVar);
+                                                    return matchType.typePlayability(childQuery, childVar, parentType)
+                                                            && matchType.typeCompatibility(parentType, childType);
+                                                })
+                                                //check for substitution compatibility
+                                                .filter(crp -> {
+                                                    IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
+                                                    IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
+                                                    return matchType.atomicCompatibility(parentId, childId);
+                                                })
+                                                //check for value predicate compatibility
+                                                .filter(crp -> {
+                                                    ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
+                                                    ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
+                                                    return matchType.atomicCompatibility(parentVP, childVP);
+                                                })
+                                                .forEach(compatibleRelationPlayers::add)
                                 );
                         if (!compatibleRelationPlayers.isEmpty()) {
                             compatibleMappingsPerParentRP.add(

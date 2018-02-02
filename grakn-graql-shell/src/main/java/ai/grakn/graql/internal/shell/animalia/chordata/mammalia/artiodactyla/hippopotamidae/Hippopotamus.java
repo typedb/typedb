@@ -35,5 +35,6 @@ public interface Hippopotamus {
 
     void submerge();
 
+    @SuppressWarnings("unused")
     boolean isHungryHungry();
 }

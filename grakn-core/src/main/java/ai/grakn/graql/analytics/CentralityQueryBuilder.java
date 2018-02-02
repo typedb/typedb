@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
@@ -37,6 +38,7 @@ public interface CentralityQueryBuilder {
      * @param tx the {@link GraknTx} to execute the compute query on
      * @return a compute query builder with the graph set
      */
+    @API
     @CheckReturnValue
     CentralityQueryBuilder withTx(GraknTx tx);
 

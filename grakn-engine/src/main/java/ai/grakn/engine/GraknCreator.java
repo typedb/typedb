@@ -107,7 +107,6 @@ public class GraknCreator {
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
             IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, RedisIndexStorage.create(jedisPool, metricRegistry));
             CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
-
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
             int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
             GrpcServer grpcServer = GrpcServer.create(grpcPort, engineGraknTxFactory);

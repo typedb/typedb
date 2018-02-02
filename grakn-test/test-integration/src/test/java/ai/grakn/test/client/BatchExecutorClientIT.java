@@ -165,7 +165,7 @@ public class BatchExecutorClientIT {
                 all.add(
                         loader
                                 .add(query(), keyspace, true)
-                                .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
+                                .doOnError(ex -> System.out.println("Error " + ex)));
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);
