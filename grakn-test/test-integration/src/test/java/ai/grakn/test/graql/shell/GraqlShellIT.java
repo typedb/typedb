@@ -644,7 +644,7 @@ public class GraqlShellIT {
 
         ImmutableSet<String> noPromptArgs = ImmutableSet.of("-e", "-f", "-b", "-v", "-h");
         if (Sets.intersection(Sets.newHashSet(arguments), noPromptArgs).isEmpty()) {
-            // Remove first four lines containing license and last line containing prompt
+            // Remove first five lines containing license and last line containing prompt
             outputLines = outputLines.subList(4, outputLines.size() - 1);
         }
 

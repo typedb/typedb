@@ -148,7 +148,7 @@ public class BatchExecutorClient implements Closeable {
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
-    private Observable<Void> ignoreErrors(Observable<Void> observable) {
+    private Observable ignoreErrors(Observable<Object> observable) {
         observable = observable
                 .map(Optional::of)
                 .onErrorResumeNext(error -> {
@@ -381,7 +381,7 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected List<Void> run() throws GraknClientException {
+        protected List run() throws GraknClientException {
             List<Query<?>> queryList = queries.stream().map(QueryRequest::getQuery)
                     .collect(Collectors.toList());
             try {
