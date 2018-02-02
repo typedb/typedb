@@ -121,19 +121,19 @@ public class BatchExecutorClient implements Closeable {
     /**
      * Will block until there is space for the query to be submitted
      */
-    public Observable add(Query<?> query, Keyspace keyspace) {
+    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
         return add(query, keyspace, true);
     }
 
     /**
      * Will block until there is space for the query to be submitted
      */
-    public Observable add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
         QueryRequest queryRequest = new QueryRequest(query);
         queryRequest.acquirePermit();
 
         Context context = addTimer.time();
-        Observable observable = new QueriesObservableCollapser(queryRequest, keyspace)
+        Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
                 .doOnEach(a -> {
@@ -148,7 +148,7 @@ public class BatchExecutorClient implements Closeable {
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
-    private Observable ignoreErrors(Observable<QueryResponse> observable) {
+    private Observable<QueryResponse> ignoreErrors(Observable<QueryResponse> observable) {
         observable = observable
                 .map(Optional::of)
                 .onErrorResumeNext(error -> {
