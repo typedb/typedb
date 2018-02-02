@@ -20,7 +20,9 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -46,6 +48,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -417,7 +420,7 @@ public class AtomicTest {
         assertEquals(4, relation3.getApplicableRules().count());
         assertEquals(3, relation4.getApplicableRules().count());
         assertThat(relation5.getApplicableRules().collect(toSet()), empty());
-        assertEquals(4, relation6.getApplicableRules().count());
+        assertEquals(5, relation6.getApplicableRules().count());
     }
 
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
@@ -463,9 +466,9 @@ public class AtomicTest {
         Atom type5 = ReasonerQueries.atomic(conjunction(typeString5, graph), graph).getAtom();
 
         List<InferenceRule> rules = RuleUtils.getRules(graph).map(r -> new InferenceRule(r, graph)).collect(Collectors.toList());
-        assertEquals(2, type.getApplicableRules().count());
-        assertEquals(1, type2.getApplicableRules().count());
-        assertEquals(3, type3.getApplicableRules().count());
+        assertEquals(getRulesWithType("reifying-relation", graph).count(), type.getApplicableRules().count());
+        assertEquals(getRulesWithType("typed-relation", graph).count(), type2.getApplicableRules().count());
+        assertEquals(getRulesWithType("description", graph).count(), type3.getApplicableRules().count());
         assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isResource()).count(), type4.getApplicableRules().count());
         assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isRelation()).count(), type5.getApplicableRules().count());
     }
@@ -528,7 +531,12 @@ public class AtomicTest {
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
 
-        assertEquals(5, relation.getApplicableRules().count());
+        long relationRules = RuleUtils.getRules(graph)
+                .map(r -> new InferenceRule(r, graph))
+                .filter(r -> r.getHead().getAtom().isRelation())
+                .count();
+        //first relation matches all rules with relations in the head apart from the rule that reifies relations (type mismatch)
+        assertEquals(relationRules - 1, relation.getApplicableRules().count());
         assertEquals(RuleUtils.getRules(graph).count(), relation2.getApplicableRules().count());
     }
 
@@ -544,9 +552,11 @@ public class AtomicTest {
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
         Atom relation3 = ReasonerQueries.atomic(conjunction(relationString3, graph), graph).getAtom();
         Atom relation4 = ReasonerQueries.atomic(conjunction(relationString4, graph), graph).getAtom();
-        assertEquals(2, relation.getApplicableRules().count());
-        assertEquals(2, relation2.getApplicableRules().count());
-        assertEquals(1, relation3.getApplicableRules().count());
+        long reifyingRelationRules = getRulesWithType("reifying-relation", graph).count();
+        assertEquals(reifyingRelationRules, relation.getApplicableRules().count());
+        assertEquals(reifyingRelationRules, relation2.getApplicableRules().count());
+        //single rule not applicable due to type mismatch
+        assertEquals(reifyingRelationRules- 1, relation3.getApplicableRules().count());
         assertThat(relation4.getApplicableRules().collect(toSet()), empty());
     }
 
@@ -580,9 +590,9 @@ public class AtomicTest {
         Atom type = ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
         Atom type2 = ReasonerQueries.atomic(conjunction(typeString2, graph), graph).getAtom();
         Atom type3 = ReasonerQueries.atomic(conjunction(typeString3, graph), graph).getAtom();
-        assertEquals(2, type.getApplicableRules().count());
-        assertEquals(2, type2.getApplicableRules().count());
-        assertEquals(1, type3.getApplicableRules().count());
+        assertEquals(getRulesWithType("reifying-relation", graph).count(), type.getApplicableRules().count());
+        assertEquals(getRulesWithType("ternary", graph).count(), type2.getApplicableRules().count());
+        assertEquals(getRulesWithType("binary", graph).count(), type3.getApplicableRules().count());
     }
 
     @Test
@@ -1273,6 +1283,10 @@ public class AtomicTest {
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 checkInverse,
                 checkEquality);
+    }
+
+    private Stream<Rule> getRulesWithType(String typeName, GraknTx graph){
+        return RuleUtils.getRulesWithType(graph.getSchemaConcept(Label.of(typeName)), graph);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
