@@ -323,10 +323,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
-    private Stream<IsaAtom> inferEntityTypes() {
-        return inferEntityTypes(new QueryAnswer());
-    }
-
     private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){
         HashMap<Var, Type> map = new HashMap<>();
         isas
