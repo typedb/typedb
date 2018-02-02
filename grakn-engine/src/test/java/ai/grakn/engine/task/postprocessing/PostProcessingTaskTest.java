@@ -94,4 +94,33 @@ public class PostProcessingTaskTest {
         //Check no methods calls
         verify(indexPostProcessor, Mockito.times(0)).mergeDuplicateConcepts(any(), any(), any());
     }
+
+    @Test
+    public void whenThereAreMultipleIndicesToPostProcess_EnsurePPIsCalledMultipleTimes() throws InterruptedException {
+        String index1 = "index1";
+        String index2 = "index2";
+        String index3 = "index3";
+        String index4 = "index4";
+
+        when(indexPostProcessor.popIndex(keyspaceA)).
+                thenReturn(index1).
+                thenReturn(index2).
+                thenReturn(index3).
+                thenReturn(index4);
+
+        Set<ConceptId> ids = Stream.of("id1", "id2", "id3").map(ConceptId::of).collect(Collectors.toSet());
+        when(indexPostProcessor.popIds(keyspaceA, index1)).thenReturn(ids);
+        when(indexPostProcessor.popIds(keyspaceA, index2)).thenReturn(ids);
+        when(indexPostProcessor.popIds(keyspaceA, index3)).thenReturn(ids);
+        when(indexPostProcessor.popIds(keyspaceA, index4)).thenReturn(ids);
+
+        //Run the method
+        postProcessingTask.run();
+
+        //Give time for PP to run
+        Thread.sleep(config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY) * 2000);
+
+        //Check methods are called
+        verify(indexPostProcessor, Mockito.times(4)).popIds(keyspaceA, any());
+    }
 }
