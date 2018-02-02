@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 
@@ -34,7 +33,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class UndefineQueryImpl implements UndefineQuery {
+abstract class UndefineQueryImpl extends AbstractVoidQuery implements UndefineQuery {
 
     abstract ImmutableList<VarPatternAdmin> varPatterns();
     abstract @Nullable GraknTx tx();
@@ -49,19 +48,12 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     }
 
     @Override
-    public Stream<?> stream() {
+    public Void execute() {
         ImmutableList<VarPatternAdmin> allPatterns =
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
 
         QueryOperationExecutor.undefineAll(allPatterns, tx());
 
-        return Stream.empty();
-    }
-
-    @Override
-    public Void convert(Stream<?> results) {
-        // Consume whole stream
-        results.forEach(result -> {});
         return null;
     }
 

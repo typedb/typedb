@@ -33,19 +33,17 @@ import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A query that will insert a collection of variables into a graph
  */
-class InsertQueryImpl implements InsertQueryAdmin {
+class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQueryAdmin {
 
     private final Optional<MatchAdmin> match;
     private final Optional<GraknTx> tx;
@@ -87,16 +85,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
         ).orElseGet(
                 () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(tx))
         );
-    }
-
-    @Override
-    public List<Answer> execute() {
-        return convert(stream());
-    }
-
-    @Override
-    public final List<Answer> convert(Stream<?> results) {
-        return ((Stream<Answer>) results).collect(toList());
     }
 
     @Override

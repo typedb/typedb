@@ -23,17 +23,12 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
-import com.google.common.collect.Iterables;
-
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result
  */
-class AggregateQueryImpl<T> implements AggregateQuery<T> {
+class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
 
     private final MatchAdmin match;
     private final Aggregate<? super Answer, T> aggregate;
@@ -49,13 +44,8 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public T convert(Stream<?> results) {
-        return Iterables.getOnlyElement(((Stream<T>) results).collect(toList()));
-    }
-
-    @Override
-    public Stream<?> stream() {
-        return Stream.of(aggregate.apply(match.stream()));
+    public T execute() {
+        return aggregate.apply(match.stream());
     }
 
     @Override

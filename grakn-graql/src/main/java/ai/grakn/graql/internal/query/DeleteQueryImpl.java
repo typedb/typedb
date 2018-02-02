@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -41,7 +40,7 @@ import static java.util.stream.Collectors.toList;
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  */
 @AutoValue
-abstract class DeleteQueryImpl implements DeleteQueryAdmin {
+abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryAdmin {
 
     abstract ImmutableCollection<Var> vars();
 
@@ -57,16 +56,9 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Stream<?> stream() {
+    public Void execute() {
         List<Answer> results = match().stream().collect(toList());
         results.forEach(this::deleteResult);
-        return Stream.empty();
-    }
-
-    @Override
-    public Void convert(Stream<?> results) {
-        // Consume whole stream
-        results.forEach(result -> {});
         return null;
     }
 

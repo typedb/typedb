@@ -34,9 +34,9 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,8 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements ComputeQuery<T> {
+abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
+        extends AbstractExecutableQuery<T> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
@@ -118,16 +119,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
             }
         }
         return Stream.of(printer.graqlString(computeResult));
-    }
-
-    @Override
-    public Stream<?> stream() {
-        return Stream.of(execute());
-    }
-
-    @Override
-    public T convert(Stream<?> results) {
-        return Iterables.getOnlyElement(((Stream<T>) results).collect(toList()));
     }
 
     void initSubGraph() {
