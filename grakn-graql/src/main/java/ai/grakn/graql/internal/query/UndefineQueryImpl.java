@@ -60,6 +60,13 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     }
 
     @Override
+    public Void convert(Stream<?> results) {
+        // Consume whole stream
+        results.forEach(result -> {});
+        return null;
+    }
+
+    @Override
     public <T> Stream<T> results(GraqlConverter<?, T> converter) {
         execute();
         return Stream.empty();

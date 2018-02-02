@@ -53,7 +53,7 @@ public abstract class GetQueryImpl implements GetQuery {
 
     @Override
     public List<Answer> execute() {
-        return stream().collect(toList());
+        return convert(stream());
     }
 
     @Override
@@ -79,5 +79,10 @@ public abstract class GetQueryImpl implements GetQuery {
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+    }
+
+    @Override
+    public final List<Answer> convert(Stream<?> results) {
+        return ((Stream<Answer>) results).collect(toList());
     }
 }

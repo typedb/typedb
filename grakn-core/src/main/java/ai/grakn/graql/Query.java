@@ -62,6 +62,10 @@ public interface Query<T> {
     @CheckReturnValue
     <S> Stream<S> results(GraqlConverter<?, S> converter);
 
+    @CheckReturnValue
+    // TODO: this is bad maybe
+    T convert(Stream<?> results);
+
     /**
      * Whether this query will modify the graph
      */

@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -91,7 +92,12 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public List<Answer> execute() {
-        return stream().collect(Collectors.toList());
+        return convert(stream());
+    }
+
+    @Override
+    public final List<Answer> convert(Stream<?> results) {
+        return ((Stream<Answer>) results).collect(toList());
     }
 
     @Override
