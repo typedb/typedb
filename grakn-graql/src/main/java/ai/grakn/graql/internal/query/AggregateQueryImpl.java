@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
 import com.google.common.collect.Iterables;
@@ -50,18 +49,13 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public T execute() {
-        return aggregate.apply(match.stream());
-    }
-
-    @Override
     public T convert(Stream<?> results) {
         return Iterables.getOnlyElement(((Stream<T>) results).collect(toList()));
     }
 
     @Override
-    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
-        return Stream.of(converter.convert(execute()));
+    public Stream<?> stream() {
+        return Stream.of(aggregate.apply(match.stream()));
     }
 
     @Override

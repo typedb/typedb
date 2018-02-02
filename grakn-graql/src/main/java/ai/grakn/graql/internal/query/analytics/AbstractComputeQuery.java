@@ -32,7 +32,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -122,8 +121,8 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
     }
 
     @Override
-    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
-        return Stream.of(converter.convert(execute()));
+    public Stream<?> stream() {
+        return Stream.of(execute());
     }
 
     @Override
