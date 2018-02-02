@@ -349,15 +349,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap() {
         if (varTypeMap == null) {
-            this.varTypeMap = ImmutableMap.copyOf(getVarTypeMap(
-                    Stream.concat(
-                        getAtoms(IsaAtom.class),
-                        inferEntityTypes()
-                    )
-                )
-            );
+            this.varTypeMap = getVarTypeMap(new QueryAnswer());
         }
         return varTypeMap;
+    }
+
+    @Override
+    public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
+        return ImmutableMap.copyOf(getVarTypeMap(
+                Stream.concat(
+                        getAtoms(IsaAtom.class),
+                        inferEntityTypes(sub)
+                )
+                )
+        );
     }
 
     /**
