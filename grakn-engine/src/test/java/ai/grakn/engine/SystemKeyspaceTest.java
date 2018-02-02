@@ -65,9 +65,7 @@ public class SystemKeyspaceTest {
     // the systemKeyspace is initialised. If we make this a ClassRule that load order is broken and this test fails with
     // the janus profile.
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
-    }).host("0.0.0.0").port(4567);
+    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry)).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
     @ClassRule

@@ -16,25 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
+package ai.grakn.engine.controller;
 
-import java.nio.file.Path;
+import spark.Service;
 
 /**
+ *  Interface implemented by all HTTPControllers
  *
- * A class responsible for instantiating GraknPidManager
- *
- * @author Ganeshwara Herawan Hananda
- *
+ *  @author marcoscoppetta
  */
-public class GraknPidManagerFactory {
-    /*
-     * instantiates a GraknPidManager which supports *nix systems such as Linux and OS X
-     */
-    public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
-        GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
-        GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
-        GraknPidManager graknPidManager = new GraknPidManager(graknPidStore, graknPidRetriever);
-        return graknPidManager;
-    }
+
+public interface HttpController {
+
+    void start(Service spark);
 }

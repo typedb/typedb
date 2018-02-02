@@ -72,7 +72,7 @@ public class SystemControllerTest {
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         SystemControllerTest.config = config;
-        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
+        new SystemController(config, systemKeyspace, status, metricRegistry).start(spark);
     });
 
     @BeforeClass

@@ -35,14 +35,13 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class CommitLogController {
+public class CommitLogController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();
     private final PostProcessor postProcessor;
 
-    public CommitLogController(Service spark, PostProcessor postProcessor){
+    public CommitLogController(PostProcessor postProcessor){
         this.postProcessor = postProcessor;
 
-        spark.post(REST.WebPath.COMMIT_LOG_URI, (req, res) -> submitConcepts(req));
     }
 
     @POST
@@ -51,5 +50,10 @@ public class CommitLogController {
         CommitLog commitLog = mapper.readValue(req.body(), CommitLog.class);
         CompletableFuture.allOf(CompletableFuture.runAsync(() -> postProcessor.submit(commitLog))).join();
         return "";
+    }
+
+    @Override
+    public void start(Service spark) {
+        spark.post(REST.WebPath.COMMIT_LOG_URI, (req, res) -> submitConcepts(req));
     }
 }

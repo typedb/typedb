@@ -62,9 +62,7 @@ public class GraqlControllerDeleteTest {
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, postProcessor, printer, new MetricRegistry());
-    });
+    public static SparkContext sparkContext = SparkContext.withControllers(new GraqlController(mockFactory, postProcessor, printer, new MetricRegistry()));
 
     @Before
     public void setupMock(){

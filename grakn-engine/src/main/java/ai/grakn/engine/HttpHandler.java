@@ -23,6 +23,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
+import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
@@ -41,29 +42,31 @@ import spark.Response;
 import spark.Service;
 
 import java.nio.file.Path;
+import java.util.Collection;
 
 import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
 /**
- *
  * @author Michele Orsi
  */
 public class HttpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
-    protected final GraknConfig prop;
-    protected final Service spark;
-    protected final EngineGraknTxFactory factory;
-    protected final MetricRegistry metricRegistry;
-    protected final GraknEngineStatus graknEngineStatus;
-    protected final PostProcessor postProcessor;
+    private final GraknConfig prop;
+    private final Service spark;
+    private final EngineGraknTxFactory factory;
+    private final MetricRegistry metricRegistry;
+    private final GraknEngineStatus graknEngineStatus;
+    private final PostProcessor postProcessor;
     private final GrpcServer grpcServer;
+    private final Collection<HttpController> additionalCollaborators;
 
     public HttpHandler(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
             GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
-            GrpcServer grpcServer
+            GrpcServer grpcServer,
+            Collection<HttpController> additionalCollaborators
     ) {
         this.prop = prop;
         this.spark = spark;
@@ -72,6 +75,7 @@ public class HttpHandler {
         this.graknEngineStatus = graknEngineStatus;
         this.postProcessor = postProcessor;
         this.grpcServer = grpcServer;
+        this.additionalCollaborators = additionalCollaborators;
     }
 
 
@@ -91,11 +95,13 @@ public class HttpHandler {
 
         JacksonPrinter printer = JacksonPrinter.create();
 
-        // Start all the controllers
-        new GraqlController(factory, spark, postProcessor, printer, metricRegistry);
-        new ConceptController(factory, spark, metricRegistry);
-        new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessor);
+        // Start all the DEFAULT controllers
+        new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
+        new ConceptController(factory, metricRegistry).start(spark);
+        new SystemController(prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry).start(spark);
+        new CommitLogController(postProcessor).start(spark);
+
+        additionalCollaborators.forEach(httpController -> httpController.start(spark));
     }
 
     public static void configureSpark(Service spark, GraknConfig prop) {
@@ -110,7 +116,7 @@ public class HttpHandler {
                                       String hostName,
                                       int port,
                                       Path staticFolder,
-                                      int maxThreads){
+                                      int maxThreads) {
         // Set host name
         spark.ipAddress(hostName);
 
@@ -144,8 +150,7 @@ public class HttpHandler {
         while (running) {
             try {
                 spark.port();
-            }
-            catch(IllegalStateException e){
+            } catch (IllegalStateException e) {
                 LOG.debug("Spark server has been stopped");
                 running = false;
             }
@@ -157,9 +162,9 @@ public class HttpHandler {
      * the correct JSON response.
      *
      * @param exception exception thrown by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    protected static void handleGraknServerError(GraknServerException exception, Response response){
+    protected static void handleGraknServerError(GraknServerException exception, Response response) {
         LOG.error("REST error", exception);
         response.status(exception.getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
@@ -168,10 +173,11 @@ public class HttpHandler {
 
     /**
      * Handle any exception thrown by the server
+     *
      * @param exception Exception by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    protected static void handleInternalError(Exception exception, Response response){
+    protected static void handleInternalError(Exception exception, Response response) {
         LOG.error("REST error", exception);
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
