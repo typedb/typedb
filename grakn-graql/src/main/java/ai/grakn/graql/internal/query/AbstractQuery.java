@@ -40,8 +40,7 @@ abstract class AbstractQuery<T, S> implements Query<T> {
     protected abstract Stream<S> stream();
 
     @Override
-    // TODO: Make this method final once `AbstractComputeQuery` doesn't override it
-    public Stream<String> resultsString(Printer printer) {
+    public final Stream<String> resultsString(Printer<?> printer) {
         return results(printer);
     }
 

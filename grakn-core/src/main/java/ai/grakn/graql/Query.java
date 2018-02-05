@@ -53,7 +53,7 @@ public interface Query<T> {
      */
     @Deprecated
     @CheckReturnValue
-    Stream<String> resultsString(Printer printer);
+    Stream<String> resultsString(Printer<?> printer);
 
     /**
      * Execute the query and return a converted stream of results

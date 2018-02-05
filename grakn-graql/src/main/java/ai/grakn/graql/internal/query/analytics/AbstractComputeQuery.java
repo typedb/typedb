@@ -31,7 +31,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -132,28 +130,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         if (graknComputer != null) {
             graknComputer.killJobs();
         }
-    }
-
-    @Override
-    public final Stream<String> resultsString(Printer printer) {
-        // TODO: clarify or remove this special-case behaviour
-        Object computeResult = execute();
-        if (computeResult instanceof Map) {
-            if (((Map<?, ?>) computeResult).isEmpty()) {
-                return Stream.of("There are no instances of the selected type(s).");
-            }
-            if (((Map<?, ?>) computeResult).values().iterator().next() instanceof Set) {
-                Map<?, ?> map = (Map<?, ?>) computeResult;
-                return map.entrySet().stream().map(entry -> {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    for (Object s : (Iterable<?>) entry.getValue()) {
-                        stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
-                    }
-                    return stringBuilder.toString();
-                });
-            }
-        }
-        return Stream.of(printer.graqlString(computeResult));
     }
 
     private boolean subTypesContainsImplicitOrAttributeTypes() {
