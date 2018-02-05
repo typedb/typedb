@@ -22,21 +22,23 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
         extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
+
+    private boolean ofTypeLabelsSet = false;
+    private ImmutableSet<Label> ofLabels = ImmutableSet.of();
 
     AbstractCentralityQuery(Optional<GraknTx> tx) {
         super(tx);
@@ -62,19 +64,20 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         }
     }
 
-    private boolean ofTypeLabelsSet = false;
-    Set<Label> ofLabels = new HashSet<>();
-
     public V of(String... ofTypeLabels) {
-        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
+        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     public V of(Collection<Label> ofLabels) {
         if (!ofLabels.isEmpty()) {
             ofTypeLabelsSet = true;
-            this.ofLabels = Sets.newHashSet(ofLabels);
+            this.ofLabels = ImmutableSet.copyOf(ofLabels);
         }
         return (V) this;
+    }
+
+    final Set<Label> ofLabels() {
+        return ofLabels;
     }
 
     abstract CentralityMeasure getMethod();
@@ -83,7 +86,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     String graqlString() {
         String string = "centrality";
         if (ofTypeLabelsSet) {
-            string += " of " + ofLabels.stream()
+            string += " of " + ofLabels().stream()
                     .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
         }

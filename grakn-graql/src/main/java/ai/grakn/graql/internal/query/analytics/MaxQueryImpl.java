@@ -42,9 +42,9 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> i
     @Override
     protected final Optional<Number> innerExecute(GraknTx tx) {
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels())) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels);
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels());
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),

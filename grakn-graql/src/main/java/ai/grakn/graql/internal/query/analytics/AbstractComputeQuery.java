@@ -37,13 +37,12 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +52,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -65,8 +65,8 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     private GraknComputer graknComputer = null;
     private boolean includeAttribute = false;
 
-    private Set<Label> subLabels = new HashSet<>();
-    private Set<Type> subTypes = new HashSet<>();
+    private ImmutableSet<Label> subLabels = ImmutableSet.of();
+    private ImmutableSet<Type> subTypes = ImmutableSet.of();
 
     AbstractComputeQuery(Optional<GraknTx> tx) {
         this.tx = tx;
@@ -107,17 +107,16 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final V in(String... subTypeLabels) {
-        this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return (V) this;
+        return in(Arrays.stream(subTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
     public V in(Collection<Label> subLabels) {
-        this.subLabels = Sets.newHashSet(subLabels);
+        this.subLabels = ImmutableSet.copyOf(subLabels);
         return (V) this;
     }
 
-    final Set<Label> subLabels() {
+    final ImmutableSet<Label> subLabels() {
         return subLabels;
     }
 
@@ -164,13 +163,17 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
         if (subLabels.isEmpty()) {
+            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
+
             if (includeAttribute) {
-                tx.admin().getMetaConcept().subs().forEach(subTypes::add);
+                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
             } else {
-                tx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
                 tx.admin().getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
             }
+
+            subTypes = subTypesBuilder.build();
         } else {
             subTypes = subLabels.stream().map(label -> {
                 SchemaConcept type = tx.getSchemaConcept(label);
@@ -182,16 +185,16 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
                     includeAttribute = true;
                 }
                 return type.asType();
-            }).collect(Collectors.toSet());
+            }).collect(toImmutableSet());
 
             if (includeAttribute) {
-                subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+                subTypes = subTypes.stream().flatMap(Type::subs).collect(toImmutableSet());
             } else {
                 subTypes = subTypes.stream().flatMap(Type::subs)
-                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(Collectors.toSet());
+                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(toImmutableSet());
             }
         }
-        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
+        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(toImmutableSet());
     }
 
     final GraknComputer getGraphComputer() {

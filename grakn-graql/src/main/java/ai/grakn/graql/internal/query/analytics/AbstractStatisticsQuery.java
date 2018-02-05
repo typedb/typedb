@@ -27,37 +27,34 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
         extends AbstractComputeQuery<T, V> {
 
-    Set<Label> statisticsResourceLabels = new HashSet<>();
-    Set<Type> statisticsResourceTypes = new HashSet<>();
+    private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
+    private ImmutableSet<Type> statisticsResourceTypes = ImmutableSet.of();
 
     public AbstractStatisticsQuery(Optional<GraknTx> tx) {
         super(tx);
     }
 
     public V of(String... statisticsResourceTypeLabels) {
-        this.statisticsResourceLabels =
-                Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return (V) this;
+        return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     public V of(Collection<Label> statisticsResourceLabels) {
-        this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
+        this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
     }
 
@@ -70,6 +67,10 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     void getAllSubTypes(GraknTx tx) {
         super.getAllSubTypes(tx);
         getResourceTypes(tx);
+    }
+
+    final Set<Label> statisticsResourceLabels() {
+        return statisticsResourceLabels;
     }
 
     @Override
@@ -97,10 +98,10 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
                     return type;
                 })
                 .flatMap(Type::subs)
-                .collect(Collectors.toSet());
+                .collect(toImmutableSet());
         statisticsResourceLabels = statisticsResourceTypes.stream()
                 .map(SchemaConcept::getLabel)
-                .collect(Collectors.toSet());
+                .collect(toImmutableSet());
     }
 
     @Nullable

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -27,6 +28,7 @@ import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collections;
@@ -47,11 +49,13 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     protected final Map<Long, Set<String>> innerExecute(GraknTx tx) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
+        Set<Label> ofLabels;
+
         // Check if ofType is valid before returning emptyMap
-        if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels());
+        if (ofLabels().isEmpty()) {
+            ofLabels = subLabels();
         } else {
-            ofLabels = ofLabels.stream()
+            ofLabels = ofLabels().stream()
                     .flatMap(typeLabel -> {
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
@@ -60,15 +64,16 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
                     })
                     .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
-            subLabels().addAll(ofLabels);
         }
+
+        Set<Label> subLabels = Sets.union(subLabels(), ofLabels);
 
         if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels);
         Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
         try {
