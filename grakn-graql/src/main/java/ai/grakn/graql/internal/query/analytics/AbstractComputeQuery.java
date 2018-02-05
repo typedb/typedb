@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -33,7 +32,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,12 +232,4 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
-
-    static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
-        return subTypes.stream()
-                .filter(Concept::isAttributeType)
-                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
-                .collect(Collectors.toSet());
-    }
-
 }

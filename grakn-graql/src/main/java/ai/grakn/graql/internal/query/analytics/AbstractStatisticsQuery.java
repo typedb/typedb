@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -27,6 +28,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
@@ -34,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -88,6 +91,13 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
         statisticsResourceLabels = calcStatisticsResourceTypes(tx).stream()
                 .map(SchemaConcept::getLabel)
                 .collect(toImmutableSet());
+    }
+
+    private static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+        return subTypes.stream()
+                .filter(Concept::isAttributeType)
+                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
+                .collect(Collectors.toSet());
     }
 
     @Nullable
