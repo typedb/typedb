@@ -167,7 +167,7 @@ public class DistributionContext extends CompositeTestRule {
     private String getClassPath(){
         Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/services/lib").listFiles(jarFiles));
         File conf = new File(DIST_DIRECTORY + "/conf/");
-        File graknLogback = new File(DIST_DIRECTORY + "/services/grakn/");
+        File graknLogback = new File(DIST_DIRECTORY + "/services/grakn/server");
         return Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
