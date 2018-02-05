@@ -73,14 +73,15 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
 
         PathQueryImpl pathQuery = (PathQueryImpl) o;
 
-        return sourceId.equals(pathQuery.sourceId) && destinationId.equals(pathQuery.destinationId);
+        if (sourceId != null ? !sourceId.equals(pathQuery.sourceId) : pathQuery.sourceId != null) return false;
+        return destinationId != null ? destinationId.equals(pathQuery.destinationId) : pathQuery.destinationId == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + destinationId.hashCode();
+        result = 31 * result + (sourceId != null ? sourceId.hashCode() : 0);
+        result = 31 * result + (destinationId != null ? destinationId.hashCode() : 0);
         return result;
     }
 }

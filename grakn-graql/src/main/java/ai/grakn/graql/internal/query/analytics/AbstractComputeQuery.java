@@ -139,14 +139,14 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         // TODO: clarify or remove this special-case behaviour
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            if (((Map) computeResult).isEmpty()) {
+            if (((Map<?, ?>) computeResult).isEmpty()) {
                 return Stream.of("There are no instances of the selected type(s).");
             }
-            if (((Map) computeResult).values().iterator().next() instanceof Set) {
-                Map<?, ?> map = (Map) computeResult;
+            if (((Map<?, ?>) computeResult).values().iterator().next() instanceof Set) {
+                Map<?, ?> map = (Map<?, ?>) computeResult;
                 return map.entrySet().stream().map(entry -> {
                     StringBuilder stringBuilder = new StringBuilder();
-                    for (Object s : (Iterable) entry.getValue()) {
+                    for (Object s : (Iterable<?>) entry.getValue()) {
                         stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
                     }
                     return stringBuilder.toString();

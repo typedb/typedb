@@ -44,7 +44,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
 
     private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
 
-    public AbstractStatisticsQuery(Optional<GraknTx> tx) {
+    AbstractStatisticsQuery(Optional<GraknTx> tx) {
         super(tx);
     }
 
@@ -91,12 +91,12 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     }
 
     @Nullable
-    AttributeType.DataType getDataTypeOfSelectedResourceTypes(GraknTx tx) {
-        AttributeType.DataType dataType = null;
+    AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes(GraknTx tx) {
+        AttributeType.DataType<?> dataType = null;
         for (Type type : calcStatisticsResourceTypes(tx)) {
             // check if the selected type is a resource-type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-            AttributeType resourceType = (AttributeType) type;
+            AttributeType<?> resourceType = type.asAttributeType();
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
                 dataType = resourceType.getDataType();

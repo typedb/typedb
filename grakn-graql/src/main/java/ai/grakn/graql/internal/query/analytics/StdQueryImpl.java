@@ -42,7 +42,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
 
     @Override
     protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(tx);
+        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
         if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels())) return Optional.empty();
 
         Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
