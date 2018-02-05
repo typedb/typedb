@@ -45,7 +45,7 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -392,7 +392,7 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public int computePriority(Set<Var> subbedVars) {
         int priority = super.computePriority(subbedVars);
-        priority += ResolutionPlan.IS_RELATION_ATOM;
+        priority += SimplePlanner.IS_RELATION_ATOM;
         return priority;
     }
 
@@ -846,7 +846,7 @@ public class RelationshipAtom extends IsaAtom {
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
-                                .forEach(role -> {
+                                .forEach(role ->
                                     childRoleRPMap.get(role).stream()
                                             //check for inter-type compatibility
                                             .filter(crp -> {
@@ -867,8 +867,8 @@ public class RelationshipAtom extends IsaAtom {
                                                 ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
                                                 return matchType.atomicCompatibility(parentVP, childVP);
                                             })
-                                            .forEach(compatibleRelationPlayers::add);
-                                });
+                                            .forEach(compatibleRelationPlayers::add)
+                                );
                         if (!compatibleRelationPlayers.isEmpty()) {
                             compatibleMappingsPerParentRP.add(
                                     compatibleRelationPlayers.stream()

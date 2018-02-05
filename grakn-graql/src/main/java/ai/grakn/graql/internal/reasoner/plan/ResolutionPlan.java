@@ -16,33 +16,24 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
 import java.util.ArrayList;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,7 +42,8 @@ import java.util.stream.Stream;
  *
  * <p>
  * Class defining the resolution plan for a given {@link ReasonerQueryImpl}.
- * The plan is constructed either using the {@link GraqlTraversal} or in terms of different weights applicable to certain {@link Atom} configurations.
+ * The plan is constructed either using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}
+ * or in terms of different weights applicable to certain {@link Atom} configurations when using the {@link SimplePlanner}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -59,92 +51,12 @@ import java.util.stream.Stream;
  */
 public final class ResolutionPlan {
 
-    /**
-     * priority modifier for each partial substitution a given atom has
-     */
-    public static final int PARTIAL_SUBSTITUTION = 30;
-
-    /**
-     * priority modifier if a given atom is a resource atom
-     */
-    public static final int IS_RESOURCE_ATOM = 0;
-
-    /**
-     * priority modifier if a given atom is a resource atom attached to a relation
-     */
-    public static final int RESOURCE_REIFYING_RELATION = 20;
-
-    /**
-     * priority modifier if a given atom is a type atom
-     */
-    public static final int IS_TYPE_ATOM = 0;
-
-    /**
-     * priority modifier if a given atom is a relation atom
-     */
-    public static final int IS_RELATION_ATOM = 2;
-
-    /**
-     * priority modifier if a given atom is a type atom without specific type
-     * NB: atom satisfying this criterion should be resolved last
-     */
-    public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
-
-
-    public static final int RULE_RESOLVABLE_ATOM = -10;
-
-    /**
-     * priority modifier if a given atom is recursive atom
-     */
-    public static final int RECURSIVE_ATOM = -5;
-
-    /**
-     * priority modifier for guard (type atom) the atom has
-     */
-    public static final int GUARD = 1;
-
-    /**
-     * priority modifier for guard (type atom) the atom has - favour boundary rather than bulk atoms
-     */
-    public static final int BOUND_VARIABLE = -2;
-
-    /**
-     * priority modifier if an atom has an inequality predicate
-     */
-    public static final int INEQUALITY_PREDICATE = -1000;
-
-    /**
-     * priority modifier for each specific value predicate a given atom (resource) has
-     */
-    public static final int SPECIFIC_VALUE_PREDICATE = 20;
-
-    /**
-     * priority modifier for each non-specific value predicate a given atom (resource) has
-     */
-    public static final int NON_SPECIFIC_VALUE_PREDICATE = 5;
-
-    /**
-     * priority modifier for each value predicate with variable
-     */
-    public static final int VARIABLE_VALUE_PREDICATE = -100;
-
-    /**
-     * number of entities that need to be attached to a resource wtih a specific value to be considered a supernode
-     */
-    public static final int RESOURCE_SUPERNODE_SIZE = 5;
-
-    /**
-     * priority modifier for each value predicate with variable requiring comparison
-     * NB: atom satisfying this criterion should be resolved last
-     */
-    public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
-
     final private ImmutableList<Atom> plan;
     final private GraknTx tx;
 
     public ResolutionPlan(ReasonerQueryImpl query){
         this.tx =  query.tx();
-        this.plan = planFromTraversal(query);
+        this.plan = GraqlTraversalPlanner.refinedPlan(query);
         if (!isValid()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
@@ -159,50 +71,6 @@ public final class ResolutionPlan {
      * @return corresponding atom plan
      */
     public ImmutableList<Atom> plan(){ return plan;}
-
-    /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    private ImmutableList<Atom> planFromTraversal(ReasonerQueryImpl query){
-        Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
-        query.getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .filter(at -> !(at instanceof OntologicalAtom))
-                .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
-        Set<VarProperty> properties = propertyMap.keySet();
-
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
-
-        ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
-
-        //TODO: need to double check correctness of this
-        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
-        builder.addAll(query.getAtoms(OntologicalAtom.class).iterator());
-        builder.addAll(fragments.stream()
-                .map(Fragment::varProperty)
-                .filter(Objects::nonNull)
-                .filter(properties::contains)
-                .distinct()
-                .flatMap(p -> propertyMap.get(p).stream())
-                .distinct()
-                .iterator());
-        return builder.build();
-    }
-
-    /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD")
-    @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private ImmutableList<Atom> plan(ReasonerQueryImpl query){
-        return ImmutableList.<Atom>builder().addAll(
-                query.selectAtoms().stream()
-                        .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                        .iterator())
-                .build();
-    }
 
     /**
      * @return true if the plan doesn't lead to any non-ground neq predicate
