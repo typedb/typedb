@@ -135,11 +135,7 @@ public class Client {
             return false;
         }
 
-        if (available == 0) {
-            LOG.error("input stream is not available");
-            return false;
-        }
-        return true;
+        return available != 0;
     }
 
     private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) {
