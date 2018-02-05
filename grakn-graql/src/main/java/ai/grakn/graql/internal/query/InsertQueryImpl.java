@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
@@ -56,8 +57,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
      * @param tx the graph to execute on
      */
     static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
-        // match and graph should never both be present (should get graph from inner match)
-        assert(!match.isPresent() || !tx.isPresent());
+        match.ifPresent(answers -> Preconditions.checkArgument(answers.tx().equals(tx)));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
