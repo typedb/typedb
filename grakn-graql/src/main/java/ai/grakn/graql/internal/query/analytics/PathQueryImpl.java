@@ -24,22 +24,23 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.nullableIdToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQuery> implements PathQuery {
 
-    private ConceptId sourceId = null;
-    private ConceptId destinationId = null;
+    private @Nullable ConceptId sourceId = null;
+    private @Nullable ConceptId destinationId = null;
 
     PathQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
     }
 
     @Override
-    public Optional<List<Concept>> execute() {
+    protected final Optional<List<Concept>> innerExecute() {
         PathsQuery pathsQuery = new PathsQueryImpl(tx);
         if (includeAttribute) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(sourceId).to(destinationId).in(subLabels).execute().stream().findAny();
@@ -64,7 +65,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
 
     @Override
     String graqlString() {
-        return "path from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
+        return "path from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
+                + subtypeString();
     }
 
     @Override

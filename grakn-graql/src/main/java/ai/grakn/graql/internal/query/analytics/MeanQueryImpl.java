@@ -40,10 +40,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
     }
 
     @Override
-    public Optional<Double> execute() {
-        LOGGER.info("MeanMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final Optional<Double> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -63,7 +60,6 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
         double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
         LOGGER.debug("Mean = " + finalResult);
 
-        LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
     }
 

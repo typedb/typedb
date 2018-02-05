@@ -40,10 +40,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("SumMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final Optional<Number> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -62,7 +59,6 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
         Number finalResult = sum.get(MapReduce.NullObject.instance());
         LOGGER.info("Sum = " + finalResult);
 
-        LOGGER.info("SumMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
     }
 

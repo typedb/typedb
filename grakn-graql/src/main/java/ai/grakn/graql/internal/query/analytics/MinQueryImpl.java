@@ -40,10 +40,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final Optional<Number> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -60,7 +57,6 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
-        LOGGER.info("MinMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(min.get(MapReduce.NullObject.instance()));
     }
 

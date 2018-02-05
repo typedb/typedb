@@ -38,16 +38,12 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     @Override
-    public Long execute() {
-        LOGGER.info("Count query started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Long innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
         if (!selectedTypesHaveInstance()) {
             LOGGER.debug("Count = 0");
-            LOGGER.info("Count query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return 0L;
         }
 
@@ -71,7 +67,6 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
         }
 
         LOGGER.debug("Count = " + finalCount);
-        LOGGER.info("Count query finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return finalCount;
     }
 

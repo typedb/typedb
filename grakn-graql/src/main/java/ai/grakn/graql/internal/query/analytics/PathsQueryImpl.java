@@ -43,7 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.nullableIdToString;
 
 class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuery> implements PathsQuery {
 
@@ -55,10 +55,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    public List<List<Concept>> execute() {
-        LOGGER.info("ShortestPathVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final List<List<Concept>> innerExecute() {
         if (sourceId == null) throw GraqlQueryException.noPathSource();
         if (destinationId == null) throw GraqlQueryException.noPathDestination();
         initSubGraph();
@@ -77,7 +74,6 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
             result = getGraphComputer().compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyList();
         }
 
@@ -88,7 +84,6 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         }
 
         LOGGER.info("Number of paths: " + allPaths.size());
-        LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return allPaths;
     }
 
@@ -201,7 +196,8 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
 
     @Override
     String graqlString() {
-        return "paths from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
+        return "paths from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
+                + subtypeString();
     }
 
     @Override

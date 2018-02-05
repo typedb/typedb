@@ -41,10 +41,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    public Map<String, Set<String>> execute() {
-        LOGGER.info("KCore query is started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Map<String, Set<String>> innerExecute() {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         includeAttribute = true; //TODO: REMOVE THIS LINE
@@ -52,7 +49,6 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
         getAllSubTypes();
 
         if (!selectedTypesHaveInstance()) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
@@ -64,11 +60,9 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
-        LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(ClusterMemberMapReduce.class.getName());
     }
 

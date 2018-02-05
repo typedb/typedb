@@ -40,10 +40,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
     }
 
     @Override
-    public Optional<Double> execute() {
-        LOGGER.info("StdMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final Optional<Double> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -67,7 +64,6 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
         double finalResult = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
         LOGGER.debug("Std = " + finalResult);
 
-        LOGGER.info("StdMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
     }
 

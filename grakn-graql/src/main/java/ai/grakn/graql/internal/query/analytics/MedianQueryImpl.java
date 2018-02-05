@@ -35,10 +35,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MedianVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-
+    protected final Optional<Number> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -54,7 +51,6 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);
 
-        LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
     }
 

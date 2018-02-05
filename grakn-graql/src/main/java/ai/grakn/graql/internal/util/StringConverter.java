@@ -22,9 +22,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.util.StringUtil;
-
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
@@ -54,6 +54,11 @@ public class StringConverter {
      */
     public static String idToString(ConceptId id) {
         return escapeLabelOrId(id.getValue());
+    }
+
+    @Nullable
+    public static String nullableIdToString(@Nullable ConceptId id) {
+        return id != null ? escapeLabelOrId(id.getValue()) : null;
     }
 
     /**

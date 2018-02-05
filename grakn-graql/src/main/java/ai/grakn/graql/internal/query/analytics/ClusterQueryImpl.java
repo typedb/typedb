@@ -48,9 +48,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public T execute() {
-        LOGGER.info("ConnectedComponentsVertexProgram is called");
-        long startTime = System.currentTimeMillis();
+    protected final T innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -88,8 +86,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
         }
 
         Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
-        LOGGER.info("ConnectedComponentsVertexProgram is done in "
-                + (System.currentTimeMillis() - startTime) + " ms");
         return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
     }
 

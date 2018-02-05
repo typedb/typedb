@@ -69,6 +69,20 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     Set<Type> subTypes = new HashSet<>();
 
     @Override
+    public final T execute() {
+        LOGGER.info(toString() + " started");
+        long startTime = System.currentTimeMillis();
+
+        T result = innerExecute();
+
+        LOGGER.info(toString() + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
+
+        return result;
+    }
+
+    protected abstract T innerExecute();
+
+    @Override
     public final Optional<GraknTx> tx() {
         return tx;
     }

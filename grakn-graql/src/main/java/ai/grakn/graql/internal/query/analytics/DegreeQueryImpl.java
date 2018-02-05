@@ -41,10 +41,7 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     }
 
     @Override
-    public Map<Long, Set<String>> execute() {
-        LOGGER.info("Degree query started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Map<Long, Set<String>> innerExecute() {
         initSubGraph();
         getAllSubTypes();
 
@@ -64,7 +61,6 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
         }
 
         if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Degree query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
@@ -76,7 +72,6 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
                 subLabelIds);
 
-        LOGGER.info("Degree query finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 

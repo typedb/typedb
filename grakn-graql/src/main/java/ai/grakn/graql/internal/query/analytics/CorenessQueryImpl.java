@@ -44,10 +44,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    public Map<Long, Set<String>> execute() {
-        LOGGER.info("Coreness query started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Map<Long, Set<String>> innerExecute() {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         initSubGraph();
@@ -70,7 +67,6 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
         }
 
         if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
@@ -84,11 +80,9 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
                     new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
                     subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
-        LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
