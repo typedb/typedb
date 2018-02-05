@@ -71,7 +71,7 @@ public class PostProcessingTaskTest {
     public void whenThereIsSomethingInTheIndexCache_PPStarts() throws InterruptedException {
         //Configure Data For Mocks
         String index1 = "index1";
-        when(indexPostProcessor.popIndex(keyspaceA)).thenReturn(index1);
+        when(indexPostProcessor.popIndex(keyspaceA)).thenReturn(index1).thenReturn(null);
 
         Set<ConceptId> ids = Stream.of("id1", "id2", "id3").map(ConceptId::of).collect(Collectors.toSet());
         when(indexPostProcessor.popIds(keyspaceA, index1)).thenReturn(ids);
@@ -106,7 +106,8 @@ public class PostProcessingTaskTest {
                 thenReturn(index1).
                 thenReturn(index2).
                 thenReturn(index3).
-                thenReturn(index4);
+                thenReturn(index4).
+                thenReturn(null);
 
         Set<ConceptId> ids = Stream.of("id1", "id2", "id3").map(ConceptId::of).collect(Collectors.toSet());
         when(indexPostProcessor.popIds(keyspaceA, index1)).thenReturn(ids);
@@ -121,6 +122,6 @@ public class PostProcessingTaskTest {
         Thread.sleep(config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY) * 2000);
 
         //Check methods are called
-        verify(indexPostProcessor, Mockito.times(4)).popIds(keyspaceA, any());
+        verify(indexPostProcessor, Mockito.times(4)).mergeDuplicateConcepts(any(), any(), eq(ids));
     }
 }

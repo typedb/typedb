@@ -60,10 +60,12 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
-            String index = indexPostProcessor.popIndex(keyspace);
-            if(index != null) {
-                threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
-            }
+            String index;
+            do{
+                 index = indexPostProcessor.popIndex(keyspace);
+                 final String i = index;
+                 if(index != null) threadPool.schedule(() -> processIndex(keyspace, i), postprocessingDelay, TimeUnit.SECONDS);
+            } while(index != null);
         });
     }
 
