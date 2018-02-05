@@ -39,6 +39,6 @@ jobs:
         - bash <(curl -s https://codecov.io/bash)
     - stage: deploy
       script:
-        - mvn sonar:sonar
+        - mvn sonar:sonar -Dsonar.host.url=https://sonarcloud.io
 before_install:
   - npm config set registry http://registry.npmjs.org/
