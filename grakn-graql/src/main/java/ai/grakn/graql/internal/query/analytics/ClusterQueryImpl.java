@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
@@ -48,7 +49,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    protected final T innerExecute(GraknTx tx) {
+    protected final T innerExecute(GraknTx tx, GraknComputer computer) {
         if (!selectedTypesHaveInstance(tx)) {
             LOGGER.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
@@ -82,7 +83,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
             }
         }
 
-        Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
+        Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
         return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
     }
 

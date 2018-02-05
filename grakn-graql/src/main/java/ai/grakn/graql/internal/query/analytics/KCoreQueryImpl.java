@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
@@ -42,7 +43,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    protected final Map<String, Set<String>> innerExecute(GraknTx tx) {
+    protected final Map<String, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         if (!selectedTypesHaveInstance(tx)) {
@@ -52,7 +53,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
         ComputerResult result;
         Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
         try {
-            result = getGraphComputer().compute(
+            result = computer.compute(
                     new KCoreVertexProgram(k),
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);

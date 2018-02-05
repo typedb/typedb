@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
@@ -40,13 +41,13 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     }
 
     @Override
-    protected final Optional<Number> innerExecute(GraknTx tx) {
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(tx);
         if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels())) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels());
 
-        ComputerResult result = getGraphComputer().compute(
+        ComputerResult result = computer.compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
                 new SumMapReduce(statisticsResourceLabelIds, dataType,
                         DegreeVertexProgram.DEGREE),

@@ -43,7 +43,6 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
         extends AbstractComputeQuery<T, V> {
 
     private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
-    private ImmutableSet<Type> statisticsResourceTypes = ImmutableSet.of();
 
     public AbstractStatisticsQuery(Optional<GraknTx> tx) {
         super(tx);
@@ -86,28 +85,15 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     }
 
     private void getResourceTypes(GraknTx tx) {
-        if (statisticsResourceLabels.isEmpty()) {
-            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
-        }
-
-        statisticsResourceTypes = statisticsResourceLabels.stream()
-                .map((label) -> {
-                    Type type = tx.getSchemaConcept(label);
-                    if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-                    return type;
-                })
-                .flatMap(Type::subs)
-                .collect(toImmutableSet());
-        statisticsResourceLabels = statisticsResourceTypes.stream()
+        statisticsResourceLabels = calcStatisticsResourceTypes(tx).stream()
                 .map(SchemaConcept::getLabel)
                 .collect(toImmutableSet());
     }
 
     @Nullable
-    AttributeType.DataType getDataTypeOfSelectedResourceTypes() {
+    AttributeType.DataType getDataTypeOfSelectedResourceTypes(GraknTx tx) {
         AttributeType.DataType dataType = null;
-        for (Type type : statisticsResourceTypes) {
+        for (Type type : calcStatisticsResourceTypes(tx)) {
             // check if the selected type is a resource-type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
             AttributeType resourceType = (AttributeType) type;
@@ -150,11 +136,27 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    Set<Label> getCombinedSubTypes() {
-        Set<Label> allSubTypes = getHasResourceRelationLabels(statisticsResourceTypes);
+    Set<Label> getCombinedSubTypes(GraknTx tx) {
+        Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(tx));
         allSubTypes.addAll(subLabels());
         allSubTypes.addAll(statisticsResourceLabels);
         return allSubTypes;
+    }
+
+    private ImmutableSet<Type> calcStatisticsResourceTypes(GraknTx tx) {
+        if (statisticsResourceLabels.isEmpty()) {
+            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
+        }
+
+        return statisticsResourceLabels.stream()
+                .map((label) -> {
+                    Type type = tx.getSchemaConcept(label);
+                    if (type == null) throw GraqlQueryException.labelNotFound(label);
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+                    return type;
+                })
+                .flatMap(Type::subs)
+                .collect(toImmutableSet());
     }
 
     @Override

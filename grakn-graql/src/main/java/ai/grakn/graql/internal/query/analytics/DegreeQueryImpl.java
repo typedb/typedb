@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -43,7 +44,7 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     }
 
     @Override
-    protected final Map<Long, Set<String>> innerExecute(GraknTx tx) {
+    protected final Map<Long, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
         Set<Label> ofLabels;
 
         // Check if ofType is valid before returning emptyMap
@@ -69,7 +70,7 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
         Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels);
         Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
-        ComputerResult result = getGraphComputer().compute(
+        ComputerResult result = computer.compute(
                 new DegreeVertexProgram(ofLabelIds),
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
                 subLabelIds);

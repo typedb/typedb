@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
@@ -40,14 +41,14 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
     }
 
     @Override
-    protected final Optional<Double> innerExecute(GraknTx tx) {
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+    protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(tx);
         if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels())) return Optional.empty();
 
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels());
 
-        ComputerResult result = getGraphComputer().compute(
+        ComputerResult result = computer.compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
                 new StdMapReduce(statisticsResourceLabelIds, dataType,
                         DegreeVertexProgram.DEGREE),

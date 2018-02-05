@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -56,7 +57,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    protected final List<List<Concept>> innerExecute(GraknTx tx) {
+    protected final List<List<Concept>> innerExecute(GraknTx tx, GraknComputer computer) {
         if (sourceId == null) throw GraqlQueryException.noPathSource();
         if (destinationId == null) throw GraqlQueryException.noPathDestination();
 
@@ -70,7 +71,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         ComputerResult result;
         Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
         try {
-            result = getGraphComputer().compute(
+            result = computer.compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
         } catch (NoResultException e) {
             return Collections.emptyList();

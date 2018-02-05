@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -46,7 +47,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    protected final Map<Long, Set<String>> innerExecute(GraknTx tx) {
+    protected final Map<Long, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         Set<Label> ofLabels;
@@ -77,7 +78,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
         Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
         try {
-            result = getGraphComputer().compute(
+            result = computer.compute(
                     new CorenessVertexProgram(k),
                     new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
                     subLabelIds);

@@ -24,8 +24,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -64,9 +62,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     private Optional<GraknTx> tx;
     private GraknComputer graknComputer = null;
     private boolean includeAttribute = false;
-
     private ImmutableSet<Label> subLabels = ImmutableSet.of();
-    private ImmutableSet<Type> subTypes = ImmutableSet.of();
 
     AbstractComputeQuery(Optional<GraknTx> tx) {
         this.tx = tx;
@@ -79,20 +75,21 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         LOGGER.info(toString() + " started");
         long startTime = System.currentTimeMillis();
 
-        if (this.isStatisticsQuery()) {
-            includeAttribute = true;
-        }
-
         getAllSubTypes(tx);
 
-        T result = innerExecute(tx);
+        // TODO: is this definitely the right behaviour if the computer is already present?
+        if (graknComputer == null) {
+            graknComputer = tx.session().getGraphComputer();
+        }
+
+        T result = innerExecute(tx, graknComputer);
 
         LOGGER.info(toString() + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
 
         return result;
     }
 
-    protected abstract T innerExecute(GraknTx tx);
+    protected abstract T innerExecute(GraknTx tx, GraknComputer computer);
 
     @Override
     public final Optional<GraknTx> tx() {
@@ -127,7 +124,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     final boolean getIncludeAttribute() {
-        return includeAttribute;
+        return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
     }
 
     @Override
@@ -159,53 +156,21 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return Stream.of(printer.graqlString(computeResult));
     }
 
-    void getAllSubTypes(GraknTx tx) {
-        // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        if (subLabels.isEmpty()) {
-            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
-
-            if (includeAttribute) {
-                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
-            } else {
-                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
-                tx.admin().getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
-            }
-
-            subTypes = subTypesBuilder.build();
-        } else {
-            subTypes = subLabels.stream().map(label -> {
-                SchemaConcept type = tx.getSchemaConcept(label);
-                if (type == null) throw GraqlQueryException.labelNotFound(label);
-                if (!type.isType()) {
-                    throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
-                }
-                if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
-                    includeAttribute = true;
-                }
-                return type.asType();
-            }).collect(toImmutableSet());
-
-            if (includeAttribute) {
-                subTypes = subTypes.stream().flatMap(Type::subs).collect(toImmutableSet());
-            } else {
-                subTypes = subTypes.stream().flatMap(Type::subs)
-                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(toImmutableSet());
-            }
+    private boolean subTypesContainsImplicitOrAttributeTypes() {
+        if (!tx.isPresent()) {
+            return false;
         }
-        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(toImmutableSet());
+
+        GraknTx theTx = tx.get();
+
+        return subLabels.stream().anyMatch(label -> {
+            SchemaConcept type = theTx.getSchemaConcept(label);
+            return (type != null && (type.isAttributeType() || type.isImplicit()));
+        });
     }
 
-    final GraknComputer getGraphComputer() {
-        if (graknComputer == null) {
-            if (tx.isPresent()) {
-                graknComputer = tx.get().session().getGraphComputer();
-            } else {
-                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
-            }
-        }
-        return graknComputer;
+    void getAllSubTypes(GraknTx tx) {
+        subLabels = calcSubTypes(tx).stream().map(SchemaConcept::getLabel).collect(toImmutableSet());
     }
 
     final boolean selectedTypesHaveInstance(GraknTx tx) {
@@ -239,16 +204,34 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return "compute " + graqlString();
     }
 
-    final Set<LabelId> getRolePlayerLabelIds(GraknTx tx) {
-        return subTypes.stream()
-                .filter(Concept::isRelationshipType)
-                .map(Concept::asRelationshipType)
-                .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::relates)
-                .flatMap(Role::playedByTypes)
-                .map(type -> tx.admin().convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+    final ImmutableSet<Type> calcSubTypes(GraknTx tx) {
+        // get all types if subGraph is empty, else get all subTypes of each type in subGraph
+        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        if (subLabels.isEmpty()) {
+            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
+
+            if (getIncludeAttribute()) {
+                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
+            } else {
+                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
+                tx.admin().getMetaRelationType().subs()
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
+            }
+
+            return subTypesBuilder.build();
+        } else {
+            Stream<Type> subTypes = subLabels.stream().map(label -> {
+                Type type = tx.getType(label);
+                if (type == null) throw GraqlQueryException.labelNotFound(label);
+                return type;
+            }).flatMap(Type::subs);
+
+            if (!getIncludeAttribute()) {
+                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
+            }
+
+            return subTypes.collect(toImmutableSet());
+        }
     }
 
     @Override
