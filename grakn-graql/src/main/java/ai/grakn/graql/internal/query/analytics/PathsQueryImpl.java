@@ -31,6 +31,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
+import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,26 +51,24 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     private ConceptId sourceId = null;
     private ConceptId destinationId = null;
 
-    PathsQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    PathsQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final List<List<Concept>> innerExecute() {
+    protected final List<List<Concept>> innerExecute(GraknTx tx) {
         if (sourceId == null) throw GraqlQueryException.noPathSource();
         if (destinationId == null) throw GraqlQueryException.noPathDestination();
-        initSubGraph();
-        getAllSubTypes();
 
-        if (!verticesExistInSubgraph(sourceId, destinationId)) {
+        if (!verticesExistInSubgraph(tx, sourceId, destinationId)) {
             throw GraqlQueryException.instanceDoesNotExist();
         }
         if (sourceId.equals(destinationId)) {
-            return Collections.singletonList(Collections.singletonList(tx.get().getConcept(sourceId)));
+            return Collections.singletonList(Collections.singletonList(tx.<Thing>getConcept(sourceId)));
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
         try {
             result = getGraphComputer().compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
@@ -77,10 +76,10 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
             return Collections.emptyList();
         }
 
-        Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(result);
-        List<List<Concept>> allPaths = getAllPaths(predecessorMapFromSource);
-        if (includeAttribute) { // this can be slow
-            return getExtendedPaths(allPaths);
+        Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(tx, result);
+        List<List<Concept>> allPaths = getAllPaths(tx, predecessorMapFromSource);
+        if (getIncludeAttribute()) { // this can be slow
+            return getExtendedPaths(tx, allPaths);
         }
 
         LOGGER.info("Number of paths: " + allPaths.size());
@@ -88,7 +87,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     // If the sub graph contains attributes, we may need to add implicit relations to the paths
-    private List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
+    private List<List<Concept>> getExtendedPaths(GraknTx tx, List<List<Concept>> allPaths) {
         List<List<Concept>> extendedPaths = new ArrayList<>();
         for (List<Concept> currentPath : allPaths) {
             boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
@@ -105,12 +104,12 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
             int numExtension = 0; // record the number of extensions needed for the current path
             for (int j = 0; j < currentPath.size() - 1; j++) {
                 extendedPath.add(currentPath.get(j));
-                ConceptId resourceRelationId = getResourceEdgeId(tx.get(),
+                ConceptId resourceRelationId = getResourceEdgeId(tx,
                         currentPath.get(j).getId(), currentPath.get(j + 1).getId());
                 if (resourceRelationId != null) {
                     numExtension++;
                     if (numExtension > numExtensionAllowed) break;
-                    extendedPath.add(getConcept(resourceRelationId));
+                    extendedPath.add(tx.getConcept(resourceRelationId));
                 }
             }
             if (numExtension == numExtensionAllowed) {
@@ -127,7 +126,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         return extendedPaths;
     }
 
-    private Multimap<Concept, Concept> getPredecessorMap(ComputerResult result) {
+    private Multimap<Concept, Concept> getPredecessorMap(GraknTx tx, ComputerResult result) {
         Map<String, Set<String>> predecessorMapFromSource =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
         Map<String, Set<String>> predecessorMapFromDestination =
@@ -135,18 +134,18 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
 
         Multimap<Concept, Concept> predecessors = HashMultimap.create();
         predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(id), getConcept(id2));
+            predecessors.put(getConcept(tx, id), getConcept(tx, id2));
         }));
         predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(id2), getConcept(id));
+            predecessors.put(getConcept(tx, id2), getConcept(tx, id));
         }));
         return predecessors;
     }
 
-    private List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource) {
+    private List<List<Concept>> getAllPaths(GraknTx tx, Multimap<Concept, Concept> predecessorMapFromSource) {
         List<List<Concept>> allPaths = new ArrayList<>();
         List<Concept> firstPath = new ArrayList<>();
-        firstPath.add(getConcept(sourceId.getValue()));
+        firstPath.add(getConcept(tx, sourceId.getValue()));
 
         Deque<List<Concept>> queue = new ArrayDeque<>();
         queue.addLast(firstPath);
@@ -169,12 +168,9 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         return allPaths;
     }
 
-    private Thing getConcept(String conceptId) {
-        return tx.get().getConcept(ConceptId.of(conceptId));
-    }
-
-    private Thing getConcept(ConceptId conceptId) {
-        return tx.get().getConcept(conceptId);
+    @Nullable
+    private Thing getConcept(GraknTx tx, String conceptId) {
+        return tx.getConcept(ConceptId.of(conceptId));
     }
 
     @Override
@@ -187,11 +183,6 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     public PathsQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
-    }
-
-    @Override
-    public PathsQuery includeAttribute() {
-        return (PathsQuery) super.includeAttribute();
     }
 
     @Override

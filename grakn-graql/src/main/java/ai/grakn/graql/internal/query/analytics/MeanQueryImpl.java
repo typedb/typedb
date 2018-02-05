@@ -35,19 +35,16 @@ import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MeanQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Optional<Double> innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
+    protected final Optional<Double> innerExecute(GraknTx tx) {
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),

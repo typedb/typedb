@@ -39,40 +39,37 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
     private long k = 2L;
 
-    CorenessQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    CorenessQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Map<Long, Set<String>> innerExecute() {
+    protected final Map<Long, Set<String>> innerExecute(GraknTx tx) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
-
-        initSubGraph();
-        getAllSubTypes();
 
         // Check if ofType is valid before returning emptyMap
         if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels);
+            ofLabels.addAll(subLabels());
         } else {
             ofLabels = ofLabels.stream()
                     .flatMap(typeLabel -> {
-                        Type type = tx.get().getSchemaConcept(typeLabel);
+                        Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
-            subLabels.addAll(ofLabels);
+            subLabels().addAll(ofLabels);
         }
 
-        if (!selectedTypesHaveInstance()) {
+        if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
         try {
             result = getGraphComputer().compute(

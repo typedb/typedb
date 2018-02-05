@@ -30,19 +30,16 @@ import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MedianQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Optional<Number> innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
+    protected final Optional<Number> innerExecute(GraknTx tx) {
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new MedianVertexProgram(statisticsResourceLabelIds, dataType),

@@ -35,20 +35,17 @@ import java.util.Set;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> implements StdQuery {
 
-    StdQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    StdQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Optional<Double> innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
+    protected final Optional<Double> innerExecute(GraknTx tx) {
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels)) return Optional.empty();
 
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),

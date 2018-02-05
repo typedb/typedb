@@ -43,26 +43,23 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
-    ClusterQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    ClusterQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final T innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
+    protected final T innerExecute(GraknTx tx) {
+        if (!selectedTypesHaveInstance(tx)) {
             LOGGER.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
 
         GraknVertexProgram<?> vertexProgram;
         if (sourceId.isPresent()) {
             ConceptId conceptId = sourceId.get();
-            if (!verticesExistInSubgraph(conceptId)) {
+            if (!verticesExistInSubgraph(tx, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
@@ -87,11 +84,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
 
         Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
         return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
-    }
-
-    @Override
-    public ClusterQuery<T> includeAttribute() {
-        return (ClusterQuery<T>) super.includeAttribute();
     }
 
     @Override

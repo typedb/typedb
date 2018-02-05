@@ -35,19 +35,16 @@ import java.util.Set;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> implements SumQuery {
 
-    SumQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    SumQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Optional<Number> innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
+    protected final Optional<Number> innerExecute(GraknTx tx) {
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,11 @@ import static java.util.stream.Collectors.joining;
 
 abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
         extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
+
+    AbstractCentralityQuery(Optional<GraknTx> tx) {
+        super(tx);
+        this.includeAttribute();
+    }
 
     /**
      * The centrality measures supported.
@@ -57,10 +64,6 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
 
     private boolean ofTypeLabelsSet = false;
     Set<Label> ofLabels = new HashSet<>();
-
-    void initSubGraph() { //TODO: REMOVE THIS METHOD
-        includeAttribute = true;
-    }
 
     public V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));

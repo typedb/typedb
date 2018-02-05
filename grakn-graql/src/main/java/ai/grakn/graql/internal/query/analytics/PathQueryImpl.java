@@ -35,15 +35,15 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     private @Nullable ConceptId sourceId = null;
     private @Nullable ConceptId destinationId = null;
 
-    PathQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    PathQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Optional<List<Concept>> innerExecute() {
-        PathsQuery pathsQuery = new PathsQueryImpl(tx);
-        if (includeAttribute) pathsQuery = pathsQuery.includeAttribute();
-        return pathsQuery.from(sourceId).to(destinationId).in(subLabels).execute().stream().findAny();
+    protected final Optional<List<Concept>> innerExecute(GraknTx tx) {
+        PathsQuery pathsQuery = new PathsQueryImpl(Optional.of(tx));
+        if (getIncludeAttribute()) pathsQuery = pathsQuery.includeAttribute();
+        return pathsQuery.from(sourceId).to(destinationId).in(subLabels()).execute().stream().findAny();
     }
 
     @Override
@@ -56,11 +56,6 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
-    }
-
-    @Override
-    public PathQuery includeAttribute() {
-        return (PathQuery) super.includeAttribute();
     }
 
     @Override

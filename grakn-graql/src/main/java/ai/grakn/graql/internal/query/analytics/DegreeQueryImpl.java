@@ -36,36 +36,33 @@ import java.util.stream.Collectors;
 
 class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements DegreeQuery {
 
-    DegreeQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    DegreeQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Map<Long, Set<String>> innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
+    protected final Map<Long, Set<String>> innerExecute(GraknTx tx) {
         // Check if ofType is valid before returning emptyMap
         if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels);
+            ofLabels.addAll(subLabels());
         } else {
             ofLabels = ofLabels.stream()
                     .flatMap(typeLabel -> {
-                        Type type = tx.get().getSchemaConcept(typeLabel);
+                        Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
-            subLabels.addAll(ofLabels);
+            subLabels().addAll(ofLabels);
         }
 
-        if (!selectedTypesHaveInstance()) {
+        if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(ofLabelIds),

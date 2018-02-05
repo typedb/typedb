@@ -33,24 +33,21 @@ import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LAB
 
 class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements CountQuery {
 
-    CountQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    CountQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    protected final Long innerExecute() {
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
+    protected final Long innerExecute(GraknTx tx) {
+        if (!selectedTypesHaveInstance(tx)) {
             LOGGER.debug("Count = 0");
             return 0L;
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> typeLabelIds = convertLabelsToIds(tx, subLabels());
         Map<Integer, Long> count;
 
-        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
+        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds(tx);
         rolePlayerLabelIds.addAll(typeLabelIds);
 
         ComputerResult result = getGraphComputer().compute(

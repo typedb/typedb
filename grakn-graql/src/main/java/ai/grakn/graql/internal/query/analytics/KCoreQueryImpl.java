@@ -36,24 +36,21 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
 
     private long k = -1L;
 
-    KCoreQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    KCoreQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
+        this.includeAttribute(); //TODO: REMOVE THIS LINE
     }
 
     @Override
-    protected final Map<String, Set<String>> innerExecute() {
+    protected final Map<String, Set<String>> innerExecute(GraknTx tx) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        includeAttribute = true; //TODO: REMOVE THIS LINE
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
+        if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
         try {
             result = getGraphComputer().compute(
                     new KCoreVertexProgram(k),
@@ -78,11 +75,6 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
         string += k;
         string += subtypeString();
         return string;
-    }
-
-    @Override
-    public KCoreQuery includeAttribute() {
-        return (KCoreQuery) super.includeAttribute();
     }
 
     @Override

@@ -61,26 +61,38 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
-    Optional<GraknTx> tx = Optional.empty();
+    private Optional<GraknTx> tx;
     private GraknComputer graknComputer = null;
-    boolean includeAttribute = false;
+    private boolean includeAttribute = false;
 
-    Set<Label> subLabels = new HashSet<>();
-    Set<Type> subTypes = new HashSet<>();
+    private Set<Label> subLabels = new HashSet<>();
+    private Set<Type> subTypes = new HashSet<>();
+
+    AbstractComputeQuery(Optional<GraknTx> tx) {
+        this.tx = tx;
+    }
 
     @Override
     public final T execute() {
+        GraknTx tx = tx().orElseThrow(GraqlQueryException::noTx);
+
         LOGGER.info(toString() + " started");
         long startTime = System.currentTimeMillis();
 
-        T result = innerExecute();
+        if (this.isStatisticsQuery()) {
+            includeAttribute = true;
+        }
+
+        getAllSubTypes(tx);
+
+        T result = innerExecute(tx);
 
         LOGGER.info(toString() + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
 
         return result;
     }
 
-    protected abstract T innerExecute();
+    protected abstract T innerExecute(GraknTx tx);
 
     @Override
     public final Optional<GraknTx> tx() {
@@ -88,13 +100,13 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public V withTx(GraknTx tx) {
+    public final V withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
         return (V) this;
     }
 
     @Override
-    public V in(String... subTypeLabels) {
+    public final V in(String... subTypeLabels) {
         this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
         return (V) this;
     }
@@ -105,21 +117,29 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return (V) this;
     }
 
-    @Override
-    public ComputeQuery<T> includeAttribute() {
-        this.includeAttribute = true;
-        return this;
+    final Set<Label> subLabels() {
+        return subLabels;
     }
 
     @Override
-    public void kill() {
+    public final V includeAttribute() {
+        this.includeAttribute = true;
+        return (V) this;
+    }
+
+    final boolean getIncludeAttribute() {
+        return includeAttribute;
+    }
+
+    @Override
+    public final void kill() {
         if (graknComputer != null) {
             graknComputer.killJobs();
         }
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
+    public final Stream<String> resultsString(Printer printer) {
         // TODO: clarify or remove this special-case behaviour
         Object computeResult = execute();
         if (computeResult instanceof Map) {
@@ -140,27 +160,20 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return Stream.of(printer.graqlString(computeResult));
     }
 
-    void initSubGraph() {
-        if (this.isStatisticsQuery()) {
-            includeAttribute = true;
-        }
-    }
-
-    void getAllSubTypes() {
+    void getAllSubTypes(GraknTx tx) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        GraknTx graknTx = tx.get();
         if (subLabels.isEmpty()) {
             if (includeAttribute) {
-                graknTx.admin().getMetaConcept().subs().forEach(subTypes::add);
+                tx.admin().getMetaConcept().subs().forEach(subTypes::add);
             } else {
-                graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
-                graknTx.admin().getMetaRelationType().subs()
+                tx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                tx.admin().getMetaRelationType().subs()
                         .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
             }
         } else {
             subTypes = subLabels.stream().map(label -> {
-                SchemaConcept type = graknTx.getSchemaConcept(label);
+                SchemaConcept type = tx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 if (!type.isType()) {
                     throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
@@ -181,7 +194,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
     }
 
-    GraknComputer getGraphComputer() {
+    final GraknComputer getGraphComputer() {
         if (graknComputer == null) {
             if (tx.isPresent()) {
                 graknComputer = tx.get().session().getGraphComputer();
@@ -192,7 +205,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return graknComputer;
     }
 
-    boolean selectedTypesHaveInstance() {
+    final boolean selectedTypesHaveInstance(GraknTx tx) {
         if (subLabels.isEmpty()) {
             LOGGER.info("No types found while looking for instances");
             return false;
@@ -200,12 +213,12 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(toList());
-        return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
+        return tx.graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 
-    boolean verticesExistInSubgraph(ConceptId... ids) {
+    final boolean verticesExistInSubgraph(GraknTx tx, ConceptId... ids) {
         for (ConceptId id : ids) {
-            Thing thing = this.tx.get().getConcept(id);
+            Thing thing = tx.getConcept(id);
             if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
         }
         return true;
@@ -219,18 +232,18 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "compute " + graqlString();
     }
 
-    Set<LabelId> getRolePlayerLabelIds() {
+    final Set<LabelId> getRolePlayerLabelIds(GraknTx tx) {
         return subTypes.stream()
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
                 .flatMap(RelationshipType::relates)
                 .flatMap(Role::playedByTypes)
-                .map(type -> tx.get().admin().convertToId(type.getLabel()))
+                .map(type -> tx.admin().convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
@@ -253,9 +266,9 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return result;
     }
 
-    Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
+    final Set<LabelId> convertLabelsToIds(GraknTx tx, Set<Label> labelSet) {
         return labelSet.stream()
-                .map(tx.get().admin()::convertToId)
+                .map(tx.admin()::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
