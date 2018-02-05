@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -40,7 +41,7 @@ import static java.util.stream.Collectors.toList;
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  */
 @AutoValue
-abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryAdmin {
+abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
 
     /**
      * @param vars a collection of variables to delete
@@ -94,5 +95,11 @@ abstract class DeleteQueryImpl extends AbstractVoidQuery implements DeleteQueryA
     @Override
     public String toString() {
         return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    protected final Stream<Void> stream() {
+        execute();
+        return Stream.empty();
     }
 }

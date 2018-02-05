@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 
@@ -38,7 +39,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class UndefineQueryImpl extends AbstractVoidQuery implements UndefineQuery {
+abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {
 
     static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
         return new AutoValue_UndefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
@@ -68,5 +69,11 @@ abstract class UndefineQueryImpl extends AbstractVoidQuery implements UndefineQu
     @Override
     public String toString() {
         return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    protected final Stream<Void> stream() {
+        execute();
+        return Stream.empty();
     }
 }

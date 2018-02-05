@@ -27,7 +27,9 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -38,7 +40,7 @@ import static java.util.stream.Collectors.joining;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class GetQueryImpl extends AbstractStreamableQuery<Answer> implements GetQuery {
+public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
@@ -66,5 +68,10 @@ public abstract class GetQueryImpl extends AbstractStreamableQuery<Answer> imple
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+    }
+
+    @Override
+    public final List<Answer> execute() {
+        return stream().collect(Collectors.toList());
     }
 }

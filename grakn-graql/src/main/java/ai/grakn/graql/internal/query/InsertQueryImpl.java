@@ -34,6 +34,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * A query that will insert a collection of variables into a graph
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractStreamableQuery<Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -131,5 +132,10 @@ abstract class InsertQueryImpl extends AbstractStreamableQuery<Answer> implement
     public String toString() {
         String mq = match().map(match -> match + "\n").orElse("");
         return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    public final List<Answer> execute() {
+        return stream().collect(Collectors.toList());
     }
 }
