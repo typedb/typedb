@@ -37,7 +37,6 @@ import static java.util.stream.Collectors.joining;
 abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
         extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
 
-    private boolean ofTypeLabelsSet = false;
     private ImmutableSet<Label> ofLabels = ImmutableSet.of();
 
     AbstractCentralityQuery(Optional<GraknTx> tx) {
@@ -69,10 +68,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     }
 
     public V of(Collection<Label> ofLabels) {
-        if (!ofLabels.isEmpty()) {
-            ofTypeLabelsSet = true;
-            this.ofLabels = ImmutableSet.copyOf(ofLabels);
-        }
+        this.ofLabels = ImmutableSet.copyOf(ofLabels);
         return (V) this;
     }
 
@@ -85,7 +81,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     @Override
     String graqlString() {
         String string = "centrality";
-        if (ofTypeLabelsSet) {
+        if (!ofLabels().isEmpty()) {
             string += " of " + ofLabels().stream()
                     .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
@@ -101,18 +97,15 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        AbstractCentralityQuery that = (AbstractCentralityQuery) o;
+        AbstractCentralityQuery<?> that = (AbstractCentralityQuery<?>) o;
 
-        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofLabels.equals(that.ofLabels) &&
-                getMethod() == that.getMethod();
+        return ofLabels.equals(that.ofLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
         result = 31 * result + ofLabels.hashCode();
-        result = 31 * result + getMethod().hashCode();
         return result;
     }
 }
