@@ -38,7 +38,8 @@ jobs:
         - mvn test --projects "$MODULE" -Dtest=$TESTS -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
         - bash <(curl -s https://codecov.io/bash)
     - stage: deploy
+      if: type IN (push, cron, api)
       script:
-        - mvn sonar:sonar -Dsonar.host.url=https://sonarcloud.io
+        - mvn sonar:sonar
 before_install:
   - npm config set registry http://registry.npmjs.org/
