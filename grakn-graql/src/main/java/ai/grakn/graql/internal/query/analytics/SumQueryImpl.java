@@ -43,9 +43,9 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     @Override
     protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
         AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
-        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels())) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
 
         ComputerResult result = computer.compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),

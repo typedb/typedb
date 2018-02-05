@@ -71,8 +71,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         LOGGER.info(toString() + " started");
         long startTime = System.currentTimeMillis();
 
-        getAllSubTypes(tx);
-
         // TODO: is this definitely the right behaviour if the computer is already present?
         if (graknComputer == null) {
             graknComputer = tx.session().getGraphComputer();
@@ -109,8 +107,8 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return (V) this;
     }
 
-    final ImmutableSet<Label> subLabels() {
-        return subLabels;
+    final ImmutableSet<Label> subLabels(GraknTx tx) {
+        return subTypes(tx).map(SchemaConcept::getLabel).collect(toImmutableSet());
     }
 
     @Override
@@ -143,17 +141,13 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         });
     }
 
-    void getAllSubTypes(GraknTx tx) {
-        subLabels = calcSubTypes(tx).stream().map(SchemaConcept::getLabel).collect(toImmutableSet());
-    }
-
     final boolean selectedTypesHaveInstance(GraknTx tx) {
-        if (subLabels.isEmpty()) {
+        if (subLabels(tx).isEmpty()) {
             LOGGER.info("No types found while looking for instances");
             return false;
         }
 
-        List<Pattern> checkSubtypes = subLabels.stream()
+        List<Pattern> checkSubtypes = subLabels(tx).stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(toList());
         return tx.graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
@@ -161,7 +155,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     final boolean verticesExistInSubgraph(GraknTx tx, ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
+            if (thing == null || !subLabels(tx).contains(thing.type().getLabel())) return false;
         }
         return true;
     }
@@ -178,7 +172,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return "compute " + graqlString();
     }
 
-    final ImmutableSet<Type> calcSubTypes(GraknTx tx) {
+    final Stream<Type> subTypes(GraknTx tx) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
         if (subLabels.isEmpty()) {
@@ -192,7 +186,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
                         .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
             }
 
-            return subTypesBuilder.build();
+            return subTypesBuilder.build().stream();
         } else {
             Stream<Type> subTypes = subLabels.stream().map(label -> {
                 Type type = tx.getType(label);
@@ -204,7 +198,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
                 subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
             }
 
-            return subTypes.collect(toImmutableSet());
+            return subTypes;
         }
     }
 

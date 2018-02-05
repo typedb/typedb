@@ -69,7 +69,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
         try {
             result = computer.compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);

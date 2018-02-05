@@ -51,7 +51,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
         try {
             result = computer.compute(
                     new KCoreVertexProgram(k),

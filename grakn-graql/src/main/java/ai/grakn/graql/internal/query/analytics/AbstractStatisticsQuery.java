@@ -65,14 +65,10 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
         return true;
     }
 
-    @Override
-    void getAllSubTypes(GraknTx tx) {
-        super.getAllSubTypes(tx);
-        getResourceTypes(tx);
-    }
-
-    final Set<Label> statisticsResourceLabels() {
-        return statisticsResourceLabels;
+    final Set<Label> statisticsResourceLabels(GraknTx tx) {
+        return calcStatisticsResourceTypes(tx).stream()
+                .map(SchemaConcept::getLabel)
+                .collect(toImmutableSet());
     }
 
     @Override
@@ -85,12 +81,6 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     private String resourcesString() {
         return " of " + statisticsResourceLabels.stream()
                 .map(StringConverter::typeLabelToString).collect(joining(", "));
-    }
-
-    private void getResourceTypes(GraknTx tx) {
-        statisticsResourceLabels = calcStatisticsResourceTypes(tx).stream()
-                .map(SchemaConcept::getLabel)
-                .collect(toImmutableSet());
     }
 
     private static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
@@ -127,7 +117,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
 
     boolean selectedResourceTypesHaveInstance(GraknTx tx, Set<Label> statisticsResourceTypes) {
         for (Label resourceType : statisticsResourceTypes) {
-            for (Label type : subLabels()) {
+            for (Label type : subLabels(tx)) {
                 Boolean patternExist = tx.graql().infer(false).match(
                         var("x").has(resourceType, var()),
                         var("x").isa(Graql.label(type))
@@ -148,7 +138,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
 
     Set<Label> getCombinedSubTypes(GraknTx tx) {
         Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(tx));
-        allSubTypes.addAll(subLabels());
+        allSubTypes.addAll(subLabels(tx));
         allSubTypes.addAll(statisticsResourceLabels);
         return allSubTypes;
     }

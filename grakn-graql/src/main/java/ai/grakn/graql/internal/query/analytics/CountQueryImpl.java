@@ -49,7 +49,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
             return 0L;
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> typeLabelIds = convertLabelsToIds(tx, subLabels(tx));
         Map<Integer, Long> count;
 
         Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds(tx);
@@ -78,7 +78,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     private Set<LabelId> getRolePlayerLabelIds(GraknTx tx) {
-        return calcSubTypes(tx).stream()
+        return subTypes(tx)
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)

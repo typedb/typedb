@@ -54,7 +54,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
         // Check if ofType is valid before returning emptyMap
         if (ofLabels().isEmpty()) {
-            ofLabels = subLabels();
+            ofLabels = subLabels(tx);
         } else {
             ofLabels = ofLabels().stream()
                     .flatMap(typeLabel -> {
@@ -67,7 +67,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
                     .collect(Collectors.toSet());
         }
 
-        Set<Label> subLabels = Sets.union(subLabels(), ofLabels);
+        Set<Label> subLabels = Sets.union(subLabels(tx), ofLabels);
 
         if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();

@@ -55,7 +55,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
             return (T) Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
 
         GraknVertexProgram<?> vertexProgram;
         if (sourceId.isPresent()) {
