@@ -33,7 +33,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -99,11 +98,14 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
         Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
 
+        GraknMapReduce<S> mapReduce =
+                mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+
         ComputerResult result = computer.compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE),
+                mapReduce,
                 allSubLabelIds);
-        Map<Serializable, S> map = result.memory().get(MinMapReduce.class.getName());
+        Map<Serializable, S> map = result.memory().get(mapReduce.getClass().getName());
 
         LOGGER.debug("Result = " + map.get(MapReduce.NullObject.instance()));
         return Optional.of(map.get(MapReduce.NullObject.instance()));
