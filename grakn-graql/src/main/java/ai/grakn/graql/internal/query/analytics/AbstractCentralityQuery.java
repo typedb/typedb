@@ -39,9 +39,10 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
 
     private ImmutableSet<Label> ofLabels = ImmutableSet.of();
 
+    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
+
     AbstractCentralityQuery(Optional<GraknTx> tx) {
-        super(tx);
-        this.includeAttribute();
+        super(tx, INCLUDE_ATTRIBUTE);
     }
 
     /**

@@ -57,11 +57,18 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     private Optional<GraknTx> tx;
     private GraknComputer graknComputer = null;
-    private boolean includeAttribute = false;
+    private boolean includeAttribute;
     private ImmutableSet<Label> subLabels = ImmutableSet.of();
 
+    private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
+
     AbstractComputeQuery(Optional<GraknTx> tx) {
+        this(tx, DEFAULT_INCLUDE_ATTRIBUTE);
+    }
+
+    AbstractComputeQuery(Optional<GraknTx> tx, boolean includeAttribute) {
         this.tx = tx;
+        this.includeAttribute = includeAttribute;
     }
 
     @Override

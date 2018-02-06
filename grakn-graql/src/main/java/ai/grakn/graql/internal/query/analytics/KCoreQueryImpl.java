@@ -37,9 +37,10 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
 
     private long k = -1L;
 
+    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
+
     KCoreQueryImpl(Optional<GraknTx> tx) {
-        super(tx);
-        this.includeAttribute(); //TODO: REMOVE THIS LINE
+        super(tx, INCLUDE_ATTRIBUTE);
     }
 
     @Override
