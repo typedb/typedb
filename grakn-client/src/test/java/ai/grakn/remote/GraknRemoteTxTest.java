@@ -243,7 +243,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
-        String queryString = "define person sub entity;";
+        String queryString = "define label person sub entity;";
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();

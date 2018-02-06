@@ -1,0 +1,181 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.remote;
+
+import ai.grakn.QueryRunner;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.UndefineQuery;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
+import ai.grakn.graql.analytics.CountQuery;
+import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
+import ai.grakn.graql.analytics.MaxQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.MedianQuery;
+import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
+import ai.grakn.graql.analytics.StdQuery;
+import ai.grakn.graql.analytics.SumQuery;
+import com.google.common.collect.Iterables;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+/**
+ * @author Felix Chapman
+ */
+public class RemoteQueryRunner implements QueryRunner {
+
+    private final GrpcClient client;
+    private final @Nullable Boolean infer;
+
+    private RemoteQueryRunner(GrpcClient client, @Nullable Boolean infer) {
+        this.client = client;
+        this.infer = infer;
+    }
+
+    public static RemoteQueryRunner create(GrpcClient client, @Nullable Boolean infer) {
+        return new RemoteQueryRunner(client, infer);
+    }
+
+    @Override
+    public Stream<Answer> run(GetQuery query) {
+        return runAnswerStream(query);
+    }
+
+    @Override
+    public Stream<Answer> run(InsertQuery query) {
+        return runAnswerStream(query);
+    }
+
+    @Override
+    public void run(DeleteQuery query) {
+        runVoid(query);
+    }
+
+    @Override
+    public Answer run(DefineQuery query) {
+        return runSingle(query, Answer.class);
+    }
+
+    @Override
+    public void run(UndefineQuery query) {
+        runVoid(query);
+    }
+
+    @Override
+    public <T> T run(AggregateQuery<T> query) {
+        return (T) runSingle(query, Object.class);
+    }
+
+    @Override
+    public <T> T run(ClusterQuery<T> query) {
+        return (T) runSingle(query, Object.class);
+    }
+
+    @Override
+    public Map<Long, Set<String>> run(CorenessQuery query) {
+        return runSingle(query, Map.class);
+    }
+
+    @Override
+    public long run(CountQuery query) {
+        return runSingle(query, Long.class);
+    }
+
+    @Override
+    public Map<Long, Set<String>> run(DegreeQuery query) {
+        return runSingle(query, Map.class);
+    }
+
+    @Override
+    public Map<String, Set<String>> run(KCoreQuery query) {
+        return runSingle(query, Map.class);
+    }
+
+    @Override
+    public Optional<Number> run(MaxQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public Optional<Double> run(MeanQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public Optional<Number> run(MedianQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public Optional<Number> run(MinQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public Optional<List<Concept>> run(PathQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public List<List<Concept>> run(PathsQuery query) {
+        return runSingle(query, List.class);
+    }
+
+    @Override
+    public Optional<Double> run(StdQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    @Override
+    public Optional<Number> run(SumQuery query) {
+        return runSingle(query, Optional.class);
+    }
+
+    private List<Object> run(Query<?> query) {
+        return client.execQuery(query, infer);
+    }
+
+    private void runVoid(Query<?> query) {
+        run(query).forEach(empty -> {});
+    }
+
+    private Stream<Answer> runAnswerStream(Query<?> query) {
+        // TODO make lazy
+        return run(query).stream().map(Answer.class::cast);
+    }
+
+    private <T> T runSingle(Query<?> query, Class<T> clazz) {
+        return clazz.cast(Iterables.getOnlyElement(run(query)));
+    }
+}

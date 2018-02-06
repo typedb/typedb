@@ -22,12 +22,14 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -36,16 +38,25 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
  */
-public class GraknRemoteTx implements GraknTx {
+public class GraknRemoteTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
     private final GrpcClient client;
@@ -167,7 +178,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public GraknAdmin admin() {
-        throw new UnsupportedOperationException();
+        return this;
     }
 
     @Override
@@ -192,7 +203,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public QueryBuilder graql() {
-        return RemoteQueryBuilder.create(client);
+        return new QueryBuilderImpl(this);
     }
 
     @Override
@@ -210,4 +221,109 @@ public class GraknRemoteTx implements GraknTx {
         client.commit();
     }
 
+    @Override
+    public <T extends Concept> T buildConcept(Vertex vertex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T extends Concept> T buildConcept(Edge edge) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public GraphTraversalSource getTinkerTraversal() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isBatchTx() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Type getMetaConcept() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RelationshipType getMetaRelationType() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Role getMetaRole() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AttributeType getMetaAttributeType() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public EntityType getMetaEntityType() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Rule getMetaRule() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public LabelId convertToId(Label label) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void shard(ConceptId conceptId) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public long shardingThreshold() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delete() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getShardCount(Type type) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public QueryRunner queryRunner() {
+        return RemoteQueryRunner.create(client, null);
+    }
 }
