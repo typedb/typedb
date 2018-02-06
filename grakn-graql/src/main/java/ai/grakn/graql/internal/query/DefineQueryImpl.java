@@ -21,19 +21,18 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Implementation for {@link DefineQuery}
@@ -56,19 +55,19 @@ abstract class DefineQueryImpl implements DefineQuery {
     }
 
     @Override
-    public Answer convert(Stream<?> results) {
-        return Iterables.getOnlyElement(((Stream<Answer>) results).collect(toList()));
-    }
-
-    @Override
-    public Stream<?> stream() {
+    public Answer execute() {
         GraknTx tx = tx();
         if (tx == null) throw GraqlQueryException.noTx();
 
         ImmutableList<VarPatternAdmin> allPatterns =
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
+        
+        return QueryOperationExecutor.defineAll(allPatterns, tx);
+    }
 
-        return Stream.of(QueryOperationExecutor.defineAll(allPatterns, tx));
+    @Override
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return Stream.of(converter.convert(execute()));
     }
 
     @Override

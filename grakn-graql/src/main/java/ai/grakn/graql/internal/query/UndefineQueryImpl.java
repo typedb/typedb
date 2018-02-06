@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
@@ -49,20 +50,19 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     }
 
     @Override
-    public Stream<?> stream() {
+    public Void execute() {
         ImmutableList<VarPatternAdmin> allPatterns =
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
 
         QueryOperationExecutor.undefineAll(allPatterns, tx());
 
-        return Stream.empty();
+        return null;
     }
 
     @Override
-    public Void convert(Stream<?> results) {
-        // Consume whole stream
-        results.forEach(result -> {});
-        return null;
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        execute();
+        return Stream.empty();
     }
 
     @Override

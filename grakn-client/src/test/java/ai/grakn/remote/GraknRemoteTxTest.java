@@ -27,6 +27,7 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
@@ -51,7 +52,6 @@ import org.junit.rules.ExpectedException;
 import javax.annotation.Nullable;
 import java.util.List;
 
-import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -161,9 +161,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
+        Query<?> query = mock(Query.class);
         String queryString = "match $x isa person; get $x;";
-        GetQuery query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        when(query.toString()).thenReturn(queryString);
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
@@ -176,9 +176,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_GetAResultBack() {
+        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
-        GetQuery query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        when(query.toString()).thenReturn(queryString);
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -211,9 +211,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
+        DeleteQuery query = mock(DeleteQuery.class);
         String queryString = "match $x isa person; delete $x;";
-        DeleteQuery query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        when(query.toString()).thenReturn(queryString);
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -229,9 +229,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
+        AggregateQuery<Boolean> query = mock(AggregateQuery.class);
         String queryString = "match $x isa person; aggregate ask;";
-        AggregateQuery<Boolean> query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        when(query.toString()).thenReturn(queryString);
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -253,9 +253,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
-        String queryString = "define label person sub entity;";
-        DefineQuery query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        DefineQuery query = mock(DefineQuery.class);
+        String queryString = "define person sub entity;";
+        when(query.toString()).thenReturn(queryString);
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -287,9 +287,9 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
+        Query<?> query = mock(Query.class);
         String queryString = "match $x isa person; get $x;";
-        GetQuery query = parse(queryString);
-        assert query.toString().equals(queryString); // sanity check
+        when(query.toString()).thenReturn(queryString);
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request

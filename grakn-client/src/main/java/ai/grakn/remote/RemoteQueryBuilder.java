@@ -31,7 +31,6 @@ import ai.grakn.graql.VarPattern;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author Felix Chapman
@@ -118,7 +117,7 @@ class RemoteQueryBuilder implements QueryBuilder {
 
     @Override
     public <T> T execute(Query<T> query) {
-        List<Object> result = client.execQuery(query, infer);
-        return query.convert(result.stream());
+        // If the server is working correctly, then this cast is safe
+        return (T) client.execQuery(query, infer);
     }
 }

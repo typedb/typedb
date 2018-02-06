@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -51,6 +52,16 @@ public abstract class GetQueryImpl implements GetQuery {
     }
 
     @Override
+    public List<Answer> execute() {
+        return stream().collect(toList());
+    }
+
+    @Override
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return stream().map(converter::convert);
+    }
+
+    @Override
     public boolean isReadOnly() {
         return true;
     }
@@ -68,10 +79,5 @@ public abstract class GetQueryImpl implements GetQuery {
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
-    }
-
-    @Override
-    public final List<Answer> convert(Stream<?> results) {
-        return ((Stream<Answer>) results).collect(toList());
     }
 }

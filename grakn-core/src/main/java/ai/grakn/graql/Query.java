@@ -43,9 +43,7 @@ public interface Query<T> {
      * Execute the query against the graph (potentially writing to the graph) and return a result
      * @return the result of the query
      */
-    default T execute() {
-        return convert(stream());
-    }
+    T execute();
 
     /**
      * Execute the query and return a human-readable stream of results
@@ -62,17 +60,7 @@ public interface Query<T> {
      * Execute the query and return a converted stream of results
      */
     @CheckReturnValue
-    default <S> Stream<S> results(GraqlConverter<?, S> converter) {
-        return stream().map(converter::convert);
-    }
-
-    @CheckReturnValue
-    // TODO: this is bad maybe
-    T convert(Stream<?> results);
-
-    @CheckReturnValue
-    // TODO maybe this is bad too??
-    Stream<?> stream();
+    <S> Stream<S> results(GraqlConverter<?, S> converter);
 
     /**
      * Whether this query will modify the graph

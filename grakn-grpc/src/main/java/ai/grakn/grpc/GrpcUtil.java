@@ -41,7 +41,6 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
-import mjson.Json;
 
 import javax.annotation.Nullable;
 
@@ -97,7 +96,7 @@ public class GrpcUtil {
             case ANSWER:
                 return convert(queryResult.getAnswer());
             case OTHERRESULT:
-                return Json.read(queryResult.getOtherResult()).getValue();
+                throw new UnsupportedOperationException();
             default:
             case QUERYRESULT_NOT_SET:
                 throw new IllegalArgumentException(); // TODO

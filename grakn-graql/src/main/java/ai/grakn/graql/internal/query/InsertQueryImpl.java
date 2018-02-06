@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
@@ -40,7 +41,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -91,12 +91,12 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public List<Answer> execute() {
-        return convert(stream());
+        return stream().collect(Collectors.toList());
     }
 
     @Override
-    public final List<Answer> convert(Stream<?> results) {
-        return ((Stream<Answer>) results).collect(toList());
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return stream().map(converter::convert);
     }
 
     @Override
