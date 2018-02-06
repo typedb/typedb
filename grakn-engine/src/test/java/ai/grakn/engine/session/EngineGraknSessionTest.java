@@ -64,9 +64,7 @@ public class EngineGraknSessionTest {
 
     //Needed so that Grakn.session() can return a session
     @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
-    });
+    public static final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry));
 
     //Needed to start cass depending on profile
     @ClassRule

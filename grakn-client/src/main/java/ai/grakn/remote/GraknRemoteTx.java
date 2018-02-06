@@ -171,7 +171,7 @@ public class GraknRemoteTx implements GraknTx {
     }
 
     @Override
-    public boolean isReadOnly() {
+    public GraknTxType txType() {
         throw new UnsupportedOperationException();
     }
 

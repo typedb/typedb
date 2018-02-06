@@ -323,10 +323,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
-    private Stream<IsaAtom> inferEntityTypes() {
-        return inferEntityTypes(new QueryAnswer());
-    }
-
     private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){
         HashMap<Var, Type> map = new HashMap<>();
         isas
@@ -349,13 +345,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap() {
         if (varTypeMap == null) {
-            this.varTypeMap = ImmutableMap.copyOf(getVarTypeMap(
-                    Stream.concat(
-                        getAtoms(IsaAtom.class),
-                        inferEntityTypes()
-                    )
-                )
-            );
+            this.varTypeMap = getVarTypeMap(new QueryAnswer());
         }
         return varTypeMap;
     }
@@ -365,7 +355,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return ImmutableMap.copyOf(getVarTypeMap(
                 Stream.concat(
                         getAtoms(IsaAtom.class),
-                        inferEntityTypes()
+                        inferEntityTypes(sub)
                 )
                 )
         );

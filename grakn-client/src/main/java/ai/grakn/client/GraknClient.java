@@ -38,8 +38,7 @@ public interface GraknClient {
         return new GraknClientImpl(url);
     }
 
-    List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
-            throws GraknClientException;
+    List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException;
 
     Optional<Keyspace> keyspace(String keyspace) throws GraknClientException;
 }

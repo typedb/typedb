@@ -29,6 +29,12 @@ import javax.annotation.CheckReturnValue;
  * @author Filipe Teixeira
  */
 public enum ErrorMessage {
+    //--------------------------------------------- Bootup Errors -----------------------------------------------
+    GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
+    UNABLE_TO_START_GRAKN("Unable to start Grakn"),
+    UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
+    UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
+
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     SUPER_LOOP_DETECTED("By setting the super of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
@@ -125,7 +131,6 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
-    INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors

@@ -81,10 +81,10 @@ public class GraqlControllerReadOnlyTest {
     public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
-        new GraqlController(mockFactory, spark, mock(PostProcessor.class), printer, metricRegistry);
+        new SystemController(mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry).start(spark);
+        new GraqlController(mockFactory, mock(PostProcessor.class), printer, metricRegistry).start(spark);
     });
 
     @Before

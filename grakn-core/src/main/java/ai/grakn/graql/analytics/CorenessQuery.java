@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
@@ -55,7 +56,8 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
      *                 entities and attributes are computed.
      * @return a CorenessQuery with the subTypeLabels set
      */
-    CorenessQuery of(Collection<Label> ofLabels);
+    @API
+     CorenessQuery of(Collection<Label> ofLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph.

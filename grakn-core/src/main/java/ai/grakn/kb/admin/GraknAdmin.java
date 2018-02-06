@@ -204,11 +204,6 @@ public interface GraknAdmin {
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
     /**
-     * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
-     */
-    void closeSession();
-
-    /**
      * Immediately closes the session and deletes the graph.
      * Should be used with caution as this will invalidate any pending transactions
      */

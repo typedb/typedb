@@ -153,7 +153,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         GraknTxType txType = GrpcUtil.getTxType(request);
         tx = txFactory.tx(keyspace, txType);
 
-        responseObserver.onNext(doneResponse());
+        responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void commit() {

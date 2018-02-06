@@ -16,23 +16,22 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * <p>
+ *     We use this annotation to more clearly define our public api.
+ *     It is also useful finding dead code.
+ * </p>
  *
- * @author Michele Orsi
+ * @author Filipe Peliz Pinto Teixeira
  */
-interface ProcessHandler {
-
-    void start();
-
-    void stop();
-
-    void status();
-
-    void statusVerbose();
-
-    void clean();
-
-    boolean isRunning();
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.METHOD)
+public @interface API {
 }

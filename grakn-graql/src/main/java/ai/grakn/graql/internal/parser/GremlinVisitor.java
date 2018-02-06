@@ -49,13 +49,6 @@ public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.P
     }
 
     /**
-     * Print the traversal to stdout in a readable format
-     */
-    public static void prettyPrint(GraphTraversal<?, ?> traversal) {
-        System.out.println(prettify(traversal));
-    }
-
-    /**
      * Change the traversal to a string in a readable format
      */
     public static String prettify(GraphTraversal<?, ?> traversal) {

@@ -115,7 +115,7 @@ public class GraknSessionImpl implements GraknSession {
         return commitLogHandler;
     }
 
-    //This must remain public because it is accessed via reflection
+    @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
     public static GraknSessionImpl create(Keyspace keyspace, String engineUri){
         return new GraknSessionImpl(keyspace, engineUri, null, true);
     }

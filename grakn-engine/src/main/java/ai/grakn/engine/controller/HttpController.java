@@ -16,26 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.grakn_pid;
+package ai.grakn.engine.controller;
 
-import java.nio.file.Path;
+import spark.Service;
 
 /**
+ *  Interface implemented by all HTTPControllers
  *
- * A class which manages grakn engine's PID
- *
- * @author Ganeshwara Herawan Hananda
- *
+ *  @author marcoscoppetta
  */
-public class PidFileAlreadyExistsException extends RuntimeException {
-    private Path pidFilePath;
 
-    public PidFileAlreadyExistsException(Path pidFilePath) {
-        super("pid file already exists: '" + pidFilePath.toString());
-        this.pidFilePath = pidFilePath;
-    }
+public interface HttpController {
 
-    public Path getPidFilePath() {
-        return pidFilePath;
-    }
+    void start(Service spark);
 }

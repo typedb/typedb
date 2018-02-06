@@ -47,12 +47,14 @@ public class PostProcessingTask implements BackgroundTask{
     private final EngineGraknTxFactory factory;
     private final IndexPostProcessor indexPostProcessor;
     private final ScheduledExecutorService threadPool;
+    private final int postProcessingMaxJobs;
     private final int postprocessingDelay;
 
     public PostProcessingTask(EngineGraknTxFactory factory,  IndexPostProcessor indexPostProcessor, GraknConfig config){
         this.factory = factory;
         this.indexPostProcessor = indexPostProcessor;
-        this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
+        this.postProcessingMaxJobs = config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE);
+        this.threadPool = Executors.newScheduledThreadPool(postProcessingMaxJobs);
         this.postprocessingDelay = config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY);
     }
 
@@ -60,10 +62,14 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
-            String index = indexPostProcessor.popIndex(keyspace);
-            if(index != null) {
-                threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
-            }
+            String index;
+            int limit = 0;
+            do{
+                 index = indexPostProcessor.popIndex(keyspace);
+                 final String i = index;
+                 if(index != null) threadPool.schedule(() -> processIndex(keyspace, i), postprocessingDelay, TimeUnit.SECONDS);
+                 limit++;
+            } while(index != null && limit < postProcessingMaxJobs);
         });
     }
 

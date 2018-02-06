@@ -28,6 +28,9 @@ import java.nio.file.Path;
  *
  */
 public class GraknPidManagerFactory {
+    /*
+     * instantiates a GraknPidManager which supports *nix systems such as Linux and OS X
+     */
     public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
         GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
         GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
