@@ -68,10 +68,6 @@ public class LazyIterator<T> implements Iterable<T>{
         };
     }
 
-    public LazyIterator<T> merge(Stream<T> stream){
-        return new LazyIterator<>(Stream.concat(this.stream(), stream));
-    }
-
     public Stream<T> stream() {
         return StreamSupport.stream(this.spliterator(), false).distinct();
     }

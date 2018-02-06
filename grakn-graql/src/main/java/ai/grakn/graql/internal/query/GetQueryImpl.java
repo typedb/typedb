@@ -20,16 +20,14 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -57,8 +55,8 @@ public abstract class GetQueryImpl implements GetQuery {
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return stream().map(converter::convert);
     }
 
     @Override
@@ -69,11 +67,6 @@ public abstract class GetQueryImpl implements GetQuery {
     @Override
     public Stream<Answer> stream() {
         return match().stream().map(result -> result.project(vars())).distinct();
-    }
-
-    @Nullable
-    public Optional<GraknTx> tx() {
-        return match().admin().tx();
     }
 
     @Override

@@ -62,6 +62,14 @@ public interface ComputeQuery<T> extends Query<T> {
     ComputeQuery<T> includeAttribute();
 
     /**
+     * Whether this query will modify the graph
+     */
+    @Override
+    default boolean isReadOnly() {
+        return true;
+    }
+
+    /**
      * Returns <tt>true</tt> if this is a statistics query
      *
      * @return <tt>true</tt> if this is a statistics query

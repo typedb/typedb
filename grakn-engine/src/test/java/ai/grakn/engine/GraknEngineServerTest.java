@@ -21,6 +21,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.rule.SessionContext;
@@ -46,6 +47,8 @@ import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -115,7 +118,14 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
+    public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered() throws IOException {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+            assertThat(server.backgroundTaskRunner().tasks(), hasItem(isA(PostProcessingTask.class)));
+        }
+    }
+
+    @Test
+    public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
@@ -126,7 +136,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
+    public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
@@ -138,7 +148,7 @@ public class GraknEngineServerTest {
 
     @Test
     @Ignore("Printed but not detected")
-    public void whenEngineServerIsStartedWithDifferentVersion_PrintWarning() {
+    public void whenEngineServerIsStartedWithDifferentVersion_PrintWarning() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
@@ -151,7 +161,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
+    public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {

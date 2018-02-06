@@ -42,6 +42,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Felix Chapman
  */
+@SuppressWarnings("unused") // We create some vertices and edges for the tests but don't reference them
 public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();

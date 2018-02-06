@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
@@ -140,23 +139,17 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     public abstract Stream<Answer> record(Q query, Stream<Answer> answers);
 
     /**
-     * record answer stream for a specific query and retrieve the updated stream in a lazy iterator
-     * @param query to be recorded
-     * @param answers answer stream of the query
-     * @return lazy iterator of updated answers
-     */
-    public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
-
-    /**
      * retrieve (possibly) cached answers for provided query
      * @param query for which to retrieve answers
      * @return unified cached answers
      */
     public abstract T getAnswers(Q query);
+
     public abstract Pair<T, MultiUnifier> getAnswersWithUnifier(Q query);
+
     public abstract Stream<Answer> getAnswerStream(Q query);
+
     public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
-    public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**
      * return an inverse answer map which is more suitable for operations involving concept comparison (joins, filtering, etc.)
@@ -200,9 +193,4 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      */
     public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
 
-    /**
-     * @param queries to be checked
-     * @return number of answers for the specified query set
-     */
-    public abstract long answerSize(Set<Q> queries);
 }

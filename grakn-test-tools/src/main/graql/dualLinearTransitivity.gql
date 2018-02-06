@@ -4,7 +4,7 @@ define
 ####################Schema######################
 #################################################
 
-"entity2" sub entity
+entity2 sub entity
     has index
     plays P-from plays P-to
     plays Q1-from plays Q1-to
@@ -12,32 +12,32 @@ define
     plays R1-from plays R1-to
     plays R2-from plays R2-to;
 
-"start" sub entity2;
-"end" sub entity2;
-"a-entity" sub entity2;
-"b-entity" sub entity2;
+start sub entity2;
+end sub entity2;
+a-entity sub entity2;
+b-entity sub entity2;
 
-"R1-from" sub role;
-"R1-to" sub role;
-"R1" sub relationship, relates R1-from, relates R1-to;
+R1-from sub role;
+R1-to sub role;
+R1 sub relationship, relates R1-from, relates R1-to;
 
-"R2-from" sub role;
-"R2-to" sub role;
-"R2" sub relationship, relates R2-from, relates R2-to;
+R2-from sub role;
+R2-to sub role;
+R2 sub relationship, relates R2-from, relates R2-to;
 
-"Q1-from" sub role;
-"Q1-to" sub role;
-"Q1" sub relationship, relates Q1-from, relates Q1-to;
+Q1-from sub role;
+Q1-to sub role;
+Q1 sub relationship, relates Q1-from, relates Q1-to;
 
-"Q2-from" sub role;
-"Q2-to" sub role;
-"Q2" sub relationship, relates Q2-from, relates Q2-to;
+Q2-from sub role;
+Q2-to sub role;
+Q2 sub relationship, relates Q2-from, relates Q2-to;
 
-"P-from" sub role;
-"P-to" sub role;
-"P" sub relationship, relates P-from, relates P-to;
+P-from sub role;
+P-to sub role;
+P sub relationship, relates P-from, relates P-to;
 
-"index" sub attribute, datatype string;
+index sub attribute, datatype string;
 
 insert
 

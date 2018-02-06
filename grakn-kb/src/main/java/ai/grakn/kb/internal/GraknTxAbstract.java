@@ -225,8 +225,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public abstract boolean isSessionClosed();
 
     @Override
-    public boolean isReadOnly() {
-        return GraknTxType.READ.equals(txCache().txType());
+    public GraknTxType txType() {
+        return txCache().txType();
     }
 
     @Override
@@ -369,7 +369,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     public void checkMutationAllowed() {
-        if (isReadOnly()) throw GraknTxOperationException.transactionReadOnly(this);
+        if (GraknTxType.READ.equals(txType())) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
 
@@ -699,7 +699,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
-    @Override
+    /**
+     * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
+     */
     public void closeSession() {
         try {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
@@ -737,7 +739,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 logs = commitWithLogs(trackLogs);
                 txCache().writeToGraphCache(true);
             } else {
-                txCache().writeToGraphCache(isReadOnly());
+                txCache().writeToGraphCache(txType().equals(GraknTxType.READ));
             }
         } finally {
             closeTransaction(closeMessage);

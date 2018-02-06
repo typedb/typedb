@@ -33,7 +33,7 @@ public enum GraknSystemProperty {
     CONFIGURATION_FILE("grakn.conf"),
     TEST_PROFILE("grakn.test-profile"),
     PROJECT_RELATIVE_DIR("main.basedir"),
-    LOGBACK_CONFIG("logback.configurationFile");
+    GRAKN_PID_FILE("grakn.pidfile");
 
     private String key;
 

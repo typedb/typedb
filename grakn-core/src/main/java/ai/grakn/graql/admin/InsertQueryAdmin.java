@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -52,10 +51,4 @@ public interface InsertQueryAdmin extends InsertQuery {
      */
     @CheckReturnValue
     Collection<VarPatternAdmin> varPatterns();
-
-    /**
-     * @return the graph set on this query, if it was provided one
-     */
-    @CheckReturnValue
-    Optional<GraknTx> getTx();
 }

@@ -21,17 +21,15 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
+class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQuery> implements PathQuery {
 
     private ConceptId sourceId = null;
     private ConceptId destinationId = null;
@@ -65,28 +63,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
-    public PathQuery in(String... subTypeLabels) {
-        return (PathQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public PathQuery in(Collection<Label> subLabels) {
-        return (PathQuery) super.in(subLabels);
-    }
-
-    @Override
     String graqlString() {
         return "path from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
-    }
-
-    @Override
-    public PathQuery withTx(GraknTx tx) {
-        return (PathQuery) super.withTx(tx);
     }
 
     @Override

@@ -20,21 +20,13 @@ package ai.grakn.exception;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.TaskId;
-import ai.grakn.util.SimpleURI;
-import org.apache.commons.lang.exception.ExceptionUtils;
 
-import java.io.IOException;
 import java.net.URI;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.COULD_NOT_REACH_ENGINE;
 import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
-import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
 import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
-import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
-import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
 
 /**
  * <p>
@@ -83,34 +75,6 @@ public class GraknBackendException extends GraknException {
      */
     public static GraknBackendException convertingUnknownConcept(Concept concept){
         return new GraknBackendException(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
-    }
-
-    /**
-     * Thrown when the task state storage cannot be accessed.
-     */
-    public static GraknBackendException stateStorage(){
-        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage());
-    }
-
-    /**
-     * Thrown when a task id is missing from the task state storage
-     */
-    public static GraknBackendException stateStorageMissingId(TaskId id){
-        return new GraknBackendException(MISSING_TASK_ID.getMessage(id));
-    }
-
-    /**
-     * Thrown when a task id is missing from the task state storage
-     */
-    public static GraknBackendException stateStorageTaskRetrievalFailure(Exception e){
-        return new GraknBackendException(TASK_STATE_RETRIEVAL_FAILURE.getMessage(ExceptionUtils.getFullStackTrace(e)));
-    }
-
-    /**
-     * Thrown when the task client cannot reach engine
-     */
-    public static GraknBackendException engineUnavailable(SimpleURI uri, IOException e){
-        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(uri), e);
     }
 
     public static GraknBackendException initializationException(Keyspace keyspace) {

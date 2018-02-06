@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
@@ -119,15 +118,6 @@ class ConjunctionQuery {
                 .map(EquivalentFragmentSet::fragments)
                 .collect(toList());
         return Sets.cartesianProduct(fragments).stream();
-    }
-
-    /**
-     * @return a stream of concept names mentioned in the query
-     */
-    Stream<Label> getTypes() {
-        return vars.stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
-                .flatMap(v -> v.getTypeLabels().stream());
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPatternAdmin var) {

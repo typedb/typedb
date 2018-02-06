@@ -85,7 +85,7 @@ public class GraknClientImpl implements GraknClient {
                 throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity + "\nqueries: " + queries, response.getStatusInfo());
             }
             LOG.debug("Received {}", status.getStatusCode());
-            return QueryResponse.from(queryList, entity);
+            return queryList.stream().map(q -> QueryResponse.INSTANCE).collect(Collectors.toList());
         } finally {
             response.close();
         }

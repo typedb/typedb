@@ -19,11 +19,11 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.kb.log.CommitLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -32,8 +32,8 @@ import java.util.Collections;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -43,14 +43,15 @@ public class CommitLogControllerTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Keyspace keyspace = Keyspace.of("myks");
     private static final CommitLog commitLog = CommitLog.create(keyspace, Collections.emptyMap(), Collections.emptyMap());
-
-    private final TaskManager taskManager = mock(TaskManager.class);
-    private final PostProcessor postProcessor = mock(PostProcessor.class);
+    private static final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, taskManager, postProcessor);
-    });
+    public final SparkContext sparkContext = SparkContext.withControllers(new CommitLogController(postProcessor));
+
+    @Before
+    public void resetMock(){
+        reset(postProcessor);
+    }
 
     @Test
     public void whenPostingToCommitLogEndpoint_Return200() throws JsonProcessingException {
@@ -58,9 +59,8 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenPostingToCommitLogEndpoint_SubmitTwoTasks() throws JsonProcessingException {
+    public void whenPostingToCommitLogEndpoint_RecordCommitLog() throws JsonProcessingException {
         given().body(mapper.writeValueAsString(commitLog)).post("/kb/" + keyspace.getValue() +"/commit_log");
-
-        verify(taskManager, Mockito.times(1)).addTask(any(), any());
+        verify(postProcessor, Mockito.times(1)).submit(commitLog);
     }
 }

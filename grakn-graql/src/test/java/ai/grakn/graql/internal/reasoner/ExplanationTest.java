@@ -268,13 +268,16 @@ public class ExplanationTest {
     @Test
     public void testExplanationConsistency(){
         GraknTx genealogyGraph = genealogyKB.tx();
+        final long limit = 3;
         QueryBuilder iqb = genealogyGraph.graql().infer(true);
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 3; get;";
+                "limit " + limit + ";"+
+                "get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
+        assertEquals(answers.size(), limit);
         answers.forEach(answer -> {
             testExplanation(answer);
 
@@ -304,7 +307,7 @@ public class ExplanationTest {
         assertFalse("Non-lookup explanation misses children",
                 answer.getExplanations().stream()
                 .filter(e -> !e.isLookupExplanation())
-                .filter(e -> e.getAnswers().isEmpty()).findFirst().isPresent()
+                .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
@@ -314,8 +317,7 @@ public class ExplanationTest {
             assertTrue("Disconnected answer in explanation",
                     answers.stream()
                             .filter(a2 -> !a2.equals(a))
-                            .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
-                            .findFirst().isPresent()
+                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
             );
         });
     }

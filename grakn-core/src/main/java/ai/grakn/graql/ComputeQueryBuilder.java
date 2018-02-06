@@ -19,9 +19,12 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -103,14 +106,38 @@ public interface ComputeQueryBuilder {
     PathsQuery paths();
 
     /**
-     * @return a cluster query that will find the clusters in the graph
+     * @return a cluster query that will find the connected components
      */
     @CheckReturnValue
     ClusterQuery<Map<String, Long>> cluster();
 
     /**
-     * @return a degree query that will compute the degree of instances
+     * @return a k-core query that will find interlinked core areas using k-core.
      */
     @CheckReturnValue
+    KCoreQuery kCore();
+
+    /**
+     * This method is deprecated. Please use centrality query instead.
+     *
+     * @return a coreness query that computes centrality using k-core.
+     */
+    @Deprecated
+    @CheckReturnValue
+    CorenessQuery coreness();
+
+    /**
+     * This method is deprecated. Please use centrality query instead.
+     *
+     * @return a degree query that will compute the degree of instances
+     */
+    @Deprecated
+    @CheckReturnValue
     DegreeQuery degree();
+
+    /**
+     * @return a centrality query builder for creating centrality query
+     */
+    @CheckReturnValue
+    CentralityQueryBuilder centrality();
 }

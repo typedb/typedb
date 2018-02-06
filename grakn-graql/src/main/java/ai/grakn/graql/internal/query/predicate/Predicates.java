@@ -42,32 +42,16 @@ public class Predicates {
         return new LtPredicate(value);
     }
 
-    public static ValuePredicate lt(VarPatternAdmin var) {
-        return new LtPredicate(var);
-    }
-
     public static ValuePredicate lte(Object value) {
         return new LtePredicate(value);
-    }
-
-    public static ValuePredicate lte(VarPatternAdmin var) {
-        return new LtePredicate(var);
     }
 
     public static ValuePredicate gt(Object value) {
         return new GtPredicate(value);
     }
 
-    public static ValuePredicate gt(VarPatternAdmin var) {
-        return new GtPredicate(var);
-    }
-
     public static ValuePredicate gte(Object value) {
         return new GtePredicate(value);
-    }
-
-    public static ValuePredicate gte(VarPatternAdmin var) {
-        return new GtePredicate(var);
     }
 
     public static ValuePredicate eq(Object value) {

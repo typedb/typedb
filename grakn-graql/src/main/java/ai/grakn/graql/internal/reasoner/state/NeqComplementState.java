@@ -77,8 +77,7 @@ public class NeqComplementState extends AtomicState {
         Answer fullAnswer = state.getSubstitution().merge(predicateSub);
 
         boolean isNeqSatisfied = !predicates.stream()
-                .filter(p -> !p.isSatisfied(fullAnswer))
-                .findFirst().isPresent();
+                .anyMatch(p -> !p.isSatisfied(fullAnswer));
         return isNeqSatisfied?
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;

@@ -52,7 +52,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
@@ -84,10 +83,7 @@ public class GraqlTraversalTest {
     private static final Var y = Graql.var("y");
     private static final Var z = Graql.var("z");
     private static final Var xx = Graql.var("xx");
-    private static final Var yy = Graql.var("yy");
-    private static final Var zz = Graql.var("zz");
     private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
-    private static final Fragment xValue = value(null, x, eq("hello"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);
     private static final Fragment yTypeOfX = inIsa(null, y, x, true);

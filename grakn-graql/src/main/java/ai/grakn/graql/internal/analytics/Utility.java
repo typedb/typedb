@@ -65,12 +65,6 @@ public class Utility {
                 selectedTypeIds.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
     }
 
-    static boolean vertexHasSelectedTypeId(Vertex vertex, Set<LabelId> selectedTypeId1, Set<LabelId> selectedTypeId2) {
-        return vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent() &&
-                selectedTypeId1.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()))) &&
-                selectedTypeId2.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
-    }
-
     /**
      * The state of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
      * computations. If the vertex is alive it is likely to be a valid Grakn concept.

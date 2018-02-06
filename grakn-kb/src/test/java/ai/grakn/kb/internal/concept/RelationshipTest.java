@@ -110,7 +110,7 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("Role 1");
         Role role2 = tx.putRole("Role 2");
         Role role3 = tx.putRole("Role 3");
-        RelationshipType relType = tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
+        tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
         EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data

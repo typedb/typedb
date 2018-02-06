@@ -32,6 +32,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -47,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,7 +55,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
+abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
@@ -67,21 +67,21 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Set<Type> subTypes = new HashSet<>();
 
     @Override
-    public ComputeQuery<T> withTx(GraknTx tx) {
+    public V withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
-        return this;
+        return (V) this;
     }
 
     @Override
-    public ComputeQuery<T> in(String... subTypeLabels) {
+    public V in(String... subTypeLabels) {
         this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return this;
+        return (V) this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<Label> subLabels) {
+    public V in(Collection<Label> subLabels) {
         this.subLabels = Sets.newHashSet(subLabels);
-        return this;
+        return (V) this;
     }
 
     @Override
@@ -99,6 +99,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     @Override
     public Stream<String> resultsString(Printer printer) {
+        // TODO: clarify or remove this special-case behaviour
         Object computeResult = execute();
         if (computeResult instanceof Map) {
             if (((Map) computeResult).isEmpty()) {
@@ -116,6 +117,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             }
         }
         return Stream.of(printer.graqlString(computeResult));
+    }
+
+    @Override
+    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
+        return Stream.of(converter.convert(execute()));
     }
 
     void initSubGraph() {
@@ -161,7 +167,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            if(tx.isPresent()){
+            if (tx.isPresent()) {
                 graknComputer = tx.get().session().getGraphComputer();
             } else {
                 throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
@@ -218,7 +224,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
+        AbstractComputeQuery<?, ?> that = (AbstractComputeQuery<?, ?>) o;
 
         return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
     }
@@ -245,7 +251,4 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 .collect(Collectors.toSet());
     }
 
-    static String getRandomJobId() {
-        return Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
-    }
 }

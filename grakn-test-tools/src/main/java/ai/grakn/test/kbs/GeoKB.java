@@ -121,7 +121,7 @@ public class GeoKB extends TestKB {
     }
 
     @Override
-    public void buildRelations(GraknTx tx) {
+    public void buildRelations() {
 
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)

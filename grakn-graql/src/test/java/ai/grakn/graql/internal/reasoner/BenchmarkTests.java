@@ -36,11 +36,10 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
-import ai.grakn.test.kbs.PathKB;
+import ai.grakn.test.kbs.PathTreeKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -357,7 +356,7 @@ public class BenchmarkTests {
         
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
-        SampleKBContext kb = PathKB.context(N, linksPerEntity);
+        SampleKBContext kb = PathTreeKB.context(N, linksPerEntity);
         GraknTx graph = kb.tx();
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +

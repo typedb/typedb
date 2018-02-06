@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.antlr.GraqlParser.QueryEOFContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryListContext;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.template.TemplateParser;
-import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -119,11 +118,6 @@ public class QueryParserImpl implements QueryParser {
     @Override
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, aggregateMethod);
-    }
-
-    @Override
-    public void registerMacro(Macro macro) {
-        templateParser.registerMacro(macro);
     }
 
     @Override

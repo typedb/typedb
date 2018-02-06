@@ -60,15 +60,9 @@ define
     relates spouse2
     has picture;
 
-  spouse1 sub role;
-  spouse2 sub role;
-
   parentship sub relationship
     relates parent
     relates child;
-
-  parent sub role;
-  child sub role;
 ```
 
 This schema represents a genealogy knowledge base which models a family tree.

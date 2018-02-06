@@ -148,7 +148,7 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
+                            <url>https://github.com/graknlabs/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>

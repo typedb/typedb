@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,8 +36,6 @@ import java.util.stream.Stream;
  *
  */
 public class QueryAnswers implements Iterable<Answer>{
-
-    private static final long serialVersionUID = -8092703897236995422L;
 
     private final HashSet<Answer> set = new HashSet<>();
 
@@ -59,19 +57,15 @@ public class QueryAnswers implements Iterable<Answer>{
 
     public QueryAnswers(){}
     public QueryAnswers(Answer ans){ set.add(ans);}
-    public QueryAnswers(Collection<Answer> ans){ ans.forEach(set::add);}
+    public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
     public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
     public boolean add(Answer a){ return set.add(a);}
     public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
-    public boolean remove(Answer a){ return set.remove(a);}
+
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
 
     public boolean contains(Answer a){ return set.contains(a);}
-    public boolean containsAll(QueryAnswers ans){ return set.containsAll(ans.set);}
-
-    public int size(){ return set.size();}
-    public boolean isEmpty(){ return set.isEmpty();}
 
     /**
      * unify the answers by applying unifier to variable set
@@ -102,13 +96,4 @@ public class QueryAnswers implements Iterable<Answer>{
         return unifiedAnswers;
     }
 
-    /**
-     * unify answers of childQuery with parentQuery
-     * @param parentQuery parent atomic query containing target variables
-     * @return unified answers
-     */
-    public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
-        if (parentQuery == childQuery) return new QueryAnswers(answers);
-        return answers.unify(childQuery.getMultiUnifier(parentQuery));
-    }
 }

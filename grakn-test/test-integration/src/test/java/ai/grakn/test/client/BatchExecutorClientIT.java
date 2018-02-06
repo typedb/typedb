@@ -50,10 +50,12 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import static ai.grakn.util.GraknTestUtil.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static java.util.stream.Stream.generate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.spy;
 
 public class BatchExecutorClientIT {
@@ -70,12 +72,15 @@ public class BatchExecutorClientIT {
 
     @Before
     public void setupSession() {
+        // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
+        assumeFalse(usingTinker());
+
         keyspace = randomKeyspace();
         this.session = Grakn.session(engine.uri(), keyspace);
     }
 
     @Test
-    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() {
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
@@ -121,8 +126,7 @@ public class BatchExecutorClientIT {
         }
     }
 
-    //TODO: this seems to fail consistently
-    @Ignore
+    @Ignore("This test interferes with other tests using the BEC (they probably use the same HystrixRequestLog)")
     @Test
     public void whenSending100Queries_TheyAreSentInBatch() {
         List<Observable<QueryResponse>> all = new ArrayList<>();
@@ -161,7 +165,7 @@ public class BatchExecutorClientIT {
                 all.add(
                         loader
                                 .add(query(), keyspace, true)
-                                .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
+                                .doOnError(ex -> System.out.println("Error " + ex)));
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);

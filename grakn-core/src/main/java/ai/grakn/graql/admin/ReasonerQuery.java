@@ -20,10 +20,9 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
-
 import com.google.common.collect.ImmutableMap;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -38,9 +37,6 @@ import java.util.stream.Stream;
  *
  */
 public interface ReasonerQuery{
-
-    @CheckReturnValue
-    ReasonerQuery copy();
 
     /**
      * @param q query to combine
@@ -62,12 +58,6 @@ public interface ReasonerQuery{
     void checkValid();
 
     /**
-     * @return conjunctive pattern corresponding to this reasoner query
-     */
-    @CheckReturnValue
-    Conjunction<PatternAdmin> getPattern();
-
-    /**
      * @return set of variable names present in this reasoner query
      */
     @CheckReturnValue
@@ -86,12 +76,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     <T extends Atomic> Stream<T> getAtoms(Class<T> type);
-
-    /**
-     * @return corresponding {@link GetQuery}
-     */
-    @CheckReturnValue
-    GetQuery getQuery();
 
     /**
      * @return (partial) substitution obtained from all id predicates (including internal) in the query
@@ -120,13 +104,6 @@ public interface ReasonerQuery{
     boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
-     * @param parent query to unify wth
-     * @return multiunifier unifying this and parent query
-     */
-    @CheckReturnValue
-    MultiUnifier getMultiUnifier(ReasonerQuery parent);
-
-    /**
      * resolves the query
      * @param materialise materialisation flag
      * @return stream of answers
@@ -148,4 +125,5 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
+
 }

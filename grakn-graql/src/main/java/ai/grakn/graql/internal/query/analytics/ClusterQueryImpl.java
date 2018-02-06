@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -32,13 +31,12 @@ import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
+class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> implements ClusterQuery<T> {
 
     private boolean members = false;
     private boolean anySize = true;
@@ -101,11 +99,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     public ClusterQuery<Map<String, Set<String>>> members() {
         this.members = true;
         return (ClusterQuery<Map<String, Set<String>>>) this;
@@ -125,16 +118,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> in(String... subTypeLabels) {
-        return (ClusterQuery<T>) super.in(subTypeLabels);
-    }
-
-    @Override
-    public ClusterQuery<T> in(Collection<Label> subLabels) {
-        return (ClusterQuery<T>) super.in(subLabels);
-    }
-
-    @Override
     String graqlString() {
         String string = "cluster" + subtypeString();
         if (sourceId.isPresent()) {
@@ -147,11 +130,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
             string += " size " + clusterSize + ";";
         }
         return string;
-    }
-
-    @Override
-    public ClusterQuery<T> withTx(GraknTx tx) {
-        return (ClusterQuery<T>) super.withTx(tx);
     }
 
     @Override

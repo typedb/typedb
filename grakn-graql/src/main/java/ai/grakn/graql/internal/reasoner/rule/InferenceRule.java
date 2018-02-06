@@ -89,13 +89,6 @@ public class InferenceRule {
         this.body = body;
     }
 
-    public InferenceRule(InferenceRule r){
-        this.tx = r.tx;
-        this.ruleId = r.getRuleId();
-        this.body = ReasonerQueries.create(r.getBody());
-        this.head = ReasonerQueries.atomic(r.getHead());
-    }
-
     @Override
     public String toString(){
         return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "[" + resolutionPriority() +"]\n";
@@ -200,7 +193,7 @@ public class InferenceRule {
     private ReasonerQueryImpl getCombinedQuery(){
         Set<Atomic> allAtoms = new HashSet<>();
         allAtoms.add(head.getAtom());
-        body.getAtoms().forEach(allAtoms::add);
+        allAtoms.addAll(body.getAtoms());
         return ReasonerQueries.create(allAtoms, tx);
     }
 

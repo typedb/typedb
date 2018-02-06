@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.LabelId;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -88,7 +88,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     private Set<LabelId> statisticsResourceLabelIds = new HashSet<>();
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 

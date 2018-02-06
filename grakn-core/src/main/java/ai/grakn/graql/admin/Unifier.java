@@ -82,13 +82,6 @@ public interface Unifier{
     boolean containsKey(Var key);
 
     /**
-     * @param value term to be checked for presence
-     * @return true if specified value is part of a mapping
-     */
-    @CheckReturnValue
-    boolean containsValue(Var value);
-
-    /**
      * @param u unifier to be compared with
      * @return true if this unifier contains all mappings of u
      */
@@ -103,25 +96,9 @@ public interface Unifier{
     Unifier merge(Unifier u);
 
     /**
-     * Setting v = this unifier, produces a unifier u' that applied to an expression E has the following properties:
-     *
-     *  u'E = u x E' = u x (v E)
-     *
-     * @param u unifier to be combined with this unifier
-     * @return combined unifier
-     */
-    @CheckReturnValue
-    Unifier combine(Unifier u);
-
-    /**
      * @return unifier inverse - new unifier with inverted mappings
      */
     @CheckReturnValue
     Unifier inverse();
 
-    /**
-     * @return number of mappings that constitute this unifier
-     */
-    @CheckReturnValue
-    int size();
 }

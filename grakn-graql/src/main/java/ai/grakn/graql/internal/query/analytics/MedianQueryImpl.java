@@ -19,18 +19,16 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
+class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
     MedianQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -58,31 +56,6 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
 
         LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
-    }
-
-    @Override
-    public MedianQuery of(String... resourceTypeLabels) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public MedianQuery of(Collection<Label> resourceLabels) {
-        return (MedianQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public MedianQuery in(String... subTypeLabels) {
-        return (MedianQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public MedianQuery in(Collection<Label> subLabels) {
-        return (MedianQuery) super.in(subLabels);
-    }
-
-    @Override
-    public MedianQuery withTx(GraknTx tx) {
-        return (MedianQuery) super.withTx(tx);
     }
 
     @Override

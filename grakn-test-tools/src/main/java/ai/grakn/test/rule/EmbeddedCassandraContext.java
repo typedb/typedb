@@ -30,30 +30,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
- *     Starts Embedded Cassandra
+ * Starts Embedded Cassandra
  * </p>
- *
  * <p>
- *     Helper class for starting and working with an embedded cassandra.
- *     This should be used for testing purposes only
+ * <p>
+ * Helper class for starting and working with an embedded cassandra.
+ * This should be used for testing purposes only
  * </p>
  *
  * @author fppt
- *
  */
 public class EmbeddedCassandraContext extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandraContext.class);
+    private static final String DEFAULT_YAML_FILE_PATH = "cassandra-embedded.yaml";
+
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
     private static AtomicInteger IN_CASSANDRA_CONTEXT = new AtomicInteger(0);
 
-    private EmbeddedCassandraContext() {
+    private String yamlFilePath;
 
+    private EmbeddedCassandraContext(String yamlFilePath) {
+        this.yamlFilePath = yamlFilePath;
     }
 
     public static EmbeddedCassandraContext create() {
-        return new EmbeddedCassandraContext();
+        return new EmbeddedCassandraContext(DEFAULT_YAML_FILE_PATH);
     }
+
+    public static EmbeddedCassandraContext create(String yamlFilePath) {
+        return new EmbeddedCassandraContext(yamlFilePath);
+    }
+
 
     public static boolean inCassandraContext() {
         return IN_CASSANDRA_CONTEXT.get() > 0;
@@ -61,16 +69,15 @@ public class EmbeddedCassandraContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
+        if (CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
-                EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);
+                EmbeddedCassandraServerHelper.startEmbeddedCassandra(yamlFilePath, 30_000L);
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed
                 try {
                     Thread.sleep(5000);
-                }
-                catch(InterruptedException ex) {
+                } catch (InterruptedException ex) {
                     LOG.info("Thread sleep interrupted.");
                 }
                 LOG.info("cassandra started.");

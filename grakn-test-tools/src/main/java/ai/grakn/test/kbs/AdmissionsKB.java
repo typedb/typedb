@@ -134,7 +134,7 @@ public class AdmissionsKB extends TestKB {
     }
 
     @Override
-    protected void buildRelations(GraknTx tx) {
+    protected void buildRelations() {
 
     }
 
