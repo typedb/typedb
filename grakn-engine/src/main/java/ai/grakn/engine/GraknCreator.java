@@ -84,8 +84,8 @@ public class GraknCreator {
         return new GraknEngineStatus();
     }
 
-    protected static MetricRegistry metricRegistry() {
-        return new MetricRegistry();
+    public MetricRegistry getMetricRegistry() {
+        return metricRegistry;
     }
 
     public static GraknCreator create(
@@ -97,7 +97,7 @@ public class GraknCreator {
 
     public static GraknCreator create() {
         GraknConfig config = GraknConfig.create();
-        return create(engineId(), sparkService(), graknEngineStatus(), metricRegistry(), config, RedisWrapper.create(config));
+        return create(engineId(), sparkService(), graknEngineStatus(), new MetricRegistry(), config, RedisWrapper.create(config));
     }
 
     public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime, Collection<HttpController> collaborators) throws IOException {
