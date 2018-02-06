@@ -66,10 +66,17 @@
                 <include>grakn.properties</include>
             </includes>
         </fileSet>
-        <!-- and logback.xml (main config) -->
+        <!-- and logback.xml (server and client configs) -->
         <fileSet>
-            <outputDirectory>services/grakn</outputDirectory>
-            <directory>${main.basedir}/conf/main</directory>
+            <outputDirectory>services/grakn/server</outputDirectory>
+            <directory>${main.basedir}/conf/main/server</directory>
+            <includes>
+                <include>logback.xml</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>services/grakn/client</outputDirectory>
+            <directory>${main.basedir}/conf/main/client</directory>
             <includes>
                 <include>logback.xml</include>
             </includes>

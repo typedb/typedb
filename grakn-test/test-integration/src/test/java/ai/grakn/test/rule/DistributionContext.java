@@ -168,7 +168,7 @@ public class DistributionContext extends CompositeTestRule {
     private String getClassPath(){
         Path servicesLibDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "lib");
         Path confDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "conf");
-        Path graknLogback = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "grakn");
+        Path graknLogback = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "grakn", "server");
         FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
 
         Stream<File> jars = Stream.of(servicesLibDir.toFile().listFiles(jarFiles));
