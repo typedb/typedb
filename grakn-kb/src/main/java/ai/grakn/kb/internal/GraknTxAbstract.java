@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -111,6 +111,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
+    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.TinkerQueryRunner";
 
     //----------------------------- Shared Variables
     private final GraknSession session;
@@ -126,6 +127,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             queryConstructor = null;
         }
+    }
+
+    private static final Method queryRunnerFactory;
+
+    static {
+        Method method;
+        try {
+            method = Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create");
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            method = null;
+        }
+        queryRunnerFactory = method;
     }
 
     //----------------------------- Transaction Specific
@@ -961,13 +974,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public QueryRunner queryRunner() {
+    public final QueryRunner queryRunner() {
         // TODO apologise
+        if (queryRunnerFactory == null) {
+            throw new RuntimeException("The query runner implementation " + QUERY_RUNNER_CLASS_NAME +
+                    " must be accessible in the classpath");
+        }
         try {
-            Constructor<? extends QueryRunner> queryRunnerConstructor = (Constructor<? extends QueryRunner>) Class.forName("ai.grakn.graql.internal.query.TinkerQueryRunner").getConstructor();
-            return queryRunnerConstructor.newInstance();
-        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            // I'm sure this is fine
+            return (QueryRunner) queryRunnerFactory.invoke(null);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
