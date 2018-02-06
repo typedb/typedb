@@ -20,19 +20,11 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.MeanMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
 
@@ -42,23 +34,11 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
 
     @Override
     protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
-        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
-        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
+        Optional<Map<String, Double>> result = execWithMapReduce(tx, computer, MeanMapReduce::new);
 
-        ComputerResult result = computer.compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new MeanMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
-        Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
-
-        double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-        LOGGER.debug("Mean = " + finalResult);
-
-        return Optional.of(finalResult);
+        return result.map(meanPair ->
+                meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
+        );
     }
 
     @Override

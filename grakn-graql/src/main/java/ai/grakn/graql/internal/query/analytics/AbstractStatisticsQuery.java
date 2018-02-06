@@ -19,22 +19,32 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.API;
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQueryOf;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
+import ai.grakn.graql.internal.analytics.GraknMapReduce;
+import ai.grakn.graql.internal.analytics.MinMapReduce;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,6 +91,27 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
     @Override
     final String graqlString() {
         return getName() + resourcesString() + subtypeString();
+    }
+
+    final <S> Optional<S> execWithMapReduce(GraknTx tx, GraknComputer computer, MapReduceFactory<S> mapReduceFactory) {
+        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
+
+        ComputerResult result = computer.compute(
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE),
+                allSubLabelIds);
+        Map<Serializable, S> map = result.memory().get(MinMapReduce.class.getName());
+
+        LOGGER.debug("Result = " + map.get(MapReduce.NullObject.instance()));
+        return Optional.of(map.get(MapReduce.NullObject.instance()));
+    }
+
+    interface MapReduceFactory<S> {
+        GraknMapReduce<S> get(
+                Set<LabelId> statisticsResourceLabelIds, AttributeType.DataType<?> dataType, String degreePropertyKey);
     }
 
     abstract String getName();

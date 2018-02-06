@@ -20,19 +20,10 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.MinMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> implements MinQuery {
 
@@ -42,20 +33,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
 
     @Override
     protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
-        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
-        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
-
-        ComputerResult result = computer.compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new MinMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
-
-        LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
-        return Optional.of(min.get(MapReduce.NullObject.instance()));
+        return execWithMapReduce(tx, computer, MinMapReduce::new);
     }
 
     @Override
