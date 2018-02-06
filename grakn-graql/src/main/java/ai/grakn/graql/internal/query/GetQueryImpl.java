@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
@@ -62,7 +61,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
 
     @Override
     public final Stream<Answer> stream() {
-        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
+        return queryRunner().run(this);
     }
 
     @Override

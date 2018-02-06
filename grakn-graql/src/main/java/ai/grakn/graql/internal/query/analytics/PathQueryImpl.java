@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
@@ -41,8 +40,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     }
 
     @Override
-    protected Optional<List<Concept>> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Optional<List<Concept>> execute() {
+        return queryRunner().run(this);
     }
 
     @Override

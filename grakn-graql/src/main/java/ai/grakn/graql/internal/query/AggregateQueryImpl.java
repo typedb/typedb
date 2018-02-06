@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.AggregateQuery;
 import com.google.auto.value.AutoValue;
 
@@ -38,8 +37,8 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public T execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final T execute() {
+        return queryRunner().run(this);
     }
 
     @Override

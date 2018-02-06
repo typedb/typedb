@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.MedianQuery;
 
 import java.util.Optional;
@@ -31,8 +30,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
     }
 
     @Override
-    protected Optional<Number> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Optional<Number> execute() {
+        return queryRunner().run(this);
     }
 
     @Override

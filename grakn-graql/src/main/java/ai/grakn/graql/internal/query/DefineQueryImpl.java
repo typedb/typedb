@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.VarPattern;
@@ -50,8 +49,8 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
     }
 
     @Override
-    public Answer execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Answer execute() {
+        return queryRunner().run(this);
     }
 
     @Override

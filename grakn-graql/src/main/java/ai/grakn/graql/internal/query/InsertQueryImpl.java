@@ -86,7 +86,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public final Stream<Answer> stream() {
-        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
+        return queryRunner().run(this);
     }
 
     @Override

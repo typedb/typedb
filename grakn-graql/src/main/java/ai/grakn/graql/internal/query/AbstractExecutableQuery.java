@@ -18,9 +18,6 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.QueryRunner;
-import ai.grakn.exception.GraqlQueryException;
-
 import java.util.stream.Stream;
 
 /**
@@ -36,11 +33,4 @@ public abstract class AbstractExecutableQuery<T> extends AbstractQuery<T, T> {
     protected final Stream<T> stream() {
         return Stream.of(execute());
     }
-
-    @Override
-    public final T execute() {
-        return execute(tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner());
-    }
-
-    protected abstract T execute(QueryRunner queryRunner);
 }

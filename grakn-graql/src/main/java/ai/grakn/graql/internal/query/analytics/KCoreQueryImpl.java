@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.KCoreQuery;
 
 import java.util.Map;
@@ -37,8 +36,8 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    protected Map<String, Set<String>> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Map<String, Set<String>> execute() {
+        return queryRunner().run(this);
     }
 
     @Override

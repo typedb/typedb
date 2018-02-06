@@ -50,7 +50,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public final Void execute() {
-        tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
+        queryRunner().run(this);
         return null;
     }
 

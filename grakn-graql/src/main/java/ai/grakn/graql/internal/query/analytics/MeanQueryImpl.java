@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.MeanQuery;
 
 import java.util.Optional;
@@ -31,8 +30,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
     }
 
     @Override
-    protected Optional<Double> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Optional<Double> execute() {
+        return queryRunner().run(this);
     }
 
     @Override

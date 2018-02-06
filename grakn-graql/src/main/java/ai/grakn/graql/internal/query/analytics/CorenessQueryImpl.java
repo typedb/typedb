@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.CorenessQuery;
 
 import java.util.Map;
@@ -35,8 +34,8 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    protected Map<Long, Set<String>> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final Map<Long, Set<String>> execute() {
+        return queryRunner().run(this);
     }
 
     @Override

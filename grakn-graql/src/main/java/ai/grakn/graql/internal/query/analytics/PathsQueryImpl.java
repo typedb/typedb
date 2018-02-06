@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
@@ -54,8 +53,8 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    protected List<List<Concept>> execute(QueryRunner queryRunner) {
-        return queryRunner.run(this);
+    public final List<List<Concept>> execute() {
+        return queryRunner().run(this);
     }
 
     // If the sub graph contains attributes, we may need to add implicit relations to the paths

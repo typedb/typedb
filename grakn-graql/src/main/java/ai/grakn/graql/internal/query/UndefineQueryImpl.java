@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
 import com.google.auto.value.AutoValue;
@@ -48,7 +47,7 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
 
     @Override
     public final Void execute() {
-        tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
+        queryRunner().run(this);
         return null;
     }
 
