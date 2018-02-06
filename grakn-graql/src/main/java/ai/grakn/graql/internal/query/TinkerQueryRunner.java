@@ -118,9 +118,9 @@ import static java.util.stream.Collectors.toList;
 /**
  * @author Felix Chapman
  */
-public class LocalQueryRunner implements QueryRunner {
+public class TinkerQueryRunner implements QueryRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalQueryRunner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TinkerQueryRunner.class);
 
     @Override
     public Stream<Answer> run(GetQuery query) {

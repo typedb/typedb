@@ -964,7 +964,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public QueryRunner queryRunner() {
         // TODO apologise
         try {
-            Constructor<? extends QueryRunner> queryRunnerConstructor = (Constructor<? extends QueryRunner>) Class.forName("ai.grakn.graql.internal.query.LocalQueryRunner").getConstructor();
+            Constructor<? extends QueryRunner> queryRunnerConstructor = (Constructor<? extends QueryRunner>) Class.forName("ai.grakn.graql.internal.query.TinkerQueryRunner").getConstructor();
             return queryRunnerConstructor.newInstance();
         } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
             // I'm sure this is fine
