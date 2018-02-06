@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
 
 import java.util.Optional;
 
@@ -32,8 +31,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> i
     }
 
     @Override
-    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
-        return execWithMapReduce(tx, computer, MaxMapReduce::new);
+    protected Optional<Number> execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

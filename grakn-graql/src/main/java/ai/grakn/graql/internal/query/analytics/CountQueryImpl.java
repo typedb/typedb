@@ -18,23 +18,17 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
-import ai.grakn.graql.internal.analytics.CountVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
 
 class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements CountQuery {
 
@@ -43,33 +37,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     @Override
-    protected final Long innerExecute(GraknTx tx, GraknComputer computer) {
-        if (!selectedTypesHaveInstance(tx)) {
-            LOGGER.debug("Count = 0");
-            return 0L;
-        }
-
-        Set<LabelId> typeLabelIds = convertLabelsToIds(tx, subLabels(tx));
-        Map<Integer, Long> count;
-
-        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds(tx);
-        rolePlayerLabelIds.addAll(typeLabelIds);
-
-        ComputerResult result = computer.compute(
-                new CountVertexProgram(),
-                new CountMapReduceWithAttribute(),
-                rolePlayerLabelIds, false);
-        count = result.memory().get(CountMapReduceWithAttribute.class.getName());
-
-        long finalCount = count.keySet().stream()
-                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
-                .mapToLong(count::get).sum();
-        if (count.containsKey(RESERVED_TYPE_LABEL_KEY)) {
-            finalCount += count.get(RESERVED_TYPE_LABEL_KEY);
-        }
-
-        LOGGER.debug("Count = " + finalCount);
-        return finalCount;
+    protected Long execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

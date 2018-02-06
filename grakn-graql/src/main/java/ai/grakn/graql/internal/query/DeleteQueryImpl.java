@@ -30,12 +30,9 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
@@ -52,9 +49,8 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public Void execute() {
-        List<Answer> results = match().stream().collect(toList());
-        results.forEach(this::deleteResult);
+    public final Void execute() {
+        tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
         return null;
     }
 

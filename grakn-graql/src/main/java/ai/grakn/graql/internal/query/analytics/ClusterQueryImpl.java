@@ -18,22 +18,12 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.LabelId;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ClusterQuery;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
-import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,42 +40,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    protected final T innerExecute(GraknTx tx, GraknComputer computer) {
-        if (!selectedTypesHaveInstance(tx)) {
-            LOGGER.info("Selected types don't have instances");
-            return (T) Collections.emptyMap();
-        }
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
-
-        GraknVertexProgram<?> vertexProgram;
-        if (sourceId.isPresent()) {
-            ConceptId conceptId = sourceId.get();
-            if (!verticesExistInSubgraph(tx, conceptId)) {
-                throw GraqlQueryException.instanceDoesNotExist();
-            }
-            vertexProgram = new ConnectedComponentVertexProgram(conceptId);
-        } else {
-            vertexProgram = new ConnectedComponentsVertexProgram();
-        }
-
-        GraknMapReduce<?> mapReduce;
-        if (members) {
-            if (anySize) {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            } else {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-            }
-        } else {
-            if (anySize) {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            } else {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-            }
-        }
-
-        Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
-        return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
+    protected T execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

@@ -24,6 +24,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -76,6 +77,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -956,5 +958,17 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public long getShardCount(Type concept){
         return TypeImpl.from(concept).shardCount();
+    }
+
+    @Override
+    public QueryRunner queryRunner() {
+        // TODO apologise
+        try {
+            Constructor<? extends QueryRunner> queryRunnerConstructor = (Constructor<? extends QueryRunner>) Class.forName("ai.grakn.graql.internal.query.LocalQueryRunner").getConstructor();
+            return queryRunnerConstructor.newInstance();
+        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            // I'm sure this is fine
+            throw new RuntimeException(e);
+        }
     }
 }

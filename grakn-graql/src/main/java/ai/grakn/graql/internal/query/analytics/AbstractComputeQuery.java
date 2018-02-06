@@ -72,27 +72,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public final T execute() {
-        GraknTx tx = tx().orElseThrow(GraqlQueryException::noTx);
-
-        LOGGER.info(toString() + " started");
-        long startTime = System.currentTimeMillis();
-
-        // TODO: is this definitely the right behaviour if the computer is already present?
-        if (graknComputer == null) {
-            graknComputer = tx.session().getGraphComputer();
-        }
-
-        T result = innerExecute(tx, graknComputer);
-
-        LOGGER.info(toString() + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
-
-        return result;
-    }
-
-    protected abstract T innerExecute(GraknTx tx, GraknComputer computer);
-
-    @Override
     public final Optional<GraknTx> tx() {
         return tx;
     }

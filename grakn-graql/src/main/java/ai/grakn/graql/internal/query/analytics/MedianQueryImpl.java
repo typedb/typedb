@@ -18,16 +18,11 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
+import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.internal.analytics.MedianVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Optional;
-import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
@@ -36,20 +31,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
     }
 
     @Override
-    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
-        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
-        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
-
-        ComputerResult result = computer.compute(
-                new MedianVertexProgram(statisticsResourceLabelIds, dataType),
-                null, allSubLabelIds);
-
-        Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
-        LOGGER.debug("Median = " + finalResult);
-
-        return Optional.of(finalResult);
+    protected Optional<Number> execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

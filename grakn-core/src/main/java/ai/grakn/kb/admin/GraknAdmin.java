@@ -19,6 +19,7 @@
 package ai.grakn.kb.admin;
 
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -217,4 +218,6 @@ public interface GraknAdmin {
      * @return the number of Shards the {@link Type} currently has.
      */
     long getShardCount(Type type);
+
+    QueryRunner queryRunner();
 }

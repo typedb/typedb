@@ -18,15 +18,13 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathsQuery;
-import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -36,7 +34,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -57,34 +54,8 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    protected final List<List<Concept>> innerExecute(GraknTx tx, GraknComputer computer) {
-        if (sourceId == null) throw GraqlQueryException.noPathSource();
-        if (destinationId == null) throw GraqlQueryException.noPathDestination();
-
-        if (!verticesExistInSubgraph(tx, sourceId, destinationId)) {
-            throw GraqlQueryException.instanceDoesNotExist();
-        }
-        if (sourceId.equals(destinationId)) {
-            return Collections.singletonList(Collections.singletonList(tx.<Thing>getConcept(sourceId)));
-        }
-
-        ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
-        try {
-            result = computer.compute(
-                    new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
-        } catch (NoResultException e) {
-            return Collections.emptyList();
-        }
-
-        Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(tx, result);
-        List<List<Concept>> allPaths = getAllPaths(tx, predecessorMapFromSource);
-        if (getIncludeAttribute()) { // this can be slow
-            return getExtendedPaths(tx, allPaths);
-        }
-
-        LOGGER.info("Number of paths: " + allPaths.size());
-        return allPaths;
+    protected List<List<Concept>> execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     // If the sub graph contains attributes, we may need to add implicit relations to the paths

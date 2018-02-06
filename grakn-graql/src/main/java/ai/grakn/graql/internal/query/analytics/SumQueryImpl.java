@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.SumMapReduce;
 
 import java.util.Optional;
 
@@ -32,8 +31,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     }
 
     @Override
-    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
-        return execWithMapReduce(tx, computer, SumMapReduce::new);
+    protected Optional<Number> execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

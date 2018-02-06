@@ -18,12 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.QueryRunner;
 import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
 
-import java.util.Map;
 import java.util.Optional;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
@@ -33,12 +31,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
     }
 
     @Override
-    protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
-        Optional<Map<String, Double>> result = execWithMapReduce(tx, computer, MeanMapReduce::new);
-
-        return result.map(meanPair ->
-                meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
-        );
+    protected Optional<Double> execute(QueryRunner queryRunner) {
+        return queryRunner.run(this);
     }
 
     @Override

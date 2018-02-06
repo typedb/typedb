@@ -41,8 +41,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
-
 /**
  * A query that will insert a collection of variables into a graph
  */
@@ -87,16 +85,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public Stream<Answer> stream() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
-
-        Collection<VarPatternAdmin> varPatterns = allVarPatterns().collect(toImmutableList());
-
-        return match().map(
-                query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(varPatterns, theGraph, answer))
-        ).orElseGet(
-                () -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, theGraph))
-        );
+    public final Stream<Answer> stream() {
+        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner().run(this);
     }
 
     @Override
