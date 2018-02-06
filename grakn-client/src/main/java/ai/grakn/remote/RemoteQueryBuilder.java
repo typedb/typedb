@@ -114,10 +114,4 @@ class RemoteQueryBuilder implements QueryBuilder {
     public QueryBuilder materialise(boolean materialise) {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public <T> T execute(Query<T> query) {
-        // If the server is working correctly, then this cast is safe
-        return (T) client.execQuery(query, infer);
-    }
 }

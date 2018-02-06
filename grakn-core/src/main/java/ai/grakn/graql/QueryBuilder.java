@@ -113,8 +113,4 @@ public interface QueryBuilder {
      * Enable or disable materialisation
      */
     QueryBuilder materialise(boolean materialise);
-
-    default <T> T execute(Query<T> query) {
-        throw new UnsupportedOperationException();
-    }
 }

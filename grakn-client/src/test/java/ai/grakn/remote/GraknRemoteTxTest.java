@@ -23,9 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknException;
-import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -161,14 +159,12 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
-        Query<?> query = mock(Query.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
 
-            tx.graql().execute(query);
+            tx.graql().parse(queryString).execute();
         }
 
         verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
@@ -176,9 +172,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_GetAResultBack() {
-        GetQuery query = mock(GetQuery.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -201,7 +195,7 @@ public class GraknRemoteTxTest {
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
-            results = tx.graql().execute(query);
+            results = tx.graql().<GetQuery>parse(queryString).execute();
         }
 
         Answer answer = Iterables.getOnlyElement(results);
@@ -211,9 +205,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
-        DeleteQuery query = mock(DeleteQuery.class);
         String queryString = "match $x isa person; delete $x;";
-        when(query.toString()).thenReturn(queryString);
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -223,15 +215,13 @@ public class GraknRemoteTxTest {
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
-            assertNull(tx.graql().execute(query));
+            assertNull(tx.graql().parse(queryString).execute());
         }
     }
 
     @Test
     public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
-        AggregateQuery<Boolean> query = mock(AggregateQuery.class);
         String queryString = "match $x isa person; aggregate ask;";
-        when(query.toString()).thenReturn(queryString);
 
         doAnswer(args -> {
             assert serverResponses != null;
@@ -247,15 +237,13 @@ public class GraknRemoteTxTest {
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
-            assertTrue(tx.graql().execute(query));
+            assertTrue(tx.graql().<Query<Boolean>>parse(queryString).execute());
         }
     }
 
     @Test
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
-        DefineQuery query = mock(DefineQuery.class);
         String queryString = "define person sub entity;";
-        when(query.toString()).thenReturn(queryString);
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -278,7 +266,7 @@ public class GraknRemoteTxTest {
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
-            answer = tx.graql().execute(query);
+            answer = tx.graql().<DefineQuery>parse(queryString).execute();
         }
 
         assertEquals(answer.vars(), ImmutableSet.of(var("x")));
@@ -287,21 +275,17 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
-        Query<?> query = mock(Query.class);
         String queryString = "match $x isa person; get $x;";
-        when(query.toString()).thenReturn(queryString);
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
 
             QueryBuilder graql = tx.graql();
 
-            graql.infer(true);
-            graql.execute(query);
+            graql.infer(true).parse(queryString).execute();
             verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString, true));
 
-            graql.infer(false);
-            graql.execute(query);
+            graql.infer(false).parse(queryString).execute();
             verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString, false));
         }
     }
