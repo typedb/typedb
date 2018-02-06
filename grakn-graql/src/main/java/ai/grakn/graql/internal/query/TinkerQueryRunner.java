@@ -363,52 +363,25 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Number> run(MaxQuery query) {
-        return runCompute(query, (tx, computer) -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) return Optional.empty();
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
-
-            ComputerResult result = computer.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    new MaxMapReduce(statisticsResourceLabelIds, dataType,
-                            DegreeVertexProgram.DEGREE),
-                    allSubLabelIds);
-            Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
-
-            LOG.debug("Max = " + max.get(MapReduce.NullObject.instance()));
-            return Optional.of(max.get(MapReduce.NullObject.instance()));
-        });
+        return execWithMapReduce(query, MaxMapReduce::new);
     }
 
     @Override
     public Optional<Double> run(MeanQuery query) {
-        return runCompute(query, (tx, computer) -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) return Optional.empty();
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
+        Optional<Map<String, Double>> result = execWithMapReduce(query, MeanMapReduce::new);
 
-            ComputerResult result = computer.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    new MeanMapReduce(statisticsResourceLabelIds, dataType,
-                            DegreeVertexProgram.DEGREE),
-                    allSubLabelIds);
-            Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
-            Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
-
-            double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-            LOG.debug("Mean = " + finalResult);
-
-            return Optional.of(finalResult);
-        });
+        return result.map(meanPair ->
+                meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
+        );
     }
 
     @Override
     public Optional<Number> run(MedianQuery query) {
         return runCompute(query, (tx, computer) -> {
             AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) return Optional.empty();
+            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
+                return Optional.empty();
+            }
             Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
             Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
 
@@ -425,22 +398,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Number> run(MinQuery query) {
-        return runCompute(query, (tx, computer) -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) return Optional.empty();
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
-
-            ComputerResult result = computer.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    new MinMapReduce(statisticsResourceLabelIds, dataType,
-                            DegreeVertexProgram.DEGREE),
-                    allSubLabelIds);
-            Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
-
-            LOG.debug("Min = " + min.get(MapReduce.NullObject.instance()));
-            return Optional.of(min.get(MapReduce.NullObject.instance()));
-        });
+        return execWithMapReduce(query, MinMapReduce::new);
     }
 
     @Override
@@ -488,58 +446,22 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Double> run(StdQuery query) {
-        return runCompute(query, (tx, computer) -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
-                return Optional.empty();
-            }
+        Optional<Map<String, Double>> result = execWithMapReduce(query, StdMapReduce::new);
 
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
-
-            ComputerResult result = computer.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    new StdMapReduce(statisticsResourceLabelIds, dataType,
-                            DegreeVertexProgram.DEGREE),
-                    allSubLabelIds);
-            Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
-            Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
+        return result.map(stdTuple -> {
             double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
             double sum = stdTuple.get(StdMapReduce.SUM);
             double count = stdTuple.get(StdMapReduce.COUNT);
-
-            double finalResult = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
-            LOG.debug("Std = " + finalResult);
-
-            return Optional.of(finalResult);
+            return Math.sqrt(squareSum / count - (sum / count) * (sum / count));
         });
     }
 
     @Override
     public Optional<Number> run(SumQuery query) {
-        return runCompute(query, (tx, computer) -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
-            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
-                return Optional.empty();
-            }
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
-
-            ComputerResult result = computer.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    new SumMapReduce(statisticsResourceLabelIds, dataType,
-                            DegreeVertexProgram.DEGREE),
-                    allSubLabelIds);
-            Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
-
-            Number finalResult = sum.get(MapReduce.NullObject.instance());
-            LOG.info("Sum = " + finalResult);
-
-            return Optional.of(finalResult);
-        });
+        return execWithMapReduce(query, SumMapReduce::new);
     }
 
-    private <T, Q extends ComputeQuery<T>> T runCompute(Q query, ComputeRunner<T> runner) {
+    private static <T, Q extends ComputeQuery<?>> T runCompute(Q query, ComputeRunner<T> runner) {
         GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
 
         LOG.info(query + " started");
@@ -549,7 +471,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
         T result = runner.apply(tx, computer);
 
-        LOG.info(toString() + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
+        LOG.info(query + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
 
         return result;
     }
@@ -812,5 +734,35 @@ public class TinkerQueryRunner implements QueryRunner {
     @Nullable
     private static Thing getConcept(GraknTx tx, String conceptId) {
         return tx.getConcept(ConceptId.of(conceptId));
+    }
+
+    private static <T, Q extends ComputeQueryOf<?>> Optional<T> execWithMapReduce(
+            Q query, MapReduceFactory<T> mapReduceFactory) {
+
+        return runCompute(query, (tx, computer) -> {
+            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
+            if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
+                return Optional.empty();
+            }
+            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(query, tx));
+            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(query, tx));
+
+            GraknMapReduce<T> mapReduce =
+                    mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+
+            ComputerResult result = computer.compute(
+                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                    mapReduce,
+                    allSubLabelIds);
+            Map<Serializable, T> map = result.memory().get(mapReduce.getClass().getName());
+
+            LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
+            return Optional.of(map.get(MapReduce.NullObject.instance()));
+        });
+    }
+
+    interface MapReduceFactory<S> {
+        GraknMapReduce<S> get(
+                Set<LabelId> statisticsResourceLabelIds, AttributeType.DataType<?> dataType, String degreePropertyKey);
     }
 }

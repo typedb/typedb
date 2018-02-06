@@ -19,15 +19,9 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements CountQuery {
 
@@ -43,17 +37,5 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     @Override
     String graqlString() {
         return "count" + subtypeString();
-    }
-
-    private Set<LabelId> getRolePlayerLabelIds(GraknTx tx) {
-        return subTypes(tx)
-                .filter(Concept::isRelationshipType)
-                .map(Concept::asRelationshipType)
-                .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::relates)
-                .flatMap(Role::playedByTypes)
-                .map(type -> tx.admin().convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
     }
 }

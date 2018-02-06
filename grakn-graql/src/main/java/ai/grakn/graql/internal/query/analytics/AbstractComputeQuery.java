@@ -20,40 +20,22 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         extends AbstractExecutableQuery<T> implements ComputeQuery<T> {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
     private Optional<GraknTx> tx;
     private GraknComputer graknComputer = null;
@@ -98,10 +80,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return subLabels;
     }
 
-    final ImmutableSet<Label> subLabels(GraknTx tx) {
-        return subTypes(tx).map(SchemaConcept::getLabel).collect(toImmutableSet());
-    }
-
     @Override
     public final V includeAttribute() {
         this.includeAttribute = true;
@@ -133,25 +111,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         });
     }
 
-    final boolean selectedTypesHaveInstance(GraknTx tx) {
-        if (subLabels(tx).isEmpty()) {
-            LOGGER.info("No types found while looking for instances");
-            return false;
-        }
-
-        List<Pattern> checkSubtypes = subLabels(tx).stream()
-                .map(type -> var("x").isa(Graql.label(type))).collect(toList());
-        return tx.graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
-    }
-
-    final boolean verticesExistInSubgraph(GraknTx tx, ConceptId... ids) {
-        for (ConceptId id : ids) {
-            Thing thing = tx.getConcept(id);
-            if (thing == null || !subLabels(tx).contains(thing.type().getLabel())) return false;
-        }
-        return true;
-    }
-
     abstract String graqlString();
 
     final String subtypeString() {
@@ -162,36 +121,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     @Override
     public final String toString() {
         return "compute " + graqlString();
-    }
-
-    final Stream<Type> subTypes(GraknTx tx) {
-        // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        if (subLabels.isEmpty()) {
-            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
-
-            if (getIncludeAttribute()) {
-                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
-            } else {
-                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
-                tx.admin().getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
-            }
-
-            return subTypesBuilder.build().stream();
-        } else {
-            Stream<Type> subTypes = subLabels.stream().map(label -> {
-                Type type = tx.getType(label);
-                if (type == null) throw GraqlQueryException.labelNotFound(label);
-                return type;
-            }).flatMap(Type::subs);
-
-            if (!getIncludeAttribute()) {
-                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
-            }
-
-            return subTypes;
-        }
     }
 
     @Override
@@ -210,12 +139,5 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         result = 31 * result + Boolean.hashCode(includeAttribute);
         result = 31 * result + subLabels.hashCode();
         return result;
-    }
-
-    final Set<LabelId> convertLabelsToIds(GraknTx tx, Set<Label> labelSet) {
-        return labelSet.stream()
-                .map(tx.admin()::convertToId)
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
     }
 }

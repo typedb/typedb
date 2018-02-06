@@ -19,12 +19,9 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -72,20 +69,6 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     @Override
     public DeleteQueryAdmin admin() {
         return this;
-    }
-
-    private void deleteResult(Answer result) {
-        Collection<? extends Var> toDelete = vars().isEmpty() ? result.vars() : vars();
-
-        for (Var var : toDelete) {
-            Concept concept = result.get(var);
-
-            if (concept.isSchemaConcept()) {
-                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
-            }
-
-            concept.delete();
-        }
     }
 
     @Override
