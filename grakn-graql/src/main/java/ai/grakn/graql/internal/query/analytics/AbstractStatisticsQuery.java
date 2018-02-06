@@ -20,54 +20,45 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.API;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
+import ai.grakn.graql.ComputeQueryOf;
 import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
-        extends AbstractComputeQuery<T, V> {
+abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
+        extends AbstractComputeQuery<T, V> implements ComputeQueryOf<T> {
 
-    Set<Label> statisticsResourceLabels = new HashSet<>();
-    Set<Type> statisticsResourceTypes = new HashSet<>();
+    private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
+
+    AbstractStatisticsQuery(Optional<GraknTx> tx) {
+        super(tx);
+    }
 
     @API
     public V of(String... statisticsResourceTypeLabels) {
-        this.statisticsResourceLabels =
-                Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return (V) this;
+        return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     @API
     public V of(Collection<Label> statisticsResourceLabels) {
-        this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
+        this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
+    }
+
+    public final Collection<? extends Label> ofLabels() {
+        return statisticsResourceLabels;
     }
 
     @Override
     public boolean isStatisticsQuery() {
         return true;
-    }
-
-    @Override
-    void getAllSubTypes() {
-        super.getAllSubTypes();
-        getResourceTypes(tx.get());
     }
 
     @Override
@@ -80,78 +71,6 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     private String resourcesString() {
         return " of " + statisticsResourceLabels.stream()
                 .map(StringConverter::typeLabelToString).collect(joining(", "));
-    }
-
-    private void getResourceTypes(GraknTx graph) {
-        if (statisticsResourceLabels.isEmpty()) {
-            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
-        }
-
-        statisticsResourceTypes = statisticsResourceLabels.stream()
-                .map((label) -> {
-                    Type type = graph.getSchemaConcept(label);
-                    if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-                    return type;
-                })
-                .flatMap(Type::subs)
-                .collect(Collectors.toSet());
-        statisticsResourceLabels = statisticsResourceTypes.stream()
-                .map(SchemaConcept::getLabel)
-                .collect(Collectors.toSet());
-    }
-
-    @Nullable
-    AttributeType.DataType getDataTypeOfSelectedResourceTypes() {
-        AttributeType.DataType dataType = null;
-        for (Type type : statisticsResourceTypes) {
-            // check if the selected type is a resource-type
-            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-            AttributeType resourceType = (AttributeType) type;
-            if (dataType == null) {
-                // check if the resource-type has data-type LONG or DOUBLE
-                dataType = resourceType.getDataType();
-                if (!dataType.equals(AttributeType.DataType.LONG) &&
-                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType.getLabel());
-                }
-
-            } else {
-                // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceType.getDataType())) {
-                    throw GraqlQueryException.resourcesWithDifferentDataTypes(statisticsResourceLabels);
-                }
-            }
-        }
-        return dataType;
-    }
-
-    boolean selectedResourceTypesHaveInstance(Set<Label> statisticsResourceTypes) {
-        for (Label resourceType : statisticsResourceTypes) {
-            for (Label type : subLabels) {
-                Boolean patternExist = tx.get().graql().infer(false).match(
-                        var("x").has(resourceType, var()),
-                        var("x").isa(Graql.label(type))
-                ).iterator().hasNext();
-                if (patternExist) return true;
-            }
-        }
-        return false;
-        //TODO: should use the following ask query when ask query is even lazier
-//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-//                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-//        List<Pattern> checkSubtypes = subLabels.stream()
-//                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-//
-//        return tx.get().graql().infer(false)
-//                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
-    }
-
-    Set<Label> getCombinedSubTypes() {
-        Set<Label> allSubTypes = getHasResourceRelationLabels(statisticsResourceTypes);
-        allSubTypes.addAll(subLabels);
-        allSubTypes.addAll(statisticsResourceLabels);
-        return allSubTypes;
     }
 
     @Override

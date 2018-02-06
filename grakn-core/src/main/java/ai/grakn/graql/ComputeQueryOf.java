@@ -18,22 +18,30 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.concept.Label;
+
+import java.util.Collection;
 
 /**
- * An aggregate query produced from a {@link Match}.
+ * yes this is a bad name TODO
  *
- * @param <T> the type of the result of the aggregate query
+ * @param <T> the type of result this query will return
  *
  * @author Felix Chapman
  */
-public interface AggregateQuery<T> extends Query<T> {
+public interface ComputeQueryOf<T> extends ComputeQuery<T> {
 
-    @Override
-    AggregateQuery<T> withTx(GraknTx tx);
+    /**
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a ComputeQuery with the subTypeLabels set
+     */
+    ComputeQueryOf<T> of(String... resourceTypeLabels);
 
-    Match match();
+    /**
+     * @param resourceLabels a collection of types of resources to execute the query on
+     * @return a ComputeQuery with the subTypeLabels set
+     */
+    ComputeQueryOf<T> of(Collection<Label> resourceLabels);
 
-    Aggregate<? super Answer, T> aggregate();
+    Collection<? extends Label> ofLabels();
 }

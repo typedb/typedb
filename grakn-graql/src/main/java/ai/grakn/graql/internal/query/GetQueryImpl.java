@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -28,10 +27,11 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Default implementation of {@link GetQuery}
@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toList;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class GetQueryImpl implements GetQuery {
+public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
@@ -50,13 +50,8 @@ public abstract class GetQueryImpl implements GetQuery {
     }
 
     @Override
-    public List<Answer> execute() {
-        return stream().collect(toList());
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        return stream().map(converter::convert);
+    public final Optional<? extends GraknTx> tx() {
+        return match().admin().tx();
     }
 
     @Override
@@ -65,12 +60,17 @@ public abstract class GetQueryImpl implements GetQuery {
     }
 
     @Override
-    public Stream<Answer> stream() {
-        return match().stream().map(result -> result.project(vars())).distinct();
+    public final Stream<Answer> stream() {
+        return queryRunner().run(this);
     }
 
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+    }
+
+    @Override
+    public final List<Answer> execute() {
+        return stream().collect(Collectors.toList());
     }
 }

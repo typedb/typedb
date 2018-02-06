@@ -16,26 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.analytics;
+package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.analytics.MeanQuery;
+import java.util.stream.Stream;
 
-import java.util.Optional;
-
-class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
-
-    MeanQueryImpl(Optional<GraknTx> tx) {
-        super(tx);
-    }
-
-    @Override
-    public final Optional<Double> execute() {
-        return queryRunner().run(this);
-    }
+/**
+ * Abstract class for queries that have a single result such as {@link DefineQueryImpl} and {@link AggregateQueryImpl}.
+ *
+ * @param <T> The type of result to return
+ *
+ * @author Felix Chapman
+ */
+public abstract class AbstractExecutableQuery<T> extends AbstractQuery<T, T> {
 
     @Override
-    String getName() {
-        return "mean";
+    protected final Stream<T> stream() {
+        return Stream.of(execute());
     }
 }
