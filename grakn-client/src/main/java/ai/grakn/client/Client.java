@@ -18,80 +18,24 @@
 
 package ai.grakn.client;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.util.Properties;
 
 /**
  * Providing useful methods for the user of the GraknEngine client
  *
  * @author alexandraorth
  */
-public class Client {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-
-    private enum EngineStatus {
-        Running(0),
-        NotRunning(1),
-        Error(2);
-
-        private final int exitCode;
-
-        EngineStatus(int exitCode) {
-            this.exitCode = exitCode;
-        }
-    }
-
-    public static void main(String[] args) {
-        EngineStatus engineStatus;
-        try {
-            engineStatus = checkServerRunning();
-        } catch (Exception e) {
-            LOG.error("An unexpected error occurred", e);
-            engineStatus = EngineStatus.Error;
-        }
-        System.exit(engineStatus.exitCode);
-    }
-
-    private static EngineStatus checkServerRunning() throws IOException {
-        String confPath = GraknSystemProperty.CONFIGURATION_FILE.value();
-
-        if (confPath == null) {
-            String msg = "System property `" + GraknSystemProperty.CONFIGURATION_FILE.key() + "` has not been set";
-            LOG.error(msg);
-            return EngineStatus.Error;
-        }
-
-        Properties properties = new Properties();
-        try (FileInputStream stream = new FileInputStream(confPath)) {
-            properties.load(stream);
-        }
-
-        String host = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name());
-        int port = Integer.parseInt(properties.getProperty(GraknConfigKey.SERVER_PORT.name()));
-        if (serverIsRunning(new SimpleURI(host, port))) {
-            LOG.info("Server " + host + ":" + port + " is running");
-            return EngineStatus.Running;
-        } else {
-            LOG.info("Server " + host + ":" + port + " is not running");
-            return EngineStatus.NotRunning;
-        }
-    }
+public final class Client {
 
     /**
      * Check if Grakn Engine has been started
