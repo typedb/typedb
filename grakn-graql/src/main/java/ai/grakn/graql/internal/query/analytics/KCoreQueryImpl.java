@@ -65,9 +65,14 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    public KCoreQuery kValue(long kValue) {
+    public final KCoreQuery kValue(long kValue) {
         k = kValue;
         return this;
+    }
+
+    @Override
+    public long kValue() {
+        return k;
     }
 
     @Override

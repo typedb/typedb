@@ -96,6 +96,11 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
+    public final long minK() {
+        return k;
+    }
+
+    @Override
     CentralityMeasure getMethod() {
         return CentralityMeasure.K_CORE;
     }

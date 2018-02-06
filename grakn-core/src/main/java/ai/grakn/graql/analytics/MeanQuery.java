@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.ComputeQueryOf;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface MeanQuery extends ComputeQuery<Optional<Double>> {
+public interface MeanQuery extends ComputeQueryOf<Optional<Double>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on

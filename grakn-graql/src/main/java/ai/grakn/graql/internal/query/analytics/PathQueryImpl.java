@@ -22,6 +22,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 
@@ -54,9 +55,21 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     }
 
     @Override
+    public final ConceptId from() {
+        if (sourceId == null) throw GraqlQueryException.noPathSource();
+        return sourceId;
+    }
+
+    @Override
     public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
+    }
+
+    @Override
+    public final ConceptId to() {
+        if (destinationId == null) throw GraqlQueryException.noPathDestination();
+        return destinationId;
     }
 
     @Override

@@ -72,7 +72,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         return (V) this;
     }
 
-    final Set<Label> ofLabels() {
+    public final Set<Label> ofLabels() {
         return ofLabels;
     }
 

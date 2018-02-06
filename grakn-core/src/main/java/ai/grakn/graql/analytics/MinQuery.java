@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.ComputeQueryOf;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface MinQuery extends ComputeQuery<Optional<Number>> {
+public interface MinQuery extends ComputeQueryOf<Optional<Number>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on

@@ -107,6 +107,11 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return (V) this;
     }
 
+    @Override
+    public final ImmutableSet<Label> subLabels() {
+        return subLabels;
+    }
+
     final ImmutableSet<Label> subLabels(GraknTx tx) {
         return subTypes(tx).map(SchemaConcept::getLabel).collect(toImmutableSet());
     }
@@ -117,7 +122,8 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         return (V) this;
     }
 
-    final boolean getIncludeAttribute() {
+    @Override
+    public final boolean getIncludeAttribute() {
         return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
     }
 

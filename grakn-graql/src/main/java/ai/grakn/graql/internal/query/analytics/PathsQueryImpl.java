@@ -181,9 +181,21 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
+    public final ConceptId from() {
+        if (sourceId == null) throw GraqlQueryException.noPathSource();
+        return sourceId;
+    }
+
+    @Override
     public PathsQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
+    }
+
+    @Override
+    public final ConceptId to() {
+        if (destinationId == null) throw GraqlQueryException.noPathDestination();
+        return destinationId;
     }
 
     @Override

@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -94,9 +95,19 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
+    public final boolean membersSet() {
+        return members;
+    }
+
+    @Override
     public ClusterQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
+    }
+
+    @Override
+    public final Optional<ConceptId> sourceId() {
+        return sourceId;
     }
 
     @Override
@@ -104,6 +115,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;
+    }
+
+    @Override
+    @Nullable
+    public final Long clusterSize() {
+        return anySize ? null : clusterSize;
     }
 
     @Override

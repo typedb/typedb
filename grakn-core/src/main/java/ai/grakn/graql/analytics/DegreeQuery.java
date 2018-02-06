@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.ComputeQueryOf;
 
 import java.util.Collection;
 import java.util.Map;
@@ -31,7 +31,7 @@ import java.util.Set;
  *
  * @author Jason Liu
  */
-public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
+public interface DegreeQuery extends ComputeQueryOf<Map<Long, Set<String>>> {
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph

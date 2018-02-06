@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.ComputeQueryOf;
 
 import java.util.Collection;
 import java.util.Map;
@@ -35,13 +35,15 @@ import java.util.Set;
  *
  * @author Jason Liu
  */
-public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
+public interface CorenessQuery extends ComputeQueryOf<Map<Long, Set<String>>> {
 
     /**
      * @param k set the min value of coreness in k-core. Be default, k = 2.
      * @return a CorenessQuery with min value of coreness set
      */
     CorenessQuery minK(long k);
+
+    long minK();
 
     /**
      * @param ofTypeLabels an array of types in the subgraph to compute coreness of. By default the coreness of all
