@@ -141,6 +141,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         }
     }
 
+    @SuppressWarnings("unused")/**Used through {@link Open} annotation*/
     public void configure(@SuppressWarnings("unused") Open open) {
         setOpen(open.value());
     }

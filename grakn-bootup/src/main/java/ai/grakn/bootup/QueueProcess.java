@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
  *
  * @author Michele Orsi
  */
-public class QueueProcess extends AbstractProcessHandler implements ProcessHandler {
+public class QueueProcess extends AbstractProcessHandler {
     private static final String QUEUE_PROCESS_NAME = "redis-server";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;

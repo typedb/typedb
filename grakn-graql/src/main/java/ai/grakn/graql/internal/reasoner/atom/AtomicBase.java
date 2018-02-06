@@ -106,7 +106,6 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
 
-    @Override
     public Atomic inferTypes(Answer sub){ return this; }
 
     /**

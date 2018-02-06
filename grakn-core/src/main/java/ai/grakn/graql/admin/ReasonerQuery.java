@@ -125,4 +125,5 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
+
 }

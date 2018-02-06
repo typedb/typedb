@@ -16,26 +16,22 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.grakn_pid;
+package ai.grakn;
 
-import java.nio.file.Path;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * <p>
+ *     We use this annotation to more clearly define our public api.
+ *     It is also useful finding dead code.
+ * </p>
  *
- * A class which manages grakn engine's PID
- *
- * @author Ganeshwara Herawan Hananda
- *
+ * @author Filipe Peliz Pinto Teixeira
  */
-public class PidFileAlreadyExistsException extends RuntimeException {
-    private Path pidFilePath;
-
-    public PidFileAlreadyExistsException(Path pidFilePath) {
-        super("pid file already exists: '" + pidFilePath.toString());
-        this.pidFilePath = pidFilePath;
-    }
-
-    public Path getPidFilePath() {
-        return pidFilePath;
-    }
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.METHOD)
+public @interface API {
 }

@@ -66,7 +66,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             VertexComputeKey.of(K_CORE_LABEL, false),
             VertexComputeKey.of(IMPLICIT_MESSAGE_COUNT, true));
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused") //Needed internally for OLAP tasks
     public KCoreVertexProgram() {
     }
 

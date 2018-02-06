@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,6 +50,11 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
+    public final Optional<? extends GraknTx> tx() {
+        return match().admin().tx();
+    }
+
+    @Override
     public boolean isReadOnly() {
         return true;
     }
@@ -58,11 +62,6 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     @Override
     public Stream<Answer> stream() {
         return match().stream().map(result -> result.project(vars())).distinct();
-    }
-
-    @Nullable
-    public Optional<GraknTx> tx() {
-        return match().admin().tx();
     }
 
     @Override

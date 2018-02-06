@@ -77,7 +77,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
             MemoryComputeKey.of(PATH_HAS_MIDDLE_POINT, Operator.and, false, true)
     );
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused") //Needed internally for OLAP tasks
     public ShortestPathVertexProgram() {
     }
 

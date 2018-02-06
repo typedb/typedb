@@ -65,10 +65,6 @@ class EdgeQueueMap<V> {
             edges.add(exclusiveEdge);
         }
 
-        public Optional<ExclusiveEdge<V>> popBestEdge() {
-            return popBestEdge(Arborescence.empty());
-        }
-
         /**
          * Always breaks ties in favor of edges in bestArborescence
          */

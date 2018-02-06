@@ -65,7 +65,6 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatib
  */
 public abstract class Atom extends AtomicBase {
 
-    private int basePriority = Integer.MAX_VALUE;
     private Set<InferenceRule> applicableRules = null;
 
     protected Atom(VarPattern pattern, ReasonerQuery par) {
@@ -144,20 +143,12 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
+    public Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
     /**
      * @return set of variables that need to be have their roles expanded
      */
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
-
-    /**
-     * compute base resolution priority of this atom
-     * @return priority value
-     */
-    private int computePriority(){
-        return computePriority(getPartialSubstitutions().map(IdPredicate::getVarName).collect(Collectors.toSet()));
-    }
 
     /**
      * compute resolution priority based on provided substitution variables
@@ -182,16 +173,6 @@ public abstract class Atom extends AtomicBase {
                 .map(Predicate::getPredicate)
                 .filter(v -> !subbedVars.contains(v)).count() * SimplePlanner.INEQUALITY_PREDICATE;
         return priority;
-    }
-
-    /**
-     * @return measure of priority with which this atom should be resolved
-     */
-    public int baseResolutionPriority(){
-        if (basePriority == Integer.MAX_VALUE) {
-            basePriority = computePriority();
-        }
-        return basePriority;
     }
 
     private boolean isRuleApplicable(InferenceRule child){

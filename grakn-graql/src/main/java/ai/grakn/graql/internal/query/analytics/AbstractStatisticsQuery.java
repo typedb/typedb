@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -51,10 +52,12 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
         super(tx);
     }
 
+    @API
     public V of(String... statisticsResourceTypeLabels) {
         return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
+    @API
     public V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
