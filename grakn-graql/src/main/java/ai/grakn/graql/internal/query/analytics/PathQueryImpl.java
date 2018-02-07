@@ -44,7 +44,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     @Override
     protected final Optional<List<Concept>> innerExecute(GraknTx tx, GraknComputer computer) {
         PathsQuery pathsQuery = new PathsQueryImpl(Optional.of(tx));
-        if (getIncludeAttribute()) pathsQuery = pathsQuery.includeAttribute();
+        if (isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(sourceId).to(destinationId).in(subLabels(tx)).execute().stream().findAny();
     }
 

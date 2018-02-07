@@ -69,7 +69,7 @@ public interface ComputeQuery<T> extends Query<T> {
     /**
      * Get if this query will include attributes and their relationships
      */
-    boolean getIncludeAttribute();
+    boolean isAttributeIncluded();
 
     /**
      * Whether this query will modify the graph

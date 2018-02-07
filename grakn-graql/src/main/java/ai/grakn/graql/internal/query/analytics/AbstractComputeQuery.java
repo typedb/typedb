@@ -130,7 +130,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public final boolean getIncludeAttribute() {
+    public final boolean isAttributeIncluded() {
         return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
     }
 
@@ -191,7 +191,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         if (subLabels.isEmpty()) {
             ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
 
-            if (getIncludeAttribute()) {
+            if (isAttributeIncluded()) {
                 tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
             } else {
                 tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
@@ -207,7 +207,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
                 return type;
             }).flatMap(Type::subs);
 
-            if (!getIncludeAttribute()) {
+            if (!isAttributeIncluded()) {
                 subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
             }
 

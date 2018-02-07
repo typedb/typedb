@@ -79,7 +79,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
 
         Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(tx, result);
         List<List<Concept>> allPaths = getAllPaths(tx, predecessorMapFromSource);
-        if (getIncludeAttribute()) { // this can be slow
+        if (isAttributeIncluded()) { // this can be slow
             return getExtendedPaths(tx, allPaths);
         }
 
