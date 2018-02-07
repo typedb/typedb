@@ -219,8 +219,10 @@ public class GreedyTraversalPlan {
             Set<Type> possibleRelationShipTypes =
                     new HashSet<>(relationshipMap.get(instanceVarTypeMap.get(firstRolePlayer)));
             while (rolePlayerVarIterator.hasNext()) {
-                possibleRelationShipTypes.retainAll(
-                        relationshipMap.get(instanceVarTypeMap.get(rolePlayerVarIterator.next())));
+                Var nextRolePlayer = rolePlayerVarIterator.next();
+                if (instanceVarTypeMap.containsKey(nextRolePlayer)) {
+                    possibleRelationShipTypes.retainAll(relationshipMap.get(instanceVarTypeMap.get(nextRolePlayer)));
+                }
             }
             if (possibleRelationShipTypes.size() == 1 && !instanceVarTypeMap.containsKey(relationshipVar)) {
 

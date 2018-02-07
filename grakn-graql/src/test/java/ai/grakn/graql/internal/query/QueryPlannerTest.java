@@ -137,7 +137,6 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println(plan);
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
 
         pattern = and(
@@ -147,6 +146,39 @@ public class QueryPlannerTest {
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
         assertEquals(4L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+    }
+
+    @Test
+    public void aRolePlayerHasNoType() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy1),
+                y.isa(thingy2),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+
+        pattern = and(
+                y.isa(thingy2),
+                z.isa(thingy4),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+    }
+
+    @Test
+    public void rolePlayedBySuperType() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
     }
 
     @Test
