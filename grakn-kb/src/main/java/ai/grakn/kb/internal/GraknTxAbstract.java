@@ -134,7 +134,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     static {
         Method method;
         try {
-            method = Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create");
+            method = Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             method = null;
         }
