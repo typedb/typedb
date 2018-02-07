@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -39,7 +40,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public final T execute() {
+    public final ComputeJob<T> createJob() {
         return queryRunner().run(this);
     }
 

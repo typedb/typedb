@@ -16,27 +16,28 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.analytics;
+package ai.grakn;
 
-import ai.grakn.ComputeJob;
-import ai.grakn.GraknTx;
-import ai.grakn.graql.analytics.MedianQuery;
+import java.util.function.Function;
 
-import java.util.Optional;
+/**
+ * Class representing a job executing a {@link ai.grakn.graql.ComputeQuery} against a knowledge base.
+ *
+ * @author Felix Chapman
+ *
+ * @param <T> The returned result of the compute job
+ */
+public interface ComputeJob<T> {
 
-class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
+    /**
+     * Get the result of the compute query job
+     *
+     * @throws something if the job has been killed
+     */
+    T get();
 
-    MedianQueryImpl(Optional<GraknTx> tx) {
-        super(tx);
-    }
-
-    @Override
-    public final ComputeJob<Optional<Number>> createJob() {
-        return queryRunner().run(this);
-    }
-
-    @Override
-    String getName() {
-        return "median";
-    }
+    /**
+     * Stop the job executing and make something terrible and unspeakable happen to anyone waiting for a result
+     */
+    void kill();
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.CorenessQuery;
 
@@ -34,7 +35,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    public final Map<Long, Set<String>> execute() {
+    public final ComputeJob<Map<Long, Set<String>>> createJob() {
         return queryRunner().run(this);
     }
 

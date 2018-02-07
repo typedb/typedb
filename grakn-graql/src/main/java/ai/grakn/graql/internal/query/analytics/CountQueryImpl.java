@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.CountQuery;
 
@@ -30,7 +31,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     @Override
-    public final Long execute() {
+    public final ComputeJob<Long> createJob() {
         return queryRunner().run(this);
     }
 

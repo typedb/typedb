@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
@@ -94,6 +95,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,50 +117,50 @@ public class TinkerComputeQueryRunner {
         return new TinkerComputeQueryRunner(tx);
     }
 
-    public <T> T run(ClusterQuery<T> query) {
-        GraknComputer computer = tx.session().getGraphComputer();
-
-        if (!selectedTypesHaveInstance(query)) {
-            LOG.info("Selected types don't have instances");
-            return (T) Collections.emptyMap();
-        }
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels(query));
-
-        GraknVertexProgram<?> vertexProgram;
-        if (query.sourceId().isPresent()) {
-            ConceptId conceptId = query.sourceId().get();
-            if (!verticesExistInSubgraph(query, conceptId)) {
-                throw GraqlQueryException.instanceDoesNotExist();
+    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+        return runCompute(query, computer -> {
+            if (!selectedTypesHaveInstance(query)) {
+                LOG.info("Selected types don't have instances");
+                return (T) Collections.emptyMap();
             }
-            vertexProgram = new ConnectedComponentVertexProgram(conceptId);
-        } else {
-            vertexProgram = new ConnectedComponentsVertexProgram();
-        }
 
-        Long clusterSize = query.clusterSize();
-        boolean members = query.isMembersSet();
+            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels(query));
 
-        GraknMapReduce<?> mapReduce;
-        if (members) {
-            if (clusterSize == null) {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+            GraknVertexProgram<?> vertexProgram;
+            if (query.sourceId().isPresent()) {
+                ConceptId conceptId = query.sourceId().get();
+                if (!verticesExistInSubgraph(query, conceptId)) {
+                    throw GraqlQueryException.instanceDoesNotExist();
+                }
+                vertexProgram = new ConnectedComponentVertexProgram(conceptId);
             } else {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
+                vertexProgram = new ConnectedComponentsVertexProgram();
             }
-        } else {
-            if (clusterSize == null) {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            } else {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-            }
-        }
 
-        Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
-        return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
+            Long clusterSize = query.clusterSize();
+            boolean members = query.isMembersSet();
+
+            GraknMapReduce<?> mapReduce;
+            if (members) {
+                if (clusterSize == null) {
+                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                } else {
+                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
+                }
+            } else {
+                if (clusterSize == null) {
+                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                } else {
+                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
+                }
+            }
+
+            Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
+            return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
+        });
     }
 
-    public Map<Long, Set<String>> run(CorenessQuery query) {
+    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
         return runCompute(query, computer -> {
             long k = query.minK();
 
@@ -203,7 +206,7 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public long run(CountQuery query) {
+    public ComputeJob<Long> run(CountQuery query) {
         return runCompute(query, computer -> {
 
             if (!selectedTypesHaveInstance(query)) {
@@ -235,7 +238,7 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Map<Long, Set<String>> run(DegreeQuery query) {
+    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
         return runCompute(query, computer -> {
             Set<Label> ofLabels;
 
@@ -271,7 +274,7 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Map<String, Set<String>> run(KCoreQuery query) {
+    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
         return runCompute(query, computer -> {
             long k = query.kValue();
 
@@ -296,19 +299,17 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Optional<Number> run(MaxQuery query) {
+    public ComputeJob<Optional<Number>> run(MaxQuery query) {
         return execWithMapReduce(query, MaxMapReduce::new);
     }
 
-    public Optional<Double> run(MeanQuery query) {
-        Optional<Map<String, Double>> result = execWithMapReduce(query, MeanMapReduce::new);
-
-        return result.map(meanPair ->
-                meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
+    public ComputeJob<Optional<Double>> run(MeanQuery query) {
+        return execWithMapReduce(query, MeanMapReduce::new, meanPair ->
+            meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
         );
     }
 
-    public Optional<Number> run(MedianQuery query) {
+    public ComputeJob<Optional<Number>> run(MedianQuery query) {
         return runCompute(query, computer -> {
             AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query);
             if (!selectedResourceTypesHaveInstance(query, statisticsResourceLabels(query))) {
@@ -328,17 +329,19 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Optional<Number> run(MinQuery query) {
+    public ComputeJob<Optional<Number>> run(MinQuery query) {
         return execWithMapReduce(query, MinMapReduce::new);
     }
 
-    public Optional<List<Concept>> run(PathQuery query) {
+    public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
         PathsQuery pathsQuery = tx.graql().compute().paths();
         if (isAttributeIncluded(query)) pathsQuery = pathsQuery.includeAttribute();
-        return pathsQuery.from(query.from()).to(query.to()).in(query.subLabels()).execute().stream().findAny();
+        pathsQuery = pathsQuery.from(query.from()).to(query.to()).in(query.subLabels());
+
+        return run(pathsQuery).map(result -> result.stream().findAny());
     }
 
-    public List<List<Concept>> run(PathsQuery query) {
+    public TinkerComputeJob<List<List<Concept>>> run(PathsQuery query) {
         return runCompute(query, computer -> {
 
             ConceptId sourceId = query.from();
@@ -371,10 +374,8 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Optional<Double> run(StdQuery query) {
-        Optional<Map<String, Double>> result = execWithMapReduce(query, StdMapReduce::new);
-
-        return result.map(stdTuple -> {
+    public ComputeJob<Optional<Double>> run(StdQuery query) {
+        return execWithMapReduce(query, StdMapReduce::new, stdTuple -> {
             double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
             double sum = stdTuple.get(StdMapReduce.SUM);
             double count = stdTuple.get(StdMapReduce.COUNT);
@@ -382,21 +383,23 @@ public class TinkerComputeQueryRunner {
         });
     }
 
-    public Optional<Number> run(SumQuery query) {
+    public ComputeJob<Optional<Number>> run(SumQuery query) {
         return execWithMapReduce(query, SumMapReduce::new);
     }
 
-    private <T, Q extends ComputeQuery<?>> T runCompute(Q query, ComputeRunner<T> runner) {
-        LOG.info(query + " started");
-        long startTime = System.currentTimeMillis();
-
+    private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(Q query, ComputeRunner<T> runner) {
         GraknComputer computer = tx.session().getGraphComputer();
 
-        T result = runner.apply(computer);
+        return TinkerComputeJob.create(computer, () -> {
+            LOG.info(query + " started");
+            long startTime = System.currentTimeMillis();
 
-        LOG.info(query + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
+            T result = runner.apply(computer);
 
-        return result;
+            LOG.info(query + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
+
+            return result;
+        });
     }
 
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
@@ -639,8 +642,13 @@ public class TinkerComputeQueryRunner {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
-    private <T, Q extends StatisticsQuery<?>> Optional<T> execWithMapReduce(
+    private <T, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<T>> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory) {
+        return execWithMapReduce(query, mapReduceFactory, Function.identity());
+    }
+
+    private <T, S, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<S>> execWithMapReduce(
+            Q query, MapReduceFactory<T> mapReduceFactory, Function<T, S> operator) {
 
         return runCompute(query, computer -> {
             AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query);
@@ -660,7 +668,7 @@ public class TinkerComputeQueryRunner {
             Map<Serializable, T> map = result.memory().get(mapReduce.getClass().getName());
 
             LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
-            return Optional.of(map.get(MapReduce.NullObject.instance()));
+            return Optional.of(operator.apply(map.get(MapReduce.NullObject.instance())));
         });
     }
 
@@ -682,5 +690,35 @@ public class TinkerComputeQueryRunner {
     private interface MapReduceFactory<S> {
         GraknMapReduce<S> get(
                 Set<LabelId> statisticsResourceLabelIds, AttributeType.DataType<?> dataType, String degreePropertyKey);
+    }
+
+    private static class TinkerComputeJob<T> implements ComputeJob<T> {
+
+        private final GraknComputer computer;
+
+        private final Supplier<T> supplier;
+
+        private TinkerComputeJob(GraknComputer computer, Supplier<T> supplier) {
+            this.computer = computer;
+            this.supplier = supplier;
+        }
+
+        private static <T> TinkerComputeJob<T> create(GraknComputer computer, Supplier<T> supplier) {
+            return new TinkerComputeJob<>(computer, supplier);
+        }
+
+        @Override
+        public T get() {
+            return supplier.get();
+        }
+
+        @Override
+        public void kill() {
+            computer.killJobs();
+        }
+
+        public <S> TinkerComputeJob<S> map(Function<T, S> function) {
+            return create(computer, () -> function.apply(supplier.get()));
+        }
     }
 }

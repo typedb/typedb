@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
@@ -37,9 +38,10 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         extends AbstractExecutableQuery<T> implements ComputeQuery<T> {
 
     private Optional<GraknTx> tx;
-    private GraknComputer graknComputer = null;
     private boolean includeAttribute;
     private ImmutableSet<Label> subLabels = ImmutableSet.of();
+
+    private @Nullable ComputeJob<T> job = null;
 
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
@@ -51,6 +53,15 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         this.tx = tx;
         this.includeAttribute = includeAttribute;
     }
+
+    @Override
+    public final T execute() {
+        assert job == null; // TODO
+        job = createJob();
+        return job.get();
+    }
+
+    protected abstract ComputeJob<T> createJob();
 
     @Override
     public final Optional<GraknTx> tx() {
@@ -92,8 +103,8 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final void kill() {
-        if (graknComputer != null) {
-            graknComputer.killJobs();
+        if (job != null) {
+            job.kill();
         }
     }
 

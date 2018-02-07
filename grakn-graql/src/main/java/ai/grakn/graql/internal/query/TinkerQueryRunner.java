@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
@@ -124,67 +125,67 @@ public class TinkerQueryRunner implements QueryRunner {
     }
 
     @Override
-    public <T> T run(ClusterQuery<T> query) {
+    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Map<Long, Set<String>> run(CorenessQuery query) {
+    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public long run(CountQuery query) {
+    public ComputeJob<Long> run(CountQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Map<Long, Set<String>> run(DegreeQuery query) {
+    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Map<String, Set<String>> run(KCoreQuery query) {
+    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Number> run(MaxQuery query) {
+    public ComputeJob<Optional<Number>> run(MaxQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Double> run(MeanQuery query) {
+    public ComputeJob<Optional<Double>> run(MeanQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Number> run(MedianQuery query) {
+    public ComputeJob<Optional<Number>> run(MedianQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Number> run(MinQuery query) {
+    public ComputeJob<Optional<Number>> run(MinQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<List<Concept>> run(PathQuery query) {
+    public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public List<List<Concept>> run(PathsQuery query) {
+    public ComputeJob<List<List<Concept>>> run(PathsQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Double> run(StdQuery query) {
+    public ComputeJob<Optional<Double>> run(StdQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
-    public Optional<Number> run(SumQuery query) {
+    public ComputeJob<Optional<Number>> run(SumQuery query) {
         return tinkerComputeQueryRunner.run(query);
     }
 
