@@ -122,6 +122,16 @@ public class TinkerQueryRunner implements QueryRunner {
 
     private static final Logger LOG = LoggerFactory.getLogger(TinkerQueryRunner.class);
 
+    private final GraknTx tx;
+
+    private TinkerQueryRunner(GraknTx tx) {
+        this.tx = tx;
+    }
+
+    public static TinkerQueryRunner create(GraknTx tx) {
+        return new TinkerQueryRunner(tx);
+    }
+
     @Override
     public Stream<Answer> run(GetQuery query) {
         return query.match().stream().map(result -> result.project(query.vars())).distinct();
@@ -132,8 +142,6 @@ public class TinkerQueryRunner implements QueryRunner {
         Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
-
-        GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
 
         return query.admin().match().map(
                 match -> match.stream().map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer))
@@ -150,8 +158,6 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Answer run(DefineQuery query) {
-        GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
-
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
@@ -165,7 +171,7 @@ public class TinkerQueryRunner implements QueryRunner {
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
-        QueryOperationExecutor.undefineAll(allPatterns, query.tx().orElseThrow(GraqlQueryException::noTx));
+        QueryOperationExecutor.undefineAll(allPatterns, tx);
     }
 
     @Override
@@ -175,7 +181,6 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public <T> T run(ClusterQuery<T> query) {
-        GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
         GraknComputer computer = tx.session().getGraphComputer();
 
         if (!selectedTypesHaveInstance(query, tx)) {
@@ -220,7 +225,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Map<Long, Set<String>> run(CorenessQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
             long k = query.minK();
 
             if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -267,7 +272,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public long run(CountQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
 
             if (!selectedTypesHaveInstance(query, tx)) {
                 LOG.debug("Count = 0");
@@ -300,7 +305,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Map<Long, Set<String>> run(DegreeQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
             Set<Label> ofLabels;
 
             // Check if ofType is valid before returning emptyMap
@@ -337,7 +342,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Map<String, Set<String>> run(KCoreQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
             long k = query.kValue();
 
             if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -377,7 +382,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Number> run(MedianQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
             AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
             if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
                 return Optional.empty();
@@ -403,8 +408,6 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<List<Concept>> run(PathQuery query) {
-        GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
-
         PathsQuery pathsQuery = tx.graql().compute().paths();
         if (query.isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(query.from()).to(query.to()).in(query.subLabels()).execute().stream().findAny();
@@ -412,7 +415,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public List<List<Concept>> run(PathsQuery query) {
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
 
             ConceptId sourceId = query.from();
             ConceptId destinationId = query.to();
@@ -461,15 +464,13 @@ public class TinkerQueryRunner implements QueryRunner {
         return execWithMapReduce(query, SumMapReduce::new);
     }
 
-    private static <T, Q extends ComputeQuery<?>> T runCompute(Q query, ComputeRunner<T> runner) {
-        GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
-
+    private <T, Q extends ComputeQuery<?>> T runCompute(Q query, ComputeRunner<T> runner) {
         LOG.info(query + " started");
         long startTime = System.currentTimeMillis();
 
         GraknComputer computer = tx.session().getGraphComputer();
 
-        T result = runner.apply(tx, computer);
+        T result = runner.apply(computer);
 
         LOG.info(query + " finished in " + (System.currentTimeMillis() - startTime) + " ms");
 
@@ -477,7 +478,7 @@ public class TinkerQueryRunner implements QueryRunner {
     }
 
     private interface ComputeRunner<T> {
-        T apply(GraknTx tx, GraknComputer computer);
+        T apply(GraknComputer computer);
     }
 
     private void deleteResult(Answer result, Collection<? extends Var> vars) {
@@ -736,10 +737,10 @@ public class TinkerQueryRunner implements QueryRunner {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
-    private static <T, Q extends StatisticsQuery<?>> Optional<T> execWithMapReduce(
+    private <T, Q extends StatisticsQuery<?>> Optional<T> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory) {
 
-        return runCompute(query, (tx, computer) -> {
+        return runCompute(query, computer -> {
             AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx);
             if (!selectedResourceTypesHaveInstance(query, tx, statisticsResourceLabels(query, tx))) {
                 return Optional.empty();

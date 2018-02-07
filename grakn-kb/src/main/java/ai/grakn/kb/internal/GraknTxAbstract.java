@@ -981,7 +981,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                     " must be accessible in the classpath");
         }
         try {
-            return (QueryRunner) queryRunnerFactory.invoke(null);
+            return (QueryRunner) queryRunnerFactory.invoke(null, this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
