@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQueryOf;
+import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface MedianQuery extends ComputeQueryOf<Optional<Number>> {
+public interface MedianQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on

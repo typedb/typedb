@@ -18,33 +18,34 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 
 import java.util.Collection;
 
 /**
- * yes this is a bad name TODO
+ * A {@link ComputeQuery} that operates on a specified set of {@link AttributeType}s.
  *
  * @param <T> the type of result this query will return
  *
  * @author Felix Chapman
  */
-public interface ComputeQueryOf<T> extends ComputeQuery<T> {
+public interface StatisticsQuery<T> extends ComputeQuery<T> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a ComputeQuery with the subTypeLabels set
      */
-    ComputeQueryOf<T> of(String... resourceTypeLabels);
+    StatisticsQuery<T> of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a ComputeQuery with the subTypeLabels set
      */
-    ComputeQueryOf<T> of(Collection<Label> resourceLabels);
+    StatisticsQuery<T> of(Collection<Label> resourceLabels);
 
     /**
-     * Get the collection of types of resources to execute the query on
+     * Get the collection of types of attributes to execute the query on
      */
-    Collection<? extends Label> ofLabels();
+    Collection<? extends Label> attributeLabels();
 }

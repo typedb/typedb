@@ -28,7 +28,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQueryOf;
+import ai.grakn.graql.StatisticsQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -52,8 +52,8 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
-        extends AbstractComputeQuery<T, V> implements ComputeQueryOf<T> {
+abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
+        extends AbstractComputeQuery<T, V> implements StatisticsQuery<T> {
 
     private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
 
@@ -72,7 +72,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
         return (V) this;
     }
 
-    public final Collection<? extends Label> ofLabels() {
+    public final Collection<? extends Label> attributeLabels() {
         return statisticsResourceLabels;
     }
 

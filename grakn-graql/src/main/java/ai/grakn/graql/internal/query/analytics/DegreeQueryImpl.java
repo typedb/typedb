@@ -48,10 +48,10 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
         Set<Label> ofLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (ofLabels().isEmpty()) {
+        if (targetLabels().isEmpty()) {
             ofLabels = subLabels(tx);
         } else {
-            ofLabels = ofLabels().stream()
+            ofLabels = targetLabels().stream()
                     .flatMap(typeLabel -> {
                         Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
