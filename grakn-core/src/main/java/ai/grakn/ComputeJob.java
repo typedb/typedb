@@ -18,8 +18,6 @@
 
 package ai.grakn;
 
-import java.util.function.Function;
-
 /**
  * Class representing a job executing a {@link ai.grakn.graql.ComputeQuery} against a knowledge base.
  *
