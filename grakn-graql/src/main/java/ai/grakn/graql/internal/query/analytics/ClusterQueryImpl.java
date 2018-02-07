@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
@@ -31,6 +32,7 @@ import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -43,28 +45,23 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
-    ClusterQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    ClusterQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public T execute() {
-        LOGGER.info("ConnectedComponentsVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
+    protected final T innerExecute(GraknTx tx, GraknComputer computer) {
+        if (!selectedTypesHaveInstance(tx)) {
             LOGGER.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
 
         GraknVertexProgram<?> vertexProgram;
         if (sourceId.isPresent()) {
             ConceptId conceptId = sourceId.get();
-            if (!verticesExistInSubgraph(conceptId)) {
+            if (!verticesExistInSubgraph(tx, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
@@ -87,15 +84,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
             }
         }
 
-        Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
-        LOGGER.info("ConnectedComponentsVertexProgram is done in "
-                + (System.currentTimeMillis() - startTime) + " ms");
+        Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
         return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
-    }
-
-    @Override
-    public ClusterQuery<T> includeAttribute() {
-        return (ClusterQuery<T>) super.includeAttribute();
     }
 
     @Override
@@ -105,9 +95,19 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
+    public final boolean isMembersSet() {
+        return members;
+    }
+
+    @Override
     public ClusterQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
+    }
+
+    @Override
+    public final Optional<ConceptId> sourceId() {
+        return sourceId;
     }
 
     @Override
@@ -115,6 +115,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;
+    }
+
+    @Override
+    @Nullable
+    public final Long clusterSize() {
+        return anySize ? null : clusterSize;
     }
 
     @Override

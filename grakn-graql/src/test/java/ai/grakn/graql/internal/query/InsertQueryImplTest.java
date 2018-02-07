@@ -44,8 +44,8 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
-        InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
-        InsertQuery query2 = new InsertQueryImpl(vars1, match1, Optional.empty());
+        InsertQuery query1 = InsertQueryImpl.create(vars1, match1, Optional.empty());
+        InsertQuery query2 = InsertQueryImpl.create(vars1, match1, Optional.empty());
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -55,8 +55,8 @@ public class InsertQueryImplTest {
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
         GraknTx graph = mock(GraknTx.class);
 
-        InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
-        InsertQuery query2 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
+        InsertQuery query1 = InsertQueryImpl.create(vars1, Optional.empty(), Optional.of(graph));
+        InsertQuery query2 = InsertQueryImpl.create(vars1, Optional.empty(), Optional.of(graph));
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -64,8 +64,8 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithDifferentMatchesAreDifferent() {
-        InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
-        InsertQuery query2 = new InsertQueryImpl(vars1, match2, Optional.empty());
+        InsertQuery query1 = InsertQueryImpl.create(vars1, match1, Optional.empty());
+        InsertQuery query2 = InsertQueryImpl.create(vars1, match2, Optional.empty());
 
         assertNotEquals(query1, query2);
     }
@@ -75,16 +75,16 @@ public class InsertQueryImplTest {
         GraknTx graph1 = mock(GraknTx.class);
         GraknTx graph2 = mock(GraknTx.class);
 
-        InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph1));
-        InsertQuery query2 = new InsertQueryImpl(vars2, Optional.empty(), Optional.of(graph2));
+        InsertQuery query1 = InsertQueryImpl.create(vars1, Optional.empty(), Optional.of(graph1));
+        InsertQuery query2 = InsertQueryImpl.create(vars2, Optional.empty(), Optional.of(graph2));
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void insertQueriesWithDifferentVarsAreDifferent() {
-        InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
-        InsertQuery query2 = new InsertQueryImpl(vars2, match1, Optional.empty());
+        InsertQuery query1 = InsertQueryImpl.create(vars1, match1, Optional.empty());
+        InsertQuery query2 = InsertQueryImpl.create(vars2, match1, Optional.empty());
 
         assertNotEquals(query1, query2);
     }

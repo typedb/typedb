@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
@@ -30,31 +31,24 @@ import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MedianQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MedianVertexProgram is called");
-        long startTime = System.currentTimeMillis();
+    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
+        AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(tx);
+        if (!selectedResourceTypesHaveInstance(tx, statisticsResourceLabels(tx))) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(tx, getCombinedSubTypes(tx));
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx, statisticsResourceLabels(tx));
 
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
+        ComputerResult result = computer.compute(
                 new MedianVertexProgram(statisticsResourceLabelIds, dataType),
                 null, allSubLabelIds);
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);
 
-        LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
     }
 

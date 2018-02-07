@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -27,6 +29,7 @@ import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collections;
@@ -39,56 +42,50 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
     private long k = 2L;
 
-    CorenessQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    CorenessQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Map<Long, Set<String>> execute() {
-        LOGGER.info("Coreness query started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Map<Long, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        initSubGraph();
-        getAllSubTypes();
+        Set<Label> ofLabels;
 
         // Check if ofType is valid before returning emptyMap
-        if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels);
+        if (targetLabels().isEmpty()) {
+            ofLabels = subLabels(tx);
         } else {
-            ofLabels = ofLabels.stream()
+            ofLabels = targetLabels().stream()
                     .flatMap(typeLabel -> {
-                        Type type = tx.get().getSchemaConcept(typeLabel);
+                        Type type = tx.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
-            subLabels.addAll(ofLabels);
         }
 
-        if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
+        Set<Label> subLabels = Sets.union(subLabels(tx), ofLabels);
+
+        if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
 
         try {
-            result = getGraphComputer().compute(
+            result = computer.compute(
                     new CorenessVertexProgram(k),
                     new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
                     subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
-        LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
@@ -96,6 +93,11 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     public CorenessQuery minK(long k) {
         this.k = k;
         return this;
+    }
+
+    @Override
+    public final long minK() {
+        return k;
     }
 
     @Override

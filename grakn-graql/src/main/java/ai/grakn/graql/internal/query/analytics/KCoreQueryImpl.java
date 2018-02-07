@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
@@ -36,46 +37,43 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
 
     private long k = -1L;
 
-    KCoreQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
+
+    KCoreQueryImpl(Optional<GraknTx> tx) {
+        super(tx, INCLUDE_ATTRIBUTE);
     }
 
     @Override
-    public Map<String, Set<String>> execute() {
-        LOGGER.info("KCore query is started");
-        long startTime = System.currentTimeMillis();
-
+    protected final Map<String, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        includeAttribute = true; //TODO: REMOVE THIS LINE
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+        if (!selectedTypesHaveInstance(tx)) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels(tx));
         try {
-            result = getGraphComputer().compute(
+            result = computer.compute(
                     new KCoreVertexProgram(k),
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
-        LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(ClusterMemberMapReduce.class.getName());
     }
 
     @Override
-    public KCoreQuery kValue(long kValue) {
+    public final KCoreQuery kValue(long kValue) {
         k = kValue;
         return this;
+    }
+
+    @Override
+    public final long kValue() {
+        return k;
     }
 
     @Override
@@ -84,11 +82,6 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
         string += k;
         string += subtypeString();
         return string;
-    }
-
-    @Override
-    public KCoreQuery includeAttribute() {
-        return (KCoreQuery) super.includeAttribute();
     }
 
     @Override

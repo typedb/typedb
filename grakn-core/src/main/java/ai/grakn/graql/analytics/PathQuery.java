@@ -42,10 +42,20 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     PathQuery from(ConceptId sourceId);
 
     /**
+     * Get the id of the source instance
+     */
+    ConceptId from();
+
+    /**
      * @param destinationId the id of the destination instance
      * @return a PathQuery with the the destination instance set
      */
     PathQuery to(ConceptId destinationId);
+
+    /**
+     * Get the id of the destination instance
+     */
+    ConceptId to();
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph

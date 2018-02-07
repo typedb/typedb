@@ -22,17 +22,16 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,19 +41,14 @@ import static java.util.stream.Collectors.toList;
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  */
 @AutoValue
-abstract class DeleteQueryImpl implements DeleteQueryAdmin {
-
-    abstract ImmutableCollection<Var> vars();
-
-    @Override
-    public abstract Match match();
+abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
 
     /**
      * @param vars a collection of variables to delete
      * @param match a pattern to match and delete for each result
      */
     static DeleteQueryImpl of(Collection<? extends Var> vars, Match match) {
-        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), match);
+        return new AutoValue_DeleteQueryImpl(match, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -65,14 +59,13 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        execute();
-        return Stream.empty();
+    public final boolean isReadOnly() {
+        return false;
     }
 
     @Override
-    public boolean isReadOnly() {
-        return false;
+    public final Optional<? extends GraknTx> tx() {
+        return match().admin().tx();
     }
 
     @Override
@@ -86,7 +79,7 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
+        Collection<? extends Var> toDelete = vars().isEmpty() ? result.vars() : vars();
 
         for (Var var : toDelete) {
             Concept concept = result.get(var);
@@ -102,5 +95,11 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     @Override
     public String toString() {
         return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    protected final Stream<Void> stream() {
+        execute();
+        return Stream.empty();
     }
 }

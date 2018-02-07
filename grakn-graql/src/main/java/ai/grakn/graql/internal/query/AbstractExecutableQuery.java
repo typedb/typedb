@@ -16,30 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.admin;
+package ai.grakn.graql.internal.query;
 
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-
-import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
- * Admin class for inspecting and manipulating a DeleteQuery
+ * Abstract class for queries that have a single result such as {@link DefineQueryImpl} and {@link AggregateQueryImpl}.
+ *
+ * @param <T> The type of result to return
  *
  * @author Felix Chapman
  */
-public interface DeleteQueryAdmin extends DeleteQuery {
-    /**
-     * @return the {@link Match} this delete query is operating on
-     */
-    @CheckReturnValue
-    Match match();
+public abstract class AbstractExecutableQuery<T> extends AbstractQuery<T, T> {
 
-    /**
-     * Get the {@link Var}s to delete on each result of {@link #match()}.
-     */
-    @CheckReturnValue
-    Collection<? extends Var> vars();
+    @Override
+    protected final Stream<T> stream() {
+        return Stream.of(execute());
+    }
 }

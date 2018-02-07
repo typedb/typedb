@@ -54,12 +54,22 @@ public interface ComputeQuery<T> extends Query<T> {
     ComputeQuery<T> in(Collection<Label> subLabels);
 
     /**
+     * Get the collection of types to include in the subgraph
+     */
+    Collection<? extends Label> subLabels();
+
+    /**
      * Allow analytics query to include attributes and their relationships
      *
      * @return a ComputeQuery with the subLabels set
      */
     @CheckReturnValue
     ComputeQuery<T> includeAttribute();
+
+    /**
+     * Get if this query will include attributes and their relationships
+     */
+    boolean isAttributeIncluded();
 
     /**
      * Whether this query will modify the graph

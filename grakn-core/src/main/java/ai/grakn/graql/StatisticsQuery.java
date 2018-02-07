@@ -18,26 +18,34 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
 
 import java.util.Collection;
 
 /**
- * A query for undefining {@link SchemaConcept}s.
- * <p>
- *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
- * </p>
+ * A {@link ComputeQuery} that operates on a specified set of {@link AttributeType}s.
+ *
+ * @param <T> the type of result this query will return
  *
  * @author Felix Chapman
  */
-public interface UndefineQuery extends Query<Void> {
-
-    @Override
-    UndefineQuery withTx(GraknTx tx);
+public interface StatisticsQuery<T> extends ComputeQuery<T> {
 
     /**
-     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a ComputeQuery with the subTypeLabels set
      */
-    Collection<? extends VarPattern> varPatterns();
+    StatisticsQuery<T> of(String... resourceTypeLabels);
+
+    /**
+     * @param resourceLabels a collection of types of resources to execute the query on
+     * @return a ComputeQuery with the subTypeLabels set
+     */
+    StatisticsQuery<T> of(Collection<Label> resourceLabels);
+
+    /**
+     * Get the collection of types of attributes to execute the query on
+     */
+    Collection<? extends Label> attributeLabels();
 }

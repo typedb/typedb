@@ -18,57 +18,30 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> implements StdQuery {
 
-    StdQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    StdQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Double> execute() {
-        LOGGER.info("StdMapReduce is called");
-        long startTime = System.currentTimeMillis();
+    protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
+        Optional<Map<String, Double>> result = execWithMapReduce(tx, computer, StdMapReduce::new);
 
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new StdMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
-        Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
-        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
-        double sum = stdTuple.get(StdMapReduce.SUM);
-        double count = stdTuple.get(StdMapReduce.COUNT);
-
-        double finalResult = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
-        LOGGER.debug("Std = " + finalResult);
-
-        LOGGER.info("StdMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(finalResult);
+        return result.map(stdTuple -> {
+            double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
+            double sum = stdTuple.get(StdMapReduce.SUM);
+            double count = stdTuple.get(StdMapReduce.COUNT);
+            return Math.sqrt(squareSum / count - (sum / count) * (sum / count));
+        });
     }
 
     @Override
