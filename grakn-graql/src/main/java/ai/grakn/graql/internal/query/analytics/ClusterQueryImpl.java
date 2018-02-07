@@ -95,7 +95,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public final boolean membersSet() {
+    public final boolean isMembersSet() {
         return members;
     }
 

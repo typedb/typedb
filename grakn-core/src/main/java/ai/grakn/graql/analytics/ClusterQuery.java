@@ -48,7 +48,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     /**
      * Get whether this query will return the members of each cluster.
      */
-    boolean membersSet();
+    boolean isMembersSet();
 
     /**
      * Get the source ID, if one is set with {@link #of(ConceptId)}.
