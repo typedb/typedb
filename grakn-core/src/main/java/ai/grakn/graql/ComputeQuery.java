@@ -80,15 +80,6 @@ public interface ComputeQuery<T> extends Query<T> {
     }
 
     /**
-     * Returns <tt>true</tt> if this is a statistics query
-     *
-     * @return <tt>true</tt> if this is a statistics query
-     */
-    default boolean isStatisticsQuery() {
-        return false;
-    }
-
-    /**
      * kill the compute query, terminate the job
      */
     void kill();

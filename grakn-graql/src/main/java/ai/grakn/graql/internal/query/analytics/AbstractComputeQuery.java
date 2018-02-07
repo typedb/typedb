@@ -88,7 +88,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final boolean isAttributeIncluded() {
-        return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
+        return includeAttribute || subTypesContainsImplicitOrAttributeTypes();
     }
 
     @Override
