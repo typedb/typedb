@@ -114,24 +114,20 @@ public class TinkerComputeQueryRunner {
         return new TinkerComputeQueryRunner(tx);
     }
 
-    private GraknTx tx() {
-        return tx;
-    }
-
     public <T> T run(ClusterQuery<T> query) {
-        GraknComputer computer = tx().session().getGraphComputer();
+        GraknComputer computer = tx.session().getGraphComputer();
 
-        if (!selectedTypesHaveInstance(query, tx())) {
+        if (!selectedTypesHaveInstance(query)) {
             LOG.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx(), subLabels(query, tx()));
+        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels(query));
 
         GraknVertexProgram<?> vertexProgram;
         if (query.sourceId().isPresent()) {
             ConceptId conceptId = query.sourceId().get();
-            if (!verticesExistInSubgraph(query, tx(), conceptId)) {
+            if (!verticesExistInSubgraph(query, conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
@@ -171,11 +167,11 @@ public class TinkerComputeQueryRunner {
 
             // Check if ofType is valid before returning emptyMap
             if (query.targetLabels().isEmpty()) {
-                ofLabels = subLabels(query, tx());
+                ofLabels = subLabels(query);
             } else {
                 ofLabels = query.targetLabels().stream()
                         .flatMap(typeLabel -> {
-                            Type type = tx().getSchemaConcept(typeLabel);
+                            Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                             if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                             return type.subs();
@@ -184,15 +180,15 @@ public class TinkerComputeQueryRunner {
                         .collect(Collectors.toSet());
             }
 
-            Set<Label> subLabels = Sets.union(subLabels(query, tx()), ofLabels);
+            Set<Label> subLabels = Sets.union(subLabels(query), ofLabels);
 
-            if (!selectedTypesHaveInstance(query, tx())) {
+            if (!selectedTypesHaveInstance(query)) {
                 return Collections.emptyMap();
             }
 
             ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(tx(), subLabels);
-            Set<LabelId> ofLabelIds = convertLabelsToIds(tx(), ofLabels);
+            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+            Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
             try {
                 result = computer.compute(
@@ -210,15 +206,15 @@ public class TinkerComputeQueryRunner {
     public long run(CountQuery query) {
         return runCompute(query, computer -> {
 
-            if (!selectedTypesHaveInstance(query, tx())) {
+            if (!selectedTypesHaveInstance(query)) {
                 LOG.debug("Count = 0");
                 return 0L;
             }
 
-            Set<LabelId> typeLabelIds = convertLabelsToIds(tx(), subLabels(query, tx()));
+            Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels(query));
             Map<Integer, Long> count;
 
-            Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds(query, tx());
+            Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds(query);
             rolePlayerLabelIds.addAll(typeLabelIds);
 
             ComputerResult result = computer.compute(
@@ -245,11 +241,11 @@ public class TinkerComputeQueryRunner {
 
             // Check if ofType is valid before returning emptyMap
             if (query.targetLabels().isEmpty()) {
-                ofLabels = subLabels(query, tx());
+                ofLabels = subLabels(query);
             } else {
                 ofLabels = query.targetLabels().stream()
                         .flatMap(typeLabel -> {
-                            Type type = tx().getSchemaConcept(typeLabel);
+                            Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                             return type.subs();
                         })
@@ -257,14 +253,14 @@ public class TinkerComputeQueryRunner {
                         .collect(Collectors.toSet());
             }
 
-            Set<Label> subLabels = Sets.union(subLabels(query, tx()), ofLabels);
+            Set<Label> subLabels = Sets.union(subLabels(query), ofLabels);
 
-            if (!selectedTypesHaveInstance(query, tx())) {
+            if (!selectedTypesHaveInstance(query)) {
                 return Collections.emptyMap();
             }
 
-            Set<LabelId> subLabelIds = convertLabelsToIds(tx(), subLabels);
-            Set<LabelId> ofLabelIds = convertLabelsToIds(tx(), ofLabels);
+            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+            Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
             ComputerResult result = computer.compute(
                     new DegreeVertexProgram(ofLabelIds),
@@ -281,12 +277,12 @@ public class TinkerComputeQueryRunner {
 
             if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-            if (!selectedTypesHaveInstance(query, tx())) {
+            if (!selectedTypesHaveInstance(query)) {
                 return Collections.emptyMap();
             }
 
             ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(tx(), subLabels(query, tx()));
+            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels(query));
             try {
                 result = computer.compute(
                         new KCoreVertexProgram(k),
@@ -314,12 +310,12 @@ public class TinkerComputeQueryRunner {
 
     public Optional<Number> run(MedianQuery query) {
         return runCompute(query, computer -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx());
-            if (!selectedResourceTypesHaveInstance(query, tx(), statisticsResourceLabels(query, tx()))) {
+            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query);
+            if (!selectedResourceTypesHaveInstance(query, statisticsResourceLabels(query))) {
                 return Optional.empty();
             }
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx(), getCombinedSubTypes(query, tx()));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx(), statisticsResourceLabels(query, tx()));
+            Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes(query));
+            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels(query));
 
             ComputerResult result = computer.compute(
                     new MedianVertexProgram(statisticsResourceLabelIds, dataType),
@@ -337,7 +333,7 @@ public class TinkerComputeQueryRunner {
     }
 
     public Optional<List<Concept>> run(PathQuery query) {
-        PathsQuery pathsQuery = tx().graql().compute().paths();
+        PathsQuery pathsQuery = tx.graql().compute().paths();
         if (query.isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(query.from()).to(query.to()).in(query.subLabels()).execute().stream().findAny();
     }
@@ -348,15 +344,15 @@ public class TinkerComputeQueryRunner {
             ConceptId sourceId = query.from();
             ConceptId destinationId = query.to();
 
-            if (!verticesExistInSubgraph(query, tx(), sourceId, destinationId)) {
+            if (!verticesExistInSubgraph(query, sourceId, destinationId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             if (sourceId.equals(destinationId)) {
-                return Collections.singletonList(Collections.singletonList(tx().getConcept(sourceId)));
+                return Collections.singletonList(Collections.singletonList(tx.getConcept(sourceId)));
             }
 
             ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(tx(), subLabels(query, tx()));
+            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels(query));
             try {
                 result = computer.compute(
                         new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
@@ -364,10 +360,10 @@ public class TinkerComputeQueryRunner {
                 return Collections.emptyList();
             }
 
-            Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(tx(), result);
-            List<List<Concept>> allPaths = getAllPaths(tx(), predecessorMapFromSource, sourceId);
+            Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(result);
+            List<List<Concept>> allPaths = getAllPaths(predecessorMapFromSource, sourceId);
             if (query.isAttributeIncluded()) { // this can be slow
-                return getExtendedPaths(tx(), allPaths);
+                return getExtendedPaths(allPaths);
             }
 
             LOG.info("Number of paths: " + allPaths.size());
@@ -394,7 +390,7 @@ public class TinkerComputeQueryRunner {
         LOG.info(query + " started");
         long startTime = System.currentTimeMillis();
 
-        GraknComputer computer = tx().session().getGraphComputer();
+        GraknComputer computer = tx.session().getGraphComputer();
 
         T result = runner.apply(computer);
 
@@ -403,29 +399,29 @@ public class TinkerComputeQueryRunner {
         return result;
     }
 
-    private static Set<LabelId> convertLabelsToIds(GraknTx tx, Set<Label> labelSet) {
+    private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
                 .map(tx.admin()::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
 
-    private boolean selectedTypesHaveInstance(ComputeQuery<?> query, GraknTx tx) {
-        if (subLabels(query, tx).isEmpty()) {
+    private boolean selectedTypesHaveInstance(ComputeQuery<?> query) {
+        if (subLabels(query).isEmpty()) {
             LOG.info("No types found while looking for instances");
             return false;
         }
 
-        List<Pattern> checkSubtypes = subLabels(query, tx).stream()
+        List<Pattern> checkSubtypes = subLabels(query).stream()
                 .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
         return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
     }
 
-    private static ImmutableSet<Label> subLabels(ComputeQuery<?> query, GraknTx tx) {
-        return subTypes(query, tx).map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
+    private ImmutableSet<Label> subLabels(ComputeQuery<?> query) {
+        return subTypes(query).map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
     }
 
-    private static Stream<Type> subTypes(ComputeQuery<?> query, GraknTx tx) {
+    private Stream<Type> subTypes(ComputeQuery<?> query) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
         if (query.subLabels().isEmpty()) {
@@ -455,16 +451,16 @@ public class TinkerComputeQueryRunner {
         }
     }
 
-    private static boolean verticesExistInSubgraph(ComputeQuery<?> query, GraknTx tx, ConceptId... ids) {
+    private boolean verticesExistInSubgraph(ComputeQuery<?> query, ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !subLabels(query, tx).contains(thing.type().getLabel())) return false;
+            if (thing == null || !subLabels(query).contains(thing.type().getLabel())) return false;
         }
         return true;
     }
 
-    private static Set<LabelId> getRolePlayerLabelIds(ComputeQuery<?> query, GraknTx tx) {
-        return subTypes(query, tx)
+    private Set<LabelId> getRolePlayerLabelIds(ComputeQuery<?> query) {
+        return subTypes(query)
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
@@ -476,9 +472,9 @@ public class TinkerComputeQueryRunner {
     }
 
     @Nullable
-    private static AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes(StatisticsQuery<?> query, GraknTx tx) {
+    private AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes(StatisticsQuery<?> query) {
         AttributeType.DataType<?> dataType = null;
-        for (Type type : calcStatisticsResourceTypes(query, tx)) {
+        for (Type type : calcStatisticsResourceTypes(query)) {
             // check if the selected type is a resource-type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
             AttributeType<?> resourceType = type.asAttributeType();
@@ -500,20 +496,20 @@ public class TinkerComputeQueryRunner {
         return dataType;
     }
 
-    private static Set<Label> statisticsResourceLabels(StatisticsQuery<?> query, GraknTx tx) {
-        return calcStatisticsResourceTypes(query, tx).stream()
+    private Set<Label> statisticsResourceLabels(StatisticsQuery<?> query) {
+        return calcStatisticsResourceTypes(query).stream()
                 .map(SchemaConcept::getLabel)
                 .collect(CommonUtil.toImmutableSet());
     }
 
-    private static ImmutableSet<Type> calcStatisticsResourceTypes(StatisticsQuery<?> query, GraknTx tx) {
+    private ImmutableSet<Type> calcStatisticsResourceTypes(StatisticsQuery<?> query) {
         if (query.attributeLabels().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
         return query.attributeLabels().stream()
                 .map((label) -> {
-                    Type type = tx.getSchemaConcept(label);
+                    Type type = this.tx.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
                     if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
                     return type;
@@ -522,9 +518,9 @@ public class TinkerComputeQueryRunner {
                 .collect(CommonUtil.toImmutableSet());
     }
 
-    private static boolean selectedResourceTypesHaveInstance(ComputeQuery<?> query, GraknTx tx, Set<Label> statisticsResourceTypes) {
+    private boolean selectedResourceTypesHaveInstance(ComputeQuery<?> query, Set<Label> statisticsResourceTypes) {
         for (Label resourceType : statisticsResourceTypes) {
-            for (Label type : subLabels(query, tx)) {
+            for (Label type : subLabels(query)) {
                 Boolean patternExist = tx.graql().infer(false).match(
                         Graql.var("x").has(resourceType, Graql.var()),
                         Graql.var("x").isa(Graql.label(type))
@@ -543,21 +539,21 @@ public class TinkerComputeQueryRunner {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    private static Set<Label> getCombinedSubTypes(StatisticsQuery<?> query, GraknTx tx) {
-        Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(query, tx));
-        allSubTypes.addAll(subLabels(query, tx));
+    private Set<Label> getCombinedSubTypes(StatisticsQuery<?> query) {
+        Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(query));
+        allSubTypes.addAll(subLabels(query));
         allSubTypes.addAll(query.attributeLabels());
         return allSubTypes;
     }
 
-    private static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+    private Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
         return subTypes.stream()
                 .filter(Concept::isAttributeType)
                 .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }// If the sub graph contains attributes, we may need to add implicit relations to the paths
 
-    private List<List<Concept>> getExtendedPaths(GraknTx tx, List<List<Concept>> allPaths) {
+    private List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
         List<List<Concept>> extendedPaths = new ArrayList<List<Concept>>();
         for (List<Concept> currentPath : allPaths) {
             boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
@@ -596,7 +592,7 @@ public class TinkerComputeQueryRunner {
         return extendedPaths;
     }
 
-    private static Multimap<Concept, Concept> getPredecessorMap(GraknTx tx, ComputerResult result) {
+    private Multimap<Concept, Concept> getPredecessorMap(ComputerResult result) {
         Map<String, Set<String>> predecessorMapFromSource =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
         Map<String, Set<String>> predecessorMapFromDestination =
@@ -604,19 +600,18 @@ public class TinkerComputeQueryRunner {
 
         Multimap<Concept, Concept> predecessors = HashMultimap.create();
         predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(tx, id), getConcept(tx, id2));
+            predecessors.put(getConcept(id), getConcept(id2));
         }));
         predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(tx, id2), getConcept(tx, id));
+            predecessors.put(getConcept(id2), getConcept(id));
         }));
         return predecessors;
     }
 
-    private List<List<Concept>> getAllPaths(
-            GraknTx tx, Multimap<Concept, Concept> predecessorMapFromSource, ConceptId sourceId) {
+    private List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource, ConceptId sourceId) {
         List<List<Concept>> allPaths = new ArrayList<List<Concept>>();
         List<Concept> firstPath = new ArrayList<Concept>();
-        firstPath.add(getConcept(tx, sourceId.getValue()));
+        firstPath.add(getConcept(sourceId.getValue()));
 
         Deque<List<Concept>> queue = new ArrayDeque<List<Concept>>();
         queue.addLast(firstPath);
@@ -640,7 +635,7 @@ public class TinkerComputeQueryRunner {
     }
 
     @Nullable
-    private static Thing getConcept(GraknTx tx, String conceptId) {
+    private Thing getConcept(String conceptId) {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
@@ -648,12 +643,12 @@ public class TinkerComputeQueryRunner {
             Q query, MapReduceFactory<T> mapReduceFactory) {
 
         return runCompute(query, computer -> {
-            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query, tx());
-            if (!selectedResourceTypesHaveInstance(query, tx(), statisticsResourceLabels(query, tx()))) {
+            AttributeType.DataType<?> dataType = getDataTypeOfSelectedResourceTypes(query);
+            if (!selectedResourceTypesHaveInstance(query, statisticsResourceLabels(query))) {
                 return Optional.empty();
             }
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tx(), getCombinedSubTypes(query, tx()));
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tx(), statisticsResourceLabels(query, tx()));
+            Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes(query));
+            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels(query));
 
             GraknMapReduce<T> mapReduce =
                     mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
