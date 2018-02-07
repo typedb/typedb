@@ -53,6 +53,8 @@ public class QueryPlannerTest {
     private static final String thingy2 = "thingy2";
     private static final String thingy3 = "thingy3";
     private static final String related = "related";
+    private static final String veryRelated = "veryRelated";
+    private static final String sameAsRelated = "sameAsRelated";
 
     private EmbeddedGraknTx<?> tx;
 
@@ -74,13 +76,21 @@ public class QueryPlannerTest {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
-        RelationshipType relationshipType = graph.putRelationshipType(related)
+        RelationshipType relationshipType1 = graph.putRelationshipType(related)
                 .relates(role1).relates(role2).relates(role3);
+        graph.putRelationshipType(sameAsRelated)
+                .relates(role1).relates(role2).relates(role3);
+
+        Role role4 = graph.putRole("role4");
+        Role role5 = graph.putRole("role5");
+        entityType2.plays(role4).plays(role5);
+        graph.putRelationshipType(veryRelated)
+                .relates(role4).relates(role5);
 
         Entity entity1 = entityType1.addEntity();
         Entity entity2 = entityType2.addEntity();
         Entity entity3 = entityType3.addEntity();
-        relationshipType.addRelationship()
+        relationshipType1.addRelationship()
                 .addRolePlayer(role1, entity1)
                 .addRolePlayer(role2, entity2)
                 .addRolePlayer(role3, entity3);
@@ -89,6 +99,34 @@ public class QueryPlannerTest {
     @Before
     public void setUp() {
         tx = context.tx();
+    }
+
+    @Test
+    public void inferUniqueRelationshipType() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy2),
+                y.isa(thingy3),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+    }
+
+    @Test
+    public void inferUniqueRelationshipTypeInChainedRelationships() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy2),
+                y.isa(thingy3),
+//                z.isa(thingy3),
+                var().rel(x).rel(y),
+                var().rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
     }
 
     @Test

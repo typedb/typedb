@@ -41,9 +41,10 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 @AutoValue
-abstract class LabelFragment extends Fragment {
+public abstract class LabelFragment extends Fragment {
 
-    abstract ImmutableSet<Label> labels();
+    // TODO: labels() should return ONE label instead of a set
+    public abstract ImmutableSet<Label> labels();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

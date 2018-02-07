@@ -18,13 +18,21 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
 import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
+import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
+import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
 import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -32,8 +40,13 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +64,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
@@ -95,7 +110,15 @@ public class GreedyTraversalPlan {
         final Set<Node> connectedNodes = new HashSet<>();
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
-        getConnectedFragmentSets(plan, query, allNodes, connectedNodes, nodesWithFixedCost, tx).forEach(fragmentSet -> {
+        final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
+                .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
+
+        inferRelationshipTypes(tx, allFragments);
+
+        Collection<Set<Fragment>> connectedFragmentSets =
+                getConnectedFragmentSets(plan, allFragments, allNodes, connectedNodes, nodesWithFixedCost, tx);
+
+        connectedFragmentSets.forEach(fragmentSet -> {
 
             final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
 
@@ -136,6 +159,89 @@ public class GreedyTraversalPlan {
         return plan;
     }
 
+    private static void inferRelationshipTypes(EmbeddedGraknTx<?> tx, Set<Fragment> allFragments) {
+        // find all vars representing types
+        Map<Var, Type> labelVarTypeMap = new HashMap<>();
+        allFragments.stream()
+                .filter(LabelFragment.class::isInstance)
+                .forEach(fragment -> {
+                    // TODO: labels() should return ONE label instead of a set
+                    Type type = tx.getType(((LabelFragment) fragment).labels().iterator().next());
+                    if (type != null && !type.isRole()) labelVarTypeMap.put(fragment.start(), type);
+                });
+
+        // find all vars with direct out isa edges
+        Map<Var, Type> instanceVarTypeMap = allFragments.stream()
+                .filter(InIsaFragment.class::isInstance)
+                .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
+                .collect(Collectors.toMap(Fragment::end, fragment -> labelVarTypeMap.get(fragment.start())));
+
+        // relationship vars and its role player vars
+        Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
+        allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
+                .forEach(fragment -> relationshipRolePlayerMap.put(fragment.start(), fragment.end()));
+        Iterator<Var> iterator = relationshipRolePlayerMap.keySet().iterator();
+        while (iterator.hasNext()) {
+            Var relationship = iterator.next();
+
+            // the relation should have at least 2 known role players so we can infer something useful
+            if (instanceVarTypeMap.containsKey(relationship) ||
+                    relationshipRolePlayerMap.get(relationship).size() < 2) {
+                iterator.remove();
+            } else {
+                final int[] numRolePlayersHaveType = {0};
+                relationshipRolePlayerMap.get(relationship).forEach(
+                        rolePlayer -> {
+                            if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                                numRolePlayersHaveType[0]++;
+                            }
+                        });
+                if (numRolePlayersHaveType[0] < 2) {
+                    iterator.remove();
+                }
+            }
+        }
+
+        // for each type, get all possible relationship type it could be in
+        Map<Type, Set<RelationshipType>> relationshipMap = new HashMap<>();
+        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaEntityType());
+        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaAttributeType());
+        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaRelationType());
+
+        relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
+            Iterator<Var> rolePlayerVarIterator = rolePlayerVars.iterator();
+
+            // compute the intersection of possible relationship types
+            Var firstRolePlayer = rolePlayerVarIterator.next();
+            while (!instanceVarTypeMap.containsKey(firstRolePlayer)) {
+                firstRolePlayer = rolePlayerVarIterator.next();
+            }
+            Set<Type> possibleRelationShipTypes =
+                    new HashSet<>(relationshipMap.get(instanceVarTypeMap.get(firstRolePlayer)));
+            while (rolePlayerVarIterator.hasNext()) {
+                possibleRelationShipTypes.retainAll(
+                        relationshipMap.get(instanceVarTypeMap.get(rolePlayerVarIterator.next())));
+            }
+            if (possibleRelationShipTypes.size() == 1 && !instanceVarTypeMap.containsKey(relationshipVar)) {
+
+                Label label = possibleRelationShipTypes.iterator().next().getLabel();
+                Var labelVar = var();
+                allFragments.add(Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label)));
+                allFragments.addAll(EquivalentFragmentSets.isa(IsaProperty.of(label(label).admin()),
+                        relationshipVar, labelVar, true).fragments());
+            }
+        });
+    }
+
+    private static void getAllPossibleRelationships(Map<Type, Set<RelationshipType>> relationshipMap, Type metaType) {
+        metaType.subs().filter(type -> !type.equals(metaType))
+                .forEach(type -> {
+                    Set<RelationshipType> relationshipTypeSet = type.plays()
+                            .flatMap(Role::relationshipTypes).collect(Collectors.toSet());
+                    relationshipMap.put(type, relationshipTypeSet);
+                });
+    }
+
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
                                                   Map<NodeId, Node> allNodes,
                                                   Collection<Node> connectedNodes) {
@@ -153,15 +259,10 @@ public class GreedyTraversalPlan {
         }
     }
 
-    private static Collection<Set<Fragment>> getConnectedFragmentSets(List<Fragment> plan,
-                                                                      ConjunctionQuery query,
-                                                                      Map<NodeId, Node> allNodes,
-                                                                      Set<Node> connectedNodes,
-                                                                      Map<Node, Double> nodesWithFixedCost,
-                                                                      EmbeddedGraknTx<?> tx) {
-
-        final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
-                .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
+    private static Collection<Set<Fragment>> getConnectedFragmentSets(
+            List<Fragment> plan, Set<Fragment> allFragments,
+            Map<NodeId, Node> allNodes, Set<Node> connectedNodes,
+            Map<Node, Double> nodesWithFixedCost,  EmbeddedGraknTx<?> tx) {
 
         allFragments.forEach(fragment -> {
             if (fragment.end() == null) {
@@ -261,9 +362,7 @@ public class GreedyTraversalPlan {
                 Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
                 if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
                     Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);
-                    if (!nodesWithFixedCost.containsKey(subType)) {
-                        return true;
-                    }
+                    return !nodesWithFixedCost.containsKey(subType);
                 }
             }
             return false;
