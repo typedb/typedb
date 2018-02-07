@@ -66,16 +66,16 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     }
 
     @API
-    public V of(String... ofTypeLabels) {
+    public final V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
-    public V of(Collection<Label> ofLabels) {
+    public final V of(Collection<Label> ofLabels) {
         this.ofLabels = ImmutableSet.copyOf(ofLabels);
         return (V) this;
     }
 
-    public final Set<Label> ofLabels() {
+    public final Set<Label> targetLabels() {
         return ofLabels;
     }
 
@@ -84,8 +84,8 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     @Override
     String graqlString() {
         String string = "centrality";
-        if (!ofLabels().isEmpty()) {
-            string += " of " + ofLabels().stream()
+        if (!targetLabels().isEmpty()) {
+            string += " of " + targetLabels().stream()
                     .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
         }

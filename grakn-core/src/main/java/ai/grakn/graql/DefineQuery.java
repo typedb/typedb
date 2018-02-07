@@ -34,5 +34,8 @@ import java.util.Collection;
  */
 public interface DefineQuery extends Query<Answer> {
 
+    /**
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     */
     Collection<? extends VarPattern> varPatterns();
 }

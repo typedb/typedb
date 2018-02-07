@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 abstract class AbstractQuery<T, S> implements Query<T> {
 
     @CheckReturnValue
-    // TODO maybe this is bad too??
     protected abstract Stream<S> stream();
 
     @Override

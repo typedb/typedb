@@ -41,6 +41,9 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      */
     PathQuery from(ConceptId sourceId);
 
+    /**
+     * Get the id of the source instance
+     */
     ConceptId from();
 
     /**
@@ -49,6 +52,9 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      */
     PathQuery to(ConceptId destinationId);
 
+    /**
+     * Get the id of the destination instance
+     */
     ConceptId to();
 
     /**
@@ -63,7 +69,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @return a PathQuery with the subLabels set
      */
     @Override
-    PathQuery in(Collection<Label> subLabels);
+    PathQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

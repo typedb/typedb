@@ -68,7 +68,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    String graqlString() {
+    final String graqlString() {
         return "paths from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
                 + subtypeString();
     }

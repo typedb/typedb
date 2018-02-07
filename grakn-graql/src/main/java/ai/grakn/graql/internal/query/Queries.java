@@ -55,7 +55,7 @@ public class Queries {
             }
         }
 
-        return new AutoValue_GetQueryImpl(vars, match);
+        return GetQueryImpl.of(match, vars);
     }
 
     public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, Optional<GraknTx> tx) {
@@ -75,6 +75,6 @@ public class Queries {
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
-        return new AutoValue_AggregateQueryImpl<>(match, aggregate);
+        return AggregateQueryImpl.of(match, aggregate);
     }
 }

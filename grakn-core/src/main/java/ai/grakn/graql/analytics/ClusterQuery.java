@@ -45,8 +45,14 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      */
     ClusterQuery<Map<String, Set<String>>> members();
 
-    boolean membersSet();
+    /**
+     * Get whether this query will return the members of each cluster.
+     */
+    boolean isMembersSet();
 
+    /**
+     * Get the source ID, if one is set with {@link #of(ConceptId)}.
+     */
     Optional<ConceptId> sourceId();
 
     /**
@@ -75,7 +81,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the subLabels set
      */
     @Override
-    ClusterQuery<T> in(Collection<Label> subLabels);
+    ClusterQuery<T> in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on
@@ -90,6 +96,8 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     @Override
     ClusterQuery<T> includeAttribute();
 
-    @Nullable
-    Long clusterSize();
+    /**
+     * Get the size of the clusters returned
+     */
+    @Nullable Long clusterSize();
 }

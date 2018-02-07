@@ -34,13 +34,13 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.ComputeQueryOf;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.StatisticsQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -197,7 +197,7 @@ public class TinkerQueryRunner implements QueryRunner {
         }
 
         Long clusterSize = query.clusterSize();
-        boolean members = query.membersSet();
+        boolean members = query.isMembersSet();
 
         GraknMapReduce<?> mapReduce;
         if (members) {
@@ -228,10 +228,10 @@ public class TinkerQueryRunner implements QueryRunner {
             Set<Label> ofLabels;
 
             // Check if ofType is valid before returning emptyMap
-            if (query.ofLabels().isEmpty()) {
+            if (query.targetLabels().isEmpty()) {
                 ofLabels = subLabels(query, tx);
             } else {
-                ofLabels = query.ofLabels().stream()
+                ofLabels = query.targetLabels().stream()
                         .flatMap(typeLabel -> {
                             Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
@@ -304,10 +304,10 @@ public class TinkerQueryRunner implements QueryRunner {
             Set<Label> ofLabels;
 
             // Check if ofType is valid before returning emptyMap
-            if (query.ofLabels().isEmpty()) {
+            if (query.targetLabels().isEmpty()) {
                 ofLabels = subLabels(query, tx);
             } else {
-                ofLabels = query.ofLabels().stream()
+                ofLabels = query.targetLabels().stream()
                         .flatMap(typeLabel -> {
                             Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
@@ -406,7 +406,7 @@ public class TinkerQueryRunner implements QueryRunner {
         GraknTx tx = query.tx().orElseThrow(GraqlQueryException::noTx);
 
         PathsQuery pathsQuery = tx.graql().compute().paths();
-        if (query.getIncludeAttribute()) pathsQuery = pathsQuery.includeAttribute();
+        if (query.isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(query.from()).to(query.to()).in(query.subLabels()).execute().stream().findAny();
     }
 
@@ -435,7 +435,7 @@ public class TinkerQueryRunner implements QueryRunner {
 
             Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(tx, result);
             List<List<Concept>> allPaths = getAllPaths(tx, predecessorMapFromSource, sourceId);
-            if (query.getIncludeAttribute()) { // this can be slow
+            if (query.isAttributeIncluded()) { // this can be slow
                 return getExtendedPaths(tx, allPaths);
             }
 
@@ -522,7 +522,7 @@ public class TinkerQueryRunner implements QueryRunner {
         if (query.subLabels().isEmpty()) {
             ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
 
-            if (query.getIncludeAttribute()) {
+            if (query.isAttributeIncluded()) {
                 tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
             } else {
                 tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
@@ -538,7 +538,7 @@ public class TinkerQueryRunner implements QueryRunner {
                 return type;
             }).flatMap(Type::subs);
 
-            if (!query.getIncludeAttribute()) {
+            if (!query.isAttributeIncluded()) {
                 subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
             }
 
@@ -567,7 +567,7 @@ public class TinkerQueryRunner implements QueryRunner {
     }
 
     @Nullable
-    private static AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes(ComputeQueryOf<?> query, GraknTx tx) {
+    private static AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes(StatisticsQuery<?> query, GraknTx tx) {
         AttributeType.DataType<?> dataType = null;
         for (Type type : calcStatisticsResourceTypes(query, tx)) {
             // check if the selected type is a resource-type
@@ -584,25 +584,25 @@ public class TinkerQueryRunner implements QueryRunner {
             } else {
                 // check if all the resource-types have the same data-type
                 if (!dataType.equals(resourceType.getDataType())) {
-                    throw GraqlQueryException.resourcesWithDifferentDataTypes(query.ofLabels());
+                    throw GraqlQueryException.resourcesWithDifferentDataTypes(query.attributeLabels());
                 }
             }
         }
         return dataType;
     }
 
-    private static Set<Label> statisticsResourceLabels(ComputeQueryOf<?> query, GraknTx tx) {
+    private static Set<Label> statisticsResourceLabels(StatisticsQuery<?> query, GraknTx tx) {
         return calcStatisticsResourceTypes(query, tx).stream()
                 .map(SchemaConcept::getLabel)
                 .collect(toImmutableSet());
     }
 
-    private static ImmutableSet<Type> calcStatisticsResourceTypes(ComputeQueryOf<?> query, GraknTx tx) {
-        if (query.ofLabels().isEmpty()) {
+    private static ImmutableSet<Type> calcStatisticsResourceTypes(StatisticsQuery<?> query, GraknTx tx) {
+        if (query.attributeLabels().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
-        return query.ofLabels().stream()
+        return query.attributeLabels().stream()
                 .map((label) -> {
                     Type type = tx.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
@@ -634,10 +634,10 @@ public class TinkerQueryRunner implements QueryRunner {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    private static Set<Label> getCombinedSubTypes(ComputeQueryOf<?> query, GraknTx tx) {
+    private static Set<Label> getCombinedSubTypes(StatisticsQuery<?> query, GraknTx tx) {
         Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(query, tx));
         allSubTypes.addAll(subLabels(query, tx));
-        allSubTypes.addAll(query.ofLabels());
+        allSubTypes.addAll(query.attributeLabels());
         return allSubTypes;
     }
 
@@ -736,7 +736,7 @@ public class TinkerQueryRunner implements QueryRunner {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
-    private static <T, Q extends ComputeQueryOf<?>> Optional<T> execWithMapReduce(
+    private static <T, Q extends StatisticsQuery<?>> Optional<T> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory) {
 
         return runCompute(query, (tx, computer) -> {

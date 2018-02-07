@@ -70,7 +70,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public V in(Collection<Label> subLabels) {
+    public final V in(Collection<? extends Label> subLabels) {
         this.subLabels = ImmutableSet.copyOf(subLabels);
         return (V) this;
     }
@@ -87,7 +87,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public final boolean getIncludeAttribute() {
+    public final boolean isAttributeIncluded() {
         return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
     }
 

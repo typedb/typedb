@@ -19,7 +19,10 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
 import java.util.Optional;
@@ -31,8 +34,12 @@ import java.util.Optional;
 @AutoValue
 abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
 
+    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<? super Answer, T> aggregate) {
+        return new AutoValue_AggregateQueryImpl<>(match, aggregate);
+    }
+
     @Override
-    public AggregateQuery<T> withTx(GraknTx tx) {
+    public final AggregateQuery<T> withTx(GraknTx tx) {
         return Queries.aggregate(match().withTx(tx).admin(), aggregate());
     }
 
@@ -53,7 +60,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 }

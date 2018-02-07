@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQueryOf;
+import ai.grakn.graql.StatisticsQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
@@ -32,8 +32,8 @@ import java.util.Optional;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
-        extends AbstractComputeQuery<T, V> implements ComputeQueryOf<T> {
+abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
+        extends AbstractComputeQuery<T, V> implements StatisticsQuery<T> {
 
     private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
 
@@ -42,17 +42,17 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
     }
 
     @API
-    public V of(String... statisticsResourceTypeLabels) {
+    public final V of(String... statisticsResourceTypeLabels) {
         return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     @API
-    public V of(Collection<Label> statisticsResourceLabels) {
+    public final V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
     }
 
-    public final Collection<? extends Label> ofLabels() {
+    public final Collection<? extends Label> attributeLabels() {
         return statisticsResourceLabels;
     }
 
