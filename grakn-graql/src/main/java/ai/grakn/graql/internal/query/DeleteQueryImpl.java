@@ -59,7 +59,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public boolean isReadOnly() {
+    public final boolean isReadOnly() {
         return false;
     }
 

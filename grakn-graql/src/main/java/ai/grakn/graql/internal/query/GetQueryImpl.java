@@ -44,6 +44,10 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
 
+    public static GetQueryImpl of(Match match, ImmutableSet<Var> vars) {
+        return new AutoValue_GetQueryImpl(vars, match);
+    }
+
     @Override
     public GetQuery withTx(GraknTx tx) {
         return Queries.get(vars(), match().withTx(tx).admin());

@@ -73,7 +73,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public InsertQuery withTx(GraknTx tx) {
+    public final InsertQuery withTx(GraknTx tx) {
         return match().map(
                 m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
         ).orElseGet(
@@ -129,7 +129,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         String mq = match().map(match -> match + "\n").orElse("");
         return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }

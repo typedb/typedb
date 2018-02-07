@@ -44,6 +44,9 @@ public interface CorenessQuery extends ComputeQueryOf<Map<Long, Set<String>>> {
      */
     CorenessQuery minK(long k);
 
+    /**
+     * Get the min value of coreness in k-core.
+     */
     long minK();
 
     /**

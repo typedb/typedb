@@ -43,5 +43,8 @@ public interface ComputeQueryOf<T> extends ComputeQuery<T> {
      */
     ComputeQueryOf<T> of(Collection<Label> resourceLabels);
 
+    /**
+     * Get the collection of types of resources to execute the query on
+     */
     Collection<? extends Label> ofLabels();
 }

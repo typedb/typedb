@@ -62,12 +62,12 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
     }
 
     @API
-    public V of(String... statisticsResourceTypeLabels) {
+    public final V of(String... statisticsResourceTypeLabels) {
         return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
     @API
-    public V of(Collection<Label> statisticsResourceLabels) {
+    public final V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
     }
@@ -155,7 +155,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
         return dataType;
     }
 
-    boolean selectedResourceTypesHaveInstance(GraknTx tx, Set<Label> statisticsResourceTypes) {
+    final boolean selectedResourceTypesHaveInstance(GraknTx tx, Set<Label> statisticsResourceTypes) {
         for (Label resourceType : statisticsResourceTypes) {
             for (Label type : subLabels(tx)) {
                 Boolean patternExist = tx.graql().infer(false).match(
@@ -176,7 +176,7 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQueryOf<T>>
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    Set<Label> getCombinedSubTypes(GraknTx tx) {
+    final Set<Label> getCombinedSubTypes(GraknTx tx) {
         Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes(tx));
         allSubTypes.addAll(subLabels(tx));
         allSubTypes.addAll(statisticsResourceLabels);

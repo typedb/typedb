@@ -51,7 +51,7 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
     }
 
     @Override
-    public Void execute() {
+    public final Void execute() {
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());

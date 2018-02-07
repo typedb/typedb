@@ -109,7 +109,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public V in(Collection<Label> subLabels) {
+    public final V in(Collection<Label> subLabels) {
         this.subLabels = ImmutableSet.copyOf(subLabels);
         return (V) this;
     }

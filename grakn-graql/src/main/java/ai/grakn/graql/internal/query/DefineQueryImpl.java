@@ -54,7 +54,7 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
     }
 
     @Override
-    public Answer execute() {
+    public final Answer execute() {
         GraknTx tx = tx().orElseThrow(GraqlQueryException::noTx);
 
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(varPatterns()).stream()

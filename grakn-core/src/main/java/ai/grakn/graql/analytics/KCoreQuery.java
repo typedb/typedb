@@ -43,6 +43,9 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
      */
     KCoreQuery kValue(long k);
 
+    /**
+     * Get the value of k in k-core.
+     */
     long kValue();
 
     /**

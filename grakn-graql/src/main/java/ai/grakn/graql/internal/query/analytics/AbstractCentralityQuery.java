@@ -66,11 +66,11 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     }
 
     @API
-    public V of(String... ofTypeLabels) {
+    public final V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(toImmutableSet()));
     }
 
-    public V of(Collection<Label> ofLabels) {
+    public final V of(Collection<Label> ofLabels) {
         this.ofLabels = ImmutableSet.copyOf(ofLabels);
         return (V) this;
     }
