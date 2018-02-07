@@ -19,9 +19,13 @@
 package ai.grakn.bootup;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Properties;
 
 /**
  *
@@ -29,6 +33,7 @@ import java.time.LocalDateTime;
  */
 public class QueueProcess extends AbstractProcessHandler {
     private static final String QUEUE_PROCESS_NAME = "redis-server";
+    private static String CONFIG_LOCATION = "/services/redis/redis.conf";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
     private static final String NAME = "Queue";
@@ -58,7 +63,7 @@ public class QueueProcess extends AbstractProcessHandler {
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
-                homePath +"/services/redis/"+queueBin+" "+ homePath +"/services/redis/redis.conf"
+                homePath +"/services/redis/"+queueBin+" "+ homePath + CONFIG_LOCATION
         },null,homePath.toFile());
 
         LocalDateTime init = LocalDateTime.now();
@@ -99,14 +104,27 @@ public class QueueProcess extends AbstractProcessHandler {
         int pid = retrievePid(QUEUE_PID);
         if (pid <0 ) return;
 
+        String host = getHostFromConfig();
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
-                homePath + "/services/redis/" + queueBin + " shutdown"
+                homePath + "/services/redis/" + queueBin + " -h " + host + " shutdown"
         }, null, null);
 
         waitUntilStopped(QUEUE_PID,pid);
+    }
+
+    private String getHostFromConfig() {
+        String fileLocation = homePath + CONFIG_LOCATION;
+        try (InputStream input = new FileInputStream(fileLocation)){
+            Properties prop = new Properties();
+            prop.load(input);
+            return prop.getProperty("bind");
+        } catch (IOException ex) {
+            System.out.println(String.format("Cannot load config {%s}", fileLocation));
+            throw new RuntimeException(ex);
+        }
     }
 
     public void status() {
