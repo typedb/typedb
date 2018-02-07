@@ -37,6 +37,9 @@ public interface DeleteQueryAdmin extends DeleteQuery {
     @CheckReturnValue
     Match match();
 
+    /**
+     * Get the {@link Var}s to delete on each result of {@link #match()}.
+     */
     @CheckReturnValue
     Collection<? extends Var> vars();
 }

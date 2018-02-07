@@ -23,7 +23,6 @@ import ai.grakn.concept.Label;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A query that triggers an analytics OLAP computation on a graph.
@@ -52,9 +51,12 @@ public interface ComputeQuery<T> extends Query<T> {
      * @return a ComputeQuery with the subLabels set
      */
     @CheckReturnValue
-    ComputeQuery<T> in(Collection<Label> subLabels);
+    ComputeQuery<T> in(Collection<? extends Label> subLabels);
 
-    Set<Label> subLabels();
+    /**
+     * Get the collection of types to include in the subgraph
+     */
+    Collection<? extends Label> subLabels();
 
     /**
      * Allow analytics query to include attributes and their relationships
@@ -64,7 +66,10 @@ public interface ComputeQuery<T> extends Query<T> {
     @CheckReturnValue
     ComputeQuery<T> includeAttribute();
 
-    boolean getIncludeAttribute();
+    /**
+     * Get if this query will include attributes and their relationships
+     */
+    boolean isAttributeIncluded();
 
     /**
      * Whether this query will modify the graph

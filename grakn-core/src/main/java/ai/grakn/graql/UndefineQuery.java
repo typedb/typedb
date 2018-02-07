@@ -36,5 +36,8 @@ public interface UndefineQuery extends Query<Void> {
     @Override
     UndefineQuery withTx(GraknTx tx);
 
+    /**
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     */
     Collection<? extends VarPattern> varPatterns();
 }
