@@ -224,11 +224,12 @@ public class GreedyTraversalPlan {
             }
             if (possibleRelationShipTypes.size() == 1 && !instanceVarTypeMap.containsKey(relationshipVar)) {
 
-                Label label = possibleRelationShipTypes.iterator().next().getLabel();
+                Type relationshipType = possibleRelationShipTypes.iterator().next();
+                Label label = relationshipType.getLabel();
                 Var labelVar = var();
                 allFragments.add(Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label)));
                 allFragments.addAll(EquivalentFragmentSets.isa(IsaProperty.of(label(label).admin()),
-                        relationshipVar, labelVar, true).fragments());
+                        relationshipVar, labelVar, relationshipType.isImplicit()).fragments());
             }
         });
     }

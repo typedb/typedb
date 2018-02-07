@@ -40,6 +40,12 @@ import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * A fragment representing traversing a label.
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
 public abstract class LabelFragment extends Fragment {
 

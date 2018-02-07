@@ -26,6 +26,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
 import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
@@ -52,6 +53,7 @@ public class QueryPlannerTest {
     private static final String thingy1 = "thingy1";
     private static final String thingy2 = "thingy2";
     private static final String thingy3 = "thingy3";
+    private static final String thingy4 = "thingy4";
     private static final String related = "related";
     private static final String veryRelated = "veryRelated";
     private static final String sameAsRelated = "sameAsRelated";
@@ -65,6 +67,7 @@ public class QueryPlannerTest {
         EntityType entityType1 = graph.putEntityType(thingy1);
         EntityType entityType2 = graph.putEntityType(thingy2);
         EntityType entityType3 = graph.putEntityType(thingy3);
+        EntityType entityType4 = graph.putEntityType(thingy4);
 
         EntityType superType1 = graph.putEntityType(thingy)
                 .sub(entityType0)
@@ -83,7 +86,9 @@ public class QueryPlannerTest {
 
         Role role4 = graph.putRole("role4");
         Role role5 = graph.putRole("role5");
+        entityType1.plays(role4).plays(role5);
         entityType2.plays(role4).plays(role5);
+        entityType4.plays(role4);
         graph.putRelationshipType(veryRelated)
                 .relates(role4).relates(role5);
 
@@ -102,31 +107,46 @@ public class QueryPlannerTest {
     }
 
     @Test
-    public void inferUniqueRelationshipType() {
+    public void uniqueAndNonUniqueRelationshipType() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
         pattern = and(
-                x.isa(thingy2),
-                y.isa(thingy3),
+                x.isa(thingy1),
+                y.isa(thingy2),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
+        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+
+        pattern = and(
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
     }
 
     @Test
-    public void inferUniqueRelationshipTypeInChainedRelationships() {
+    public void relationshipTypeWithMoreThan2Roles() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
         pattern = and(
-                x.isa(thingy2),
-                y.isa(thingy3),
-//                z.isa(thingy3),
-                var().rel(x).rel(y),
-                var().rel(y).rel(z));
+                x.isa(thingy1),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
+        System.out.println(plan);
+        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+
+        pattern = and(
+                x.isa(thingy1),
+                y.isa(thingy2),
+                z.isa(thingy4),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        assertEquals(4L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
     }
 
     @Test
