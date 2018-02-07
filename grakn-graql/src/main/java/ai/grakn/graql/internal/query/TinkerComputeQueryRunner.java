@@ -334,7 +334,7 @@ public class TinkerComputeQueryRunner {
 
     public Optional<List<Concept>> run(PathQuery query) {
         PathsQuery pathsQuery = tx.graql().compute().paths();
-        if (query.isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
+        if (isAttributeIncluded(query)) pathsQuery = pathsQuery.includeAttribute();
         return pathsQuery.from(query.from()).to(query.to()).in(query.subLabels()).execute().stream().findAny();
     }
 
@@ -362,7 +362,7 @@ public class TinkerComputeQueryRunner {
 
             Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(result);
             List<List<Concept>> allPaths = getAllPaths(predecessorMapFromSource, sourceId);
-            if (query.isAttributeIncluded()) { // this can be slow
+            if (isAttributeIncluded(query)) { // this can be slow
                 return getExtendedPaths(allPaths);
             }
 
@@ -427,7 +427,7 @@ public class TinkerComputeQueryRunner {
         if (query.subLabels().isEmpty()) {
             ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
 
-            if (query.isAttributeIncluded()) {
+            if (isAttributeIncluded(query)) {
                 tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
             } else {
                 tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
@@ -443,7 +443,7 @@ public class TinkerComputeQueryRunner {
                 return type;
             }).flatMap(Type::subs);
 
-            if (!query.isAttributeIncluded()) {
+            if (!isAttributeIncluded(query)) {
                 subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
             }
 
@@ -664,11 +664,22 @@ public class TinkerComputeQueryRunner {
         });
     }
 
+    private boolean isAttributeIncluded(ComputeQuery<?> query) {
+        return query.isAttributeIncluded() || subTypesContainsImplicitOrAttributeTypes(query);
+    }
+
+    private boolean subTypesContainsImplicitOrAttributeTypes(ComputeQuery<?> query) {
+        return query.subLabels().stream().anyMatch(label -> {
+            SchemaConcept type = tx.getSchemaConcept(label);
+            return (type != null && (type.isAttributeType() || type.isImplicit()));
+        });
+    }
+
     private interface ComputeRunner<T> {
         T apply(GraknComputer computer);
     }
 
-    interface MapReduceFactory<S> {
+    private interface MapReduceFactory<S> {
         GraknMapReduce<S> get(
                 Set<LabelId> statisticsResourceLabelIds, AttributeType.DataType<?> dataType, String degreePropertyKey);
     }

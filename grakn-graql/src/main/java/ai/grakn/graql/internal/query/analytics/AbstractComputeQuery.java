@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -88,7 +87,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final boolean isAttributeIncluded() {
-        return includeAttribute || subTypesContainsImplicitOrAttributeTypes();
+        return includeAttribute;
     }
 
     @Override
@@ -96,19 +95,6 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         if (graknComputer != null) {
             graknComputer.killJobs();
         }
-    }
-
-    private boolean subTypesContainsImplicitOrAttributeTypes() {
-        if (!tx.isPresent()) {
-            return false;
-        }
-
-        GraknTx theTx = tx.get();
-
-        return subLabels.stream().anyMatch(label -> {
-            SchemaConcept type = theTx.getSchemaConcept(label);
-            return (type != null && (type.isAttributeType() || type.isImplicit()));
-        });
     }
 
     abstract String graqlString();
