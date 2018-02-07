@@ -125,7 +125,6 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public <T> T run(ClusterQuery<T> query) {
-
         return tinkerComputeQueryRunner.run(query);
     }
 
@@ -156,7 +155,6 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Double> run(MeanQuery query) {
-
         return tinkerComputeQueryRunner.run(query);
     }
 
@@ -182,17 +180,12 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Optional<Double> run(StdQuery query) {
-
         return tinkerComputeQueryRunner.run(query);
     }
 
     @Override
     public Optional<Number> run(SumQuery query) {
         return tinkerComputeQueryRunner.run(query);
-    }
-
-    public GraknTx tx() {
-        return tx;
     }
 
     private void deleteResult(Answer result, Collection<? extends Var> vars) {
