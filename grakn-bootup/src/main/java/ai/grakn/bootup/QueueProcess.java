@@ -32,7 +32,7 @@ import java.time.LocalDateTime;
  */
 public class QueueProcess extends AbstractProcessHandler {
     private static final String QUEUE_PROCESS_NAME = "redis-server";
-    private static String CONFIG_LOCATION = "/services/redis/redis.conf";
+    private static final String CONFIG_LOCATION = "/services/redis/redis.conf";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
     private static final String NAME = "Queue";
@@ -115,8 +115,8 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     private String getHostFromConfig() {
-        String fileLocation = homePath + CONFIG_LOCATION;
-        return GraknConfig.read(new File(fileLocation)).getProperty(GraknConfigKey.REDIS_BIND);
+        Path fileLocation = Paths.get(homePath.toString(), CONFIG_LOCATION);
+        return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
 
     public void status() {
