@@ -52,7 +52,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -387,13 +386,6 @@ public class RelationshipAtom extends IsaAtom {
             }
         }
         return errors;
-    }
-
-    @Override
-    public int computePriority(Set<Var> subbedVars) {
-        int priority = super.computePriority(subbedVars);
-        priority += SimplePlanner.IS_RELATION_ATOM;
-        return priority;
     }
 
     @Override

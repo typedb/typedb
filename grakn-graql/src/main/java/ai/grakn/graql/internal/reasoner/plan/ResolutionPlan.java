@@ -40,8 +40,7 @@ import java.util.stream.Collectors;
  *
  * <p>
  * Class defining the resolution plan for a given {@link ReasonerQueryImpl}.
- * The plan is constructed either using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}
- * or in terms of different weights applicable to certain {@link Atom} configurations when using the {@link SimplePlanner}.
+ * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
  * @author Kasper Piskorski
