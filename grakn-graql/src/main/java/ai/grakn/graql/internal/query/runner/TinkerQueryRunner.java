@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
@@ -63,6 +63,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Felix Chapman
  */
+@SuppressWarnings("unused") // accessed via reflection in GraknTxAbstract
 public class TinkerQueryRunner implements QueryRunner {
 
     private final GraknTx tx;

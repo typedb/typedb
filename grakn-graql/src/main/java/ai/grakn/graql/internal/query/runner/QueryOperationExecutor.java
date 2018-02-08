@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;

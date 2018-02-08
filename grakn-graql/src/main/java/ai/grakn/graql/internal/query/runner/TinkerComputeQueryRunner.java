@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
@@ -96,7 +96,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -138,25 +137,16 @@ public class TinkerComputeQueryRunner {
             }
 
             Long clusterSize = query.clusterSize();
-            boolean members = query.isMembersSet();
 
             GraknMapReduce<?> mapReduce;
-            if (members) {
-                if (clusterSize == null) {
-                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-                } else {
-                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-                }
+            if (query.isMembersSet()) {
+                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
             } else {
-                if (clusterSize == null) {
-                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-                } else {
-                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-                }
+                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
             }
 
             Memory memory = computer.compute(vertexProgram, mapReduce, subLabelIds).memory();
-            return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
+            return memory.get(mapReduce.getClass().getName());
         });
     }
 
@@ -388,9 +378,7 @@ public class TinkerComputeQueryRunner {
     }
 
     private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(Q query, ComputeRunner<T> runner) {
-        GraknComputer computer = tx.session().getGraphComputer();
-
-        return TinkerComputeJob.create(computer, () -> {
+        return TinkerComputeJob.create(tx.session(), computer -> {
             LOG.info(query + " started");
             long startTime = System.currentTimeMillis();
 
@@ -692,33 +680,4 @@ public class TinkerComputeQueryRunner {
                 Set<LabelId> statisticsResourceLabelIds, AttributeType.DataType<?> dataType, String degreePropertyKey);
     }
 
-    private static class TinkerComputeJob<T> implements ComputeJob<T> {
-
-        private final GraknComputer computer;
-
-        private final Supplier<T> supplier;
-
-        private TinkerComputeJob(GraknComputer computer, Supplier<T> supplier) {
-            this.computer = computer;
-            this.supplier = supplier;
-        }
-
-        private static <T> TinkerComputeJob<T> create(GraknComputer computer, Supplier<T> supplier) {
-            return new TinkerComputeJob<>(computer, supplier);
-        }
-
-        @Override
-        public T get() {
-            return supplier.get();
-        }
-
-        @Override
-        public void kill() {
-            computer.killJobs();
-        }
-
-        public <S> TinkerComputeJob<S> map(Function<T, S> function) {
-            return create(computer, () -> function.apply(supplier.get()));
-        }
-    }
 }

@@ -111,7 +111,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.TinkerQueryRunner";
+    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
 
     //----------------------------- Shared Variables
     private final GraknSession session;
