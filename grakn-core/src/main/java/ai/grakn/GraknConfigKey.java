@@ -59,6 +59,7 @@ public abstract class GraknConfigKey<T> {
             withDefault(GraknConfigKey::parseCSValue, ImmutableList.of()),
             GraknConfigKey::toStringCSValue
     );
+    public static final GraknConfigKey<String> REDIS_BIND = key("bind");
     public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
             key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
