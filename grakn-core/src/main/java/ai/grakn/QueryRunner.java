@@ -47,6 +47,14 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
+ * Interface for executing queries and getting a result. Examples of possible implementations are: running the query
+ * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
+ *
+ * <p>
+ *     This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
+ *     (here in {@link QueryRunner}).
+ * </p>
+ *
  * @author Felix Chapman
  */
 public interface QueryRunner {
