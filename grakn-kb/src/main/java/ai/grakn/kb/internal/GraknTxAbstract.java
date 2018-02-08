@@ -120,9 +120,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static final Constructor<?> queryConstructor = getQueryConstructor();
+    private static final @Nullable Constructor<?> queryConstructor = getQueryConstructor();
 
-    private static final Method queryRunnerFactory = getQueryRunnerFactory();
+    private static final @Nullable Method queryRunnerFactory = getQueryRunnerFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -312,6 +312,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public QueryBuilder graql() {
+        if (queryConstructor == null) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
+        }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
         } catch (Exception e) {
@@ -954,6 +957,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public final QueryRunner queryRunner() {
+        if (queryRunnerFactory == null) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
+        }
         try {
             return (QueryRunner) queryRunnerFactory.invoke(null, this);
         } catch (Exception e) {
@@ -961,19 +967,19 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    private static Constructor<?> getQueryConstructor() {
+    private static @Nullable Constructor<?> getQueryConstructor() {
         try {
             return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
+            return null;
         }
     }
 
-    private static Method getQueryRunnerFactory() {
+    private static @Nullable Method getQueryRunnerFactory() {
         try {
             return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
+            return null;
         }
     }
 }
