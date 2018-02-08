@@ -93,6 +93,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -119,27 +120,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static Constructor<?> queryConstructor = null;
+    private static final Constructor<?> queryConstructor = getQueryConstructor();
 
-    static {
-        try {
-            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            queryConstructor = null;
-        }
-    }
-
-    private static final Method queryRunnerFactory;
-
-    static {
-        Method method;
-        try {
-            method = Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            method = null;
-        }
-        queryRunnerFactory = method;
-    }
+    private static final Method queryRunnerFactory = getQueryRunnerFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -329,10 +312,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public QueryBuilder graql() {
-        if (queryConstructor == null) {
-            throw new RuntimeException("The query builder implementation " + QUERY_BUILDER_CLASS_NAME +
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknTx");
-        }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
         } catch (Exception e) {
@@ -975,15 +954,26 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public final QueryRunner queryRunner() {
-        // TODO apologise
-        if (queryRunnerFactory == null) {
-            throw new RuntimeException("The query runner implementation " + QUERY_RUNNER_CLASS_NAME +
-                    " must be accessible in the classpath");
-        }
         try {
             return (QueryRunner) queryRunnerFactory.invoke(null, this);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static Constructor<?> getQueryConstructor() {
+        try {
+            return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
+        }
+    }
+
+    private static Method getQueryRunnerFactory() {
+        try {
+            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
         }
     }
 }
