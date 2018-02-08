@@ -26,10 +26,11 @@ import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -41,7 +42,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     private boolean includeAttribute;
     private ImmutableSet<Label> subLabels = ImmutableSet.of();
 
-    private @Nullable ComputeJob<T> job = null;
+    private Set<ComputeJob<T>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
@@ -56,9 +57,15 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final T execute() {
-        assert job == null; // TODO
-        job = createJob();
-        return job.get();
+        ComputeJob<T> job = createJob();
+
+        runningJobs.add(job);
+
+        try {
+            return job.get();
+        } finally {
+            runningJobs.remove(job);
+        }
     }
 
     protected abstract ComputeJob<T> createJob();
@@ -103,9 +110,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final void kill() {
-        if (job != null) {
-            job.kill();
-        }
+        runningJobs.forEach(ComputeJob::kill);
     }
 
     abstract String graqlString();
