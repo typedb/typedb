@@ -35,7 +35,7 @@ We also welcome developers wanting to build example projects on top of GRAKN.AI,
 Some of the ways to get involved:
 
 * Sign up for our [community newsletter](http://grakn.us8.list-manage.com/subscribe?u=b27e8984466b0dc642a917ba5&id=3742a20dc0)
-* [Download](https://grakn.ai/download/latest) the latest release
+* [Download](https://grakn.ai/download/) the latest release
 * [Fork our code](https://github.com/graknlabs/grakn)
 * Read our [code of conduct](./conduct.html)
 * Report a bug in the code
