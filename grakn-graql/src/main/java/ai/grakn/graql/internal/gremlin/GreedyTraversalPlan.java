@@ -237,12 +237,11 @@ public class GreedyTraversalPlan {
     }
 
     private static void getAllPossibleRelationships(Map<Type, Set<RelationshipType>> relationshipMap, Type metaType) {
-        metaType.subs().filter(type -> !type.equals(metaType))
-                .forEach(type -> {
-                    Set<RelationshipType> relationshipTypeSet = type.plays()
-                            .flatMap(Role::relationshipTypes).collect(Collectors.toSet());
-                    relationshipMap.put(type, relationshipTypeSet);
-                });
+        metaType.subs().forEach(type -> {
+            Set<RelationshipType> relationshipTypeSet = type.plays()
+                    .flatMap(Role::relationshipTypes).collect(Collectors.toSet());
+            relationshipMap.put(type, relationshipTypeSet);
+        });
     }
 
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
