@@ -30,12 +30,12 @@ public interface ComputeJob<T> {
     /**
      * Get the result of the compute query job
      *
-     * @throws something if the job has been killed
+     * @throws RuntimeException if the job is killed
      */
     T get();
 
     /**
-     * Stop the job executing and make something terrible and unspeakable happen to anyone waiting for a result
+     * Stop the job executing. Any calls to {@link #get()} will throw.
      */
     void kill();
 }
