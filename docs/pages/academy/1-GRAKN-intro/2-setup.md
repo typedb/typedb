@@ -35,6 +35,7 @@ There are several ways to interact with GRAKN. We will mostly be using 3 of them
 
 Let's load some data before we start to interact with Grakn. You can download the data from [here](https://github.com/graknlabs/academy/archive/master.zip).
 Unzip, go to the subfolder `short-training`. From there, run `./load.sh PATH/TO/GRAKN-DIST grakn`, where `PATH/TO/GRAKN-DIST` being the path to grakn core.
+This can take a moment.
 
 ## Visualiser
 
