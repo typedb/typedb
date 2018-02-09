@@ -93,7 +93,7 @@ public class GraknSessionImpl implements GraknSession {
         //Create commit log submitter if needed
         if(remoteSubmissionNeeded) {
             ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                    .setNameFormat("commit-log-subbmit-%d").build();
+                    .setNameFormat("commit-log-submit-%d").build();
             commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
             commitLogSubmitter.scheduleAtFixedRate(this::submitLogs, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
         }
