@@ -26,9 +26,11 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
 import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
 import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.graql.internal.gremlin.fragment.OutIsaFragment;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -179,6 +181,19 @@ public class QueryPlannerTest {
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
         assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+    }
+
+    @Test
+    public void varWithTwoTypes() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy),
+                x.isa(thingy1));
+        plan = getPlan(pattern);
+        assertEquals(1L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
     @Test
