@@ -23,7 +23,7 @@ You will also need to have and know how to use a text editor which can save simp
 ## Setup Grakn
 
 You can download the latest version of Grakn core from [here](https://grakn.ai/download/), unzip it, put it in a folder you like. 
-Or you can follow the instruction on [this page](https://dev.grakn.ai/docs/get-started/setup-guide)
+Or you can follow the instruction on [this page](https://dev.grakn.ai/docs/get-started/setup-guide).
 
 ## Starting and using GRAKN
 
@@ -67,8 +67,6 @@ When you have too many results or in general for some type of queries that do no
 
 
 ## GRAQL Console
-
-For security reasons, the dashboard does not allow you to modify the knowledge base, only to query it. In order to be able to add data or remove things, a lower level access point is needed: the GRAQL shell, which  looks very similar to the Dashboard Console, but requires the command line to be launched.
 
 In order to launch the GRAQL shell, from the command line, in the folder of grakn core, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
 
