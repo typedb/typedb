@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
 import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
 import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
+import ai.grakn.graql.internal.gremlin.fragment.OutIsaFragment;
 import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
@@ -171,10 +172,17 @@ public class GreedyTraversalPlan {
                 });
 
         // find all vars with direct out isa edges
-        Map<Var, Type> instanceVarTypeMap = allFragments.stream()
+        Multimap<Var, Type> instanceVarTypeMap = HashMultimap.create();
+        Map<Var, Type> instanceVarUniqueTypeMap = new HashMap<>();
+        allFragments.stream()
                 .filter(InIsaFragment.class::isInstance)
                 .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
-                .collect(Collectors.toMap(Fragment::end, fragment -> labelVarTypeMap.get(fragment.start())));
+                .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
+
+        // If a var has two types
+        instanceVarTypeMap.asMap().forEach((var, types) ->
+                instanceVarUniqueTypeMap.put(var, getMostSpecificSubtype(types)));
+        removeRedundantIsaFragments(allFragments, labelVarTypeMap, instanceVarUniqueTypeMap);
 
         // relationship vars and its role player vars
         Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
@@ -185,14 +193,14 @@ public class GreedyTraversalPlan {
             Var relationship = iterator.next();
 
             // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relationship) ||
+            if (instanceVarUniqueTypeMap.containsKey(relationship) ||
                     relationshipRolePlayerMap.get(relationship).size() < 2) {
                 iterator.remove();
             } else {
                 final int[] numRolePlayersHaveType = {0};
                 relationshipRolePlayerMap.get(relationship).forEach(
                         rolePlayer -> {
-                            if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                            if (instanceVarUniqueTypeMap.containsKey(rolePlayer)) {
                                 numRolePlayersHaveType[0]++;
                             }
                         });
@@ -213,18 +221,19 @@ public class GreedyTraversalPlan {
 
             // compute the intersection of possible relationship types
             Var firstRolePlayer = rolePlayerVarIterator.next();
-            while (!instanceVarTypeMap.containsKey(firstRolePlayer)) {
+            while (!instanceVarUniqueTypeMap.containsKey(firstRolePlayer)) {
                 firstRolePlayer = rolePlayerVarIterator.next();
             }
             Set<Type> possibleRelationShipTypes =
-                    new HashSet<>(relationshipMap.get(instanceVarTypeMap.get(firstRolePlayer)));
+                    new HashSet<>(relationshipMap.get(instanceVarUniqueTypeMap.get(firstRolePlayer)));
             while (rolePlayerVarIterator.hasNext()) {
                 Var nextRolePlayer = rolePlayerVarIterator.next();
-                if (instanceVarTypeMap.containsKey(nextRolePlayer)) {
-                    possibleRelationShipTypes.retainAll(relationshipMap.get(instanceVarTypeMap.get(nextRolePlayer)));
+                if (instanceVarUniqueTypeMap.containsKey(nextRolePlayer)) {
+                    possibleRelationShipTypes.retainAll(
+                            relationshipMap.get(instanceVarUniqueTypeMap.get(nextRolePlayer)));
                 }
             }
-            if (possibleRelationShipTypes.size() == 1 && !instanceVarTypeMap.containsKey(relationshipVar)) {
+            if (possibleRelationShipTypes.size() == 1 && !instanceVarUniqueTypeMap.containsKey(relationshipVar)) {
 
                 Type relationshipType = possibleRelationShipTypes.iterator().next();
                 Label label = relationshipType.getLabel();
@@ -236,12 +245,54 @@ public class GreedyTraversalPlan {
         });
     }
 
+    private static void removeRedundantIsaFragments(Set<Fragment> allFragments, Map<Var, Type> labelVarTypeMap, Map<Var, Type> instanceVarUniqueTypeMap) {
+        Iterator<Fragment> fragmentIterator = allFragments.iterator();
+        while (fragmentIterator.hasNext()) {
+            Fragment fragment = fragmentIterator.next();
+            if (fragment instanceof InIsaFragment && labelVarTypeMap.containsKey(fragment.start()) &&
+                    instanceVarUniqueTypeMap.containsKey(fragment.end()) &&
+                    !instanceVarUniqueTypeMap.get(fragment.end()).equals(labelVarTypeMap.get(fragment.start()))) {
+                fragmentIterator.remove();
+            } else if (fragment instanceof OutIsaFragment && labelVarTypeMap.containsKey(fragment.end()) &&
+                    instanceVarUniqueTypeMap.containsKey(fragment.start()) &&
+                    !instanceVarUniqueTypeMap.get(fragment.start()).equals(labelVarTypeMap.get(fragment.end()))) {
+                fragmentIterator.remove();
+            }
+        }
+    }
+
     private static void getAllPossibleRelationships(Map<Type, Set<RelationshipType>> relationshipMap, Type metaType) {
         metaType.subs().forEach(type -> {
             Set<RelationshipType> relationshipTypeSet = type.plays()
                     .flatMap(Role::relationshipTypes).collect(Collectors.toSet());
             relationshipMap.put(type, relationshipTypeSet);
         });
+    }
+
+    // check if one type is a subtype of the other
+    private static Optional<Type> subType(Type typeA, Type typeB) {
+        if (!typeA.equals(typeB)) {
+            if (typeB.sups().anyMatch(superType -> superType.equals(typeA))) {
+                return Optional.of(typeB);
+            }
+            if (typeA.sups().anyMatch(superType -> superType.equals(typeB))) {
+                return Optional.of(typeA);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Type getMostSpecificSubtype(Collection<Type> types) {
+        Iterator<Type> iterator = types.iterator();
+        Type firstType = iterator.next();
+        while (iterator.hasNext()) {
+            Type nextType = iterator.next();
+            Optional<Type> type = subType(firstType, nextType);
+            if (type.isPresent()) {
+                firstType = type.get();
+            }
+        }
+        return firstType;
     }
 
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
