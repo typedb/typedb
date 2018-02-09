@@ -4,6 +4,7 @@ keywords: getting started
 last_updated: September 2017
 tags: [getting-started]
 sidebar: academy_sidebar
+summary: This is a brief introduction to topics that will be covered in the Grakn Academy.
 permalink: ./academy/index.html
 folder: overview
 toc: false
