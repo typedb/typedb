@@ -20,33 +20,22 @@ If you do not know where to begin with, try having look at this [tutorial](http:
 You will also need to have and know how to use a text editor which can save simple, non formatted text files. There are countless alternatives on every platform, just pick your favourite one.
 
 
-## Setup the Academy Virtual Machine (VM)
+## Setup Grakn
 
-To make sure that the GRAKN environment is the same for everyone following this course, we will use a virtual machine (VM from now on) with GRAKN pre-installed and the data we will be using pre-loaded.
-
-To set it up you have to follow some simple steps:
-
-  1. Install Oracle’s VirtualBox if you have not already installed it. It can be downloaded from [here](https://www.virtualbox.org/wiki/Downloads) where you will also find detailed instructions on how to set it up on your favourite OS (it is a fairly simple process).
-
-  1. Download the GRAKN virtual machine following [this link](http://grakn.ai/download-academy) and unzip the downloaded file
-
-  1. Start Virtualbox and from the `File` menu select `Import Appliance`. Open the `GRAKN.ovf` file that you will find in the folder you unzipped in the preceding step. This will import the virtual machine image into VirtualBox
-
-  1. You are ready to go: start the Virtual Machine you just imported and you will be presented a login screen to the virtual machine. Input `grakn` both as a user name and password and you will be in the shell.
-
-![VM Screenshot](/images/academy/1-welcome/VM-screenshot.png)
-
-### Exercise
-
-Once you have started the virtual machine, list the content on the home directory, then move yourself into the folder `grakn/` from here you will be able to start grakn.
-
+You can download the latest version of Grakn core from [here](https://grakn.ai/download/), unzip it, put it in a folder you like. 
+Or you can follow the instruction on [this page](https://dev.grakn.ai/docs/get-started/setup-guide).
 
 ## Starting and using GRAKN
 
-With the Virtual Machine up and running, you are ready to start grakn. From the directory `~/grakn/` run the command `./grakn server start` to start Grakn. As soon as you see the Grakn logo, you will be able to connect to the Grakn.
+From the directory of grakn, run the command `./grakn server start` to start Grakn. As soon as you see the Grakn logo, you will be able to connect to the Grakn.
 
 There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the Graql shell.
 
+## Loading data
+
+Let's load some data before we start to interact with Grakn. You can download the data from [here](https://github.com/graknlabs/academy/archive/master.zip).
+Unzip, go to the subfolder `short-training`. From there, run `./load.sh PATH/TO/GRAKN-DIST grakn`, where `PATH/TO/GRAKN-DIST` being the path to grakn core.
+This can take a moment.
 
 ## Visualiser
 
@@ -79,9 +68,7 @@ When you have too many results or in general for some type of queries that do no
 
 ## GRAQL Console
 
-For security reasons, the dashboard does not allow you to modify the knowledge base, only to query it. In order to be able to add data or remove things, a lower level access point is needed: the GRAQL shell, which  looks very similar to the Dashboard Console, but requires the command line to be launched.
-
-In order to launch the GRAQL shell, from the command line of the VM, in the folder `grakn`, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
+In order to launch the GRAQL shell, from the command line, in the folder of grakn core, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
 
 Once again, type `match $x isa company; get;` and hit return to launch the query. As you can see the results looks very similar those in the dashboard console.
 
