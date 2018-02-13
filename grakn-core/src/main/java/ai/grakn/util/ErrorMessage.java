@@ -34,6 +34,7 @@ public enum ErrorMessage {
     UNABLE_TO_START_GRAKN("Unable to start Grakn"),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
+    UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
