@@ -56,7 +56,7 @@ public interface SumQuery extends StatisticsQuery<Optional<Number>> {
      * @return a SumQuery with the subLabels set
      */
     @Override
-    SumQuery in(Collection<Label> subLabels);
+    SumQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

@@ -45,7 +45,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
 
     @Override
     public final T execute() {
-        return aggregate().apply(match().stream());
+        return queryRunner().run(this);
     }
 
     @Override

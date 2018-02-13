@@ -19,11 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
@@ -32,8 +29,6 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.toImmutableList;
 
 /**
  * @author Felix Chapman
@@ -52,12 +47,7 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
 
     @Override
     public final Void execute() {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(varPatterns()).stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
-                .collect(toImmutableList());
-
-        QueryOperationExecutor.undefineAll(allPatterns, tx().orElseThrow(GraqlQueryException::noTx));
-
+        queryRunner().run(this);
         return null;
     }
 

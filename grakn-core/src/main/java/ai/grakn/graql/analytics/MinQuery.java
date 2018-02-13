@@ -56,7 +56,7 @@ public interface MinQuery extends StatisticsQuery<Optional<Number>> {
      * @return a MinQuery with the subLabels set
      */
     @Override
-    MinQuery in(Collection<Label> subLabels);
+    MinQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

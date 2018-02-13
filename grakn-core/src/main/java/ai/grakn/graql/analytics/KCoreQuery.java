@@ -62,7 +62,7 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
      * @return a KCoreQuery with the subLabels set
      */
     @Override
-    KCoreQuery in(Collection<Label> subLabels);
+    KCoreQuery in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on

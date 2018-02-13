@@ -56,7 +56,7 @@ public interface MedianQuery extends StatisticsQuery<Optional<Number>> {
      * @return a MedianQuery with the subLabels set
      */
     @Override
-    MedianQuery in(Collection<Label> subLabels);
+    MedianQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

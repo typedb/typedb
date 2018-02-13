@@ -56,7 +56,7 @@ public interface MaxQuery extends StatisticsQuery<Optional<Number>> {
      * @return a MaxQuery with the subLabels set
      */
     @Override
-    MaxQuery in(Collection<Label> subLabels);
+    MaxQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

@@ -56,7 +56,7 @@ public interface StdQuery extends StatisticsQuery<Optional<Double>> {
      * @return a StdQuery with the subLabels set
      */
     @Override
-    StdQuery in(Collection<Label> subLabels);
+    StdQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

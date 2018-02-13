@@ -18,25 +18,13 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.NoResultException;
-import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implements CorenessQuery {
 
@@ -47,46 +35,8 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    protected final Map<Long, Set<String>> innerExecute(GraknTx tx, GraknComputer computer) {
-        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
-
-        Set<Label> ofLabels;
-
-        // Check if ofType is valid before returning emptyMap
-        if (targetLabels().isEmpty()) {
-            ofLabels = subLabels(tx);
-        } else {
-            ofLabels = targetLabels().stream()
-                    .flatMap(typeLabel -> {
-                        Type type = tx.getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
-                        return type.subs();
-                    })
-                    .map(SchemaConcept::getLabel)
-                    .collect(Collectors.toSet());
-        }
-
-        Set<Label> subLabels = Sets.union(subLabels(tx), ofLabels);
-
-        if (!selectedTypesHaveInstance(tx)) {
-            return Collections.emptyMap();
-        }
-
-        ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tx, subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(tx, ofLabels);
-
-        try {
-            result = computer.compute(
-                    new CorenessVertexProgram(k),
-                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
-                    subLabelIds);
-        } catch (NoResultException e) {
-            return Collections.emptyMap();
-        }
-
-        return result.memory().get(DegreeDistributionMapReduce.class.getName());
+    public final ComputeJob<Map<Long, Set<String>>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

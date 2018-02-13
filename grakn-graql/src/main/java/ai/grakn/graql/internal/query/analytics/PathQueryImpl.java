@@ -18,13 +18,12 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -42,10 +41,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     }
 
     @Override
-    protected final Optional<List<Concept>> innerExecute(GraknTx tx, GraknComputer computer) {
-        PathsQuery pathsQuery = new PathsQueryImpl(Optional.of(tx));
-        if (isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
-        return pathsQuery.from(sourceId).to(destinationId).in(subLabels(tx)).execute().stream().findAny();
+    public final ComputeJob<Optional<List<Concept>>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

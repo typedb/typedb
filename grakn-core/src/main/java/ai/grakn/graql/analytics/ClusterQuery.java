@@ -81,7 +81,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the subLabels set
      */
     @Override
-    ClusterQuery<T> in(Collection<Label> subLabels);
+    ClusterQuery<T> in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on

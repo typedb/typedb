@@ -24,6 +24,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -76,6 +77,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,6 +93,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -109,6 +112,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
+    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
 
     //----------------------------- Shared Variables
     private final GraknSession session;
@@ -116,15 +120,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static Constructor<?> queryConstructor = null;
+    private static final @Nullable Constructor<?> queryConstructor = getQueryConstructor();
 
-    static {
-        try {
-            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            queryConstructor = null;
-        }
-    }
+    private static final @Nullable Method queryRunnerFactory = getQueryRunnerFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -315,8 +313,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public QueryBuilder graql() {
         if (queryConstructor == null) {
-            throw new RuntimeException("The query builder implementation " + QUERY_BUILDER_CLASS_NAME +
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknTx");
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
         }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
@@ -956,5 +953,33 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public long getShardCount(Type concept){
         return TypeImpl.from(concept).shardCount();
+    }
+
+    @Override
+    public final QueryRunner queryRunner() {
+        if (queryRunnerFactory == null) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
+        }
+        try {
+            return (QueryRunner) queryRunnerFactory.invoke(null, this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static @Nullable Constructor<?> getQueryConstructor() {
+        try {
+            return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static @Nullable Method getQueryRunnerFactory() {
+        try {
+            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
+        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            return null;
+        }
     }
 }

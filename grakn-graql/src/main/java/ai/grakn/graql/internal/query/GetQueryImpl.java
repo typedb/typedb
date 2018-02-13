@@ -64,8 +64,8 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public Stream<Answer> stream() {
-        return match().stream().map(result -> result.project(vars())).distinct();
+    public final Stream<Answer> stream() {
+        return queryRunner().run(this);
     }
 
     @Override

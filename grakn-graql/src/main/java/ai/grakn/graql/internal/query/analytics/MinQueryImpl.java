@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
 
 import java.util.Optional;
 
@@ -32,8 +31,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
     }
 
     @Override
-    protected final Optional<Number> innerExecute(GraknTx tx, GraknComputer computer) {
-        return execWithMapReduce(tx, computer, MinMapReduce::new);
+    public final ComputeJob<Optional<Number>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

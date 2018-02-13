@@ -19,23 +19,17 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
@@ -52,9 +46,8 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public Void execute() {
-        List<Answer> results = match().stream().collect(toList());
-        results.forEach(this::deleteResult);
+    public final Void execute() {
+        queryRunner().run(this);
         return null;
     }
 
@@ -76,20 +69,6 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     @Override
     public DeleteQueryAdmin admin() {
         return this;
-    }
-
-    private void deleteResult(Answer result) {
-        Collection<? extends Var> toDelete = vars().isEmpty() ? result.vars() : vars();
-
-        for (Var var : toDelete) {
-            Concept concept = result.get(var);
-
-            if (concept.isSchemaConcept()) {
-                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
-            }
-
-            concept.delete();
-        }
     }
 
     @Override

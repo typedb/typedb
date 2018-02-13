@@ -51,7 +51,7 @@ public interface ComputeQuery<T> extends Query<T> {
      * @return a ComputeQuery with the subLabels set
      */
     @CheckReturnValue
-    ComputeQuery<T> in(Collection<Label> subLabels);
+    ComputeQuery<T> in(Collection<? extends Label> subLabels);
 
     /**
      * Get the collection of types to include in the subgraph
@@ -77,15 +77,6 @@ public interface ComputeQuery<T> extends Query<T> {
     @Override
     default boolean isReadOnly() {
         return true;
-    }
-
-    /**
-     * Returns <tt>true</tt> if this is a statistics query
-     *
-     * @return <tt>true</tt> if this is a statistics query
-     */
-    default boolean isStatisticsQuery() {
-        return false;
     }
 
     /**

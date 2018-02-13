@@ -18,12 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.internal.analytics.StdMapReduce;
 
-import java.util.Map;
 import java.util.Optional;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> implements StdQuery {
@@ -33,15 +31,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
     }
 
     @Override
-    protected final Optional<Double> innerExecute(GraknTx tx, GraknComputer computer) {
-        Optional<Map<String, Double>> result = execWithMapReduce(tx, computer, StdMapReduce::new);
-
-        return result.map(stdTuple -> {
-            double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
-            double sum = stdTuple.get(StdMapReduce.SUM);
-            double count = stdTuple.get(StdMapReduce.COUNT);
-            return Math.sqrt(squareSum / count - (sum / count) * (sum / count));
-        });
+    public final ComputeJob<Optional<Double>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

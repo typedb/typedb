@@ -83,7 +83,7 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
      * @return a CorenessQuery with the subLabels set
      */
     @Override
-    CorenessQuery in(Collection<Label> subLabels);
+    CorenessQuery in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on

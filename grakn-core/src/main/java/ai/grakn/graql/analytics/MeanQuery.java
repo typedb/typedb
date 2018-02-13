@@ -56,7 +56,7 @@ public interface MeanQuery extends StatisticsQuery<Optional<Double>> {
      * @return a MeanQuery with the subLabels set
      */
     @Override
-    MeanQuery in(Collection<Label> subLabels);
+    MeanQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

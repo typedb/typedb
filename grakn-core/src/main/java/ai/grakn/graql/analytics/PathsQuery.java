@@ -68,7 +68,7 @@ public interface PathsQuery extends ComputeQuery<List<List<Concept>>> {
      * @return a PathQuery with the subLabels set
      */
     @Override
-    PathsQuery in(Collection<Label> subLabels);
+    PathsQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.
