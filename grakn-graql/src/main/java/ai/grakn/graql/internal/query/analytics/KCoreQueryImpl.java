@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.KCoreQuery;
 
@@ -36,7 +37,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    public final Map<String, Set<String>> execute() {
+    public final ComputeJob<Map<String, Set<String>>> createJob() {
         return queryRunner().run(this);
     }
 

@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -30,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -38,9 +39,10 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         extends AbstractExecutableQuery<T> implements ComputeQuery<T> {
 
     private Optional<GraknTx> tx;
-    private GraknComputer graknComputer = null;
     private boolean includeAttribute;
     private ImmutableSet<Label> subLabels = ImmutableSet.of();
+
+    private Set<ComputeJob<T>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
@@ -52,6 +54,21 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         this.tx = tx;
         this.includeAttribute = includeAttribute;
     }
+
+    @Override
+    public final T execute() {
+        ComputeJob<T> job = createJob();
+
+        runningJobs.add(job);
+
+        try {
+            return job.get();
+        } finally {
+            runningJobs.remove(job);
+        }
+    }
+
+    protected abstract ComputeJob<T> createJob();
 
     @Override
     public final Optional<GraknTx> tx() {
@@ -88,27 +105,12 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final boolean isAttributeIncluded() {
-        return includeAttribute || isStatisticsQuery() || subTypesContainsImplicitOrAttributeTypes();
+        return includeAttribute;
     }
 
     @Override
     public final void kill() {
-        if (graknComputer != null) {
-            graknComputer.killJobs();
-        }
-    }
-
-    private boolean subTypesContainsImplicitOrAttributeTypes() {
-        if (!tx.isPresent()) {
-            return false;
-        }
-
-        GraknTx theTx = tx.get();
-
-        return subLabels.stream().anyMatch(label -> {
-            SchemaConcept type = theTx.getSchemaConcept(label);
-            return (type != null && (type.isAttributeType() || type.isImplicit()));
-        });
+        runningJobs.forEach(ComputeJob::kill);
     }
 
     abstract String graqlString();

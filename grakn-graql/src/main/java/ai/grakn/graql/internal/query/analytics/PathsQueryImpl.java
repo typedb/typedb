@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -39,7 +40,7 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    public final List<List<Concept>> execute() {
+    public final ComputeJob<List<List<Concept>>> createJob() {
         return queryRunner().run(this);
     }
 

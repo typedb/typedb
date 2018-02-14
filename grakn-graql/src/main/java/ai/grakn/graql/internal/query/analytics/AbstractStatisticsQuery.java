@@ -37,8 +37,10 @@ abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
 
     private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
 
+    private static final boolean INCLUDE_ATTRIBUTE = true;
+
     AbstractStatisticsQuery(Optional<GraknTx> tx) {
-        super(tx);
+        super(tx, INCLUDE_ATTRIBUTE);
     }
 
     @API
@@ -54,11 +56,6 @@ abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
 
     public final Collection<? extends Label> attributeLabels() {
         return statisticsResourceLabels;
-    }
-
-    @Override
-    public boolean isStatisticsQuery() {
-        return true;
     }
 
     @Override

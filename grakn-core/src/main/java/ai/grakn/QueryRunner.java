@@ -47,6 +47,14 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
+ * Interface for executing queries and getting a result. Examples of possible implementations are: running the query
+ * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
+ *
+ * <p>
+ *     This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
+ *     (here in {@link QueryRunner}).
+ * </p>
+ *
  * @author Felix Chapman
  */
 public interface QueryRunner {
@@ -63,29 +71,29 @@ public interface QueryRunner {
 
     <T> T run(AggregateQuery<T> query);
 
-    <T> T run(ClusterQuery<T> query);
+    <T> ComputeJob<T> run(ClusterQuery<T> query);
 
-    Map<Long, Set<String>> run(CorenessQuery query);
+    ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query);
 
-    long run(CountQuery query);
+    ComputeJob<Long> run(CountQuery query);
 
-    Map<Long, Set<String>> run(DegreeQuery query);
+    ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query);
 
-    Map<String, Set<String>> run(KCoreQuery query);
+    ComputeJob<Map<String, Set<String>>> run(KCoreQuery query);
 
-    Optional<Number> run(MaxQuery query);
+    ComputeJob<Optional<Number>> run(MaxQuery query);
 
-    Optional<Double> run(MeanQuery query);
+    ComputeJob<Optional<Double>> run(MeanQuery query);
 
-    Optional<Number> run(MedianQuery query);
+    ComputeJob<Optional<Number>> run(MedianQuery query);
 
-    Optional<Number> run(MinQuery query);
+    ComputeJob<Optional<Number>> run(MinQuery query);
 
-    Optional<List<Concept>> run(PathQuery query);
+    ComputeJob<Optional<List<Concept>>> run(PathQuery query);
 
-    List<List<Concept>> run(PathsQuery query);
+    ComputeJob<List<List<Concept>>> run(PathsQuery query);
 
-    Optional<Double> run(StdQuery query);
+    ComputeJob<Optional<Double>> run(StdQuery query);
 
-    Optional<Number> run(SumQuery query);
+    ComputeJob<Optional<Number>> run(SumQuery query);
 }

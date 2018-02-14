@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.MaxQuery;
 
@@ -30,7 +31,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> i
     }
 
     @Override
-    public final Optional<Number> execute() {
+    public final ComputeJob<Optional<Number>> createJob() {
         return queryRunner().run(this);
     }
 

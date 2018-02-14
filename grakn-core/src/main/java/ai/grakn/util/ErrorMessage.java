@@ -132,6 +132,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
+    CANNOT_FIND_CLASS("The %s implementation %s must be accessible in the classpath"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
