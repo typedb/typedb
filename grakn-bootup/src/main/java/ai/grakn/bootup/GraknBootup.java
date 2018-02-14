@@ -65,10 +65,10 @@ public class GraknBootup {
     }
 
     private static void assertConfigurationCorrect(Path homeStatic, Path configStatic) {
-        if (!Files.exists(homeStatic.resolve("grakn"))) {
+        if (!homeStatic.resolve(GRAKN).toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
-        if (!Files.exists(configStatic)) {
+        if (!configStatic.toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_CONFIG_FOLDER.getMessage());
         }
     }
@@ -98,7 +98,7 @@ public class GraknBootup {
 
     public static void printAscii() {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
-        if(Files.exists(ascii)) {
+        if(ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
             } catch (IOException e) {

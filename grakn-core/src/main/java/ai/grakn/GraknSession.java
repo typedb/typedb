@@ -20,7 +20,6 @@ package ai.grakn;
 
 
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 
@@ -40,7 +39,6 @@ import javax.annotation.CheckReturnValue;
  * @author fppt
  */
 public interface GraknSession extends AutoCloseable {
-    String DEFAULT_URI = "localhost:4567";
 
     /**
      * Gets a new transaction bound to the keyspace of this Session.
@@ -64,9 +62,8 @@ public interface GraknSession extends AutoCloseable {
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
      *
-     * @throws GraknTxOperationException when more than 1 transaction is open on the graph
      */
-    void close() throws GraknTxOperationException;
+    void close();
 
     /**
      * Used to determine the location of the Engine which this session is interacting with.

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
+package ai.grakn.bootup.graknengine.pid;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,38 +38,28 @@ public class UnixGraknPidRetriever implements GraknPidRetriever {
         int exitValue = 1;
 
         Process p;
-        BufferedReader reader = null;
         try {
             p = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", psEfCommand }, null, null);
             p.waitFor();
             exitValue = p.exitValue();
 
             if (exitValue == 0) {
-                reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    outputS.append(line).append("\n");
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))){
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputS.append(line).append("\n");
+                    }
                 }
             } else {
                 throw new RuntimeException("a non-zero exit code '" + exitValue + "'returned by the command '" + psEfCommand + "'");
             }
         } catch (InterruptedException | IOException e) {
             // DO NOTHING
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // DO NOTHING
-                }
-            }
         }
 
         String pidString = outputS.toString().trim();
         try {
-            long pid = Long.parseLong(pidString);
-            return pid;
+            return Long.parseLong(pidString);
         } catch (NumberFormatException e) {
             throw new RuntimeException("Couldn't get PID of Grakn. Received '" + pidString);
         }

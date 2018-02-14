@@ -125,18 +125,18 @@ public class SNB {
     static final Var $original = var("original");
     static final Var $comment = var("comment");
     static final Var $commentId = var("commentId");
-    static final Var $firstName = var("first-name");
-    static final Var $lastName = var("last-name");
+    static final Var $firstName = var(FIRST_NAME);
+    static final Var $lastName = var(LAST_NAME);
     static final Var $birthday = var("birthday");
-    static final Var $locationIp = var("location-ip");
-    static final Var $browserUsed = var("browser-used");
-    static final Var $gender = var("gender");
-    static final Var $creationDate = var("creation-date");
+    static final Var $locationIp = var(LOCATION_IP);
+    static final Var $browserUsed = var(BROWSER_USED);
+    static final Var $gender = var(GENDER);
+    static final Var $creationDate = var(CREATION_DATE);
     static final Var $place = var("place");
     static final Var $placeId = var("placeID");
     static final Var $date = var("date");
     static final Var $messageId = var("messageId");
-    static final Var $content = var("content");
+    static final Var $content = var(CONTENT);
     static final Var $originalPost = var("originalPost");
     static final Var $opId = var("opId");
     static final Var $authorId = var("authorId");
@@ -144,7 +144,9 @@ public class SNB {
     static final Var $friendId = var("friendId");
     static final Var $personId = var("personId");
     static final Var $forumId = var("forumId");
-    static final Var $title = var("title");
+    static final Var $title = var(TITLE);
+
+    private SNB(){}
 
     static VarPattern has(String label) {
         return label(Schema.ImplicitType.HAS.getLabel(label));

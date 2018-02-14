@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
+package ai.grakn.bootup.graknengine.pid;
 
 import java.nio.file.Path;
 
@@ -28,13 +28,15 @@ import java.nio.file.Path;
  *
  */
 public class GraknPidManagerFactory {
+
+    private GraknPidManagerFactory(){}
+
     /*
      * instantiates a GraknPidManager which supports *nix systems such as Linux and OS X
      */
     public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
         GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
         GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
-        GraknPidManager graknPidManager = new GraknPidManager(graknPidStore, graknPidRetriever);
-        return graknPidManager;
+        return new GraknPidManager(graknPidStore, graknPidRetriever);
     }
 }
