@@ -104,11 +104,11 @@ public class GraqlTraversalPlanner {
             return initialPlan;
         } else {
             Atom first = optimalCandidate(candidates);
-
             List<Atom> atomsToPlan = new ArrayList<>(atoms);
-            atomsToPlan.remove(first);
 
             if(first != null){
+                atomsToPlan.remove(first);
+
                 Set<IdPredicate> extraSubs = first.getVarNames().stream()
                         .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
                         .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
