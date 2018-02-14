@@ -127,9 +127,6 @@ public class GraknSessionImpl implements GraknSession {
      * This methods creates a {@link GraknSessionImpl} object for the remote API.
      * A user should not call this method directly.
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
-     * @param keyspace
-     * @param engineUri
-     * @return
      */
     @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
     public static GraknSessionImpl create(Keyspace keyspace, String engineUri){
@@ -139,10 +136,6 @@ public class GraknSessionImpl implements GraknSession {
     /**
      * Creates a {@link GraknSessionImpl} specific for internal use (within Engine).
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
-     * @param keyspace
-     * @param engineUri
-     * @param config
-     * @return
      */
     public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
         return new GraknSessionImpl(keyspace, engineUri, config, false);
