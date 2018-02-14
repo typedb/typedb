@@ -9,9 +9,10 @@ folder: docs
 KB: genealogy-plus
 ---
 
-The page documents use of the Graql `define` query, which will define a specified [variable pattern](../querying-data/match-clause#variable-patterns)
-describing a schema. To follow along, or experiment further, with the examples given below, please
-load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
+The page documents use of the Graql `define` query, which will define a specified
+[variable pattern](../querying-data/match-clause#variable-patterns) describing a schema. To follow along, or experiment
+further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples*
+directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 {% include note.html content="If you are working in the Graql shell, don't forget to `commit`." %}
