@@ -77,105 +77,105 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public EntityType putEntityType(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Rule putRule(String label, Pattern when, Pattern then) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public RelationshipType putRelationshipType(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Role putRole(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Role putRole(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public <T extends Type> T getType(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
@@ -200,7 +200,7 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public boolean isClosed() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
@@ -215,7 +215,7 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void abort() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
@@ -225,103 +225,103 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public <T extends Concept> T buildConcept(Edge edge) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public GraphTraversalSource getTinkerTraversal() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public boolean isBatchTx() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Type getMetaConcept() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public RelationshipType getMetaRelationType() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Role getMetaRole() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public AttributeType getMetaAttributeType() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Rule getMetaRule() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public LabelId convertToId(Label label) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public void shard(ConceptId conceptId) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
 
     }
 
     @Override
     public long shardingThreshold() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public void delete() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public long getShardCount(Type type) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override

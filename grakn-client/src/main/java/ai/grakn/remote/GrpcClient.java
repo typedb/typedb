@@ -28,6 +28,7 @@ import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
+import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -110,7 +111,7 @@ final class GrpcClient implements AutoCloseable {
             response = communicator.receive();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupt"); // TODO
+            throw Throwables.propagate(e);
         }
 
         switch (response.type()) {

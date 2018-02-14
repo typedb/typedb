@@ -162,7 +162,7 @@ public class GrpcUtil {
                 return Json.read(queryResult.getOtherResult()).getValue();
             default:
             case QUERYRESULT_NOT_SET:
-                throw new IllegalArgumentException(); // TODO
+                throw new IllegalArgumentException("Unexpected " + queryResult);
         }
     }
 
@@ -205,59 +205,11 @@ public class GrpcUtil {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            Concept concept = new MyConcept(ConceptId.of(grpcConcept.getId()));
+            Concept concept = RemoteConcept.create(ConceptId.of(grpcConcept.getId()));
             map.put(Graql.var(grpcVar), concept);
         });
 
         return new QueryAnswer(map.build());
     }
 
-    private static class MyConcept implements Concept {
-
-        private final ConceptId id;
-
-        private MyConcept(ConceptId id) {
-            this.id = id;
-        }
-
-        @Override
-        public ConceptId getId() {
-            return id;
-        }
-
-        @Override
-        public Keyspace keyspace() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void delete() throws GraknTxOperationException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isDeleted() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            MyConcept myConcept = (MyConcept) o;
-
-            return id.equals(myConcept.id);
-        }
-
-        @Override
-        public int hashCode() {
-            return id.hashCode();
-        }
-
-        @Override
-        public int compareTo(Concept o) {
-            throw new UnsupportedOperationException();
-        }
-    }
 }

@@ -71,7 +71,7 @@ class RemoteGraknSession implements GraknSession {
 
     @Override
     public GraknComputer getGraphComputer() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
@@ -91,6 +91,6 @@ class RemoteGraknSession implements GraknSession {
 
     @Override
     public GraknConfig config() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO
     }
 }
