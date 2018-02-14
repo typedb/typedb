@@ -31,7 +31,7 @@ import ai.grakn.util.SimpleURI;
 /**
  * @author Felix Chapman
  */
-public class GraknRemoteSession implements GraknSession {
+final class GraknRemoteSession implements GraknSession {
 
     private final Keyspace keyspace;
     private final SimpleURI uri;

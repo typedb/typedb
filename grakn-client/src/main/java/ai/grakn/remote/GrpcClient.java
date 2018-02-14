@@ -45,7 +45,7 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-class GrpcClient implements AutoCloseable {
+final class GrpcClient implements AutoCloseable {
 
     private final TxGrpcCommunicator communicator;
 

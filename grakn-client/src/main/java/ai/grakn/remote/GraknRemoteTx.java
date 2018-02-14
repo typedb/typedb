@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  */
-public class GraknRemoteTx implements GraknTx, GraknAdmin {
+final class GraknRemoteTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
     private final GrpcClient client;

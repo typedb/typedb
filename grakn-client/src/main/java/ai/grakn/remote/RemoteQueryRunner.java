@@ -55,7 +55,7 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  */
-public class RemoteQueryRunner implements QueryRunner {
+final class RemoteQueryRunner implements QueryRunner {
 
     private final GrpcClient client;
     private final @Nullable Boolean infer;

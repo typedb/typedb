@@ -27,7 +27,7 @@ import ai.grakn.ComputeJob;
  *
  * @param <T> The returned result of the compute job
  */
-public final class RemoteComputeJob<T> implements ComputeJob<T> {
+final class RemoteComputeJob<T> implements ComputeJob<T> {
 
     private final T result;
 

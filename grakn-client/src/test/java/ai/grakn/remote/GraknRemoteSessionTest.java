@@ -37,14 +37,14 @@ public class GraknRemoteSessionTest {
 
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSessionImpl() {
-        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
+        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
             assertTrue(GraknRemoteSession.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
+        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
             assertEquals(URI.toString(), session.uri());
             assertEquals(KEYSPACE, session.keyspace());
         }

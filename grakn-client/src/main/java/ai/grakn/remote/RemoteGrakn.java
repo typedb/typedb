@@ -16,21 +16,20 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.remote;
 
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
-import ai.grakn.remote.GraknRemoteSession;
 import ai.grakn.util.SimpleURI;
 
 /**
  * @author Felix Chapman
  */
-public class GraknSessionImpl {
+public final class RemoteGrakn {
 
-    // TODO: this is sneaky of me
-    //This must remain public because it is accessed via reflection
-    public static GraknSession create(Keyspace keyspace, String engineUri){
-        return GraknRemoteSession.create(keyspace, new SimpleURI(engineUri));
+    private RemoteGrakn() {}
+
+    public static GraknSession session(SimpleURI uri, Keyspace keyspace) {
+        return GraknRemoteSession.create(keyspace, uri);
     }
 }
