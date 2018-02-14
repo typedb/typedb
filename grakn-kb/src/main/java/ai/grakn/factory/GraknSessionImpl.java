@@ -39,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Objects;
@@ -82,7 +83,14 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    GraknSessionImpl(Keyspace keyspace, String engineUri, GraknConfig config, boolean remoteSubmissionNeeded){
+    /**
+     * Instantiates {@link GraknSessionImpl}
+     * @param keyspace to which keyspace the session should be bound to
+     * @param engineUri to which Engine the session should be bound to
+     * @param config config to be used. If null is supplied, it will be created
+     * @param remoteSubmissionNeeded whether to create a background task which submits commit logs periodically
+     */
+    GraknSessionImpl(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
@@ -115,11 +123,27 @@ public class GraknSessionImpl implements GraknSession {
         return commitLogHandler;
     }
 
+    /**
+     * This methods creates a {@link GraknSessionImpl} object for the remote API.
+     * A user should not call this method directly.
+     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
+     * @param keyspace
+     * @param engineUri
+     * @return
+     */
     @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
     public static GraknSessionImpl create(Keyspace keyspace, String engineUri){
         return new GraknSessionImpl(keyspace, engineUri, null, true);
     }
 
+    /**
+     * Creates a {@link GraknSessionImpl} specific for internal use (within Engine).
+     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
+     * @param keyspace
+     * @param engineUri
+     * @param config
+     * @return
+     */
     public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
         return new GraknSessionImpl(keyspace, engineUri, config, false);
     }
