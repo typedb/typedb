@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.module.GraknModuleException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -126,8 +125,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 throw convertGraknException(e, ErrorType.GRAQL_SYNTAX_EXCEPTION);
             } catch (InvalidKBException e) {
                 throw convertGraknException(e, ErrorType.INVALID_KB_EXCEPTION);
-            } catch (GraknModuleException e) {
-                throw convertGraknException(e, ErrorType.GRAKN_MODULE_EXCEPTION);
             } catch (GraknException e) {
                 // We shouldn't normally encounter this case unless someone adds a new exception class
                 throw convertGraknException(e, ErrorType.UNKNOWN);

@@ -20,15 +20,16 @@ package ai.grakn.remote;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -109,7 +110,7 @@ final class GrpcClient implements AutoCloseable {
             response = communicator.receive();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new MyGraknException("interrupt"); // TODO
+            throw new RuntimeException("interrupt"); // TODO
         }
 
         switch (response.type()) {
@@ -125,18 +126,15 @@ final class GrpcClient implements AutoCloseable {
 
     private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
         Status status = error.getStatus();
-        if (status.getCode().equals(Status.Code.UNKNOWN)) {
+        Metadata trailers = error.getTrailers();
+
+        ErrorType errorType = trailers.get(ErrorType.KEY);
+
+        if (errorType != null) {
             String message = status.getDescription();
-            return new MyGraknException(message);
+            return errorType.toException(message);
         } else {
             return error;
-        }
-    }
-
-    private static class MyGraknException extends GraknException {
-
-        MyGraknException(String error) {
-            super(error);
         }
     }
 }

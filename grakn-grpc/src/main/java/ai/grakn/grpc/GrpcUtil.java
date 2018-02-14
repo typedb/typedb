@@ -22,8 +22,15 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -47,27 +54,50 @@ import io.grpc.Metadata.AsciiMarshaller;
 import mjson.Json;
 
 import javax.annotation.Nullable;
+import java.util.function.Function;
 
 /**
  * @author Felix Chapman
  */
 public class GrpcUtil {
 
+    static class UnknownGraknException extends GraknException {
+
+        private static final long serialVersionUID = 4354432748314041017L;
+
+        UnknownGraknException(String error) {
+            super(error);
+        }
+
+        public static UnknownGraknException create(String message) {
+            return new UnknownGraknException(message);
+        }
+    }
+
     /**
      * Enumeration of all sub-classes of {@link GraknException} that can be thrown during gRPC calls.
      */
     public enum ErrorType {
         // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
-        GRAQL_QUERY_EXCEPTION,
-        GRAQL_SYNTAX_EXCEPTION,
-        GRAKN_TX_OPERATION_EXCEPTION,
-        TEMPORARY_WRITE_EXCEPTION,
-        GRAKN_SERVER_EXCEPTION,
-        PROPERTY_NOT_UNIQUE_EXCEPTION,
-        INVALID_KB_EXCEPTION,
-        GRAKN_MODULE_EXCEPTION,
-        GRAKN_BACKEND_EXCEPTION,
-        UNKNOWN;
+        GRAQL_QUERY_EXCEPTION(GraqlQueryException::create),
+        GRAQL_SYNTAX_EXCEPTION(GraqlSyntaxException::create),
+        GRAKN_TX_OPERATION_EXCEPTION(GraknTxOperationException::create),
+        TEMPORARY_WRITE_EXCEPTION(TemporaryWriteException::create),
+        GRAKN_SERVER_EXCEPTION(GraknServerException::create),
+        PROPERTY_NOT_UNIQUE_EXCEPTION(PropertyNotUniqueException::create),
+        INVALID_KB_EXCEPTION(InvalidKBException::create),
+        GRAKN_BACKEND_EXCEPTION(GraknBackendException::create),
+        UNKNOWN(UnknownGraknException::create);
+
+        private final Function<String, GraknException> converter;
+
+        ErrorType(Function<String, GraknException> converter) {
+            this.converter = converter;
+        }
+
+        public final GraknException toException(String message) {
+            return converter.apply(message);
+        }
 
         public static Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", new AsciiMarshaller<ErrorType>() {
             @Override

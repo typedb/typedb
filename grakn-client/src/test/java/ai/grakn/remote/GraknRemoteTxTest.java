@@ -22,13 +22,15 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -37,6 +39,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -68,8 +71,6 @@ import static org.mockito.Mockito.when;
  */
 public class GraknRemoteTxTest {
 
-    private static final String ERROR_DESC = "OH NOES";
-    private static final StatusRuntimeException ERROR = new StatusRuntimeException(Status.UNKNOWN.withDescription(ERROR_DESC));
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -357,10 +358,11 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenOpeningATxFails_Throw() {
-        throwOn(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
+        TxRequest openRequest = GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE);
+        throwOn(openRequest, ErrorType.GRAKN_BACKEND_EXCEPTION, "well something went wrong");
 
-        exception.expect(GraknException.class);
-        exception.expectMessage(ERROR_DESC);
+        exception.expect(GraknBackendException.class);
+        exception.expectMessage("well something went wrong");
 
         GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE);
         tx.close();
@@ -368,21 +370,25 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenCommittingATxFails_Throw() {
-        throwOn(GrpcUtil.commitRequest());
+        throwOn(GrpcUtil.commitRequest(), ErrorType.INVALID_KB_EXCEPTION, "do it better next time");
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
 
-            exception.expect(GraknException.class);
-            exception.expectMessage(ERROR_DESC);
+            exception.expect(InvalidKBException.class);
+            exception.expectMessage("do it better next time");
 
             tx.commit();
         }
     }
 
-    private void throwOn(TxRequest request) {
+    private void throwOn(TxRequest request, ErrorType errorType, String message) {
+        Metadata trailers = new Metadata();
+        trailers.put(ErrorType.KEY, errorType);
+        StatusRuntimeException exception = Status.UNKNOWN.withDescription(message).asRuntimeException(trailers);
+
         doAnswer(args -> {
             assert serverResponses != null;
-            serverResponses.onError(ERROR);
+            serverResponses.onError(exception);
             return null;
         }).when(serverRequests).onNext(request);
     }

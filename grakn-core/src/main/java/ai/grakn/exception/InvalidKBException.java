@@ -41,6 +41,10 @@ public class InvalidKBException extends GraknException{
         super(message);
     }
 
+    public static InvalidKBException create(String message) {
+        return new InvalidKBException(message);
+    }
+
     /**
      * Thrown on commit when validation errors are found
      */
@@ -50,6 +54,6 @@ public class InvalidKBException extends GraknException{
         for (String s : errors) {
             message.append(s);
         }
-        return new InvalidKBException(message.toString());
+        return create(message.toString());
     }
 }
