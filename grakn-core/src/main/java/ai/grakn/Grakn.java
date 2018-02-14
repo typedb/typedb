@@ -83,6 +83,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Grakn {
 
+    private Grakn(){}
+
     /**
      * Constant to be passed to {@link #session(String, String)} to specify the default localhost Grakn Engine location.
      * This default constant, which is set to localhost: 4567 cannot be changed in development"
@@ -146,6 +148,6 @@ public class Grakn {
     @CheckReturnValue
     public static GraknSession session(String location, Keyspace keyspace) {
         String key = location + keyspace.getValue();
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(SESSION_CLASS, location, keyspace));
+        return clients.computeIfAbsent(key, k -> loadImplementation(SESSION_CLASS, location, keyspace));
     }
 }
