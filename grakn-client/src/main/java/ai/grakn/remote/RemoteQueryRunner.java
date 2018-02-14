@@ -18,9 +18,11 @@
 
 package ai.grakn.remote;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -94,72 +96,72 @@ public class RemoteQueryRunner implements QueryRunner {
 
     @Override
     public <T> T run(AggregateQuery<T> query) {
-        return (T) runSingle(query, Object.class);
+        return runSingleUnchecked(query);
     }
 
     @Override
-    public <T> T run(ClusterQuery<T> query) {
-        return (T) runSingle(query, Object.class);
+    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Map<Long, Set<String>> run(CorenessQuery query) {
-        return runSingle(query, Map.class);
+    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public long run(CountQuery query) {
-        return runSingle(query, Long.class);
+    public ComputeJob<Long> run(CountQuery query) {
+        return runCompute(query, Long.class);
     }
 
     @Override
-    public Map<Long, Set<String>> run(DegreeQuery query) {
-        return runSingle(query, Map.class);
+    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Map<String, Set<String>> run(KCoreQuery query) {
-        return runSingle(query, Map.class);
+    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Number> run(MaxQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Number>> run(MaxQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Double> run(MeanQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Double>> run(MeanQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Number> run(MedianQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Number>> run(MedianQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Number> run(MinQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Number>> run(MinQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<List<Concept>> run(PathQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public List<List<Concept>> run(PathsQuery query) {
-        return runSingle(query, List.class);
+    public ComputeJob<List<List<Concept>>> run(PathsQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Double> run(StdQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Double>> run(StdQuery query) {
+        return runComputeUnchecked(query);
     }
 
     @Override
-    public Optional<Number> run(SumQuery query) {
-        return runSingle(query, Optional.class);
+    public ComputeJob<Optional<Number>> run(SumQuery query) {
+        return runComputeUnchecked(query);
     }
 
     private List<Object> run(Query<?> query) {
@@ -175,7 +177,19 @@ public class RemoteQueryRunner implements QueryRunner {
         return run(query).stream().map(Answer.class::cast);
     }
 
-    private <T> T runSingle(Query<?> query, Class<T> clazz) {
+    private <T> ComputeJob<T> runCompute(ComputeQuery<? extends T> query, Class<? extends T> clazz) {
+        return RemoteComputeJob.of(runSingle(query, clazz));
+    }
+
+    private <T> ComputeJob<T> runComputeUnchecked(ComputeQuery<? extends T> query) {
+        return RemoteComputeJob.of(runSingleUnchecked(query));
+    }
+
+    private <T> T runSingle(Query<? extends T> query, Class<? extends T> clazz) {
         return clazz.cast(Iterables.getOnlyElement(run(query)));
+    }
+
+    private <T> T runSingleUnchecked(Query<? extends T> query) {
+        return (T) Iterables.getOnlyElement(run(query));
     }
 }
