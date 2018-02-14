@@ -106,7 +106,7 @@ public class EngineGraknSessionTest {
     }
 
     @Test
-    public void closeGraphWhenOnlyOneTransactionIsOpen(){
+    public void whenInsertingAfterSessionHasBeenClosed_shouldThrowTxException(){
         assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
