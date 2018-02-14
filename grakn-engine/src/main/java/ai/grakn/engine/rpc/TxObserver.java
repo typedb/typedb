@@ -22,7 +22,16 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.module.GraknModuleException;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
@@ -31,6 +40,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -42,8 +52,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static ai.grakn.grpc.GrpcUtil.doneResponse;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -101,8 +109,27 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                     case REQUEST_NOT_SET:
                         throw error(Status.INVALID_ARGUMENT);
                 }
+            } catch (TemporaryWriteException e) {
+                throw convertGraknException(e, GrpcUtil.Error.TEMPORARY_WRITE_EXCEPTION);
+            } catch (GraknServerException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAKN_SERVER_EXCEPTION);
+            } catch (GraknBackendException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAKN_BACKEND_EXCEPTION);
+            } catch (PropertyNotUniqueException e) {
+                throw convertGraknException(e, GrpcUtil.Error.PROPERTY_NOT_UNIQUE_EXCEPTION);
+            } catch (GraknTxOperationException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAKN_TX_OPERATION_EXCEPTION);
+            } catch (GraqlQueryException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAQL_QUERY_EXCEPTION);
+            } catch (GraqlSyntaxException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAQL_SYNTAX_EXCEPTION);
+            } catch (InvalidKBException e) {
+                throw convertGraknException(e, GrpcUtil.Error.INVALID_KB_EXCEPTION);
+            } catch (GraknModuleException e) {
+                throw convertGraknException(e, GrpcUtil.Error.GRAKN_MODULE_EXCEPTION);
             } catch (GraknException e) {
-                throw error(Status.UNKNOWN.withDescription(e.getMessage()));
+                // We shouldn't normally encounter this case unless someone adds a new exception class
+                throw convertGraknException(e, GrpcUtil.Error.UNKNOWN);
             }
         });
     }
@@ -218,12 +245,21 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(response);
     }
 
+    private StatusRuntimeException convertGraknException(GraknException exception, GrpcUtil.Error errorType) {
+        Metadata trailers = new Metadata();
+        trailers.put(GrpcUtil.Error.KEY, errorType);
+        return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
+    }
+
     private StatusRuntimeException error(Status status) {
-        StatusRuntimeException exception = new StatusRuntimeException(status);
+        return error(status, null);
+    }
+
+    private StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
+        StatusRuntimeException exception = new StatusRuntimeException(status, trailers);
         if (!terminated.getAndSet(true)) {
             responseObserver.onError(exception);
         }
         return exception;
     }
-
 }

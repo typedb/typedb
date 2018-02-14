@@ -25,13 +25,17 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -58,6 +62,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static ai.grakn.grpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.grpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.grpc.GrpcUtil.commitRequest;
 import static ai.grakn.grpc.GrpcUtil.doneResponse;
@@ -83,9 +88,7 @@ import static org.mockito.Mockito.when;
 public class GrpcServerTest {
 
     private static final String EXCEPTION_MESSAGE = "OH DEAR";
-    private static final GraknException EXCEPTION = new GraknException(EXCEPTION_MESSAGE) {
-        private static final long serialVersionUID = 8491972914457727509L;
-    };
+    private static final GraknException EXCEPTION = GraqlQueryException.create(EXCEPTION_MESSAGE);
 
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
@@ -211,6 +214,7 @@ public class GrpcServerTest {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
+            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAKN_TX_OPERATION_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -416,12 +420,16 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningTxFails_Throw() throws Throwable {
-        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(EXCEPTION);
+        String message = "the backend went wrong";
+        GraknException error = GraknBackendException.create(message);
+
+        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
+            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAKN_BACKEND_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -445,7 +453,10 @@ public class GrpcServerTest {
 
     @Test
     public void whenParsingQueryFails_Throw() throws Throwable {
-        when(tx.graql().parse(QUERY)).thenThrow(EXCEPTION);
+        String message = "you forgot a semicolon";
+        GraknException error = GraqlSyntaxException.create(message);
+
+        when(tx.graql().parse(QUERY)).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
@@ -453,7 +464,8 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
+            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAQL_SYNTAX_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -461,7 +473,10 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryFails_Throw() throws Throwable {
-        when(query.results(any())).thenThrow(EXCEPTION);
+        String message = "your query is dumb";
+        GraknException error = GraqlQueryException.create(message);
+
+        when(query.results(any())).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
@@ -469,7 +484,8 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
+            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAQL_QUERY_EXCEPTION));
 
             throw tx.receive().error();
         }

@@ -22,6 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -41,6 +42,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
+import io.grpc.Metadata;
 import mjson.Json;
 
 import javax.annotation.Nullable;
@@ -49,6 +51,35 @@ import javax.annotation.Nullable;
  * @author Felix Chapman
  */
 public class GrpcUtil {
+
+    /**
+     * Enumeration of all sub-classes of {@link GraknException} that can be thrown during gRPC calls.
+     */
+    public enum Error {
+        // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
+        GRAQL_QUERY_EXCEPTION,
+        GRAQL_SYNTAX_EXCEPTION,
+        GRAKN_TX_OPERATION_EXCEPTION,
+        TEMPORARY_WRITE_EXCEPTION,
+        GRAKN_SERVER_EXCEPTION,
+        PROPERTY_NOT_UNIQUE_EXCEPTION,
+        INVALID_KB_EXCEPTION,
+        GRAKN_MODULE_EXCEPTION,
+        GRAKN_BACKEND_EXCEPTION,
+        UNKNOWN;
+
+        public static Metadata.Key<Error> KEY = Metadata.Key.of("error", new Metadata.AsciiMarshaller<Error>() {
+            @Override
+            public String toAsciiString(Error value) {
+                return value.name();
+            }
+
+            @Override
+            public Error parseAsciiString(String serialized) {
+                return Error.valueOf(serialized);
+            }
+        });
+    }
 
     public static TxRequest openRequest(Keyspace keyspace, GraknTxType txType) {
         Open.Builder open = Open.newBuilder().setKeyspace(convert(keyspace)).setTxType(convert(txType));
@@ -176,6 +207,21 @@ public class GrpcUtil {
         @Override
         public boolean isDeleted() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            MyConcept myConcept = (MyConcept) o;
+
+            return id.equals(myConcept.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode();
         }
 
         @Override

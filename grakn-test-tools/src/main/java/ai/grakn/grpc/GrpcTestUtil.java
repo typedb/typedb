@@ -18,9 +18,14 @@
 
 package ai.grakn.grpc;
 
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
+import java.util.Objects;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
@@ -47,5 +52,19 @@ public class GrpcTestUtil {
         }
 
         return allOf(isA(StatusRuntimeException.class), hasProperty("status", statusMatcher));
+    }
+
+    public static <T> Matcher<StatusRuntimeException> hasMetadata(Metadata.Key<T> key, T value) {
+        return new TypeSafeMatcher<StatusRuntimeException>() {
+            @Override
+            protected boolean matchesSafely(StatusRuntimeException item) {
+                return Objects.equals(item.getTrailers().get(key), value);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendValue(String.format("has metadata %s=%s", key.name(), value));
+            }
+        };
     }
 }

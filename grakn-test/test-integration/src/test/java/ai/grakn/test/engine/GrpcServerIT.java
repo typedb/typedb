@@ -21,6 +21,7 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
@@ -28,7 +29,6 @@ import ai.grakn.grpc.GrpcTestUtil;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.grpc.Status;
 import org.junit.After;
@@ -69,7 +69,7 @@ public class GrpcServerIT {
 
     @Before
     public void setUp() {
-        remoteSession = RemoteGrakn.session(engine.uri(), localSession.keyspace());
+        remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
     @After
@@ -139,21 +139,24 @@ public class GrpcServerIT {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
             Iterator<Answer> iterator1 = query.iterator();
-            iterator1.next();
+            Iterator<Answer> iterator2 = query.iterator();
 
             exception.expect(GrpcTestUtil.hasStatus(Status.FAILED_PRECONDITION));
 
-            Iterator<Answer> iterator2 = query.iterator();
-            iterator2.next();
+            while (iterator1.hasNext() || iterator2.hasNext()) {
+                if (iterator1.hasNext()) iterator1.next();
+                if (iterator2.hasNext()) iterator2.next();
+            }
         }
     }
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
-            GetQuery query = tx.graql().match(var("x").sub("thing")).get(ImmutableSet.of(var("y")));
+            GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
 
-            exception.expect(GrpcTestUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
+            exception.expect(GraqlQueryException.class);
+            exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("not-a-thing")).getMessage());
 
             query.execute();
         }
