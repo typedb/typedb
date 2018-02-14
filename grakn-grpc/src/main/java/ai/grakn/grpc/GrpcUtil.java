@@ -43,6 +43,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.Metadata;
+import io.grpc.Metadata.AsciiMarshaller;
 import mjson.Json;
 
 import javax.annotation.Nullable;
@@ -55,7 +56,7 @@ public class GrpcUtil {
     /**
      * Enumeration of all sub-classes of {@link GraknException} that can be thrown during gRPC calls.
      */
-    public enum Error {
+    public enum ErrorType {
         // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
         GRAQL_QUERY_EXCEPTION,
         GRAQL_SYNTAX_EXCEPTION,
@@ -68,15 +69,15 @@ public class GrpcUtil {
         GRAKN_BACKEND_EXCEPTION,
         UNKNOWN;
 
-        public static Metadata.Key<Error> KEY = Metadata.Key.of("error", new Metadata.AsciiMarshaller<Error>() {
+        public static Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", new AsciiMarshaller<ErrorType>() {
             @Override
-            public String toAsciiString(Error value) {
+            public String toAsciiString(ErrorType value) {
                 return value.name();
             }
 
             @Override
-            public Error parseAsciiString(String serialized) {
-                return Error.valueOf(serialized);
+            public ErrorType parseAsciiString(String serialized) {
+                return ErrorType.valueOf(serialized);
             }
         });
     }

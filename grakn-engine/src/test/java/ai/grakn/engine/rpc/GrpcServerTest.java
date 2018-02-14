@@ -35,7 +35,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -214,7 +214,7 @@ public class GrpcServerTest {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
-            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAKN_TX_OPERATION_EXCEPTION));
+            exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAKN_TX_OPERATION_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -429,7 +429,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAKN_BACKEND_EXCEPTION));
+            exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAKN_BACKEND_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -465,7 +465,7 @@ public class GrpcServerTest {
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAQL_SYNTAX_EXCEPTION));
+            exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAQL_SYNTAX_EXCEPTION));
 
             throw tx.receive().error();
         }
@@ -485,7 +485,7 @@ public class GrpcServerTest {
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(GrpcUtil.Error.KEY, GrpcUtil.Error.GRAQL_QUERY_EXCEPTION));
+            exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAQL_QUERY_EXCEPTION));
 
             throw tx.receive().error();
         }
