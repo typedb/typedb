@@ -64,7 +64,7 @@ public class StorageProcess extends AbstractProcessHandler {
             }
         }
         OutputCommand outputCommand = executeAndWait(new String[]{
-                BIN,
+                SH,
                 "-c",
                 homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA)) + " -p " + STORAGE_PID
         }, null, null);
@@ -76,7 +76,7 @@ public class StorageProcess extends AbstractProcessHandler {
             System.out.flush();
 
             OutputCommand storageStatus = executeAndWait(new String[]{
-                    BIN,
+                    SH,
                     "-c",
                     homePath + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);

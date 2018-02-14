@@ -220,13 +220,11 @@ public class GreedyTraversalPlan {
             // fragments that should be done right away
             plan.add(fragment);
             double logInstanceCount = -1D;
-            if (fragment.getShardCount(tx).isPresent()) {
-                Optional<Long> shardCount = fragment.getShardCount(tx);
-                if(shardCount.isPresent()) {
-                    if (shardCount.get() > 0) {
-                        logInstanceCount = Math.log(shardCount.get() - 1D + SHARD_LOAD_FACTOR) +
-                                Math.log(tx.admin().shardingThreshold());
-                    }
+            Optional<Long> shardCount = fragment.getShardCount(tx);
+            if(shardCount.isPresent()) {
+                if (shardCount.get() > 0) {
+                    logInstanceCount = Math.log(shardCount.get() - 1D + SHARD_LOAD_FACTOR) +
+                            Math.log(tx.admin().shardingThreshold());
                 }
             }
             nodesWithFixedCost.put(start, logInstanceCount);

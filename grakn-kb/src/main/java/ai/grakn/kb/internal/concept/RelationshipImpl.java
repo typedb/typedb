@@ -121,8 +121,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        Optional<RelationshipReified> reified = reified();
-        return reified.map(relationshipReified -> relationshipReified.attributes(attributeTypes)).orElseGet(Stream::empty);
+        return reified().map(relationshipReified -> relationshipReified.attributes(attributeTypes)).orElseGet(Stream::empty);
     }
 
     @Override

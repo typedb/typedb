@@ -34,7 +34,7 @@ import java.util.Optional;
 public abstract class AbstractProcessHandler {
 
     public static final long WAIT_INTERVAL_S=2;
-    public static final String BIN = "/bin/sh";
+    public static final String SH = "/bin/sh";
 
     public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
 
@@ -72,7 +72,7 @@ public abstract class AbstractProcessHandler {
 
     public String getPidFromPsOf(String processName) {
         return executeAndWait(new String[]{
-                    BIN,
+                SH,
                     "-c",
                     "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "
             }, null, null).output;
@@ -80,7 +80,7 @@ public abstract class AbstractProcessHandler {
 
     private void kill(int pid) {
         executeAndWait(new String[]{
-                BIN,
+                SH,
                 "-c",
                 "kill " + pid
         }, null, null);
@@ -88,7 +88,7 @@ public abstract class AbstractProcessHandler {
 
     private OutputCommand kill(int pid, String signal) {
         return executeAndWait(new String[]{
-                BIN,
+                SH,
                 "-c",
                 "kill -"+signal+" " + pid
         }, null, null);
@@ -130,7 +130,7 @@ public abstract class AbstractProcessHandler {
 
     public String selectCommand(String osx, String linux) {
         OutputCommand operatingSystem = executeAndWait(new String[]{
-                BIN,
+                SH,
                 "-c",
                 "uname"
         },null,null);
@@ -147,7 +147,7 @@ public abstract class AbstractProcessHandler {
                     return false;
                 }
                 OutputCommand command = executeAndWait(new String[]{
-                        BIN,
+                        SH,
                         "-c",
                         "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"
                 },null,null);

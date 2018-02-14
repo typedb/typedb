@@ -34,13 +34,13 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class JedisLock implements Lock {
 
-    private static final long TIMEOUT_MS = 10L * 1000L;
+    private static final long TIMEOUT_MS = 10_000L;
     private final String lockName;
     // Name of the lock
     private String internalLockName;
 
     // Lock expiration in miliseconds.
-    private int expireMsecs = 60 * 1000;
+    private int expireMsecs = 60_000;
 
     private boolean locked = false;
     private Pool<Jedis> jedis;
