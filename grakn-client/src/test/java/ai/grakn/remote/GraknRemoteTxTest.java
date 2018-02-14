@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -279,6 +280,43 @@ public class GraknRemoteTxTest {
 
         assertEquals(answer.vars(), ImmutableSet.of(var("x")));
         assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
+    }
+
+    @Test(timeout = 5_000)
+    public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
+        String queryString = "match $x sub thing; get $x;";
+
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(response);
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(response);
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+
+        List<Answer> answers;
+        int numAnswers = 10;
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
+        }
+
+        assertEquals(10, answers.size());
+
+        for (Answer answer : answers) {
+            assertEquals(answer.vars(), ImmutableSet.of(var("x")));
+            assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
+        }
     }
 
     @Ignore // TODO: dream about supporting this

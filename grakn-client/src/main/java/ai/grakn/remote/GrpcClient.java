@@ -28,12 +28,12 @@ import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.AbstractIterator;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -63,28 +63,33 @@ final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public List<Object> execQuery(Query<?> query, @Nullable Boolean infer) {
+    public Iterator<Object> execQuery(Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
 
-        ImmutableList.Builder<Object> results = ImmutableList.builder();
+        return new AbstractIterator<Object>() {
+            private boolean firstElem = true;
 
-        while (true) {
-            TxResponse response = responseOrThrow();
+            @Override
+            protected Object computeNext() {
+                if (firstElem) {
+                    firstElem = false;
+                } else {
+                    communicator.send(GrpcUtil.nextRequest());
+                }
 
-            switch (response.getResponseCase()) {
-                case QUERYRESULT:
-                    Object result = GrpcUtil.getQueryResult(response.getQueryResult());
-                    results.add(result);
-                    break;
-                case DONE:
-                    return results.build();
-                default:
-                case RESPONSE_NOT_SET:
-                    throw CommonUtil.unreachableStatement("Unexpected " + response);
+                TxResponse response = responseOrThrow();
+
+                switch (response.getResponseCase()) {
+                    case QUERYRESULT:
+                        return GrpcUtil.getQueryResult(response.getQueryResult());
+                    case DONE:
+                        return endOfData();
+                    default:
+                    case RESPONSE_NOT_SET:
+                        throw CommonUtil.unreachableStatement("Unexpected " + response);
+                }
             }
-
-            communicator.send(GrpcUtil.nextRequest());
-        }
+        };
     }
 
     public void commit() {

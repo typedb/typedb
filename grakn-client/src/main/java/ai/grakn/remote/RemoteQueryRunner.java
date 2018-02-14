@@ -43,14 +43,16 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -164,17 +166,18 @@ final class RemoteQueryRunner implements QueryRunner {
         return runComputeUnchecked(query);
     }
 
-    private List<Object> run(Query<?> query) {
+    private Iterator<Object> run(Query<?> query) {
         return client.execQuery(query, infer);
     }
 
     private void runVoid(Query<?> query) {
-        run(query).forEach(empty -> {});
+        run(query).forEachRemaining(empty -> {});
     }
 
     private Stream<Answer> runAnswerStream(Query<?> query) {
-        // TODO make lazy
-        return run(query).stream().map(Answer.class::cast);
+        Iterable<Object> iterable = () -> run(query);
+        Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
+        return stream.map(Answer.class::cast);
     }
 
     private <T> ComputeJob<T> runCompute(ComputeQuery<? extends T> query, Class<? extends T> clazz) {
@@ -186,10 +189,10 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private <T> T runSingle(Query<? extends T> query, Class<? extends T> clazz) {
-        return clazz.cast(Iterables.getOnlyElement(run(query)));
+        return clazz.cast(Iterators.getOnlyElement(run(query)));
     }
 
     private <T> T runSingleUnchecked(Query<? extends T> query) {
-        return (T) Iterables.getOnlyElement(run(query));
+        return (T) Iterators.getOnlyElement(run(query));
     }
 }
