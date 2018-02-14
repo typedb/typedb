@@ -27,6 +27,7 @@ import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
+import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import org.junit.Before;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -94,6 +96,16 @@ public class RemoteGraknSessionTest {
             assertEquals(uri.toString(), session.uri());
             assertEquals(KEYSPACE, session.keyspace());
         }
+    }
+
+    @Test
+    public void whenClosingASession_ShutdownTheChannel() {
+        ManagedChannel channel = mock(ManagedChannel.class);
+
+        GraknSession ignored = RemoteGraknSession.create(KEYSPACE, uri, channel);
+        ignored.close();
+
+        verify(channel).shutdown();
     }
 
     @Test

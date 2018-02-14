@@ -76,7 +76,7 @@ class RemoteGraknSession implements GraknSession {
 
     @Override
     public void close() throws GraknTxOperationException {
-        // todo shutdown channel
+        channel.shutdown();
     }
 
     @Override
