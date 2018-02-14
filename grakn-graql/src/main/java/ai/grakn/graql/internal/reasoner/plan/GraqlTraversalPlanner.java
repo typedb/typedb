@@ -36,6 +36,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -76,6 +78,7 @@ public class GraqlTraversalPlanner {
         return ImmutableList.copyOf(refinedPlan(query, startCandidates, subs));
     }
 
+    @Nullable
     private static Atom optimalCandidate(List<Atom> candidates){
         return candidates.stream()
                 .sorted(Comparator.comparing(at -> !at.isGround()))
@@ -105,14 +108,19 @@ public class GraqlTraversalPlanner {
             List<Atom> atomsToPlan = new ArrayList<>(atoms);
             atomsToPlan.remove(first);
 
-            Set<IdPredicate> extraSubs = first.getVarNames().stream()
-                    .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                    .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
-                    .collect(Collectors.toSet());
-            return Stream.concat(
-                    Stream.of(first),
-                    refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
-            ).collect(Collectors.toList());
+            if(first != null){
+                Set<IdPredicate> extraSubs = first.getVarNames().stream()
+                        .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
+                        .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
+                        .collect(Collectors.toSet());
+
+                return Stream.concat(
+                        Stream.of(first),
+                        refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
+                ).collect(Collectors.toList());
+            } else {
+                return refinedPlan(query, atomsToPlan, subs);
+            }
         }
     }
 
