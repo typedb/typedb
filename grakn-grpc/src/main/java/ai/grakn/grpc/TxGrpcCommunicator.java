@@ -108,6 +108,7 @@ public class TxGrpcCommunicator implements AutoCloseable {
         @Override
         public void onError(Throwable throwable) {
             terminated.set(true);
+            assert throwable instanceof StatusRuntimeException : "The server only yields these exceptions";
             queue.add(Response.error((StatusRuntimeException) throwable));
         }
 

@@ -99,7 +99,7 @@ public class GrpcUtil {
             return converter.apply(message);
         }
 
-        public static Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", new AsciiMarshaller<ErrorType>() {
+        private static final AsciiMarshaller<ErrorType> ERROR_TYPE_ASCII_MARSHALLER = new AsciiMarshaller<ErrorType>() {
             @Override
             public String toAsciiString(ErrorType value) {
                 return value.name();
@@ -109,7 +109,9 @@ public class GrpcUtil {
             public ErrorType parseAsciiString(String serialized) {
                 return ErrorType.valueOf(serialized);
             }
-        });
+        };
+
+        public static final Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", ERROR_TYPE_ASCII_MARSHALLER);
     }
 
     public static TxRequest openRequest(Keyspace keyspace, GraknTxType txType) {
