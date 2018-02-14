@@ -56,13 +56,15 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  */
-final class GraknRemoteTx implements GraknTx, GraknAdmin {
+class GraknRemoteTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
+    private final GraknTxType txType;
     private final GrpcClient client;
 
-    private GraknRemoteTx(GraknSession session, GrpcClient client) {
+    private GraknRemoteTx(GraknSession session, GraknTxType txType, GrpcClient client) {
         this.session = session;
+        this.txType = txType;
         this.client = client;
     }
 
@@ -70,7 +72,7 @@ final class GraknRemoteTx implements GraknTx, GraknAdmin {
         GraknGrpc.GraknStub stub = session.stub();
         GrpcClient client = GrpcClient.create(stub);
         client.open(session.keyspace(), txType);
-        return new GraknRemoteTx(session, client);
+        return new GraknRemoteTx(session, txType, client);
     }
 
     @Override
@@ -183,7 +185,7 @@ final class GraknRemoteTx implements GraknTx, GraknAdmin {
 
     @Override
     public GraknTxType txType() {
-        throw new UnsupportedOperationException();
+        return txType;
     }
 
     @Override

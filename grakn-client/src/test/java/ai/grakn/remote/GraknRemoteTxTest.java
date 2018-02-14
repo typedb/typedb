@@ -159,6 +159,13 @@ public class GraknRemoteTxTest {
     }
 
     @Test
+    public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.BATCH)) {
+            assertEquals(GraknTxType.BATCH, tx.txType());
+        }
+    }
+
+    @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
         String queryString = "match $x isa person; get $x;";
 

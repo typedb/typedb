@@ -25,33 +25,48 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.util.SimpleURI;
+import com.google.common.annotations.VisibleForTesting;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 /**
  * @author Felix Chapman
  */
-final class GraknRemoteSession implements GraknSession {
+class GraknRemoteSession implements GraknSession {
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
+    private final ManagedChannel channel;
 
-    private GraknRemoteSession(Keyspace keyspace, SimpleURI uri) {
+    private GraknRemoteSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
         this.keyspace = keyspace;
         this.uri = uri;
+        this.channel = channel;
     }
 
-    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI engineUri){
-        return new GraknRemoteSession(keyspace, engineUri);
+    @VisibleForTesting
+    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+        return new GraknRemoteSession(keyspace, uri, channel);
+    }
+
+    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI uri){
+        // TODO: usePlainText is insecure
+        ManagedChannel channel =
+                ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+
+        return create(keyspace, uri, channel);
     }
 
     GraknStub stub() {
-        return null;
+        return GraknGrpc.newStub(channel);
     }
 
     @Override
     public GraknTx open(GraknTxType transactionType) {
-        throw new UnsupportedOperationException();
+        return GraknRemoteTx.create(this, transactionType);
     }
 
     @Override
@@ -61,7 +76,7 @@ final class GraknRemoteSession implements GraknSession {
 
     @Override
     public void close() throws GraknTxOperationException {
-
+        // todo shutdown channel
     }
 
     @Override
