@@ -41,7 +41,7 @@ import java.util.Iterator;
  *
  * <p>
  *     This class is a light abstraction layer over gRPC - it understands how the sequence of calls should execute and
- *     how to translate gRPC objects into Java objects and back. However, any logic is kept in {@link GraknRemoteTx}.
+ *     how to translate gRPC objects into Java objects and back. However, any logic is kept in {@link RemoteGraknTx}.
  * </p>
  *
  * @author Felix Chapman

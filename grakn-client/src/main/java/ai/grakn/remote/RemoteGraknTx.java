@@ -56,23 +56,23 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  */
-class GraknRemoteTx implements GraknTx, GraknAdmin {
+class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private GraknRemoteTx(GraknSession session, GraknTxType txType, GrpcClient client) {
+    private RemoteGraknTx(GraknSession session, GraknTxType txType, GrpcClient client) {
         this.session = session;
         this.txType = txType;
         this.client = client;
     }
 
-    static GraknRemoteTx create(GraknRemoteSession session, GraknTxType txType) {
+    static RemoteGraknTx create(RemoteGraknSession session, GraknTxType txType) {
         GraknGrpc.GraknStub stub = session.stub();
         GrpcClient client = GrpcClient.create(stub);
         client.open(session.keyspace(), txType);
-        return new GraknRemoteTx(session, txType, client);
+        return new RemoteGraknTx(session, txType, client);
     }
 
     @Override

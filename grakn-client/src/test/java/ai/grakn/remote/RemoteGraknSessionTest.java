@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Felix Chapman
  */
-public class GraknRemoteSessionTest {
+public class RemoteGraknSessionTest {
 
     @Rule
     public final GrpcServerRule serverRule = new GrpcServerRule();
@@ -84,7 +84,7 @@ public class GraknRemoteSessionTest {
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSessionImpl() {
         try (GraknSession session = RemoteGrakn.session(uri, KEYSPACE)) {
-            assertTrue(GraknRemoteSession.class.isAssignableFrom(session.getClass()));
+            assertTrue(RemoteGraknSession.class.isAssignableFrom(session.getClass()));
         }
     }
 
@@ -98,7 +98,7 @@ public class GraknRemoteSessionTest {
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = GraknRemoteSession.create(KEYSPACE, uri, serverRule.getChannel())) {
+        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, uri, serverRule.getChannel())) {
             try (GraknTx tx = session.open(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(KEYSPACE, tx.keyspace());

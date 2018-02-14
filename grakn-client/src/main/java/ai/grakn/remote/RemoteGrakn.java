@@ -30,6 +30,6 @@ public final class RemoteGrakn {
     private RemoteGrakn() {}
 
     public static GraknSession session(SimpleURI uri, Keyspace keyspace) {
-        return GraknRemoteSession.create(keyspace, uri);
+        return RemoteGraknSession.create(keyspace, uri);
     }
 }

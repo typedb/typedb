@@ -35,24 +35,24 @@ import io.grpc.ManagedChannelBuilder;
 /**
  * @author Felix Chapman
  */
-class GraknRemoteSession implements GraknSession {
+class RemoteGraknSession implements GraknSession {
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
     private final ManagedChannel channel;
 
-    private GraknRemoteSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+    private RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
         this.keyspace = keyspace;
         this.uri = uri;
         this.channel = channel;
     }
 
     @VisibleForTesting
-    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
-        return new GraknRemoteSession(keyspace, uri, channel);
+    public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+        return new RemoteGraknSession(keyspace, uri, channel);
     }
 
-    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI uri){
+    public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
         // TODO: usePlainText is insecure
         ManagedChannel channel =
                 ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
@@ -66,7 +66,7 @@ class GraknRemoteSession implements GraknSession {
 
     @Override
     public GraknTx open(GraknTxType transactionType) {
-        return GraknRemoteTx.create(this, transactionType);
+        return RemoteGraknTx.create(this, transactionType);
     }
 
     @Override
