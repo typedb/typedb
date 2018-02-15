@@ -35,10 +35,10 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
+    private static final String CASSANDRA = "cassandra";
     private static final String NAME = "Storage";
 
     private final Path homePath;
-    private final String CASSANDRA = "cassandra";
 
     public StorageProcess(Path homePath) {
         this.homePath = homePath;

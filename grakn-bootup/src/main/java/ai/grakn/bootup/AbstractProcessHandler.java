@@ -124,7 +124,11 @@ public abstract class AbstractProcessHandler {
         System.out.println("SUCCESS");
         File file = pidFile.toFile();
         if(file.exists()) {
-            file.delete();
+            try {
+                Files.delete(pidFile);
+            } catch (IOException e) {
+                // DO NOTHING
+            }
         }
     }
 
