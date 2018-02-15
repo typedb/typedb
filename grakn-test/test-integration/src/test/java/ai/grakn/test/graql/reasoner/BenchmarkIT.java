@@ -186,7 +186,6 @@ public class BenchmarkIT {
                 Var toVar = Graql.var().asUserDefined();
                 VarPattern rulePattern = Graql
                         .label("rule" + i)
-                        .sub("rule")
                         .when(
                                 Graql.and(
                                         Graql.var()
