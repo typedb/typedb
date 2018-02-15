@@ -1,25 +1,25 @@
 define
 
 #transitivity of resides & sublocate
-rule-1 sub rule,
+rule-1
 when {(located-subject: $x, subject-location: $y) isa resides;
 (member-location: $y, container-location: $z) isa sublocate;
 },
 then {(located-subject: $x, subject-location: $z) isa resides;};
 
 # transitivity of sublocate
-rule-2 sub rule,
+rule-2
 when {
 (member-location: $x, container-location: $y) isa sublocate;
 (member-location: $y, container-location: $z) isa sublocate;
 },
 then {(member-location: $x, container-location: $z) isa sublocate;};
 
-rule-3 sub rule,
+rule-3
 when {(moderator: $x, moderated: $y) isa moderates;},
 then {(forum-member: $x, membered-forum: $y) isa membership;};
 
-rule-4 sub rule,
+rule-4
 when {$x isa person;
 $t1 isa tag;$t1 has name 'Ennio Morricone';
 $t2 isa tag;$t2 has name 'John Wayne';
@@ -30,7 +30,7 @@ $y has name 'The Good the Bad the Ugly';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-5 sub rule,
+#rule-5
 #when {$x isa person;
 #$t isa tag;{$t has name 'Ozzy Osbourne';} or {$t has name 'Rising Force';};
 #($x, $t) isa tagging;
@@ -39,7 +39,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-6 sub rule,
+rule-6
 when {$x isa person;
 $t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
@@ -48,7 +48,7 @@ $y has name 'Blizzard of Ozz';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-7 sub rule,
+rule-7
 when {$x isa person;
 $t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
@@ -57,7 +57,7 @@ $y has name 'Stratocaster';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-8 sub rule,
+rule-8
 when {$x isa person;
 $t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
@@ -66,7 +66,7 @@ $y has name 'Blizzard of Ozz';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-9 sub rule,
+rule-9
 when {$x isa person;
 $t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
@@ -75,7 +75,7 @@ $y has name 'Stratocaster';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-10 sub rule,
+rule-10
 when {$x isa person;
 $x has gender 'male';$x has age >=18;
 $y isa product;$y has min-age >=18;
@@ -84,7 +84,7 @@ $z isa country;$z has name 'Italy';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-11 sub rule,
+#rule-11
 #when {$x isa person;
 #$t isa tag;{$t has name 'Ludwig van Beethoven';} or {$t has name 'Johann Sebastian Bach';} or {$t has name 'Wolfgang Amadeus Mozart';};
 #($x, $t) isa tagging;
@@ -92,7 +92,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-12 sub rule,
+rule-12
 when {$x isa person;
 $t isa tag;$t has name 'Ludwig van Beethoven';
 ($x, $t) isa tagging;
@@ -100,7 +100,7 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-13 sub rule,
+rule-13
 when {$x isa person;
 $t isa tag;$t has name 'Johann Sebastian Bach';
 ($x, $t) isa tagging;
@@ -108,7 +108,7 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-14 sub rule,
+rule-14
 when {$x isa person;
 $t isa tag;$t has name 'Wolfgang Amadeus Mozart';
 ($x, $t) isa tagging;
@@ -116,7 +116,7 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-15 sub rule,
+rule-15
 when {$x isa person;
 $t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
@@ -128,7 +128,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 ##################Writer->Book######################
 #############################################
 
-#rule-16 sub rule,
+#rule-16
 #when {
 #$x isa person;$t isa tag;
 #($x, $t) isa tagging;
@@ -140,7 +140,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #then {
 #(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-17 sub rule,
+rule-17
 when {$x isa person;
 $t isa tag;$t has name 'H. G. Wells';
 ($x, $t) isa tagging;
@@ -148,7 +148,7 @@ $y isa product;$y has name 'War of the Worlds';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-18 sub rule,
+rule-18
 when {$x isa person;
 $t isa tag;$t has name 'Fyodor Dostoyevsky';
 ($x, $t) isa tagging;
@@ -156,7 +156,7 @@ $y isa product;$y has name 'Crime and Punishment';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-19 sub rule,
+rule-19
 when {$x isa person;
 $t isa tag;$t has name 'George Orwell';
 ($x, $t) isa tagging;
@@ -164,7 +164,7 @@ $y isa product;$y has name 'Animal Farm';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-20 sub rule,
+rule-20
 when {$x isa person;
 $t isa tag;$t has name 'Lewis Carroll';
 ($x, $t) isa tagging;
@@ -172,7 +172,7 @@ $y isa product;$y has name 'Adventures in Wonderland';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-21 sub rule,
+rule-21
 when {$x isa person;
 $t isa tag;$t has name 'Agatha Christie';
 ($x, $t) isa tagging;
@@ -180,7 +180,7 @@ $y isa product;$y has name 'Orient Express';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-22 sub rule,
+rule-22
 when {$x isa person;
 $t isa tag;$t has name 'Hans Christian Andersen';
 ($x, $t) isa tagging;
@@ -188,7 +188,7 @@ $y isa product;$y has name 'Fairy Tales';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-23 sub rule,
+rule-23
 when {$x isa person;
 $t isa tag;$t has name 'Terry Pratchett';
 ($x, $t) isa tagging;
@@ -196,7 +196,7 @@ $y isa product;$y has name 'Colour of Magic';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-24 sub rule,
+rule-24
 when {$x isa person;
 $t isa tag;$t has name 'P. G. Wodehouse';
 ($x, $t) isa tagging;
@@ -204,7 +204,7 @@ $y isa product;$y has name 'My Man Jeeves';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-25 sub rule,
+rule-25
 when {$x isa person;
 $t isa tag;$t has name 'Oscar Wilde';
 ($x, $t) isa tagging;
@@ -212,7 +212,7 @@ $y isa product;$y has name 'Dorian Gray';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-26 sub rule,
+rule-26
 when {$x isa person;
 $t isa tag;$t has name 'J. R. R. Tolkien';
 ($x, $t) isa tagging;
@@ -220,7 +220,7 @@ $y isa product;$y has name 'Lord of the Rings';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-27 sub rule,
+rule-27
 when {$x isa person;
 $t isa tag;$t has name 'J. K. Rowling';
 ($x, $t) isa tagging;
@@ -228,7 +228,7 @@ $y isa product;$y has name 'Harry Potter';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-28 sub rule,
+rule-28
 when {$x isa person;
 $t isa tag;$t has name 'Arthur Conan Doyle';
 ($x, $t) isa tagging;
@@ -236,7 +236,7 @@ $y isa product;$y has name 'Sherlock Holmes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-29 sub rule,
+rule-29
 when {$x isa person;
 $t isa tag;$t has name 'Ernest Hemingway';
 ($x, $t) isa tagging;
@@ -244,7 +244,7 @@ $y isa product;$y has name 'For Whom the Bell Tolls';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-30 sub rule,
+rule-30
 when {$x isa person;
 $t isa tag;$t has name 'John Steinbeck';
 ($x, $t) isa tagging;
@@ -252,7 +252,7 @@ $y isa product;$y has name 'Of Mice and Men';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-31 sub rule,
+rule-31
 when {$x isa person;
 $t isa tag;$t has name 'Franz Kafka';
 ($x, $t) isa tagging;
@@ -260,7 +260,7 @@ $y isa product;$y has name 'Trial';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-32 sub rule,
+rule-32
 when {$x isa person;
 $t isa tag;$t has name 'Johann Wolfgang von Goethe';
 ($x, $t) isa tagging;
@@ -272,7 +272,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 ##############MusicalArtist->Band############
 #############################################
 
-rule-33 sub rule,
+rule-33
 when {$x isa person;
 $t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
@@ -280,7 +280,7 @@ $y isa tag;$y has name 'Black Sabbath';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-34 sub rule, # lol
+#rule-34 # lol
 #when {$x isa person;
 #$t isa tag;{$t has name 'Paul McCartney';} or {$t has name 'George Harrison';};
 #($x, $t) isa tagging;
@@ -288,7 +288,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-35 sub rule,
+rule-35
 when {$x isa person;
 $t isa tag;$t has name 'Paul McCartney';
 ($x, $t) isa tagging;
@@ -296,7 +296,7 @@ $y isa tag;$y has name 'Beatles';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-36 sub rule,
+rule-36
 when {$x isa person;
 $t isa tag;$t has name 'George Harrison';
 ($x, $t) isa tagging;
@@ -304,7 +304,7 @@ $y isa tag;$y has name 'Beatles';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-37 sub rule,
+rule-37
 when {$x isa person;
 $t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
@@ -312,7 +312,7 @@ $y isa tag;$y has name 'Pink Floyd';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-38 sub rule,
+rule-38
 when {$x isa person;
 $t isa tag;$t has name 'Keith Richards';
 ($x, $t) isa tagging;
@@ -320,7 +320,7 @@ $y isa tag;$y has name 'Rolling Stones';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-39 sub rule,
+rule-39
 when {$x isa person;
 $t isa tag;$t has name 'Paul Simon';
 ($x, $t) isa tagging;
@@ -328,7 +328,7 @@ $y isa tag;$y has name 'Simon and Garfunkel';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-40 sub rule,
+#rule-40
 #when {$x isa person;
 #$t isa tag;$t has name 'Eric Clapton';
 #($x, $t) isa tagging;
@@ -337,7 +337,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-41 sub rule,
+rule-41
 when {$x isa person;
 $t isa tag;$t has name 'Eric Clapton';
 ($x, $t) isa tagging;
@@ -346,7 +346,7 @@ $y has name 'Cream';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-42 sub rule,
+rule-42
 when {$x isa person;
 $t isa tag;$t has name 'Eric Clapton';
 ($x, $t) isa tagging;
@@ -355,7 +355,7 @@ $y has name 'Yardbirds';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-43 sub rule,
+rule-43
 when {$x isa person;
 $t isa tag;$t has name 'Bob Marley';
 ($x, $t) isa tagging;
@@ -367,7 +367,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 ##############Album->Band##################
 #############################################
 
-#rule-44 sub rule,
+#rule-44
 #when {$x isa person;
 #$t isa tag;$t has name 'Master of Puppets';
 #($x, $t) isa tagging;
@@ -376,7 +376,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-45 sub rule,
+#rule-45
 #when {$x isa person;
 #$t isa tag;$t has name 'Far Beyond Driven';
 #($x, $t) isa tagging;
@@ -385,7 +385,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-46 sub rule,
+#rule-46
 #when {$x isa person;
 #$t isa tag;$t has name 'Hybrhas name Theory';
 #($x, $t) isa tagging;
@@ -394,7 +394,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-47 sub rule,
+#rule-47
 #when {$x isa person;
 #$t isa tag;$t has name 'Powerslave';
 #($x, $t) isa tagging;
@@ -403,7 +403,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-48 sub rule,
+#rule-48
 #when {$x isa person;
 #$t isa tag;$t has name 'Enter the Chicken';
 #($x, $t) isa tagging;
@@ -412,7 +412,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-49 sub rule,
+#rule-49
 #when {$x isa person;
 #$t isa tag;$t has name 'Rising Force';
 #($x, $t) isa tagging;
@@ -421,7 +421,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 #},
 #then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-50 sub rule,
+rule-50
 when {$x isa person;
 $t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
@@ -430,7 +430,7 @@ $y has name 'Yngwie Malmsteen';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-51 sub rule,
+rule-51
 when {$x isa person;
 $t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
@@ -439,7 +439,7 @@ $y has name 'Steve Vai';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-52 sub rule,
+rule-52
 when {$x isa person;
 $t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
@@ -448,7 +448,7 @@ $y has name 'Cacophony';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-53 sub rule,
+#rule-53
 #when {$x isa person;
 #$t isa tag;$t has name 'Led Zeppelin IV';
 #($x, $t) isa tagging;
@@ -461,7 +461,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 ##############Song/Single->Band##################
 #############################################
 
-rule-54 sub rule,
+rule-54
 when {$x isa person;
 $t isa tag;$t has name 'All_Along_the_Watchtower';
 ($x, $t) isa tagging;
@@ -469,7 +469,7 @@ $y isa tag;$y has name 'Jimi Hendrix';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-55 sub rule,
+rule-55
 when {$x isa person;
 $t isa tag;$t has name 'These_Are_the_Days_of_Our_Lives';
 ($x, $t) isa tagging;
@@ -477,7 +477,7 @@ $y isa tag;$y has name 'Queen';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-56 sub rule,
+rule-56
 when {$x isa person;
 $t isa tag;$t has name 'Come_Together';
 ($x, $t) isa tagging;
@@ -485,7 +485,7 @@ $y isa tag;$y has name ' Beatles';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-57 sub rule,
+rule-57
 when {$x isa person;
 $t isa tag;$t has name 'Smoke_on_the_Water';
 ($x, $t) isa tagging;
@@ -493,7 +493,7 @@ $y isa tag;$y has name 'Deep Purple';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-58 sub rule,
+rule-58
 when {$x isa person;
 $t isa tag;$t has name 'Immigrant_Song';
 ($x, $t) isa tagging;
@@ -505,7 +505,7 @@ then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 ##################Artist->Painting####################
 #######################################################
 
-rule-59 sub rule,
+rule-59
 when {$x isa person;
 $t isa tag;$t has name 'Claude Monet';
 ($x, $t) isa tagging;
@@ -513,7 +513,7 @@ $y isa product;$y has name 'Water Lillies';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-60 sub rule,
+rule-60
 when {$x isa person;
 $t isa tag;$t has name 'Rembrandt';
 ($x, $t) isa tagging;
@@ -521,7 +521,7 @@ $y isa product;$y has name 'The Night Watch';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-61 sub rule,
+rule-61
 when {$x isa person;
 $t isa tag;$t has name 'Leonardo da Vinci';
 ($x, $t) isa tagging;
@@ -529,7 +529,7 @@ $y isa product;$y has name 'Mona Lisa';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-62 sub rule,
+rule-62
 when {$x isa person;
 $t isa tag;$t has name 'Raphael';
 ($x, $t) isa tagging;
@@ -537,7 +537,7 @@ $y isa product;$y has name 'Madonna';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-63 sub rule,
+rule-63
 when {$x isa person;
 $t isa tag;$t has name 'Titian';
 ($x, $t) isa tagging;
@@ -545,7 +545,7 @@ $y isa product;$y has name 'Bacchus and Ariadne';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-64 sub rule,
+rule-64
 when {$x isa person;
 $t isa tag;$t has name 'Vincent van Gogh';
 ($x, $t) isa tagging;
@@ -553,7 +553,7 @@ $y isa product;$y has name 'Sunflowers';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-65 sub rule,
+rule-65
 when {$x isa person;
 $t isa tag;$t has name 'Diego Rivera';
 ($x, $t) isa tagging;
@@ -561,7 +561,7 @@ $y isa product;$y has name 'Controller of the Universe';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-66 sub rule,
+rule-66
 when {$x isa person;
 $t isa tag;$t has name 'Piet Mondrian';
 ($x, $t) isa tagging;
@@ -569,7 +569,7 @@ $y isa product;$y has name 'Gray Tree';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-67 sub rule,
+rule-67
 when {$x isa person;$t isa tag;$t has name 'Michelangelo';
 ($x, $t) isa tagging;
 $y isa product;$y has name 'Last Judgement';
