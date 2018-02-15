@@ -40,6 +40,7 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class QueryPlannerTest {
 
@@ -109,7 +110,7 @@ public class QueryPlannerTest {
     }
 
     @Test
-    public void uniqueAndNonUniqueRelationshipType() {
+    public void inferUniqueRelationshipType() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
@@ -118,18 +119,29 @@ public class QueryPlannerTest {
                 y.isa(thingy2),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
         pattern = and(
                 x.isa(thingy2),
                 y.isa(thingy4),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+
+        String relationship = plan.get(3).start().getValue();
+        assertNotEquals(relationship, x.getValue());
+        assertNotEquals(relationship, y.getValue());
     }
 
     @Test
-    public void relationshipTypeWithMoreThan2Roles() {
+    public void inferRelationshipTypeWithMoreThan2Roles() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
@@ -139,7 +151,7 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
         pattern = and(
                 x.isa(thingy1),
@@ -147,11 +159,13 @@ public class QueryPlannerTest {
                 z.isa(thingy4),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(4L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(4L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
     @Test
-    public void aRolePlayerHasNoType() {
+    public void inferRelationshipTypeWithARolePlayerWithNoType() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
@@ -160,18 +174,20 @@ public class QueryPlannerTest {
                 y.isa(thingy2),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
         pattern = and(
                 y.isa(thingy2),
                 z.isa(thingy4),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(3L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
     @Test
-    public void rolePlayedBySuperType() {
+    public void inferRelationshipTypeWhereRolePlayedBySuperType() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
@@ -180,19 +196,52 @@ public class QueryPlannerTest {
                 y.isa(thingy4),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(2L, plan.stream().filter(fragment -> fragment instanceof LabelFragment).count());
+        assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                z.isa(thingy4),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(4L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
     @Test
-    public void varWithTwoTypes() {
+    public void inferRelationshipTypeWhereAVarHasTwoTypes() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
         pattern = and(
                 x.isa(thingy),
-                x.isa(thingy1));
+                x.isa(thingy1),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+
         plan = getPlan(pattern);
-        assertEquals(1L, plan.stream()
+        assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(4L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+        String relationship = plan.get(4).start().getValue();
+        assertNotEquals(relationship, x.getValue());
+        assertNotEquals(relationship, y.getValue());
+    }
+
+    @Test
+    public void inferRelationshipTypeWhereAVarHasIncorrectTypes() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(veryRelated),
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(3L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
