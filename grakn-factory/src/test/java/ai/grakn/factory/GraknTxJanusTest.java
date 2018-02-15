@@ -59,7 +59,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class GraknTxJanusTest extends JanusTestBase {
-    private GraknTx graknTx;
+    private EmbeddedGraknTx<?> graknTx;
 
     @Before
     public void setup(){
@@ -212,9 +212,9 @@ public class GraknTxJanusTest extends JanusTestBase {
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
         TxFactoryJanus factory = newFactory();
-        GraknTx graph = factory.open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = factory.open(GraknTxType.WRITE);
         graph.close();
-        GraknTx batchGraph = factory.open(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = factory.open(GraknTxType.BATCH);
 
         for(int i = 0; i < 6; i ++){
             Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.WRITE)).get();
@@ -234,15 +234,15 @@ public class GraknTxJanusTest extends JanusTestBase {
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
         TxFactoryJanus factory = newFactory();
-        GraknTx graph = factory.open(GraknTxType.READ);
+        EmbeddedGraknTx<?> graph = factory.open(GraknTxType.READ);
         assertEquals(1, openTransactions(graph));
         graph.commit();
         assertEquals(0, openTransactions(graph));
     }
 
-    private int openTransactions(GraknTx graph){
+    private int openTransactions(EmbeddedGraknTx<?> graph){
         if(graph == null) return 0;
-        return ((EmbeddedGraknTx) graph).numOpenTx();
+        return graph.numOpenTx();
     }
 
     @Test

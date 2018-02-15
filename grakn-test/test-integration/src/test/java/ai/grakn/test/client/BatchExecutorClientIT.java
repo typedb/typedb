@@ -18,7 +18,6 @@
 
 package ai.grakn.test.client;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -77,7 +76,7 @@ public class BatchExecutorClientIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = (EmbeddedGraknSession) Grakn.session(engine.uri(), keyspace); // TODO
+        this.session = EmbeddedGraknSession.create(keyspace, engine.uri());
     }
 
     @Test

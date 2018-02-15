@@ -780,8 +780,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
         //If we have logs to commit get them and add them
         if (logsExist) {
             if(trackingNeeded) {
-                ((EmbeddedGraknSession) session()).commitLogHandler().addNewInstances(newInstances);
-                ((EmbeddedGraknSession) session()).commitLogHandler().addNewAttributes(newAttributes);
+                session().commitLogHandler().addNewInstances(newInstances);
+                session().commitLogHandler().addNewAttributes(newAttributes);
             } else {
                 Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
                         collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));

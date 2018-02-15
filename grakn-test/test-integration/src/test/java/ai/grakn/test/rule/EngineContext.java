@@ -18,7 +18,6 @@
 
 package ai.grakn.test.rule;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -141,7 +140,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return (EmbeddedGraknSession) Grakn.session(uri(), randomKeyspace()); // TODO
+        return EmbeddedGraknSession.create(randomKeyspace(), uri());
     }
 
     @Override

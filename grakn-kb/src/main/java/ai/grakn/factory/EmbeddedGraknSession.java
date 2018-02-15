@@ -130,6 +130,16 @@ public class EmbeddedGraknSession implements GraknSession {
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
      */
     @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
+    public static EmbeddedGraknSession create(Keyspace keyspace, SimpleURI engineUri){
+        return create(keyspace, engineUri.toString());
+    }
+
+    /**
+     * This methods creates a {@link EmbeddedGraknSession} object for the remote API.
+     * A user should not call this method directly.
+     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
+     */
+    @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
     public static EmbeddedGraknSession create(Keyspace keyspace, String engineUri){
         return new EmbeddedGraknSession(keyspace, engineUri, null, true);
     }

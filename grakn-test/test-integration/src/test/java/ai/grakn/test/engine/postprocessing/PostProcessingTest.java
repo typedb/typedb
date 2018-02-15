@@ -18,9 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -192,7 +190,7 @@ public class PostProcessingTest {
         EntityType et2;
 
         //Create Simple GraknTx
-        try (EmbeddedGraknTx<?> graknTx = (EmbeddedGraknTx<?>) Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) { // TODO
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri()).open(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
             graknTx.commitSubmitNoLogs();
@@ -217,8 +215,8 @@ public class PostProcessingTest {
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
-            int shards = ((EmbeddedGraknTx<?>) graknTx).getTinkerTraversal().V(). // TODO
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri()).open(GraknTxType.WRITE)) {
+            int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 

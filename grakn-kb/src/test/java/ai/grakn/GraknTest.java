@@ -73,10 +73,10 @@ public class GraknTest {
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        EmbeddedGraknTx graph = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        EmbeddedGraknTx batchGraph = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());

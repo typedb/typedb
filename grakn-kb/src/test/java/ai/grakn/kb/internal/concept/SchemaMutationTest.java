@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.util.ErrorMessage;
@@ -74,7 +75,7 @@ public class SchemaMutationTest extends TxTestBase {
         bob = man.addEntity();
         marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         tx.commit();
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
     }
 
     @Test
@@ -247,7 +248,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         animal.attribute(name);
         tx.commit();
     }
@@ -260,7 +261,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);

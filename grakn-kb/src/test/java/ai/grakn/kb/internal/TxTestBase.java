@@ -19,8 +19,9 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.factory.EmbeddedGraknSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,11 +30,11 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class TxTestBase {
-    protected GraknSession session;
+    protected EmbeddedGraknSession session;
     protected EmbeddedGraknTx<?> tx;
     private EmbeddedGraknTx<?> txBatch;
     //haha is here because the keyspace has to start with a letter
-    private String keyspace = "haha" + UUID.randomUUID().toString().replaceAll("-", "a");
+    private Keyspace keyspace = Keyspace.of("haha" + UUID.randomUUID().toString().replaceAll("-", "a"));
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -41,7 +42,7 @@ public class TxTestBase {
 
     @Before
     public void setUpTx() {
-        session = Grakn.session(Grakn.IN_MEMORY, keyspace);
+        session = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY);
         getTx(false);
     }
 
@@ -64,14 +65,14 @@ public class TxTestBase {
         if(isBatch){
             if(newTxNeeded(txBatch)){
                 closeTxIfOpen(tx);
-                return txBatch = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+                return txBatch = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.BATCH);
             } else {
                 return txBatch;
             }
         } else {
             if(newTxNeeded(tx)){
                 closeTxIfOpen(txBatch);
-                return tx = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+                return tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.WRITE);
             } else {
                 return tx;
             }

@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
@@ -33,6 +34,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.util.ErrorMessage;
@@ -144,7 +146,7 @@ public class GraknTxTest extends TxTestBase {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -213,7 +215,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Purge the above concepts into the main cache
         tx.commit();
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         //Check cache is in good order
         Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
@@ -256,7 +258,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenAttemptingToMutateReadOnlyGraph_Throw(){
-        String keyspace = "myreadonlygraph";
+        Keyspace keyspace = Keyspace.of("myreadonlygraph");
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
         String roleType2 = "My Role Type 2";
@@ -265,14 +267,14 @@ public class GraknTxTest extends TxTestBase {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
         tx.close();
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
         entityT.addEntity();
         Role roleT1 = tx.putRole(roleType1);
@@ -283,7 +285,7 @@ public class GraknTxTest extends TxTestBase {
         tx.commit();
 
         //Fail some mutations again
-        tx = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
         failMutation(tx, entityT::addEntity);
         failMutation(tx, () -> resourceT.putAttribute("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
