@@ -38,7 +38,7 @@ Depending on the configuration of the Grakn server, your Java application will r
 ```xml   
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>janus-factory</artifactId>
+    <artifactId>grakn-factory</artifactId>
     <version>${grakn.version}</version>
 </dependency>
 ```    
