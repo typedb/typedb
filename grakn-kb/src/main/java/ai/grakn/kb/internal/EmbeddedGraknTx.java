@@ -39,7 +39,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.factory.GraknSessionImpl;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -107,13 +107,13 @@ import static java.util.stream.Collectors.toSet;
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  * @author fppt
  */
-public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, GraknAdmin {
-    final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
+public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, GraknAdmin {
+    final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
     private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
 
     //----------------------------- Shared Variables
-    private final GraknSessionImpl session;
+    private final EmbeddedGraknSession session;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -126,7 +126,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
 
-    public GraknTxAbstract(GraknSessionImpl session, G graph) {
+    public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
@@ -141,7 +141,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public GraknSessionImpl session(){
+    public EmbeddedGraknSession session(){
         return session;
     }
 
@@ -742,8 +742,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //If we have logs to commit get them and add them
         if (logsExist) {
             if(trackingNeeded) {
-                ((GraknSessionImpl) session()).commitLogHandler().addNewInstances(newInstances);
-                ((GraknSessionImpl) session()).commitLogHandler().addNewAttributes(newAttributes);
+                ((EmbeddedGraknSession) session()).commitLogHandler().addNewInstances(newInstances);
+                ((EmbeddedGraknSession) session()).commitLogHandler().addNewAttributes(newAttributes);
             } else {
                 Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
                         collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
@@ -945,7 +945,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     private static @Nullable Method getQueryRunnerFactory() {
         try {
-            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTxAbstract.class);
+            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }

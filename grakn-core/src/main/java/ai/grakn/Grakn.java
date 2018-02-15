@@ -91,7 +91,7 @@ public class Grakn {
      */
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
 
-    private static final String SESSION_CLASS = "ai.grakn.factory.GraknSessionImpl";
+    private static final String SESSION_CLASS = "ai.grakn.factory.EmbeddedGraknSession";
 
     private static final String SESSION_BUILDER = "create";
 

@@ -21,7 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -32,7 +32,7 @@ public class PostProcessingTestUtils {
 
     @SuppressWarnings("unchecked")
     static <T> Set<Vertex> createDuplicateResource(GraknTx graknTx, AttributeType<T> attributeType, Attribute<T> attribute) {
-        GraknTxAbstract<?> graph = (GraknTxAbstract<?>) graknTx;
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) graknTx;
         Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V().

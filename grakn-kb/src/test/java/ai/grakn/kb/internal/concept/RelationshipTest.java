@@ -32,7 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -271,7 +271,7 @@ public class RelationshipTest extends TxTestBase {
         rel2.attribute(r2);
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) session.open(GraknTxType.WRITE);
+        tx = (EmbeddedGraknTx<?>) session.open(GraknTxType.WRITE);
 
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

@@ -30,8 +30,8 @@ import java.util.UUID;
 
 public class TxTestBase {
     protected GraknSession session;
-    protected GraknTxAbstract<?> tx;
-    private GraknTxAbstract<?> txBatch;
+    protected EmbeddedGraknTx<?> tx;
+    private EmbeddedGraknTx<?> txBatch;
     //haha is here because the keyspace has to start with a letter
     private String keyspace = "haha" + UUID.randomUUID().toString().replaceAll("-", "a");
 
@@ -52,37 +52,37 @@ public class TxTestBase {
         session.close();
     }
 
-    protected GraknTxAbstract<?> tx(){
+    protected EmbeddedGraknTx<?> tx(){
         return getTx(false);
     }
 
-    protected GraknTxAbstract<?> batchTx(){
+    protected EmbeddedGraknTx<?> batchTx(){
        return getTx(true);
     }
 
-    private GraknTxAbstract<?> getTx(boolean isBatch){
+    private EmbeddedGraknTx<?> getTx(boolean isBatch){
         if(isBatch){
             if(newTxNeeded(txBatch)){
                 closeTxIfOpen(tx);
-                return txBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+                return txBatch = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
             } else {
                 return txBatch;
             }
         } else {
             if(newTxNeeded(tx)){
                 closeTxIfOpen(txBatch);
-                return tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+                return tx = (EmbeddedGraknTx) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
             } else {
                 return tx;
             }
         }
     }
 
-    private boolean newTxNeeded(GraknTxAbstract<?> tx){
+    private boolean newTxNeeded(EmbeddedGraknTx<?> tx){
         return tx == null || tx.isClosed();
     }
 
-    private void closeTxIfOpen(GraknTxAbstract<?> tx){
+    private void closeTxIfOpen(EmbeddedGraknTx<?> tx){
         if(tx != null && !tx.isClosed()) tx.close();
     }
 

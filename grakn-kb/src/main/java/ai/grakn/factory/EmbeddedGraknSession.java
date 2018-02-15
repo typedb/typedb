@@ -27,7 +27,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
 import ai.grakn.kb.internal.log.CommitLogHandler;
@@ -69,8 +69,8 @@ import static mjson.Json.read;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class GraknSessionImpl implements GraknSession {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
+public class EmbeddedGraknSession implements GraknSession {
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);
     private static final int LOG_SUBMISSION_PERIOD = 1;
     private final String engineUri;
     private final Keyspace keyspace;
@@ -81,17 +81,17 @@ public class GraknSessionImpl implements GraknSession {
 
 
     //References so we don't have to open a tx just to check the count of the transactions
-    private GraknTxAbstract<?> tx = null;
-    private GraknTxAbstract<?> txBatch = null;
+    private EmbeddedGraknTx<?> tx = null;
+    private EmbeddedGraknTx<?> txBatch = null;
 
     /**
-     * Instantiates {@link GraknSessionImpl}
+     * Instantiates {@link EmbeddedGraknSession}
      * @param keyspace to which keyspace the session should be bound to
      * @param engineUri to which Engine the session should be bound to
      * @param config config to be used. If null is supplied, it will be created
      * @param remoteSubmissionNeeded whether to create a background task which submits commit logs periodically
      */
-    GraknSessionImpl(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded){
+    EmbeddedGraknSession(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
@@ -125,21 +125,21 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     /**
-     * This methods creates a {@link GraknSessionImpl} object for the remote API.
+     * This methods creates a {@link EmbeddedGraknSession} object for the remote API.
      * A user should not call this method directly.
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
      */
     @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
-    public static GraknSessionImpl create(Keyspace keyspace, String engineUri){
-        return new GraknSessionImpl(keyspace, engineUri, null, true);
+    public static EmbeddedGraknSession create(Keyspace keyspace, String engineUri){
+        return new EmbeddedGraknSession(keyspace, engineUri, null, true);
     }
 
     /**
-     * Creates a {@link GraknSessionImpl} specific for internal use (within Engine).
+     * Creates a {@link EmbeddedGraknSession} specific for internal use (within Engine).
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
      */
-    public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
-        return new GraknSessionImpl(keyspace, engineUri, config, false);
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
+        return new EmbeddedGraknSession(keyspace, engineUri, config, false);
     }
 
     GraknConfig getTxConfig(){
@@ -247,7 +247,7 @@ public class GraknSessionImpl implements GraknSession {
         commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 
-    private int openTransactions(GraknTxAbstract<?> graph){
+    private int openTransactions(EmbeddedGraknTx<?> graph){
         if(graph == null) return 0;
         return graph.numOpenTx();
     }

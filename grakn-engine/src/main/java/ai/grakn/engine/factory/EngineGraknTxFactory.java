@@ -29,7 +29,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.FactoryBuilder;
-import ai.grakn.factory.GraknSessionImpl;
+import ai.grakn.factory.EmbeddedGraknSession;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.util.HashMap;
@@ -98,7 +98,7 @@ public class EngineGraknTxFactory {
      */
     private GraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI, engineConfig));
         }
         return openedSessions.get(keyspace);
     }

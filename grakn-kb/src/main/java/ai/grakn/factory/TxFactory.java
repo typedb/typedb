@@ -19,7 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
@@ -42,7 +42,7 @@ public interface TxFactory<T extends Graph> {
      * @param txType The type of transaction to open on the graph
      * @return An instance of Grakn graph
      */
-    GraknTxAbstract<T> open(GraknTxType txType);
+    EmbeddedGraknTx<T> open(GraknTxType txType);
 
     /**
      *

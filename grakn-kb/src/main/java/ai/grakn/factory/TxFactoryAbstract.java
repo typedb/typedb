@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -36,17 +36,17 @@ import static javax.annotation.meta.When.NEVER;
  * <p>
  *     Defines the abstract construction of {@link GraknTx}s on top of Tinkerpop Graphs.
  *     For this factory to function a vendor specific implementation of a graph extending
- *     {@link GraknTxAbstract} must be provided. This must be provided with a matching TinkerPop {@link Graph}
+ *     {@link EmbeddedGraknTx} must be provided. This must be provided with a matching TinkerPop {@link Graph}
  *     which is wrapped within the {@link GraknTx}
  * </p>
  *
  * @author fppt
  *
- * @param <M> A {@link GraknTx} extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
+ * @param <M> A {@link GraknTx} extending {@link EmbeddedGraknTx} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
-abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
-    private final GraknSessionImpl session;
+abstract class TxFactoryAbstract<M extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
+    private final EmbeddedGraknSession session;
 
     private M graknTx = null;
     private M graknTxBatchLoading = null;
@@ -54,7 +54,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     G tx = null;
     private G txBatchLoading = null;
 
-    TxFactoryAbstract(GraknSessionImpl session){
+    TxFactoryAbstract(EmbeddedGraknSession session){
         this.session = session;
     }
 
@@ -117,7 +117,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     @CheckReturnValue(when=NEVER)
     protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
-    public GraknSessionImpl session(){
+    public EmbeddedGraknSession session(){
         return session;
     }
 }

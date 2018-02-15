@@ -19,7 +19,7 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
-import ai.grakn.factory.GraknSessionImpl;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -37,10 +37,10 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *
  * @author fppt
  */
-public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
+public class GraknTxTinker extends EmbeddedGraknTx<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTxTinker(GraknSessionImpl session, TinkerGraph tinkerGraph){
+    public GraknTxTinker(EmbeddedGraknSession session, TinkerGraph tinkerGraph){
         super(session, tinkerGraph);
         rootGraph = tinkerGraph;
     }

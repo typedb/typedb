@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
-import ai.grakn.factory.GraknSessionImpl;
+import ai.grakn.factory.EmbeddedGraknSession;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -41,8 +41,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         this.supplier = supplier;
     }
 
-    // TODO: rename `GraknSessionImpl`
-    static <T> TinkerComputeJob<T> create(GraknSessionImpl session, Function<GraknComputer, T> function) {
+    static <T> TinkerComputeJob<T> create(EmbeddedGraknSession session, Function<GraknComputer, T> function) {
         GraknComputer computer = session.getGraphComputer();
 
         return new TinkerComputeJob<>(computer, () -> function.apply(computer));

@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class FactoryBuilderTest {
-    private final static GraknSessionImpl session = mock(GraknSessionImpl.class);
+    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static String ENGINE_URL = Grakn.IN_MEMORY;

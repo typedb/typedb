@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusHadoopTest {
-    private final static GraknSessionImpl session = mock(GraknSessionImpl.class);
+    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private static final File TEST_CONFIG_FILE = Paths.get("../../conf/main/grakn.properties").toFile();
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 

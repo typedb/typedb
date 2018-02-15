@@ -84,7 +84,7 @@ public class RemoteGraknSessionTest {
     }
 
     @Test
-    public void whenOpeningASession_ReturnARemoteGraknSessionImpl() {
+    public void whenOpeningASession_ReturnARemoteGraknSession() {
         try (GraknSession session = RemoteGrakn.session(uri, KEYSPACE)) {
             assertTrue(RemoteGraknSession.class.isAssignableFrom(session.getClass()));
         }

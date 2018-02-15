@@ -30,7 +30,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import com.google.common.collect.Iterators;
 import org.junit.After;
@@ -242,7 +242,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     private int openTransactions(GraknTx graph){
         if(graph == null) return 0;
-        return ((GraknTxAbstract) graph).numOpenTx();
+        return ((EmbeddedGraknTx) graph).numOpenTx();
     }
 
     @Test

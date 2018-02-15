@@ -98,7 +98,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    TxFactoryJanus(GraknSessionImpl session) {
+    TxFactoryJanus(EmbeddedGraknSession session) {
         super(session);
     }
 

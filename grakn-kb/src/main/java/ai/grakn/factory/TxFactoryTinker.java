@@ -38,7 +38,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TxFactoryTinker(GraknSessionImpl session){
+    TxFactoryTinker(EmbeddedGraknSession session){
         super(session);
     }
 
