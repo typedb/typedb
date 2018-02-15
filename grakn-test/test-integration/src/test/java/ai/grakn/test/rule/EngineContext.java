@@ -20,7 +20,6 @@ package ai.grakn.test.rule;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknConfig;
@@ -31,6 +30,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -140,8 +140,8 @@ public class EngineContext extends CompositeTestRule {
         return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
 
-    public GraknSession sessionWithNewKeyspace() {
-        return Grakn.session(uri(), randomKeyspace());
+    public EmbeddedGraknSession sessionWithNewKeyspace() {
+        return (EmbeddedGraknSession) Grakn.session(uri(), randomKeyspace()); // TODO
     }
 
     @Override

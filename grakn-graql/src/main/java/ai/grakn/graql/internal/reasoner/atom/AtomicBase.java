@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -27,6 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -111,6 +111,6 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected GraknTx tx(){ return getParentQuery().tx();}
+    protected EmbeddedGraknTx<?> tx(){ return (EmbeddedGraknTx<?>) /* TODO ODOT */ getParentQuery().tx();}
 }
 

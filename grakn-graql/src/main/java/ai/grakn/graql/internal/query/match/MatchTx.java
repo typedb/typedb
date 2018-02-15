@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 import java.util.Optional;
 import java.util.Set;
@@ -40,12 +41,12 @@ class MatchTx extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknTx> graph) {
+    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
         if (graph.isPresent()) {
             throw GraqlQueryException.multipleTxs();
         }
 
-        return inner.stream(Optional.of(this.tx));
+        return inner.stream(Optional.of((EmbeddedGraknTx<?>) this.tx)); // TODO OR NOT TODO
     }
 
     @Override

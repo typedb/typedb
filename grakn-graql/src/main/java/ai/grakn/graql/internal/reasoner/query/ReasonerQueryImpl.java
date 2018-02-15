@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
@@ -59,6 +58,7 @@ import ai.grakn.graql.internal.reasoner.state.CumulativeState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -99,28 +99,28 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknTx tx;
+    private final EmbeddedGraknTx<?> tx;
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+    ReasonerQueryImpl(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
+    ReasonerQueryImpl(List<Atom> atoms, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
@@ -130,7 +130,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        this(Collections.singletonList(atom), atom.getParentQuery().tx());
+        this(Collections.singletonList(atom), (EmbeddedGraknTx<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -220,7 +220,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknTx tx() {
+    public EmbeddedGraknTx<?> tx() {
         return tx;
     }
 

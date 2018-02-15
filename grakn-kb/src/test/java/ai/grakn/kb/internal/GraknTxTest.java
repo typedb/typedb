@@ -121,11 +121,11 @@ public class GraknTxTest extends TxTestBase {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
         RelationshipType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
-        assertThat(tx.admin().getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
-                tx.admin().getMetaConcept(),
-                tx.admin().getMetaRelationType(),
-                tx.admin().getMetaEntityType(),
-                tx.admin().getMetaAttributeType(),
+        assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
+                tx.getMetaConcept(),
+                tx.getMetaRelationType(),
+                tx.getMetaEntityType(),
+                tx.getMetaAttributeType(),
                 sampleEntityType,
                 sampleRelationshipType
         ));
@@ -133,7 +133,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned(){
-        assertEquals(100000L, tx.admin().shardingThreshold());
+        assertEquals(100000L, tx.shardingThreshold());
     }
 
     @Test
@@ -148,8 +148,8 @@ public class GraknTxTest extends TxTestBase {
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
-        finalTypes.add(tx.admin().getMetaRole());
-        finalTypes.add(tx.admin().getMetaRule());
+        finalTypes.add(tx.getMetaRole());
+        finalTypes.add(tx.getMetaRule());
 
         tx.abort();
 
@@ -291,9 +291,9 @@ public class GraknTxTest extends TxTestBase {
         failMutation(tx, () -> relationT1.relates(roleT2));
         failMutation(tx, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(GraknTx graph, Runnable mutator){
-        int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
-        int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
+    private void failMutation(EmbeddedGraknTx<?> graph, Runnable mutator){
+        int vertexCount = graph.getTinkerTraversal().V().toList().size();
+        int eddgeCount = graph.getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
         try{
@@ -305,8 +305,8 @@ public class GraknTxTest extends TxTestBase {
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(GraknTxOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()));
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
     }
 
     @Test
@@ -347,7 +347,7 @@ public class GraknTxTest extends TxTestBase {
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        tx.admin().shard(entityType.getId());
+        tx.shard(entityType.getId());
 
         Shard s2 = entityType.currentShard();
 
@@ -358,7 +358,7 @@ public class GraknTxTest extends TxTestBase {
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        tx.admin().shard(entityType.getId());
+        tx.shard(entityType.getId());
         Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
@@ -402,10 +402,10 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenShardingConcepts_EnsureCountsAreUpdated(){
         EntityType entity = tx.putEntityType("my amazing entity type");
-        assertEquals(1L, tx.admin().getShardCount(entity));
+        assertEquals(1L, tx.getShardCount(entity));
 
-        tx.admin().shard(entity.getId());
-        assertEquals(2L, tx.admin().getShardCount(entity));
+        tx.shard(entity.getId());
+        assertEquals(2L, tx.getShardCount(entity));
     }
 
     @Test

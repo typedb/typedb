@@ -184,7 +184,7 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
     @Override
-    public GraknTx open(GraknTxType transactionType) {
+    public EmbeddedGraknTx open(GraknTxType transactionType) {
         final TxFactory<?> factory = configureTxFactory(REST.KBConfig.DEFAULT);
         switch (transactionType){
             case READ:

@@ -38,6 +38,7 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -182,7 +183,7 @@ public class GraqlController implements HttpController {
         LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
-            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+            try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
 
@@ -253,7 +254,7 @@ public class GraqlController implements HttpController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+    private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
@@ -278,7 +279,7 @@ public class GraqlController implements HttpController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.admin().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

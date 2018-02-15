@@ -379,7 +379,7 @@ public class TinkerComputeQueryRunner {
 
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(tx.admin()::convertToId)
+                .map(tx::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }

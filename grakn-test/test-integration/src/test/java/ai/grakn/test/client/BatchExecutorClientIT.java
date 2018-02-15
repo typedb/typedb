@@ -19,7 +19,6 @@
 package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -29,8 +28,10 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import com.netflix.hystrix.HystrixCommand;
@@ -61,7 +62,7 @@ import static org.mockito.Mockito.spy;
 public class BatchExecutorClientIT {
 
     public static final int MAX_DELAY = 100;
-    private GraknSession session;
+    private EmbeddedGraknSession session;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -76,7 +77,7 @@ public class BatchExecutorClientIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = (EmbeddedGraknSession) Grakn.session(engine.uri(), keyspace); // TODO
     }
 
     @Test
@@ -187,7 +188,7 @@ public class BatchExecutorClientIT {
 
     private BatchExecutorClient loader(int maxDelay) {
         // load schema
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graph = session.open(GraknTxType.WRITE)) {
             Role role = graph.putRole("some-role");
             graph.putRelationshipType("some-relationship").relates(role);
 
@@ -199,7 +200,7 @@ public class BatchExecutorClientIT {
 
             nameTag.attribute(nameTagString);
             nameTag.attribute(nameTagId);
-            graph.admin().commitSubmitNoLogs();
+            graph.commitSubmitNoLogs();
 
             GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(

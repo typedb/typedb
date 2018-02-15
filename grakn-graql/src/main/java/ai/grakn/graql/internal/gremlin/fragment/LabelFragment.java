@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -46,10 +47,10 @@ abstract class LabelFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx, Collection<Var> vars) {
 
         Set<Integer> labelIds =
-                labels().stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+                labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
 
         if (labelIds.size() == 1) {
             int labelId = Iterables.getOnlyElement(labelIds);
@@ -75,12 +76,12 @@ abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public Optional<Long> getShardCount(GraknTx tx) {
+    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
         return Optional.of(labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .flatMap(SchemaConcept::subs)
-                .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
+                .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
                 .sum());
     }
 }

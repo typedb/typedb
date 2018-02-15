@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.plan;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -32,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
@@ -147,7 +147,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
+    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))

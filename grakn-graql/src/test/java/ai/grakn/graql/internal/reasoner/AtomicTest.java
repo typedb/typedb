@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
@@ -36,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
@@ -45,7 +45,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -53,6 +52,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
@@ -87,7 +87,7 @@ public class AtomicTest {
 
     @Test
     public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String recRelString = "{($x, $y) isa binary;}";
         String nrecRelString = "{($x, $y) isa ternary;}";
         ReasonerAtomicQuery recQuery = ReasonerQueries.atomic(conjunction(recRelString, graph), graph);
@@ -98,7 +98,7 @@ public class AtomicTest {
 
     @Test
     public void testAtomFactoryProducesAtomsOfCorrectType(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String atomString = "{$x isa baseRoleEntity;}";
         String relString = "{($x, $y, $z) isa binary;}";
         String resString = "{$x has resource 'value';}";
@@ -122,7 +122,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedBinaryRelation(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{($x, $y); $x isa entity1; $y isa entity2;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1; $y isa entity2;}";
 
@@ -135,7 +135,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedBinaryRelation_SingleTypeMissing(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{($x, $y); $x isa entity1;}";
         String patternString2 = "{($x, $y) isa binary; $x isa entity1;}";
 
@@ -148,7 +148,7 @@ public class AtomicTest {
 
     @Test //each type maps to a specific role
     public void testRoleInference_TypedTernaryRelationWithKnownRole(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{($x, $y, role3: $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, role3: $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
@@ -162,7 +162,7 @@ public class AtomicTest {
 
     @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
     public void testRoleInference_TypedTernaryRelation(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{($x, $y, $z);$x isa entity1;$y isa entity2;}";
         String patternString2 = "{($x, $y, $z) isa ternary;$x isa entity1;$y isa entity2;}";
 
@@ -176,7 +176,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{(role1: $x, role2: $y, $y);}";
         String patternString2 = "{(role1: $x, role2: $y, $y) isa ternary;}";
 
@@ -190,7 +190,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesPlaySubRoles_SubRolesAreCorrectlyIdentified(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{(role: $x, role: $y, role: $z); $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3;}";
 
@@ -204,7 +204,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedTernaryRelationWithMetaRoles_MetaRolesShouldBeOverwritten(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{(role: $x, role: $y, role: $z); $x isa entity1; $y isa entity2; $z isa entity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa entity1; $y isa entity2; $z isa entity3;}";
 
@@ -218,7 +218,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesAreSubTypes_TopRolesShouldBeChosen(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{(role: $x, role: $y, role: $z); $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
         String patternString2 = "{(role: $x, role: $y, role: $z) isa ternary; $x isa subEntity1; $y isa subEntity2; $z isa subEntity3;}";
 
@@ -232,7 +232,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_TypedTernaryRelation_TypesCanPlayMultipleRoles_MetaRoleIsChosen(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String patternString = "{($x, $y, $z); $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
         String patternString2 = "{($x, $y, $z) isa ternary; $x isa genericEntity; $y isa genericEntity; $z isa genericEntity;}";
 
@@ -246,7 +246,7 @@ public class AtomicTest {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_NoInformationPresent(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y);}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
@@ -254,7 +254,7 @@ public class AtomicTest {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_MetaRelationType(){
-        GraknTx graph = roleInferenceSet.tx();
+        EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y) isa relationship;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
@@ -262,7 +262,7 @@ public class AtomicTest {
 
     @Test //missing role is ambiguous without cardinality constraints
     public void testRoleInference_RoleHierarchyInvolved() {
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String relationString = "{($p, subRole2: $gc) isa binary;}";
         String relationString2 = "{(subRole1: $gp, $p) isa binary;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -282,7 +282,7 @@ public class AtomicTest {
 
     @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_WithMetaType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
@@ -294,7 +294,7 @@ public class AtomicTest {
 
     @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_RoleMappingUnambiguous(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
@@ -306,7 +306,7 @@ public class AtomicTest {
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
@@ -314,7 +314,7 @@ public class AtomicTest {
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y) isa reifying-relation;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
@@ -333,7 +333,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_OntologicalAtomsDoNotMatchAnyRules(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         Atom subAtom = ReasonerQueries.atomic(conjunction("{$x sub relationship;}", graph), graph).getAtom();
         Atom hasAtom = ReasonerQueries.atomic(conjunction("{$x has description;}", graph), graph).getAtom();
         Atom relatesAtom = ReasonerQueries.atomic(conjunction("{reifiable-relation relates $x;}", graph), graph).getAtom();
@@ -348,7 +348,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -362,7 +362,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_AmbiguousRoleMapping_RolePlayerTypeMismatch(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -376,7 +376,7 @@ public class AtomicTest {
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
     public void testRuleApplicability_AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
@@ -385,7 +385,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_MissingRelationPlayers(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
 
         //inferred relation (role {role2, role3} : $x, role {role1, role2} : $y)
         String relationString = "{($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity;}";
@@ -422,7 +422,7 @@ public class AtomicTest {
 
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void testRuleApplicability_WithWildcard(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -436,7 +436,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_TypedResources(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{$x isa reifiable-relation; $x has description $d;}";
         String relationString2 = "{$x isa typed-relation; $x has description $d;}";
         String relationString3 = "{$x isa relationship; $x has description $d;}";
@@ -450,7 +450,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_DerivedTypes(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String typeString = "{$x isa reifying-relation;}";
         String typeString2 = "{$x isa typed-relation;}";
         String typeString3 = "{$x isa description;}";
@@ -472,7 +472,7 @@ public class AtomicTest {
 
     @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void testRuleApplicability_genericRelation(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(
@@ -483,7 +483,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_genericType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{$x isa $type;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(
@@ -494,7 +494,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_WithWildcard_MissingMappings(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -508,7 +508,7 @@ public class AtomicTest {
 
     @Test //NB: role2 sub role1
     public void testRuleApplicability_RepeatingRoleTypesWithHierarchy(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{(role1: $x1, role1: $x2, role2: $x3);}";
         String relationString2 = "{(role1: $x1, role2: $x2, role2: $x3);}";
         String relationString3 = "{(role2: $x1, role2: $x2, role2: $x3);}";
@@ -522,7 +522,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_genericRelationWithGenericType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);$x isa noRoleEntity;}";
         String relationString2 = "{($x, $y);$x isa entity;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -534,7 +534,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ReifiedRelationsWithType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{(role1: $x, role2: $y) isa reifying-relation;}";
         String relationString2 = "{$x isa entity;(role1: $x, role2: $y) isa reifying-relation;}";
         String relationString3 = "{$x isa anotherTwoRoleEntity;(role1: $x, role2: $y) isa reifying-relation;}";
@@ -552,7 +552,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_TypePlayabilityDeterminesApplicability(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{$y isa singleRoleEntity;(role1:$x, role:$y, role3: $z) isa ternary;}";
         String relationString2 = "{$y isa twoRoleEntity;(role1:$x, role2:$y, role3: $z) isa ternary;}";
         String relationString3 = "{$y isa anotherTwoRoleEntity;(role1:$x, role2:$y, role3: $z) isa ternary;}";
@@ -573,7 +573,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_TypeRelation(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String typeString = "{$x isa reifying-relation;}";
         String typeString2 = "{$x isa ternary;}";
         String typeString3 = "{$x isa binary;}";
@@ -587,7 +587,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_OntologicalTypes(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String typeString = "{$x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";}";
         String typeString2 = "{$x relates role1;}";
         String typeString3 = "{$x plays role1;}";
@@ -604,7 +604,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y) isa ternary;" +
@@ -616,7 +616,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y);" +
@@ -629,7 +629,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ResourceDouble(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String resourceString = "{$x has res-double > 3.0;}";
         String resourceString2 = "{$x has res-double > 4.0;}";
         String resourceString3 = "{$x has res-double < 3.0;}";
@@ -660,7 +660,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ResourceLong(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String resourceString = "{$x has res-long > 100;}";
         String resourceString2 = "{$x has res-long > 150;}";
         String resourceString3 = "{$x has res-long < 100;}";
@@ -691,7 +691,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ResourceString(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String resourceString = "{$x has res-string contains 'ing';}";
         String resourceString2 = "{$x has res-string 'test';}";
         String resourceString3 = "{$x has res-string /.*(fast|string).*/;}";
@@ -710,7 +710,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ResourceBoolean(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String resourceString = "{$x has res-boolean 'true';}";
         String resourceString2 = "{$x has res-boolean 'false';}";
 
@@ -723,7 +723,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_TypeResource(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String typeString = "{$x isa resource;}";
         Atom type = ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
         assertEquals(1, type.getApplicableRules().count());
@@ -731,7 +731,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_Resource_TypeMismatch(){
-        GraknTx graph = resourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = resourceApplicabilitySet.tx();
         String resourceString = "{$x isa entity1, has resource $r;}";
         String resourceString2 = "{$x isa entity2, has resource $r;}";
         String resourceString3 = "{$x isa entity2, has resource 'test';}";
@@ -747,7 +747,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ReifiedResourceDouble(){
-        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
         String queryString = "{$x isa res-double val > 3.0;($x, $y);}";
         String queryString2 = "{$x isa res-double val > 4.0;($x, $y);}";
         String queryString3 = "{$x isa res-double val < 3.0;($x, $y);}";
@@ -778,7 +778,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ReifiedResourceLong(){
-        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
         String queryString = "{$x isa res-long val > 100;($x, $y);}";
         String queryString2 = "{$x isa res-long val > 150;($x, $y);}";
         String queryString3 = "{$x isa res-long val < 100;($x, $y);}";
@@ -809,7 +809,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ReifiedResourceString(){
-        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
         String queryString = "{$x isa res-string val contains 'val';($x, $y);}";
         String queryString2 = "{$x isa res-string val 'test';($x, $y);}";
         String queryString3 = "{$x isa res-string val /.*(fast|value).*/;($x, $y);}";
@@ -828,7 +828,7 @@ public class AtomicTest {
 
     @Test
     public void testRuleApplicability_ReifiedResourceBoolean(){
-        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
         String queryString = "{$x isa res-boolean val 'true';($x, $y);}";
         String queryString2 = "{$x isa res-boolean val 'false';($x, $y);}";
 
@@ -849,7 +849,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_RelationWithRolesExchanged(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String relation = "{(role1: $x, role2: $y) isa binary;}";
         String relation2 = "{(role1: $y, role2: $x) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
@@ -857,7 +857,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_RelationWithMetaRole(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String relation = "{(role1: $x, role: $y) isa binary;}";
         String relation2 = "{(role1: $y, role: $x) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
@@ -865,7 +865,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_RelationWithRelationVar(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String relation = "{$x (role1: $r, role2: $z) isa binary;}";
         String relation2 = "{$r (role1: $x, role2: $y) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
@@ -873,7 +873,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
         String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.getId().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.getId().getValue() + "';}";
@@ -886,7 +886,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(role1: $x, role2: $y);}";
         String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v);}";
         String specialisedRelation2 = "{(subRole1: $y, anotherSubRole2: $x);}";
@@ -903,7 +903,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(subRole1: $x, subRole2: $y);}";
         String specialisedRelation = "{(subRole1: $u, subSubRole2: $v);}";
         String specialisedRelation2 = "{(subRole1: $y, subSubRole2: $x);}";
@@ -922,7 +922,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(role1: $x, role2: $y, role3: $z);}";
         String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation2 = "{(role1: $z, subRole2: $y, subSubRole3: $x);}";
@@ -939,7 +939,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(subRole1: $x, subRole2: $y, subRole3: $z);}";
         String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation2 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
@@ -958,7 +958,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(role1: $x, role2: $y, role3: $z);}";
         String specialisedRelation = "{(role1: $u, subRole2: $u, subSubRole3: $q);}";
         String specialisedRelation2 = "{(role1: $y, subRole2: $y, subSubRole3: $x);}";
@@ -975,7 +975,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentRelation = "{(role1: $x, role2: $x, role3: $y);}";
         String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation2 = "{(role1: $z, subRole2: $y, subSubRole3: $x);}";
@@ -992,7 +992,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_VariousResourceAtoms(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String resource = "{$x has resource $r;$r val 'f';}";
         String resource2 = "{$r has resource $x;$x val 'f';}";
         String resource3 = "{$r has resource 'f';}";
@@ -1006,7 +1006,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_VariousTypeAtoms(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String type = "{$x isa baseRoleEntity;}";
         String type2 = "{$y isa baseRoleEntity;}";
         String userDefinedType = "{$y isa $x;$x label 'baseRoleEntity';}";
@@ -1020,7 +1020,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_ParentHasFewerRelationPlayers() {
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String childString = "{(subRole1: $y, subRole2: $x) isa binary;}";
         String parentString = "{(subRole1: $x) isa binary;}";
         String parentString2 = "{(subRole2: $y) isa binary;}";
@@ -1060,7 +1060,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String resource = "{$x has resource $r;$r val 'f';}";
         String resource2 = "{$r has resource $x;$x val 'f';}";
         String resource3 = "{$r has resource 'f';}";
@@ -1093,7 +1093,7 @@ public class AtomicTest {
 
     @Test
     public void testRewriteAndUnification(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentString = "{$r (subRole1: $x) isa binary;}";
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Var parentVarName = parentAtom.getVarName();
@@ -1126,7 +1126,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_MatchAllParentAtom(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String parentString = "{$r($a, $x);}";
         String childString = "{$rel (role1: $z, role2: $b) isa binary;}";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
@@ -1151,7 +1151,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_IndirectRoles(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         VarPatternAdmin basePattern = var()
                 .rel(var("role1").label("subRole1"), var("y1"))
                 .rel(var("role2").label("subSubRole2"), var("y2"))
@@ -1178,7 +1178,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
-        GraknTx graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         VarPatternAdmin basePattern = var()
                 .rel(var("role1").label("subRole1"), var("y1"))
                 .rel(var("role2").label("subSubRole2"), var("y2"))
@@ -1202,7 +1202,7 @@ public class AtomicTest {
         exactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, GraknTx graph){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, EmbeddedGraknTx<?> graph){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, graph), graph).getAtom();
         Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
@@ -1220,7 +1220,7 @@ public class AtomicTest {
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
-    private void nonExistentUnifier(String parentPatternString, String childPatternString, GraknTx graph){
+    private void nonExistentUnifier(String parentPatternString, String childPatternString, EmbeddedGraknTx<?> graph){
         nonExistentUnifier(
                 ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph)
@@ -1267,7 +1267,7 @@ public class AtomicTest {
         }
     }
 
-    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
+    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, EmbeddedGraknTx<?> graph){
         exactUnification(
                 ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
@@ -1275,7 +1275,7 @@ public class AtomicTest {
                 checkEquality);
     }
 
-    private Concept getConcept(GraknTx graph, String typeName, Object val){
+    private Concept getConcept(EmbeddedGraknTx<?> graph, String typeName, Object val){
         return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
     }
 
@@ -1285,7 +1285,7 @@ public class AtomicTest {
         return roleMap;
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> graph){
         Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

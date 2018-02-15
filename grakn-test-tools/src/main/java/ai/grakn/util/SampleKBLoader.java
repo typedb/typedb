@@ -24,11 +24,12 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import com.google.common.io.Files;
 
@@ -60,7 +61,7 @@ public class SampleKBLoader {
     private final TxFactory<?> factory;
     private @Nullable Consumer<GraknTx> preLoad;
     private boolean graphLoaded = false;
-    private GraknTx tx;
+    private EmbeddedGraknTx<?> tx;
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
@@ -77,7 +78,7 @@ public class SampleKBLoader {
         return new SampleKBLoader(build);
     }
 
-    public GraknTx tx(){
+    public EmbeddedGraknTx<?> tx(){
         if(tx == null || tx.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {

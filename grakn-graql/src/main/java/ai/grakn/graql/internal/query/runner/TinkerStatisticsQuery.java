@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -43,11 +44,11 @@ import java.util.stream.Collectors;
  */
 class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 
-    private TinkerStatisticsQuery(GraknTx tx, StatisticsQuery<?> query, GraknComputer computer) {
+    private TinkerStatisticsQuery(EmbeddedGraknTx<?> tx, StatisticsQuery<?> query, GraknComputer computer) {
         super(tx, query, computer);
     }
 
-    static TinkerStatisticsQuery create(GraknTx tx, StatisticsQuery<?> query, GraknComputer computer) {
+    static TinkerStatisticsQuery create(EmbeddedGraknTx<?> tx, StatisticsQuery<?> query, GraknComputer computer) {
         return new TinkerStatisticsQuery(tx, query, computer);
     }
 

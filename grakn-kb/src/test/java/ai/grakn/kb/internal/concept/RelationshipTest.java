@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -147,12 +146,12 @@ public class RelationshipTest extends TxTestBase {
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(GraknTx graph, Thing thing) {
-        List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
+    private Set<Concept> followRolePlayerEdgesToNeighbours(EmbeddedGraknTx<?> tx, Thing thing) {
+        List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> tx.buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test

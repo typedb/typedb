@@ -548,7 +548,7 @@ public class RelationshipAtom extends IsaAtom {
                     //prioritise relations with number of roles equal to arity
                     .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
                     //prioritise relations having more instances
-                    .sorted(Comparator.comparing(e -> -tx().admin().getShardCount(e.getKey())))
+                    .sorted(Comparator.comparing(e -> -tx().getShardCount(e.getKey())))
                     //prioritise relations with highest number of possible types played by untyped role players
                     .map(e -> {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
