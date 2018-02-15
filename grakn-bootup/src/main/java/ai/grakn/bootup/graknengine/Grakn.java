@@ -19,8 +19,8 @@
 package ai.grakn.bootup.graknengine;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
-import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
+import ai.grakn.bootup.graknengine.pid.GraknPidManager;
+import ai.grakn.bootup.graknengine.pid.GraknPidManagerFactory;
 import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.ErrorMessage;

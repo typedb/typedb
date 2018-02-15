@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
+package ai.grakn.bootup.graknengine.pid;
 
 import ai.grakn.util.ErrorMessage;
 
