@@ -28,13 +28,13 @@ person plays SG-role-A, plays SG-role-B;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (sibA: $x, sibB: $y) isa Sibling;},
 then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
@@ -42,7 +42,7 @@ when {
 then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
-rule-3 sub rule,
+rule-3
 when {
 (parent: $z, child: $x) isa Parent;
 (parent: $z, child: $y) isa Parent;},
