@@ -25,16 +25,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.kb.admin.GraknAdmin;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -314,7 +313,6 @@ public interface GraknTx extends AutoCloseable{
     Rule getRule(String label);
 
     //------------------------------------- Utilities ----------------------------------
-    // TODO: what does this do when the graph is closed?
     /**
      * Returns access to the low-level details of the graph via GraknAdmin
      * @see GraknAdmin
@@ -367,7 +365,6 @@ public interface GraknTx extends AutoCloseable{
     @CheckReturnValue
     QueryBuilder graql();
 
-    // TODO: what does this do when the graph is closed?
     /**
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
@@ -384,9 +381,7 @@ public interface GraknTx extends AutoCloseable{
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
-     * @throws InvalidKBException when the transaction contains graph mutations which does not conform to the Grakn
-     * knowledge model.
      */
-    void commit() throws InvalidKBException;
+    void commit();
 
 }

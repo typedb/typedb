@@ -136,6 +136,10 @@ public class ConceptBuilder {
         return set(IS_ROLE, Unit.INSTANCE);
     }
 
+    public ConceptBuilder isRule() {
+        return set(IS_RULE, Unit.INSTANCE);
+    }
+
     public ConceptBuilder label(Label label) {
         return set(LABEL, label);
     }
@@ -224,6 +228,19 @@ public class ConceptBuilder {
             }
 
             concept = role;
+        } else if (has(IS_RULE)) {
+            use(IS_RULE);
+
+            Label label = use(LABEL);
+            Pattern when = use(WHEN);
+            Pattern then = use(THEN);
+            Rule rule = executor.tx().putRule(label, when, then);
+
+            if (has(SUPER_CONCEPT)) {
+                setSuper(rule, use(SUPER_CONCEPT));
+            }
+
+            concept = rule;
         } else if (has(SUPER_CONCEPT)) {
             concept = putSchemaConcept();
         } else if (has(TYPE)) {
@@ -282,6 +299,7 @@ public class ConceptBuilder {
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
     private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role");
+    private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule");
 
     /**
      * Class with no fields and exactly one instance.

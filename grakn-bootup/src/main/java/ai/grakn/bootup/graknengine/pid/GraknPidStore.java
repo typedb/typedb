@@ -16,25 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
-
-import java.nio.file.Path;
+package ai.grakn.bootup.graknengine.pid;
 
 /**
  *
- * A class responsible for instantiating GraknPidManager
+ * A interface to be implemented by class who is responsible for tracking and storing the process id of Grakn
  *
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class GraknPidManagerFactory {
-    /*
-     * instantiates a GraknPidManager which supports *nix systems such as Linux and OS X
-     */
-    public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
-        GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
-        GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
-        GraknPidManager graknPidManager = new GraknPidManager(graknPidStore, graknPidRetriever);
-        return graknPidManager;
-    }
+public interface GraknPidStore {
+    void trackGraknPid(long graknPid);
 }

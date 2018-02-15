@@ -16,17 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.grakn_pid;
+package ai.grakn.bootup.graknengine.pid;
+
+import java.nio.file.Path;
 
 /**
  *
- * A class which manages grakn engine's PID
+ * A class responsible for instantiating GraknPidManager
  *
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class GraknPidException extends RuntimeException {
-    public GraknPidException(String message) {
-        super(message);
+public class GraknPidManagerFactory {
+
+    private GraknPidManagerFactory(){}
+
+    /*
+     * instantiates a GraknPidManager which supports *nix systems such as Linux and OS X
+     */
+    public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
+        GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
+        GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
+        return new GraknPidManager(graknPidStore, graknPidRetriever);
     }
 }

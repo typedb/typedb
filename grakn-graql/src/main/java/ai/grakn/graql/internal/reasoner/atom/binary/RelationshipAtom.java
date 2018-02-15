@@ -481,7 +481,7 @@ public class RelationshipAtom extends IsaAtom {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    private Set<Type> inferPossibleEntityTypes(Answer sub){
+    private Set<Type> inferPossibleEntityTypePlayers(Answer sub){
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
@@ -554,9 +554,9 @@ public class RelationshipAtom extends IsaAtom {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
                         Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
-                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypes(sub);
+                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypePlayers(sub);
                         while(neighbourIterator.hasNext()){
-                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypes(sub));
+                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
                         }
 
                         Set<Role> rs = e.getKey().relates().collect(toSet());

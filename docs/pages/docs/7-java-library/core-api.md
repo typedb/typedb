@@ -241,7 +241,7 @@ Rules can be added to the knowledge base both through the Core API as well as th
 ```graql
 define
 
-R1 sub rule,
+R1
 when {
     (parent: $p, child: $c) isa Parent;
 },
@@ -249,7 +249,7 @@ then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
-R2 sub rule,
+R2
 when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;

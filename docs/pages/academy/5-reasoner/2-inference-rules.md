@@ -27,7 +27,7 @@ From a syntax point of view, to define a new rule, you will need something like 
 
 ```
 define
-RULE_LABEL sub rule,
+RULE_LABEL
 
   when {
         PRECONDITIONS

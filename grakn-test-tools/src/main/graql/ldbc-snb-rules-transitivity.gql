@@ -1,13 +1,13 @@
 insert
 
-"R1" sub rule,
+"R1"
 when {
 ($x, $y) isa resides;
 (member-location $y, container-location $z) isa sublocate},
 then {($x, $z) isa resides};
 
 # transitivity of sublocate
-"R2" sub rule,
+"R2"
 when {
 (member-location $x, container-location $y) isa sublocate;
 (member-location $y, container-location $z) isa sublocate},

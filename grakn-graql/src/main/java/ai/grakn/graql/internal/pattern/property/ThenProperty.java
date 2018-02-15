@@ -54,7 +54,8 @@ public abstract class ThenProperty extends RuleProperty {
     @Override
     public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).then(pattern());
+            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
+            executor.builder(var).isRule().then(pattern());
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
