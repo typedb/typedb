@@ -23,7 +23,6 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -190,11 +189,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     public void openTransaction(GraknTxType txType) {
         txCache().openTx(txType);
-    }
-
-    @Override
-    public Keyspace keyspace() {
-        return session().keyspace();
     }
 
     @Override
@@ -402,11 +396,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public EntityType putEntityType(String label) {
-        return putEntityType(Label.of(label));
-    }
-
-    @Override
     public EntityType putEntityType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
@@ -489,11 +478,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RelationshipType putRelationshipType(String label) {
-        return putRelationshipType(Label.of(label));
-    }
-
-    @Override
     public RelationshipType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
                 v -> factory().buildRelationshipType(v, getMetaRelationType()));
@@ -505,11 +489,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Role putRole(String label) {
-        return putRole(Label.of(label));
-    }
-
-    @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
                 v -> factory().buildRole(v, getMetaRole()));
@@ -518,11 +497,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public Role putRoleTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, true,
                 v -> factory().buildRole(v, getMetaRole()));
-    }
-
-    @Override
-    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
-        return putAttributeType(Label.of(label), dataType);
     }
 
     @SuppressWarnings("unchecked")
@@ -540,11 +514,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         return attributeType;
-    }
-
-    @Override
-    public Rule putRule(String label, Pattern when, Pattern then) {
-        return putRule(Label.of(label), when, then);
     }
 
     @Override

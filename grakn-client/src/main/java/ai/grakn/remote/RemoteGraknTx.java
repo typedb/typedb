@@ -21,7 +21,6 @@ package ai.grakn.remote;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -83,17 +82,7 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public EntityType putEntityType(String label) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public EntityType putEntityType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
         throw new UnsupportedOperationException(); // TODO
     }
 
@@ -103,27 +92,12 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public Rule putRule(String label, Pattern when, Pattern then) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
-    public RelationshipType putRelationshipType(String label) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public RelationshipType putRelationshipType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public Role putRole(String label) {
         throw new UnsupportedOperationException(); // TODO
     }
 
@@ -198,11 +172,6 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Override
     public GraknSession session() {
         return session;
-    }
-
-    @Override
-    public Keyspace keyspace() {
-        return session.keyspace();
     }
 
     @Override
