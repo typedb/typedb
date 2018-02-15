@@ -21,7 +21,6 @@ package ai.grakn.remote;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -29,7 +28,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -40,17 +38,10 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -201,21 +192,6 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public <T extends Concept> T buildConcept(Vertex vertex) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public <T extends Concept> T buildConcept(Edge edge) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public GraphTraversalSource getTinkerTraversal() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public boolean isBatchTx() {
         throw new UnsupportedOperationException(); // TODO
     }
@@ -251,53 +227,12 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public LabelId convertToId(Label label) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public void shard(ConceptId conceptId) {
-        throw new UnsupportedOperationException(); // TODO
-
-    }
-
-    @Override
-    public long shardingThreshold() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
         throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
     public void delete() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public long getShardCount(Type type) {
         throw new UnsupportedOperationException(); // TODO
     }
 
