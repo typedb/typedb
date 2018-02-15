@@ -65,6 +65,7 @@ import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -87,13 +88,14 @@ import java.util.stream.Collectors;
  */
 public class TinkerComputeQueryRunner {
     private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeQueryRunner.class);
-    private final GraknTx tx;
+    // TODO: rename this too
+    private final GraknTxAbstract<?> tx;
 
-    private TinkerComputeQueryRunner(GraknTx tx) {
+    private TinkerComputeQueryRunner(GraknTxAbstract<?> tx) {
         this.tx = tx;
     }
 
-    static TinkerComputeQueryRunner create(GraknTx tx) {
+    static TinkerComputeQueryRunner create(GraknTxAbstract<?> tx) {
         return new TinkerComputeQueryRunner(tx);
     }
 

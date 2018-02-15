@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknTxOperationException;
@@ -47,7 +46,7 @@ import static javax.annotation.meta.When.NEVER;
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
-    private final GraknSession session;
+    private final GraknSessionImpl session;
 
     private M graknTx = null;
     private M graknTxBatchLoading = null;
@@ -55,7 +54,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     G tx = null;
     private G txBatchLoading = null;
 
-    TxFactoryAbstract(GraknSession session){
+    TxFactoryAbstract(GraknSessionImpl session){
         this.session = session;
     }
 
@@ -118,7 +117,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     @CheckReturnValue(when=NEVER)
     protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
-    public GraknSession session(){
+    public GraknSessionImpl session(){
         return session;
     }
 }

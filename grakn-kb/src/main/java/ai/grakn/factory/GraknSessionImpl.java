@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.CheckReturnValue;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Objects;
@@ -199,9 +200,12 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     /**
-     * @return A new or existing grakn tx compute with the defined name
+     * Get a new or existing GraknComputer.
+     *
+     * @return A new or existing Grakn graph computer
+     * @see GraknComputer
      */
-    @Override
+    @CheckReturnValue
     public GraknComputer getGraphComputer() {
         TxFactory<?> configuredFactory = configureTxFactory(REST.KBConfig.COMPUTER);
         Graph graph = configuredFactory.getTinkerPopGraph(false);

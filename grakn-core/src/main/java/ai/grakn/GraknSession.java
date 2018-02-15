@@ -51,15 +51,6 @@ public interface GraknSession extends AutoCloseable {
     GraknTx open(GraknTxType transactionType);
 
     /**
-     * Get a new or existing GraknComputer.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see GraknComputer
-     */
-    @CheckReturnValue
-    GraknComputer getGraphComputer();
-
-    /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
      *
      */

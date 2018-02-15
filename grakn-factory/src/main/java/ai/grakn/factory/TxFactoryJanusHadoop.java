@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
@@ -48,7 +47,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
-    TxFactoryJanusHadoop(GraknSession session) {
+    TxFactoryJanusHadoop(GraknSessionImpl session) {
         super(session);
 
         session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());

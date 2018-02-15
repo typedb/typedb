@@ -20,7 +20,6 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.QueryRunner;
@@ -114,7 +113,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
 
     //----------------------------- Shared Variables
-    private final GraknSession session;
+    private final GraknSessionImpl session;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -127,7 +126,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
 
-    public GraknTxAbstract(GraknSession session, G graph) {
+    public GraknTxAbstract(GraknSessionImpl session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
@@ -142,7 +141,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public GraknSession session(){
+    public GraknSessionImpl session(){
         return session;
     }
 
@@ -946,7 +945,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     private static @Nullable Method getQueryRunnerFactory() {
         try {
-            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTx.class);
+            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", GraknTxAbstract.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }

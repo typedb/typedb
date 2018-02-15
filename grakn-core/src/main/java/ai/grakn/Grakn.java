@@ -113,13 +113,13 @@ public class Grakn {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * Returns a session instance to produce concurrent connections to the Grakn knowledge graph.
      * <p>
      * This method obtains the {@link GraknSession} for the specified location and keyspace.
      * </p>
-     * 
+     *
      * @param location The location from which to create the graph.
      * For the default, localhost Grakn Engine location, use the {@link #DEFAULT_URI} constant provided in this class.
      * For testing or experimentation, you can use a toy in-memory graph be specifying the {@link #IN_MEMORY} constant.

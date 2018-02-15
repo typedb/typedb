@@ -18,7 +18,6 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -72,11 +71,6 @@ class RemoteGraknSession implements GraknSession {
     @Override
     public GraknTx open(GraknTxType transactionType) {
         return RemoteGraknTx.create(this, transactionType);
-    }
-
-    @Override
-    public GraknComputer getGraphComputer() {
-        throw new UnsupportedOperationException(); // TODO
     }
 
     @Override

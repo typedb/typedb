@@ -18,6 +18,7 @@
 
 package ai.grakn;
 
+import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -65,7 +66,8 @@ public class GraknTest {
 
     @Test
     public void testComputer(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
+        GraknComputer computer = ((GraknSessionImpl) Grakn.session(Grakn.IN_MEMORY, "bob")).getGraphComputer();
+        assertThat(computer, instanceOf(GraknComputer.class));
     }
 
     @Test
