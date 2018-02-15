@@ -23,6 +23,13 @@ import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;
 
 /**
+ * Entry-point and remote equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
+ *
+ * <p>
+ *     In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
+ *     subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
+ * </p>
+ *
  * @author Felix Chapman
  */
 public final class RemoteGrakn {

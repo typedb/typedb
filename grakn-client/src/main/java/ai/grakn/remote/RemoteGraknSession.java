@@ -33,6 +33,11 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 /**
+ * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
+ *
+ * @see RemoteGraknTx
+ * @see RemoteGrakn
+ *
  * @author Felix Chapman
  */
 class RemoteGraknSession implements GraknSession {

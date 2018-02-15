@@ -55,6 +55,12 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Remote implementation of {@link QueryRunner} that communicates with a Grakn server using gRPC.
+ *
+ * <p>
+ *     Like {@link RemoteGraknTx}, this class is an adapter that uses the {@link GrpcClient} for gRPC calls.
+ * </p>
+ *
  * @author Felix Chapman
  */
 final class RemoteQueryRunner implements QueryRunner {

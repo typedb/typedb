@@ -54,6 +54,13 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
+ * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
+ *
+ * <p>
+ *     Most of the gRPC legwork is handled in the embedded {@link GrpcClient}. This class is an adapter to that,
+ *     translating Java calls into gRPC messages.
+ * </p>
+ *
  * @author Felix Chapman
  */
 class RemoteGraknTx implements GraknTx, GraknAdmin {
