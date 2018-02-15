@@ -238,7 +238,11 @@ public class EmbeddedGraknSession implements GraknSession {
         return keyspace;
     }
 
-    @Override
+    /**
+     * The config options of this {@link GraknSession} which were passed in at the time of construction
+     *
+     * @return The config options of this {@link GraknSession}
+     */
     public GraknConfig config() {
         return config;
     }

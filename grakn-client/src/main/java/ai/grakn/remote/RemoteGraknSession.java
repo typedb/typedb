@@ -22,7 +22,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -86,10 +85,5 @@ class RemoteGraknSession implements GraknSession {
     @Override
     public Keyspace keyspace() {
         return keyspace;
-    }
-
-    @Override
-    public GraknConfig config() {
-        throw new UnsupportedOperationException(); // TODO
     }
 }
