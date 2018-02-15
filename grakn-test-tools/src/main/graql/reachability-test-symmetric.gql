@@ -20,13 +20,13 @@ index sub attribute, datatype string;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 ($x, $y) isa link;},
 then {
 ($x, $y) isa reachable;};
 
-rule-2 sub rule,
+rule-2
 when {
 ($x, $z) isa link;
 ($z, $y) isa reachable;},

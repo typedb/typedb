@@ -83,13 +83,13 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (flat-from: $x, flat-to: $y) isa flat;},
 then {
 (RSG-from: $x, RSG-to: $y) isa RevSG;};
 
-rule-2 sub rule,
+rule-2
 when {
 (up-from: $x, up-to: $x1) isa up;
 (RSG-from: $y1, RSG-to: $x1) isa RevSG;

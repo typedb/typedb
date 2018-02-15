@@ -49,7 +49,7 @@ The rest of the project is contained in the Java example code, which can be foun
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>janus-factory</artifactId>
+<artifactId>grakn-factory</artifactId>
 <version>${grakn.version}</version>
 </dependency>
 <dependency>

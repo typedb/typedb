@@ -16,22 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.module;
-
-import ai.grakn.exception.GraknException;
+package ai.grakn.bootup.graknengine.pid;
 
 /**
- * A class representing grakn module-related exceptions
+ *
+ * A class which manages grakn engine's PID
  *
  * @author Ganeshwara Herawan Hananda
+ *
  */
-public class GraknModuleException extends GraknException {
-
-    protected GraknModuleException(String error, Exception e) {
-        super(error, e);
-    }
-
-    public static GraknModuleException exception(String error, Exception e) {
-        return new GraknModuleException(error, e);
+public class GraknPidException extends RuntimeException {
+    public GraknPidException(String message) {
+        super(message);
     }
 }

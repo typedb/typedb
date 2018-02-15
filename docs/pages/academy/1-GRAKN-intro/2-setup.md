@@ -20,21 +20,21 @@ If you do not know where to begin with, try having look at this [tutorial](http:
 You will also need to have and know how to use a text editor which can save simple, non formatted text files. There are countless alternatives on every platform, just pick your favourite one.
 
 
-## Setup Grakn
+## Setup GRAKN
 
-You can download the latest version of Grakn core from [here](https://grakn.ai/download/), unzip it, put it in a folder you like. 
+You can download the latest version of GRAKN core from [here](https://grakn.ai/download/), unzip it, put it in a folder you like. 
 Or you can follow the instruction on [this page](https://dev.grakn.ai/docs/get-started/setup-guide).
 
 ## Starting and using GRAKN
 
-From the directory of grakn, run the command `./grakn server start` to start Grakn. As soon as you see the Grakn logo, you will be able to connect to the Grakn.
+From the directory of GRAKN, run the command `./grakn server start` to start GRAKN. As soon as you see the GRAKN logo, you will be able to connect to the GRAKN.
 
-There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the Graql shell.
+There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the GRAQL shell.
 
 ## Loading data
 
-Let's load some data before we start to interact with Grakn. You can download the data from [here](https://github.com/graknlabs/academy/archive/master.zip).
-Unzip, go to the subfolder `short-training`. From there, run `./load.sh PATH/TO/GRAKN-DIST grakn`, where `PATH/TO/GRAKN-DIST` being the path to grakn core.
+Let's load some data before we start to interact with GRAKN. You can download the data from [here](https://github.com/graknlabs/academy/archive/master.zip).
+Unzip, go to the subfolder `short-training`. From there, run `./load.sh PATH/TO/GRAKN-DIST academy`, where `PATH/TO/GRAKN-DIST` being the path to GRAKN core.
 This can take a moment.
 
 ## Visualiser
@@ -45,7 +45,7 @@ To access the graph visualiser, with GRAKN running in the virtual machine, simpl
 
 This is the Graph visualiser. In this mode, you can query your GRAKN knowledge base and the results will be presented as a graph. To try it do the following:
 In the top right corner click on the `grakn` tab (this is the Keyspace selector); a drop-down menu will appear. Click on `academy` to select the Keyspace where our knowledge base has been loaded
-In the box on the top of the page (the Graql editor) write `match $x isa company; get;` and return. The result of the query will be visualised in the main area of the page.
+In the box on the top of the page (the GRAQL editor) write `match $x isa company; get;` and return. The result of the query will be visualised in the main area of the page.
 
 #### GOOD TO KNOW: Keyspaces
 In the GRAKN terminology, a keyspace is an isolated storage layer where you can store a knowledge base. This way you can have several knowledge bases in the same running instance of GRAKN without them interacting and steping on each others’ toes.
@@ -68,7 +68,7 @@ When you have too many results or in general for some type of queries that do no
 
 ## GRAQL Console
 
-In order to launch the GRAQL shell, from the command line, in the folder of grakn core, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
+In order to launch the GRAQL shell, from the command line, in the folder of GRAKN core, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
 
 Once again, type `match $x isa company; get;` and hit return to launch the query. As you can see the results looks very similar those in the dashboard console.
 

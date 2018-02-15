@@ -41,7 +41,6 @@ import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -68,6 +67,7 @@ import static ai.grakn.util.Schema.MetaSchema.ROLE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItemInArray;
@@ -382,16 +382,32 @@ public class DefineQueryTest {
 
     @Test
     public void whenDefiningANonRuleWithAWhenPattern_Throw() {
+        VarPattern rule = label("yes").sub(label(ENTITY.getLabel())).when(var("x"));
+
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
-        qb.define(label("yes").sub(label(ENTITY.getLabel())).when(var("x"))).execute();
+        exception.expectMessage(anyOf(
+                // Either we see "entity" and an unexpected "when"...
+                allOf(containsString("unexpected property"), containsString("when")),
+                // ...or we see "when" and don't find the expected "then"
+                containsString(GraqlQueryException.insertNoExpectedProperty("then", rule.admin()).getMessage()))
+        );
+
+        qb.define(rule).execute();
     }
 
     @Test
     public void whenDefiningANonRuleWithAThenPattern_Throw() {
+        VarPattern rule = label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"));
+
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
-        qb.define(label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"))).execute();
+        exception.expectMessage(anyOf(
+                // Either we see "entity" and an unexpected "when"...
+                allOf(containsString("unexpected property"), containsString("then")),
+                // ...or we see "when" and don't find the expected "then"
+                containsString(GraqlQueryException.insertNoExpectedProperty("when", rule.admin()).getMessage()))
+        );
+
+        qb.define(rule).execute();
     }
 
     @Test
@@ -407,7 +423,7 @@ public class DefineQueryTest {
         ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().getId();
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(Matchers.anyOf(
+        exception.expectMessage(anyOf(
                 is(GraqlQueryException.defineUnsupportedProperty(HasAttributeProperty.NAME).getMessage()),
                 is(GraqlQueryException.defineUnsupportedProperty(ValueProperty.NAME).getMessage())
         ));
@@ -442,6 +458,16 @@ public class DefineQueryTest {
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
         assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+    }
+
+    @Test
+    public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
+        Pattern when = qb.parser().parsePattern("$x isa entity");
+        Pattern then = qb.parser().parsePattern("$x isa entity");
+        VarPattern vars = label("my-rule").when(when).then(then);
+        qb.define(vars).execute();
+
+        assertNotNull(movies.tx().getRule("my-rule"));
     }
 
     @Test

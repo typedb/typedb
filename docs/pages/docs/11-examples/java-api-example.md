@@ -26,7 +26,7 @@ This dependency will give you access to the Core API. Your Java application will
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>janus-factory</artifactId>
+<artifactId>grakn-factory</artifactId>
 <version>${project.version}</version>
 </dependency>
 ```

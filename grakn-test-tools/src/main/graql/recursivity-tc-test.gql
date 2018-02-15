@@ -44,20 +44,20 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 $x isa q;
 (TC-roleA: $x, TC-roleB: $y) isa TC;},
 then {
 (N-TC-roleA: $x, N-TC-roleB: $y) isa N-TC;};
 
-rule-2 sub rule,
+rule-2
 when {
 (P-roleA: $x, P-roleB: $y) isa P;},
 then {
 (TC-roleA: $x, TC-roleB: $y) isa TC;};
 
-rule-3 sub rule,
+rule-3
 when {
 (P-roleA: $x, P-roleB: $z) isa P;
 (TC-roleA:$z, TC-roleB: $y) isa TC;},

@@ -20,7 +20,7 @@ index sub attribute, datatype string;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (Q-from: $x, Q-to: $z) isa Q;
 (Q-from: $z, Q-to: $y) isa Q;},

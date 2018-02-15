@@ -38,8 +38,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.EngineContext;
-import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import org.junit.Before;
@@ -186,7 +186,6 @@ public class BenchmarkIT {
                 Var toVar = Graql.var().asUserDefined();
                 VarPattern rulePattern = Graql
                         .label("rule" + i)
-                        .sub("rule")
                         .when(
                                 Graql.and(
                                         Graql.var()

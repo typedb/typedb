@@ -25,13 +25,13 @@ entity2 plays Q-from plays Q-to;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (Q-from: $x, Q-to: $y) isa Q;},
 then {
 (P-from: $x, P-to: $y) isa P;};
 
-rule-2 sub rule,
+rule-2
 when {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},

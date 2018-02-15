@@ -109,9 +109,7 @@ abstract class ComparatorPredicate implements ValuePredicate {
         if (o == null || getClass() != o.getClass()) return false;
 
         ComparatorPredicate that = (ComparatorPredicate) o;
-
-        return value != null ? value.equals(that.value) : that.value == null;
-
+        return value.equals(that.value);
     }
 
     @Override
@@ -127,7 +125,7 @@ abstract class ComparatorPredicate implements ValuePredicate {
 
     @Override
     public int hashCode() {
-        return value != null ? value.hashCode() : 0;
+        return value.hashCode();
     }
 
     @Override

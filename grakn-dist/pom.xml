@@ -91,7 +91,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>janus-factory</artifactId>
+            <artifactId>grakn-factory</artifactId>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->
