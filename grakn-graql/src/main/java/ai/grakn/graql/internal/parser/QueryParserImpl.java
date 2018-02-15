@@ -343,11 +343,11 @@ public class QueryParserImpl implements QueryParser {
             } catch (ParseCancellationException e) {
                 // If we're using the BailErrorStrategy, we will throw here
                 // This strategy is designed for parsing very large files and cannot provide useful error information
-                throw GraqlSyntaxException.parsingError("syntax error");
+                throw GraqlSyntaxException.create("syntax error");
             }
 
             if (errorListener.hasErrors()) {
-                throw GraqlSyntaxException.parsingError(errorListener.toString());
+                throw GraqlSyntaxException.create(errorListener.toString());
             }
 
             return visit(getQueryVisitor(), tree);

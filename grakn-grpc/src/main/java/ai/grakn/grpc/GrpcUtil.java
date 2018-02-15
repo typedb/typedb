@@ -20,6 +20,21 @@ package ai.grakn.grpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -27,18 +42,77 @@ import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
+import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableMap;
+import io.grpc.Metadata;
+import io.grpc.Metadata.AsciiMarshaller;
+import mjson.Json;
 
 import javax.annotation.Nullable;
+import java.util.function.Function;
 
 /**
  * @author Felix Chapman
  */
 public class GrpcUtil {
+
+    static class UnknownGraknException extends GraknException {
+
+        private static final long serialVersionUID = 4354432748314041017L;
+
+        UnknownGraknException(String error) {
+            super(error);
+        }
+
+        public static UnknownGraknException create(String message) {
+            return new UnknownGraknException(message);
+        }
+    }
+
+    /**
+     * Enumeration of all sub-classes of {@link GraknException} that can be thrown during gRPC calls.
+     */
+    public enum ErrorType {
+        // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
+        GRAQL_QUERY_EXCEPTION(GraqlQueryException::create),
+        GRAQL_SYNTAX_EXCEPTION(GraqlSyntaxException::create),
+        GRAKN_TX_OPERATION_EXCEPTION(GraknTxOperationException::create),
+        TEMPORARY_WRITE_EXCEPTION(TemporaryWriteException::create),
+        GRAKN_SERVER_EXCEPTION(GraknServerException::create),
+        PROPERTY_NOT_UNIQUE_EXCEPTION(PropertyNotUniqueException::create),
+        INVALID_KB_EXCEPTION(InvalidKBException::create),
+        GRAKN_BACKEND_EXCEPTION(GraknBackendException::create),
+        UNKNOWN(UnknownGraknException::create);
+
+        private final Function<String, GraknException> converter;
+
+        ErrorType(Function<String, GraknException> converter) {
+            this.converter = converter;
+        }
+
+        public final GraknException toException(String message) {
+            return converter.apply(message);
+        }
+
+        private static final AsciiMarshaller<ErrorType> ERROR_TYPE_ASCII_MARSHALLER = new AsciiMarshaller<ErrorType>() {
+            @Override
+            public String toAsciiString(ErrorType value) {
+                return value.name();
+            }
+
+            @Override
+            public ErrorType parseAsciiString(String serialized) {
+                return ErrorType.valueOf(serialized);
+            }
+        };
+
+        public static final Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", ERROR_TYPE_ASCII_MARSHALLER);
+    }
 
     public static TxRequest openRequest(Keyspace keyspace, GraknTxType txType) {
         Open.Builder open = Open.newBuilder().setKeyspace(convert(keyspace)).setTxType(convert(txType));
@@ -82,6 +156,18 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
+    public static Object getQueryResult(QueryResult queryResult) {
+        switch (queryResult.getQueryResultCase()) {
+            case ANSWER:
+                return convert(queryResult.getAnswer());
+            case OTHERRESULT:
+                return Json.read(queryResult.getOtherResult()).getValue();
+            default:
+            case QUERYRESULT_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + queryResult);
+        }
+    }
+
     private static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
@@ -116,4 +202,16 @@ public class GrpcUtil {
     private static GraknOuterClass.Keyspace convert(Keyspace keyspace) {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
+
+    private static Answer convert(GraknOuterClass.Answer answer) {
+        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
+
+        answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
+            Concept concept = RemoteConcept.create(ConceptId.of(grpcConcept.getId()));
+            map.put(Graql.var(grpcVar), concept);
+        });
+
+        return new QueryAnswer(map.build());
+    }
+
 }

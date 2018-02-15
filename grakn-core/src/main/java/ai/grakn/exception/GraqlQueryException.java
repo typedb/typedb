@@ -67,7 +67,7 @@ public class GraqlQueryException extends GraknException {
         super(error, cause);
     }
 
-    private static GraqlQueryException create(String formatString, Object... args) {
+    public static GraqlQueryException create(String formatString, Object... args) {
         return new GraqlQueryException(String.format(formatString, args));
     }
 

@@ -35,6 +35,10 @@
             <artifactId>grakn-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
         </dependency>

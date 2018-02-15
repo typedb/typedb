@@ -110,7 +110,7 @@ public class TemplateParser {
         ParseTree tree = parser.template();
 
         if(errorListener.hasErrors()){
-            throw GraqlSyntaxException.parsingError(errorListener.toString());
+            throw GraqlSyntaxException.create(errorListener.toString());
         }
 
         return tree;
