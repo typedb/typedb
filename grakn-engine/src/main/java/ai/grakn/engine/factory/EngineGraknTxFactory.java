@@ -79,7 +79,7 @@ public class EngineGraknTxFactory {
         FactoryBuilder.refresh();
     }
 
-    public GraknTx tx(String keyspace, GraknTxType type){
+    public EmbeddedGraknTx<?> tx(String keyspace, GraknTxType type){
         return tx(Keyspace.of(keyspace), type);
     }
 

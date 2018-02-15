@@ -192,11 +192,6 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public boolean isBatchTx() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public Type getMetaConcept() {
         throw new UnsupportedOperationException(); // TODO
     }

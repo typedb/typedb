@@ -256,7 +256,11 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
         return factory().buildConcept(edge);
     }
 
-    @Override
+    /**
+         * A flag to check if batch loading is enabled and consistency checks are switched off
+         *
+         * @return true if batch loading is enabled
+         */
     public boolean isBatchTx() {
         return GraknTxType.BATCH.equals(txCache().txType());
     }

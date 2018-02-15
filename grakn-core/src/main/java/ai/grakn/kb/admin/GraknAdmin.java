@@ -40,14 +40,6 @@ import java.util.stream.Stream;
 public interface GraknAdmin {
 
 
-    /**
-     * A flag to check if batch loading is enabled and consistency checks are switched off
-     *
-     * @return true if batch loading is enabled
-     */
-    @CheckReturnValue
-    boolean isBatchTx();
-
     //------------------------------------- Meta Types ----------------------------------
     /**
      * Get the root of all Types.
