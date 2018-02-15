@@ -21,6 +21,7 @@ package ai.grakn.remote;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
