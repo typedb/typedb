@@ -553,10 +553,6 @@
                         <artifactId>high-scale-lib</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.codahale.metrics</groupId>
-                        <artifactId>metrics-core</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>ch.qos.logback</groupId>
                         <artifactId>logback-classic</artifactId>
                     </exclusion>
