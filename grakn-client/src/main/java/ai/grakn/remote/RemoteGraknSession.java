@@ -58,7 +58,7 @@ class RemoteGraknSession implements GraknSession {
     }
 
     public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
-        // TODO: usePlainText is insecure
+        // TODO: usePlainText is insecure, because it is not encrypted
         ManagedChannel channel =
                 ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
 
