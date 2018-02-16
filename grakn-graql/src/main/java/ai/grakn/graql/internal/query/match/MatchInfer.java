@@ -48,8 +48,12 @@ class MatchInfer extends MatchModifier {
 
     @Override
     public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
-        // THIS IS BAD TODO
-        EmbeddedGraknTx<?> tx = optionalOr(optionalGraph, inner.tx().map(t -> (EmbeddedGraknTx<?>) t)).orElseThrow(GraqlQueryException::noTx);
+        // If the tx is not embedded, treat it like there is no transaction
+        // TODO: this is dodgy - when queries don't contain transactions this can be fixed
+        EmbeddedGraknTx<?> tx = optionalOr(optionalGraph, inner.tx()
+                .filter(t -> t instanceof EmbeddedGraknTx)
+                .map(t -> (EmbeddedGraknTx<?>) t))
+                .orElseThrow(GraqlQueryException::noTx);
 
         if (!RuleUtils.hasRules(tx)) return inner.stream(optionalGraph);
 

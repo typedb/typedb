@@ -130,6 +130,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
         this(Collections.singletonList(atom), (EmbeddedGraknTx<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 

@@ -46,7 +46,8 @@ class MatchTx extends MatchModifier {
             throw GraqlQueryException.multipleTxs();
         }
 
-        return inner.stream(Optional.of((EmbeddedGraknTx<?>) this.tx)); // TODO OR NOT TODO
+        // TODO: This cast is unsafe - this is fixed if queries don't contain transactions
+        return inner.stream(Optional.of((EmbeddedGraknTx<?>) this.tx));
     }
 
     @Override

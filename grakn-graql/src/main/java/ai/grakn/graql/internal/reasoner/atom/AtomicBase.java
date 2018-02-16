@@ -111,6 +111,9 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected EmbeddedGraknTx<?> tx(){ return (EmbeddedGraknTx<?>) /* TODO ODOT */ getParentQuery().tx();}
+    protected EmbeddedGraknTx<?> tx(){
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
+        return (EmbeddedGraknTx<?>) getParentQuery().tx();
+    }
 }
 
