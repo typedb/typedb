@@ -137,7 +137,7 @@ public class GraqlControllerDeleteTest {
 
         Query<?> query = tx.graql().parser().parseQuery(queryString);
 
-        InOrder inOrder = inOrder(query, tx.admin());
+        InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
         inOrder.verify(tx, times(1)).commitSubmitNoLogs();
