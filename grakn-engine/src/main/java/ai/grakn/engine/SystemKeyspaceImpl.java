@@ -171,7 +171,7 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
             loadSystemSchema(tx);
             tx.commitSubmitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
             throw e;
         }

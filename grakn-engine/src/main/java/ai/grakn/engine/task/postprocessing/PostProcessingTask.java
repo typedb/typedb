@@ -89,7 +89,7 @@ public class PostProcessingTask implements BackgroundTask{
         try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)){
             indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
-        } catch (Exception e){
+        } catch (RuntimeException e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
             LOG.error(String.format("Error during post processing index {%s} with ids {%s}", index, stringIds), e);
         }
