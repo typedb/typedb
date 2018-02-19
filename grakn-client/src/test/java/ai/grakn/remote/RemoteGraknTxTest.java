@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
@@ -37,6 +38,7 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Metadata;
@@ -53,7 +55,10 @@ import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.BiConsumer;
 
+import static ai.grakn.graql.Graql.define;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -309,6 +314,7 @@ public class RemoteGraknTxTest {
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
             verify(serverRequests).onNext(any()); // The open request
+
             answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
         }
 
@@ -381,6 +387,38 @@ public class RemoteGraknTxTest {
         }
     }
 
+    @Test
+    public void whenPuttingEntityType_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GraknTx::putEntityType);
+    }
+
+    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, BiConsumer<GraknTx, Label> adder){
+        String expectedQuery = define(label(label).sub(metaSchema.getLabel().getValue())).toString();
+
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(response);
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+
+        doAnswer(args -> {
+            assert serverResponses != null;
+            serverResponses.onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+
+        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+            adder.accept(tx, Label.of(label));
+        }
+
+        verify(serverRequests).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+    }
 
     private void throwOn(TxRequest request, ErrorType errorType, String message) {
         Metadata trailers = new Metadata();
