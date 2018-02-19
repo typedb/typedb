@@ -123,6 +123,7 @@ public class GreedyTraversalPlan {
             final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
 
             final Set<Node> startingNodeSet = new HashSet<>();
+            final Set<Node> startingNodeSet2 = new HashSet<>(); // implicit types, low priority
             final Set<Fragment> edgeFragmentSet = new HashSet<>();
 
             fragmentSet.forEach(fragment -> {
@@ -131,7 +132,12 @@ public class GreedyTraversalPlan {
                     updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
 
                 } else if (fragment.hasFixedFragmentCost()) {
-                    startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                    if (fragment instanceof LabelFragment &&
+                            tx.getType(((LabelFragment) fragment).labels().iterator().next()).isImplicit()) {
+                        startingNodeSet2.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                    } else {
+                        startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                    }
                 }
             });
 
@@ -141,9 +147,14 @@ public class GreedyTraversalPlan {
             if (!weightedGraph.isEmpty()) {
                 SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
 
-                final Collection<Node> startingNodes = !startingNodeSet.isEmpty() ? startingNodeSet :
-                        sparseWeightedGraph.getNodes().stream()
-                                .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+                Collection<Node> startingNodes;
+                if (!startingNodeSet.isEmpty()) {
+                    startingNodes = startingNodeSet;
+                } else {
+                    startingNodes = !startingNodeSet2.isEmpty() ? startingNodeSet2 :
+                            sparseWeightedGraph.getNodes().stream()
+                                    .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+                }
 
                 Arborescence<Node> arborescence = startingNodes.stream()
                         .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))

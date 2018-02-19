@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
@@ -41,6 +42,7 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerTest {
 
@@ -61,6 +63,8 @@ public class QueryPlannerTest {
     private static final String veryRelated = "veryRelated";
     private static final String sameAsRelated = "sameAsRelated";
 
+    private static final String resourceType = "resourceType";
+
     private EmbeddedGraknTx<?> tx;
 
     @ClassRule
@@ -71,6 +75,9 @@ public class QueryPlannerTest {
         EntityType entityType2 = graph.putEntityType(thingy2);
         EntityType entityType3 = graph.putEntityType(thingy3);
         EntityType entityType4 = graph.putEntityType(thingy4);
+
+        AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.DataType.STRING);
+        entityType4.attribute(attributeType);
 
         EntityType superType1 = graph.putEntityType(thingy)
                 .sub(entityType0)
@@ -243,6 +250,36 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(3L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+    }
+
+    @Test
+    public void avoidImplicitTypes() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        String relationship = plan.get(4).start().getValue();
+
+        // should  start from relationship
+        assertNotEquals(relationship, x.getValue());
+        assertNotEquals(relationship, y.getValue());
+
+        pattern = and(
+                x.isa(resourceType),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        relationship = plan.get(4).start().getValue();
+
+        // should start from role player
+        assertTrue(relationship.equals(x.getValue()) || relationship.equals(y.getValue()));
+        assertTrue(plan.get(5) instanceof OutIsaFragment);
     }
 
     @Test
