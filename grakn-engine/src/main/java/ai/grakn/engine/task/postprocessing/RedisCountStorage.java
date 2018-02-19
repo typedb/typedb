@@ -48,13 +48,13 @@ public class RedisCountStorage {
      * Adjusts the count for a specific key.
      *
      * @param key the key of the value to adjust
-     * @param count the number to adjust the key by
+     * @param incrementBy the number to adjust the key by
      * @return true
      */
-    public long adjustCount(String key, long count){
+    public long incrementCount(String key, long incrementBy){
         return redisStorage.contactRedis(jedis -> {
-            if(count != 0) {
-                return jedis.incrBy(key, count); //Number is decremented when count is negative
+            if(incrementBy != 0) {
+                return jedis.incrBy(key, incrementBy); //Number is decremented when count is negative
             } else {
                return getCount(key);
             }
