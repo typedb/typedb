@@ -381,6 +381,7 @@ public class RemoteGraknTxTest {
         }
     }
 
+
     private void throwOn(TxRequest request, ErrorType errorType, String message) {
         Metadata trailers = new Metadata();
         trailers.put(ErrorType.KEY, errorType);

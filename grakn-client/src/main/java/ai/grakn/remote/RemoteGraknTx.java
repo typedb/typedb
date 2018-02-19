@@ -36,6 +36,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -52,6 +53,8 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.label;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
@@ -89,7 +92,8 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        queryRunner().run(Graql.withoutGraph().define(label(label).sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
+        return null; // TODO
     }
 
     @Override
