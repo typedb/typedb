@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
@@ -34,6 +33,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
@@ -89,12 +89,12 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x, true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static GraknTx tx;
+    private static EmbeddedGraknTx<?> tx;
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @BeforeClass
     public static void setUp() {
-        tx = mock(GraknTx.class);
+        tx = mock(EmbeddedGraknTx.class);
 
         // We have to mock out the `subTypes` call because the role-player edge optimisation checks it
 

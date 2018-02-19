@@ -19,13 +19,13 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -151,9 +151,9 @@ public class CountPostProcessor {
             if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
 
-                try(GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-                    graph.admin().shard(conceptId);
-                    graph.admin().commitSubmitNoLogs();
+                try(EmbeddedGraknTx<?> graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+                    graph.shard(conceptId);
+                    graph.commitSubmitNoLogs();
                 }
                 //Update number of shards
                 redis.adjustCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);

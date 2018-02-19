@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
@@ -99,7 +98,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    TxFactoryJanus(GraknSession session) {
+    TxFactoryJanus(EmbeddedGraknSession session) {
         super(session);
     }
 

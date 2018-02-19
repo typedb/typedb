@@ -21,7 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -53,9 +53,9 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 public abstract class AbstractElement<E extends Element, P extends Enum> {
     private final String prefix;
     private final E element;
-    private final GraknTxAbstract tx;
+    private final EmbeddedGraknTx tx;
 
-    AbstractElement(GraknTxAbstract tx, E element, String prefix){
+    AbstractElement(EmbeddedGraknTx tx, E element, String prefix){
         this.tx = tx;
         this.element = element;
         this.prefix = prefix;
@@ -115,7 +115,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      *
      * @return The grakn graph this concept is bound to.
      */
-    public GraknTxAbstract<?> tx() {
+    public EmbeddedGraknTx<?> tx() {
         return tx;
     }
 

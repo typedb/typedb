@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusHadoopTest {
-    private final static GraknSession session = mock(GraknSession.class);
+    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private static final File TEST_CONFIG_FILE = Paths.get("../../conf/main/grakn.properties").toFile();
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -31,7 +30,9 @@ import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Equivalence;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -67,7 +68,7 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
      */
     public Stream<Answer> get(Q query){
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
-        GraknTx tx = query.tx();
+        EmbeddedGraknTx<?> tx = query.tx();
 
         CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);
         if (match != null){

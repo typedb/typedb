@@ -18,12 +18,12 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -51,8 +51,8 @@ import java.util.function.Supplier;
  *
  * @author fppt
  */
-public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(GraknSession session, JanusGraph graph){
+public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
+    public GraknTxJanus(EmbeddedGraknSession session, JanusGraph graph){
         super(session, graph);
     }
 

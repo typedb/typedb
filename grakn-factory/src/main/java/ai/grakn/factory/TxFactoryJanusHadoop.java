@@ -18,8 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
@@ -43,12 +42,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author fppt
  */
-public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<HadoopGraph>, HadoopGraph> {
+public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
-    TxFactoryJanusHadoop(GraknSession session) {
+    TxFactoryJanusHadoop(EmbeddedGraknSession session) {
         super(session);
 
         session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
@@ -56,7 +55,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     }
 
     @Override
-    GraknTxAbstract<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
+    EmbeddedGraknTx<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_TX.getMessage(HadoopGraph.class.getName()));
     }
 

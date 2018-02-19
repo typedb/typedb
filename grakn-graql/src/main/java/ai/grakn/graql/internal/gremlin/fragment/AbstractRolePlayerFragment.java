@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
@@ -27,6 +26,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -84,11 +84,11 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-            @Nullable Set<Label> typeLabels, GraknTx tx) {
+            @Nullable Set<Label> typeLabels, EmbeddedGraknTx<?> tx) {
 
         if (typeLabels != null) {
             Set<Integer> typeIds =
-                    typeLabels.stream().map(label -> tx.admin().convertToId(label).getValue()).collect(toSet());
+                    typeLabels.stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
         }
     }

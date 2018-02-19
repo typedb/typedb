@@ -65,7 +65,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
-    EntityType putEntityType(String label);
+    default EntityType putEntityType(String label) {
+        return putEntityType(Label.of(label));
+    }
 
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
@@ -95,7 +97,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
+    default <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
+        return putAttributeType(Label.of(label), dataType);
+    }
 
     /**
      * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
@@ -127,7 +131,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    Rule putRule(String label, Pattern when, Pattern then);
+    default Rule putRule(String label, Pattern when, Pattern then) {
+        return putRule(Label.of(label), when, then);
+    }
 
     /**
      * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
@@ -151,7 +157,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationshipType putRelationshipType(String label);
+    default RelationshipType putRelationshipType(String label) {
+        return putRelationshipType(Label.of(label));
+    }
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
@@ -175,7 +183,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    Role putRole(String label);
+    default Role putRole(String label) {
+        return putRole(Label.of(label));
+    }
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -333,7 +343,9 @@ public interface GraknTx extends AutoCloseable{
      * @return The {@link Keyspace} of the knowledge base.
      */
     @CheckReturnValue
-    Keyspace keyspace();
+    default Keyspace keyspace() {
+        return session().keyspace();
+    }
 
     /**
      * Utility function to determine whether the graph has been closed.

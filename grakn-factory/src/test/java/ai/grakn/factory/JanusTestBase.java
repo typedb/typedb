@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class JanusTestBase {
-    protected final static GraknSessionImpl session = mock(GraknSessionImpl.class);
+    protected final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File CONFIG_LOCATION = Paths.get("../conf/main/grakn.properties").toFile();
     private final static Keyspace TEST_SHARED = Keyspace.of("shared");
     private final static CommitLogHandler commitLogHandler = mock(CommitLogHandler.class);
