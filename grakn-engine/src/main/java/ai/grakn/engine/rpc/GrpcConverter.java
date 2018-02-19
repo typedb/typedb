@@ -107,6 +107,18 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
             schemaConceptBuilder.setLabel(schemaConcept.getLabel().getValue());
             schemaConceptBuilder.setImplicit(schemaConcept.isImplicit());
 
+            if (schemaConcept.isType()) {
+                schemaConceptBuilder.setType(GraknOuterClass.Type.getDefaultInstance());
+            }
+
+            if (schemaConcept.isRole()) {
+                schemaConceptBuilder.setRole(GraknOuterClass.Role.getDefaultInstance());
+            }
+
+            if (schemaConcept.isRule()) {
+                schemaConceptBuilder.setRule(GraknOuterClass.Rule.getDefaultInstance());
+            }
+
             builder.setSchemaConcept(schemaConceptBuilder.build());
         }
 

@@ -18,60 +18,43 @@
 
 package ai.grakn.grpc.concept;
 
+import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Type;
+import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
- *
- * @param <Self> The exact type of this class
  */
-public abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+@AutoValue
+public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    @Override
-    public abstract Label getLabel();
-
-    @Override
-    public abstract Boolean isImplicit();
-
-    @Override
-    public final Self setLabel(Label label) {
-        throw new UnsupportedOperationException();
+    public static RemoteRole create(GraknTx tx, ConceptId id, Label label, boolean isImplicit) {
+        return new AutoValue_RemoteRole(tx, id, label, isImplicit);
     }
 
-    @Nullable
     @Override
-    public final Self sup() {
+    public final Role sup(Role type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Self> sups() {
+    public final Role sub(Role type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Self> subs() {
+    public final Stream<RelationshipType> relationshipTypes() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final LabelId getLabelId() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfHypothesis() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfConclusion() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
+    public final Stream<Type> playedByTypes() {
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 }

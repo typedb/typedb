@@ -23,21 +23,22 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcTestUtil;
 import ai.grakn.remote.RemoteGrakn;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import io.grpc.Status;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -69,17 +70,23 @@ public class GrpcServerIT {
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
 
-    private final GraknSession localSession = engine.sessionWithNewKeyspace();
+    private static GraknSession localSession;
+    private static GraknSession remoteSession;
 
-    private GraknSession remoteSession;
+    @BeforeClass
+    public static void setUp() {
+        localSession = engine.sessionWithNewKeyspace();
 
-    @Before
-    public void setUp() {
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            MovieKB.get().accept(tx);
+            tx.commit();
+        }
+
         remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void tearDown() {
         remoteSession.close();
     }
 
@@ -98,11 +105,11 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
         try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
-            tx.graql().define(label("person").sub("entity")).execute();
+            tx.graql().define(label("flibflab").sub("entity")).execute();
         }
 
         try (GraknTx tx = localSession.open(GraknTxType.READ)) {
-            assertNull(tx.getEntityType("person"));
+            assertNull(tx.getEntityType("flibflab"));
         }
     }
 
@@ -114,9 +121,13 @@ public class GrpcServerIT {
             answers = tx.graql().match(var("x").sub("thing")).get().execute();
         }
 
-        int numMetaTypes = Schema.MetaSchema.METATYPES.size();
-        assertThat(answers.toString(), answers, hasSize(numMetaTypes));
-        assertThat(Sets.newHashSet(answers), hasSize(numMetaTypes));
+        int size;
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            size = tx.graql().match(var("x").sub("thing")).get().execute().size();
+        }
+
+        assertThat(answers.toString(), answers, hasSize(size));
+        assertThat(Sets.newHashSet(answers), hasSize(size));
 
         try (GraknTx tx = localSession.open(GraknTxType.READ)) {
             for (Answer answer : answers) {
@@ -185,7 +196,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: implement missing methods
     @Test
     public void whenGettingASchemaConcept_TheSchemaConceptContainsInformationAboutItself() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -195,7 +205,6 @@ public class GrpcServerIT {
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
 
-            assertEquals(localConcept.isSchemaConcept(), remoteConcept.isSchemaConcept());
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
             assertEquals(localConcept.getLabel(), remoteConcept.getLabel());
             assertEquals(localConcept.sup().getId(), remoteConcept.sup().getId());
@@ -204,7 +213,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: implement missing methods
     @Test
     public void whenGettingAThing_TheThingContainsInformationAboutItself() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -214,13 +222,58 @@ public class GrpcServerIT {
             Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
 
-            assertEquals(localConcept.isThing(), remoteConcept.isThing());
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
             assertEquals(localConcept.type().getId(), remoteConcept.type().getId());
             assertEqualConcepts(localConcept, remoteConcept, Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept, Thing::keys);
             assertEqualConcepts(localConcept, remoteConcept, Thing::plays);
             assertEqualConcepts(localConcept, remoteConcept, Thing::relationships);
+        }
+    }
+
+    @Test
+    public void whenGettingAType_TheTypeContainsInformationAboutItself() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
+            Type remoteConcept = query.stream().findAny().get().get("x").asType();
+            Type localConcept = localTx.getConcept(remoteConcept.getId()).asType();
+
+            assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
+            assertEqualConcepts(localConcept, remoteConcept, Type::plays);
+            assertEqualConcepts(localConcept, remoteConcept, Type::instances);
+            assertEqualConcepts(localConcept, remoteConcept, Type::attributes);
+        }
+    }
+
+    @Test
+    public void whenGettingARole_TheRoleContainsInformationAboutItself() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
+            Role remoteConcept = query.stream().findAny().get().get("x").asRole();
+            Role localConcept = localTx.getConcept(remoteConcept.getId()).asRole();
+
+            assertEqualConcepts(localConcept, remoteConcept, Role::playedByTypes);
+            assertEqualConcepts(localConcept, remoteConcept, Role::relationshipTypes);
+        }
+    }
+
+    @Test
+    public void whenGettingARule_TheRuleContainsInformationAboutItself() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
+            ai.grakn.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
+            ai.grakn.concept.Rule localConcept = localTx.getConcept(remoteConcept.getId()).asRule();
+
+            assertEquals(localConcept.getWhen(), remoteConcept.getWhen());
+            assertEquals(localConcept.getThen(), remoteConcept.getThen());
+            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getConclusionTypes);
+            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getHypothesisTypes);
         }
     }
 

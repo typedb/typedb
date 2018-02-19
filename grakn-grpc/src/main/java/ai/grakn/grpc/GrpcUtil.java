@@ -37,7 +37,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.concept.RemoteSchemaConcept;
+import ai.grakn.grpc.concept.RemoteRule;
 import ai.grakn.grpc.concept.RemoteThing;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
@@ -224,7 +224,17 @@ public class GrpcUtil {
             case SCHEMACONCEPT:
                 GraknOuterClass.SchemaConcept schemaConcept = concept.getSchemaConcept();
                 Label label = Label.of(schemaConcept.getLabel());
-                return RemoteSchemaConcept.create(tx, id, label, schemaConcept.getImplicit());
+                switch (schemaConcept.getBaseTypeCase()) {
+                    case TYPE:
+                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
+                    case ROLE:
+                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
+                    case RULE:
+                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
+                    default:
+                    case BASETYPE_NOT_SET:
+                        throw new IllegalArgumentException("Unrecognised " + schemaConcept);
+                }
             case THING:
                 return RemoteThing.create(tx, id);
             default:
