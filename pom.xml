@@ -239,7 +239,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>janus-factory</artifactId>
+                <artifactId>grakn-factory</artifactId>
                 <version>1.1.0</version>
                 <exclusions>
                     <exclusion>
@@ -553,10 +553,6 @@
                         <artifactId>high-scale-lib</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.codahale.metrics</groupId>
-                        <artifactId>metrics-core</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>ch.qos.logback</groupId>
                         <artifactId>logback-classic</artifactId>
                     </exclusion>
@@ -813,6 +809,11 @@
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>

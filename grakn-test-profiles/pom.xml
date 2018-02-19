@@ -101,7 +101,7 @@
             <dependencies>
                 <dependency>
                     <groupId>ai.grakn</groupId>
-                    <artifactId>janus-factory</artifactId>
+                    <artifactId>grakn-factory</artifactId>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

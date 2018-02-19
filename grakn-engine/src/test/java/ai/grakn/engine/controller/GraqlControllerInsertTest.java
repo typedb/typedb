@@ -119,7 +119,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseStatusIs400() {
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
         String query = "insert $x isa ;";
@@ -130,7 +130,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError() {
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
         String query = "insert $x isa ;";

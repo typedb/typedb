@@ -19,12 +19,13 @@
 package ai.grakn.engine.lock;
 
 import com.google.common.base.Preconditions;
+import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
 
 /**
  * Wrapper for Jedis lock
@@ -33,13 +34,13 @@ import redis.clients.util.Pool;
  */
 public class JedisLock implements Lock {
 
-    private static final long TIMEOUT_MS = 10 * 1000;
+    private static final long TIMEOUT_MS = 10_000L;
     private final String lockName;
     // Name of the lock
     private String internalLockName;
 
     // Lock expiration in miliseconds.
-    private int expireMsecs = 60 * 1000;
+    private int expireMsecs = 60_000;
 
     private boolean locked = false;
     private Pool<Jedis> jedis;

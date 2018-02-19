@@ -44,7 +44,7 @@ public interface CountQuery extends ComputeQuery<Long> {
      * @return a CountQuery with the subLabels set
      */
     @Override
-    CountQuery in(Collection<Label> subLabels);
+    CountQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

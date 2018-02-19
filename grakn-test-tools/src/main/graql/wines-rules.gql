@@ -1,20 +1,20 @@
 define
 ###############APERITIF WINES##################
 
-rule-1 sub rule,
+rule-1
 when {
 $x isa person;
 $x has preferred-context 'aperitif';},
 then { $x has recommended-generic-wine-type 'Romanian wine';};
 
-rule-2 sub rule,
+rule-2
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Romanian wine';
 $x has preferred-body 'full';},
 then { $x has recommended-generic-wine-type 'Cotnary vineyard wine';};
 
-rule-3 sub rule,
+rule-3
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Cotnary vineyard wine';
@@ -22,13 +22,13 @@ $x has preferred-sparklingness 'sparkling';},
 then { $x has recommended-generic-wine-type 'sparkling wine';};
 
 ###############Champagne###############
-rule-4 sub rule,
+rule-4
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'sparkling wine';},
 then { $x has recommended-generic-wine-type 'Champagne';};
 
-rule-5 sub rule,
+rule-5
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
@@ -37,7 +37,7 @@ $y isa wine;
 $y has name 'White Champagne';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-6 sub rule,
+rule-6
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
@@ -46,7 +46,7 @@ $y isa wine;
 $y has name 'Pink Champagne';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-7 sub rule,
+rule-7
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
@@ -57,14 +57,14 @@ then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;
 
 ###############Table###############
 
-rule-8 sub rule,
+rule-8
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Cotnary vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';},
 then { $x has recommended-generic-wine-type 'table wine';};
 
-rule-9 sub rule,
+rule-9
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'table wine';
@@ -73,7 +73,7 @@ $y isa wine;
 $y has name 'Tamaioasa Romaneasca';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-10 sub rule,
+rule-10
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'table wine';
@@ -82,7 +82,7 @@ $y isa wine;
 $y has name 'Busuioaca Romaneasca';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-11 sub rule,
+rule-11
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'table wine';
@@ -94,14 +94,14 @@ then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;
 
 ###############DEALU MARE VINEYARD###############
 
-rule-12 sub rule,
+rule-12
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Romanian wine';
 $x has preferred-body 'medium';},
 then { $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';};
 
-rule-13 sub rule,
+rule-13
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
@@ -111,7 +111,7 @@ $y isa wine;
 $y has name 'Feteasca Regala';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-14 sub rule,
+rule-14
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
@@ -121,7 +121,7 @@ $y isa wine;
 $y has name 'Feteasca Roz';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-15 sub rule,
+rule-15
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
@@ -133,14 +133,14 @@ then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;
 
 ###############Jidvei vineyard###############
 
-rule-16 sub rule,
+rule-16
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Romanian wine';
 $x has preferred-body 'light';},
 then { $x has recommended-generic-wine-type 'Jidvei vineyard wine';};
 
-rule-17 sub rule,
+rule-17
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Jidvei vineyard wine';
@@ -150,7 +150,7 @@ $y isa wine;
 $y has name 'Sauvignion Blanc';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-18 sub rule,
+rule-18
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Jidvei vineyard wine';
@@ -160,7 +160,7 @@ $y isa wine;
 $y has name 'Feteasca Regala';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-19 sub rule,
+rule-19
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'Jidvei vineyard wine';
@@ -172,13 +172,13 @@ then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;
 
 ###############ENTREE WINES###############
 
-rule-20 sub rule,
+rule-20
 when {
 $x isa person;
 $x has preferred-context 'entree';},
 then { $x has recommended-generic-wine-type 'entree wine';};
 
-rule-21 sub rule,
+rule-21
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -188,7 +188,7 @@ $y isa wine;
 $y has name 'Muscat Sec';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-22 sub rule,
+rule-22
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -198,7 +198,7 @@ $y isa wine;
 $y has name 'Pinot Grigio Rose';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-23 sub rule,
+rule-23
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -208,7 +208,7 @@ $y isa wine;
 $y has name 'Corbieres 2003';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-24 sub rule,
+rule-24
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -218,7 +218,7 @@ $y isa wine;
 $y has name 'Chateau Agnel 2000';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-25 sub rule,
+rule-25
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -228,7 +228,7 @@ $y isa wine;
 $y has name 'Busuioaca Romaneasca';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-26 sub rule,
+rule-26
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';
@@ -238,7 +238,7 @@ $y isa wine;
 $y has name 'Rosso di Sicilia 2004';},
 then {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
-rule-27 sub rule,
+rule-27
 when {
 $x isa person;
 $x has recommended-generic-wine-type 'entree wine';

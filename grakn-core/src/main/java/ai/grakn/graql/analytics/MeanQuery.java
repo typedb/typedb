@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface MeanQuery extends ComputeQuery<Optional<Double>> {
+public interface MeanQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on
@@ -56,7 +56,7 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
      * @return a MeanQuery with the subLabels set
      */
     @Override
-    MeanQuery in(Collection<Label> subLabels);
+    MeanQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

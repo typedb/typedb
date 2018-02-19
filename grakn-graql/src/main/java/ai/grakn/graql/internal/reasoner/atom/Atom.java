@@ -35,9 +35,7 @@ import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
@@ -119,7 +117,7 @@ public abstract class Atom extends AtomicBase {
                 this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
         );
         boolean unboundVariables = varNames.stream()
-                .anyMatch(var -> !parentAtoms.stream().anyMatch(at -> at.getVarNames().contains(var)));
+                .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -149,31 +147,6 @@ public abstract class Atom extends AtomicBase {
      * @return set of variables that need to be have their roles expanded
      */
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
-
-    /**
-     * compute resolution priority based on provided substitution variables
-     * @param subbedVars variables having a substitution
-     * @return resolution priority value
-     */
-    public int computePriority(Set<Var> subbedVars){
-        int priority = 0;
-        priority += Sets.intersection(getVarNames(), subbedVars).size() * SimplePlanner.PARTIAL_SUBSTITUTION;
-        priority += isRuleResolvable()? SimplePlanner.RULE_RESOLVABLE_ATOM : 0;
-        priority += isRecursive()? SimplePlanner.RECURSIVE_ATOM : 0;
-
-        priority += getTypeConstraints().count() * SimplePlanner.GUARD;
-        Set<Var> otherVars = getParentQuery().getAtoms().stream()
-                .filter(a -> a != this)
-                .flatMap(at -> at.getVarNames().stream())
-                .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * SimplePlanner.BOUND_VARIABLE;
-
-        //inequality predicates with unmapped variable
-        priority += getPredicates(NeqPredicate.class)
-                .map(Predicate::getPredicate)
-                .filter(v -> !subbedVars.contains(v)).count() * SimplePlanner.INEQUALITY_PREDICATE;
-        return priority;
-    }
 
     private boolean isRuleApplicable(InferenceRule child){
         return isRuleApplicableViaAtom(child.getRuleConclusionAtom());

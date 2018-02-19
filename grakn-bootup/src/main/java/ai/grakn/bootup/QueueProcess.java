@@ -60,7 +60,7 @@ public class QueueProcess extends AbstractProcessHandler {
         // queue needs to be ran with $GRAKN_HOME as the working directory
         // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
                 homePath +"/services/redis/"+queueBin+" "+ homePath + CONFIG_LOCATION
         },null,homePath.toFile());
@@ -106,7 +106,7 @@ public class QueueProcess extends AbstractProcessHandler {
         String host = getHostFromConfig();
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
                 homePath + "/services/redis/" + queueBin + " -h " + host + " shutdown"
         }, null, null);
@@ -134,7 +134,7 @@ public class QueueProcess extends AbstractProcessHandler {
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
 
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
                 homePath.resolve(Paths.get("services", "redis", queueBin))+" flushall"
         },null,null);

@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>janus-factory</artifactId>
+            <artifactId>grakn-factory</artifactId>
             <exclusions>
                 <!--Excluded because LDBC provides and requires a newer version -->
                 <exclusion>

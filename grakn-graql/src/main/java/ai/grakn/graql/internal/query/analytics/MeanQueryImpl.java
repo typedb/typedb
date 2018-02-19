@@ -18,53 +18,21 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MeanQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Double> execute() {
-        LOGGER.info("MeanMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new MeanMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
-        Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
-
-        double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-        LOGGER.debug("Mean = " + finalResult);
-
-        LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(finalResult);
+    public final ComputeJob<Optional<Double>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

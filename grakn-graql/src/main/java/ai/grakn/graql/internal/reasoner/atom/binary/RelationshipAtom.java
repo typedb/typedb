@@ -52,7 +52,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -390,13 +389,6 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public int computePriority(Set<Var> subbedVars) {
-        int priority = super.computePriority(subbedVars);
-        priority += SimplePlanner.IS_RELATION_ATOM;
-        return priority;
-    }
-
-    @Override
     public Stream<IdPredicate> getPartialSubstitutions() {
         Set<Var> varNames = getVarNames();
         return getPredicates(IdPredicate.class)
@@ -489,7 +481,7 @@ public class RelationshipAtom extends IsaAtom {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    private Set<Type> inferPossibleEntityTypes(Answer sub){
+    private Set<Type> inferPossibleEntityTypePlayers(Answer sub){
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
@@ -562,9 +554,9 @@ public class RelationshipAtom extends IsaAtom {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
                         Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
-                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypes(sub);
+                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypePlayers(sub);
                         while(neighbourIterator.hasNext()){
-                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypes(sub));
+                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
                         }
 
                         Set<Role> rs = e.getKey().relates().collect(toSet());

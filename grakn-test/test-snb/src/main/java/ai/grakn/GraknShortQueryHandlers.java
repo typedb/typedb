@@ -128,6 +128,8 @@ import static java.util.Comparator.comparing;
  */
 public class GraknShortQueryHandlers {
 
+    private GraknShortQueryHandlers(){}
+
     /**
      * Short Query 1
      */
@@ -290,7 +292,7 @@ public class GraknShortQueryHandlers {
                         (var().rel($message).rel($content).isa(has(CONTENT))).or(var().rel($message).rel($content).isa(has(IMAGE_FILE)))
                 ).get().execute();
 
-                if (results.size() > 0) {
+                if (!results.isEmpty()) {
                     Answer fres = results.get(0);
 
                     LdbcShortQuery4MessageContentResult result = new LdbcShortQuery4MessageContentResult(
@@ -331,7 +333,7 @@ public class GraknShortQueryHandlers {
                         var().rel($person).rel($personId).isa(key(PERSON_ID))
                 ).get().execute();
 
-                if (results.size() >= 1) {
+                if (!results.isEmpty()) {
                     Answer fres = results.get(0);
                     LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(
                             resource(fres, $personId),
@@ -370,7 +372,7 @@ public class GraknShortQueryHandlers {
                         $mod.isa(PERSON).has(PERSON_ID, $modId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
                 ).get().execute();
 
-                if (results.size() > 0) {
+                if (!results.isEmpty()) {
                     Answer fres = results.get(0);
                     LdbcShortQuery6MessageForumResult result = new LdbcShortQuery6MessageForumResult(
                             resource(fres, $forumId),

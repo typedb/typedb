@@ -92,7 +92,7 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseStatusIs400(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
 
         String query = "match $x isa ; delete;";
@@ -103,7 +103,7 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
 
         String query = "match $x isa ; delete;";

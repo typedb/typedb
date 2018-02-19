@@ -39,7 +39,6 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -317,64 +316,6 @@ public class ResourceAtom extends Binary{
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
-    }
-
-    private boolean isSuperNode(){
-        return tx().graql().match(getCombinedPattern()).admin().stream()
-                .skip(SimplePlanner.RESOURCE_SUPERNODE_SIZE)
-                .findFirst().isPresent();
-    }
-
-    @Override
-    public int computePriority(Set<Var> subbedVars){
-        int priority = super.computePriority(subbedVars);
-        Set<ai.grakn.graql.ValuePredicate> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
-        priority += SimplePlanner.IS_RESOURCE_ATOM;
-
-        if (vps.isEmpty()) {
-            if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
-                    && !isSuperNode()) {
-                    priority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-            } else{
-                    priority += SimplePlanner.VARIABLE_VALUE_PREDICATE;
-            }
-        } else {
-            int vpsPriority = 0;
-            for (ai.grakn.graql.ValuePredicate vp : vps) {
-                //vp with a value
-                if (vp.isSpecific() && !isSuperNode()) {
-                    vpsPriority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-                } //vp with a variable
-                else if (vp.getInnerVar().isPresent()) {
-                    VarPatternAdmin inner = vp.getInnerVar().orElse(null);
-                    //variable mapped inside the query
-                    if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.var())
-                            && !isSuperNode()) {
-                        vpsPriority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-                    } //variable equality
-                    else if (vp.equalsValue().isPresent()){
-                        vpsPriority += SimplePlanner.VARIABLE_VALUE_PREDICATE;
-                    } //variable inequality
-                    else {
-                        vpsPriority += SimplePlanner.COMPARISON_VARIABLE_VALUE_PREDICATE;
-                    }
-                } else {
-                    vpsPriority += SimplePlanner.NON_SPECIFIC_VALUE_PREDICATE;
-                }
-            }
-            //normalise
-            vpsPriority = vpsPriority/vps.size();
-            priority += vpsPriority;
-        }
-
-        boolean reifiesRelation = getNeighbours(Atom.class)
-                .filter(Atom::isRelation)
-                .anyMatch(at -> at.getVarName().equals(this.getVarName()));
-
-        priority += reifiesRelation ? SimplePlanner.RESOURCE_REIFYING_RELATION : 0;
-
-        return priority;
     }
 
     @Override
