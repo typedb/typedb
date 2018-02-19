@@ -40,6 +40,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Collection;

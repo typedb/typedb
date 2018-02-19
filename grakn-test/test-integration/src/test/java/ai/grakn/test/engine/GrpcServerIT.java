@@ -85,7 +85,7 @@ public class GrpcServerIT {
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)){
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)){
             assertNotNull(tx.getEntityType(label));
         }
     }
