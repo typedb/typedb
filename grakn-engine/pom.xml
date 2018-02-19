@@ -37,11 +37,6 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-module-sdk</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ai.grakn</groupId>
             <artifactId>grakn-client</artifactId>
             <scope>test</scope>
         </dependency>
