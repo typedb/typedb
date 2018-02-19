@@ -79,7 +79,7 @@ public class GraknProcess extends AbstractProcessHandler {
         }
         Stream<File> jars = Stream.of(values);
         File conf = new File(home + File.separator+"conf"+File.separator); // /conf
-        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator); // services/grakn lib
+        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator + "server"+File.separator); // services/grakn/server lib
         return ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
