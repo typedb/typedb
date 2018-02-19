@@ -35,10 +35,6 @@
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
         </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-module-sdk</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>

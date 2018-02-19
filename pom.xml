@@ -263,11 +263,6 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-module-sdk</artifactId>
-                <version>1.2.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
                 <artifactId>grakn-client</artifactId>
                 <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
