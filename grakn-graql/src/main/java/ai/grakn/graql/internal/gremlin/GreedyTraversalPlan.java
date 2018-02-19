@@ -279,23 +279,6 @@ public class GreedyTraversalPlan {
         return relationshipTypes;
     }
 
-//    private static void removeRedundantIsaFragments(
-//            Set<Fragment> allFragments, Map<Var, Type> labelVarTypeMap, Map<Var, Type> instanceVarUniqueTypeMap) {
-//        Iterator<Fragment> fragmentIterator = allFragments.iterator();
-//        while (fragmentIterator.hasNext()) {
-//            Fragment fragment = fragmentIterator.next();
-//            if (fragment instanceof InIsaFragment && labelVarTypeMap.containsKey(fragment.start()) &&
-//                    instanceVarUniqueTypeMap.containsKey(fragment.end()) &&
-//                    !instanceVarUniqueTypeMap.get(fragment.end()).equals(labelVarTypeMap.get(fragment.start()))) {
-//                fragmentIterator.remove();
-//            } else if (fragment instanceof OutIsaFragment && labelVarTypeMap.containsKey(fragment.end()) &&
-//                    instanceVarUniqueTypeMap.containsKey(fragment.start()) &&
-//                    !instanceVarUniqueTypeMap.get(fragment.start()).equals(labelVarTypeMap.get(fragment.end()))) {
-//                fragmentIterator.remove();
-//            }
-//        }
-//    }
-
     private static void getAllPossibleRelationships(Map<Type, Set<RelationshipType>> relationshipMap, Type metaType) {
         metaType.subs().forEach(type -> {
             Set<RelationshipType> relationshipTypeSet = type.plays()
@@ -303,32 +286,6 @@ public class GreedyTraversalPlan {
             relationshipMap.put(type, relationshipTypeSet);
         });
     }
-
-    // check if one type is a subtype of the other
-//    private static Optional<Type> subType(Type typeA, Type typeB) {
-//        if (!typeA.equals(typeB)) {
-//            if (typeB.sups().anyMatch(superType -> superType.equals(typeA))) {
-//                return Optional.of(typeB);
-//            }
-//            if (typeA.sups().anyMatch(superType -> superType.equals(typeB))) {
-//                return Optional.of(typeA);
-//            }
-//        }
-//        return Optional.empty();
-//    }
-//
-//    private static Type getMostSpecificSubtype(Collection<Type> types) {
-//        Iterator<Type> iterator = types.iterator();
-//        Type firstType = iterator.next();
-//        while (iterator.hasNext()) {
-//            Type nextType = iterator.next();
-//            Optional<Type> type = subType(firstType, nextType);
-//            if (type.isPresent()) {
-//                firstType = type.get();
-//            }
-//        }
-//        return firstType;
-//    }
 
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
                                                   Map<NodeId, Node> allNodes,
