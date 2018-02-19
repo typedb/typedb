@@ -16,42 +16,41 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.grpc.concept;
 
+import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import com.google.auto.value.AutoValue;
 
 /**
  * @author Felix Chapman
  */
-@AutoValue
 abstract class RemoteConcept implements Concept {
 
-    public static RemoteConcept create(Keyspace keyspace, ConceptId id) {
-        return new AutoValue_RemoteConcept(keyspace, id);
-    }
-
-    @Override
-    public abstract Keyspace keyspace();
+    abstract GraknTx tx();
 
     @Override
     public abstract ConceptId getId();
 
     @Override
+    public final Keyspace keyspace() {
+        return tx().keyspace();
+    }
+
+    @Override
     public final void delete() throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
     public final boolean isDeleted() {
-        return false; // TODO
+        return false; // TODO: implement
     }
 
     @Override
-    public int compareTo(Concept concept) {
+    public final int compareTo(Concept concept) {
         return getId().compareTo(concept.getId());
     }
 }

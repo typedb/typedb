@@ -22,8 +22,9 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
@@ -36,6 +37,7 @@ import io.grpc.Status;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,14 +45,15 @@ import org.junit.rules.ExpectedException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -129,8 +132,8 @@ public class GrpcServerIT {
         Set<Answer> answers2;
 
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
-            answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(Collectors.toSet());
-            answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(Collectors.toSet());
+            answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
+            answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
         }
 
         assertEquals(answers1, answers2);
@@ -155,21 +158,79 @@ public class GrpcServerIT {
 
     @Test
     public void whenGettingAConcept_TheConceptContainsInformationAboutItself() {
-        ConceptId id;
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x")).get();
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
-            GetQuery query = tx.graql().match(var("x").sub("thing")).get();
-            Concept concept = query.stream().findAny().get().get("x");
+            for (Answer answer : query) {
+                Concept remoteConcept = answer.get("x");
+                Concept localConcept = localTx.getConcept(remoteConcept.getId());
 
-            id = concept.getId();
-
-            assertFalse(concept.isDeleted());
-            assertEquals(localSession.keyspace(), concept.keyspace());
+                assertEquals(localConcept.isAttribute(), remoteConcept.isAttribute());
+                assertEquals(localConcept.isAttributeType(), remoteConcept.isAttributeType());
+                assertEquals(localConcept.isEntity(), remoteConcept.isEntity());
+                assertEquals(localConcept.isEntityType(), remoteConcept.isEntityType());
+                assertEquals(localConcept.isRelationship(), remoteConcept.isRelationship());
+                assertEquals(localConcept.isRelationshipType(), remoteConcept.isRelationshipType());
+                assertEquals(localConcept.isRole(), remoteConcept.isRole());
+                assertEquals(localConcept.isRule(), remoteConcept.isRule());
+                assertEquals(localConcept.isSchemaConcept(), remoteConcept.isSchemaConcept());
+                assertEquals(localConcept.isThing(), remoteConcept.isThing());
+                assertEquals(localConcept.isType(), remoteConcept.isType());
+                assertEquals(localConcept.getId(), remoteConcept.getId());
+                assertEquals(localConcept.isDeleted(), remoteConcept.isDeleted());
+                assertEquals(localConcept.keyspace(), remoteConcept.keyspace());
+            }
         }
+    }
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
-            assertNotNull(tx.getConcept(id));
+    @Ignore // TODO: implement missing methods
+    @Test
+    public void whenGettingASchemaConcept_TheSchemaConceptContainsInformationAboutItself() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("role")).get();
+            SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
+            SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
+
+            assertEquals(localConcept.isSchemaConcept(), remoteConcept.isSchemaConcept());
+            assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
+            assertEquals(localConcept.getLabel(), remoteConcept.getLabel());
+            assertEquals(localConcept.sup().getId(), remoteConcept.sup().getId());
+            assertEqualConcepts(localConcept, remoteConcept, SchemaConcept::sups);
+            assertEqualConcepts(localConcept, remoteConcept, SchemaConcept::subs);
         }
+    }
+
+    @Ignore // TODO: implement missing methods
+    @Test
+    public void whenGettingAThing_TheThingContainsInformationAboutItself() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").isa("thing")).get();
+            Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
+            Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
+
+            assertEquals(localConcept.isThing(), remoteConcept.isThing());
+            assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
+            assertEquals(localConcept.type().getId(), remoteConcept.type().getId());
+            assertEqualConcepts(localConcept, remoteConcept, Thing::attributes);
+            assertEqualConcepts(localConcept, remoteConcept, Thing::keys);
+            assertEqualConcepts(localConcept, remoteConcept, Thing::plays);
+            assertEqualConcepts(localConcept, remoteConcept, Thing::relationships);
+        }
+    }
+
+    private <T extends Concept> void assertEqualConcepts(
+            T concept1, T concept2, Function<T, Stream<? extends Concept>> function
+    ) {
+        assertEquals(
+                function.apply(concept1).map(Concept::getId).collect(toSet()),
+                function.apply(concept2).map(Concept::getId).collect(toSet())
+        );
     }
 
     @Test

@@ -19,6 +19,7 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
@@ -95,6 +96,24 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     private GraknOuterClass.Concept makeConcept(Concept concept) {
-        return GraknOuterClass.Concept.newBuilder().setId(concept.getId().getValue()).build();
+        GraknOuterClass.Concept.Builder builder = GraknOuterClass.Concept.newBuilder();
+
+        builder.setId(concept.getId().getValue());
+
+        if (concept.isSchemaConcept()) {
+            SchemaConcept schemaConcept = concept.asSchemaConcept();
+
+            GraknOuterClass.SchemaConcept.Builder schemaConceptBuilder = GraknOuterClass.SchemaConcept.newBuilder();
+            schemaConceptBuilder.setLabel(schemaConcept.getLabel().getValue());
+            schemaConceptBuilder.setImplicit(schemaConcept.isImplicit());
+
+            builder.setSchemaConcept(schemaConceptBuilder.build());
+        }
+
+        if (concept.isThing()) {
+            builder.setThing(GraknOuterClass.Thing.getDefaultInstance());
+        }
+
+        return builder.build();
     }
 }

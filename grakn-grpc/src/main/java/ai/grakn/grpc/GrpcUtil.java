@@ -18,10 +18,12 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -35,6 +37,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.concept.RemoteSchemaConcept;
+import ai.grakn.grpc.concept.RemoteThing;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -156,10 +160,10 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
-    public static Object getQueryResult(Keyspace keyspace, QueryResult queryResult) {
+    public static Object getQueryResult(GraknTx tx, QueryResult queryResult) {
         switch (queryResult.getQueryResultCase()) {
             case ANSWER:
-                return convert(keyspace, queryResult.getAnswer());
+                return convert(tx, queryResult.getAnswer());
             case OTHERRESULT:
                 return Json.read(queryResult.getOtherResult()).getValue();
             default:
@@ -203,15 +207,29 @@ public class GrpcUtil {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 
-    private static Answer convert(Keyspace keyspace, GraknOuterClass.Answer answer) {
+    private static Answer convert(GraknTx tx, GraknOuterClass.Answer answer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            Concept concept = RemoteConcept.create(keyspace, ConceptId.of(grpcConcept.getId()));
-            map.put(Graql.var(grpcVar), concept);
+            map.put(Graql.var(grpcVar), convert(tx, grpcConcept));
         });
 
         return new QueryAnswer(map.build());
     }
 
+    private static Concept convert(GraknTx tx, GraknOuterClass.Concept concept) {
+        ConceptId id = ConceptId.of(concept.getId());
+
+        switch (concept.getBaseTypeCase()) {
+            case SCHEMACONCEPT:
+                GraknOuterClass.SchemaConcept schemaConcept = concept.getSchemaConcept();
+                Label label = Label.of(schemaConcept.getLabel());
+                return RemoteSchemaConcept.create(tx, id, label, schemaConcept.getImplicit());
+            case THING:
+                return RemoteThing.create(tx, id);
+            default:
+            case BASETYPE_NOT_SET:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
+    }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.remote;
 
 import ai.grakn.ComputeJob;
-import ai.grakn.Keyspace;
+import ai.grakn.GraknTx;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
@@ -66,18 +66,18 @@ import java.util.stream.StreamSupport;
  */
 final class RemoteQueryRunner implements QueryRunner {
 
-    private final Keyspace keyspace;
+    private final GraknTx tx;
     private final GrpcClient client;
     private final @Nullable Boolean infer;
 
-    private RemoteQueryRunner(Keyspace keyspace, GrpcClient client, @Nullable Boolean infer) {
-        this.keyspace = keyspace;
+    private RemoteQueryRunner(GraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+        this.tx = tx;
         this.client = client;
         this.infer = infer;
     }
 
-    public static RemoteQueryRunner create(Keyspace keyspace, GrpcClient client, @Nullable Boolean infer) {
-        return new RemoteQueryRunner(keyspace, client, infer);
+    public static RemoteQueryRunner create(GraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+        return new RemoteQueryRunner(tx, client, infer);
     }
 
     @Override
@@ -176,7 +176,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(keyspace, query, infer);
+        return client.execQuery(tx, query, infer);
     }
 
     private void runVoid(Query<?> query) {

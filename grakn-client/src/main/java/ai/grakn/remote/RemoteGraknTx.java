@@ -233,6 +233,6 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(keyspace(), client, null);
+        return RemoteQueryRunner.create(this, client, null);
     }
 }

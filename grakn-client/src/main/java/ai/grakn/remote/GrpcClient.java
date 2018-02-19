@@ -18,6 +18,7 @@
 
 package ai.grakn.remote;
 
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
@@ -64,7 +65,7 @@ final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Iterator<Object> execQuery(Keyspace keyspace, Query<?> query, @Nullable Boolean infer) {
+    public Iterator<Object> execQuery(GraknTx tx, Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
 
         return new AbstractIterator<Object>() {
@@ -82,7 +83,7 @@ final class GrpcClient implements AutoCloseable {
 
                 switch (response.getResponseCase()) {
                     case QUERYRESULT:
-                        return GrpcUtil.getQueryResult(keyspace, response.getQueryResult());
+                        return GrpcUtil.getQueryResult(tx, response.getQueryResult());
                     case DONE:
                         return endOfData();
                     default:
