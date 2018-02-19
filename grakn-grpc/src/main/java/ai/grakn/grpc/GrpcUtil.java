@@ -156,10 +156,10 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
-    public static Object getQueryResult(QueryResult queryResult) {
+    public static Object getQueryResult(Keyspace keyspace, QueryResult queryResult) {
         switch (queryResult.getQueryResultCase()) {
             case ANSWER:
-                return convert(queryResult.getAnswer());
+                return convert(keyspace, queryResult.getAnswer());
             case OTHERRESULT:
                 return Json.read(queryResult.getOtherResult()).getValue();
             default:
@@ -203,11 +203,11 @@ public class GrpcUtil {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 
-    private static Answer convert(GraknOuterClass.Answer answer) {
+    private static Answer convert(Keyspace keyspace, GraknOuterClass.Answer answer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            Concept concept = RemoteConcept.create(ConceptId.of(grpcConcept.getId()));
+            Concept concept = RemoteConcept.create(keyspace, ConceptId.of(grpcConcept.getId()));
             map.put(Graql.var(grpcVar), concept);
         });
 

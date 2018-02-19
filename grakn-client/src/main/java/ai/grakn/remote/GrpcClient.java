@@ -64,7 +64,7 @@ final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Iterator<Object> execQuery(Query<?> query, @Nullable Boolean infer) {
+    public Iterator<Object> execQuery(Keyspace keyspace, Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
 
         return new AbstractIterator<Object>() {
@@ -82,7 +82,7 @@ final class GrpcClient implements AutoCloseable {
 
                 switch (response.getResponseCase()) {
                     case QUERYRESULT:
-                        return GrpcUtil.getQueryResult(response.getQueryResult());
+                        return GrpcUtil.getQueryResult(keyspace, response.getQueryResult());
                     case DONE:
                         return endOfData();
                     default:

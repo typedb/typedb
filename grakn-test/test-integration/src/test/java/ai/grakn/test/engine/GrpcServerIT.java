@@ -21,6 +21,8 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
@@ -48,6 +50,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -147,6 +150,25 @@ public class GrpcServerIT {
                 if (iterator1.hasNext()) iterator1.next();
                 if (iterator2.hasNext()) iterator2.next();
             }
+        }
+    }
+
+    @Test
+    public void whenGettingAConcept_TheConceptContainsInformationAboutItself() {
+        ConceptId id;
+
+        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+            GetQuery query = tx.graql().match(var("x").sub("thing")).get();
+            Concept concept = query.stream().findAny().get().get("x");
+
+            id = concept.getId();
+
+            assertFalse(concept.isDeleted());
+            assertEquals(localSession.keyspace(), concept.keyspace());
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            assertNotNull(tx.getConcept(id));
         }
     }
 

@@ -30,17 +30,15 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 abstract class RemoteConcept implements Concept {
 
-    public static RemoteConcept create(ConceptId id) {
-        return new AutoValue_RemoteConcept(id);
+    public static RemoteConcept create(Keyspace keyspace, ConceptId id) {
+        return new AutoValue_RemoteConcept(keyspace, id);
     }
+
+    @Override
+    public abstract Keyspace keyspace();
 
     @Override
     public abstract ConceptId getId();
-
-    @Override
-    public final Keyspace keyspace() {
-        throw new UnsupportedOperationException(); // TODO
-    }
 
     @Override
     public final void delete() throws GraknTxOperationException {
@@ -49,7 +47,7 @@ abstract class RemoteConcept implements Concept {
 
     @Override
     public final boolean isDeleted() {
-        throw new UnsupportedOperationException(); // TODO
+        return false; // TODO
     }
 
     @Override
