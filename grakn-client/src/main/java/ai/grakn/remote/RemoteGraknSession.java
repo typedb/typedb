@@ -18,12 +18,10 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -58,7 +56,7 @@ class RemoteGraknSession implements GraknSession {
     }
 
     public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
-        // TODO: usePlainText is insecure
+        // TODO: usePlainText is insecure, because it is not encrypted
         ManagedChannel channel =
                 ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
 
@@ -75,11 +73,6 @@ class RemoteGraknSession implements GraknSession {
     }
 
     @Override
-    public GraknComputer getGraphComputer() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public void close() throws GraknTxOperationException {
         channel.shutdown();
     }
@@ -92,10 +85,5 @@ class RemoteGraknSession implements GraknSession {
     @Override
     public Keyspace keyspace() {
         return keyspace;
-    }
-
-    @Override
-    public GraknConfig config() {
-        throw new UnsupportedOperationException(); // TODO
     }
 }

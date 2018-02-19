@@ -19,6 +19,7 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknTx;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -76,7 +77,7 @@ public class SampleKBContext extends CompositeTestRule {
         return ImmutableList.of(SessionContext.create());
     }
 
-    public GraknTx tx() {
+    public EmbeddedGraknTx<?> tx() {
         checkInContext();
         return loader.tx();
     }

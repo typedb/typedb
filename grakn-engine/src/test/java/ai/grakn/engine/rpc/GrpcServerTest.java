@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
@@ -37,6 +36,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -95,7 +95,7 @@ public class GrpcServerTest {
     private static final String QUERY = "match $x isa person; get;";
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
-    private final GraknTx tx = mock(GraknTx.class);
+    private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
 
     private GrpcServer server;

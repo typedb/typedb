@@ -18,17 +18,16 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -43,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
@@ -71,20 +71,20 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph, Set<Var> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(EmbeddedGraknTx<?> tx, Set<Var> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
             ImmutableList<Fragment> list = Iterables.getOnlyElement(fragments());
-            return getConjunctionTraversal(graph, graph.admin().getTinkerTraversal().V(), vars, list);
+            return getConjunctionTraversal(tx, tx.getTinkerTraversal().V(), vars, list);
         } else {
             Traversal[] traversals = fragments().stream()
-                    .map(list -> getConjunctionTraversal(graph, __.V(), vars, list))
+                    .map(list -> getConjunctionTraversal(tx, __.V(), vars, list))
                     .toArray(Traversal[]::new);
 
             // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
             // somewhere, so we start from a single arbitrary vertex.
-            GraphTraversal traversal = graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+            GraphTraversal traversal = tx.getTinkerTraversal().V().limit(1).union(traversals);
 
             return selectVars(traversal, vars);
         }
@@ -112,7 +112,8 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            GraknTx graph, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars, ImmutableList<Fragment> fragmentList
+            EmbeddedGraknTx<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars,
+            ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
 
@@ -121,11 +122,11 @@ public abstract class GraqlTraversal {
             newTraversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
         }
 
-        return applyFragments(graph, vars, fragmentList, newTraversal);
+        return applyFragments(tx, vars, fragmentList, newTraversal);
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            GraknTx graph, Set<Var> vars, ImmutableList<Fragment> fragmentList,
+            EmbeddedGraknTx<?> tx, Set<Var> vars, ImmutableList<Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal
     ) {
         Set<Var> foundVars = new HashSet<>();
@@ -135,7 +136,7 @@ public abstract class GraqlTraversal {
 
         for (Fragment fragment : fragmentList) {
             // Apply fragment to traversal
-            fragment.applyTraversal(traversal, graph, foundVars, currentName);
+            fragment.applyTraversal(traversal, tx, foundVars, currentName);
             currentName = fragment.end() != null ? fragment.end() : fragment.start();
         }
 

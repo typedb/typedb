@@ -19,8 +19,6 @@
 package ai.grakn;
 
 
-import ai.grakn.engine.GraknConfig;
-
 import javax.annotation.CheckReturnValue;
 
 /**
@@ -51,15 +49,6 @@ public interface GraknSession extends AutoCloseable {
     GraknTx open(GraknTxType transactionType);
 
     /**
-     * Get a new or existing GraknComputer.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see GraknComputer
-     */
-    @CheckReturnValue
-    GraknComputer getGraphComputer();
-
-    /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
      *
      */
@@ -78,11 +67,4 @@ public interface GraknSession extends AutoCloseable {
      * @return The {@link Keyspace} of the knowledge base this {@link GraknSession} is interacting with.
      */
     Keyspace keyspace();
-
-    /**
-     * The config options of this {@link GraknSession} which were passed in at the time of construction
-     *
-     * @return The config options of this {@link GraknSession}
-     */
-    GraknConfig config();
 }

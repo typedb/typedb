@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -65,6 +64,7 @@ import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -87,13 +87,14 @@ import java.util.stream.Collectors;
  */
 public class TinkerComputeQueryRunner {
     private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeQueryRunner.class);
-    private final GraknTx tx;
+    // TODO: rename this too
+    private final EmbeddedGraknTx<?> tx;
 
-    private TinkerComputeQueryRunner(GraknTx tx) {
+    private TinkerComputeQueryRunner(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
     }
 
-    static TinkerComputeQueryRunner create(GraknTx tx) {
+    static TinkerComputeQueryRunner create(EmbeddedGraknTx<?> tx) {
         return new TinkerComputeQueryRunner(tx);
     }
 
@@ -378,7 +379,7 @@ public class TinkerComputeQueryRunner {
 
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(tx.admin()::convertToId)
+                .map(tx::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }

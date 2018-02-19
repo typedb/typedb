@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
@@ -28,6 +27,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
@@ -69,7 +69,7 @@ import static org.mockito.Mockito.when;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerReadOnlyTest {
 
-    private static GraknTx mockTx;
+    private static EmbeddedGraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspaceImpl.class);
@@ -102,7 +102,7 @@ public class GraqlControllerReadOnlyTest {
         when(mockParser.parseQuery(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockTx.keyspace()).thenReturn(Keyspace.of("randomkeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);

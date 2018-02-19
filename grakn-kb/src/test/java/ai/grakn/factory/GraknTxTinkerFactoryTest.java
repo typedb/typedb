@@ -18,13 +18,12 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
@@ -47,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class GraknTxTinkerFactoryTest {
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
-    private final static GraknSession session = mock(GraknSession.class);
+    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private TxFactory tinkerGraphFactory;
 
 
@@ -68,7 +67,7 @@ public class GraknTxTinkerFactoryTest {
     public void whenBuildingGraphUsingTinkerFactory_ReturnGraknTinkerGraph() throws Exception {
         GraknTx graph = tinkerGraphFactory.open(GraknTxType.WRITE);
         assertThat(graph, instanceOf(GraknTxTinker.class));
-        assertThat(graph, instanceOf(GraknTxAbstract.class));
+        assertThat(graph, instanceOf(EmbeddedGraknTx.class));
     }
 
     @Test

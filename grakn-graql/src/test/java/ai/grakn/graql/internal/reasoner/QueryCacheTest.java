@@ -32,15 +32,17 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -54,7 +56,7 @@ public class QueryCacheTest {
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
 
-    private static GraknTx graph;
+    private static EmbeddedGraknTx<?> graph;
     private static ReasonerAtomicQuery recordQuery;
     private static ReasonerAtomicQuery retrieveQuery;
     private static Answer singleAnswer;

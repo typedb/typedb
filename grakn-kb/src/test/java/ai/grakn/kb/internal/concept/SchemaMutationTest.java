@@ -29,7 +29,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterables;
@@ -74,7 +75,7 @@ public class SchemaMutationTest extends TxTestBase {
         bob = man.addEntity();
         marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
     }
 
     @Test
@@ -117,7 +118,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         graknGraphBatch.putEntityType("This Will Fail");
     }
 
@@ -126,7 +127,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         graknGraphBatch.putRole("This Will Fail");
     }
 
@@ -135,7 +136,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
     }
 
@@ -144,7 +145,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
@@ -155,7 +156,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRole(roleTypeId);
         tx.putRelationshipType(relationTypeId);
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -172,7 +173,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRole(roleTypeId);
         tx.putEntityType(entityTypeId);
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -190,7 +191,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putEntityType(entityTypeId1);
         tx.putEntityType(entityTypeId2);
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
@@ -208,7 +209,7 @@ public class SchemaMutationTest extends TxTestBase {
         Role role = tx.putRole(roleTypeId);
         tx.putEntityType(entityTypeId).plays(role);
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -226,7 +227,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRelationshipType(relationTypeId).relates(role);
         tx.commit();
 
-        GraknTxAbstract<?> graknGraphBatch = batchTx();
+        EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -247,7 +248,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         animal.attribute(name);
         tx.commit();
     }
@@ -260,7 +261,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);

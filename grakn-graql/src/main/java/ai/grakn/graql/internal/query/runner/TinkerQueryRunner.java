@@ -46,6 +46,7 @@ import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
@@ -63,18 +64,18 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Felix Chapman
  */
-@SuppressWarnings("unused") // accessed via reflection in GraknTxAbstract
+@SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
 public class TinkerQueryRunner implements QueryRunner {
 
     private final GraknTx tx;
     private final TinkerComputeQueryRunner tinkerComputeQueryRunner;
 
-    private TinkerQueryRunner(GraknTx tx) {
+    private TinkerQueryRunner(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
         this.tinkerComputeQueryRunner = TinkerComputeQueryRunner.create(tx);
     }
 
-    public static TinkerQueryRunner create(GraknTx tx) {
+    public static TinkerQueryRunner create(EmbeddedGraknTx<?> tx) {
         return new TinkerQueryRunner(tx);
     }
 
