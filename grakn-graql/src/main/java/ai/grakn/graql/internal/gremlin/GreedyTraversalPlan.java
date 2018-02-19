@@ -307,7 +307,7 @@ public class GreedyTraversalPlan {
     private static Collection<Set<Fragment>> getConnectedFragmentSets(
             List<Fragment> plan, Set<Fragment> allFragments,
             Map<NodeId, Node> allNodes, Set<Node> connectedNodes,
-            Map<Node, Double> nodesWithFixedCost,  EmbeddedGraknTx<?> tx) {
+            Map<Node, Double> nodesWithFixedCost, EmbeddedGraknTx<?> tx) {
 
         allFragments.forEach(fragment -> {
             if (fragment.end() == null) {
@@ -367,7 +367,7 @@ public class GreedyTraversalPlan {
             plan.add(fragment);
             double logInstanceCount = -1D;
             Optional<Long> shardCount = fragment.getShardCount(tx);
-            if(shardCount.isPresent() && shardCount.get() > 0) {
+            if (shardCount.isPresent() && shardCount.get() > 0) {
                 logInstanceCount = Math.log(shardCount.get() - 1D + SHARD_LOAD_FACTOR) +
                         Math.log(tx.shardingThreshold());
             }
