@@ -22,25 +22,16 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.grpc.GrpcUtil;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
 import io.grpc.ManagedChannel;
-import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcServerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Felix Chapman
@@ -48,39 +39,14 @@ import static org.mockito.Mockito.when;
 public class RemoteGraknSessionTest {
 
     @Rule
-    public final GrpcServerRule serverRule = new GrpcServerRule();
+    public final GrpcServerMock server = new GrpcServerMock();
 
     private SimpleURI uri;
     private final Keyspace KEYSPACE = Keyspace.of("lalala");
 
-    private StreamObserver<TxRequest> serverRequests = mock(StreamObserver.class);
-    private StreamObserver<TxResponse> serverResponses = null;
-
     @Before
     public void setUp() {
-        uri = new SimpleURI("localhost", serverRule.getServer().getPort());
-
-        GraknGrpc.GraknImplBase server = mock(GraknGrpc.GraknImplBase.class);
-
-        when(server.tx(any())).thenAnswer(args -> {
-            assert serverResponses == null;
-            serverResponses = args.getArgument(0);
-            return serverRequests;
-        });
-
-        doAnswer(args -> {
-            assert serverResponses != null;
-            serverResponses.onNext(GrpcUtil.doneResponse());
-            return null;
-        }).when(serverRequests).onNext(any());
-
-        doAnswer(args -> {
-            assert serverResponses != null;
-            serverResponses.onCompleted();
-            return null;
-        }).when(serverRequests).onCompleted();
-
-        serverRule.getServiceRegistry().addService(server);
+        uri = server.uri();
     }
 
     @Test
@@ -110,7 +76,7 @@ public class RemoteGraknSessionTest {
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, uri, serverRule.getChannel())) {
+        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, uri, server.channel())) {
             try (GraknTx tx = session.open(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(KEYSPACE, tx.keyspace());
