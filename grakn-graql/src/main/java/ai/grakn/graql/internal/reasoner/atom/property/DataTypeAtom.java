@@ -43,10 +43,13 @@ public class DataTypeAtom extends AtomicBase {
         this.datatype = prop.dataType();
     }
 
-    private DataTypeAtom(DataTypeAtom a) {
-        super(a);
+    private DataTypeAtom(DataTypeAtom a, ReasonerQuery parent) {
+        super(a, parent);
         this.datatype = a.getDataType();
     }
+
+    @Override
+    public Atomic copy(ReasonerQuery parent) { return new DataTypeAtom(this, parent);}
 
     @Override
     public boolean equals(Object obj){
@@ -88,9 +91,6 @@ public class DataTypeAtom extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    @Override
-    public Atomic copy() { return new DataTypeAtom(this);}
 
     public AttributeType.DataType<?> getDataType(){ return datatype;}
 }

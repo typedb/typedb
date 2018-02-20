@@ -44,14 +44,19 @@ public class IdPredicate extends Predicate<ConceptId>{
     public IdPredicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(Var varName, Label label, ReasonerQuery par) { super(createIdVar(varName.asUserDefined(), label, par.tx()), par);}
-    public IdPredicate(Var varName, ConceptId id, ReasonerQuery par) {
-        super(createIdVar(varName.asUserDefined(), id), par);
+    public IdPredicate(Var varName, Label label, ReasonerQuery parent) { super(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);}
+    public IdPredicate(Var varName, ConceptId id, ReasonerQuery parent) {
+        super(createIdVar(varName.asUserDefined(), id), parent);
     }
-    public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
-        super(createIdVar(varName.asUserDefined(), con.getId()), par);
+    public IdPredicate(Var varName, Concept con, ReasonerQuery parent) {
+        super(createIdVar(varName.asUserDefined(), con.getId()), parent);
     }
-    private IdPredicate(IdPredicate a) { super(a);}
+    private IdPredicate(IdPredicate a, ReasonerQuery parent) { super(a, parent);}
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){
+        return new IdPredicate(this, parent);
+    }
 
     @Override
     public void checkValid() {
@@ -64,11 +69,6 @@ public class IdPredicate extends Predicate<ConceptId>{
     @Override
     public String toString(){
         return "[" + getVarName() + "/" + getPredicateValue() + "]";
-    }
-
-    @Override
-    public Atomic copy(){
-        return new IdPredicate(this);
     }
 
     @Override

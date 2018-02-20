@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary.type;
+package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -24,11 +24,10 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -37,26 +36,32 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.PlaysProperty} property.
+ * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.SubProperty} property.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class PlaysAtom extends OntologicalAtom {
-    public PlaysAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    private PlaysAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(var.plays(predicateVar), predicateVar, p, par);
+public class SubAtom extends OntologicalAtom {
+    public SubAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+        super(pattern, predicateVar, p, parent);}
+    private SubAtom(SubAtom a, ReasonerQuery parent) { super(a, parent);}
+    private SubAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
+        this(var.sub(predicateVar), predicateVar, p, parent);
     }
-    private PlaysAtom(PlaysAtom a) { super(a);}
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() {return PlaysProperty.class;}
+    public Atomic copy(ReasonerQuery parent){
+        return new SubAtom(this, parent);
+    }
 
     @Override
-    public Atomic copy(){
-        return new PlaysAtom(this);
+    public Class<? extends VarProperty> getVarPropertyClass() {return SubProperty.class;}
+
+    @Override
+    public String toString(){
+        String typeString = "sub"+ "(" + getVarName() + ", " + getPredicateVariable() +")";
+        return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -64,18 +69,18 @@ public class PlaysAtom extends OntologicalAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> new PlaysAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> new SubAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return new PlaysAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+        return new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
-                new PlaysAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
                 this;
     }
 }

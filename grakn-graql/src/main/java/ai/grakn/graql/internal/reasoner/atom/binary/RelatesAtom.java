@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary.type;
+package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -26,8 +26,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,20 +43,20 @@ import java.util.stream.Collectors;
  *
  */
 public class RelatesAtom extends OntologicalAtom {
-    public RelatesAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    private RelatesAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(var.relates(predicateVar), predicateVar, p, par);
+    public RelatesAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+        super(pattern, predicateVar, p, parent);}
+    private RelatesAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
+        this(var.relates(predicateVar), predicateVar, p, parent);
     }
-    private RelatesAtom(RelatesAtom a) { super(a);}
+    private RelatesAtom(RelatesAtom a, ReasonerQuery parent) { super(a, parent);}
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){
+        return new RelatesAtom(this, parent);
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return RelatesProperty.class;}
-
-    @Override
-    public Atomic copy(){
-        return new RelatesAtom(this);
-    }
 
     @Override
     public Set<TypeAtom> unify(Unifier u){

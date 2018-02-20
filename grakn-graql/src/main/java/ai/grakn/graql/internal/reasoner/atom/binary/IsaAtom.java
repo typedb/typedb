@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary.type;
+package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
@@ -63,27 +62,28 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  */
 public class IsaAtom extends TypeAtom {
 
-    public IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery par) {
-        this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), par), par);
+    public IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+        super(pattern, predicateVar, p, parent);}
+    public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
+        this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), parent), parent);
     }
-    private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(var.isa(predicateVar).admin(), predicateVar, p, par);
+    private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
+        this(var.isa(predicateVar).admin(), predicateVar, p, parent);
     }
-    protected IsaAtom(TypeAtom a) { super(a);}
+    IsaAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){
+        return new IsaAtom(this, parent);
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
 
+    @Override
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
         return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
-    }
-
-    @Override
-    public Atomic copy(){
-        return new IsaAtom(this);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class IsaAtom extends TypeAtom {
         return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
     }
 
-    protected Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
+    Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
         ConceptId typeId = type.getId();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 

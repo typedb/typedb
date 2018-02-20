@@ -45,8 +45,8 @@ public abstract class Predicate<T> extends AtomicBase {
         this.predicate = extractPredicate(pattern);
     }
 
-    Predicate(Predicate pred) {
-        super(pred);
+    Predicate(Predicate pred, ReasonerQuery parent) {
+        super(pred, parent);
         this.predicate = extractPredicate(pred.getPattern());
     }
 

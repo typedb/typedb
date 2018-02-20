@@ -46,8 +46,9 @@ public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
     private final VarPattern atomPattern;
+    private final ReasonerQuery parent;
+
     private Pattern combinedPattern = null;
-    private ReasonerQuery parent;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
@@ -55,14 +56,19 @@ public abstract class AtomicBase implements Atomic {
         this.parent = par;
     }
 
-    protected AtomicBase(AtomicBase a) {
+    protected AtomicBase(AtomicBase a, ReasonerQuery parent) {
         this.atomPattern = a.atomPattern;
         this.varName = atomPattern.admin().var();
-        this.parent = a.getParentQuery();
+        this.parent = parent;
     }
 
     @Override
-    public abstract Atomic copy();
+    public Var getVarName(){ return varName;}
+
+    @Override
+    public VarPattern getPattern(){ return atomPattern;}
+
+    public ReasonerQuery getParentQuery(){ return parent;}
 
     @Override
     public void checkValid(){}
@@ -75,20 +81,15 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public String toString(){ return atomPattern.toString(); }
 
-    public boolean containsVar(Var name){ return getVarNames().contains(name);}
+    boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     public boolean isUserDefined(){ return varName.isUserDefinedName();}
-    
-    @Override
-    public Var getVarName(){ return varName;}
+
 
     @Override
     public Set<Var> getVarNames(){
         return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
-
-    @Override
-    public VarPattern getPattern(){ return atomPattern;}
 
     protected Pattern createCombinedPattern(){ return atomPattern;}
 
@@ -97,11 +98,6 @@ public abstract class AtomicBase implements Atomic {
         if (combinedPattern == null) combinedPattern = createCombinedPattern();
         return combinedPattern;
     }
-
-    public ReasonerQuery getParentQuery(){ return parent;}
-
-    @Override
-    public void setParentQuery(ReasonerQuery q){ parent = q;}
 
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }

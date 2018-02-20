@@ -39,7 +39,7 @@ import java.util.Set;
 public interface Atomic {
 
     @CheckReturnValue
-    Atomic copy();
+    Atomic copy(ReasonerQuery parent);
 
     /**
      * validate wrt transaction the atomic is defined in
@@ -128,11 +128,6 @@ public interface Atomic {
      */
     @CheckReturnValue
     Pattern getCombinedPattern();
-
-    /**
-     * @param q query this atomic is supposed to belong to
-     */
-    void setParentQuery(ReasonerQuery q);
 
     /**
      * @return variable name of this atomic

@@ -41,15 +41,15 @@ public class NeqPredicate extends Predicate<Var> {
     public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
         super(varName.neq(prop.var().var()).admin(), parent);
     }
-    public NeqPredicate(NeqPredicate a){
-        super(a);
+    public NeqPredicate(NeqPredicate a, ReasonerQuery parent){
+        super(a, parent);
     }
 
     @Override
-    public String toString(){ return "[" + getVarName() + "!=" + getReferenceVarName() + "]";}
+    public Atomic copy(ReasonerQuery parent) { return new NeqPredicate(this, parent);}
 
     @Override
-    public Atomic copy() { return new NeqPredicate(this);}
+    public String toString(){ return "[" + getVarName() + "!=" + getReferenceVarName() + "]";}
 
     @Override
     public String getPredicateValue() {

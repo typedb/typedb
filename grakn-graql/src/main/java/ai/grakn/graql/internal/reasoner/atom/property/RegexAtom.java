@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import com.google.auto.value.AutoValue;
 
 /**
  *
@@ -42,10 +43,13 @@ public class RegexAtom extends AtomicBase {
         this.regex = prop.regex();
     }
 
-    private RegexAtom(RegexAtom a) {
-        super(a);
+    private RegexAtom(RegexAtom a, ReasonerQuery parent) {
+        super(a, parent);
         this.regex = a.getRegex();
     }
+
+    @Override
+    public Atomic copy(ReasonerQuery parent) { return new RegexAtom(this, parent);}
 
     @Override
     public boolean equals(Object obj){
@@ -86,7 +90,5 @@ public class RegexAtom extends AtomicBase {
     @Override
     public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
 
-    @Override
-    public Atomic copy() { return new RegexAtom(this);}
     public String getRegex(){ return regex;}
 }

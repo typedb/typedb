@@ -65,11 +65,11 @@ public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarPattern pattern, ReasonerQuery par) {
-        super(pattern, par);
+    protected Atom(VarPattern pattern, ReasonerQuery parent) {
+        super(pattern, parent);
     }
-    protected Atom(Atom a) {
-        super(a);
+    protected Atom(Atom a, ReasonerQuery parent) {
+        super(a, parent);
         this.applicableRules = a.applicableRules;
     }
 

@@ -37,8 +37,10 @@ public class IsAbstractAtom extends AtomicBase {
     public IsAbstractAtom(Var varName, ReasonerQuery parent){
         super(varName.isAbstract().admin(), parent);
     }
+    private IsAbstractAtom(IsAbstractAtom a, ReasonerQuery parent){ super(a, parent);}
 
-    private IsAbstractAtom(IsAbstractAtom a){ super(a);}
+    @Override
+    public Atomic copy(ReasonerQuery parent) { return new IsAbstractAtom(this, parent); }
 
     @Override
     public boolean equals(Object obj){
@@ -69,8 +71,5 @@ public class IsAbstractAtom extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    @Override
-    public Atomic copy() { return new IsAbstractAtom(this); }
 
 }

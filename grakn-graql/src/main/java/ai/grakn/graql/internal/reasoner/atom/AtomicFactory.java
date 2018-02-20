@@ -45,9 +45,7 @@ public class AtomicFactory {
      * @return atom copy
      */
     public static Atomic create(Atomic atom, ReasonerQuery parent) {
-        Atomic copy = atom.copy();
-        copy.setParentQuery(parent);
-        return copy;
+        return atom.copy(parent);
     }
 
     /**

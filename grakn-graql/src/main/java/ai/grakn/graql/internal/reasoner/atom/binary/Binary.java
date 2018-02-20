@@ -60,6 +60,7 @@ import java.util.Set;
 public abstract class Binary extends Atom {
     private final IdPredicate typePredicate;
     private final Var predicateVariable;
+
     private Type type = null;
 
     Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
@@ -68,8 +69,8 @@ public abstract class Binary extends Atom {
         this.typePredicate = p;
     }
 
-    Binary(Binary a) {
-        super(a);
+    Binary(Binary a, ReasonerQuery parent) {
+        super(a, parent);
         this.predicateVariable = a.predicateVariable;
         this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
         this.type = a.type;
@@ -98,6 +99,23 @@ public abstract class Binary extends Atom {
 
     @Override
     public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && this.getVarName().equals(a2.getVarName());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        return hashCode;
+    }
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
@@ -158,12 +176,6 @@ public abstract class Binary extends Atom {
         Set<PatternAdmin> vars = Sets.newHashSet(super.getPattern().admin());
         if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
-    }
-
-    @Override
-    public void setParentQuery(ReasonerQuery q) {
-        super.setParentQuery(q);
-        if (typePredicate != null) typePredicate.setParentQuery(q);
     }
 
     @Override

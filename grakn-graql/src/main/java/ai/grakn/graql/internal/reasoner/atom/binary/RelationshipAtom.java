@@ -48,7 +48,6 @@ import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -104,13 +103,14 @@ import static java.util.stream.Collectors.toSet;
  */
 public class RelationshipAtom extends IsaAtom {
 
+    private final ImmutableList<RelationPlayer> relationPlayers;
+    private final ImmutableSet<Label> roleLabels;
+
     private int hashCode = 0;
     private ImmutableMultimap<Role, Var> roleVarMap = null;
     private ImmutableMultimap<Role, Type> roleTypeMap = null;
     private ImmutableMultimap<Role, String> roleConceptIdMap = null;
     private ImmutableList<Type> possibleRelations = null;
-    private final ImmutableList<RelationPlayer> relationPlayers;
-    private final ImmutableSet<Label> roleLabels;
 
     public RelationshipAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicateVar, predicate, par);
@@ -134,8 +134,8 @@ public class RelationshipAtom extends IsaAtom {
         this.possibleRelations = possibleRelations;
     }
 
-    private RelationshipAtom(RelationshipAtom a) {
-        super(a);
+    private RelationshipAtom(RelationshipAtom a, ReasonerQuery parent) {
+        super(a, parent);
         this.relationPlayers = a.relationPlayers;
         this.roleLabels = a.roleLabels;
         this.roleVarMap = a.roleVarMap;
@@ -199,8 +199,8 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Atomic copy() {
-        return new RelationshipAtom(this);
+    public Atomic copy(ReasonerQuery parent) {
+        return new RelationshipAtom(this, parent);
     }
 
     @Override

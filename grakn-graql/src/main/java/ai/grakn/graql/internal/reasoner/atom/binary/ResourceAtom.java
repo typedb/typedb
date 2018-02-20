@@ -95,15 +95,18 @@ public class ResourceAtom extends Binary{
         this.multiPredicate = ImmutableSet.copyOf(ps);
     }
 
-    private ResourceAtom(ResourceAtom a) {
-        super(a);
+    private ResourceAtom(ResourceAtom a, ReasonerQuery parent) {
+        super(a, parent);
         this.relationVariable = a.getRelationVariable();
         this.multiPredicate = ImmutableSet.<ValuePredicate>builder().addAll(
                 a.getMultiPredicate().stream()
-                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
+                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, parent))
                         .iterator()
         ).build();
     }
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){ return new ResourceAtom(this, parent);}
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
@@ -207,12 +210,6 @@ public class ResourceAtom extends Binary{
         return (thisPredicate == null) == (predicate == null);
     }
 
-    @Override
-    public void setParentQuery(ReasonerQuery q) {
-        super.setParentQuery(q);
-        multiPredicate.forEach(pred -> pred.setParentQuery(q));
-    }
-
     public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
     public Var getRelationVariable(){ return relationVariable;}
 
@@ -254,9 +251,6 @@ public class ResourceAtom extends Binary{
         }
         return true;
     }
-
-    @Override
-    public Atomic copy(){ return new ResourceAtom(this);}
 
     @Override
     public boolean isResource(){ return true;}

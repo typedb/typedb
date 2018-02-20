@@ -45,13 +45,13 @@ import java.util.stream.Collectors;
  */
 public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
 
-    public ValuePredicate(VarPattern pattern, ReasonerQuery par) { super(pattern, par);}
-    public ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery par){ this(createValueVar(varName, pred), par);}
-    private ValuePredicate(ValuePredicate pred) { super(pred);}
+    public ValuePredicate(VarPattern pattern, ReasonerQuery parent) { super(pattern, parent);}
+    public ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery parent){ this(createValueVar(varName, pred), parent);}
+    private ValuePredicate(ValuePredicate pred, ReasonerQuery parent) { super(pred, parent);}
 
     @Override
-    public Atomic copy() {
-        return new ValuePredicate(this);
+    public Atomic copy(ReasonerQuery parent) {
+        return new ValuePredicate(this, parent);
     }
 
     @Override

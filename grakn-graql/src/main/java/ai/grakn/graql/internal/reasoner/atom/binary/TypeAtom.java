@@ -52,26 +52,9 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary{
 
-    protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    protected TypeAtom(TypeAtom a) { super(a);}
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarName().equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery parent) {
+        super(pattern, predicateVar, p, parent);}
+    protected TypeAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
 
     @Override
     public boolean isType(){ return true;}
