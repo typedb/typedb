@@ -18,10 +18,10 @@
 
 package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -30,7 +30,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 abstract class RemoteMetaType extends RemoteType<Type, Thing> {
 
-    public static RemoteMetaType create(GraknTx tx, ConceptId id) {
+    public static RemoteMetaType create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteMetaType(tx, id);
     }
 }

@@ -18,7 +18,6 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
@@ -75,7 +74,7 @@ final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Iterator<Object> execQuery(GraknTx tx, Query<?> query, @Nullable Boolean infer) {
+    public Iterator<Object> execQuery(RemoteGraknTx tx, Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
 
         return new AbstractIterator<Object>() {
@@ -151,7 +150,7 @@ final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private static Object convert(GraknTx tx, GraknOuterClass.QueryResult queryResult) {
+    private static Object convert(RemoteGraknTx tx, GraknOuterClass.QueryResult queryResult) {
         switch (queryResult.getQueryResultCase()) {
             case ANSWER:
                 return convert(tx, queryResult.getAnswer());
@@ -163,7 +162,7 @@ final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private static Answer convert(GraknTx tx, GraknOuterClass.Answer answer) {
+    private static Answer convert(RemoteGraknTx tx, GraknOuterClass.Answer answer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
@@ -173,7 +172,7 @@ final class GrpcClient implements AutoCloseable {
         return new QueryAnswer(map.build());
     }
 
-    private static Concept convert(GraknTx tx, GraknOuterClass.Concept concept) {
+    private static Concept convert(RemoteGraknTx tx, GraknOuterClass.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {

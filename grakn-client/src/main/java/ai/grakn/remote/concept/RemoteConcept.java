@@ -18,18 +18,18 @@
 
 package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.remote.RemoteGraknTx;
 
 /**
  * @author Felix Chapman
  */
 abstract class RemoteConcept implements Concept {
 
-    abstract GraknTx tx();
+    abstract RemoteGraknTx tx();
 
     @Override
     public abstract ConceptId getId();

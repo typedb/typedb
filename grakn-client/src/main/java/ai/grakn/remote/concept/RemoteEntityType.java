@@ -18,10 +18,10 @@
 
 package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -30,7 +30,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
 
-    public static RemoteEntityType create(GraknTx tx, ConceptId id) {
+    public static RemoteEntityType create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteEntityType(tx, id);
     }
 

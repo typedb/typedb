@@ -19,7 +19,6 @@
 package ai.grakn.remote;
 
 import ai.grakn.ComputeJob;
-import ai.grakn.GraknTx;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
@@ -66,17 +65,17 @@ import java.util.stream.StreamSupport;
  */
 final class RemoteQueryRunner implements QueryRunner {
 
-    private final GraknTx tx;
+    private final RemoteGraknTx tx;
     private final GrpcClient client;
     private final @Nullable Boolean infer;
 
-    private RemoteQueryRunner(GraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+    private RemoteQueryRunner(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
         this.tx = tx;
         this.client = client;
         this.infer = infer;
     }
 
-    public static RemoteQueryRunner create(GraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+    public static RemoteQueryRunner create(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
         return new RemoteQueryRunner(tx, client, infer);
     }
 

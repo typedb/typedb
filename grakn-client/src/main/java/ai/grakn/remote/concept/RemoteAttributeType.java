@@ -18,10 +18,10 @@
 
 package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
         extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
 
-    public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(GraknTx tx, ConceptId id) {
+    public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteAttributeType<>(tx, id);
     }
 

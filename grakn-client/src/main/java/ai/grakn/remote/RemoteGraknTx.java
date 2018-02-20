@@ -54,7 +54,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-class RemoteGraknTx implements GraknTx, GraknAdmin {
+public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
     private final GraknTxType txType;
@@ -71,6 +71,10 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
         GrpcClient client = GrpcClient.create(stub);
         client.open(session.keyspace(), txType);
         return new RemoteGraknTx(session, txType, client);
+    }
+
+    public final GrpcClient client() {
+        return client;
     }
 
     @Override

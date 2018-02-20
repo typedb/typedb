@@ -18,11 +18,11 @@
 
 package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 @AutoValue
 abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
-    public static RemoteRule create(GraknTx tx, ConceptId id) {
+    public static RemoteRule create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteRule(tx, id);
     }
 
