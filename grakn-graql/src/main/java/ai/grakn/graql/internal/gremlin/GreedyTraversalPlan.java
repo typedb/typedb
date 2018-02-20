@@ -132,9 +132,13 @@ public class GreedyTraversalPlan {
                     updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
 
                 } else if (fragment.hasFixedFragmentCost()) {
-                    if (fragment instanceof LabelFragment &&
-                            tx.getType(((LabelFragment) fragment).labels().iterator().next()).isImplicit()) {
-                        startingNodeSet2.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                    if (fragment instanceof LabelFragment) {
+                        Type type = tx.getType(((LabelFragment) fragment).labels().iterator().next());
+                        if (type != null && type.isImplicit()) {
+                            startingNodeSet2.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                        } else {
+                            startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                        }
                     } else {
                         startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
                     }
