@@ -91,7 +91,7 @@ public class CountPostProcessor {
                 Timer.Context contextSingle = metricRegistry
                         .timer(name(CountPostProcessor.class, "execution-single")).time();
                 try {
-                    if (updateShardCounts(redis, commitLog.keyspace(), key, value, shardingThreshold)) {
+                    if (incrementInstanceCountAndCheckIfShardingIsNeeded(redis, commitLog.keyspace(), key, value, shardingThreshold)) {
                         conceptToShard.add(key);
                     }
                 } finally {
@@ -120,14 +120,13 @@ public class CountPostProcessor {
      *
      * @param keyspace The keyspace of the graph which the type comes from
      * @param conceptId The id of the concept with counts to update
-     * @param value The number of instances which the type has gained/lost
+     * @param incrementBy The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean updateShardCounts(RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
+    private static boolean incrementInstanceCountAndCheckIfShardingIsNeeded(RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long incrementBy, long shardingThreshold){
         long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.adjustCount(
-                RedisCountStorage.getKeyNumInstances(keyspace, conceptId), value);
+        long numInstances = redis.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace, conceptId), incrementBy);
         return numInstances > shardingThreshold * numShards;
     }
 
@@ -148,7 +147,7 @@ public class CountPostProcessor {
 
         try {
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-            if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
+            if (incrementInstanceCountAndCheckIfShardingIsNeeded(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
 
                 try(EmbeddedGraknTx<?> graph = factory.tx(keyspace, GraknTxType.WRITE)) {
@@ -156,7 +155,7 @@ public class CountPostProcessor {
                     graph.commitSubmitNoLogs();
                 }
                 //Update number of shards
-                redis.adjustCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
+                redis.incrementCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
             }
         } finally {
             engineLock.unlock();
