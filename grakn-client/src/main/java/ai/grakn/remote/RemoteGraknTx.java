@@ -37,16 +37,25 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
+import static ai.grakn.util.Schema.MetaSchema.ROLE;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
@@ -79,28 +88,35 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(Label label) {
-        queryRunner().run(Graql.withoutGraph().define(label(label).sub(Schema.MetaSchema.ENTITY.getLabel().getValue())));
-        return null; // TODO
+        return putSchemaConcept(label, ENTITY);
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        throw new UnsupportedOperationException(); // TODO
+        return putSchemaConcept(label, ATTRIBUTE, var("x").datatype(dataType));
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        throw new UnsupportedOperationException(); // TODO
+        return putSchemaConcept(label, RULE, var("x").when(when).then(then));
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return putSchemaConcept(label, RELATIONSHIP);
     }
 
     @Override
     public Role putRole(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return putSchemaConcept(label, ROLE);
+    }
+
+    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta, VarPattern ... optionalVars){
+        List<VarPattern> vars = new ArrayList<>();
+        vars.add(var("x").label(label).sub(meta.getLabel().getValue()));
+        vars.addAll(Arrays.asList(optionalVars));
+        queryRunner().run(Graql.withoutGraph().define(vars));
+        return null;
     }
 
     @Nullable

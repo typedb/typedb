@@ -21,14 +21,18 @@ package ai.grakn.remote;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
@@ -54,11 +58,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import static ai.grakn.graql.Graql.define;
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -392,8 +397,36 @@ public class RemoteGraknTxTest {
         assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GraknTx::putEntityType);
     }
 
-    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, BiConsumer<GraknTx, Label> adder){
-        String expectedQuery = define(label(label).sub(metaSchema.getLabel().getValue())).toString();
+    @Test
+    public void whenPuttingRelationType_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RELATIONSHIP, GraknTx::putRelationshipType);
+    }
+
+    @Test
+    public void whenPuttingAttributeType_EnsureCorrectQueryIsSent(){
+        AttributeType.DataType<String> string = AttributeType.DataType.STRING;
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ATTRIBUTE,
+                (tx, label) -> tx.putAttributeType(label, string),
+                var("x").datatype(string));
+    }
+
+    @Test
+    public void whenPuttingRule_EnsureCorrectQueryIsSent(){
+        Pattern when = Graql.parser().parsePattern("$x isa Your-Type");
+        Pattern then = Graql.parser().parsePattern("$x isa Your-Other-Type");
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RULE, (tx, label) -> tx.putRule(label, when, then), var("x").when(when).then(then));
+    }
+
+    @Test
+    public void whenPuttingRole_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ROLE, GraknTx::putRole);
+    }
+
+    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, BiConsumer<GraknTx, Label> adder, VarPattern... optionalVars){
+        List<VarPattern> vars = new ArrayList<>();
+        vars.add(var("x").label(label).sub(metaSchema.getLabel().getValue()));
+        vars.addAll(Arrays.asList(optionalVars));
+        String expectedQuery = define(vars).toString();
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
