@@ -62,11 +62,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -451,6 +453,28 @@ public class RemoteGraknTxTest {
         }
 
         verify(serverRequests).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+    }
+
+    @Test
+    public void whenClosingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::close);
+    }
+
+    @Test
+    public void whenCommittingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::commit);
+    }
+
+    @Test
+    public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::abort);
+    }
+
+    private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){
+        GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE);
+        assertFalse(tx.isClosed());
+        action.accept(tx);
+        assertTrue(tx.isClosed());
     }
 
     private void throwOn(TxRequest request, ErrorType errorType, String message) {

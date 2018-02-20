@@ -189,7 +189,7 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public boolean isClosed() {
-        throw new UnsupportedOperationException(); // TODO
+        return client.isClosed();
     }
 
     @Override
@@ -204,12 +204,13 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void abort() {
-        throw new UnsupportedOperationException(); // TODO
+        client.close();
     }
 
     @Override
     public void commit() throws InvalidKBException {
         client.commit();
+        client.close();
     }
 
     @Override

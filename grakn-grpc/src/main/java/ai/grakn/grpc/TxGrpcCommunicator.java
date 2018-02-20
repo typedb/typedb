@@ -86,8 +86,14 @@ public class TxGrpcCommunicator implements AutoCloseable {
 
     @Override
     public void close() {
-        requests.onCompleted();
-        responses.close();
+        if(!responses.terminated.get()) {
+            requests.onCompleted();
+            responses.close();
+        }
+    }
+
+    public boolean isClosed(){
+        return responses.terminated.get();
     }
 
     /**
