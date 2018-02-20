@@ -199,12 +199,12 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void close() {
-        client.close();
+        if(!isClosed()) client.close();
     }
 
     @Override
     public void abort() {
-        client.close();
+        if(!isClosed()) client.close();
     }
 
     @Override
