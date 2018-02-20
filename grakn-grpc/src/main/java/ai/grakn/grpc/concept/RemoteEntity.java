@@ -28,7 +28,7 @@ import com.google.auto.value.AutoValue;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
+abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
 
     public static RemoteEntity create(GraknTx tx, ConceptId id) {
         return new AutoValue_RemoteEntity(tx, id);

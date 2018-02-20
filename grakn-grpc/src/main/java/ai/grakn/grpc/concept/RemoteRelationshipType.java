@@ -31,8 +31,7 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RemoteRelationshipType
-        extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
+abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
 
     public static RemoteRelationshipType create(GraknTx tx, ConceptId id) {
         return new AutoValue_RemoteRelationshipType(tx, id);

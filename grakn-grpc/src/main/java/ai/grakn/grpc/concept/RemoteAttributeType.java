@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * @param <D> The data type of this attribute type
  */
 @AutoValue
-public abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
+abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
         extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
 
     public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(GraknTx tx, ConceptId id) {

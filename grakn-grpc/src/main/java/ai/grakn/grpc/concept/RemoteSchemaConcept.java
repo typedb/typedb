@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @param <Self> The exact type of this class
  */
-public abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
 
     @Override
     public final Label getLabel() {

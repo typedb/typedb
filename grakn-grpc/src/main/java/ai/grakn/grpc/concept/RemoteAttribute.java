@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  * @param <D> The data type of this attribute
  */
 @AutoValue
-public abstract class RemoteAttribute<D extends AttributeType.DataType<?>>
+abstract class RemoteAttribute<D extends AttributeType.DataType<?>>
         extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
 
     public static <D extends AttributeType.DataType<?>> RemoteAttribute<D> create(GraknTx tx, ConceptId id) {

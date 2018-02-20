@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * @param <Self> The exact type of this class
  * @param <MyType> the type of an instance of this class
  */
-public abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept implements Thing {
+abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept implements Thing {
 
     @Override
     public final MyType type() {

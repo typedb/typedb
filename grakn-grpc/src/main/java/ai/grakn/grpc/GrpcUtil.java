@@ -36,15 +36,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.concept.RemoteAttribute;
-import ai.grakn.grpc.concept.RemoteAttributeType;
-import ai.grakn.grpc.concept.RemoteEntity;
-import ai.grakn.grpc.concept.RemoteEntityType;
-import ai.grakn.grpc.concept.RemoteMetaType;
-import ai.grakn.grpc.concept.RemoteRelationship;
-import ai.grakn.grpc.concept.RemoteRelationshipType;
-import ai.grakn.grpc.concept.RemoteRole;
-import ai.grakn.grpc.concept.RemoteRule;
+import ai.grakn.grpc.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -228,23 +220,23 @@ public class GrpcUtil {
 
         switch (concept.getBaseType()) {
             case Entity:
-                return RemoteEntity.create(tx, id);
+                return RemoteConcepts.createEntity(tx, id);
             case Relationship:
-                return RemoteRelationship.create(tx, id);
+                return RemoteConcepts.createRelationship(tx, id);
             case Attribute:
-                return RemoteAttribute.create(tx, id);
+                return RemoteConcepts.createAttribute(tx, id);
             case EntityType:
-                return RemoteEntityType.create(tx, id);
+                return RemoteConcepts.createEntityType(tx, id);
             case RelationshipType:
-                return RemoteRelationshipType.create(tx, id);
+                return RemoteConcepts.createRelationshipType(tx, id);
             case AttributeType:
-                return RemoteAttributeType.create(tx, id);
+                return RemoteConcepts.createAttributeType(tx, id);
             case Role:
-                return RemoteRole.create(tx, id);
+                return RemoteConcepts.createRole(tx, id);
             case Rule:
-                return RemoteRule.create(tx, id);
+                return RemoteConcepts.createRule(tx, id);
             case MetaType:
-                return RemoteMetaType.create(tx, id);
+                return RemoteConcepts.createMetaType(tx, id);
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + concept);
