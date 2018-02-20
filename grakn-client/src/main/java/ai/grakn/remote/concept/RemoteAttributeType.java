@@ -16,66 +16,53 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
+import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
  *
- * @param <Self> The exact type of this class
+ * @param <D> The data type of this attribute type
  */
-abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+@AutoValue
+abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
+        extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+
+    public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteAttributeType<>(tx, id);
+    }
 
     @Override
-    public final Label getLabel() {
+    public final AttributeType<D> setRegex(@Nullable String regex) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Boolean isImplicit() {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Self setLabel(Label label) {
+    public final Attribute<D> putAttribute(D value) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Nullable
     @Override
-    public final Self sup() {
+    public final Attribute<D> getAttribute(D value) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Self> sups() {
+    public final DataType<D> getDataType() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
+    @Nullable
     @Override
-    public final Stream<Self> subs() {
+    public final String getRegex() {
         throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final LabelId getLabelId() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfHypothesis() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfConclusion() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 }

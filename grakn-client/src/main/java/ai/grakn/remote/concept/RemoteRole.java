@@ -16,49 +16,44 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Type;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
- *
- * @param <D> The data type of this attribute
  */
 @AutoValue
-abstract class RemoteAttribute<D extends AttributeType.DataType<?>>
-        extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
+abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    public static <D extends AttributeType.DataType<?>> RemoteAttribute<D> create(GraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteAttribute<>(tx, id);
+    public static RemoteRole create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteRole(tx, id);
     }
 
     @Override
-    public final D getValue() {
+    public final Role sup(Role type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final AttributeType.DataType<D> dataType() {
+    public final Role sub(Role type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Thing> ownerInstances() {
+    public final Stream<RelationshipType> relationshipTypes() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
-    @Nullable
     @Override
-    public final Thing owner() {
+    public final Stream<Type> playedByTypes() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

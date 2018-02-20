@@ -16,57 +16,66 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import com.google.auto.value.AutoValue;
+import ai.grakn.concept.SchemaConcept;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
+ *
+ * @param <Self> The exact type of this class
  */
-@AutoValue
-abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
+abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
 
-    public static RemoteRule create(GraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteRule(tx, id);
+    @Override
+    public final Label getLabel() {
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 
-    @Nullable
     @Override
-    public final Pattern getWhen() {
+    public final Boolean isImplicit() {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self setLabel(Label label) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Nullable
     @Override
-    public final Pattern getThen() {
+    public final Self sup() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Type> getHypothesisTypes() {
+    public final Stream<Self> sups() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Type> getConclusionTypes() {
+    public final Stream<Self> subs() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Rule sup(Rule superRule) {
-        throw new UnsupportedOperationException(); // TODO: implement
+    public final LabelId getLabelId() {
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
-    public final Rule sub(Rule type) {
-        throw new UnsupportedOperationException(); // TODO: implement
+    public final Stream<Rule> getRulesOfHypothesis() {
+        throw new UnsupportedOperationException(); // TODO: remove from API
+    }
+
+    @Override
+    public final Stream<Rule> getRulesOfConclusion() {
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 }

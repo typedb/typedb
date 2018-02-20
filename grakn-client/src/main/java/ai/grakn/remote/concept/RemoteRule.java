@@ -16,53 +16,57 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Pattern;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
+import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
- *
- * @param <D> The data type of this attribute type
  */
 @AutoValue
-abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
-        extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
-    public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(GraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteAttributeType<>(tx, id);
+    public static RemoteRule create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteRule(tx, id);
     }
 
+    @Nullable
     @Override
-    public final AttributeType<D> setRegex(@Nullable String regex) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Attribute<D> putAttribute(D value) {
+    public final Pattern getWhen() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Nullable
     @Override
-    public final Attribute<D> getAttribute(D value) {
+    public final Pattern getThen() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final DataType<D> getDataType() {
+    public final Stream<Type> getHypothesisTypes() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
-    @Nullable
     @Override
-    public final String getRegex() {
+    public final Stream<Type> getConclusionTypes() {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Rule sup(Rule superRule) {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Rule sub(Rule type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

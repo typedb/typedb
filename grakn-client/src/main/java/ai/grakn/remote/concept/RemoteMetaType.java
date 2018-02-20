@@ -16,26 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import com.google.auto.value.AutoValue;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
+abstract class RemoteMetaType extends RemoteType<Type, Thing> {
 
-    public static RemoteEntityType create(GraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteEntityType(tx, id);
-    }
-
-    @Override
-    public final Entity addEntity() {
-        throw new UnsupportedOperationException(); // TODO: implement
+    public static RemoteMetaType create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteMetaType(tx, id);
     }
 }

@@ -16,14 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc.concept;
+package ai.grakn.remote.concept;
 
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknTxOperationException;
 
 import java.util.stream.Stream;
 
@@ -31,17 +30,35 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  *
  * @param <Self> The exact type of this class
- * @param <MyType> the type of an instance of this class
+ * @param <Instance> the exact type of instances of this class
  */
-abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept implements Thing {
+abstract class RemoteType<Self extends Type, Instance extends Thing> extends RemoteSchemaConcept<Self> implements Type {
 
-    @Override
-    public final MyType type() {
+    public final Self sup(Self type) {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    public final Self sub(Self type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Relationship> relationships(Role... roles) {
+    public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self plays(Role role) throws GraknTxOperationException {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self key(AttributeType attributeType) throws GraknTxOperationException {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
@@ -51,32 +68,37 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     }
 
     @Override
-    public final Self attribute(Attribute attribute) {
+    public final Stream<AttributeType> attributes() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Relationship attributeRelationship(Attribute attribute) {
+    public final Stream<AttributeType> keys() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
+    public final Stream<Instance> instances() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
+    public final Boolean isAbstract() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Self deleteAttribute(Attribute attribute) {
+    public final Self deletePlays(Role role) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final boolean isInferred() {
+    public final Self deleteAttribute(AttributeType attributeType) {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self deleteKey(AttributeType attributeType) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }
