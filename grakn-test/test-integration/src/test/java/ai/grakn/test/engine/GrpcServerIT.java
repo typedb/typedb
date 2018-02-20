@@ -21,10 +21,14 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -37,6 +41,7 @@ import ai.grakn.grpc.GrpcTestUtil;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Sets;
 import io.grpc.Status;
 import org.junit.AfterClass;
@@ -318,6 +323,65 @@ public class GrpcServerIT {
 
             assertEquals(localConcept.getDataType(), remoteConcept.getDataType());
             assertEquals(localConcept.getRegex(), remoteConcept.getRegex());
+        }
+    }
+
+    @Test
+    public void whenGettingAnEntity_TheInformationOnTheEntityIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").isa("movie")).get();
+            Entity remoteConcept = query.stream().findAny().get().get("x").asEntity();
+            Entity localConcept = localTx.getConcept(remoteConcept.getId()).asEntity();
+
+            // There actually aren't any new methods on Entity, but we should still check we can get them
+            assertEquals(localConcept.getId(), remoteConcept.getId());
+        }
+    }
+
+    @Test
+    public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
+            Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
+            Relationship localConcept = localTx.getConcept(remoteConcept.getId()).asRelationship();
+
+            assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
+
+            ImmutableMultimap.Builder<ConceptId, ConceptId> localRolePlayers = ImmutableMultimap.builder();
+            localConcept.allRolePlayers().forEach((role, players) -> {
+                for (Thing player : players) {
+                    localRolePlayers.put(role.getId(), player.getId());
+                }
+            });
+
+            ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
+            remoteConcept.allRolePlayers().forEach((role, players) -> {
+                for (Thing player : players) {
+                    localRolePlayers.put(role.getId(), player.getId());
+                }
+            });
+
+            assertEquals(localRolePlayers.build(), remoteRolePlayers.build());
+        }
+    }
+
+    @Test
+    public void whenGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").isa("title")).get();
+            Attribute<?> remoteConcept = query.stream().findAny().get().get("x").asAttribute();
+            Attribute<?> localConcept = localTx.getConcept(remoteConcept.getId()).asAttribute();
+
+            assertEquals(localConcept.dataType(), remoteConcept.dataType());
+            assertEquals(localConcept.getValue(), remoteConcept.getValue());
+            assertEquals(localConcept.owner(), remoteConcept.owner());
+            assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
         }
     }
 

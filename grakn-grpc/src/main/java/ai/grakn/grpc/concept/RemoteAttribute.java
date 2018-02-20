@@ -18,65 +18,47 @@
 
 package ai.grakn.grpc.concept;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
+import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
  *
- * @param <Self> The exact type of this class
- * @param <MyType> the type of an instance of this class
+ * @param <D> The data type of this attribute
  */
-public abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept implements Thing {
+@AutoValue
+public abstract class RemoteAttribute<D extends AttributeType.DataType<?>>
+        extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
+
+    public static <D extends AttributeType.DataType<?>> RemoteAttribute<D> create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteAttribute<>(tx, id);
+    }
 
     @Override
-    public final MyType type() {
+    public final D getValue() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Relationship> relationships(Role... roles) {
+    public final AttributeType.DataType<D> dataType() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Role> plays() {
+    public final Stream<Thing> ownerInstances() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
+    @Nullable
     @Override
-    public final Self attribute(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Relationship attributeRelationship(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Self deleteAttribute(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final boolean isInferred() {
+    public final Thing owner() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

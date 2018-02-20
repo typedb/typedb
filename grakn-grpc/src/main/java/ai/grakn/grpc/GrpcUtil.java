@@ -36,13 +36,15 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.concept.RemoteAttribute;
 import ai.grakn.grpc.concept.RemoteAttributeType;
+import ai.grakn.grpc.concept.RemoteEntity;
 import ai.grakn.grpc.concept.RemoteEntityType;
 import ai.grakn.grpc.concept.RemoteMetaType;
+import ai.grakn.grpc.concept.RemoteRelationship;
 import ai.grakn.grpc.concept.RemoteRelationshipType;
 import ai.grakn.grpc.concept.RemoteRole;
 import ai.grakn.grpc.concept.RemoteRule;
-import ai.grakn.grpc.concept.RemoteThing;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -226,11 +228,11 @@ public class GrpcUtil {
 
         switch (concept.getBaseType()) {
             case Entity:
-                return RemoteThing.create(tx, id);
+                return RemoteEntity.create(tx, id);
             case Relationship:
-                return RemoteThing.create(tx, id);
+                return RemoteRelationship.create(tx, id);
             case Attribute:
-                return RemoteThing.create(tx, id);
+                return RemoteAttribute.create(tx, id);
             case EntityType:
                 return RemoteEntityType.create(tx, id);
             case RelationshipType:
