@@ -75,7 +75,7 @@ public class ConceptBuilder {
         }
 
         //TODO: This does not actually scale. The DB is still read in this instance
-        List<Thing> things = type.instances().skip(offset).limit(limit + 1).
+        List<Thing> things = type.instances().skip(offset).limit(limit + 1L).
                 map(ConceptBuilder::buildThing).collect(Collectors.toList());
 
         // We get one extra instance and then remove it so we can sneakily check if there is a next page

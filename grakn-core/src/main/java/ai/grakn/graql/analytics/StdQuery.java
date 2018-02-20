@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface StdQuery extends ComputeQuery<Optional<Double>> {
+public interface StdQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on
@@ -56,7 +56,7 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
      * @return a StdQuery with the subLabels set
      */
     @Override
-    StdQuery in(Collection<Label> subLabels);
+    StdQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

@@ -43,7 +43,7 @@ public class GraqlSyntaxException extends GraknException {
     /**
      * Thrown when a parsing error occurs during parsing a graql file
      */
-    public static GraqlSyntaxException parsingError(String error){
+    public static GraqlSyntaxException create(String error){
         return new GraqlSyntaxException(error);
     }
 

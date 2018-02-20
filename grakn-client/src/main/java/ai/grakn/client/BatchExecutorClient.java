@@ -73,7 +73,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class BatchExecutorClient implements Closeable {
 
-    private final static Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
 
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
@@ -132,10 +132,10 @@ public class BatchExecutorClient implements Closeable {
         QueryRequest queryRequest = new QueryRequest(query);
         queryRequest.acquirePermit();
 
-        Context context = addTimer.time();
+        Context contextAddTimer = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace)
                 .observe()
-                .doOnError((error) -> failureMeter.mark())
+                .doOnError(error -> failureMeter.mark())
                 .doOnEach(a -> {
                     if (a.getThrowable() != null) {
                         LOG.error("Error while executing statement", a.getThrowable());
@@ -144,7 +144,7 @@ public class BatchExecutorClient implements Closeable {
                     }
                 })
                 .subscribeOn(scheduler)
-                .doOnTerminate(context::close);
+                .doOnTerminate(contextAddTimer::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
@@ -365,7 +365,7 @@ public class BatchExecutorClient implements Closeable {
             this.graqlExecuteTimer = metricRegistry.timer(name(this.getClass(), "execute"));
             this.attemptMeter = metricRegistry.meter(name(this.getClass(), "attempt"));
             this.retryer = RetryerBuilder.<List>newBuilder()
-                    .retryIfException((throwable) ->
+                    .retryIfException(throwable ->
                             throwable instanceof GraknClientException
                                     && ((GraknClientException) throwable).isRetriable())
                     .retryIfExceptionOfType(ConnectException.class)

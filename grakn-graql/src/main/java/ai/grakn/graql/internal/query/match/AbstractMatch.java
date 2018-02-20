@@ -37,6 +37,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
@@ -64,7 +65,7 @@ abstract class AbstractMatch implements MatchAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<GraknTx> graph);
+    public abstract Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph);
 
     @Override
     public final Stream<Answer> stream() {

@@ -19,13 +19,13 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,10 +86,10 @@ public class PostProcessingTask implements BackgroundTask{
         //No need to post process if another engine has beaten you to doing it
         if(ids.isEmpty()) return;
 
-        try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
+        try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)){
             indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
-        } catch (Exception e){
+        } catch (RuntimeException e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
             LOG.error(String.format("Error during post processing index {%s} with ids {%s}", index, stringIds), e);
         }

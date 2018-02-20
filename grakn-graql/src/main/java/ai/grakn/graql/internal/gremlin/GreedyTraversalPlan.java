@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -34,6 +33,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +70,7 @@ public class GreedyTraversalPlan {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknTx tx) {
+    public static GraqlTraversal createTraversal(PatternAdmin pattern, EmbeddedGraknTx<?> tx) {
         Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
@@ -87,7 +87,7 @@ public class GreedyTraversalPlan {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> planForConjunction(ConjunctionQuery query, GraknTx tx) {
+    private static List<Fragment> planForConjunction(ConjunctionQuery query, EmbeddedGraknTx<?> tx) {
 
         final List<Fragment> plan = new ArrayList<>();
         final Map<NodeId, Node> allNodes = new HashMap<>();
@@ -158,7 +158,7 @@ public class GreedyTraversalPlan {
                                                                       Map<NodeId, Node> allNodes,
                                                                       Set<Node> connectedNodes,
                                                                       Map<Node, Double> nodesWithFixedCost,
-                                                                      GraknTx tx) {
+                                                                      EmbeddedGraknTx<?> tx) {
 
         final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
@@ -211,7 +211,7 @@ public class GreedyTraversalPlan {
                                                      Map<NodeId, Node> allNodes,
                                                      Set<Node> connectedNodes,
                                                      Map<Node, Double> nodesWithFixedCost,
-                                                     GraknTx tx, Fragment fragment) {
+                                                     EmbeddedGraknTx<?> tx, Fragment fragment) {
 
         Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
         connectedNodes.add(start);
@@ -220,12 +220,10 @@ public class GreedyTraversalPlan {
             // fragments that should be done right away
             plan.add(fragment);
             double logInstanceCount = -1D;
-            if (fragment.getShardCount(tx).isPresent()) {
-                long shardCount = fragment.getShardCount(tx).get();
-                if (shardCount > 0) {
-                    logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
-                            Math.log(tx.admin().shardingThreshold());
-                }
+            Optional<Long> shardCount = fragment.getShardCount(tx);
+            if(shardCount.isPresent() && shardCount.get() > 0) {
+                logInstanceCount = Math.log(shardCount.get() - 1D + SHARD_LOAD_FACTOR) +
+                        Math.log(tx.shardingThreshold());
             }
             nodesWithFixedCost.put(start, logInstanceCount);
             start.setFixedFragmentCost(fragment.fragmentCost());

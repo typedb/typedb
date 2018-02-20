@@ -772,7 +772,7 @@ public class TemplateParserTest {
         data.put("name", list);
 
         exception.expect(GraqlSyntaxException.class);
-        exception.expectMessage(GraqlSyntaxException.parsingError("Index [2] out of bounds for list "  + list).getMessage());
+        exception.expectMessage(GraqlSyntaxException.create("Index [2] out of bounds for list "  + list).getMessage());
 
         String template = "insert $this has name <name[2]>;";
         String expected = "insert $this0 has name \"Alex\";";

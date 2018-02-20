@@ -34,8 +34,8 @@ import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
@@ -67,7 +67,7 @@ public class GraqlQueryException extends GraknException {
         super(error, cause);
     }
 
-    private static GraqlQueryException create(String formatString, Object... args) {
+    public static GraqlQueryException create(String formatString, Object... args) {
         return new GraqlQueryException(String.format(formatString, args));
     }
 
@@ -272,7 +272,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException resourcesWithDifferentDataTypes(Set<Label> resourceTypes) {
+    public static GraqlQueryException resourcesWithDifferentDataTypes(Collection<? extends Label> resourceTypes) {
         return new GraqlQueryException("resource types " + resourceTypes + " have different data types");
     }
 

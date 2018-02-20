@@ -19,7 +19,6 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -28,6 +27,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -68,7 +68,7 @@ public class CountPostProcessorTest {
         SystemKeyspace systemKeyspaceMock = mock(SystemKeyspace.class);
         when(systemKeyspaceMock.containsKeyspace(any())).thenReturn(true);
 
-        GraknTx txMock = mock(GraknTx.class);
+        EmbeddedGraknTx txMock = mock(EmbeddedGraknTx.class);
         when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
 
         factoryMock = mock(EngineGraknTxFactory.class);

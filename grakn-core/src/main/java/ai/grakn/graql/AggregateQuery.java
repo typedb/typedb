@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.admin.Answer;
 
 /**
  * An aggregate query produced from a {@link Match}.
@@ -31,4 +32,14 @@ public interface AggregateQuery<T> extends Query<T> {
 
     @Override
     AggregateQuery<T> withTx(GraknTx tx);
+
+    /**
+     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
+     */
+    Match match();
+
+    /**
+     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
+     */
+    Aggregate<? super Answer, T> aggregate();
 }

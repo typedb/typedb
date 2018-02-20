@@ -21,6 +21,8 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 
+import java.util.Collection;
+
 /**
  * A query for undefining {@link SchemaConcept}s.
  * <p>
@@ -33,4 +35,9 @@ public interface UndefineQuery extends Query<Void> {
 
     @Override
     UndefineQuery withTx(GraknTx tx);
+
+    /**
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     */
+    Collection<? extends VarPattern> varPatterns();
 }

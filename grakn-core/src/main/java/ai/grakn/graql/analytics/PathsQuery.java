@@ -41,10 +41,20 @@ public interface PathsQuery extends ComputeQuery<List<List<Concept>>> {
     PathsQuery from(ConceptId sourceId);
 
     /**
+     * Get the id of the source instance
+     */
+    ConceptId from();
+
+    /**
      * @param destinationId the id of the destination instance
      * @return a PathQuery with the the destination instance set
      */
     PathsQuery to(ConceptId destinationId);
+
+    /**
+     * Get the id of the destination instance
+     */
+    ConceptId to();
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
@@ -58,7 +68,7 @@ public interface PathsQuery extends ComputeQuery<List<List<Concept>>> {
      * @return a PathQuery with the subLabels set
      */
     @Override
-    PathsQuery in(Collection<Label> subLabels);
+    PathsQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

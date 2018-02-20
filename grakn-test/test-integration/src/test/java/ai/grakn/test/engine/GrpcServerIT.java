@@ -21,37 +21,30 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcTestUtil;
-import ai.grakn.grpc.TxGrpcCommunicator;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.grpc.GrpcUtil.commitRequest;
-import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
-import static ai.grakn.grpc.GrpcUtil.nextRequest;
-import static ai.grakn.grpc.GrpcUtil.openRequest;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -70,133 +63,102 @@ public class GrpcServerIT {
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
 
-    private final GraknSession session = engine.sessionWithNewKeyspace();
+    private final GraknSession localSession = engine.sessionWithNewKeyspace();
 
-    // TODO: usePlainText is not secure
-    private final ManagedChannel channel =
-            ManagedChannelBuilder.forAddress(engine.host(), engine.grpcPort()).usePlaintext(true).build();
+    private GraknSession remoteSession;
 
-    private final GraknStub stub = GraknGrpc.newStub(channel);
+    @Before
+    public void setUp() {
+        remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
+    }
+
+    @After
+    public void tearDown() {
+        remoteSession.close();
+    }
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.WRITE));
-            tx.receive();
-            tx.send(execQueryRequest("define person sub entity;"));
-            queryResults(tx);
-            tx.send(commitRequest());
-            tx.receive();
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            tx.graql().define(label("person").sub("entity")).execute();
+            tx.commit();
         }
 
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
             assertNotNull(tx.getEntityType("person"));
         }
     }
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.WRITE));
-            tx.receive();
-            tx.send(execQueryRequest("define person sub entity;"));
-            queryResults(tx);
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            tx.graql().define(label("person").sub("entity")).execute();
         }
 
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
             assertNull(tx.getEntityType("person"));
         }
     }
 
     @Test
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
-        List<QueryResult> results;
+        List<Answer> answers;
 
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
-            tx.receive();
-            tx.send(execQueryRequest("match $x sub thing; get;"));
-
-            results = queryResults(tx);
+        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+            answers = tx.graql().match(var("x").sub("thing")).get().execute();
         }
 
         int numMetaTypes = Schema.MetaSchema.METATYPES.size();
-        assertThat(results.toString(), results, hasSize(numMetaTypes));
-        assertThat(Sets.newHashSet(results), hasSize(numMetaTypes));
+        assertThat(answers.toString(), answers, hasSize(numMetaTypes));
+        assertThat(Sets.newHashSet(answers), hasSize(numMetaTypes));
 
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
-            for (QueryResult result : results) {
-                Map<String, GraknOuterClass.Concept> map = result.getAnswer().getAnswerMap();
-
-                assertThat(map.keySet(), contains("x"));
-                assertNotNull(tx.getConcept(ConceptId.of(map.get("x").getId())));
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            for (Answer answer : answers) {
+                assertThat(answer.vars(), contains(var("x")));
+                assertNotNull(tx.getConcept(answer.get("x").getId()));
             }
         }
     }
 
     @Test
     public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() throws InterruptedException {
-        Set<QueryResult> results1;
-        Set<QueryResult> results2;
+        Set<Answer> answers1;
+        Set<Answer> answers2;
 
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
-            tx.receive();
-            tx.send(execQueryRequest("match $x sub thing; get;"));
-            results1 = Sets.newHashSet(queryResults(tx));
-            tx.send(execQueryRequest("match $x sub thing; get;"));
-            results2 = Sets.newHashSet(queryResults(tx));
+        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+            answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(Collectors.toSet());
+            answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(Collectors.toSet());
         }
 
-        assertEquals(results1, results2);
+        assertEquals(answers1, answers2);
     }
 
     @Test // This behaviour is temporary - we should eventually support it correctly
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
-            tx.receive();
-            tx.send(execQueryRequest("match $x sub thing; get;"));
-            tx.receive();
-            tx.send(execQueryRequest("match $x sub thing; get;"));
+        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+            GetQuery query = tx.graql().match(var("x").sub("thing")).get();
+
+            Iterator<Answer> iterator1 = query.iterator();
+            Iterator<Answer> iterator2 = query.iterator();
 
             exception.expect(GrpcTestUtil.hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().error();
+            while (iterator1.hasNext() || iterator2.hasNext()) {
+                if (iterator1.hasNext()) iterator1.next();
+                if (iterator2.hasNext()) iterator2.next();
+            }
         }
     }
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
-            tx.receive();
-            tx.send(execQueryRequest("match $x sub thing; get $y;"));
+        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+            GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
 
-            exception.expect(GrpcTestUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
+            exception.expect(GraqlQueryException.class);
+            exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("not-a-thing")).getMessage());
 
-            throw tx.receive().error();
-        }
-    }
-
-    private static List<QueryResult> queryResults(TxGrpcCommunicator tx) throws InterruptedException {
-        ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
-
-        while (true) {
-            TxResponse response = tx.receive().ok();
-            assert response != null;
-
-            switch (response.getResponseCase()) {
-                case QUERYRESULT:
-                    results.add(response.getQueryResult());
-                    break;
-                case DONE:
-                    return results.build();
-                default:
-                case RESPONSE_NOT_SET:
-                    throw CommonUtil.unreachableStatement("Unexpected response: " + response);
-            }
-            tx.send(nextRequest());
+            query.execute();
         }
     }
 }

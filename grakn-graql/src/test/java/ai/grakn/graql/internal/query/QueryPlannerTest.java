@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
@@ -28,6 +27,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class QueryPlannerTest {
     private static final String thingy3 = "thingy3";
     private static final String related = "related";
 
-    private GraknTx tx;
+    private EmbeddedGraknTx<?> tx;
 
     @ClassRule
     public static final SampleKBContext context = SampleKBContext.load(graph -> {
@@ -96,16 +96,16 @@ public class QueryPlannerTest {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
         // thing 2 = 4, thing3 = 7
-        tx.admin().shard(tx.getEntityType(thingy2).getId());
-        tx.admin().shard(tx.getEntityType(thingy2).getId());
-        tx.admin().shard(tx.getEntityType(thingy2).getId());
+        tx.shard(tx.getEntityType(thingy2).getId());
+        tx.shard(tx.getEntityType(thingy2).getId());
+        tx.shard(tx.getEntityType(thingy2).getId());
 
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
-        tx.admin().shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).getId());
 
         Pattern pattern;
         ImmutableList<Fragment> plan;
@@ -151,9 +151,9 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(z, plan.get(4).end());
 
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-        tx.admin().shard(tx.getEntityType(thingy).getId());
+        tx.shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy).getId());
         // now thing = 5, thing1 = 3
 
         pattern = and(
@@ -172,8 +172,8 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(x, plan.get(3).end());
 
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy1).getId());
         // now thing = 7, thing1 = 5
 
         pattern = and(

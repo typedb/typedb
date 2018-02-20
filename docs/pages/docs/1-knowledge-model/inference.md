@@ -36,7 +36,7 @@ define
   located-in sub relationship,
     relates located-subject, relates subject-location;
 
-  transitive-location sub rule,
+  transitive-location
     when {
       ($x, $y) isa located-in;
       ($y, $z) isa located-in;
