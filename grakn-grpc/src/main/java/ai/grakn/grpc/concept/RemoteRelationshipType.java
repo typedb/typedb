@@ -18,64 +18,43 @@
 
 package ai.grakn.grpc.concept;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
- *
- * @param <Self> The exact type of this class
  */
-public abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+@AutoValue
+public abstract class RemoteRelationshipType
+        extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
+
+    public static RemoteRelationshipType create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteRelationshipType(tx, id);
+    }
 
     @Override
-    public final Label getLabel() {
+    public final Relationship addRelationship() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Boolean isImplicit() {
+    public final Stream<Role> relates() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Self setLabel(Label label) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Nullable
-    @Override
-    public final Self sup() {
+    public final RelationshipType relates(Role role) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Stream<Self> sups() {
+    public final RelationshipType deleteRelates(Role role) {
         throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Stream<Self> subs() {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final LabelId getLabelId() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfHypothesis() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    @Override
-    public final Stream<Rule> getRulesOfConclusion() {
-        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 }

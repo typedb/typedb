@@ -41,47 +41,47 @@ public abstract class RemoteThing extends RemoteConcept implements Thing {
     }
 
     @Override
-    public Type type() {
+    public final Type type() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Stream<Relationship> relationships(Role... roles) {
+    public final Stream<Relationship> relationships(Role... roles) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Stream<Role> plays() {
+    public final Stream<Role> plays() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Thing attribute(Attribute attribute) {
+    public final Thing attribute(Attribute attribute) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Relationship attributeRelationship(Attribute attribute) {
+    public final Relationship attributeRelationship(Attribute attribute) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
+    public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
+    public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public Thing deleteAttribute(Attribute attribute) {
+    public final Thing deleteAttribute(Attribute attribute) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public boolean isInferred() {
+    public final boolean isInferred() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

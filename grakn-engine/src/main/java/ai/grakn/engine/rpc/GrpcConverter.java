@@ -19,12 +19,12 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -96,36 +96,33 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     private GraknOuterClass.Concept makeConcept(Concept concept) {
-        GraknOuterClass.Concept.Builder builder = GraknOuterClass.Concept.newBuilder();
+        return GraknOuterClass.Concept.newBuilder()
+                .setId(concept.getId().getValue())
+                .setBaseType(getBaseType(concept))
+                .build();
+    }
 
-        builder.setId(concept.getId().getValue());
-
-        if (concept.isSchemaConcept()) {
-            SchemaConcept schemaConcept = concept.asSchemaConcept();
-
-            GraknOuterClass.SchemaConcept.Builder schemaConceptBuilder = GraknOuterClass.SchemaConcept.newBuilder();
-            schemaConceptBuilder.setLabel(schemaConcept.getLabel().getValue());
-            schemaConceptBuilder.setImplicit(schemaConcept.isImplicit());
-
-            if (schemaConcept.isType()) {
-                schemaConceptBuilder.setType(GraknOuterClass.Type.getDefaultInstance());
-            }
-
-            if (schemaConcept.isRole()) {
-                schemaConceptBuilder.setRole(GraknOuterClass.Role.getDefaultInstance());
-            }
-
-            if (schemaConcept.isRule()) {
-                schemaConceptBuilder.setRule(GraknOuterClass.Rule.getDefaultInstance());
-            }
-
-            builder.setSchemaConcept(schemaConceptBuilder.build());
+    private GraknOuterClass.BaseType getBaseType(Concept concept) {
+        if (concept.isEntityType()) {
+            return GraknOuterClass.BaseType.EntityType;
+        } else if (concept.isRelationshipType()) {
+            return GraknOuterClass.BaseType.RelationshipType;
+        } else if (concept.isAttributeType()) {
+            return GraknOuterClass.BaseType.AttributeType;
+        } else if (concept.isEntity()) {
+            return GraknOuterClass.BaseType.Entity;
+        } else if (concept.isRelationship()) {
+            return GraknOuterClass.BaseType.Relationship;
+        } else if (concept.isAttribute()) {
+            return GraknOuterClass.BaseType.Attribute;
+        } else if (concept.isRole()) {
+            return GraknOuterClass.BaseType.Role;
+        } else if (concept.isRule()) {
+            return GraknOuterClass.BaseType.Rule;
+        } else if (concept.isType()) {
+            return GraknOuterClass.BaseType.MetaType;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
-
-        if (concept.isThing()) {
-            builder.setThing(GraknOuterClass.Thing.getDefaultInstance());
-        }
-
-        return builder.build();
     }
 }

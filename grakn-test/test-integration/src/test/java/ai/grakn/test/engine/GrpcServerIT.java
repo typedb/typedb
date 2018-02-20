@@ -21,8 +21,11 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
@@ -168,7 +171,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingAConcept_TheConceptContainsInformationAboutItself() {
+    public void whenGettingAConcept_TheInformationOnTheConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -197,7 +200,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingASchemaConcept_TheSchemaConceptContainsInformationAboutItself() {
+    public void whenGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -214,7 +217,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingAThing_TheThingContainsInformationAboutItself() {
+    public void whenGettingAThing_TheInformationOnTheThingIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -232,7 +235,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingAType_TheTypeContainsInformationAboutItself() {
+    public void whenGettingAType_TheInformationOnTheTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -248,7 +251,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingARole_TheRoleContainsInformationAboutItself() {
+    public void whenGettingARole_TheInformationOnTheRoleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -262,7 +265,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenGettingARule_TheRuleContainsInformationAboutItself() {
+    public void whenGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
@@ -274,6 +277,47 @@ public class GrpcServerIT {
             assertEquals(localConcept.getThen(), remoteConcept.getThen());
             assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getConclusionTypes);
             assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getHypothesisTypes);
+        }
+    }
+
+    @Test
+    public void whenGettingAnEntityType_TheInformationOnTheEntityTypeIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
+            EntityType remoteConcept = query.stream().findAny().get().get("x").asEntityType();
+            EntityType localConcept = localTx.getConcept(remoteConcept.getId()).asEntityType();
+
+            // There actually aren't any new methods on EntityType, but we should still check we can get them
+            assertEquals(localConcept.getId(), remoteConcept.getId());
+        }
+    }
+
+    @Test
+    public void whenGettingARelationshipType_TheInformationOnTheRelationshipTypeIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("has-cast")).get();
+            RelationshipType remoteConcept = query.stream().findAny().get().get("x").asRelationshipType();
+            RelationshipType localConcept = localTx.getConcept(remoteConcept.getId()).asRelationshipType();
+
+            assertEqualConcepts(localConcept, remoteConcept, RelationshipType::relates);
+        }
+    }
+
+    @Test
+    public void whenGettingAnAttributeType_TheInformationOnTheAttributeTypeIsCorrect() {
+        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
+             GraknTx localTx = localSession.open(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
+            AttributeType<?> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
+            AttributeType<?> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
+
+            assertEquals(localConcept.getDataType(), remoteConcept.getDataType());
+            assertEquals(localConcept.getRegex(), remoteConcept.getRegex());
         }
     }
 

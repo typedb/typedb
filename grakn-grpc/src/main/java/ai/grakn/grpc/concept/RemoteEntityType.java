@@ -20,40 +20,22 @@ package ai.grakn.grpc.concept;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import com.google.auto.value.AutoValue;
-
-import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
+public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
 
-    public static RemoteRole create(GraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteRole(tx, id);
+    public static RemoteEntityType create(GraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteEntityType(tx, id);
     }
 
     @Override
-    public final Role sup(Role type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Role sub(Role type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Stream<RelationshipType> relationshipTypes() {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Stream<Type> playedByTypes() {
+    public final Entity addEntity() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

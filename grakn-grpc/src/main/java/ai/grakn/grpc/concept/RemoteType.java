@@ -18,45 +18,47 @@
 
 package ai.grakn.grpc.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
+ *
+ * @param <Self> The exact type of this class
+ * @param <Instance> the exact type of instances of this class
  */
-@AutoValue
-public abstract class RemoteType extends RemoteSchemaConcept<Type> implements Type {
+abstract class RemoteType<Self extends Type, Instance extends Thing> extends RemoteSchemaConcept<Self> implements Type {
 
-    public static RemoteType create(GraknTx tx, ConceptId id, Label label, boolean isImplicit) {
-        return new AutoValue_RemoteType(tx, id, label, isImplicit);
+    public final Self sup(Self type) {
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 
-    @Override
-    public final Type setAbstract(Boolean isAbstract) throws GraknTxOperationException {
+    public final Self sub(Self type) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Type plays(Role role) throws GraknTxOperationException {
+    public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Type key(AttributeType attributeType) throws GraknTxOperationException {
+    public final Self plays(Role role) throws GraknTxOperationException {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Type attribute(AttributeType attributeType) throws GraknTxOperationException {
+    public final Self key(AttributeType attributeType) throws GraknTxOperationException {
+        throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
@@ -76,7 +78,7 @@ public abstract class RemoteType extends RemoteSchemaConcept<Type> implements Ty
     }
 
     @Override
-    public final Stream<? extends Thing> instances() {
+    public final Stream<Instance> instances() {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
@@ -86,17 +88,17 @@ public abstract class RemoteType extends RemoteSchemaConcept<Type> implements Ty
     }
 
     @Override
-    public final Type deletePlays(Role role) {
+    public final Self deletePlays(Role role) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Type deleteAttribute(AttributeType attributeType) {
+    public final Self deleteAttribute(AttributeType attributeType) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
-    public final Type deleteKey(AttributeType attributeType) {
+    public final Self deleteKey(AttributeType attributeType) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
 }

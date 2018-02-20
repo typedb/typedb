@@ -23,7 +23,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -37,6 +36,11 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.concept.RemoteAttributeType;
+import ai.grakn.grpc.concept.RemoteEntityType;
+import ai.grakn.grpc.concept.RemoteMetaType;
+import ai.grakn.grpc.concept.RemoteRelationshipType;
+import ai.grakn.grpc.concept.RemoteRole;
 import ai.grakn.grpc.concept.RemoteRule;
 import ai.grakn.grpc.concept.RemoteThing;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -220,25 +224,27 @@ public class GrpcUtil {
     private static Concept convert(GraknTx tx, GraknOuterClass.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 
-        switch (concept.getBaseTypeCase()) {
-            case SCHEMACONCEPT:
-                GraknOuterClass.SchemaConcept schemaConcept = concept.getSchemaConcept();
-                Label label = Label.of(schemaConcept.getLabel());
-                switch (schemaConcept.getBaseTypeCase()) {
-                    case TYPE:
-                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
-                    case ROLE:
-                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
-                    case RULE:
-                        return RemoteRule.create(tx, id, label, schemaConcept.getImplicit());
-                    default:
-                    case BASETYPE_NOT_SET:
-                        throw new IllegalArgumentException("Unrecognised " + schemaConcept);
-                }
-            case THING:
+        switch (concept.getBaseType()) {
+            case Entity:
                 return RemoteThing.create(tx, id);
+            case Relationship:
+                return RemoteThing.create(tx, id);
+            case Attribute:
+                return RemoteThing.create(tx, id);
+            case EntityType:
+                return RemoteEntityType.create(tx, id);
+            case RelationshipType:
+                return RemoteRelationshipType.create(tx, id);
+            case AttributeType:
+                return RemoteAttributeType.create(tx, id);
+            case Role:
+                return RemoteRole.create(tx, id);
+            case Rule:
+                return RemoteRule.create(tx, id);
+            case MetaType:
+                return RemoteMetaType.create(tx, id);
             default:
-            case BASETYPE_NOT_SET:
+            case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + concept);
         }
     }
