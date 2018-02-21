@@ -46,6 +46,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -133,7 +134,7 @@ public class GreedyTraversalPlan {
 
                 } else if (fragment.hasFixedFragmentCost()) {
                     if (fragment instanceof LabelFragment) {
-                        Type type = tx.getType(((LabelFragment) fragment).labels().iterator().next());
+                        Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                         if (type != null && type.isImplicit()) {
                             startingNodeSet2.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
                         } else {
@@ -181,7 +182,7 @@ public class GreedyTraversalPlan {
                 .filter(LabelFragment.class::isInstance)
                 .forEach(fragment -> {
                     // TODO: labels() should return ONE label instead of a set
-                    Type type = tx.getType(((LabelFragment) fragment).labels().iterator().next());
+                    Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                     if (type != null && !type.isRole()) labelVarTypeMap.put(fragment.start(), type);
                 });
         if (labelVarTypeMap.isEmpty()) return;
@@ -228,9 +229,8 @@ public class GreedyTraversalPlan {
 
         // for each type, get all possible relationship type it could be in
         Map<Type, Set<RelationshipType>> relationshipMap = new HashMap<>();
-        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaEntityType());
-        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaAttributeType());
-        getAllPossibleRelationships(relationshipMap, tx.admin().getMetaRelationType());
+        labelVarTypeMap.values().stream().distinct().forEach(
+                type -> getAllPossibleRelationships(relationshipMap, type));
 
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
             Iterator<Var> rolePlayerVarIterator = rolePlayerVars.iterator();

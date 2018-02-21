@@ -250,6 +250,15 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(3L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+
+        pattern = and(
+                x.isa(veryRelated),
+                y.isa(thingy4),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        assertEquals(2L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
     @Test
