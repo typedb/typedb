@@ -11,14 +11,14 @@ toc: false
 KB: academy
 ---
 
-During the course of the Academy lessons, you will learn step by step how to reproduce the academy dataset that comes preloaded into the GRAKN distribution in the VM that you should have installe by now (if you have not, head back to [last lesson](./setup.html) and make sure you do so.)
+During the course of the Academy lessons, you will learn step by step how to reproduce the academy dataset that comes preloaded into the Grakn distribution in the VM that you should have installe by now (if you have not, head back to [last lesson](./setup.html) and make sure you do so.)
 
 In order to understand the dataset, let's first set up the scene.
 
 
 ## Dataset Background
 
-Imagine you are company that gathers information about financial products issued by oil companies. You have your knowledge graph stored with GRAKN and you have employees who browse the internet for interesting articles and add them to the knowledge base.
+Imagine you are company that gathers information about financial products issued by oil companies. You have your knowledge graph stored with Grakn and you have employees who browse the internet for interesting articles and add them to the knowledge base.
 
 In 2016, a referendum in Italy has been held about the renovation of concessions on oil platforms within 18 kilometers from the coast. Had the referendum succeeded, this would have potentially affected the companies owning those platforms, and, indirectly, the financial products issued by those companies. So your employees start adding articles related to the referendum into the knowledge base.
 
@@ -48,7 +48,7 @@ limit 3; get $bond, $article;
 
 ### Try it yourself
 
-Start GRAKN (if it’s not already running), then open the dashboard. Set the default limit to something small (I suggest 2 or 3), then try running that query in the dashboard to see how the answer looks like.
+Start Grakn (if it’s not already running), then open the dashboard. Set the default limit to something small (I suggest 2 or 3), then try running that query in the dashboard to see how the answer looks like.
 
 If you click and hold one of the nodes that appear you will see a box appear on your screen. You can there select the colours and displayed information for that type of nodes.
 

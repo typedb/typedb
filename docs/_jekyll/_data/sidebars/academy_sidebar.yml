@@ -42,7 +42,7 @@ entries:
         output: web
         url: /academy/graql-review.html
 
-  - title: 3. GRAKN schemas
+  - title: 3. Grakn schemas
     output: web
     folderitems:
       - title: 3.1 Schema elements

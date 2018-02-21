@@ -28,7 +28,7 @@ entries:
     # - title: Use Case
     #   output: web
     #   url: /overview/use-case.html
-    - title: GRAKN Academy
+    - title: Grakn Academy
       output: web
       url: /academy/index.html
     - title: Documentation

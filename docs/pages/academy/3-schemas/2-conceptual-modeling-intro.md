@@ -92,4 +92,4 @@ Subject (of articles)
 
 
 ## What next?
-We are now ready to turn our conceptual model into a valid GRAKN schema in the [next lesson](./schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about GRAKN object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](../index.html)
+We are now ready to turn our conceptual model into a valid Grakn schema in the [next lesson](./schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about Grakn object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](../index.html)

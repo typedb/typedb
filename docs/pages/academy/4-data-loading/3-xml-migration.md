@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into GRAKN more structured data files, like XML or JSON files.
+Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into Grakn more structured data files, like XML or JSON files.
 
 We will cover here only some basic constructs that can be used to migrate XML files to avoid this course becoming a full course on XML, which is a very rich topic on its own, but if you are interested in studying more, [the internet is your friend](https://www.w3schools.com/xml/xml_whatis.asp).
 
@@ -71,9 +71,9 @@ Loading a GRAQL template against an XML file is a very similar process to the on
 
 While dealing with XML files you often find that the actually interesting stuff only starts after two or three levels of nesting. In the fake example above, for instance, we are only interested in the content of "LEVEL1" elements.
 
-We will then call our migration command with the option `-e` that tells GRAKN what to consider the *base element* of the file. In a way, you can think of it like splitting the XML file into many separate files, each containing one single "LEVEL1" element.
+We will then call our migration command with the option `-e` that tells Grakn what to consider the *base element* of the file. In a way, you can think of it like splitting the XML file into many separate files, each containing one single "LEVEL1" element.
 
-XML files usually come with a schema, which is stored in a XSD file. The schema describes formally the structure of the XML file and it is used by GRAKN to migrate the XML file (for example in a schema for the XML mock above you would find the information that each "LEVEL1" element can contain more that one "NESTED" element.
+XML files usually come with a schema, which is stored in a XSD file. The schema describes formally the structure of the XML file and it is used by Grakn to migrate the XML file (for example in a schema for the XML mock above you would find the information that each "LEVEL1" element can contain more that one "NESTED" element.
 
 To refer to the schema while calling the migration command, use the `-s` option.
 

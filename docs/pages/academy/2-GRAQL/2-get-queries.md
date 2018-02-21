@@ -2,7 +2,7 @@
 title: Get Queries
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn about the get queries, the fundamental queries used to explore GRAKN Knowledge bases
+summary: In this lesson you will learn about the get queries, the fundamental queries used to explore Grakn Knowledge bases
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/get-queries.html
@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-GRAQL, the language used to query and manipulate data in a GRAKN knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge base.
+GRAQL, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge base.
 
 
 ## Basic get queries
@@ -45,7 +45,7 @@ $x isa company;
 get;
 ```
 
-Go ahead and try these queries in your running distribution of GRAKN (need a refresher? [Here’s the link](/academy/setup.html) to the lesson in which you learned how to do that).
+Go ahead and try these queries in your running distribution of Grakn (need a refresher? [Here’s the link](/academy/setup.html) to the lesson in which you learned how to do that).
 
 
 ### Exercise: a query with an attribute

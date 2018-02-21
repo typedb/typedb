@@ -12,7 +12,7 @@ folder: docs
 
 ## Windows Support
 
-GRAKN is currently not supported natively on Windows.
+Grakn is currently not supported natively on Windows.
 
 Your current options are:
 - a virtual machine with Ubuntu (eg. [VirtualBox](https://www.virtualbox.org/wiki/Downloads))

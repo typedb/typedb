@@ -2,7 +2,7 @@
 title: Loading data - Building knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn how to load schema and data GRAQL files into your GRAKN distribution.
+summary: In this lesson you will learn how to load schema and data GRAQL files into your Grakn distribution.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/loading-files.html
@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Following the lessons of the Academy you should be by now at a point where you have a solid grasp on the basics of GRAQL, the GRAKN object model, you should be able to understand what a GRAKN schema is and how to build one.
+Following the lessons of the Academy you should be by now at a point where you have a solid grasp on the basics of GRAQL, the Grakn object model, you should be able to understand what a Grakn schema is and how to build one.
 
 The problem at this point is: how can you load the schema you have created? And how to add data to you knowledge base when you have loaded the schema?
 
@@ -19,7 +19,7 @@ Of course, you could use the GRAQL shell, one `define` or `insert` query at a ti
 And this is what we will be talking about in this module.
 
 ## Loading files
-The first thing we need to build our knowledge base is to load our schema file. To load a file in GRAKN we will use the command line.
+The first thing we need to build our knowledge base is to load our schema file. To load a file in Grakn we will use the command line.
 In the VM, from the directory  `/grakn` you will  have to use the command
 
 `./graql console -k KEYSPACE -f FILE_TO_LOAD`
@@ -65,7 +65,7 @@ match $x isa country; get;
 ```
 
 ### What have you learned?
-You have learned how to load Graql files, both with the simple loader and as a batch load. As a consequence, you should have managed to create your first GRAKN knowledge base and load some data into it.
+You have learned how to load Graql files, both with the simple loader and as a batch load. As a consequence, you should have managed to create your first Grakn knowledge base and load some data into it.
 
 Isn’t it exciting?
 
