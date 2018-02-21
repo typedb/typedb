@@ -2,7 +2,7 @@
 title: Analytics - From Knowledge to Wisdom
 keywords: getting started
 last_updated: October 2017
-summary: In this lesson you will learn about the different types of GRAQL Analytics query and when to use them
+summary: In this lesson you will learn about the different types of Graql Analytics query and when to use them
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/analytics-intro.html
@@ -16,7 +16,7 @@ In this module you will learn the details of the Grakn distributed analytics cap
 Before you begin this module, a disclaimer is in place.
 
 ### WARNING! EXPERIMENTAL!
-GRAQL Analytics, although powerful, is still an experimental feature of GRAKN, so things might change and sometimes you might get funny results. You have been warned.
+Graql Analytics, although powerful, is still an experimental feature of GRAKN, so things might change and sometimes you might get funny results. You have been warned.
 
 ## Distributed analytics
 So far, in the Academy courses, you have learned about what are commonly called OLTP queries (On Line Transaction Processing), which are the queries in which you want to learn about specific concepts in your knowledge base and whatever happens somewhere else is irrelevant. For example, in the query about the Italian referendum you have examined, if the rest of the knowledge base did not exist, you would have obtained exactly the same responses.

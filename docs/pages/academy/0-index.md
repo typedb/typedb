@@ -35,7 +35,7 @@ In the third module you will be introduced to the innovative Grakn object model 
 
 ## [Data loading](./loading-files.html)
 
-The fourth module will guide you through the topic of data loading and migration. It will introduce to the GRAQL templating language extensions, that allow to easily migrate data from the most common file formats.
+The fourth module will guide you through the topic of data loading and migration. It will introduce to the Graql templating language extensions, that allow to easily migrate data from the most common file formats.
 
 ## [Grakn Reasoner](./reasoner-intro.html)
 
@@ -43,4 +43,4 @@ The fith module will introduce you to the topic of logic inference and Grakn rul
 
 ## [Grakn Analytics](./analytics-intro.html)
 
-The sixth and final module will be about GRAQL OLAP queries and the distributed analytics component, that allows to perform distributed computation at scale.
+The sixth and final module will be about Graql OLAP queries and the distributed analytics component, that allows to perform distributed computation at scale.

@@ -2,7 +2,7 @@
 title: Insert and Delete Queries
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn the GRAQL syntax to insert and delete things from your knowledge base
+summary: In this lesson you will learn the Graql syntax to insert and delete things from your knowledge base
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/insert-delete-queries.html
@@ -24,7 +24,7 @@ insert $x isa company has name "GRAKN";
 ```
 You should see a big red box warning you that you cannot run insert queries into the dashboard. The reason for this is that the dashboard is an application independent of the main Grakn engine and that you could expose as a web interface if you so desired. And you definitely would not want to have anybody visiting your website to be able to insert stuff into your graph, would you?
 
-To insert new data into your knowledge base you need the GRAQL shell. As you should recall, to start it in the appropriate keyspace, you have to go into the directory `grakn` from the VM terminal and then run `./graql console -k academy`.
+To insert new data into your knowledge base you need the Graql shell. As you should recall, to start it in the appropriate keyspace, you have to go into the directory `grakn` from the VM terminal and then run `./graql console -k academy`.
 
 Once you have done that, you can try again the query
 ```graql
@@ -39,9 +39,9 @@ As you might have noticed, the syntax for insert queries is the same as the synt
 insert $x isa company; $x has name "GRAKN";
 ```
 
-Try this query (notice that you cannot split the query with a new line in the GRAQL shell) as well and you will see that it will work as well.
+Try this query (notice that you cannot split the query with a new line in the Graql shell) as well and you will see that it will work as well.
 
-Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE GRAQL SHELL!**)
+Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE Graql SHELL!**)
 ```graql
 match $x isa company has name "GRAKN"; get;
 ```
@@ -50,9 +50,9 @@ match $x isa company has name "GRAKN"; get;
 
 What? There is nothing? What happened?
 
-What happened is that whenever we make a change to the knowledge base from the GRAQL shell, the change is temporary until it gets stored in the graph.
+What happened is that whenever we make a change to the knowledge base from the Graql shell, the change is temporary until it gets stored in the graph.
 
-To actually confirm  the change, go back into the GRAQL shell and type `commit`. When the query gets executed you will see the new companies inserted. Notice that there are two of them, as we run two insert queries. For GRAQL when you say
+To actually confirm  the change, go back into the Graql shell and type `commit`. When the query gets executed you will see the new companies inserted. Notice that there are two of them, as we run two insert queries. For Graql when you say
 ```graql
 insert $x isa company has name "GRAKN";
 ```
@@ -75,7 +75,7 @@ insert
 (location: $c, located: $g) isa located-in;
 ```
 
-Before trying this query into the GRAQL shell (and committing) are you able to guess what will happen?
+Before trying this query into the Graql shell (and committing) are you able to guess what will happen?
 
 Let us split into smaller steps: the first part is a normal match, like the ones you have encountered with get queries; the second part of the query is a normal `insert` action that gets executed _once for each result of the first part_. This means that in our case, since the first part will return two results, two relations will be inserted, once for each instance of "GRAKN". So both GRAKNs will be located in the UK.
 
@@ -111,7 +111,7 @@ match $r ($x) isa located-in; $x isa company has name "GRAKN"; delete $r;
 
 If you run the query above and commit, the relation will be gone and Grakn won’t be in the UK anymore. You can check it in the graph visualiser.
 
-Did you notice that we did not had to specify the "UK" in the above query? When you run a query, GRAQL will do its best to try and understand what you mean. In this case, there are no other `located-in` relations involving "GRAKN" and the company plays only that role, so that is all we need to specify.
+Did you notice that we did not had to specify the "UK" in the above query? When you run a query, Graql will do its best to try and understand what you mean. In this case, there are no other `located-in` relations involving "GRAKN" and the company plays only that role, so that is all we need to specify.
 
 At this point you are free to run
 ```graql
@@ -123,8 +123,8 @@ As a parting thought: if you omit the variables in the delete or get actions, it
 
 
 ### What have you learned?
-In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge base. We also have learned how to match relations. By now you should have a solid foundation of GRAQL and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
+In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge base. We also have learned how to match relations. By now you should have a solid foundation of Graql and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
 
 
 ## What next?
-In the [next lesson](./other-queries.html) you will be introduced to other, less common kind of queries. Once again a more complete description of the GRAQL syntax can be found in the [docs](../index.html).
+In the [next lesson](./other-queries.html) you will be introduced to other, less common kind of queries. Once again a more complete description of the Graql syntax can be found in the [docs](../index.html).

@@ -134,4 +134,4 @@ And so on and so forth. Notice that in the first example, you do not simply `und
 
 
 ## What next?
-First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about Grakn schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
+First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about Grakn schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the Graql basics.

@@ -29,7 +29,7 @@ Or you can follow the instruction on [this page](https://dev.grakn.ai/docs/get-s
 
 From the directory of GRAKN, run the command `./grakn server start` to start GRAKN. As soon as you see the Grakn logo, you will be able to connect to the GRAKN.
 
-There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the GRAQL shell.
+There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the Graql shell.
 
 ## Loading data
 
@@ -45,7 +45,7 @@ To access the graph visualiser, with Grakn running in the virtual machine, simpl
 
 This is the Graph visualiser. In this mode, you can query your Grakn knowledge base and the results will be presented as a graph. To try it do the following:
 In the top right corner click on the `grakn` tab (this is the Keyspace selector); a drop-down menu will appear. Click on `academy` to select the Keyspace where our knowledge base has been loaded
-In the box on the top of the page (the GRAQL editor) write `match $x isa company; get;` and return. The result of the query will be visualised in the main area of the page.
+In the box on the top of the page (the Graql editor) write `match $x isa company; get;` and return. The result of the query will be visualised in the main area of the page.
 
 #### GOOD TO KNOW: Keyspaces
 In the Grakn terminology, a keyspace is an isolated storage layer where you can store a knowledge base. This way you can have several knowledge bases in the same running instance of Grakn without them interacting and steping on each others’ toes.
@@ -57,7 +57,7 @@ When the results to the query are too many, though, too much information is on y
 ![Visualiser screenshot](/images/academy/1-welcome/Dashboard-settings.png)
 
 #### GOOD TO KNOW: Clearing the graph.
-In order to clear both the graph and the GRAQL editor in the dashboard, just SHIFT+Click on the (X) sign next to the editor.
+In order to clear both the graph and the Graql editor in the dashboard, just SHIFT+Click on the (X) sign next to the editor.
 
 
 ## Dashboard Console
@@ -66,23 +66,23 @@ When you have too many results or in general for some type of queries that do no
 ![Visualiser screenshot](/images/academy/1-welcome/Dashboard-Console.png)
 
 
-## GRAQL Console
+## Graql Console
 
-In order to launch the GRAQL shell, from the command line, in the folder of Grakn core, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
+In order to launch the Graql shell, from the command line, in the folder of Grakn core, run `./graql console -k academy`. This will launch the Graql shell in the keyspace "academy", that contains the data we are using during this course.
 
 Once again, type `match $x isa company; get;` and hit return to launch the query. As you can see the results looks very similar those in the dashboard console.
 
-To quit the GRAQL shell, just type `exit` to return to the command line.
+To quit the Graql shell, just type `exit` to return to the command line.
 
 
 ## Other entry points
 
-The graph visualiser, the console and the GRAQL shell are not the only ways to interact with GRAKN. There are lower level ways to control it programmatically, like the REST endpoints and the Java API, but those are out of the scope of this article. They are treated more in depth in the [documentation](https://dev.grakn.ai) that I highly encourage you to consult.
+The graph visualiser, the console and the Graql shell are not the only ways to interact with GRAKN. There are lower level ways to control it programmatically, like the REST endpoints and the Java API, but those are out of the scope of this article. They are treated more in depth in the [documentation](https://dev.grakn.ai) that I highly encourage you to consult.
 
 
 ### What you have learned?
 
-If you have made it this far, you should have a working distribution of Grakn running in a virtual machine, and you should know how to access the main entry points to the system: you should know how to access and query Grakn from the Graph visualiser, the Dashboard console, and the GRAQL shell.
+If you have made it this far, you should have a working distribution of Grakn running in a virtual machine, and you should know how to access the main entry points to the system: you should know how to access and query Grakn from the Graph visualiser, the Dashboard console, and the Graql shell.
 
 You are now ready to get your hands dirty and start working with GRAKN.
 

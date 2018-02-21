@@ -2,7 +2,7 @@
 title: Migrating structured data - XML and JSON files
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will deepen your knowledge of GRAQL templating and learn about loading non-tabular data files, like XML and JSON files.
+summary: In this lesson you will deepen your knowledge of Graql templating and learn about loading non-tabular data files, like XML and JSON files.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/xml-migration.html
@@ -62,12 +62,12 @@ for (<NESTED> do {
 ...
 ```
 
-The template bit above (WARNING: that is not a complete and valid template) will loop each element `<NESTED>`, then fetch the content of the tag `<LEVEL3>` within and put it into the GRAQL statement within curly braces.
+The template bit above (WARNING: that is not a complete and valid template) will loop each element `<NESTED>`, then fetch the content of the tag `<LEVEL3>` within and put it into the Graql statement within curly braces.
 
 It might sound complicated, but it honestly just requires a bit of practice and familiarity with the XML format.
 
 ## Loading XML files
-Loading a GRAQL template against an XML file is a very similar process to the one you learned in the last lesson, but it requires a couple of extra arguments:
+Loading a Graql template against an XML file is a very similar process to the one you learned in the last lesson, but it requires a couple of extra arguments:
 
 While dealing with XML files you often find that the actually interesting stuff only starts after two or three levels of nesting. In the fake example above, for instance, we are only interested in the content of "LEVEL1" elements.
 

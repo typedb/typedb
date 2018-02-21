@@ -59,7 +59,7 @@ Click on an empty point of the background of the graph visualiser to make sure t
 
   ![Selecting multiple nodes](/images/academy/6-analytics/multi-selection.png)
 
-After this, you can right click one of the nodes and you will be able to select "Shortest path" among the options. If you click on it, the `compute path` query will be shown in the GRAQL editor ready for you to be launched or modified.
+After this, you can right click one of the nodes and you will be able to select "Shortest path" among the options. If you click on it, the `compute path` query will be shown in the Graql editor ready for you to be launched or modified.
 
   ![Shortest path GUI](/images/academy/6-analytics/path-gui.png)
 

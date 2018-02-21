@@ -2,7 +2,7 @@
 title: Loading data - Building knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn how to load schema and data GRAQL files into your Grakn distribution.
+summary: In this lesson you will learn how to load schema and data Graql files into your Grakn distribution.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/loading-files.html
@@ -15,7 +15,7 @@ Following the lessons of the Academy you should be by now at a point where you h
 
 The problem at this point is: how can you load the schema you have created? And how to add data to you knowledge base when you have loaded the schema?
 
-Of course, you could use the GRAQL shell, one `define` or `insert` query at a time ([review the topic](./insert-delete-queries.html) if you need a refresher), but that would not be efficient. We need a way of migrating data files into the knowledge base.
+Of course, you could use the Graql shell, one `define` or `insert` query at a time ([review the topic](./insert-delete-queries.html) if you need a refresher), but that would not be efficient. We need a way of migrating data files into the knowledge base.
 And this is what we will be talking about in this module.
 
 ## Loading files
@@ -70,4 +70,4 @@ You have learned how to load Graql files, both with the simple loader and as a b
 Isn’t it exciting?
 
 ## What next?
-The knowledge base is far from complete yet. In the [next lesson](./csv-migration) you will start learning about the GRAQL [templating language](https://en.wikipedia.org/wiki/Template_processor) and how to load structured data files into GRAKN. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.
+The knowledge base is far from complete yet. In the [next lesson](./csv-migration) you will start learning about the Graql [templating language](https://en.wikipedia.org/wiki/Template_processor) and how to load structured data files into GRAKN. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.

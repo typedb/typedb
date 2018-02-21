@@ -67,8 +67,8 @@ Apart from the basic statistics which can be performed with aggregate queries as
 
 
 ### What have you learned?
-You now know all the query types that GRAQL supports. You are ready to step up your Grakn level.
+You now know all the query types that Graql supports. You are ready to step up your Grakn level.
 
 
 ## What next?
-First of all, try and do the [GRAQL review](./graql-review.html) before proceeding to [module 3](./schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](../index.html).
+First of all, try and do the [Graql review](./graql-review.html) before proceeding to [module 3](./schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](../index.html).

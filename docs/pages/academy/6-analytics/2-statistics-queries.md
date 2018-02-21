@@ -13,7 +13,7 @@ KB: academy
 
 In the last lesson you have learned about the differences between OLTP and OLAP queries and you have been introduced to the Grakn Analytics component. In this lesson you will get deeper into the details of the Analytics component, starting with the statistics queries.
 
-All the analytics query in GRAQL begin with the keyword `compute` and, for this reason, are called "compute queries" as well. Statistics compute queries have all the following structure:
+All the analytics query in Graql begin with the keyword `compute` and, for this reason, are called "compute queries" as well. Statistics compute queries have all the following structure:
 
 
 ```graql-skip-test

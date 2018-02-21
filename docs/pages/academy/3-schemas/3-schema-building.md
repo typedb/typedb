@@ -29,7 +29,7 @@ Since every concept you add to the schema must be the direct subconcept of somet
 
   ![The metaschema](/images/academy/3-schema/meta-schema.png)
 
-## GRAQL entities and relationships
+## Graql entities and relationships
 Enough with the theory, let’s create our schema! In our last lesson, we created the following model sketch:
 
 ```
@@ -59,7 +59,7 @@ define
 "cat" sub animal;
 ```
 
-And save it as `schema.gql` or something similar (the `.gql` file extension is completely optional, but it is the default extension for GRAQL files).
+And save it as `schema.gql` or something similar (the `.gql` file extension is completely optional, but it is the default extension for Graql files).
 
 Notice that in the example above we are defining two types (`animal` and `cat`) but we have used the keyword `define` only once. It is in fact possible, and often useful, to actually define the whole schema in one single file, with one single query; this way Grakn will take care of adding concepts to your knowledge base in the correct order (for example it will add "animal" before "cat" as the latter is a subconcept of the former).
 The only other thing you need to know is that when you add a concept and name it in some way, or more precisely you assign a **label** to it, like "animal" or "cat", you are allowed to use spaces, but it is in general not a good idea.

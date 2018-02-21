@@ -1,8 +1,8 @@
 ---
-title: GRAQL - the language of knowledge
+title: Graql - the language of knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn about the dataset you will be dealing with in the Academy and will get a first taste of the GRAQL language
+summary: In this lesson you will learn about the dataset you will be dealing with in the Academy and will get a first taste of the Graql language
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graql-intro.html
@@ -52,18 +52,18 @@ Start Grakn (if it’s not already running), then open the dashboard. Set the de
 
 If you click and hold one of the nodes that appear you will see a box appear on your screen. You can there select the colours and displayed information for that type of nodes.
 
-  ![GRAQL query result](/images/academy/2-graql/Big-Query.png)
+  ![Graql query result](/images/academy/2-graql/Big-Query.png)
 
 Clear the graph with Shift+click on the (x) as you learned in last lesson and you are able to go on.
 
 
-## The structure of a GRAQL query
+## The structure of a Graql query
 
-Let’s explore how a GRAQL query looks like in general.
+Let’s explore how a Graql query looks like in general.
 
-With some exception, GRAQL queries are made of three parts:
+With some exception, Graql queries are made of three parts:
 
-  1. A _match portion_, which reads the parts of the knowledge base you are interested into. It is indicated by the _keyword_ match followed by a list of _patterns_ separated by semicolons (highlighted in the picture below), that actually specify what part of the knowledge base to isolate. Notice that differently from what normally happens with query languages, **the order of patterns in a GRAQL query does not matter**: the system will take care of putting it in the correct order and execute the query in the most efficient way it can.
+  1. A _match portion_, which reads the parts of the knowledge base you are interested into. It is indicated by the _keyword_ match followed by a list of _patterns_ separated by semicolons (highlighted in the picture below), that actually specify what part of the knowledge base to isolate. Notice that differently from what normally happens with query languages, **the order of patterns in a Graql query does not matter**: the system will take care of putting it in the correct order and execute the query in the most efficient way it can.
 
   1. One or more optional _modifiers._ This specify things about the result, like the order in which they should be displayed, the number of results you want  etc.
 
@@ -77,9 +77,9 @@ This is how this structure looks like in our example query:
 
 ### What have you learned?
 
-By now, you should be familiar the background of the demo dataset we will be working with and the question we will be trying to answer. You should have had a first feel at how a GRAQL query looks like, and you should know how a GRAQL query is structured.
+By now, you should be familiar the background of the demo dataset we will be working with and the question we will be trying to answer. You should have had a first feel at how a Graql query looks like, and you should know how a Graql query is structured.
 
 
 ## What next?
 
-In the [next lesson](./get-queries.html) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible GRAQL query and you want to go faster, you can have a look at the GRAQL syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
+In the [next lesson](./get-queries.html) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible Graql query and you want to go faster, you can have a look at the Graql syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
