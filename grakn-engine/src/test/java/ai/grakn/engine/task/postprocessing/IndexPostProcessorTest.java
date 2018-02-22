@@ -21,6 +21,7 @@ package ai.grakn.engine.task.postprocessing;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import org.junit.BeforeClass;

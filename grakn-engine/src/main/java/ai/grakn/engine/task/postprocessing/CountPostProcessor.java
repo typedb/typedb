@@ -49,13 +49,13 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class CountPostProcessor {
     private final static Logger LOG = LoggerFactory.getLogger(CountPostProcessor.class);
-    private final RedisCountStorage redis;
+    private final CountStorage redis;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
     private final long shardingThreshold;
 
-    private CountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
+    private CountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, CountStorage countStorage) {
         this.redis = countStorage;
         this.shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         this.metricRegistry = metricRegistry;
@@ -63,7 +63,7 @@ public class CountPostProcessor {
         this.lockProvider = lockProvider;
     }
 
-    public static CountPostProcessor create(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
+    public static CountPostProcessor create(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, CountStorage countStorage) {
         return new CountPostProcessor(engineConfig, factory, lockProvider, metricRegistry, countStorage);
     }
 
@@ -120,13 +120,13 @@ public class CountPostProcessor {
      *
      * @param keyspace The keyspace of the graph which the type comes from
      * @param conceptId The id of the concept with counts to update
-     * @param incrementBy The number of instances which the type has gained/lost
+     * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean incrementInstanceCountAndCheckIfShardingIsNeeded(RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long incrementBy, long shardingThreshold){
-        long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
+    private static boolean incrementInstanceCountAndCheckIfShardingIsNeeded(CountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
+        long numShards = redis.getShardCount(keyspace, conceptId);
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace, conceptId), incrementBy);
+        long numInstances = redis.incrementInstanceCount(keyspace, conceptId, value);
         return numInstances > shardingThreshold * numShards;
     }
 
@@ -140,7 +140,7 @@ public class CountPostProcessor {
      * @param keyspace The database containing the {@link ai.grakn.concept.Type} to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
+    private void shardConcept(CountStorage redis, EngineGraknTxFactory factory,
                               Keyspace keyspace, ConceptId conceptId, long shardingThreshold){
         Lock engineLock = lockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
@@ -155,7 +155,7 @@ public class CountPostProcessor {
                     graph.commitSubmitNoLogs();
                 }
                 //Update number of shards
-                redis.incrementCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
+                redis.incrementShardCount(keyspace, conceptId, 1);
             }
         } finally {
             engineLock.unlock();

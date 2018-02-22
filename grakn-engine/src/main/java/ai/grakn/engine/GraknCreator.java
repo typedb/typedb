@@ -27,11 +27,13 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
+import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
+import ai.grakn.engine.task.postprocessing.IndexStorage;
 import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.RedisIndexStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import redis.clients.jedis.Jedis;
@@ -106,11 +108,12 @@ public class GraknCreator {
 
     public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime, Collection<HttpController> collaborators) throws IOException {
         if (graknEngineServer == null) {
-            Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
-            LockProvider lockProvider = instantiateLock(jedisPool);
+            LockProvider lockProvider = instantiateRedisLock(redisWrapper.getJedisPool());
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
-            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, RedisIndexStorage.create(jedisPool, metricRegistry));
-            CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
+            IndexStorage indexStorage =  newRedisIndexStorage(redisWrapper.getJedisPool(), metricRegistry);
+            CountStorage countStorage = newRedisCountStorage(redisWrapper.getJedisPool(), metricRegistry);
+            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
+            CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
             int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
             GrpcServer grpcServer = GrpcServer.create(grpcPort, engineGraknTxFactory);
@@ -127,11 +130,19 @@ public class GraknCreator {
         return instantiateGraknEngineServer(runtime, Collections.emptyList());
     }
 
-        private BackgroundTaskRunner configureBackgroundTaskRunner(EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
+    private BackgroundTaskRunner configureBackgroundTaskRunner(EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
         PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
         taskRunner.register(postProcessingTask);
         return taskRunner;
+    }
+
+    public IndexStorage newRedisIndexStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
+        return RedisIndexStorage.create(jedisPool, metricRegistry);
+    }
+
+    public CountStorage newRedisCountStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
+        return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
     /**
@@ -150,13 +161,12 @@ public class GraknCreator {
         return RedisWrapper.create(config);
     }
 
-    protected synchronized LockProvider instantiateLock(Pool<Jedis> jedisPool) {
+    protected synchronized LockProvider instantiateRedisLock(Pool<Jedis> jedisPool) {
         if (lockProvider == null) {
             lockProvider = lockProvider(jedisPool);
         }
         return lockProvider;
     }
-
     protected static JedisLockProvider lockProvider(Pool<Jedis> jedisPool) {
         return new JedisLockProvider(jedisPool);
     }
