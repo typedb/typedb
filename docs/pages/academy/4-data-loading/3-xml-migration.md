@@ -45,7 +45,7 @@ Content
 </ROOT>
 ```
 
-To navigate the tree structure in GRAQL, we use the standard dot notation. This means that, for example, if we want to refer to the content of one of the elements "Level 2" in the file above, we would use `<LEVEL1.LEVEL2>` in our template file (exactly like we used the column names in the CSV templates.
+To navigate the tree structure in Graql, we use the standard dot notation. This means that, for example, if we want to refer to the content of one of the elements "Level 2" in the file above, we would use `<LEVEL1.LEVEL2>` in our template file (exactly like we used the column names in the CSV templates.
 
 ## Loops
 You probably have noticed from the example above that an XML element can contain several elements of the same type. What can we do if we want to access the content of all of them?
@@ -110,7 +110,7 @@ There are no specific JSON examples in the Academy, as their migration works jus
   * There is no _base element_ for the JSON migration
 
 ### What have you learned?
-Whew! That was a lot to take in! You should by know have learned the basic of data migration into GRAKN. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
+Whew! That was a lot to take in! You should by know have learned the basic of data migration into Grakn. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
 
 ## What next
 You are almost there! After the module [review](./migration-review.html) you will have put all the data into your knowledge base and you will be able to proceed to one of the most exciting topics of the academy: logic inference.

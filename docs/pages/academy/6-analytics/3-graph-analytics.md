@@ -2,7 +2,7 @@
 title: Graph analytics - The GRAph of KNowledge
 keywords: getting started
 last_updated: October 2017
-summary: In this lesson you will learn about the graph analytics capabilities of GRAKN, together with the appropriate syntax
+summary: In this lesson you will learn about the graph analytics capabilities of Grakn, together with the appropriate syntax
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graph-analytics.html
@@ -79,7 +79,7 @@ In a graph, the _degree_ of a node is the number of edges connected to that node
 
 Although it might seems a bit confusing at first, an example will make it clearer. As you should know by now, there is a relationship type in the academy dataset called `owns`, that links companies to the oil platforms they know. If you know the degree of a company with respect to the `owns` relationship, you effectively now how many oil platforms that company owns.
 
-This is how the query looks like in GRAQL:
+This is how the query looks like in Graql:
 
 ```graql-skip-test
 compute degrees of company in company, owns;
@@ -127,8 +127,8 @@ If you want to know the actual clusters, just append `members;` to the query abo
 
 ### What have you learned?
 
-In this lesson, you have learned about the graph analytics capabilities of GRAKN; you have learned what how to compute shortest paths, cluster and degrees in a Grakn knowledge base and what these terms mean.
+In this lesson, you have learned about the graph analytics capabilities of Grakn; you have learned what how to compute shortest paths, cluster and degrees in a Grakn knowledge base and what these terms mean.
 
 ## What next
 
-You are almost done! You have learned about all the basics of GRAKN! The last thing left is doing the last [module review](./analytics-review.html)!
+You are almost done! You have learned about all the basics of Grakn! The last thing left is doing the last [module review](./analytics-review.html)!

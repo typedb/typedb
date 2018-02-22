@@ -26,4 +26,4 @@ After that use the explanation facility on one of the results on the dashboard.
   ![Located-in explanation](/images/academy/5-reasoner/location-explanation.png)
 
 ## What next?
-You have reached an important milestone in your Grakn training. You could stop at this point and you would already be able to take advantage of the Grakn software stack. But there is more to Grakn than "just" the database. Now that you are equipped to fully understand them, feel free to examine the numerous examples in the [documentation](../index.html) and [blog](https://blog.grakn.ai) to get more ideas on how to use GRAKN.
+You have reached an important milestone in your Grakn training. You could stop at this point and you would already be able to take advantage of the Grakn software stack. But there is more to Grakn than "just" the database. Now that you are equipped to fully understand them, feel free to examine the numerous examples in the [documentation](../index.html) and [blog](https://blog.grakn.ai) to get more ideas on how to use Grakn.

@@ -33,7 +33,7 @@ Or, more explicitly:
 
 > What are the bonds issued by companies that own oil platforms located in Italy less than 18 kilometers from the coast? Those bonds should be connected to articles related to the Italian referendum.
 
-Just to whet your appetite, here is how that question looks like in GRAQL. Don’t worry about getting it right now, there is no rush. You will be able to very soon.
+Just to whet your appetite, here is how that question looks like in Graql. Don’t worry about getting it right now, there is no rush. You will be able to very soon.
 
 ```graql
 match

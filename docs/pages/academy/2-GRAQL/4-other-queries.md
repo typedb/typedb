@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-You have learned to query and manipulate data with GRAQL, and that will probably constitute the bulk of the language you need for a while, but before we go on to other topics, you might want to know that there are also other kind of queries than get, insert and delete queries.
+You have learned to query and manipulate data with Graql, and that will probably constitute the bulk of the language you need for a while, but before we go on to other topics, you might want to know that there are also other kind of queries than get, insert and delete queries.
 
 In this lesson we will very briefly review them, so that you have a more complete view of the language.
 
@@ -51,7 +51,7 @@ match $x isa company has name "AwesomePuppies";
 aggregate ask;
 ```
 
-To find whether something is in the knowledge base, you just need to use the `ask` aggregate. If the `get` query returns no result, then the corresponding `ask` aggregate will return `False`. Otherwise it will return `True`. Nothing fancy, but very useful. Especially if you are building an app on top of GRAKN.
+To find whether something is in the knowledge base, you just need to use the `ask` aggregate. If the `get` query returns no result, then the corresponding `ask` aggregate will return `False`. Otherwise it will return `True`. Nothing fancy, but very useful. Especially if you are building an app on top of Grakn.
 
 
 ## Compute queries
