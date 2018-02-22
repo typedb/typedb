@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknCreator;
+import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
@@ -182,8 +182,8 @@ public class EngineContext extends CompositeTestRule {
         MetricRegistry metricRegistry = new MetricRegistry();
         RedisWrapper redis = RedisWrapper.create(config);
 
-        GraknCreator creator = GraknCreator.create(id, spark, status, metricRegistry, config, redis);
-        server = creator.instantiateGraknEngineServer(Runtime.getRuntime());
+        GraknEngineServerFactory creator = GraknEngineServerFactory.create(id, spark, status, metricRegistry, config, redis);
+        server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime());
         server.start();
 
         LOG.info("engine started on " + uri());

@@ -75,7 +75,7 @@ public class GraknEngineServerTest {
     private final GraknEngineStatus status = new GraknEngineStatus();
     private final Service spark = Service.ignite();
     private final MetricRegistry metrics = new MetricRegistry();
-    private final GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, redisWrapper);
+    private final GraknEngineServerFactory creator = GraknEngineServerFactory.create(id, spark, status, metrics, conf, redisWrapper);
 
     private final Jedis jedis = mock(Jedis.class);
 
@@ -100,9 +100,9 @@ public class GraknEngineServerTest {
         redisServer.start();
 
         try {
-            GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, RedisWrapper.create(conf));
+            GraknEngineServerFactory creator = GraknEngineServerFactory.create(id, spark, status, metrics, conf, RedisWrapper.create(conf));
 
-            try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+            try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
                 server.start();
                 assertNotNull(server.factory().systemKeyspace());
 
@@ -119,7 +119,7 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered() throws IOException {
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+        try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
             assertThat(server.backgroundTaskRunner().tasks(), hasItem(isA(PostProcessingTask.class)));
         }
     }
@@ -128,7 +128,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+        try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -139,7 +139,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+        try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -152,7 +152,7 @@ public class GraknEngineServerTest {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+        try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -164,7 +164,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+        try (GraknEngineServer server = creator.getOrCreateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 

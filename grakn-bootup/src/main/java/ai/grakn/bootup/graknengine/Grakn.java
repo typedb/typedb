@@ -21,7 +21,7 @@ package ai.grakn.bootup.graknengine;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.graknengine.pid.GraknPidManager;
 import ai.grakn.bootup.graknengine.pid.GraknPidManagerFactory;
-import ai.grakn.engine.GraknCreator;
+import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class Grakn {
             graknPidManager.trackGraknPid();
 
             // Start Engine
-            GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
+            GraknEngineServer graknEngineServer = GraknEngineServerFactory.getOrCreateGraknEngineServer();
             graknEngineServer.start();
         } catch (IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
