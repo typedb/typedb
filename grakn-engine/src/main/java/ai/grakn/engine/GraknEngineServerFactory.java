@@ -58,7 +58,8 @@ public class GraknEngineServerFactory {
         return graknEngineServer;
     }
 
-    public static GraknEngineServer createGraknEngineServer() throws IOException {
+    @VisibleForTesting
+    private static GraknEngineServer createGraknEngineServer() throws IOException {
         GraknConfig config = GraknConfig.create();
         RedisWrapper redisWrapper = RedisWrapper.create(config);
         MetricRegistry metricRegistry = new MetricRegistry();
