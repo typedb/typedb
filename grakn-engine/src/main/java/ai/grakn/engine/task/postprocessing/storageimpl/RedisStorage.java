@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.task.postprocessing.storageimpl;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -42,7 +42,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  *
  * @author fppt
  */
-class RedisStorage {
+public class RedisStorage {
     private final static Logger LOG = LoggerFactory.getLogger(RedisStorage.class);
     private final Timer contactRedisTimer;
     private Pool<Jedis> jedisPool;

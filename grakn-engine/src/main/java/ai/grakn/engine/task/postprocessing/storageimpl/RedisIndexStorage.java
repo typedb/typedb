@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.task.postprocessing.storageimpl;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
