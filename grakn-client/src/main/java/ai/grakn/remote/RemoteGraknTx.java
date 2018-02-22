@@ -44,10 +44,8 @@ import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
@@ -93,12 +91,12 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        return putSchemaConcept(label, ATTRIBUTE, var("x").datatype(dataType));
+        return putSchemaConcept(label, ATTRIBUTE, var -> var.datatype(dataType));
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, RULE, var("x").when(when).then(then));
+        return putSchemaConcept(label, RULE, var -> var.when(when).then(then));
     }
 
     @Override
@@ -111,11 +109,14 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
         return putSchemaConcept(label, ROLE);
     }
 
-    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta, VarPattern ... optionalVars){
-        List<VarPattern> vars = new ArrayList<>();
-        vars.add(var("x").label(label).sub(meta.getLabel().getValue()));
-        vars.addAll(Arrays.asList(optionalVars));
-        queryRunner().run(Graql.withoutGraph().define(vars));
+    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta){
+        return putSchemaConcept(label, meta, null);
+    }
+
+    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta, @Nullable Function<VarPattern, VarPattern> extender){
+        VarPattern var = var().label(label).sub(meta.getLabel().getValue());
+        if(extender != null) var = extender.apply(var);
+        queryRunner().run(Graql.define(var));
         return null;
     }
 
