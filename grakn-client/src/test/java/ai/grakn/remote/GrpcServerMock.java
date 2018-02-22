@@ -39,6 +39,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
+ * Semi-mocked gRPC server that can handle transactions.
+ *
+ * <p>
+ *     The gRPC server itself is "real" and can be connected to using the {@link #channel()}. However, the
+ *     {@link #service()} and {@link #requests()} are both mock objects and should be used with
+ *     {@link org.mockito.Mockito#verify(Object)}.
+ * </p>
+ * <p>
+ *     By default, the server will return a {@link GrpcUtil#doneResponse()} to every message. And will respond
+ *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
+ * </p>
+ * <p>
+ *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse)}.
+ * </p>
+ *
  * @author Felix Chapman
  */
 public final class GrpcServerMock extends CompositeTestRule {
@@ -86,6 +101,7 @@ public final class GrpcServerMock extends CompositeTestRule {
             return serverRequests;
         });
 
+        // Return a default "done" response to every message from the client
         doAnswer(args -> {
             if (serverResponses == null) {
                 throw new IllegalArgumentException("Set-up of rule not called");
@@ -94,6 +110,7 @@ public final class GrpcServerMock extends CompositeTestRule {
             return null;
         }).when(serverRequests).onNext(any());
 
+        // Return a default "complete" response to every "complete" message from the client
         doAnswer(args -> {
             if (serverResponses == null) {
                 throw new IllegalArgumentException("Set-up of rule not called");
