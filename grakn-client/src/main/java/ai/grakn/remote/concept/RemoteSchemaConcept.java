@@ -23,7 +23,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -48,7 +47,6 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         throw new UnsupportedOperationException(); // TODO: implement
     }
 
-    @Nullable
     @Override
     public final Self sup() {
         throw new UnsupportedOperationException(); // TODO: implement

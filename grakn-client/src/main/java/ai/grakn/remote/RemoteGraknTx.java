@@ -73,7 +73,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return new RemoteGraknTx(session, txType, client);
     }
 
-    public final GrpcClient client() {
+    public GrpcClient client() {
         return client;
     }
 
