@@ -24,7 +24,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;
 import io.grpc.ManagedChannel;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,25 +40,20 @@ public class RemoteGraknSessionTest {
     @Rule
     public final GrpcServerMock server = new GrpcServerMock();
 
-    private SimpleURI uri;
+    private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private final Keyspace KEYSPACE = Keyspace.of("lalala");
-
-    @Before
-    public void setUp() {
-        uri = server.uri();
-    }
 
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSession() {
-        try (GraknSession session = RemoteGrakn.session(uri, KEYSPACE)) {
+        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
             assertTrue(RemoteGraknSession.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (GraknSession session = RemoteGrakn.session(uri, KEYSPACE)) {
-            assertEquals(uri.toString(), session.uri());
+        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
+            assertEquals(URI.toString(), session.uri());
             assertEquals(KEYSPACE, session.keyspace());
         }
     }
@@ -68,7 +62,7 @@ public class RemoteGraknSessionTest {
     public void whenClosingASession_ShutdownTheChannel() {
         ManagedChannel channel = mock(ManagedChannel.class);
 
-        GraknSession ignored = RemoteGraknSession.create(KEYSPACE, uri, channel);
+        GraknSession ignored = RemoteGraknSession.create(KEYSPACE, URI, channel);
         ignored.close();
 
         verify(channel).shutdown();
@@ -76,7 +70,7 @@ public class RemoteGraknSessionTest {
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, uri, server.channel())) {
+        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, URI, server.channel())) {
             try (GraknTx tx = session.open(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(KEYSPACE, tx.keyspace());

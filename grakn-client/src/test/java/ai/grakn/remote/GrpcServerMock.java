@@ -23,7 +23,6 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
-import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
@@ -62,10 +61,6 @@ public final class GrpcServerMock extends CompositeTestRule {
 
     StreamObserver<TxRequest> requests() {
         return serverRequests;
-    }
-
-    public SimpleURI uri() {
-        return new SimpleURI("localhost", serverRule.getServer().getPort());
     }
 
     void setResponse(TxRequest request, TxResponse response) {
