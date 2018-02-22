@@ -88,7 +88,7 @@ article-bond  sub rule
 
 This new rule checks for the articles about the Italian referendum linked to a platform and then links the same articles to bonds issued by companies owning those platforms.
 
-But we already know that in our data there are no links between articles and anything else, let alone oil platforms, so how can this rule work? The answer is that Reasoner knows that the first rule can link the articles to the oil platform and so that the results of the first rule can in fact change the results of the second one. It takes care of considering the rule in the correct order no matter how many you write and chain them for you. It’s just a bit more of GRAKN magic…
+But we already know that in our data there are no links between articles and anything else, let alone oil platforms, so how can this rule work? The answer is that Reasoner knows that the first rule can link the articles to the oil platform and so that the results of the first rule can in fact change the results of the second one. It takes care of considering the rule in the correct order no matter how many you write and chain them for you. It’s just a bit more of Grakn magic…
 
 
 ## But… why?
@@ -120,7 +120,7 @@ So this new rule is much more useful: it is telling us that everything that affe
 ## Can you explain that?
 Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](./loading-files.html).
 
-Making sure that the GRAKN distribution in the VM is running, open the dashboard and make sure that the inference is turned on as shown below
+Making sure that the Grakn distribution in the VM is running, open the dashboard and make sure that the inference is turned on as shown below
 
   ![Inference settings](/images/academy/5-reasoner/inference-settings.png)
 
@@ -166,7 +166,7 @@ If you check carefully the explanation that has been added to your visualiser, y
 
 
 ### What have you learned?
-In this lesson you have learned how rules chaining works in reasoner (not much to do on your side: it just works) and how to use the explanation facility. There are still many things to discover, but you are ready to build powerful knowledge bases with GRAKN and to take full advantage of its capabilities! Well done!
+In this lesson you have learned how rules chaining works in reasoner (not much to do on your side: it just works) and how to use the explanation facility. There are still many things to discover, but you are ready to build powerful knowledge bases with Grakn and to take full advantage of its capabilities! Well done!
 
 ## What next
 One last thing to do before we proceed to the next module: it is time to [review your knowledge](./reasoner-review.html) about logic reasoning.

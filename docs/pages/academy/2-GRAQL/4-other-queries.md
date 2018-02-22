@@ -55,7 +55,7 @@ To find whether something is in the knowledge base, you just need to use the `as
 
 
 ## Compute queries
-The aggregates effectively do their computations on the results of a match query. This means that before doing your calculations, GRAKN first has to execute the query and return the results. If you want to do your statistics on the whole database this soon gets not possible. You need something more powerful, namely GRAKN analytics.
+The aggregates effectively do their computations on the results of a match query. This means that before doing your calculations, Grakn first has to execute the query and return the results. If you want to do your statistics on the whole database this soon gets not possible. You need something more powerful, namely Grakn analytics.
 
 To use Analytics, you run `compute` queries, that have a slightly different syntax: a `compute` query has the form `compute SOMETHING of ATTRIBUTE in SUBTYPES;` where `SOMETHING` indicates what you want to compute, `ATTRIBUTE` is the numeric variable on which you want to perform and `SUBTYPES` is just a list of entities and relationships that have that attribute. For example
 
@@ -67,8 +67,8 @@ Apart from the basic statistics which can be performed with aggregate queries as
 
 
 ### What have you learned?
-You now know all the query types that GRAQL supports. You are ready to step up your GRAKN level.
+You now know all the query types that Graql supports. You are ready to step up your Grakn level.
 
 
 ## What next?
-First of all, try and do the [GRAQL review](./graql-review.html) before proceeding to [module 3](./schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](../index.html).
+First of all, try and do the [Graql review](./graql-review.html) before proceeding to [module 3](./schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](../index.html).

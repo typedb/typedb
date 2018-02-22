@@ -23,10 +23,10 @@ entries:
       - title: 1.2 Academy Setup
         output: web
         url: /academy/setup.html
-  - title: 2. GRAQL language
+  - title: 2. Graql language
     output: web
     folderitems:
-      - title: 2.1 GRAQL introduction
+      - title: 2.1 Graql introduction
         output: web
         url: /academy/graql-intro.html
       - title: 2.2 Get Queries
@@ -42,7 +42,7 @@ entries:
         output: web
         url: /academy/graql-review.html
 
-  - title: 3. GRAKN schemas
+  - title: 3. Grakn schemas
     output: web
     folderitems:
       - title: 3.1 Schema elements
