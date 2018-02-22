@@ -266,7 +266,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                predicate = new IdPredicate(typeVariable, label, parent);
+                predicate = IdPredicate.create(typeVariable, label, parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

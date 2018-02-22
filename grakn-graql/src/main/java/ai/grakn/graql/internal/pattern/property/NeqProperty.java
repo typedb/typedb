@@ -76,6 +76,6 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new NeqPredicate(var.var(), this, parent);
+        return NeqPredicate.create(var.var(), this, parent);
     }
 }

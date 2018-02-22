@@ -65,7 +65,7 @@ public class IsaAtom extends TypeAtom {
     public IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         super(pattern, predicateVar, p, parent);}
     public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
-        this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), parent), parent);
+        this(var, predicateVar, IdPredicate.create(predicateVar, type.getLabel(), parent), parent);
     }
     private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
         this(var.isa(predicateVar).admin(), predicateVar, p, parent);
@@ -96,7 +96,7 @@ public class IsaAtom extends TypeAtom {
         ConceptId typeId = type.getId();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
-        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
+        IdPredicate newPredicate = IdPredicate.create(typeVariable.id(typeId).admin(), getParentQuery());
         return new Pair<>(getPattern(), newPredicate);
     }
 

@@ -41,7 +41,6 @@ import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -52,6 +51,7 @@ import ai.grakn.kb.internal.concept.EntityImpl;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -85,11 +85,26 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
  * @author Kasper Piskorski
  *
  */
-public class ResourceAtom extends Binary{
+@AutoValue
+public abstract class ResourceAtom extends Binary{
     private final Var relationVariable;
     private final ImmutableSet<ValuePredicate> multiPredicate;
 
-    public ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_ResourceAtom(pattern, attributeVar, relationVariable, idPred, ImmutableSet.copyOf(ps), parent);
+    }
+
+    private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
+
+        //toDO
+        //return create;
+    }
+
+    public ImmutableSet<ValuePredicate> getMultiPredicate() { return multiPredicate;}
+    public Var getRelationVariable(){ return relationVariable;}
+
+    /*
+    private ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, attributeVar, idPred, par);
         this.relationVariable = relationVariable;
         this.multiPredicate = ImmutableSet.copyOf(ps);
@@ -104,9 +119,10 @@ public class ResourceAtom extends Binary{
                         .iterator()
         ).build();
     }
+    */
 
     @Override
-    public Atomic copy(ReasonerQuery parent){ return new ResourceAtom(this, parent);}
+    public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
@@ -124,7 +140,7 @@ public class ResourceAtom extends Binary{
                         .isa(typeLabel.getValue())
                 .admin(),
                 getPredicateVariable(),
-                new IdPredicate(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
+                IdPredicate.create(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
                 getParentQuery()
         );
     }
@@ -209,9 +225,6 @@ public class ResourceAtom extends Binary{
         IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
         return (thisPredicate == null) == (predicate == null);
     }
-
-    public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
-    public Var getRelationVariable(){ return relationVariable;}
 
     @Override
     protected Pattern createCombinedPattern(){
@@ -387,12 +400,12 @@ public class ResourceAtom extends Binary{
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
-        return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return new ResourceAtom(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

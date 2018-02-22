@@ -178,7 +178,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
-            if (conceptId != null) return new IdPredicate(p.getVarName(), conceptId, p.getParentQuery());
+            if (conceptId != null) return IdPredicate.createIdPredicate(p.getVarName(), conceptId, p.getParentQuery());
             return p;
         }).collect(Collectors.toSet());
         getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);

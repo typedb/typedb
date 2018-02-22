@@ -403,7 +403,7 @@ public class RelationshipAtom extends IsaAtom {
                 .filter(vp -> vp.getTypeLabel().isPresent())
                 .map(vp -> {
                     Label label = vp.getTypeLabel().orElse(null);
-                    return new IdPredicate(vp.var(), tx().getRole(label.getValue()), getParentQuery());
+                    return IdPredicate.create(vp.var(), tx().getRole(label.getValue()), getParentQuery());
                 });
     }
 
@@ -656,7 +656,7 @@ public class RelationshipAtom extends IsaAtom {
                         .filter(vp -> vp.var().isUserDefinedName())
                         .map(vp -> new Pair<>(vp.var(), vp.getTypeLabel().orElse(null)))
                         .filter(p -> Objects.nonNull(p.getValue()))
-                        .map(p -> new IdPredicate(p.getKey(), p.getValue(), getParentQuery()))
+                        .map(p -> IdPredicate.create(p.getKey(), p.getValue(), getParentQuery()))
         );
     }
 

@@ -42,6 +42,23 @@ public interface Atomic {
     Atomic copy(ReasonerQuery parent);
 
     /**
+     * @return variable name of this atomic
+     */
+    @CheckReturnValue
+    Var getVarName();
+
+    /**
+     * @return the corresponding base pattern
+     * */
+    @CheckReturnValue
+    VarPattern getPattern();
+
+    /**
+     * @return the {@link ReasonerQuery} this atomic belongs to
+     */
+    ReasonerQuery getParentQuery();
+
+    /**
      * validate wrt transaction the atomic is defined in
      */
     void checkValid();
@@ -118,22 +135,10 @@ public interface Atomic {
     default Set<String> validateOntologically(){ return new HashSet<>();}
 
     /**
-     * @return the corresponding base pattern
-     * */
-    @CheckReturnValue
-    VarPattern getPattern();
-
-    /**
      * @return the base pattern combined with possible predicate patterns
      */
     @CheckReturnValue
     Pattern getCombinedPattern();
-
-    /**
-     * @return variable name of this atomic
-     */
-    @CheckReturnValue
-    Var getVarName();
 
     /**
      * @return all addressable variable names in this atomic

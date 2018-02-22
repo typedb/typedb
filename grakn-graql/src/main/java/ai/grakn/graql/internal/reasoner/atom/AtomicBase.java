@@ -44,6 +44,7 @@ import java.util.Set;
  */
 public abstract class AtomicBase implements Atomic {
 
+    /*
     private final Var varName;
     private final VarPattern atomPattern;
     private final ReasonerQuery parent;
@@ -69,6 +70,7 @@ public abstract class AtomicBase implements Atomic {
     public VarPattern getPattern(){ return atomPattern;}
 
     public ReasonerQuery getParentQuery(){ return parent;}
+    */
 
     @Override
     public void checkValid(){}
@@ -79,25 +81,27 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public String toString(){ return atomPattern.toString(); }
+    public String toString(){ return getPattern().toString(); }
 
     boolean containsVar(Var name){ return getVarNames().contains(name);}
 
-    public boolean isUserDefined(){ return varName.isUserDefinedName();}
-
+    public boolean isUserDefined(){ return getVarName().isUserDefinedName();}
 
     @Override
     public Set<Var> getVarNames(){
+        Var varName = getVarName();
         return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
-    protected Pattern createCombinedPattern(){ return atomPattern;}
+    protected Pattern createCombinedPattern(){ return getPattern();}
 
+    /*
     @Override
     public Pattern getCombinedPattern(){
         if (combinedPattern == null) combinedPattern = createCombinedPattern();
         return combinedPattern;
     }
+    */
 
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }

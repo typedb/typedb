@@ -206,6 +206,6 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
                 varName.has(type(), attributeVariable, relationVariable).admin() :
                 varName.has(type(), attributeVariable).admin();
-        return new ResourceAtom(resVar, attributeVariable, relationVariable, idPredicate, predicates, parent);
+        return ResourceAtom.create(resVar, attributeVariable, relationVariable, idPredicate, predicates, parent);
     }
 }

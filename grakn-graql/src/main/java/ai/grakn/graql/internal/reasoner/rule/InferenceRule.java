@@ -226,7 +226,7 @@ public class InferenceRule {
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .peek(bodyAtoms::add)
                     .collect(toSet());
-            headAtom = new ResourceAtom(
+            headAtom = ResourceAtom.create(
                     headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),

@@ -23,8 +23,10 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 
+import com.google.auto.value.AutoValue;
 import java.util.Set;
 
 /**
@@ -36,17 +38,35 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class NeqPredicate extends Predicate<Var> {
+@AutoValue
+public abstract class NeqPredicate extends Predicate<Var> {
 
-    public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
+    /*
+    private NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
         super(varName.neq(prop.var().var()).admin(), parent);
     }
-    public NeqPredicate(NeqPredicate a, ReasonerQuery parent){
+    private NeqPredicate(NeqPredicate a, ReasonerQuery parent){
         super(a, parent);
+    }
+    */
+
+    public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
+        return new AutoValue_NeqPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+    }
+    public static NeqPredicate create(Var varName, NeqProperty prop, ReasonerQuery parent) {
+        VarPatternAdmin pattern = varName.neq(prop.var().var()).admin();
+        return create(pattern, parent);
+    }
+    public static NeqPredicate create(NeqPredicate a, ReasonerQuery parent) {
+        return create(a.getPattern(), parent);
+    }
+
+    private static Var extractPredicate(VarPattern pattern) {
+        return pattern.admin().getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
     @Override
-    public Atomic copy(ReasonerQuery parent) { return new NeqPredicate(this, parent);}
+    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
 
     @Override
     public String toString(){ return "[" + getVarName() + "!=" + getReferenceVarName() + "]";}
@@ -54,11 +74,6 @@ public class NeqPredicate extends Predicate<Var> {
     @Override
     public String getPredicateValue() {
         return getPredicate().getValue();
-    }
-
-    @Override
-    protected Var extractPredicate(VarPattern pattern) {
-        return pattern.admin().getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
     @Override

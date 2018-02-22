@@ -17,6 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -38,7 +39,8 @@ import java.util.Set;
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    private final T predicate;
+    public abstract T getPredicate();
+    /*
 
     Predicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
@@ -49,23 +51,7 @@ public abstract class Predicate<T> extends AtomicBase {
         super(pred, parent);
         this.predicate = extractPredicate(pred.getPattern());
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Predicate a2 = (Predicate) obj;
-        return this.getVarName().equals(a2.getVarName())
-                && this.getPredicateValue().equals(a2.getPredicateValue());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+     */
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -97,7 +83,8 @@ public abstract class Predicate<T> extends AtomicBase {
         return alphaEquivalenceHashCode();
     }
 
-    public T getPredicate(){ return predicate;}
+    @Override
+    public Pattern getCombinedPattern() { return createCombinedPattern(); }
+
     public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarPattern pattern);
 }

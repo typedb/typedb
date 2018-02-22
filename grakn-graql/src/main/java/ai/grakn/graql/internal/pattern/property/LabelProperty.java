@@ -100,6 +100,6 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
         if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
-        return new IdPredicate(var.var().asUserDefined(), label(), parent);
+        return IdPredicate.create(var.var().asUserDefined(), label(), parent);
     }
 }
