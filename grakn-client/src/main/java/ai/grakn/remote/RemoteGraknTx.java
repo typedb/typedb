@@ -200,13 +200,13 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void close() {
-        if(!isClosed()) client.close();
+        client.close();
     }
 
     @Override
     public void commit() throws InvalidKBException {
         client.commit();
-        client.close();
+        close();
     }
 
     @Override
