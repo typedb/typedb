@@ -47,7 +47,7 @@ public class RedisStorage {
     private final Timer contactRedisTimer;
     private Pool<Jedis> jedisPool;
 
-    RedisStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
+    public RedisStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
         this.jedisPool = jedisPool;
         this.contactRedisTimer = metricRegistry.timer(name(RedisCountStorage.class, "contact"));
     }
@@ -60,7 +60,7 @@ public class RedisStorage {
      * @param <X> The type of the result returned.
      * @return The result of contacting redis.
      */
-    <X> X contactRedis(Function<Jedis, X> function){
+    public <X> X contactRedis(Function<Jedis, X> function){
         try(Jedis jedis = jedisPool.getResource(); Timer.Context ignored = contactRedisTimer.time()){
             return function.apply(jedis);
         } catch (JedisException e) {

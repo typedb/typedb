@@ -96,7 +96,7 @@ public class RedisIndexStorage implements IndexStorage {
      * The key which refers to  a list of all the indices in a certain {@link Keyspace} which need to be post processed
      */
     @VisibleForTesting
-    static String getIndicesKey(Keyspace keyspace){
+    public static String getIndicesKey(Keyspace keyspace){
         return "IndicesToProcess_" + keyspace.getValue();
     }
 
@@ -104,7 +104,7 @@ public class RedisIndexStorage implements IndexStorage {
      * The key which refers to a set of vertices currently pointing to the same index
      */
     @VisibleForTesting
-    static String getConceptIdsKey(Keyspace keyspace, String index){
+    public static String getConceptIdsKey(Keyspace keyspace, String index){
         return "IdsToPostProcess_" + keyspace.getValue() + "_Id_" + index;
     }
 }

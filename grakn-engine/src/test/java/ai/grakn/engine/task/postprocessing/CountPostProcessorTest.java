@@ -103,8 +103,8 @@ public class CountPostProcessorTest {
         //Check the calls
         newInstanceCounts.forEach((id, value) -> {
             //Redis is updated
-            verify(countStorage, Mockito.times(1)).getCount(RedisCountStorage.getKeyNumShards(keyspace, id));
-            verify(countStorage, Mockito.times(1)).incrementCount(RedisCountStorage.getKeyNumInstances(keyspace, id), value);
+            verify(countStorage, Mockito.times(1)).getShardCount(keyspace, id);
+            verify(countStorage, Mockito.times(1)).incrementInstanceCount(keyspace, id, value);
 
             //No Sharding takes place
             verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
@@ -116,8 +116,8 @@ public class CountPostProcessorTest {
         //Configure mock to return value which breaches threshold
         ConceptId id = ConceptId.of("e");
         newInstanceCounts.put(id, 6L);
-        when(countStorage.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 6L)).thenReturn(6L);
-        when(countStorage.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 0L)).thenReturn(6L);
+        when(countStorage.incrementInstanceCount(keyspace, id, 6L)).thenReturn(6L);
+        when(countStorage.incrementInstanceCount(keyspace, id, 0L)).thenReturn(6L);
 
         //Create fake commit log
         CommitLog commitLog = CommitLog.create(keyspace, newInstanceCounts, Collections.emptyMap());
@@ -127,6 +127,6 @@ public class CountPostProcessorTest {
 
         //Check Sharding Takes Place
         verify(factoryMock, Mockito.times(1)).tx(keyspace, GraknTxType.WRITE);
-        verify(countStorage, Mockito.times(1)).incrementCount(RedisCountStorage.getKeyNumShards(keyspace, id), 1);
+        verify(countStorage, Mockito.times(1)).incrementShardCount(keyspace, id, 1);
     }
 }
