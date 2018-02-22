@@ -93,6 +93,10 @@ public class GrpcServerTest {
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
+    private static final GraknOuterClass.ConceptId V123 =
+            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
+    private static final GraknOuterClass.ConceptId V456 =
+            GraknOuterClass.ConceptId.newBuilder().setValue("V456").build();
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
@@ -282,7 +286,7 @@ public class GrpcServerTest {
             tx.send(execQueryRequest(QUERY));
             TxResponse response1 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+            GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId(V123).build();
             GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
             QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
@@ -290,7 +294,7 @@ public class GrpcServerTest {
             tx.send(nextRequest());
             TxResponse response2 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId("V456").build();
+            GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId(V456).build();
             GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
             QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);

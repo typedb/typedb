@@ -97,7 +97,7 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
 
     private GraknOuterClass.Concept makeConcept(Concept concept) {
         return GraknOuterClass.Concept.newBuilder()
-                .setId(concept.getId().getValue())
+                .setId(GraknOuterClass.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
                 .setBaseType(getBaseType(concept))
                 .build();
     }

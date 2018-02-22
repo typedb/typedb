@@ -74,6 +74,8 @@ public class RemoteGraknTxTest {
     private final RemoteGraknSession session = mock(RemoteGraknSession.class);
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
+    private static final GraknOuterClass.ConceptId V123 =
+            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
 
     @Before
     public void setUp() {
@@ -142,7 +144,7 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQuery_GetAResultBack() {
         String queryString = "match $x isa person; get $x;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
@@ -195,7 +197,7 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
         String queryString = "define label person sub entity;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
@@ -218,7 +220,7 @@ public class RemoteGraknTxTest {
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         String queryString = "match $x sub thing; get $x;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
