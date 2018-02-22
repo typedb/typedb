@@ -36,8 +36,6 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
 import spark.Service;
 
 import java.io.IOException;
@@ -52,40 +50,43 @@ import java.util.Collections;
 public class GraknEngineServerFactory {
     private static GraknEngineServer graknEngineServer;
 
-    public static synchronized GraknEngineServer getOrCreateGraknEngineServer(
-            EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
-            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider, Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
-
-            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-            CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
-            PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-            int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
-            GrpcServer grpcServer = GrpcServer.create(grpcPort, factory);
-            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
-            BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(graknEngineConfig, factory, indexPostProcessor);
-            graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
-            Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
-            runtime.addShutdownHook(thread);
-            return graknEngineServer;
-    }
-
     public static synchronized GraknEngineServer getOrCreateGraknEngineServer() throws IOException {
         if (graknEngineServer == null) {
-            GraknConfig config = GraknConfig.create();
-            RedisWrapper redisWrapper = RedisWrapper.create(config);
-            MetricRegistry metricRegistry = new MetricRegistry();
-            IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-            CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-            LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
-            EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
-            return getOrCreateGraknEngineServer(EngineID.me(), Service.ignite(), new GraknEngineStatus(), metricRegistry,
-                    config, redisWrapper, indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
-            }
-
+            return createGraknEngineServer();
+        }
         return graknEngineServer;
     }
 
-    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
+    public static GraknEngineServer createGraknEngineServer() throws IOException {
+        GraknConfig config = GraknConfig.create();
+        RedisWrapper redisWrapper = RedisWrapper.create(config);
+        MetricRegistry metricRegistry = new MetricRegistry();
+        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
+        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
+        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        return createGraknEngineServer(EngineID.me(), Service.ignite(), new GraknEngineStatus(), metricRegistry,
+                config, redisWrapper, indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
+    }
+
+    public static synchronized GraknEngineServer createGraknEngineServer(
+            EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
+            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider, Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
+
+        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
+        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
+        GrpcServer grpcServer = GrpcServer.create(grpcPort, factory);
+        HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
+        BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(graknEngineConfig, factory, indexPostProcessor);
+        graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
+        Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
+        runtime.addShutdownHook(thread);
+        return graknEngineServer;
+    }
+
+    public static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
         PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
         taskRunner.register(postProcessingTask);

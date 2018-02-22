@@ -62,7 +62,7 @@ public class Grakn {
             graknPidManager.trackGraknPid();
 
             // Start Engine
-            GraknEngineServer graknEngineServer = GraknEngineServerFactory.getOrCreateGraknEngineServer();
+            GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
             graknEngineServer.start();
         } catch (IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
