@@ -176,7 +176,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAConcept_TheInformationOnTheConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
