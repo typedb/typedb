@@ -22,6 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
@@ -56,7 +57,7 @@ import java.util.Iterator;
  *
  * @author Felix Chapman
  */
-final class GrpcClient implements AutoCloseable {
+public final class GrpcClient implements AutoCloseable {
 
     private final TxGrpcCommunicator communicator;
 
@@ -106,6 +107,11 @@ final class GrpcClient implements AutoCloseable {
     public void commit() {
         communicator.send(GrpcUtil.commitRequest());
         responseOrThrow();
+    }
+
+    public Label getLabel(ConceptId id) {
+        communicator.send(GrpcUtil.getLabelRequest(id));
+        return GrpcUtil.getLabel(responseOrThrow().getLabel());
     }
 
     @Override

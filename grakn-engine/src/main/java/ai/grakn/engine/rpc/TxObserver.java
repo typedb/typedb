@@ -21,6 +21,8 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -35,6 +37,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.generated.GraknOuterClass.GetLabel;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -104,6 +107,9 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                         break;
                     case STOP:
                         stop();
+                        break;
+                    case GETLABEL:
+                        getLabel(request.getGetLabel());
                         break;
                     default:
                     case REQUEST_NOT_SET:
@@ -182,23 +188,18 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void commit() {
-        if (tx == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
-        tx.commit();
-
+        tx().commit();
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void execQuery(ExecQuery request) {
-        if (tx == null || queryResults != null) {
+        if (queryResults != null) {
             throw error(Status.FAILED_PRECONDITION);
         }
 
         String queryString = request.getQuery().getValue();
 
-        QueryBuilder graql = tx.graql();
+        QueryBuilder graql = tx().graql();
 
         if (request.hasInfer()) {
             graql = graql.infer(request.getInfer().getValue());
@@ -206,34 +207,16 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
 
-        sendNextResult();
+        next();
     }
 
     private void next() {
-        if (queryResults == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
-        sendNextResult();
-    }
-
-    private void stop() {
-        if (queryResults == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
-        queryResults = null;
-
-        responseObserver.onNext(GrpcUtil.doneResponse());
-    }
-
-    private void sendNextResult() {
-        assert queryResults != null : "Method is only called when queryResults is non-null";
+        Iterator<QueryResult> nonNullResults = nonNull(queryResults);
 
         TxResponse response;
 
-        if (queryResults.hasNext()) {
-            QueryResult queryResult = queryResults.next();
+        if (nonNullResults.hasNext()) {
+            QueryResult queryResult = nonNullResults.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
             response = GrpcUtil.doneResponse();
@@ -241,6 +224,30 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         }
 
         responseObserver.onNext(response);
+    }
+
+    private void stop() {
+        nonNull(queryResults);
+        queryResults = null;
+        responseObserver.onNext(GrpcUtil.doneResponse());
+    }
+
+    private void getLabel(GetLabel getLabel) {
+        Concept concept = tx().getConcept(GrpcUtil.getConceptId(getLabel));
+        Label label = nonNull(concept).asSchemaConcept().getLabel();
+        responseObserver.onNext(GrpcUtil.labelResponse(label));
+    }
+
+    private GraknTx tx() {
+        return nonNull(tx);
+    }
+
+    private <T> T nonNull(@Nullable T item) {
+        if (item == null) {
+            throw error(Status.FAILED_PRECONDITION);
+        } else {
+            return item;
+        }
     }
 
     private StatusRuntimeException convertGraknException(GraknException exception, ErrorType errorType) {

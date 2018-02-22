@@ -20,6 +20,8 @@ package ai.grakn.grpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -33,6 +35,7 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.generated.GraknOuterClass.GetLabel;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
@@ -135,8 +138,16 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
+    public static TxRequest getLabelRequest(ConceptId id) {
+        return TxRequest.newBuilder().setGetLabel(GetLabel.newBuilder().setId(convert(id)).build()).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+    }
+
+    public static TxResponse labelResponse(Label label) {
+        return TxResponse.newBuilder().setLabel(convert(label)).build();
     }
 
     public static Keyspace getKeyspace(Open open) {
@@ -145,6 +156,14 @@ public class GrpcUtil {
 
     public static GraknTxType getTxType(Open open) {
         return convert(open.getTxType());
+    }
+
+    public static ConceptId getConceptId(GetLabel getLabelRequest) {
+        return convert(getLabelRequest.getId());
+    }
+
+    public static Label getLabel(GraknOuterClass.Label labelResponse) {
+        return Label.of(labelResponse.getValue());
     }
 
     private static GraknTxType convert(TxType txType) {
@@ -182,4 +201,15 @@ public class GrpcUtil {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 
+    private static GraknOuterClass.ConceptId convert(ConceptId id) {
+        return GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
+    }
+
+    private static ConceptId convert(GraknOuterClass.ConceptId id) {
+        return ConceptId.of(id.getValue());
+    }
+
+    private static GraknOuterClass.Label convert(Label label) {
+        return GraknOuterClass.Label.newBuilder().setValue(label.getValue()).build();
+    }
 }

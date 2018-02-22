@@ -69,7 +69,7 @@ public class RemoteGraknTxTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final GrpcServerMock server = new GrpcServerMock();
+    public final GrpcServerMock server = GrpcServerMock.create();
 
     private final RemoteGraknSession session = mock(RemoteGraknSession.class);
 

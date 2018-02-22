@@ -34,6 +34,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -68,6 +69,7 @@ import static ai.grakn.grpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.grpc.GrpcUtil.commitRequest;
 import static ai.grakn.grpc.GrpcUtil.doneResponse;
 import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
+import static ai.grakn.grpc.GrpcUtil.getLabelRequest;
 import static ai.grakn.grpc.GrpcUtil.nextRequest;
 import static ai.grakn.grpc.GrpcUtil.openRequest;
 import static ai.grakn.grpc.GrpcUtil.stopRequest;
@@ -75,6 +77,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -118,7 +121,7 @@ public class GrpcServerTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
-        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenReturn(tx);
+        when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
 
@@ -387,6 +390,65 @@ public class GrpcServerTest {
         }
 
         verify(tx.graql()).infer(true);
+    }
+
+    @Test
+    public void whenGettingALabel_TheLabelIsReturned() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+        Label label = Label.of("Dunstan");
+
+        Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(id)).thenReturn(concept);
+        when(concept.isSchemaConcept()).thenReturn(true);
+        when(concept.asSchemaConcept().getLabel()).thenReturn(label);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(getLabelRequest(id));
+
+            assertEquals(label, GrpcUtil.getLabel(tx.receive().ok().getLabel()));
+        }
+    }
+
+    @Test
+    public void whenGettingALabelForANonExistentConcept_Throw() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+
+        when(tx.getConcept(id)).thenReturn(null);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(getLabelRequest(id));
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().error();
+        }
+    }
+
+    @Test
+    public void whenGettingALabelForANonSchemaConcept_Throw() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+
+        Concept concept = mock(Concept.class);
+        when(tx.getConcept(id)).thenReturn(concept);
+        when(concept.isSchemaConcept()).thenReturn(false);
+        when(concept.asSchemaConcept()).thenThrow(EXCEPTION);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(getLabelRequest(id));
+
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
+
+            throw tx.receive().error();
+        }
     }
 
     @Test

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 public class RemoteGraknSessionTest {
 
     @Rule
-    public final GrpcServerMock server = new GrpcServerMock();
+    public final GrpcServerMock server = GrpcServerMock.create();
 
     private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private final Keyspace KEYSPACE = Keyspace.of("lalala");

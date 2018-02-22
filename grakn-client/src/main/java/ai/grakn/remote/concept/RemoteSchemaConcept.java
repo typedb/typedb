@@ -34,7 +34,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Label getLabel() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return tx().client().getLabel(getId());
     }
 
     @Override
