@@ -126,6 +126,6 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
         VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
-        return new RelatesAtom(hrVar, roleVariable, rolePredicate, parent);
+        return RelatesAtom.create(hrVar, roleVariable, rolePredicate, parent);
     }
 }

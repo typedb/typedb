@@ -55,6 +55,12 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.github.reggar</groupId>
+            <artifactId>auto-value-ignore-hash-equals</artifactId>
+            <version>1.1.4</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

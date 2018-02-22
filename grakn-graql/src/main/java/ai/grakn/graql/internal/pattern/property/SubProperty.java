@@ -127,6 +127,6 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();
-        return new SubAtom(resVar, typeVariable, predicate, parent);
+        return SubAtom.create(resVar, typeVariable, predicate, parent);
     }
 }

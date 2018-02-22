@@ -58,11 +58,17 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
+    /*
     private final IdPredicate typePredicate;
     private final Var predicateVariable;
+    */
+
+    public abstract Var getPredicateVariable();
+    @Nullable public abstract IdPredicate getTypePredicate();
 
     private Type type = null;
 
+    /*
     Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicateVariable = predicateVar;
@@ -75,16 +81,12 @@ public abstract class Binary extends Atom {
         this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
         this.type = a.type;
     }
+    */
 
     @Override
     public void checkValid() {
         if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
-
-    public Var getPredicateVariable() { return predicateVariable;}
-
-    @Nullable
-    public IdPredicate getTypePredicate() { return typePredicate;}
 
     @Nullable
     @Override
@@ -98,7 +100,7 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
+    public ConceptId getTypeId(){ return getTypePredicate() != null? getTypePredicate().getPredicate() : null;}
 
     @Override
     public boolean equals(Object obj) {
@@ -173,7 +175,7 @@ public abstract class Binary extends Atom {
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<PatternAdmin> vars = Sets.newHashSet(super.getPattern().admin());
+        Set<PatternAdmin> vars = Sets.newHashSet(getPattern().admin());
         if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
     }
@@ -182,13 +184,13 @@ public abstract class Binary extends Atom {
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (getPredicateVariable().isUserDefinedName()) vars.add(predicateVariable);
+        if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
         return vars;
     }
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return typePredicate != null? Stream.of(typePredicate) : Stream.empty();
+        return getTypePredicate() != null? Stream.of(getTypePredicate()) : Stream.empty();
     }
 
     @Override

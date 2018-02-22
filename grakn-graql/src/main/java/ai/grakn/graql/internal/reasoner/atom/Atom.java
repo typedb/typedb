@@ -65,6 +65,7 @@ public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
 
+    /*
     protected Atom(VarPattern pattern, ReasonerQuery parent) {
         super(pattern, parent);
     }
@@ -72,6 +73,7 @@ public abstract class Atom extends AtomicBase {
         super(a, parent);
         this.applicableRules = a.applicableRules;
     }
+    */
 
     public RelationshipAtom toRelationshipAtom(){
         throw GraqlQueryException.illegalAtomConversion(this);

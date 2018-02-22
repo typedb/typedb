@@ -95,6 +95,6 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new DataTypeAtom(var.var(), this, parent);
+        return DataTypeAtom.create(var.var(), this, parent);
     }
 }

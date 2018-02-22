@@ -34,11 +34,15 @@ import com.google.auto.value.AutoValue;
  * @author Kasper Piskorski
  *
  */
-public class RegexAtom extends AtomicBase {
+@AutoValue
+public abstract class RegexAtom extends AtomicBase {
 
-    private final String regex;
+    //private final String regex;
 
-    public RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
+    public abstract String getRegex();
+
+    /*
+    private RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
         super(varName.regex(prop.regex()).admin(), parent);
         this.regex = prop.regex();
     }
@@ -47,25 +51,18 @@ public class RegexAtom extends AtomicBase {
         super(a, parent);
         this.regex = a.getRegex();
     }
+    */
 
-    @Override
-    public Atomic copy(ReasonerQuery parent) { return new RegexAtom(this, parent);}
+    public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
+        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), parent, prop.regex());
+    }
 
-    @Override
-    public boolean equals(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        RegexAtom a2 = (RegexAtom) obj;
-        return this.getRegex().equals(a2.getRegex()) &&
-                this.getRegex().equals(((RegexAtom)obj).getRegex());
+    private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {
+        return new AutoValue_RegexAtom(a.getVarName(), a.getPattern(), parent, a.getRegex());
     }
 
     @Override
-    public int hashCode(){
-        int hashCode = alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
@@ -78,7 +75,7 @@ public class RegexAtom extends AtomicBase {
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.regex.hashCode();
+        hashCode = hashCode * 37 + this.getRegex().hashCode();
         return hashCode;
     }
 
@@ -89,6 +86,4 @@ public class RegexAtom extends AtomicBase {
 
     @Override
     public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
-
-    public String getRegex(){ return regex;}
 }

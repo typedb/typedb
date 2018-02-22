@@ -273,6 +273,6 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             }
         }
         relVar = relVar.isa(typeVariable.asUserDefined());
-        return new RelationshipAtom(relVar.admin(), typeVariable, predicate, parent);
+        return RelationshipAtom.create(relVar.admin(), typeVariable, predicate, parent);
     }
 }

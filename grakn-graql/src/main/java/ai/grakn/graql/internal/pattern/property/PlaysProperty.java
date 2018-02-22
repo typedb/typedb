@@ -118,6 +118,6 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.plays(typeVariable).admin();
-        return new PlaysAtom(resVar, typeVariable, predicate, parent);
+        return PlaysAtom.create(resVar, typeVariable, predicate, parent);
     }
 }

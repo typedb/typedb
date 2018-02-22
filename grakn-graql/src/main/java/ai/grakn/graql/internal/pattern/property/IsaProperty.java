@@ -130,7 +130,7 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
 
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
-        return new IsaAtom(isaVar, typeVariable, predicate, parent);
+        return IsaAtom.create(isaVar, typeVariable, predicate, parent);
     }
 
     // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary

@@ -95,13 +95,10 @@ public abstract class AtomicBase implements Atomic {
 
     protected Pattern createCombinedPattern(){ return getPattern();}
 
-    /*
     @Override
     public Pattern getCombinedPattern(){
-        if (combinedPattern == null) combinedPattern = createCombinedPattern();
-        return combinedPattern;
+        return createCombinedPattern();
     }
-    */
 
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }

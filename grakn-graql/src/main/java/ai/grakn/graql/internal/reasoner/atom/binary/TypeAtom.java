@@ -52,9 +52,11 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary{
 
+    /*
     protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery parent) {
         super(pattern, predicateVar, p, parent);}
     protected TypeAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
+    */
 
     @Override
     public boolean isType(){ return true;}

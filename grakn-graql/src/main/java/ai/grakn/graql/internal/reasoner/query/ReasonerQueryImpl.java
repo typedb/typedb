@@ -178,7 +178,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
-            if (conceptId != null) return IdPredicate.createIdPredicate(p.getVarName(), conceptId, p.getParentQuery());
+            if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery());
             return p;
         }).collect(Collectors.toSet());
         getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
@@ -321,7 +321,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isEntity())
-                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
+                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
     private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){

@@ -42,9 +42,11 @@ import javax.annotation.Nullable;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
+    /*
     OntologicalAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     OntologicalAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
+    */
 
     @Override
     public boolean isSelectable() {

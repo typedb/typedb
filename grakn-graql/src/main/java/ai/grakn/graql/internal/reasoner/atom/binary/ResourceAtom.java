@@ -87,23 +87,15 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
  */
 @AutoValue
 public abstract class ResourceAtom extends Binary{
+    /*
     private final Var relationVariable;
     private final ImmutableSet<ValuePredicate> multiPredicate;
+    */
 
-    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AutoValue_ResourceAtom(pattern, attributeVar, relationVariable, idPred, ImmutableSet.copyOf(ps), parent);
-    }
+    public abstract Var getRelationVariable();
+    public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
-
-        //toDO
-        //return create;
-    }
-
-    public ImmutableSet<ValuePredicate> getMultiPredicate() { return multiPredicate;}
-    public Var getRelationVariable(){ return relationVariable;}
-
-    /*
+     /*
     private ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, attributeVar, idPred, par);
         this.relationVariable = relationVariable;
@@ -121,6 +113,13 @@ public abstract class ResourceAtom extends Binary{
     }
     */
 
+    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, attributeVar, idPred,  relationVariable, ImmutableSet.copyOf(ps));
+    }
+    private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
+        return create(a.getPattern(), a.getPredicateVariable(),  a.getRelationVariable(), a.getTypePredicate(), a.getMultiPredicate(), parent);
+    }
+
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
@@ -133,7 +132,7 @@ public abstract class ResourceAtom extends Binary{
         if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
         GraknTx tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.getLabel());
-        return new RelationshipAtom(
+        return RelationshipAtom.create(
                 Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.getLabel()).getValue(), getVarName())
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.getLabel()).getValue(), getPredicateVariable())
@@ -153,7 +152,7 @@ public abstract class ResourceAtom extends Binary{
         return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
                 getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
-                (relationVariable.isUserDefinedName()? "(" + relationVariable + ")" : "");
+                (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
     }
 
     @Override
@@ -232,7 +231,7 @@ public abstract class ResourceAtom extends Binary{
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().admin());
+        vars.add(getPattern().admin());
         return Patterns.conjunction(vars);
     }
 
@@ -300,8 +299,8 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public Set<Var> getVarNames() {
         Set<Var> varNames = super.getVarNames();
-        multiPredicate.stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
-        if (getRelationVariable().isUserDefinedName()) varNames.add(relationVariable);
+        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
+        if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
         return varNames;
     }
 

@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import com.google.auto.value.AutoValue;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -42,17 +43,31 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class SubAtom extends OntologicalAtom {
-    public SubAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+@AutoValue
+public abstract class SubAtom extends OntologicalAtom {
+    /*
+    private SubAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         super(pattern, predicateVar, p, parent);}
     private SubAtom(SubAtom a, ReasonerQuery parent) { super(a, parent);}
     private SubAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
         this(var.sub(predicateVar), predicateVar, p, parent);
     }
+    */
+
+    public static SubAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+        return new AutoValue_SubAtom(pattern.admin().var(), pattern, parent, predicateVar, p);
+    }
+    private static SubAtom create(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
+        return create(var.sub(predicateVar), predicateVar, p, parent);
+    }
+
+    private static SubAtom create(SubAtom a, ReasonerQuery parent) {
+        return create(a.getPattern(), a.getPredicateVariable(), a.getTypePredicate(), parent);
+    }
 
     @Override
     public Atomic copy(ReasonerQuery parent){
-        return new SubAtom(this, parent);
+        return create(this, parent);
     }
 
     @Override
@@ -69,18 +84,18 @@ public class SubAtom extends OntologicalAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> new SubAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> create(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
-                new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                create(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
                 this;
     }
 }

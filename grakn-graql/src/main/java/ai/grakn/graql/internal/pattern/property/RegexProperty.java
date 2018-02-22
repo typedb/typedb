@@ -92,6 +92,6 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new RegexAtom(var.var(), this, parent);
+        return RegexAtom.create(var.var(), this, parent);
     }
 }
