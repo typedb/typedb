@@ -33,9 +33,10 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
+import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.GetLabel;
+import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
@@ -49,6 +50,8 @@ import io.grpc.Metadata.AsciiMarshaller;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
+
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 
 /**
  * @author Felix Chapman
@@ -139,15 +142,20 @@ public class GrpcUtil {
     }
 
     public static TxRequest getLabelRequest(ConceptId id) {
-        return TxRequest.newBuilder().setGetLabel(GetLabel.newBuilder().setId(convert(id)).build()).build();
+        GetConceptProperty getConceptProperty = GetConceptProperty.newBuilder()
+                .setId(convert(id))
+                .setConceptProperty(LabelProperty)
+                .build();
+        return TxRequest.newBuilder().setGetConceptProperty(getConceptProperty).build();
     }
 
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
-    public static TxResponse labelResponse(Label label) {
-        return TxResponse.newBuilder().setLabel(convert(label)).build();
+    public static TxResponse conceptPropertyLabelResponse(Label label) {
+        ConceptPropertyValue conceptPropertyValue = ConceptPropertyValue.newBuilder().setLabel(convert(label)).build();
+        return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue).build();
     }
 
     public static Keyspace getKeyspace(Open open) {
@@ -158,12 +166,12 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
-    public static ConceptId getConceptId(GetLabel getLabelRequest) {
-        return convert(getLabelRequest.getId());
+    public static ConceptId getConceptId(GetConceptProperty getConceptPropertyRequest) {
+        return convert(getConceptPropertyRequest.getId());
     }
 
-    public static Label getLabel(GraknOuterClass.Label labelResponse) {
-        return Label.of(labelResponse.getValue());
+    public static Label getLabel(ConceptPropertyValue conceptPropertyValue) {
+        return Label.of(conceptPropertyValue.getLabel().getValue());
     }
 
     private static GraknTxType convert(TxType txType) {

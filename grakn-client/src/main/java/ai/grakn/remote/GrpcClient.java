@@ -111,7 +111,7 @@ public final class GrpcClient implements AutoCloseable {
 
     public Label getLabel(ConceptId id) {
         communicator.send(GrpcUtil.getLabelRequest(id));
-        return GrpcUtil.getLabel(responseOrThrow().getLabel());
+        return GrpcUtil.getLabel(responseOrThrow().getConceptPropertyValue());
     }
 
     @Override

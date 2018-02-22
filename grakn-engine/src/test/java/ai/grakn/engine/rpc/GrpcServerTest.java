@@ -408,7 +408,7 @@ public class GrpcServerTest {
 
             tx.send(getLabelRequest(id));
 
-            assertEquals(label, GrpcUtil.getLabel(tx.receive().ok().getLabel()));
+            assertEquals(label, GrpcUtil.getLabel(tx.receive().ok().getConceptPropertyValue()));
         }
     }
 

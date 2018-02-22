@@ -37,7 +37,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.GetLabel;
+import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -108,8 +108,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                     case STOP:
                         stop();
                         break;
-                    case GETLABEL:
-                        getLabel(request.getGetLabel());
+                    case GETCONCEPTPROPERTY:
+                        getConceptProperty(request.getGetConceptProperty());
                         break;
                     default:
                     case REQUEST_NOT_SET:
@@ -232,10 +232,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
-    private void getLabel(GetLabel getLabel) {
-        Concept concept = tx().getConcept(GrpcUtil.getConceptId(getLabel));
+    private void getConceptProperty(GetConceptProperty getConceptProperty) {
+        Concept concept = tx().getConcept(GrpcUtil.getConceptId(getConceptProperty));
         Label label = nonNull(concept).asSchemaConcept().getLabel();
-        responseObserver.onNext(GrpcUtil.labelResponse(label));
+        responseObserver.onNext(GrpcUtil.conceptPropertyLabelResponse(label));
     }
 
     private GraknTx tx() {

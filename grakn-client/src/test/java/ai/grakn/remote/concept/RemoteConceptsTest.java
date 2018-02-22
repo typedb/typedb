@@ -80,7 +80,7 @@ public class RemoteConceptsTest {
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-        server.setResponse(GrpcUtil.getLabelRequest(ID), GrpcUtil.labelResponse(LABEL));
+        server.setResponse(GrpcUtil.getLabelRequest(ID), GrpcUtil.conceptPropertyLabelResponse(LABEL));
 
         assertEquals(LABEL, concept.getLabel());
     }
