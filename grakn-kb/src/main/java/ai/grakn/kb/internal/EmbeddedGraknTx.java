@@ -716,11 +716,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public void abort() {
-        close();
-    }
-
-    @Override
     public void commit() throws InvalidKBException {
         close(true, true);
     }
