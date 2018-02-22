@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing.storageimpl;
+package ai.grakn.engine.task.postprocessing.redisstorage;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
