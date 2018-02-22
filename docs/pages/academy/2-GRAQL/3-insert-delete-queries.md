@@ -11,16 +11,16 @@ toc: false
 KB: academy
 ---
 
-Let us kick off this lesson with an exercise: open the dashboard and write a query to get a company named "GRAKN".
+Let us kick off this lesson with an exercise: open the dashboard and write a query to get a company named "Grakn".
 
-What? There is no Grakn in your GRAKN? We have to fix this!
+What? There is no Grakn in your Grakn? We have to fix this!
 We need to learn how to insert data into your knowledge base.
 
 
 ## Insert queries
 Try and run in the dashboard
 ```graql
-insert $x isa company has name "GRAKN";
+insert $x isa company has name "Grakn";
 ```
 You should see a big red box warning you that you cannot run insert queries into the dashboard. The reason for this is that the dashboard is an application independent of the main Grakn engine and that you could expose as a web interface if you so desired. And you definitely would not want to have anybody visiting your website to be able to insert stuff into your graph, would you?
 
@@ -28,7 +28,7 @@ To insert new data into your knowledge base you need the Graql shell. As you sho
 
 Once you have done that, you can try again the query
 ```graql
-insert $x isa company has name "GRAKN";
+insert $x isa company has name "Grakn";
 ```
 And this time it will work.
 
@@ -36,17 +36,17 @@ As you might have noticed, the syntax for insert queries is the same as the synt
 
 
 ```graql
-insert $x isa company; $x has name "GRAKN";
+insert $x isa company; $x has name "Grakn";
 ```
 
 Try this query (notice that you cannot split the query with a new line in the Graql shell) as well and you will see that it will work as well.
 
 Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE GRAQL SHELL!**)
 ```graql
-match $x isa company has name "GRAKN"; get;
+match $x isa company has name "Grakn"; get;
 ```
 
-  ![No GRAKN](/images/academy/2-graql/no-grakn.png)
+  ![No Grakn](/images/academy/2-graql/no-grakn.png)
 
 What? There is nothing? What happened?
 
@@ -54,15 +54,15 @@ What happened is that whenever we make a change to the knowledge base from the G
 
 To actually confirm  the change, go back into the Graql shell and type `commit`. When the query gets executed you will see the new companies inserted. Notice that there are two of them, as we run two insert queries. For Graql when you say
 ```graql
-insert $x isa company has name "GRAKN";
+insert $x isa company has name "Grakn";
 ```
-you mean "Create a new company entity and assign to it the name ‘GRAKN’". We have never said that there could not be more than one company with the same name, so a new one is added to the knowledge base each time we run the query or an equivalent one.
+you mean "Create a new company entity and assign to it the name ‘Grakn’". We have never said that there could not be more than one company with the same name, so a new one is added to the knowledge base each time we run the query or an equivalent one.
 
-  ![Two GRAKN](/images/academy/2-graql/two-grakn.png)
+  ![Two Grakn](/images/academy/2-graql/two-grakn.png)
 
 
 ## Adding relationships
-So we have added Grakn to our knowledge base. Actually we have added two copies of it, but we will take care of it later. Our "GRAKN" companies, though are quite alone in the graph, so we do not know much about them. How can we add into the knowledge base, for example the information that Grakn is in the UK? The company is there, the country is there, we know that the relation type is call `located-in` because we have used it before, but how can we connect the two?
+So we have added Grakn to our knowledge base. Actually we have added two copies of it, but we will take care of it later. Our "Grakn" companies, though are quite alone in the graph, so we do not know much about them. How can we add into the knowledge base, for example the information that Grakn is in the UK? The company is there, the country is there, we know that the relation type is call `located-in` because we have used it before, but how can we connect the two?
 
 Well that is what the `match` part of the query is for: to apply our insert action to something that is already in the knowledge base. It looks like this:
 
@@ -70,22 +70,22 @@ Well that is what the `match` part of the query is for: to apply our insert acti
 ```graql
 match
 $c isa country has name "UK";
-$g isa company has name "GRAKN";
+$g isa company has name "Grakn";
 insert
 (location: $c, located: $g) isa located-in;
 ```
 
 Before trying this query into the Graql shell (and committing) are you able to guess what will happen?
 
-Let us split into smaller steps: the first part is a normal match, like the ones you have encountered with get queries; the second part of the query is a normal `insert` action that gets executed _once for each result of the first part_. This means that in our case, since the first part will return two results, two relations will be inserted, once for each instance of "GRAKN". So both GRAKNs will be located in the UK.
+Let us split into smaller steps: the first part is a normal match, like the ones you have encountered with get queries; the second part of the query is a normal `insert` action that gets executed _once for each result of the first part_. This means that in our case, since the first part will return two results, two relations will be inserted, once for each instance of "Grakn". So both Grakns will be located in the UK.
 
 Try it now.
 
 If you want to see the newly created relations, run
 ```graql
-match $x isa company has name "GRAKN"; get;
+match $x isa company has name "Grakn"; get;
 ```
-into the dashboard and double click on one of the two copies of the company that appears. This is telling the visualiser to fetch all the relations connected to GRAKN, so we will see that Grakn is in the UK.
+into the dashboard and double click on one of the two copies of the company that appears. This is telling the visualiser to fetch all the relations connected to Grakn, so we will see that Grakn is in the UK.
 
   ![Grakn in the UK](/images/academy/2-graql/grakn-uk.png)
 
@@ -95,27 +95,27 @@ How do we delete things that we don’t want in the knowledge base? But with a d
 A delete query is nothing more than a get query that uses `delete` as the action keyword there is no difference in syntax. Try this, for example:
 
 ```graql
-match $x isa company has name "GRAKN"; delete;
+match $x isa company has name "Grakn"; delete;
 ```
 
 Did it work? No? Of course not.
-The reason for this is that both our companies "GRAKN" are in a relation with the "UK".
+The reason for this is that both our companies "Grakn" are in a relation with the "UK".
 And if we delete the companies we will get two `located-in` relationships with only the "UK" participating in it.
 And this is not allowed. So we have to delete the relationships first.
 
 Retrieving relations is something that we haven’t seen so far, but it’s nothing complicated. Basically, if you want to assign a relation to a variable, just put a variable name before the parenthesis. It’s quite easy (notice how we use the variables in the delete action as we used them in the get action):
 
 ```graql
-match $r ($x) isa located-in; $x isa company has name "GRAKN"; delete $r;
+match $r ($x) isa located-in; $x isa company has name "Grakn"; delete $r;
 ```
 
 If you run the query above and commit, the relation will be gone and Grakn won’t be in the UK anymore. You can check it in the graph visualiser.
 
-Did you notice that we did not had to specify the "UK" in the above query? When you run a query, Graql will do its best to try and understand what you mean. In this case, there are no other `located-in` relations involving "GRAKN" and the company plays only that role, so that is all we need to specify.
+Did you notice that we did not had to specify the "UK" in the above query? When you run a query, Graql will do its best to try and understand what you mean. In this case, there are no other `located-in` relations involving "Grakn" and the company plays only that role, so that is all we need to specify.
 
 At this point you are free to run
 ```graql
-match $x isa company has name "GRAKN"; delete;
+match $x isa company has name "Grakn"; delete;
 ```
 Then commit, and everything will be returned like it was at the beginning of this lesson.
 

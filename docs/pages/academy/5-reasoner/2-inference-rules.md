@@ -44,7 +44,7 @@ The first block of the rule, the WHEN part or block, is just a list of patterns 
 
 There are quite deep theoretical reasons for these limitations but they are out of the scope of the academy, we will briefly come back on the topic in the next lesson.
 
-If you define a rule, each time you run a query, GRAKN
+If you define a rule, each time you run a query, Grakn
 
   * checks whether you are accessing part of the Knowledge base described by the _WHEN_ block of the rule,
   * and it responds as if the _THEN_ block were satisfied as well

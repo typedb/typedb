@@ -24,7 +24,7 @@ If you know a bit about other schema first database knowledge systems, you know 
 
   1. _A low level physical schema_, that requires you to optimise your schema according to how your physical resources are distributed
 
-With GRAKN, thanks to our high level knowledge model, your schema will closely resemble the conceptual schema of step one, essentially avoiding you the hassle of going through the other two modelling steps: your Grakn system will take care of those.
+With Grakn, thanks to our high level knowledge model, your schema will closely resemble the conceptual schema of step one, essentially avoiding you the hassle of going through the other two modelling steps: your Grakn system will take care of those.
 
 This greatly simplifies the design process, getting you what can be considered a highly normalised distributed schema without the need of going through the logical and physical modelling.
 

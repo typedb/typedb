@@ -14,20 +14,20 @@ Welcome to the Grakn Academy. In this series of tutorials, you will learn all th
 
 The Academy is structured into modules that covers a broad topic. Each module is divided into several lessons, that you are supposed to follow in order.
 
-The Academy lessons are sprinkled with exercises, that you are highly adviced to do, as they will help solidify your understanding of the topics covered.
+The Academy lessons are sprinkled with exercises, that you are highly advised to do, as they will help solidify your understanding of the topics covered.
 
 Almost no previous knowledge is required, but a familiarity with your computer. Nonetheless, be advised that Grakn is a database, that is a technical piece of software, so if you are completely devoid of technical skills it might be hard to find value in it.
 
 
 The module topics are divided as follows:
 
-## [Intoduction to GRAKN](./grakn-intro.html)
+## [Introduction to Grakn](./grakn-intro.html)
 
 In this module you will be given a brief overview of the Grakn software stack and the principal components you will be using and you will be guided through the process of setting up the necessary tools to follow the Academy lessons.
 
-## [GRAQL](./graql-intro.html)
+## [Graql](./graql-intro.html)
 
-In the second module you will learn about GRAQL, GRAKN's own high level query language that is usued to perform all your data definition and manipulation needs.
+In the second module you will learn about Graql, Grakn's own high level query language that is usued to perform all your data definition and manipulation needs.
 
 ## [Grakn Schemas](./schema-elements.html)
 

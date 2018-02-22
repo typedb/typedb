@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Following the lessons of the Academy you should be by now at a point where you have a solid grasp on the basics of GRAQL, the Grakn object model, you should be able to understand what a Grakn schema is and how to build one.
+Following the lessons of the Academy you should be by now at a point where you have a solid grasp on the basics of Graql, the Grakn object model, you should be able to understand what a Grakn schema is and how to build one.
 
 The problem at this point is: how can you load the schema you have created? And how to add data to you knowledge base when you have loaded the schema?
 
@@ -70,4 +70,4 @@ You have learned how to load Graql files, both with the simple loader and as a b
 Isn’t it exciting?
 
 ## What next?
-The knowledge base is far from complete yet. In the [next lesson](./csv-migration) you will start learning about the Graql [templating language](https://en.wikipedia.org/wiki/Template_processor) and how to load structured data files into GRAKN. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.
+The knowledge base is far from complete yet. In the [next lesson](./csv-migration) you will start learning about the Graql [templating language](https://en.wikipedia.org/wiki/Template_processor) and how to load structured data files into Grakn. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.
