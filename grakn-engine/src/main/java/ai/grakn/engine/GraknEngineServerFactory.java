@@ -36,6 +36,7 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import spark.Service;
 
 import java.io.IOException;
@@ -69,7 +70,8 @@ public class GraknEngineServerFactory {
                 config, redisWrapper, indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
     }
 
-    public static synchronized GraknEngineServer createGraknEngineServer(
+    @VisibleForTesting
+    private static synchronized GraknEngineServer createGraknEngineServer(
             EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
             RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider, Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
 
@@ -86,7 +88,8 @@ public class GraknEngineServerFactory {
         return graknEngineServer;
     }
 
-    public static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
+    @VisibleForTesting
+    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
         PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
         taskRunner.register(postProcessingTask);
