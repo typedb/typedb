@@ -19,7 +19,6 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
