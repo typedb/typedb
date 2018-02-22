@@ -40,6 +40,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -93,6 +94,10 @@ public class GrpcServerTest {
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
+    private static final GraknOuterClass.ConceptId V123 =
+            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
+    private static final GraknOuterClass.ConceptId V456 =
+            GraknOuterClass.ConceptId.newBuilder().setValue("V456").build();
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
@@ -258,13 +263,13 @@ public class GrpcServerTest {
     public void whenExecutingAQueryRemotely_AResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
-        when(conceptX.isThing()).thenReturn(true);
-        when(conceptX.asThing().type().getLabel()).thenReturn(Label.of("L123"));
+        when(conceptX.isRelationship()).thenReturn(true);
+        when(conceptX.asRelationship().type().getLabel()).thenReturn(Label.of("L123"));
 
         Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
-        when(conceptY.isThing()).thenReturn(true);
-        when(conceptY.asThing().type().getLabel()).thenReturn(Label.of("L456"));
+        when(conceptY.isAttribute()).thenReturn(true);
+        when(conceptY.asAttribute().type().getLabel()).thenReturn(Label.of("L456"));
 
         ImmutableList<Answer> answers = ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
@@ -282,7 +287,8 @@ public class GrpcServerTest {
             tx.send(execQueryRequest(QUERY));
             TxResponse response1 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+            GraknOuterClass.Concept rpcX =
+                    GraknOuterClass.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
             GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
             QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
@@ -290,7 +296,8 @@ public class GrpcServerTest {
             tx.send(nextRequest());
             TxResponse response2 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId("V456").build();
+            GraknOuterClass.Concept rpcY =
+                    GraknOuterClass.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
             GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
             QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
@@ -309,13 +316,13 @@ public class GrpcServerTest {
     public void whenExecutingAQueryRemotelyAndAskingForOneResult_OnlyOneResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
-        when(conceptX.isThing()).thenReturn(true);
-        when(conceptX.asThing().type().getLabel()).thenReturn(Label.of("L123"));
+        when(conceptX.isEntity()).thenReturn(true);
+        when(conceptX.asEntity().type().getLabel()).thenReturn(Label.of("L123"));
 
         Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
-        when(conceptY.isThing()).thenReturn(true);
-        when(conceptY.asThing().type().getLabel()).thenReturn(Label.of("L456"));
+        when(conceptY.isEntity()).thenReturn(true);
+        when(conceptY.asEntity().type().getLabel()).thenReturn(Label.of("L456"));
 
         ImmutableList<Answer> answers = ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),

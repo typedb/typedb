@@ -16,44 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.remote.concept;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteConcept implements Concept {
+abstract class RemoteMetaType extends RemoteType<Type, Thing> {
 
-    public static RemoteConcept create(ConceptId id) {
-        return new AutoValue_RemoteConcept(id);
-    }
-
-    @Override
-    public abstract ConceptId getId();
-
-    @Override
-    public final Keyspace keyspace() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public final void delete() throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public final boolean isDeleted() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public int compareTo(Concept concept) {
-        return getId().compareTo(concept.getId());
+    public static RemoteMetaType create(RemoteGraknTx tx, ConceptId id) {
+        return new AutoValue_RemoteMetaType(tx, id);
     }
 }

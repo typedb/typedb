@@ -20,8 +20,6 @@ package ai.grakn.grpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -31,10 +29,6 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -42,16 +36,13 @@ import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableMap;
 import io.grpc.Metadata;
 import io.grpc.Metadata.AsciiMarshaller;
-import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
@@ -156,18 +147,6 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
-    public static Object getQueryResult(QueryResult queryResult) {
-        switch (queryResult.getQueryResultCase()) {
-            case ANSWER:
-                return convert(queryResult.getAnswer());
-            case OTHERRESULT:
-                return Json.read(queryResult.getOtherResult()).getValue();
-            default:
-            case QUERYRESULT_NOT_SET:
-                throw new IllegalArgumentException("Unexpected " + queryResult);
-        }
-    }
-
     private static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
@@ -201,17 +180,6 @@ public class GrpcUtil {
 
     private static GraknOuterClass.Keyspace convert(Keyspace keyspace) {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
-    }
-
-    private static Answer convert(GraknOuterClass.Answer answer) {
-        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
-
-        answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            Concept concept = RemoteConcept.create(ConceptId.of(grpcConcept.getId()));
-            map.put(Graql.var(grpcVar), concept);
-        });
-
-        return new QueryAnswer(map.build());
     }
 
 }

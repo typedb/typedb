@@ -65,16 +65,18 @@ import java.util.stream.StreamSupport;
  */
 final class RemoteQueryRunner implements QueryRunner {
 
+    private final RemoteGraknTx tx;
     private final GrpcClient client;
     private final @Nullable Boolean infer;
 
-    private RemoteQueryRunner(GrpcClient client, @Nullable Boolean infer) {
+    private RemoteQueryRunner(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+        this.tx = tx;
         this.client = client;
         this.infer = infer;
     }
 
-    public static RemoteQueryRunner create(GrpcClient client, @Nullable Boolean infer) {
-        return new RemoteQueryRunner(client, infer);
+    public static RemoteQueryRunner create(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+        return new RemoteQueryRunner(tx, client, infer);
     }
 
     @Override
@@ -173,7 +175,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(query, infer);
+        return client.execQuery(tx, query, infer);
     }
 
     private void runVoid(Query<?> query) {
