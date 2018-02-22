@@ -31,6 +31,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.remote.RemoteGraknTx;
 
 /**
+ * Static factory methods for {@link RemoteConcept} instances, which communicate with a gRPC server using a
+ * {@link RemoteGraknTx}.
+ *
  * @author Felix Chapman
  */
 public class RemoteConcepts {
