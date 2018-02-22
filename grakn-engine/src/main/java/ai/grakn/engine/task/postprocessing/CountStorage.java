@@ -26,8 +26,8 @@ import ai.grakn.concept.ConceptId;
  * @author Ganeshwara Herawan Hananda
  */
 public interface CountStorage {
-    long adjustInstanceCount(Keyspace keyspace, ConceptId conceptId, long count);
-    long adjustShardCount(Keyspace keyspace, ConceptId conceptId, long count);
+    long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long count);
+    long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long count);
     long getInstanceCount(Keyspace keyspace, ConceptId conceptId);
     long getShardCount(Keyspace keyspace, ConceptId conceptId);
 }
