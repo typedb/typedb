@@ -33,7 +33,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
@@ -74,14 +78,34 @@ public class RemoteConceptsTest {
 
         concept.getLabel();
 
-        verify(server.requests()).onNext(GrpcUtil.getLabelRequest(ID));
+        verify(server.requests()).onNext(GrpcUtil.getConceptPropertyRequest(ID, LabelProperty));
     }
 
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-        server.setResponse(GrpcUtil.getLabelRequest(ID), GrpcUtil.conceptPropertyLabelResponse(LABEL));
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, LabelProperty), GrpcUtil.conceptPropertyLabelResponse(LABEL));
 
         assertEquals(LABEL, concept.getLabel());
+    }
+
+    @Test
+    public void whenCallingIsImplicit_MakeAGrpcRequest() {
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        concept.isImplicit();
+
+        verify(server.requests()).onNext(GrpcUtil.getConceptPropertyRequest(ID, IsImplicit));
+    }
+
+    @Test
+    public void whenCallingIsImplicit_GetTheExpectedResult() {
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IsImplicit), GrpcUtil.conceptPropertyIsImplicitResponse(true));
+        assertTrue(concept.isImplicit());
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IsImplicit), GrpcUtil.conceptPropertyIsImplicitResponse(false));
+        assertFalse(concept.isImplicit());
     }
 }

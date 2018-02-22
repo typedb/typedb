@@ -33,6 +33,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
+import ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
@@ -49,9 +50,8 @@ import io.grpc.Metadata;
 import io.grpc.Metadata.AsciiMarshaller;
 
 import javax.annotation.Nullable;
+import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 
 /**
  * @author Felix Chapman
@@ -141,10 +141,10 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
-    public static TxRequest getLabelRequest(ConceptId id) {
+    public static TxRequest getConceptPropertyRequest(ConceptId id, ConceptProperty property) {
         GetConceptProperty getConceptProperty = GetConceptProperty.newBuilder()
                 .setId(convert(id))
-                .setConceptProperty(LabelProperty)
+                .setConceptProperty(property)
                 .build();
         return TxRequest.newBuilder().setGetConceptProperty(getConceptProperty).build();
     }
@@ -154,8 +154,17 @@ public class GrpcUtil {
     }
 
     public static TxResponse conceptPropertyLabelResponse(Label label) {
-        ConceptPropertyValue conceptPropertyValue = ConceptPropertyValue.newBuilder().setLabel(convert(label)).build();
-        return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue).build();
+        return conceptPropertyResponse(val -> val.setLabel(convert(label)));
+    }
+
+    public static TxResponse conceptPropertyIsImplicitResponse(boolean isImplicit) {
+        return conceptPropertyResponse(val -> val.setIsImplicit(isImplicit));
+    }
+
+    public static TxResponse conceptPropertyResponse(Consumer<ConceptPropertyValue.Builder> setter) {
+        ConceptPropertyValue.Builder conceptPropertyValue = ConceptPropertyValue.newBuilder();
+        setter.accept(conceptPropertyValue);
+        return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue.build()).build();
     }
 
     public static Keyspace getKeyspace(Open open) {

@@ -233,9 +233,32 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void getConceptProperty(GetConceptProperty getConceptProperty) {
-        Concept concept = tx().getConcept(GrpcUtil.getConceptId(getConceptProperty));
-        Label label = nonNull(concept).asSchemaConcept().getLabel();
-        responseObserver.onNext(GrpcUtil.conceptPropertyLabelResponse(label));
+        Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(getConceptProperty)));
+
+        TxResponse response;
+
+        switch (getConceptProperty.getConceptProperty()) {
+            case LabelProperty:
+                Label label = concept.asSchemaConcept().getLabel();
+                response = GrpcUtil.conceptPropertyLabelResponse(label);
+                break;
+            case IsImplicit:
+                boolean isImplicit = concept.asSchemaConcept().isImplicit();
+                response = GrpcUtil.conceptPropertyIsImplicitResponse(isImplicit);
+                break;
+            case ValueProperty:
+            case DataTypeProperty:
+            case IsInferred:
+            case IsAbstract:
+            case When:
+            case Then:
+            case Regex:
+            default:
+            case UNRECOGNIZED:
+                throw error(Status.INVALID_ARGUMENT);
+        }
+
+        responseObserver.onNext(response);
     }
 
     private GraknTx tx() {

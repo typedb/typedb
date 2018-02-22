@@ -47,6 +47,9 @@ import mjson.Json;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
+
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
  *
@@ -110,8 +113,13 @@ public final class GrpcClient implements AutoCloseable {
     }
 
     public Label getLabel(ConceptId id) {
-        communicator.send(GrpcUtil.getLabelRequest(id));
+        communicator.send(GrpcUtil.getConceptPropertyRequest(id, LabelProperty));
         return GrpcUtil.getLabel(responseOrThrow().getConceptPropertyValue());
+    }
+
+    public boolean isImplicit(ConceptId id) {
+        communicator.send(GrpcUtil.getConceptPropertyRequest(id, IsImplicit));
+        return responseOrThrow().getConceptPropertyValue().getIsImplicit();
     }
 
     @Override
