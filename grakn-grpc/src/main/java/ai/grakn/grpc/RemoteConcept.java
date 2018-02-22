@@ -52,8 +52,4 @@ abstract class RemoteConcept implements Concept {
         throw new UnsupportedOperationException(); // TODO
     }
 
-    @Override
-    public int compareTo(Concept concept) {
-        return getId().compareTo(concept.getId());
-    }
 }
