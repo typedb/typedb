@@ -41,7 +41,7 @@ insert $x isa company; $x has name "GRAKN";
 
 Try this query (notice that you cannot split the query with a new line in the Graql shell) as well and you will see that it will work as well.
 
-Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE Graql SHELL!**)
+Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE GRAQL SHELL!**)
 ```graql
 match $x isa company has name "GRAKN"; get;
 ```
