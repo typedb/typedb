@@ -33,6 +33,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
@@ -126,6 +127,10 @@ public class ConceptBuilder {
 
     public ConceptBuilder isa(Type type) {
         return set(TYPE, type);
+    }
+
+    public ConceptBuilder directIsa(Type directType) {
+        return set(DIRECT_TYPE, directType);
     }
 
     public ConceptBuilder sub(SchemaConcept superConcept) {
@@ -243,7 +248,7 @@ public class ConceptBuilder {
             concept = rule;
         } else if (has(SUPER_CONCEPT)) {
             concept = putSchemaConcept();
-        } else if (has(TYPE)) {
+        } else if (has(TYPE) || has(DIRECT_TYPE)) {
             concept = putInstance();
         } else {
             throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
@@ -291,6 +296,7 @@ public class ConceptBuilder {
     }
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
+    private static final BuilderParam<Type> DIRECT_TYPE = BuilderParam.of(DirectIsaProperty.NAME);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
     private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
@@ -375,6 +381,7 @@ public class ConceptBuilder {
      */
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
+        validateParam(concept, DIRECT_TYPE, Thing.class, Thing::type);
         validateParam(concept, SUPER_CONCEPT, SchemaConcept.class, SchemaConcept::sup);
         validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::getLabel);
         validateParam(concept, ID, Concept.class, Concept::getId);

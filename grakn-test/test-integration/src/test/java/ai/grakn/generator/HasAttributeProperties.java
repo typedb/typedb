@@ -20,6 +20,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 
@@ -40,11 +41,14 @@ public class HasAttributeProperties extends AbstractGenerator<HasAttributeProper
         // `HasAttributeProperty` will implicitly attach an `IsaProperty`, so must not clash
         do {
             varPatternAttribute = gen(VarPatternAdmin.class);
-        } while (varPatternAttribute.hasProperty(IsaProperty.class));
+        } while (varPatternAttribute.hasProperty(IsaProperty.class) ||
+                varPatternAttribute.hasProperty(DirectIsaProperty.class));
 
         do {
             varPatternRelationship = gen(VarPatternAdmin.class);
-        } while (varPatternRelationship.hasProperty(IsaProperty.class));
+        } while (varPatternRelationship.hasProperty(IsaProperty.class) ||
+                varPatternRelationship.hasProperty(DirectIsaProperty.class));
+
 
         return HasAttributeProperty.of(gen(Label.class), varPatternAttribute, varPatternRelationship);
     }
