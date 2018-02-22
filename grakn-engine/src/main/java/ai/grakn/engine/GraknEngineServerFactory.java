@@ -69,7 +69,7 @@ public class GraknEngineServerFactory {
                 config, redisWrapper, indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
     }
 
-    public static synchronized GraknEngineServer createGraknEngineServer(
+    public static GraknEngineServer createGraknEngineServer(
             EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
             RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider, Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
 
