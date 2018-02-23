@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -95,6 +96,33 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     private GraknOuterClass.Concept makeConcept(Concept concept) {
-        return GraknOuterClass.Concept.newBuilder().setId(concept.getId().getValue()).build();
+        return GraknOuterClass.Concept.newBuilder()
+                .setId(GraknOuterClass.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
+                .setBaseType(getBaseType(concept))
+                .build();
+    }
+
+    private GraknOuterClass.BaseType getBaseType(Concept concept) {
+        if (concept.isEntityType()) {
+            return GraknOuterClass.BaseType.EntityType;
+        } else if (concept.isRelationshipType()) {
+            return GraknOuterClass.BaseType.RelationshipType;
+        } else if (concept.isAttributeType()) {
+            return GraknOuterClass.BaseType.AttributeType;
+        } else if (concept.isEntity()) {
+            return GraknOuterClass.BaseType.Entity;
+        } else if (concept.isRelationship()) {
+            return GraknOuterClass.BaseType.Relationship;
+        } else if (concept.isAttribute()) {
+            return GraknOuterClass.BaseType.Attribute;
+        } else if (concept.isRole()) {
+            return GraknOuterClass.BaseType.Role;
+        } else if (concept.isRule()) {
+            return GraknOuterClass.BaseType.Rule;
+        } else if (concept.isType()) {
+            return GraknOuterClass.BaseType.MetaType;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
+        }
     }
 }

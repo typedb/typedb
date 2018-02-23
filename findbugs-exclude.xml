@@ -43,7 +43,7 @@
             <Class name="ai.grakn.concept.Label"/>
             <Class name="ai.grakn.concept.LabelId"/>
             <Class name="ai.grakn.Keyspace"/>
-            <Class name="ai.grakn.grpc.RemoteConcept"/>
+            <Class name="ai.grakn.remote.concept.RemoteConcept"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>
