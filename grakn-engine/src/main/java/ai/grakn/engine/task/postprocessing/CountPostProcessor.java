@@ -49,14 +49,14 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class CountPostProcessor {
     private final static Logger LOG = LoggerFactory.getLogger(CountPostProcessor.class);
-    private final CountStorage redis;
+    private final CountStorage countStorage;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
     private final long shardingThreshold;
 
     private CountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, CountStorage countStorage) {
-        this.redis = countStorage;
+        this.countStorage = countStorage;
         this.shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         this.metricRegistry = metricRegistry;
         this.factory = factory;
@@ -78,7 +78,7 @@ public class CountPostProcessor {
             metricRegistry.histogram(name(CountPostProcessor.class, "jobs"))
                     .update(jobs.size());
 
-            //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
+            //We Use countStorage to keep track of counts in order to ensure sharding happens in a centralised manner.
             //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
             //values only approximately correct
             Set<ConceptId> conceptToShard = new HashSet<>();
@@ -91,7 +91,7 @@ public class CountPostProcessor {
                 Timer.Context contextSingle = metricRegistry
                         .timer(name(CountPostProcessor.class, "execution-single")).time();
                 try {
-                    if (incrementInstanceCountAndCheckIfShardingIsNeeded(redis, commitLog.keyspace(), key, value, shardingThreshold)) {
+                    if (incrementInstanceCountAndCheckIfShardingIsNeeded(countStorage, commitLog.keyspace(), key, value, shardingThreshold)) {
                         conceptToShard.add(key);
                     }
                 } finally {
@@ -103,7 +103,7 @@ public class CountPostProcessor {
             conceptToShard.forEach(type -> {
                 Timer.Context contextSharding = metricRegistry.timer("sharding").time();
                 try {
-                    shardConcept(redis, factory, commitLog.keyspace(), type, shardingThreshold);
+                    shardConcept(countStorage, factory, commitLog.keyspace(), type, shardingThreshold);
                 } finally {
                     contextSharding.stop();
                 }
@@ -116,17 +116,17 @@ public class CountPostProcessor {
     }
 
     /**
-     * Updates the type counts in redis and checks if sharding is needed.
+     * Updates the type counts in countStorage and checks if sharding is needed.
      *
      * @param keyspace The keyspace of the graph which the type comes from
      * @param conceptId The id of the concept with counts to update
      * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean incrementInstanceCountAndCheckIfShardingIsNeeded(CountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
-        long numShards = redis.getShardCount(keyspace, conceptId);
+    private static boolean incrementInstanceCountAndCheckIfShardingIsNeeded(CountStorage countStorage, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
+        long numShards = countStorage.getShardCount(keyspace, conceptId);
         if(numShards == 0) numShards = 1;
-        long numInstances = redis.incrementInstanceCount(keyspace, conceptId, value);
+        long numInstances = countStorage.incrementInstanceCount(keyspace, conceptId, value);
         return numInstances > shardingThreshold * numShards;
     }
 
@@ -140,14 +140,14 @@ public class CountPostProcessor {
      * @param keyspace The database containing the {@link ai.grakn.concept.Type} to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(CountStorage redis, EngineGraknTxFactory factory,
+    private void shardConcept(CountStorage countStorage, EngineGraknTxFactory factory,
                               Keyspace keyspace, ConceptId conceptId, long shardingThreshold){
         Lock engineLock = lockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
         try {
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
-            if (incrementInstanceCountAndCheckIfShardingIsNeeded(redis, keyspace, conceptId, 0, shardingThreshold)) {
+            if (incrementInstanceCountAndCheckIfShardingIsNeeded(countStorage, keyspace, conceptId, 0, shardingThreshold)) {
 
 
                 try(EmbeddedGraknTx<?> graph = factory.tx(keyspace, GraknTxType.WRITE)) {
@@ -155,7 +155,7 @@ public class CountPostProcessor {
                     graph.commitSubmitNoLogs();
                 }
                 //Update number of shards
-                redis.incrementShardCount(keyspace, conceptId, 1);
+                countStorage.incrementShardCount(keyspace, conceptId, 1);
             }
         } finally {
             engineLock.unlock();
