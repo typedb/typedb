@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -312,7 +313,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private Stream<IsaAtom> inferEntityTypes(Answer sub) {
-        Set<Var> typedVars = getAtoms(IsaAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        Set<Var> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
                 getAtoms(IdPredicate.class),
                 sub.toPredicates(this).stream().map(IdPredicate.class::cast)
@@ -324,7 +325,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
-    private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){
+    private Map<Var, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
         HashMap<Var, Type> map = new HashMap<>();
         isas
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
@@ -355,7 +356,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
         return ImmutableMap.copyOf(getVarTypeMap(
                 Stream.concat(
-                        getAtoms(IsaAtom.class),
+                        getAtoms(IsaAtomBase.class),
                         inferEntityTypes(sub)
                 )
                 )
@@ -429,8 +430,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Answer getSubstitution(){
         if (substitution == null) {
             Set<Var> varNames = getVarNames();
-            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
-                    .map(IsaAtom::getTypePredicate)
+            Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
+                    .map(IsaAtomBase::getTypePredicate)
                     .filter(Objects::nonNull)
                     .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());
