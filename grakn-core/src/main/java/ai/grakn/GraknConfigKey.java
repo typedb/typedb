@@ -41,7 +41,7 @@ public abstract class GraknConfigKey<T> {
 
     interface KeyParser<T> {
 
-        Optional<T> read(Optional<String> string);
+        T read(String string);
 
         default String write(T value) {
             return value.toString();
@@ -56,11 +56,9 @@ public abstract class GraknConfigKey<T> {
 
     private static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
         @Override
-        public Optional<List<String>> read(Optional<String> string) {
-            return string.map(s -> {
-                Stream<String> split = Arrays.stream(s.split(","));
-                return split.map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
-            });
+        public List<String> read(String string) {
+            Stream<String> split = Arrays.stream(string.split(","));
+            return split.map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
         }
 
         @Override
@@ -120,9 +118,11 @@ public abstract class GraknConfigKey<T> {
      * @throws RuntimeException if the value is not present and there is no default value
      */
     public final T parse(Optional<String> value, Path configFilePath) {
-        return parser().read(value).orElseThrow(() ->
-                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath))
-        );
+        if (!value.isPresent()) {
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath));
+        }
+
+        return parser().read(value.get());
     }
 
     /**
@@ -150,6 +150,6 @@ public abstract class GraknConfigKey<T> {
      * A function for parsing a required parameter using the given parse function.
      */
     private static <T> KeyParser<T> required(Function<String, T> parseFunction) {
-        return opt -> opt.map(parseFunction);
+        return parseFunction::apply;
     }
 }
