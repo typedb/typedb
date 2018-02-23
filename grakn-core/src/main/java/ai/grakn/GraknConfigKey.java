@@ -38,7 +38,13 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class GraknConfigKey<T> {
 
-    interface KeyParser<T> {
+    /**
+     * Parser for a {@link GraknConfigKey}.
+     * Describes how to {@link #read(String)} and {@link #write(Object)} properties.
+     *
+     * @param <T> The type of the property value
+     */
+    public interface KeyParser<T> {
 
         T read(String string);
 
@@ -48,13 +54,12 @@ public abstract class GraknConfigKey<T> {
     }
 
     // These are helpful parser to describe how to parse parameters of certain types.
-    private static final KeyParser<String> STRING = string -> string;
-    private static final KeyParser<Integer> INT = Integer::parseInt;
-    private static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
-    private static final KeyParser<Long> LONG = Long::parseLong;
-    private static final KeyParser<Path> PATH = Paths::get;
-
-    private static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
+    public static final KeyParser<String> STRING = string -> string;
+    public static final KeyParser<Integer> INT = Integer::parseInt;
+    public static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
+    public static final KeyParser<Long> LONG = Long::parseLong;
+    public static final KeyParser<Path> PATH = Paths::get;
+    public static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
         @Override
         public List<String> read(String string) {
             Stream<String> split = Arrays.stream(string.split(","));
