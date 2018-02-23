@@ -237,7 +237,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         ConceptProperty<?> conceptProperty = ConceptProperty.fromGrpc(getConceptProperty.getConceptProperty());
 
-        TxResponse response = conceptProperty.response(concept);
+        TxResponse response = conceptProperty.createTxResponse(concept);
 
         responseObserver.onNext(response);
     }

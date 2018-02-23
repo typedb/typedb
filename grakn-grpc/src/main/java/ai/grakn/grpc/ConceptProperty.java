@@ -138,13 +138,13 @@ public abstract class ConceptProperty<T> {
         }
     }
 
-    public final TxResponse response(T value) {
+    public final TxResponse createTxResponse(T value) {
         ConceptPropertyValue.Builder conceptPropertyValue = ConceptPropertyValue.newBuilder();
         set(conceptPropertyValue, value);
         return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue.build()).build();
     }
 
-    public abstract TxResponse response(Concept concept);
+    public abstract TxResponse createTxResponse(Concept concept);
 
     public abstract T get(TxResponse value);
 
@@ -152,6 +152,13 @@ public abstract class ConceptProperty<T> {
 
     abstract GraknOuterClass.ConceptProperty toGrpc();
 
+    /**
+     * @param grpcProperty the gRPC {@link GraknOuterClass.ConceptProperty} equivalent of this with the same name
+     * @param conceptGetter a method to retrieve a property value from a {@link Concept}
+     * @param responseGetter a method to retrieve a property value from inside a gRPC response
+     * @param setter a method to set the property value inside a gRPC response
+     * @param <T> The type of values of the property
+     */
     private static <T> ConceptProperty<T> create(
             GraknOuterClass.ConceptProperty grpcProperty,
             Function<Concept, T> conceptGetter,
@@ -160,8 +167,8 @@ public abstract class ConceptProperty<T> {
     ) {
         return new ConceptProperty<T>() {
             @Override
-            public TxResponse response(Concept concept) {
-                return response(conceptGetter.apply(concept));
+            public TxResponse createTxResponse(Concept concept) {
+                return createTxResponse(conceptGetter.apply(concept));
             }
 
             @Override
