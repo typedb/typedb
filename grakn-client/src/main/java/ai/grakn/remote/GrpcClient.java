@@ -109,6 +109,7 @@ public final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
+    @Nullable
     public <T> T getConceptProperty(ConceptId id, ConceptProperty<T> conceptProperty) {
         communicator.send(GrpcUtil.getConceptPropertyRequest(id, conceptProperty));
         return conceptProperty.get(responseOrThrow());

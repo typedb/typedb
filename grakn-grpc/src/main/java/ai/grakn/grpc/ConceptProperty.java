@@ -26,6 +26,7 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 
+import javax.annotation.Nullable;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -138,7 +139,7 @@ public abstract class ConceptProperty<T> {
         }
     }
 
-    public final TxResponse createTxResponse(T value) {
+    public final TxResponse createTxResponse(@Nullable T value) {
         ConceptPropertyValue.Builder conceptPropertyValue = ConceptPropertyValue.newBuilder();
         set(conceptPropertyValue, value);
         return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue.build()).build();
@@ -146,9 +147,10 @@ public abstract class ConceptProperty<T> {
 
     public abstract TxResponse createTxResponse(Concept concept);
 
+    @Nullable
     public abstract T get(TxResponse value);
 
-    abstract void set(ConceptPropertyValue.Builder builder, T value);
+    abstract void set(ConceptPropertyValue.Builder builder, @Nullable T value);
 
     abstract GraknOuterClass.ConceptProperty toGrpc();
 
@@ -171,14 +173,22 @@ public abstract class ConceptProperty<T> {
                 return createTxResponse(conceptGetter.apply(concept));
             }
 
+            @Nullable
             @Override
             public T get(TxResponse txResponse) {
-                return responseGetter.apply(txResponse.getConceptPropertyValue());
+                ConceptPropertyValue conceptPropertyValue = txResponse.getConceptPropertyValue();
+                if (conceptPropertyValue.getValueCase().equals(ConceptPropertyValue.ValueCase.VALUE_NOT_SET)) {
+                    return null;
+                } else {
+                    return responseGetter.apply(conceptPropertyValue);
+                }
             }
 
             @Override
-            void set(ConceptPropertyValue.Builder builder, T value) {
-                setter.accept(builder, value);
+            void set(ConceptPropertyValue.Builder builder, @Nullable T value) {
+                if (value != null) {
+                    setter.accept(builder, value);
+                }
             }
 
             @Override
