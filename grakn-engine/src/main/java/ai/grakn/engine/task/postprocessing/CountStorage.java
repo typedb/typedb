@@ -23,6 +23,11 @@ import ai.grakn.concept.ConceptId;
 
 /**
  *
+ * <p>
+ *    Stores a cache of counts so that we can know which {@link ai.grakn.concept.Type}s to shard when they have too many
+ *    instances.
+ * </p>
+ *
  * @author Ganeshwara Herawan Hananda
  */
 public interface CountStorage {

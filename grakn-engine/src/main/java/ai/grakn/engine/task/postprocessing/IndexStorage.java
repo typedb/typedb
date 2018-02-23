@@ -25,6 +25,9 @@ import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
+ * <p>
+ *     Stores a list of indices and vertex ids representing those indices which need to be post processed
+ * </p>
  *
  * @author lolski
  */
