@@ -52,6 +52,8 @@ public class Grakn {
      * @param args
      */
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(newUncaughtExceptionHandler(LOG));
+
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
@@ -62,9 +64,13 @@ public class Grakn {
             // Start Engine
             GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
-        } catch (IOException | RuntimeException e) {
-            LOG.error("An exception has occurred", e);
+        } catch (IOException e) {
+            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
         }
+    }
+
+    private static Thread.UncaughtExceptionHandler newUncaughtExceptionHandler(Logger logger) {
+        return (Thread t, Throwable e) -> logger.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e);
     }
 }
 

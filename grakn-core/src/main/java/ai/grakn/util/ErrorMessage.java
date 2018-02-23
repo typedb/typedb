@@ -34,6 +34,7 @@ public enum ErrorMessage {
     UNABLE_TO_START_GRAKN("Unable to start Grakn"),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
+    UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
@@ -72,6 +73,7 @@ public enum ErrorMessage {
     UNKNOWN_CONCEPT("Uknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
+    BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Grakn will need to be restarted."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

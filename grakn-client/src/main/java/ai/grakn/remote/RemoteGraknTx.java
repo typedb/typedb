@@ -65,7 +65,7 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
  *
  * @author Felix Chapman
  */
-class RemoteGraknTx implements GraknTx, GraknAdmin {
+public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final GraknSession session;
     private final GraknTxType txType;
@@ -82,6 +82,10 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
         GrpcClient client = GrpcClient.create(stub);
         client.open(session.keyspace(), txType);
         return new RemoteGraknTx(session, txType, client);
+    }
+
+    public GrpcClient client() {
+        return client;
     }
 
     @Override
@@ -251,6 +255,6 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(client, null);
+        return RemoteQueryRunner.create(this, client, null);
     }
 }

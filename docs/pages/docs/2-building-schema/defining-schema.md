@@ -9,13 +9,96 @@ folder: docs
 KB: genealogy-plus
 ---
 
-The page documents use of the Graql `define` query, which will define a specified [variable pattern](../querying-data/match-clause#variable-patterns)
-describing a schema. To follow along, or experiment further, with the examples given below, please
-load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
+The page documents use of the Graql `define` and `undefine` queries, which will define a specified
+[variable pattern](../querying-data/match-clause#variable-patterns) describing a schema. To follow along, or experiment
+further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples*
+directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 {% include note.html content="If you are working in the Graql shell, don't forget to `commit`." %}
 
+## Define
+
+[Define queries](../api-references/ddl#define-query) are used to define your schema. Any
+[variable patterns](../api-references/dml#patterns) within them are added to the schema:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell-define" data-toggle="tab">Graql</a></li>
+    <li><a href="#java-define" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell-define">
+<pre class="language-graql"> <code>
+define
+person sub entity, has name;
+name sub attribute, datatype string;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java-define">
+<pre class="language-java"> <code>
+qb.define(
+    label("person").sub("entity").has("name"),
+    label("name").sub("attribute").datatype(STRING)
+).execute();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+This example defines an entity `person` and an attribute `name`. `name` is given the datatype `string` and a `person`
+can have a name.
+
+## Undefine
+
+[Undefine queries](../api-references/ddl#undefine-query) are used to undefine your schema. Any
+[variable patterns](../api-references/dml#patterns) within them are removed from your schema:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell-undefine-has" data-toggle="tab">Graql</a></li>
+    <li><a href="#java-undefine-has" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell-undefine-has">
+<pre class="language-graql"> <code>
+undefine person has name;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java-undefine-has">
+<pre class="language-java"> <code>
+qb.undefine(label("person").has("name")).execute();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+This example will stop instances of a `person` from having a `name`. `person` and `name` will both still be in the
+schema.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell-undefine-sub" data-toggle="tab">Graql</a></li>
+    <li><a href="#java-undefine-sub" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell-undefine-sub">
+<pre class="language-graql"> <code>
+undefine person sub entity;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java-undefine-sub">
+<pre class="language-java"> <code>
+qb.undefine(label("person").sub("entity")).execute();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+This example will remove `person` from the schema entirely.
 
 ## Properties
 
@@ -153,6 +236,3 @@ qb.define(label("person").has("nickname")).execute();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
-
-
-has
