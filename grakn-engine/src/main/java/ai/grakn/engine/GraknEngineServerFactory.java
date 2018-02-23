@@ -57,7 +57,18 @@ public class GraknEngineServerFactory {
         return graknEngineServer;
     }
 
-    private static GraknEngineServer createGraknEngineServer() throws IOException {
+    public static synchronized GraknEngineServer getOrCreateGraknEngineServer(
+            EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
+            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider,
+            Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
+        if (graknEngineServer == null) {
+            graknEngineServer = createGraknEngineServer(engineID, sparkService, graknEngineStatus, metricRegistry, graknEngineConfig,
+                    redisWrapper, indexStorage, countStorage, lockProvider, runtime, collaborators, factory);
+        }
+        return graknEngineServer;
+    }
+
+    public static GraknEngineServer createGraknEngineServer() throws IOException {
         GraknConfig config = GraknConfig.create();
         RedisWrapper redisWrapper = RedisWrapper.create(config);
         MetricRegistry metricRegistry = new MetricRegistry();
@@ -71,7 +82,8 @@ public class GraknEngineServerFactory {
 
     public static GraknEngineServer createGraknEngineServer(
             EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
-            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider, Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
+            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider,
+            Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
 
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
