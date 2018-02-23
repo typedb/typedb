@@ -18,9 +18,7 @@
 
 package ai.grakn.test.rule;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknConfig;
@@ -29,10 +27,9 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -68,16 +65,29 @@ public class EngineContext extends CompositeTestRule {
 
     private GraknEngineServer server;
 
-    private final GraknConfig config = createTestConfig();
+    private final GraknConfig config;
     private JedisPool jedisPool;
     private Service spark;
 
     private final TestRule redis;
 
     private EngineContext(){
+        config = createTestConfig();
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
         redis = InMemoryRedisContext.create(redisPort);
+    }
+
+    private EngineContext(GraknConfig config, TestRule redis){
+        this.config = config;
+        this.redis = redis;
+    }
+
+    public static EngineContext create(GraknConfig config){
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
+        int redisPort = redisURI.getPort();
+        TestRule redis = InMemoryRedisContext.create(redisPort);
+        return new EngineContext(config, redis);
     }
 
     /**
@@ -113,16 +123,24 @@ public class EngineContext extends CompositeTestRule {
         return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
-    public TaskManager getTaskManager(){
-        return server.getTaskManager();
-    }
-
     public SimpleURI uri() {
         return config.uri();
     }
 
-    public GraknSession sessionWithNewKeyspace() {
-        return Grakn.session(uri(), randomKeyspace());
+    public String host() {
+        return config.uri().getHost();
+    }
+
+    public int port() {
+        return config.uri().getPort();
+    }
+
+    public SimpleURI grpcUri() {
+        return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
+    }
+
+    public EmbeddedGraknSession sessionWithNewKeyspace() {
+        return EmbeddedGraknSession.create(randomKeyspace(), uri());
     }
 
     @Override
@@ -176,7 +194,6 @@ public class EngineContext extends CompositeTestRule {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
-        noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
             noThrow(() -> {
@@ -235,11 +252,12 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    private static GraknConfig createTestConfig() {
+    public static GraknConfig createTestConfig() {
         GraknConfig config = GraknConfig.create();
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
+        config.setConfigProperty(GraknConfigKey.GRPC_PORT, GraknTestUtil.getEphemeralPort());
 
         return config;
     }

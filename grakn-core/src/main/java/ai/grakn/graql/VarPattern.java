@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.API;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
@@ -320,6 +321,7 @@ public interface VarPattern extends Pattern {
      * @param var the variable that this variable should not be equal to
      * @return this
      */
+    @API
     @CheckReturnValue
     VarPattern neq(String var);
 
@@ -328,6 +330,7 @@ public interface VarPattern extends Pattern {
      * @param varPattern the variable pattern that this variable should not be equal to
      * @return this
      */
+    @API
     @CheckReturnValue
     VarPattern neq(VarPattern varPattern);
 }

@@ -39,7 +39,6 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -266,9 +265,6 @@ public class ResourceAtom extends Binary{
     public boolean isSelectable(){ return true;}
 
     @Override
-    public boolean isUserDefined(){ return relationVariable.isUserDefinedName();}
-
-    @Override
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
@@ -280,8 +276,7 @@ public class ResourceAtom extends Binary{
         if (getMultiPredicate().isEmpty()){
             boolean predicateBound = getParentQuery().getAtoms(Atom.class)
                     .filter(at -> !at.equals(this))
-                    .filter(at -> at.getVarNames().contains(getPredicateVariable()))
-                    .findFirst().isPresent();
+                    .anyMatch(at -> at.getVarNames().contains(getPredicateVariable()));
             if (!predicateBound) {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
             }
@@ -321,65 +316,6 @@ public class ResourceAtom extends Binary{
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
-    }
-
-    private boolean isSuperNode(){
-        return tx().graql().match(getCombinedPattern()).admin().stream()
-                .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
-                .findFirst().isPresent();
-    }
-
-    @Override
-    public int computePriority(Set<Var> subbedVars){
-        int priority = super.computePriority(subbedVars);
-        Set<ai.grakn.graql.ValuePredicate> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
-        priority += ResolutionPlan.IS_RESOURCE_ATOM;
-
-        if (vps.isEmpty()) {
-            if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
-                    && !isSuperNode()) {
-                    priority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
-            } else{
-                    priority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
-            }
-        } else {
-            int vpsPriority = 0;
-            for (ai.grakn.graql.ValuePredicate vp : vps) {
-                //vp with a value
-                if (vp.isSpecific() && !isSuperNode()) {
-                    vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
-                } //vp with a variable
-                else if (vp.getInnerVar().isPresent()) {
-                    VarPatternAdmin inner = vp.getInnerVar().orElse(null);
-                    //variable mapped inside the query
-                    if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.var())
-                            && !isSuperNode()) {
-                        vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
-                    } //variable equality
-                    else if (vp.equalsValue().isPresent()){
-                        vpsPriority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
-                    } //variable inequality
-                    else {
-                        vpsPriority += ResolutionPlan.COMPARISON_VARIABLE_VALUE_PREDICATE;
-                    }
-                } else {
-                    vpsPriority += ResolutionPlan.NON_SPECIFIC_VALUE_PREDICATE;
-                }
-            }
-            //normalise
-            vpsPriority = vpsPriority/vps.size();
-            priority += vpsPriority;
-        }
-
-        boolean reifiesRelation =  getNeighbours(Atom.class)
-                .filter(Atom::isRelation)
-                .filter(at -> at.getVarName().equals(this.getVarName()))
-                .findFirst().isPresent();
-
-        priority += reifiesRelation ? ResolutionPlan.RESOURCE_REIFYING_RELATION : 0;
-
-        return priority;
     }
 
     @Override

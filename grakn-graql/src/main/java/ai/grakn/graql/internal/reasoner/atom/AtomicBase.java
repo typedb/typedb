@@ -18,16 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.Pattern;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -48,7 +47,7 @@ public abstract class AtomicBase implements Atomic {
     private final Var varName;
     private final VarPattern atomPattern;
     private Pattern combinedPattern = null;
-    private ReasonerQuery parent = null;
+    private ReasonerQuery parent;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
@@ -76,10 +75,8 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public String toString(){ return atomPattern.toString(); }
 
-    @Override
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
-    @Override
     public boolean isUserDefined(){ return varName.isUserDefinedName();}
     
     @Override
@@ -101,7 +98,6 @@ public abstract class AtomicBase implements Atomic {
         return combinedPattern;
     }
 
-    @Override
     public ReasonerQuery getParentQuery(){ return parent;}
 
     @Override
@@ -110,12 +106,14 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
 
-    @Override
     public Atomic inferTypes(Answer sub){ return this; }
 
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected GraknTx tx(){ return getParentQuery().tx();}
+    protected EmbeddedGraknTx<?> tx(){
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
+        return (EmbeddedGraknTx<?>) getParentQuery().tx();
+    }
 }
 

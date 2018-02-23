@@ -44,6 +44,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
+@SuppressWarnings("unused")
 public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromTxGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
@@ -104,13 +105,13 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
         return this;
     }
 
-    public final void configure(Meta meta) {
+    public final void configure(@SuppressWarnings("unused") Meta meta) {
         Preconditions.checkArgument(
                 !this.meta.isPresent() || this.meta.get(), "Cannot specify parameter is both meta and non-meta");
         this.meta = Optional.of(true);
     }
 
-    public final void configure(NonMeta nonMeta) {
+    public final void configure(@SuppressWarnings("unused") NonMeta nonMeta) {
         Preconditions.checkArgument(
                 !this.meta.isPresent() || !this.meta.get(), "Cannot specify parameter is both meta and non-meta");
         this.meta = Optional.of(false);

@@ -42,9 +42,6 @@ import java.util.stream.Stream;
 public interface Answer {
 
     @CheckReturnValue
-    Answer copy();
-
-    @CheckReturnValue
     Set<Var> vars();
 
     @CheckReturnValue
@@ -106,13 +103,6 @@ public interface Answer {
      */
     @CheckReturnValue
     Answer merge(Answer a2, boolean explanation);
-
-    /**
-     * @param a2 answer with which explanation of this answer should be merged
-     * @return merged explanation of this and provided answer
-     */
-    @CheckReturnValue
-    AnswerExplanation mergeExplanation(Answer a2);
 
     /**
      * explain this answer by providing explanation with preserving the structure of dependent answers

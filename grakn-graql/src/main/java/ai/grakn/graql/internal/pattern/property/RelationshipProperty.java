@@ -36,7 +36,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
@@ -185,13 +185,13 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Relationship relationship = executor.get(var).asRelationship();
             relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
         };
 
-        return PropertyExecutor.builder(method).requires(requiredVars(var)).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(requiredVars(var)).build());
     }
 
     /**

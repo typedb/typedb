@@ -56,7 +56,8 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.isEmpty() || vertexHasSelectedTypeId(vertex, selectedTypes)) {
+        if (vertex.property((String) persistentProperties.get(DegreeVertexProgram.DEGREE)).isPresent() &&
+                vertexHasSelectedTypeId(vertex, selectedTypes)) {
             emitter.emit(vertex.value((String) persistentProperties.get(DegreeVertexProgram.DEGREE)),
                     Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
         } else {
@@ -71,6 +72,7 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     @Override
     public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
+        LOGGER.debug("MapReduce Finished !!!!!!!!");
         final Map<Serializable, Set<String>> clusterPopulation = Utility.keyValuesToMap(keyValues);
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;

@@ -54,3 +54,7 @@ hadoop
 parameters_bi.log
 parameters_interactive.log
 social_network
+
+# Jekyll files #
+docs/_site
+docs/_jekyll/_site

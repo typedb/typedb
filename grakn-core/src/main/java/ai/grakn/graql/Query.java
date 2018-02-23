@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -47,13 +48,27 @@ public interface Query<T> {
 
     /**
      * Execute the query and return a human-readable stream of results
+     *
+     * @deprecated use {@link #results(GraqlConverter)}}
+     */
+    @Deprecated
+    @CheckReturnValue
+    Stream<String> resultsString(Printer<?> printer);
+
+    /**
+     * Execute the query and return a converted stream of results
      */
     @CheckReturnValue
-    Stream<String> resultsString(Printer printer);
+    <S> Stream<S> results(GraqlConverter<?, S> converter);
 
     /**
      * Whether this query will modify the graph
      */
     @CheckReturnValue
     boolean isReadOnly();
+
+    /**
+     * Get the transaction associated with this query
+     */
+    Optional<? extends GraknTx> tx();
 }

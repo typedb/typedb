@@ -19,7 +19,6 @@
 package ai.grakn.migration.json;
 
 import ai.grakn.migration.base.MigrationCLI;
-import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import mjson.Json;
 
@@ -89,14 +88,6 @@ public class JsonMigrator implements AutoCloseable {
         }
 
         this.readers = Stream.of(files).map(this::asReader).collect(toSet());
-    }
-
-    /**
-     * Construct a JsonMigrator to migrate data in given reader
-     * @param reader reader over the data to be migrated
-     */
-    public JsonMigrator(Reader reader){
-        this.readers = Sets.newHashSet(reader);
     }
 
     /**

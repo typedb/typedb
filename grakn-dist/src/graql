@@ -36,7 +36,7 @@ update_classpath_global_var() {
 
   # Add path containing grakn.properties and logback.xml
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn/client
 }
 
 # =============================================
@@ -47,4 +47,4 @@ update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.dist.DistGraql "$@"
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.bootup.Graql "$@"

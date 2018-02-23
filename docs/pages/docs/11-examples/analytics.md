@@ -78,9 +78,6 @@ economical sub attribute datatype string;
 manufactured sub relationship
     relates maker
     relates made;
-
-maker sub role;
-made sub role;
 ```
 
 To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started).

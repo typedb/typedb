@@ -29,7 +29,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.structure.Casting;
@@ -106,7 +106,7 @@ public class TxCacheTest extends TxTestBase {
         RelationshipImpl relation = (RelationshipImpl) rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedCastings(), is(empty()));
 
@@ -119,7 +119,7 @@ public class TxCacheTest extends TxTestBase {
         EntityType t1 = tx.putEntityType("1");
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         Entity i1 = t1.addEntity();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
@@ -131,7 +131,7 @@ public class TxCacheTest extends TxTestBase {
         Entity i1 = t1.addEntity();
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedThings(), is(empty()));
 
@@ -212,7 +212,7 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
 
         //Check everything is okay
-        tx = (GraknTxAbstract<?>) session.open(GraknTxType.WRITE);
+        tx = session.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e2, Type::sup, is(e1));
 
         //Mutate Super Type
@@ -251,7 +251,7 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
 
         //Check concepts match what is in transaction cache
-        tx = (GraknTxAbstract<?>) session.open(GraknTxType.WRITE);
+        tx = session.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));

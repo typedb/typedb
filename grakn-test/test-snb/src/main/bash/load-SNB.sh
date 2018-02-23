@@ -35,7 +35,7 @@ function extractArchData {
             tar -xf ${SF1_DATA}
             ;;
         *)
-            echo "Usage: arch {SF1}"
+            echo "Usage: arch {validate|SF1}"
             exit 1
             ;;
     esac

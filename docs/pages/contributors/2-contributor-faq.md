@@ -58,7 +58,7 @@ The solution was to include the Janus factory dependency explicitly:
 ```bash
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>janus-factory</artifactId>
+    <artifactId>grakn-factory</artifactId>
     <version>${project.version}</version>
 </dependency>
 ```

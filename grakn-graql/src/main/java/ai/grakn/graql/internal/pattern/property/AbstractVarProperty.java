@@ -24,6 +24,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.CommonUtil;
 
+import java.util.Collection;
 import java.util.stream.Stream;
 
 abstract class AbstractVarProperty implements VarPropertyInternal {
@@ -46,17 +47,17 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     abstract String getName();
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 

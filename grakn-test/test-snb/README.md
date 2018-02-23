@@ -32,7 +32,7 @@ Note that currently it is not possible to perform validation against it.
 A successful verification would look like the following:
 ```
 ----essed 6,987 / 11,277 -- Crashed 0 -- Incorrect 0 -- Currently processing LdbcShortQuery1PersonProfile...
-21:27:55.354 [com.ldbc.driver.Client.main()] DEBUG ai.grakn.factory.GraknSessionImpl - Response from engine []
+21:27:55.354 [com.ldbc.driver.Client.main()] DEBUG ai.grakn.factory.EmbeddedGraknSession - Response from engine []
 [WARNING] thread Thread[pool-6-thread-3,5,com.ldbc.driver.Client] was interrupted but is still alive after waiting at least 15000msecs
 [WARNING] thread Thread[pool-6-thread-3,5,com.ldbc.driver.Client] will linger despite being asked to die via interruption
 [WARNING] thread Thread[pool-6-thread-4,5,com.ldbc.driver.Client] will linger despite being asked to die via interruption

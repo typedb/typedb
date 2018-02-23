@@ -45,10 +45,8 @@ public interface SchemaConceptConverter<T extends SchemaConcept>{
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
 
         toCompatibleRoles(entryConcept)
-                .forEach(role -> {
-                    role.relationshipTypes()
-                            .forEach(rel -> relationMap.put(rel, role));
-                });
+                .forEach(role -> role.relationshipTypes()
+                        .forEach(rel -> relationMap.put(rel, role)));
         return relationMap;
     }
 

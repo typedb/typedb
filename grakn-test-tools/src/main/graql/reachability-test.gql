@@ -4,20 +4,20 @@ define
 ####################Schema######################
 #################################################
 
-"vertex" sub entity
+vertex sub entity
     has index;
 
-"link-from" sub role;
-"link-to" sub role;
-"link" sub relationship, relates link-from, relates link-to;
+link-from sub role;
+link-to sub role;
+link sub relationship, relates link-from, relates link-to;
 vertex plays link-from, plays link-to;
 
-"reach-from" sub role;
-"reach-to" sub role;
-"reachable" sub relationship, relates reach-from, relates reach-to;
+reach-from sub role;
+reach-to sub role;
+reachable sub relationship, relates reach-from, relates reach-to;
 vertex plays reach-from, plays reach-to;
 
-"index" sub attribute, datatype string;
+index sub attribute, datatype string;
 
 insert
 
@@ -41,13 +41,13 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (link-from: $x, link-to: $y) isa link;},
 then {
 (reach-from: $x, reach-to: $y) isa reachable;};
 
-rule-2 sub rule,
+rule-2
 when {
 (link-from: $x, link-to: $z) isa link;
 (reach-from: $z, reach-to: $y) isa reachable;},

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -34,20 +33,22 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraqlTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -63,7 +64,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleGuard() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //parent of all roles so all relations possible
         String patternString = "{$x isa noRoleEntity; ($x, $y);}";
@@ -90,7 +91,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_doubleGuard() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
@@ -124,7 +125,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleRole() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         String patternString = "{(role1: $x, $y);}";
         String patternString2 = "{(role2: $x, $y);}";
         String patternString3 = "{(role3: $x, $y);}";
@@ -142,14 +143,14 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleRole_subType() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         String patternString = "{(subRole2: $x, $y);}";
         typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
@@ -176,7 +177,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel3} ^ {rel2, rel3}
         String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
@@ -193,7 +194,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleRole_singleGuard_typeContradiction() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel1} ^ {rel2}
         String patternString = "{(role1: $x, $y); $y isa singleRoleEntity;}";
@@ -209,7 +210,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString = "{(role2: $x, $y);" +
@@ -225,7 +226,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
@@ -250,7 +251,7 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
 
         //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
@@ -270,19 +271,19 @@ public class TypeInferenceQueryTest {
 
     @Test
     public void testTypeInference_metaGuards() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
         typeInference(allRelations(graph), patternString, graph);
     }
 
     @Test
     public void testTypeInference_genericRelation() {
-        GraknTx graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         String patternString = "{($x, $y);}";
         typeInference(allRelations(graph), patternString, graph);
     }
 
-    private void typeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
+    private void typeInference(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
         List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
@@ -298,7 +299,7 @@ public class TypeInferenceQueryTest {
         typeInferenceQueries(possibleTypes, pattern, graph);
     }
 
-    private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
+    private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
@@ -322,7 +323,7 @@ public class TypeInferenceQueryTest {
         typeInferenceQueries(possibleTypes, subbedPattern, graph);
     }
 
-    private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, GraknTx graph) {
+    private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph) {
         QueryBuilder qb = graph.graql();
         List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
         List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
@@ -330,7 +331,7 @@ public class TypeInferenceQueryTest {
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<Answer> typedAnswers(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
+    private List<Answer> typedAnswers(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
         List<Answer> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         for(Type type : possibleTypes){
@@ -340,16 +341,16 @@ public class TypeInferenceQueryTest {
         return answers;
     }
 
-    private List<RelationshipType> allRelations(GraknTx tx){
+    private List<RelationshipType> allRelations(EmbeddedGraknTx<?> tx){
         RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 
-    private ConceptId conceptId(GraknTx graph, String type){
+    private ConceptId conceptId(EmbeddedGraknTx<?> graph, String type){
         return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> graph){
         Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

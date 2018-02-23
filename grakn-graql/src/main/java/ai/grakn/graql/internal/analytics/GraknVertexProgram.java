@@ -30,8 +30,6 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -45,8 +43,6 @@ import java.util.Set;
  */
 
 public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
     static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(__::inE);
     static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(__::outE);

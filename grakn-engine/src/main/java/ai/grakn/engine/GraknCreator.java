@@ -19,26 +19,28 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.task.BackgroundTaskRunner;
+import ai.grakn.engine.task.postprocessing.CountPostProcessor;
+import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessingTask;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.RedisCountStorage;
+import ai.grakn.engine.task.postprocessing.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 import spark.Service;
 
-import java.util.concurrent.TimeUnit;
-
-import static com.codahale.metrics.MetricRegistry.name;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Static configurator for classes
@@ -47,30 +49,16 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class GraknCreator {
 
-    protected final EngineID engineID;
-    protected final Service sparkService;
-    protected final GraknEngineStatus graknEngineStatus;
-    protected final MetricRegistry metricRegistry;
-    protected final GraknConfig graknEngineConfig;
+    private final EngineID engineID;
+    private final Service sparkService;
+    private final GraknEngineStatus graknEngineStatus;
+    private final MetricRegistry metricRegistry;
+    private final GraknConfig graknEngineConfig;
 
-    protected GraknEngineServer graknEngineServer;
-    protected RedisWrapper redisWrapper;
-    protected LockProvider lockProvider;
-    protected EngineGraknTxFactory engineGraknTxFactory;
-    protected TaskManager taskManager;
-
-    /**
-     * @deprecated use {@link GraknCreator#create()}.
-     */
-    @Deprecated
-    public GraknCreator() {
-        engineID = engineId();
-        sparkService = sparkService();
-        graknEngineStatus = graknEngineStatus();
-        metricRegistry = metricRegistry();
-        graknEngineConfig = GraknConfig.create();
-        redisWrapper = RedisWrapper.create(graknEngineConfig);
-    }
+    private GraknEngineServer graknEngineServer;
+    private RedisWrapper redisWrapper;
+    private LockProvider lockProvider;
+    private EngineGraknTxFactory engineGraknTxFactory;
 
     private GraknCreator(
             EngineID id, Service spark, GraknEngineStatus status, MetricRegistry metricRegistry, GraknConfig config,
@@ -84,20 +72,24 @@ public class GraknCreator {
         this.redisWrapper = redisWrapper;
     }
 
-    protected static EngineID engineId() {
+    private static EngineID engineId() {
         return EngineID.me();
     }
 
-    protected static Service sparkService() {
+    private static Service sparkService() {
         return Service.ignite();
     }
 
-    protected static GraknEngineStatus graknEngineStatus() {
+    private static GraknEngineStatus newGraknEngineStatus() {
         return new GraknEngineStatus();
     }
 
-    protected static MetricRegistry metricRegistry() {
+    protected static MetricRegistry newMetricRegistry() {
         return new MetricRegistry();
+    }
+
+    public MetricRegistry getMetricRegistry() {
+        return metricRegistry;
     }
 
     public static GraknCreator create(
@@ -109,22 +101,37 @@ public class GraknCreator {
 
     public static GraknCreator create() {
         GraknConfig config = GraknConfig.create();
-        return create(engineId(), sparkService(), graknEngineStatus(), metricRegistry(), config, RedisWrapper.create(config));
+        return create(engineId(), sparkService(), newGraknEngineStatus(), newMetricRegistry(), config, RedisWrapper.create(config));
     }
 
-    public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
+    public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime, Collection<HttpController> collaborators) throws IOException {
         if (graknEngineServer == null) {
             Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
             LockProvider lockProvider = instantiateLock(jedisPool);
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
-            PostProcessor postProcessor = postProcessor(metricRegistry, graknEngineConfig, factory, jedisPool, lockProvider);
-            TaskManager taskManager = instantiateTaskManager(metricRegistry, graknEngineConfig, engineID, factory, jedisPool, postProcessor);
-            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, taskManager, postProcessor);
-            graknEngineServer = new GraknEngineServer(graknEngineConfig, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
+            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, RedisIndexStorage.create(jedisPool, metricRegistry));
+            CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
+            PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+            int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
+            GrpcServer grpcServer = GrpcServer.create(grpcPort, engineGraknTxFactory);
+            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
+            BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(factory, indexPostProcessor);
+            graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);
         }
         return graknEngineServer;
+    }
+
+    public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) throws IOException {
+        return instantiateGraknEngineServer(runtime, Collections.emptyList());
+    }
+
+        private BackgroundTaskRunner configureBackgroundTaskRunner(EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
+        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
+        BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
+        taskRunner.register(postProcessingTask);
+        return taskRunner;
     }
 
     /**
@@ -163,40 +170,6 @@ public class GraknCreator {
 
     protected static EngineGraknTxFactory engineGraknTxFactory(GraknConfig config, LockProvider lockProvider) {
         return EngineGraknTxFactory.create(lockProvider, config);
-    }
-
-    /**
-     * Check in with the properties file to decide which type of task manager should be started
-     * and return the TaskManager
-     *
-     * @param jedisPool
-     */
-    protected synchronized TaskManager instantiateTaskManager(MetricRegistry metricRegistry, GraknConfig config, EngineID engineId, EngineGraknTxFactory factory,
-                                                 final Pool<Jedis> jedisPool,
-                                                 PostProcessor postProcessor) {
-        if (taskManager == null) {
-            taskManager = taskManager(config, factory, jedisPool, engineId, metricRegistry, postProcessor);
-        }
-        return taskManager;
-    }
-
-    protected PostProcessor postProcessor(MetricRegistry metricRegistry, GraknConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, LockProvider lockProvider){
-        return PostProcessor.create(config, jedisPool, factory, lockProvider, metricRegistry);
-    }
-
-    private static TaskManager taskManager(GraknConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, EngineID engineId, MetricRegistry metricRegistry, PostProcessor postProcessor) {
-        metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
-        metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
-        metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
-        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
-        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
-
-        metricRegistry.register(name(GraknEngineServer.class, "System", "gc"), new GarbageCollectorMetricSet());
-        metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
-        metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
-
-        int consumers = config.getProperty(GraknConfigKey.QUEUE_CONSUMERS);
-        return new RedisTaskManager(engineId, config, jedisPool, consumers, factory, metricRegistry, postProcessor);
     }
 
 }

@@ -45,11 +45,12 @@ public abstract class GraknConfigKey<T> {
     private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
 
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
+    public static final GraknConfigKey<Integer> NUM_BACKGROUND_THREADS = key("background-tasks.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
+    public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
-    public static final GraknConfigKey<Integer> LOADER_REPEAT_COMMITS = key("loader.repeat-commits", INT);
 
     public static final GraknConfigKey<List<String>> REDIS_HOST =
             key("queue.host", required(GraknConfigKey::parseCSValue), GraknConfigKey::toStringCSValue);
@@ -58,16 +59,16 @@ public abstract class GraknConfigKey<T> {
             withDefault(GraknConfigKey::parseCSValue, ImmutableList.of()),
             GraknConfigKey::toStringCSValue
     );
+    public static final GraknConfigKey<String> REDIS_BIND = key("bind");
     public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
             key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
-    public static final GraknConfigKey<Integer> QUEUE_CONSUMERS = key("queue.consumers", INT);
+    public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
+    public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
-
-    public static final GraknConfigKey<Integer> TASK_DELAY = key("tasks.delay", INT);
 
     public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
@@ -160,4 +161,5 @@ public abstract class GraknConfigKey<T> {
     private static String toStringCSValue(List<String> values) {
         return values.stream().collect(Collectors.joining(","));
     }
+
 }

@@ -49,6 +49,7 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable, Ja
 
     @Override
     public int compareTo(Keyspace o) {
+        if(equals(o)) return 0;
         return getValue().compareTo(o.getValue());
     }
 

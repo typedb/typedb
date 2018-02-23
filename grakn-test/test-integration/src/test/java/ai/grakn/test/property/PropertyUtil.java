@@ -55,11 +55,6 @@ public class PropertyUtil {
         return chooseWithoutCheck(collection, seed);
     }
 
-    public static <T> T choose(Collection<? extends T> collection, long seed) {
-        assumeThat(collection, not(empty()));
-        return chooseWithoutCheck(collection, seed);
-    }
-
     public static <T> T choose(String message, Collection<? extends T> collection, long seed) {
         assumeThat(message, collection, not(empty()));
         return chooseWithoutCheck(collection, seed);

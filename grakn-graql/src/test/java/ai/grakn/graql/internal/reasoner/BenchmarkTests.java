@@ -32,20 +32,19 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
-import ai.grakn.test.kbs.PathKB;
+import ai.grakn.test.kbs.PathTreeKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.rule.SessionContext;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -101,7 +100,6 @@ public class BenchmarkTests {
                 Var toVar = Graql.var().asUserDefined();
                 VarPattern rulePattern = Graql
                         .label("rule" + i)
-                        .sub("rule")
                         .when(
                                 Graql.and(
                                         Graql.var()
@@ -357,7 +355,7 @@ public class BenchmarkTests {
         
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
-        SampleKBContext kb = PathKB.context(N, linksPerEntity);
+        SampleKBContext kb = PathTreeKB.context(N, linksPerEntity);
         GraknTx graph = kb.tx();
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +

@@ -98,24 +98,14 @@ public class MultiUnifierImpl implements MultiUnifier{
         return multiUnifier.isEmpty();
     }
 
-    @Override
     public boolean contains(Unifier u2) {
-        return unifiers().stream().filter(u -> u.containsAll(u2)).findFirst().isPresent();
+        return unifiers().stream().anyMatch(u -> u.containsAll(u2));
     }
 
     @Override
     public boolean containsAll(MultiUnifier mu) {
         return !mu.unifiers().stream()
-                .filter(u -> !this.contains(u)).findFirst().isPresent();
-    }
-
-    @Override
-    public MultiUnifier merge(Unifier u) {
-        return new MultiUnifierImpl(
-                multiUnifier.stream()
-                        .map(unifier -> unifier.merge(u))
-                        .collect(Collectors.toSet())
-        );
+                .anyMatch(u -> !this.contains(u));
     }
 
     @Override

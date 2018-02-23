@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -141,7 +142,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type entityTypeConcept = executor.get(var).asType();
             AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
@@ -153,11 +154,11 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
@@ -171,7 +172,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, resourceType().var()).build());
     }
 
     @Override

@@ -15,42 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+
 package ai.grakn.client;
 
-import ai.grakn.graql.Query;
-import mjson.Json;
-
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Encapsulates a response. (TODO) We should migrate this away from a json
+ * <p>
+ *     Simple class to encapsulate a query response.
+ *     This is required by the {@link com.netflix.hystrix.Hystrix} framework we use in {@link BatchExecutorClient}
+ * </p>
  *
- * @author Domenico Corapi
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class QueryResponse {
-    private final Query<?> query;
-    private final Json jsonResponse;
+    public static final QueryResponse INSTANCE = new QueryResponse();
 
-    public QueryResponse(Query<?> query, Json jsonResponse) {
-        this.query = query;
-        this.jsonResponse = jsonResponse;
-    }
-
-    public Json getJsonResponse() {
-        return jsonResponse;
-    }
-
-    public Query<?> getQuery() {
-        return query;
-    }
-
-    public static List<QueryResponse> from(List<Query<?>> queries, String response) {
-        List<Json> json = Json.read(response).asJsonList();
-        ArrayList<QueryResponse> result = new ArrayList<>();
-        for (int i = 0; i < queries.size(); i++) {
-            result.add(new QueryResponse(queries.get(i), json.get(i)));
-        }
-        return result;
-    }
+    private QueryResponse(){}
 }

@@ -19,25 +19,15 @@
 package ai.grakn.exception;
 
 import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Query;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
-import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
-import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
-import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
-import static ai.grakn.util.ErrorMessage.INVALID_QUERY_USAGE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_BODY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
-import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
-import static org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED;
 import static org.apache.http.HttpStatus.SC_NOT_ACCEPTABLE;
-import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 /**
  * <p>
@@ -68,21 +58,6 @@ public class GraknServerException extends GraknBackendException {
      */
     public int getStatus(){
         return status;
-    }
-
-    /**
-     * Thrown when the Grakn server has an internal exception.
-     * This is thrown upwards to be interpreted by clients
-     */
-    public static GraknServerException serverException(int status, Exception e){
-        return new GraknServerException(ENGINE_ERROR.getMessage(), e, status);
-    }
-
-    /**
-     * Thrown when attempting to create an invalid task
-     */
-    public static GraknServerException invalidTask(String className){
-        return new GraknServerException(UNAVAILABLE_TASK_CLASS.getMessage(className), SC_BAD_REQUEST);
     }
 
     /**
@@ -123,39 +98,10 @@ public class GraknServerException extends GraknBackendException {
     }
 
     /**
-     * Thrown when there is a mismatch between the content type in the request and the query to be executed
-     */
-    public static GraknServerException contentTypeQueryMismatch(String contentType, Query query){
-        return new GraknServerException(
-                INVALID_CONTENT_TYPE.getMessage(query.getClass().getName(), contentType), SC_NOT_ACCEPTABLE);
-    }
-
-    /**
-     * Thrown when an incorrect query is used with a REST endpoint
-     */
-    public static GraknServerException invalidQuery(String queryType){
-        return new GraknServerException(INVALID_QUERY_USAGE.getMessage(queryType), SC_METHOD_NOT_ALLOWED);
-    }
-
-    /**
-     * Thrown when asked to explain a non-get query
-     */
-    public static GraknServerException invalidQueryExplaination(String query){
-        return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), SC_METHOD_NOT_ALLOWED);
-    }
-
-    /**
      * Thrown when engine cannot delete a keyspace as expected
      */
     public static GraknServerException couldNotDelete(Keyspace keyspace){
         return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), SC_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Thrown when requested concept is not found in the graph
-     */
-    public static GraknServerException noConceptFound(ConceptId conceptId, Keyspace keyspace){
-        return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), SC_NOT_FOUND);
     }
 
     /**

@@ -40,8 +40,8 @@ public class AggregateQueryImplTest {
 
     @Test
     public void aggregateQueriesWithTheSameMatchAndAggregatesAreEqual() {
-        AggregateQuery<?> query1 = new AggregateQueryImpl<>(match1, aggregate1);
-        AggregateQuery<?> query2 = new AggregateQueryImpl<>(match1, aggregate1);
+        AggregateQuery<?> query1 = Queries.aggregate(match1, aggregate1);
+        AggregateQuery<?> query2 = Queries.aggregate(match1, aggregate1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -49,16 +49,16 @@ public class AggregateQueryImplTest {
 
     @Test
     public void aggregateQueriesWithDifferentMatchesAreDifferent() {
-        AggregateQuery<?> query1 = new AggregateQueryImpl<>(match1, aggregate1);
-        AggregateQuery<?> query2 = new AggregateQueryImpl<>(match2, aggregate1);
+        AggregateQuery<?> query1 = Queries.aggregate(match1, aggregate1);
+        AggregateQuery<?> query2 = Queries.aggregate(match2, aggregate1);
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void aggregateQueriesWithDifferentDeletersAreDifferent() {
-        AggregateQuery<?> query1 = new AggregateQueryImpl<>(match1, aggregate1);
-        AggregateQuery<?> query2 = new AggregateQueryImpl<>(match1, aggregate2);
+        AggregateQuery<?> query1 = Queries.aggregate(match1, aggregate1);
+        AggregateQuery<?> query2 = Queries.aggregate(match1, aggregate2);
 
         assertNotEquals(query1, query2);
     }

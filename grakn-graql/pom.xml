@@ -24,13 +24,17 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-graql</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
@@ -44,21 +48,8 @@
             <artifactId>annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.javatuples</groupId>
-            <artifactId>javatuples</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

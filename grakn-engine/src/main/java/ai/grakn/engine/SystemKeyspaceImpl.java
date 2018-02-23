@@ -30,6 +30,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,16 +98,16 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
      */
     private void logNewKeyspace(Keyspace keyspace){
         //Log that we have created the keyspace
-        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-            AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
+        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
             Attribute<String> attribute = keyspaceName.putAttribute(keyspace.getValue());
             if (attribute.owner() == null) {
-                graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
+                tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
-            graph.admin().commitSubmitNoLogs();
+            tx.commitSubmitNoLogs();
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
@@ -129,8 +130,8 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
            return false;
         }
 
-        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-            AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
+        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.getAttribute(keyspace.getValue());
 
             if(attribute == null) return false;
@@ -140,7 +141,7 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
 
             existingKeyspaces.remove(keyspace);
 
-            graph.admin().commitSubmitNoLogs();
+            tx.commitSubmitNoLogs();
         }
 
         return true;
@@ -162,15 +163,15 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
     @Override
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }
             LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.admin().commitSubmitNoLogs();
+            tx.commitSubmitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
             throw e;
         }

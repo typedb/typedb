@@ -43,6 +43,7 @@ import java.util.Map;
  *
  * @author sheldon, felix
  */
+@SuppressWarnings("unused")//Used as part of SNB load test
 public class GraknDb extends Db {
 
     private GraknDbConnectionState connectionState = null;

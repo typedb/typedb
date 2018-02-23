@@ -34,7 +34,7 @@ import java.util.Set;
 import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
 
 /**
- * The vertex program for connected components in a graph.
+ * The vertex program for computing connected components of a give instance.
  *
  * @author Jason Liu
  */
@@ -51,7 +51,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean>
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
             Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
-    // for internal use
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public ConnectedComponentVertexProgram() {
     }
 

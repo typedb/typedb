@@ -4,20 +4,34 @@ define
 ####################Schema######################
 #################################################
 
-"vertex" sub entity
+vertex sub entity
     has index;
 
-"link-endA" sub role;
-"link-endB" sub role;
-"link" sub relationship, relates link-endA, relates link-endB;
-vertex plays link-endA, plays link-endB;
+coordinate sub role;
+link sub relationship, relates coordinate;
+vertex plays coordinate;
 
-"reach-endA" sub role;
-"reach-endB" sub role;
-"reachable" sub relationship, relates reach-endA, relates reach-endB;
-vertex plays reach-endA, plays reach-endB;
+reachable sub relationship, relates coordinate;
+vertex plays coordinate;
 
-"index" sub attribute, datatype string;
+index sub attribute, datatype string;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+($x, $y) isa link;},
+then {
+($x, $y) isa reachable;};
+
+rule-2
+when {
+($x, $z) isa link;
+($z, $y) isa reachable;},
+then {
+($x, $y) isa reachable;};
 
 insert
 
@@ -30,26 +44,8 @@ $b isa vertex, has index "b";
 $c isa vertex, has index "c";
 $d isa vertex, has index "d";
 
-(link-endA: $a, link-endB: $b) isa link;
-(link-endA: $b, link-endB: $c) isa link;
-(link-endA: $c, link-endB: $c) isa link;
-(link-endA: $c, link-endB: $d) isa link;
+(coordinate: $a, coordinate: $b) isa link;
+(coordinate: $b, coordinate: $c) isa link;
+(coordinate: $c, coordinate: $c) isa link;
+(coordinate: $c, coordinate: $d) isa link;
 
-define
-
-####################################################
-##################RULES#############################
-####################################################
-
-rule-1 sub rule,
-when {
-($x, $y) isa link;},
-then {
-(reach-endA: $x, reach-endB: $y) isa reachable;};
-
-rule-2 sub rule,
-when {
-(link-endA: $x, link-endB: $z) isa link;
-(reach-endA: $z, reach-endB: $y) isa reachable;},
-then {
-(reach-endA: $x, reach-endB: $y) isa reachable;};

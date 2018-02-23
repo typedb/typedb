@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -38,8 +38,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.EngineContext;
-import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import org.junit.Before;
@@ -54,8 +54,10 @@ import java.util.List;
 import java.util.Random;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraknTestUtil.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 public class BenchmarkIT {
 
@@ -68,6 +70,9 @@ public class BenchmarkIT {
 
     @Before
     public void setupSession() {
+        // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
+        assumeFalse(usingTinker());
+
         keyspace = randomKeyspace();
         this.session = Grakn.session(engine.uri(), keyspace);
     }
@@ -181,7 +186,6 @@ public class BenchmarkIT {
                 Var toVar = Graql.var().asUserDefined();
                 VarPattern rulePattern = Graql
                         .label("rule" + i)
-                        .sub("rule")
                         .when(
                                 Graql.and(
                                         Graql.var()

@@ -79,10 +79,10 @@ public class RemoteSessionTest {
 
     public static final SessionContext sessionContext = SessionContext.create();
 
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    public static final SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         GraknConfig graknConfig = GraknConfig.create();
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknConfig);
-        new SystemController(spark, graknConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
+        new SystemController(graknConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry()).start(spark);
     }).port(4567);
 
     @ClassRule

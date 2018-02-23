@@ -20,7 +20,6 @@ package ai.grakn.migration.xml;
 
 import ai.grakn.migration.base.MigrationCLI;
 import ai.grakn.migration.xml.XmlSchema.TypeInfo;
-import com.google.common.collect.Sets;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -113,14 +112,6 @@ public class XmlMigrator implements AutoCloseable {
         }
         this.readers = Stream.of(files).map(this::asReader).collect(toSet());
         this.schema = new XmlSchema();
-    }
-
-    /**
-     * Construct a XmlMigrator to migrate data in given reader
-     * @param reader reader over the data to be migrated
-     */
-    public XmlMigrator(Reader reader){
-        this.readers = Sets.newHashSet(reader);
     }
 
     public XmlMigrator element(String element) {

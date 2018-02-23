@@ -91,7 +91,7 @@ public class JacksonPrinterTest {
 
         Map<?, ?> expected = ImmutableMap.of(Answer.create(ans), ImmutableList.of(Answer.create(ans)));
 
-        assertEquals(expected, printer.graqlString(false, map));
+        assertEquals(expected, printer.build(map));
     }
 
     private static void assertWrappersMatch(Object expected, Object toPrint) throws JsonProcessingException {

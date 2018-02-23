@@ -84,17 +84,28 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Role role = executor.get(this.role().var()).asRole();
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        Var roleVar = role().var();
+
+        PropertyExecutor.Method relatesMethod = executor -> {
+            Role role = executor.get(roleVar).asRole();
             executor.get(var).asRelationshipType().relates(role);
         };
 
-        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
+
+        // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
+        PropertyExecutor.Method isRoleMethod = executor -> {
+            executor.builder(roleVar).isRole();
+        };
+
+        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
+
+        return ImmutableSet.of(relatesExecutor, isRoleExecutor);
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             RelationshipType relationshipType = executor.get(var).asRelationshipType();
             Role role = executor.get(this.role().var()).asRole();
@@ -104,7 +115,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
     }
 
     @Override

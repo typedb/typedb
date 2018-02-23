@@ -126,9 +126,6 @@ The relationship will be defined through a `siblings` relationship. We define bo
 ```graql
 define
 
-sibling sub role;
-cousin sub role;
-
 siblings sub relationship
     relates sibling;
 

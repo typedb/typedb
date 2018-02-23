@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -48,14 +47,15 @@ import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -85,7 +85,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private final Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         super(pattern, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -100,7 +100,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, GraknTx tx){
+    ReasonerAtomicQuery(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         super(atoms, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }

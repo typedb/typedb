@@ -47,7 +47,7 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public String build(Object object) {
+    public String complete(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (IOException e) {
@@ -56,43 +56,43 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object graqlString(boolean inner, Concept concept) {
+    public Object build(Concept concept) {
         return ConceptBuilder.build(concept);
     }
 
     @Override
-    public Object graqlString(boolean inner, ai.grakn.graql.admin.Answer answer) {
+    public Object build(ai.grakn.graql.admin.Answer answer) {
         return Answer.create(answer);
     }
 
     @Override
-    public Object graqlString(boolean inner, boolean bool) {
+    public Object build(boolean bool) {
         return bool;
     }
 
     @Override
-    public Object graqlStringDefault(boolean inner, Object object) {
+    public Object buildDefault(Object object) {
         return object;
     }
 
     @Override
-    public Object graqlString(boolean inner, Map map) {
+    public Object build(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
-                entry -> graqlString(inner, entry.getKey()),
-                entry -> graqlString(inner, entry.getValue())
+                entry -> build(entry.getKey()),
+                entry -> build(entry.getValue())
         ));
     }
 
     @Override
-    public Object graqlString(boolean inner, Collection collection) {
-        return collection.stream().map(object -> graqlString(inner, object)).collect(Collectors.toList());
+    public Object build(Collection collection) {
+        return collection.stream().map(object -> build(object)).collect(Collectors.toList());
     }
 
     @Override
-    public Object graqlString(boolean inner, Optional optional) {
+    public Object build(Optional optional) {
         if(optional.isPresent()){
-            return graqlString(inner, optional.get());
+            return build(optional.get());
         } else {
             return null;
         }

@@ -20,7 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface MaxQuery extends ComputeQuery<Optional<Number>> {
+public interface MaxQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
      * @param resourceTypeLabels an array of types of resources to execute the query on
@@ -56,7 +56,7 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
      * @return a MaxQuery with the subLabels set
      */
     @Override
-    MaxQuery in(Collection<Label> subLabels);
+    MaxQuery in(Collection<? extends Label> subLabels);
 
     /**
      * Execute the query.

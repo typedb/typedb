@@ -24,9 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -40,7 +38,7 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.kb.log.CommitLog;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -98,29 +96,29 @@ import static org.apache.http.HttpStatus.SC_OK;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-public class GraqlController {
+public class GraqlController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
-    private final Printer printer;
+    private final Printer<?> printer;
     private final EngineGraknTxFactory factory;
-    private final TaskManager taskManager;
     private final PostProcessor postProcessor;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
-            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
-        this.taskManager = taskManager;
         this.postProcessor = postProcessor;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
+    }
 
+    @Override
+    public void start(Service spark) {
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
@@ -143,7 +141,7 @@ public class GraqlController {
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
                 Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
-                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer, printer));
+                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });
     }
@@ -185,7 +183,7 @@ public class GraqlController {
         LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
-            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+            try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
 
@@ -256,7 +254,7 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+    private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
@@ -281,29 +279,9 @@ public class GraqlController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
+        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
 
         return formatted;
-    }
-
-    private static void commitAndSubmitPPTask(
-            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
-    ) {
-        Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
-        if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
-            CommitLog logs = result.get();
-
-            //Update the attributes which need to be merged
-            System.out.println("Adding task to manager . . . ");
-            taskSubmitter.addTask(
-                    PostProcessingTask.createTask(GraqlController.class),
-                    PostProcessingTask.createConfig(logs)
-            );
-
-            //Update the counts which need to be updated
-            System.out.println("Updating counts . . . ");
-            postProcessor.updateCounts(graph.keyspace(), logs);
-        }
     }
 
     private Object executeAndMonitor(Query<?> query) {

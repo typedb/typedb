@@ -18,77 +18,21 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> implements MinQuery {
 
-    MinQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MinQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new MinMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
-
-        LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
-        LOGGER.info("MinMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(min.get(MapReduce.NullObject.instance()));
-    }
-
-    @Override
-    public MinQuery of(String... resourceTypeLabels) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public MinQuery of(Collection<Label> resourceLabels) {
-        return (MinQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public MinQuery in(String... subTypeLabels) {
-        return (MinQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public MinQuery in(Collection<Label> subLabels) {
-        return (MinQuery) super.in(subLabels);
-    }
-
-    @Override
-    public MinQuery withTx(GraknTx tx) {
-        return (MinQuery) super.withTx(tx);
+    public final ComputeJob<Optional<Number>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

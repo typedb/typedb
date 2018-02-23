@@ -92,15 +92,9 @@ marriage sub relationship
   relates spouse2
   has picture;
 
-spouse1 sub role;
-spouse2 sub role;
-
 parentship sub relationship
   relates parent
   relates child;
-
-parent sub role;
-child sub role;
 ```
 
 There are a number of things we can say about schema shown above:

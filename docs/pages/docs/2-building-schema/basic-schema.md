@@ -88,15 +88,9 @@ marriage sub relationship
   relates spouse2
   has picture;
 
-spouse1 sub role;
-spouse2 sub role;
-
 parentship sub relationship
   relates parent
   relates child;
-
-parent sub role;
-child sub role;
 ```
 
 ## Allowing Roles to be Played
@@ -162,16 +156,9 @@ define
     relates spouse2
     has picture;
 
-  spouse1 sub role;
-  spouse2 sub role;
-
   parentship sub relationship
     relates parent
     relates child;
-
-  parent sub role;
-  child sub role;
-
 ```
 
 ![Schema](/images/basic-schema1.png)

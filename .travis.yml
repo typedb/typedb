@@ -10,6 +10,13 @@ cache:
   - grakn-dashboard/node_modules
   - grakn-engine/npm
 
+addons:
+  sonarcloud:
+    organization: "grakn-labs"
+    branches:
+      - master
+      - stable
+
 env:
   # Split tests into grakn-test and everything else
   - TESTS=**/*Test* MODULE=grakn-test/test-integration
@@ -23,8 +30,16 @@ notifications:
   
 install: mvn install -T 2.5C -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 
-script:
-    - mvn test --projects "$MODULE" -Dtest=$TESTS -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
-    - bash <(curl -s https://codecov.io/bash)
+
+jobs:
+  include:
+    - stage: test
+      script:
+        - mvn test --projects "$MODULE" -Dtest=$TESTS -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
+        - bash <(curl -s https://codecov.io/bash)
+    - stage: deploy
+      if: type IN (push, cron, api)
+      script:
+        - mvn sonar:sonar
 before_install:
   - npm config set registry http://registry.npmjs.org/

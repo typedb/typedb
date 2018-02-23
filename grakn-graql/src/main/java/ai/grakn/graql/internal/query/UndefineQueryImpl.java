@@ -19,29 +19,25 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.VarPattern;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.toImmutableList;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-abstract class UndefineQueryImpl implements UndefineQuery {
+abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {
 
-    abstract ImmutableList<VarPatternAdmin> varPatterns();
-    abstract @Nullable GraknTx tx();
-
-    static UndefineQueryImpl of(ImmutableList<VarPatternAdmin> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_UndefineQueryImpl(varPatterns, tx);
+    static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
+        return new AutoValue_UndefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
     }
 
     @Override
@@ -50,19 +46,9 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     }
 
     @Override
-    public Void execute() {
-        ImmutableList<VarPatternAdmin> allPatterns =
-                varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
-
-        QueryOperationExecutor.undefineAll(allPatterns, tx());
-
+    public final Void execute() {
+        queryRunner().run(this);
         return null;
-    }
-
-    @Override
-    public Stream<String> resultsString(Printer printer) {
-        execute();
-        return Stream.empty();
     }
 
     @Override
@@ -73,5 +59,11 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     @Override
     public String toString() {
         return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    protected final Stream<Void> stream() {
+        execute();
+        return Stream.empty();
     }
 }

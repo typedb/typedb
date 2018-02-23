@@ -61,7 +61,7 @@ public class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    public static TxFactory<?> getFactory(GraknSession session, boolean isComputerFactory){
+    public static TxFactory<?> getFactory(EmbeddedGraknSession session, boolean isComputerFactory){
         try{
             String factoryKey = session.config().getProperty(GraknConfigKey.KB_MODE);
             if(isComputerFactory){
@@ -81,7 +81,7 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TxFactoryTinker
      * @return A graph factory which produces the relevant expected graph.
     */
-    private static TxFactory<?> getFactory(String factoryType, GraknSession session){
+    private static TxFactory<?> getFactory(String factoryType, EmbeddedGraknSession session){
         String key = factoryType + session.keyspace();
         return openFactories.computeIfAbsent(key, (k) -> newFactory(factoryType, session));
     }
@@ -92,11 +92,11 @@ public class FactoryBuilder {
      * @param session The {@link GraknSession} creating this factory
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized TxFactory<?> newFactory(String factoryType, GraknSession session){
+    private static synchronized TxFactory<?> newFactory(String factoryType, EmbeddedGraknSession session){
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
-                    .getDeclaredConstructor(GraknSession.class)
+                    .getDeclaredConstructor(EmbeddedGraknSession.class)
                     .newInstance(session);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);

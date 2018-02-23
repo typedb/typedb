@@ -63,12 +63,11 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
 
         return atoms.stream()
-                .filter(at -> ! atoms.stream()
+                .filter(at -> !atoms.stream()
                         .filter(Atom.class::isInstance)
                         .map(Atom.class::cast)
                         .flatMap(Atom::getInnerPredicates)
-                        .filter(at::equals)
-                        .findFirst().isPresent()
+                        .anyMatch(at::equals)
                 );
     }
 

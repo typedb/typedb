@@ -53,7 +53,8 @@ public class Methods extends AbstractGenerator<Method> {
         return random.choose(clazz.getMethods());
     }
 
-    public void configure(MethodOf methodOf) {
+    @SuppressWarnings("unused") /** Used through {@link MethodOf} annotation*/
+    public void configure(@SuppressWarnings("unused") MethodOf methodOf) {
         this.clazz = methodOf.value();
     }
 

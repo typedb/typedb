@@ -35,7 +35,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -290,17 +289,15 @@ public class ClusteringTest {
             entityType2.plays(role1).plays(role2);
             RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            ConceptId relationId12 = relationshipType.addRelationship()
+            relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            ConceptId relationId23 = relationshipType.addRelationship()
+            relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity3).getId();
-            ConceptId relationId24 = relationshipType.addRelationship()
+            relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId();
-            List<ConceptId> instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
-                    relationId12, relationId23, relationId24);
 
             List<AttributeType> attributeTypeList = new ArrayList<>();
             attributeTypeList.add(graph.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE));

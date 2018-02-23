@@ -22,6 +22,9 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 
 
 /**
@@ -49,11 +52,12 @@ public abstract class ThenProperty extends RuleProperty {
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).then(pattern());
+            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
+            executor.builder(var).isRule().then(pattern());
         };
 
-        return PropertyExecutor.builder(method).produces(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 }

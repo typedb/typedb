@@ -58,8 +58,6 @@ import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -85,8 +83,6 @@ import static java.util.stream.Collectors.toSet;
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
 class QueryVisitor extends GraqlBaseVisitor {
-
-    protected final Logger LOG = LoggerFactory.getLogger(QueryVisitor.class);
 
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;

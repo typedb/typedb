@@ -20,7 +20,6 @@ package ai.grakn.test.docs
 
 import ai.grakn.*
 import ai.grakn.concept.*
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask
 
 import java.time.*
 import ai.grakn.graql.*
@@ -44,7 +43,6 @@ if (false) {
     BatchExecutorClient client = null
     Json json = null
     TaskId id = null
-    ShortExecutionMockTask mockTask = null
 }
 
 // Initialise graphs and fields that the code samples will use

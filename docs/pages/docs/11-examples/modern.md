@@ -70,11 +70,9 @@ define weight sub attribute datatype double;
 Let's first define the relationship between people. The diagram shows that marko knows vadas, but we don't have any information about whether the inverse is true (though it seems likely that vadas probably also knows marko). Let's set up a relationship called `knows`, which has two roles - `knower` (for marko) and `known-about` (for vadas):
 
 ```graql
-define knower sub role;
-define known-about sub role;
+define knows sub relationship, relates knower, relates known-about, has weight;
 define person plays knower;
 define person plays known-about;
-define knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
 Note that the `knows` relationship also has an attribute, in the form of an attribute called `weight`.
@@ -82,13 +80,9 @@ Note that the `knows` relationship also has an attribute, in the form of an attr
 We can set up a similar relationship between software and the people that created it:
 
 ```graql
-define programmer sub role;
-define programmed sub role;
-
+define programming sub relationship, relates programmer, relates programmed, has weight;
 define person plays programmer;
 define software plays programmed;
-
-define programming sub relationship, relates programmer, relates programmed, has weight;
 ```
 
 And that's it. At this point, we have defined the schema of the knowledge base.
@@ -175,16 +169,13 @@ insert $peter isa person, has age 35, has name "peter";
 
 define weight sub attribute datatype double;
 
-knower sub role;
-known-about sub role;
-
-person plays knower;
-person plays known-about;
-
 knows sub relationship
     relates knower
     relates known-about
     has weight;
+
+person plays knower;
+person plays known-about;
 
 match $marko has name "marko"; $josh has name "josh"; insert (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 match $marko has name "marko"; $vadas has name "vadas"; insert (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
@@ -198,16 +189,14 @@ insert $lop isa software, has lang "java", has name "lop";
 insert $ripple isa software, has lang "java", has name "ripple";
 
 define
-programmer sub role;
-programmed sub role;
-
-person plays programmer;
-software plays programmed;
 
 programming sub relationship
     relates programmer
     relates programmed
     has weight;
+
+person plays programmer;
+software plays programmed;
 
 
 match $marko has name "marko"; $lop has name "lop"; insert (programmer: $marko, programmed: $lop) isa programming has weight 0.4;

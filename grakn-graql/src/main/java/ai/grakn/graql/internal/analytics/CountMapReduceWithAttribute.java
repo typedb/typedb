@@ -31,7 +31,7 @@ import java.io.Serializable;
 
 public class CountMapReduceWithAttribute extends CountMapReduce {
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public CountMapReduceWithAttribute() {
     }
 

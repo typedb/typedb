@@ -4,37 +4,36 @@ define
 ####################Schema######################
 #################################################
 
-
-"vertex" sub entity
+vertex sub entity
    has index;
-"start-vertex" sub entity
+start-vertex sub entity
    has index;
 
-"arc-from" sub role;
-"arc-to" sub role;
-"arc" sub relationship, relates arc-from, relates arc-to;
+arc-from sub role;
+arc-to sub role;
+arc sub relationship, relates arc-from, relates arc-to;
 vertex plays arc-from, plays arc-to;
 start-vertex plays arc-from;
 
-"path-from" sub role;
-"path-to" sub role;
-"path" sub relationship, relates path-from, relates path-to;
+path-from sub role;
+path-to sub role;
+path sub relationship, relates path-from, relates path-to;
 vertex plays path-from, plays path-to;
 start-vertex plays path-from;
 
-"index" sub attribute, datatype string;
+index sub attribute, datatype string;
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (arc-from: $x, arc-to: $y) isa arc;},
 then {
 (path-from: $x, path-to: $y) isa path;};
 
-rule-2 sub rule,
+rule-2
 when {
 (path-from: $x, path-to: $z) isa path;
 (path-from: $z, path-to: $y) isa path;},

@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
@@ -43,8 +43,8 @@
         <module>grakn-factory</module>
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
-        <module>grakn-module-sdk</module>
         <module>grakn-bootup</module>
+        <module>grakn-grpc</module>
     </modules>
 
     <properties>
@@ -64,8 +64,6 @@
         <commons-csv.version>1.3</commons-csv.version>
         <json.version>20160212</json.version>
         <rest-assured.version>2.7.0</rest-assured.version>
-        <commons-math.version>3.4.1</commons-math.version>
-        <java-tuples.version>1.2</java-tuples.version>
         <spark.version>1.6.1</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
@@ -74,7 +72,7 @@
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
-        <redis-mock.version>0.1.3</redis-mock.version>
+        <redis-mock.version>0.1.5</redis-mock.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
@@ -102,7 +100,8 @@
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
-        <netty-all.version>4.0.42.Final</netty-all.version>
+        <grpc.version>1.8.0</grpc.version>
+        <netty-all.version>4.1.16.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty.version>1.1.33.Fork19</netty.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
@@ -112,7 +111,6 @@
         <jersey.version>1.19</jersey.version>
         <hystrix-core.version>1.5.12</hystrix-core.version>
         <failsafe.version>1.0.4</failsafe.version>
-        <redisq.version>0.0.7-SNAPSHOT</redisq.version>
         <reactivex.version>1.3.2</reactivex.version>
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
@@ -211,12 +209,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -231,7 +229,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -241,8 +239,8 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>janus-factory</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <artifactId>grakn-factory</artifactId>
+                <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -265,13 +263,8 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-module-sdk</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
                 <artifactId>grakn-client</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -282,7 +275,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -293,43 +286,42 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>grakn-grpc</artifactId>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>redisq</artifactId>
-                <version>${redisq.version}</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -497,20 +489,9 @@
                 <version>${antlr.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.javatuples</groupId>
-                <artifactId>javatuples</artifactId>
-                <version>${java-tuples.version}</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-csv</artifactId>
                 <version>${csv.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-math3</artifactId>
-                <version>${commons-math.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jooq</groupId>
@@ -565,10 +546,6 @@
                     <exclusion>
                         <groupId>com.boundary</groupId>
                         <artifactId>high-scale-lib</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.codahale.metrics</groupId>
-                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>ch.qos.logback</groupId>
@@ -680,6 +657,10 @@
                     <exclusion>
                         <groupId>io.dropwizard.metrics</groupId>
                         <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-handler</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -811,6 +792,26 @@
                 <version>${jetty.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>net.lingala.zip4j</groupId>
                 <artifactId>zip4j</artifactId>
                 <version>1.3.2</version>
@@ -866,7 +867,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -934,7 +935,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-bootup</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
             </dependency>
 
         </dependencies>
@@ -970,7 +971,7 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>development-snapshots</id>
+            <id>snapshots</id>
             <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
         </repository>
         <repository>
@@ -1190,6 +1191,7 @@
                     <excludes>
                         <!-- Skip generated classes, we only care about code we write -->
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
+                        <exclude>**/ai/grakn/rpc/generated/*.java</exclude>
                         <exclude>**/AutoValue_**.java</exclude>
 
                         <!-- Following controllers contain duplicate annotations for documentation -->
@@ -1272,11 +1274,11 @@
             </properties>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>grakn-snapshots</id>
+                    <id>snapshots</id>
                     <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
                 </snapshotRepository>
                 <repository>
-                    <id>grakn-releases</id>
+                    <id>releases</id>
                     <url>https://maven.grakn.ai/content/repositories/releases/</url>
                 </repository>
             </distributionManagement>

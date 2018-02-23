@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -73,30 +73,32 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
-        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
+    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
+        EmbeddedGraknTx<?> tx = optionalGraph.orElseThrow(GraqlQueryException::noTx);
 
-        validatePattern(graph);
+        validatePattern(tx);
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, tx);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        return streamWithTraversal(this.getPattern().commonVars(), graph, graqlTraversal);
+        return streamWithTraversal(this.getPattern().commonVars(), tx, graqlTraversal);
     }
 
     /**
      * @param commonVars set of variables of interest
-     * @param graph the graph to get results from
+     * @param tx the graph to get results from
      * @param graqlTraversal gral traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public static Stream<Answer> streamWithTraversal(Set<Var> commonVars, GraknTx graph, GraqlTraversal graqlTraversal) {
+    public static Stream<Answer> streamWithTraversal(
+            Set<Var> commonVars, EmbeddedGraknTx<?> tx, GraqlTraversal graqlTraversal
+    ) {
         Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
 
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph, vars);
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(tx, vars);
 
         return traversal.toStream()
-                .map(elements -> makeResults(vars, graph, elements))
+                .map(elements -> makeResults(vars, tx, elements))
                 .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
@@ -105,18 +107,20 @@ public class MatchBase extends AbstractMatch {
 
     /**
      * @param vars set of variables of interest
-     * @param graph the graph to get results from
+     * @param tx the graph to get results from
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private static Optional<Map<Var, Concept>> makeResults(Set<Var> vars, GraknTx graph, Map<String, Element> elements) {
+    private static Optional<Map<Var, Concept>> makeResults(
+            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements
+    ) {
         Map<Var, Concept> map = new HashMap<>();
         for (Var var : vars) {
             Element element = elements.get(var.name());
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
             } else {
-                Concept concept = buildConcept(graph.admin(), element);
+                Concept concept = buildConcept(tx, element);
                 map.put(var, concept);
             }
         }
@@ -124,11 +128,11 @@ public class MatchBase extends AbstractMatch {
         return Optional.of(map);
     }
 
-    private static Concept buildConcept(GraknAdmin graph, Element element) {
+    private static Concept buildConcept(EmbeddedGraknTx<?> tx, Element element) {
         if (element instanceof Vertex) {
-            return graph.buildConcept((Vertex) element);
+            return tx.buildConcept((Vertex) element);
         } else {
-            return graph.buildConcept((Edge) element);
+            return tx.buildConcept((Edge) element);
         }
     }
 

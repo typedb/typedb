@@ -45,7 +45,7 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
      * @return a DegreeQuery with the subLabels set
      */
     @Override
-    DegreeQuery in(Collection<Label> subLabels);
+    DegreeQuery in(Collection<? extends Label> subLabels);
 
     /**
      * @param ofTypeLabels an array of types in the subgraph to compute degree of. By default the degrees of all the
@@ -62,15 +62,14 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery of(Collection<Label> ofLabels);
 
     /**
+     * Get the collection of types to execute the query on
+     */
+    Collection<? extends Label> targetLabels();
+
+    /**
      * @param tx the transaction to execute the query on
      * @return a DegreeQuery with the transaction set
      */
     @Override
     DegreeQuery withTx(GraknTx tx);
-
-    /**
-     * Allow attributes and their relationships to be included.
-     */
-    @Override
-    DegreeQuery includeAttribute();
 }

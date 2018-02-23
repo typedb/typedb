@@ -42,7 +42,7 @@ public abstract class TestKB {
 
     protected void buildInstances(GraknTx tx){};
 
-    protected void buildRelations(GraknTx tx){};
+    protected void buildRelations(){};
 
     protected void buildRules(GraknTx tx){};
 
@@ -50,7 +50,7 @@ public abstract class TestKB {
         return (GraknTx tx) -> {
             buildSchema(tx);
             buildInstances(tx);
-            buildRelations(tx);
+            buildRelations();
             buildRules(tx);
         };
     }

@@ -35,17 +35,16 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
-
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import java.util.Collection;
-import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -207,13 +206,13 @@ public class ReasonerUtils {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
         if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
-            Sets.intersection(
-                    new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
-                    entryRoles
-            )
-                    .forEach(compatibleRoles::add);
+            compatibleRoles.addAll(
+                    Sets.intersection(
+                            new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
+                            entryRoles
+            ));
         } else {
-            entryRoles.forEach(compatibleRoles::add);
+            compatibleRoles.addAll(entryRoles);
         }
 
         if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
@@ -253,18 +252,6 @@ public class ReasonerUtils {
                 .filter(c -> Schema.MetaSchema.isMetaLabel(c.getLabel()))
                 .findFirst().orElse(null);
         return meta != null ? Collections.singleton(meta) : concepts;
-    }
-
-    /**
-     * @param type for which top type is to be found
-     * @return non-meta top type of the type
-     */
-    public static Type top(Type type){
-        Type superType = type;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
-            superType = superType.sup();
-        }
-        return superType;
     }
 
     /**

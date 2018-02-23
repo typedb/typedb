@@ -4,35 +4,35 @@ define
 ####################Schema######################
 #################################################
 
-"person" sub entity
+person sub entity
      has name;
 
-"parent" sub role;
-"child" sub role;
-"Parent" sub relationship, relates parent, relates child;
+parent sub role;
+child sub role;
+Parent sub relationship, relates parent, relates child;
 person plays parent, plays child;
 
-"RSG-from" sub role;
-"RSG-to" sub role;
-"RevSG" sub relationship, relates RSG-from, relates RSG-to;
+RSG-from sub role;
+RSG-to sub role;
+RevSG sub relationship, relates RSG-from, relates RSG-to;
 person plays RSG-from, plays RSG-to;
 
-"up-from" sub role;
-"up-to" sub role;
-"up" sub relationship, relates up-from, relates up-to;
+up-from sub role;
+up-to sub role;
+up sub relationship, relates up-from, relates up-to;
 person plays up-from, plays up-to;
 
-"down-from" sub role;
-"down-to" sub role;
-"down" sub relationship, relates down-from, relates down-to;
+down-from sub role;
+down-to sub role;
+down sub relationship, relates down-from, relates down-to;
 person plays down-from, plays down-to;
 
-"flat-from" sub role;
-"flat-to" sub role;
-"flat" sub relationship, relates flat-to, relates flat-from;
+flat-from sub role;
+flat-to sub role;
+flat sub relationship, relates flat-to, relates flat-from;
 person plays flat-from, plays flat-to;
 
-"name" sub attribute, datatype string;
+name sub attribute, datatype string;
 
 insert
 
@@ -83,13 +83,13 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (flat-from: $x, flat-to: $y) isa flat;},
 then {
 (RSG-from: $x, RSG-to: $y) isa RevSG;};
 
-rule-2 sub rule,
+rule-2
 when {
 (up-from: $x, up-to: $x1) isa up;
 (RSG-from: $y1, RSG-to: $x1) isa RevSG;

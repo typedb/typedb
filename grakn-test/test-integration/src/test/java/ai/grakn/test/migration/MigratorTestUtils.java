@@ -74,14 +74,6 @@ public class MigratorTestUtils {
         }
     }
 
-    public static void assertResourceEntityRelationExists(GraknTx graph, String resourceName, Object resourceValue, Entity owner){
-        AttributeType attributeType = graph.getAttributeType(resourceName);
-        assertNotNull(attributeType);
-        assertEquals(resourceValue, owner.attributes(attributeType)
-                .map(Attribute::getValue)
-                .findFirst().get());
-    }
-
     public static void assertRelationBetweenInstancesExists(GraknTx graph, Thing thing1, Thing thing2, Label relation){
         RelationshipType relationshipType = graph.getSchemaConcept(relation);
 

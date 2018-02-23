@@ -21,13 +21,12 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
-
 import com.google.common.base.Equivalence;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -112,31 +111,7 @@ public class RuleUtils {
      */
     public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
         return rules.stream()
-                .filter(InferenceRule::headSatisfiesBody)
-                .findFirst().isPresent();
-    }
-
-    /**
-     * @param topTypes entry types in the rule graph
-     * @return all rules that are reachable from the entry types
-     */
-    public static Set<Rule> getDependentRules(Set<Type> topTypes){
-        Set<Rule> rules = new HashSet<>();
-        Set<Type> visitedTypes = new HashSet<>();
-        Stack<Type> types = new Stack<>();
-        topTypes.forEach(types::push);
-        while(!types.isEmpty()) {
-            Type type = types.pop();
-            if (!visitedTypes.contains(type)){
-                type.getRulesOfConclusion()
-                        .peek(rules::add)
-                        .flatMap(Rule::getHypothesisTypes)
-                        .filter(visitedTypes::contains)
-                        .forEach(types::add);
-                visitedTypes.add(type);
-            }
-        }
-        return rules;
+                .anyMatch(InferenceRule::headSatisfiesBody);
     }
 
     /**

@@ -35,12 +35,12 @@ import static mjson.Json.nil;
 
 class JsonPrinter implements Printer<Json> {
     @Override
-    public final String build(Json builder) {
+    public final String complete(Json builder) {
         return builder.toString();
     }
 
     @Override
-    public Json graqlString(boolean inner, Concept concept) {
+    public Json build(Concept concept) {
         Json json = Json.object("id", concept.getId().getValue());
 
         if (concept.isSchemaConcept()) {
@@ -72,35 +72,35 @@ class JsonPrinter implements Printer<Json> {
     }
 
     @Override
-    public final Json graqlString(boolean inner, boolean bool) {
+    public final Json build(boolean bool) {
         return Json.make(bool);
     }
 
     @Override
-    public final Json graqlString(boolean inner, Optional<?> optional) {
-        return optional.map(item -> graqlString(inner, item)).orElse(nil());
+    public final Json build(Optional<?> optional) {
+        return optional.map(item -> build(item)).orElse(nil());
     }
 
     @Override
-    public final Json graqlString(boolean inner, Collection<?> collection) {
-        return Json.make(collection.stream().map(item -> graqlString(inner, item)).collect(toList()));
+    public final Json build(Collection<?> collection) {
+        return Json.make(collection.stream().map(item -> build(item)).collect(toList()));
     }
 
     @Override
-    public final Json graqlString(boolean inner, Map<?, ?> map) {
+    public final Json build(Map<?, ?> map) {
         Json json = Json.object();
 
         map.forEach((Object key, Object value) -> {
             if (key instanceof Var) key = ((Var) key).getValue();
             String keyString = key == null ? "" : key.toString();
-            json.set(keyString, graqlString(true, value));
+            json.set(keyString, build(value));
         });
 
         return json;
     }
 
     @Override
-    public final Json graqlStringDefault(boolean inner, Object object) {
+    public final Json buildDefault(Object object) {
         return Json.make(object);
     }
 }

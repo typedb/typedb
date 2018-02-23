@@ -54,6 +54,8 @@ one will be created.
 
 `$A relates $B` define the _relationship type_ `$A` to directly relate the _role_ `$B`.
 
+In the case where `$B` does not have a defined `sub`, this will also implicit define `$B sub role`.
+
 ## plays
 
 `$A plays $B` defines the _type_ `$A` to directly play the _role_ `$B`.

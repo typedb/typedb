@@ -5,20 +5,20 @@ define
 ####################Schema######################
 #################################################
 
-"Person" sub entity
+person sub entity
     has name;
 
-"parent" sub role;
-"child" sub role;
-"Parent" sub relationship, relates parent, relates child;
-Person plays parent, plays child;
+parent sub role;
+child sub role;
+Parent sub relationship, relates parent, relates child;
+person plays parent, plays child;
 
-"ancestor" sub role;
-"descendant" sub role;
-"Ancestor" sub relationship, relates ancestor, relates descendant;
-Person plays ancestor, plays descendant;
+ancestor sub role;
+descendant sub role;
+Ancestor sub relationship, relates ancestor, relates descendant;
+person plays ancestor, plays descendant;
 
-"name" sub attribute, datatype string;
+name sub attribute, datatype string;
 
 insert
 
@@ -26,14 +26,14 @@ insert
 ##################DATA#############################
 ####################################################
 
-$a isa Person, has name 'a';
-$aa isa Person, has name 'aa';
-$aaa isa Person, has name 'aaa';
-$aab isa Person, has name 'aab';
-$aaaa isa Person, has name 'aaaa';
-$ab isa Person, has name 'ab';
-$c isa Person, has name 'c';
-$ca isa Person, has name 'ca';
+$a isa person, has name 'a';
+$aa isa person, has name 'aa';
+$aaa isa person, has name 'aaa';
+$aab isa person, has name 'aab';
+$aaaa isa person, has name 'aaaa';
+$ab isa person, has name 'ab';
+$c isa person, has name 'c';
+$ca isa person, has name 'ca';
 
 (parent: $a, child: $aa) isa Parent;
 (parent: $a, child: $ab) isa Parent;
@@ -48,14 +48,14 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (parent: $x, child: $z) isa Parent;
 (ancestor: $z, descendant: $y) isa Ancestor;},
 then {
 (ancestor: $x, descendant: $y) isa Ancestor;};
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $y) isa Parent;},
 then {

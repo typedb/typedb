@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
@@ -96,14 +95,6 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean requiresMaterialisation() {
         return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
-    }
-
-    @Override
-    public int computePriority(Set<Var> subbedVars){
-        int priority = super.computePriority(subbedVars);
-        priority += ResolutionPlan.IS_TYPE_ATOM;
-        priority += getSchemaConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
-        return priority;
     }
 
     @Nullable

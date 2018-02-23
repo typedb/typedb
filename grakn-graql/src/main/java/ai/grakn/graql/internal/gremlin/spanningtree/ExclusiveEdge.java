@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
@@ -42,10 +41,6 @@ public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
 
     public static <T> ExclusiveEdge<T> of(DirectedEdge<T> edge, List<DirectedEdge<T>> excluded, double weight) {
         return new ExclusiveEdge<>(edge, excluded, weight);
-    }
-
-    public static <T> ExclusiveEdge<T> of(DirectedEdge<T> edge, double weight) {
-        return ExclusiveEdge.of(edge, ImmutableList.of(), weight);
     }
 
     @Override

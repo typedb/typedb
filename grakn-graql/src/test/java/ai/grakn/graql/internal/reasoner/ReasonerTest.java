@@ -31,9 +31,10 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.junit.BeforeClass;
@@ -89,7 +90,7 @@ public class ReasonerTest {
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
-        GraknTx tx = testGeoKB.tx();
+        EmbeddedGraknTx<?> tx = testGeoKB.tx();
 
         Rule rule1 = tx.getRule("Geo Rule");
 
@@ -133,7 +134,7 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithResourceVariable_BoundWithSpecificVP(){
-        GraknTx graph = snbKB.tx();
+        EmbeddedGraknTx<?> graph = snbKB.tx();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
         String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 val 'Bob';$x2 val 'Geldof';}";

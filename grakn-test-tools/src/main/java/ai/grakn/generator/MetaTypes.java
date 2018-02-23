@@ -39,6 +39,7 @@ public class MetaTypes extends FromTxGenerator<Type> {
         return tx().admin().getMetaConcept();
     }
 
-    public final void configure(Meta meta) {
+    @SuppressWarnings("unused") /** Used through {@link Meta} annotation*/
+    public final void configure(@SuppressWarnings("unused") Meta meta) {
     }
 }

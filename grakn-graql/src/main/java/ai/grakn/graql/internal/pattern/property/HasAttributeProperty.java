@@ -134,7 +134,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
@@ -142,7 +142,12 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
             executor.builder(relationship().var()).id(relationshipId);
         };
 
-        return PropertyExecutor.builder(method).produces(relationship().var()).requires(var, attribute().var()).build();
+        PropertyExecutor executor = PropertyExecutor.builder(method)
+                .produces(relationship().var())
+                .requires(var, attribute().var())
+                .build();
+
+        return ImmutableSet.of(executor);
     }
 
     @Override

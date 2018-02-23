@@ -21,39 +21,31 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MatchAdmin;
+import com.google.auto.value.AutoValue;
 
-import java.util.stream.Stream;
+import java.util.Optional;
 
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result
  */
-class AggregateQueryImpl<T> implements AggregateQuery<T> {
+@AutoValue
+abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
 
-    private final MatchAdmin match;
-    private final Aggregate<? super Answer, T> aggregate;
-
-    AggregateQueryImpl(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
-        this.match = match;
-        this.aggregate = aggregate;
+    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<? super Answer, T> aggregate) {
+        return new AutoValue_AggregateQueryImpl<>(match, aggregate);
     }
 
     @Override
-    public AggregateQuery<T> withTx(GraknTx tx) {
-        return new AggregateQueryImpl<>(match.withTx(tx).admin(), aggregate);
+    public final AggregateQuery<T> withTx(GraknTx tx) {
+        return Queries.aggregate(match().withTx(tx).admin(), aggregate());
     }
 
     @Override
-    public T execute() {
-        return aggregate.apply(match.stream());
-    }
-
-    @Override
-    public Stream<String> resultsString(Printer printer) {
-        return Stream.of(printer.graqlString(execute()));
+    public final T execute() {
+        return queryRunner().run(this);
     }
 
     @Override
@@ -63,25 +55,12 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public String toString() {
-        return match.toString() + " aggregate " + aggregate.toString() + ";";
+    public final Optional<GraknTx> tx() {
+        return match().admin().tx();
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        AggregateQueryImpl<?> that = (AggregateQueryImpl<?>) o;
-
-        if (!match.equals(that.match)) return false;
-        return aggregate.equals(that.aggregate);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = match.hashCode();
-        result = 31 * result + aggregate.hashCode();
-        return result;
+    public final String toString() {
+        return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 }

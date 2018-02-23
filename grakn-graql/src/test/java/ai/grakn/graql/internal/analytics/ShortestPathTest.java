@@ -82,7 +82,7 @@ public class ShortestPathTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testShortestPathExceptionIdNotFound() throws Exception {
+    public void testShortestPathExceptionIdNotFound() {
         // test on an empty graph
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
@@ -90,7 +90,7 @@ public class ShortestPathTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
+    public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
@@ -98,7 +98,7 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void whenThereIsNoPath_PathReturnsEmptyOptional() throws Exception {
+    public void whenThereIsNoPath_PathReturnsEmptyOptional() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertEquals(Optional.empty(), graph.graql().compute().path().from(entityId1).to(entityId5).execute());
@@ -106,7 +106,7 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void whenThereIsNoPath_PathsReturnsEmptyList() throws Exception {
+    public void whenThereIsNoPath_PathsReturnsEmptyList() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertThat(graph.graql().compute().paths().from(entityId1).to(entityId5).execute(), empty());
@@ -114,7 +114,7 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void testShortestPath() throws Exception {
+    public void testShortestPath() {
         List<String> correctPath;
         List<List<Concept>> allPaths;
         addSchemaAndEntities();
@@ -378,20 +378,19 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void testMultiplePathInSubGraph() throws Exception {
-        // TODO: should run this test on tinker as well.
-        // Tinker seems to wipe out the entire graph after the fist compute query
-        // This is the only compute query running on a sub graph with no edges
-
-        assumeFalse(GraknTestUtil.usingTinker());
-
+    public void testMultiplePathInSubGraph() {
         Set<List<ConceptId>> correctPaths = new HashSet<>();
         List<List<Concept>> allPaths;
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            allPaths = graph.graql().compute().paths().in(thing, anotherThing).to(entityId1).from(entityId4).execute();
-            assertEquals(0, allPaths.size());
+            if (GraknTestUtil.usingJanus()) {
+                // If no path is found in the vertex program, NoResultException is thrown to skip map reduce.
+                // Tinker doesn't handle this well, so the next graql query would find the graph is empty.
+                allPaths = graph.graql().compute().paths().in(thing, anotherThing)
+                        .to(entityId1).from(entityId4).execute();
+                assertEquals(0, allPaths.size());
+            }
 
             correctPaths.add(Lists.newArrayList(entityId1, relationId12, entityId2, relationId24, entityId4));
             correctPaths.add(Lists.newArrayList(entityId1, relationId13, entityId3, relationId34, entityId4));

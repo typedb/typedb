@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -87,6 +88,8 @@ public final class Schema {
         RELATIONSHIP("relationship", 5),
         RULE("rule", 6);
 
+        public static final ImmutableSet<MetaSchema> METATYPES =
+                ImmutableSet.of(THING, ENTITY, ATTRIBUTE, RELATIONSHIP);
 
         private final Label label;
         private final LabelId id;
@@ -281,26 +284,6 @@ public final class Schema {
             }
 
             return Label.of(implicitType.getValue().substring(4, endIndex));
-        }
-    }
-
-    /**
-     * An enum representing analytics schema elements
-     */
-    public enum Analytics {
-
-        DEGREE("degree"),
-        CLUSTER("cluster");
-
-        private final String label;
-
-        Analytics(String label) {
-            this.label = label;
-        }
-
-        @CheckReturnValue
-        public Label getLabel() {
-            return Label.of(label);
         }
     }
 

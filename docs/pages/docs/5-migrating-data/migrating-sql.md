@@ -119,9 +119,6 @@ occurs sub relationship
   relates event-occurred
   relates pet-in-event;
 
-event-occurred sub role;
-pet-in-event sub role;
-
 pet plays pet-in-event;
 event plays event-occurred;
 ```

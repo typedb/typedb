@@ -55,12 +55,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public String build(Function<StringBuilder, StringBuilder> builder) {
+    public String complete(Function<StringBuilder, StringBuilder> builder) {
         return builder.apply(new StringBuilder()).toString();
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Concept concept) {
+    public Function<StringBuilder, StringBuilder> build(Concept concept) {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isAttribute()) {
@@ -117,7 +117,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, boolean bool) {
+    public Function<StringBuilder, StringBuilder> build(boolean bool) {
         if (bool) {
             return sb -> sb.append(ANSI.color("True", ANSI.GREEN));
         } else {
@@ -126,43 +126,38 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Optional<?> optional) {
+    public Function<StringBuilder, StringBuilder> build(Optional<?> optional) {
         if (optional.isPresent()) {
-            return graqlString(inner, optional.get());
+            return build(optional.get());
         } else {
             return sb -> sb.append("Nothing");
         }
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Collection<?> collection) {
+    public Function<StringBuilder, StringBuilder> build(Collection<?> collection) {
         return sb -> {
-            if (inner) {
-                sb.append("{");
-                collection.stream().findFirst().ifPresent(item -> graqlString(true, item).apply(sb));
-                collection.stream().skip(1).forEach(item -> graqlString(true, item).apply(sb.append(", ")));
-                sb.append("}");
-            } else {
-                collection.forEach(item -> graqlString(true, item).apply(sb).append("\n"));
-            }
-
+            sb.append("{");
+            collection.stream().findFirst().ifPresent(item -> build(item).apply(sb));
+            collection.stream().skip(1).forEach(item -> build(item).apply(sb.append(", ")));
+            sb.append("}");
             return sb;
         };
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Map<?, ?> map) {
-        return graqlString(inner, map.entrySet());
+    public Function<StringBuilder, StringBuilder> build(Map<?, ?> map) {
+        return build(map.entrySet());
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Answer answer) {
+    public Function<StringBuilder, StringBuilder> build(Answer answer) {
         return sb -> {
             if (answer.isEmpty()) {
                 sb.append("{}");
             } else {
                 answer.forEach((name, concept) ->
-                        sb.append(name).append(" ").append(graqlString(concept)).append("; ")
+                        build(concept).apply(sb.append(name).append(" ")).append("; ")
                 );
             }
             return sb;
@@ -170,12 +165,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlStringDefault(boolean inner, Object object) {
+    public Function<StringBuilder, StringBuilder> buildDefault(Object object) {
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
-            return graqlString(true, entry.getKey())
+            return build(entry.getKey())
                     .andThen(sb -> sb.append(": "))
-                    .andThen(graqlString(true, entry.getValue()));
+                    .andThen(build(entry.getValue()));
         } else {
             return sb -> sb.append(Objects.toString(object));
         }

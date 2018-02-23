@@ -23,12 +23,42 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-bootup</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql-shell</artifactId>
+        </dependency>
+
+        <!--Migrations-->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-sql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-xml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-csv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-export</artifactId>
+        </dependency>
     </dependencies>
 </project>

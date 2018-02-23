@@ -28,7 +28,6 @@ import ai.grakn.test.kbs.GenealogyKB;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -64,7 +63,7 @@ public class GenealogyTest {
     */
 
     @Test
-    public void testMatchAll(){
+    public void matchAllRelationsWithDocumentPlayingARole(){
         String queryString = "match $x isa document; ($x, $y); get;";
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -72,7 +71,7 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testMatchAll2(){
+    public void matchAllRelationsWithDocumentPlayingARole_redundantEntityBound(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity; get;";
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -80,10 +79,11 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testSpecificPerson(){
+    public void genderOfASpecificPerson(){
         Concept concept = Sets.newHashSet(genealogyKB.tx().graql().infer(false).<GetQuery>parse("match $x isa person; get;"))
                 .iterator().next()
-                .entrySet().iterator().next().getValue();
+                .entrySet()
+                .iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g; get;";
 
         GetQuery query = iqb.parse(queryString);
@@ -92,7 +92,7 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testFemale() {
+    public void testSpecificGender() {
         String queryString = "match $x isa person has gender 'female'; get;";
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -144,53 +144,61 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testParentship2() {
+    public void testParentship_DifferentRoleMappingConfigurations() {
         String queryString = "match (child: $x, $y) isa parentship;get $x;";
         String queryString2 = "match (child: $x) isa parentship; get;";
+        String queryString3 = "match ($x, son: $y) isa parentship; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = iqb.<GetQuery>parse(queryString3).execute();
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertCollectionsEqual(answers, answers2);
         assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertThat(answers3, empty());
     }
 
     @Test
-    public void testParentship3(){
-        String queryString = "match ($x, son: $y) isa parentship; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        assertThat(answers, empty());
-    }
-
-    @Test
-    public void testComplexQuery(){
-        String queryString = "match $a has firstname 'Ann' has surname 'Niesz';" +
-                "(wife: $a, husband: $w); (husband: $w, wife: $b) isa marriage;$a != $b; get;";
+    public void peopleSharingHusbandOfSpecificPerson(){
+        String queryString = "match " +
+                "$a has firstname 'Ann' has surname 'Niesz';" +
+                "(wife: $a, husband: $w); " +
+                "(husband: $w, wife: $b);" +
+                "$a != $b;" +
+                "get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 1);
     }
 
     @Test
-    public void testMarriageNotEquals(){
-        String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;$x != $z; get;";
+    public void peopleSharingSpouse(){
+        String queryString = "match " +
+                    "($x, $y) isa marriage;" +
+                    "($y, $z) isa marriage;" +
+                    "$x != $z;" +
+                     "get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 4);
     }
 
     @Test
-    public void testMarriedToThemselves(){
+    public void marriedToThemselves(){
         String queryString = "match (spouse: $x, spouse: $x) isa marriage; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         assertThat(answers, empty());
     }
 
     @Test
-    public void testMarriageType() {
+    public void testMarriage_definedViaTypeAndRelationVariable() {
         String queryString = "match $x isa marriage; get;";
         String queryString2 = "match $x($x1, $x2) isa marriage;get $x;";
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
+
+        //requery
+        String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage; get;";
+        iqb.parse(qs).execute();
 
         List<Answer> answers = query.execute();
         assertEquals(answers.size(), 66);
@@ -199,40 +207,13 @@ public class GenealogyTest {
         assertEquals(answers2.size(), 66);
     }
 
-    @Test
-    public void testMarriageType2() {
-        String queryString = "match $x isa marriage; get;";
-        String queryString2 = "match $x($x1, $x2) isa marriage;get $x;";
-        GetQuery query = iqb.parse(queryString);
-        GetQuery query2 = iqb.parse(queryString2);
-
-        String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage; get;";
-        iqb.parse(qs).execute();
-
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        assertCollectionsEqual(answers, answers2);
-        assertEquals(answers2.size(), 66);
-    }
-
+    //Bug #11149
     @Test
     public void testMarriageMaterialisation() {
-        String queryString = "match $rel ($x, $y) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
-        assertTrue(!hasDuplicates(answers));
-        assertCollectionsEqual(answers, answers2);
-        assertEquals(answers.size(), 132);
-    }
-
-    //Bug #11149
-    @Ignore // TODO: Look into this before merging into master! probably related to `wife/husband` being `sub spouse`
-    @Test
-    public void testMarriageMaterialisation2() {
         String queryString = "match $rel (spouse: $x, spouse: $y) isa marriage; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(44, answers.size());
+        assertEquals(132, answers.size());
         assertTrue(!hasDuplicates(answers));
         assertCollectionsEqual(answers, answers2);
     }
@@ -250,7 +231,7 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testMarriage2() {
+    public void testMarriage_specialisedRoles() {
         String queryString = "match (wife: $x, husband: $y) isa marriage; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
@@ -270,10 +251,8 @@ public class GenealogyTest {
         assertCollectionsEqual(answerList, answerList2);
     }
 
-    //TODO
-    @Ignore
     @Test
-    public void testWife2(){
+    public void testWife_definedViaRoleVariable(){
         String queryString = "match ($r: $x) isa marriage;$r label 'wife';get $x;";
         String queryString2 = "match (wife: $x) isa marriage; get;";
         GetQuery query = iqb.parse(queryString);
@@ -315,17 +294,6 @@ public class GenealogyTest {
 
     @Test
     public void testInLaws() {
-        String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws; get;";
-        GetQuery query = iqb.parse(queryString);
-
-        List<Answer> answers = query.execute();
-        List<Answer> requeriedAnswers = query.execute();
-        assertEquals(answers.size(), 50);
-        assertCollectionsEqual(answers, requeriedAnswers);
-    }
-
-    @Test
-    public void testInLaws2() {
         String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male'; get;";
         String queryString2 = "match $x isa in-laws; get;";
         String queryString3 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws; get;";

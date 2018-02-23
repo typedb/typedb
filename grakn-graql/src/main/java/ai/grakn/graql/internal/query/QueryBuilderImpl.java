@@ -37,13 +37,13 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -66,6 +66,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         this.tx = Optional.empty();
     }
 
+    @SuppressWarnings("unused") /** used by {@link EmbeddedGraknTx#graql()}*/
     public QueryBuilderImpl(GraknTx tx) {
         this.tx = Optional.of(tx);
     }
@@ -119,7 +120,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, Optional.empty(), tx);
+        return Queries.insert(varAdmins, tx);
     }
 
     @Override
@@ -158,14 +159,6 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param patternString a string representing a pattern
-     * @return a pattern
-     */
-    public Pattern parsePattern(String patternString) {
-        return queryParser.parsePattern(patternString);
-    }
-
-    /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
@@ -174,7 +167,4 @@ public class QueryBuilderImpl implements QueryBuilder {
         return queryParser.parseQuery(queryString);
     }
 
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        return queryParser.parseList(queryString);
-    }
 }

@@ -31,9 +31,11 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
 import spark.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.HttpHandler.configureSpark;
 
@@ -79,8 +81,10 @@ public class SparkContext extends CompositeTestRule {
         return new SparkContext(createControllers);
     }
 
-    public static SparkContext withControllers(Consumer<Service> createControllers) {
-        return new SparkContext((spark, config) -> createControllers.accept(spark));
+    public static SparkContext withControllers(HttpController ... controllers) {
+        return new SparkContext((spark, config) -> {
+            Stream.of(controllers).forEach(controller -> controller.start(spark));
+        });
     }
 
     public SparkContext port(int port) {

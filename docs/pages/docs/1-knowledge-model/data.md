@@ -89,9 +89,6 @@ define
   marriage sub relationship;
   marriage relates husband;
 
-  husband sub role;
-  wife sub role;
-
   woman plays wife;
 
 insert
@@ -138,8 +135,6 @@ define
   marriage relates husband;
   marriage relates wife; # Fix (2) and (3)
 
-  husband sub role;
-  wife sub role;
   man plays husband; # Fix (4)
   woman plays wife;
 

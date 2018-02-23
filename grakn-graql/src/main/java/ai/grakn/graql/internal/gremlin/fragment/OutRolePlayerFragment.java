@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -54,7 +54,7 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 reifiedRelationTraversal(graph, vars),
@@ -63,14 +63,14 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         ));
     }
 
-    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
+    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(EmbeddedGraknTx<?> tx, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
         GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().name());
 
         // Filter by any provided type labels
-        applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
@@ -78,12 +78,12 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
-            GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
+            EmbeddedGraknTx<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
         GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
 
         // Filter by any provided type labels
-        applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
-        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), tx);
+        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), tx);
 
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 

@@ -5,25 +5,24 @@ define
 ####################Schema########################
 #################################################
 
-"Person" sub entity
+person sub entity
     has name;
 
-"friendA" sub role;
-"friendB" sub role;
-"Friend" sub relationship, relates friendA, relates friendB;
-Person plays friendA, plays friendB;
+friend sub role;
+Friend sub relationship, relates friend;
+person plays friend, plays friend;
 
-"parent" sub role;
-"child" sub role;
-"Parent" sub relationship, relates parent, relates child;
-Person plays parent, plays child;
+parent sub role;
+child sub role;
+Parent sub relationship, relates parent, relates child;
+person plays parent, plays child;
 
-"person" sub role;
-"ancestor-friend" sub role;
-"Ancestor-friend" sub relationship, relates person, relates ancestor-friend;
-Person plays person, plays ancestor-friend;
+ancestor sub role;
+ancestor-friend sub role;
+Ancestor-friend sub relationship, relates ancestor, relates ancestor-friend;
+person plays ancestor, plays ancestor-friend;
 
-"name" sub attribute, datatype string;
+name sub attribute, datatype string;
 
 insert
 
@@ -31,16 +30,16 @@ insert
 ##################DATA#############################
 ####################################################
 
-$a isa Person, has name "a";
-$b isa Person, has name "b";
-$c isa Person, has name "c";
-$d  isa Person, has name "d";
-$g  isa Person, has name "g";
+$a isa person, has name "a";
+$b isa person, has name "b";
+$c isa person, has name "c";
+$d isa person, has name "d";
+$g isa person, has name "g";
 
 (parent: $a, child: $b) isa Parent;
 (parent: $b, child: $c) isa Parent;
-(friendA: $a, friendB: $g) isa Friend;
-(friendA: $c, friendB: $d) isa Friend;
+(friend: $a, friend: $g) isa Friend;
+(friend: $c, friend: $d) isa Friend;
 
 define
 
@@ -48,15 +47,15 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
-(friendA: $x, friendB: $y) isa Friend;},
+(friend: $x, friend: $y) isa Friend;},
 then {
-(person: $x, ancestor-friend: $y) isa Ancestor-friend;};
+(ancestor: $x, ancestor-friend: $y) isa Ancestor-friend;};
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $z) isa Parent;
-(person: $z, ancestor-friend: $y) isa Ancestor-friend;},
+(ancestor: $z, ancestor-friend: $y) isa Ancestor-friend;},
 then {
-(person: $x, ancestor-friend: $y) isa Ancestor-friend;};
+(ancestor: $x, ancestor-friend: $y) isa Ancestor-friend;};

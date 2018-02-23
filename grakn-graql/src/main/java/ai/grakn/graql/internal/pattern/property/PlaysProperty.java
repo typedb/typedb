@@ -87,17 +87,17 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
             executor.get(var).asType().plays(role);
         };
 
-        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             Role role = executor.get(this.role().var()).asRole();
@@ -107,7 +107,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
     }
 
     @Override

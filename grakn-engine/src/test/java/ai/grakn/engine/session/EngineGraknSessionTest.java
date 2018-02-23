@@ -31,10 +31,11 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -64,9 +65,7 @@ public class EngineGraknSessionTest {
 
     //Needed so that Grakn.session() can return a session
     @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
-    });
+    public static final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry));
 
     //Needed to start cass depending on profile
     @ClassRule
@@ -96,12 +95,12 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknTx graph1 = graknFactory.tx(keyspace, GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph1 = graknFactory.tx(keyspace, GraknTxType.WRITE);
         graph1.close();
-        GraknTx graph2 = graknFactory.tx(keyspace, GraknTxType.BATCH);
+        EmbeddedGraknTx<?> graph2 = graknFactory.tx(keyspace, GraknTxType.BATCH);
 
-        assertFalse(graph1.admin().isBatchTx());
-        assertTrue(graph2.admin().isBatchTx());
+        assertFalse(graph1.isBatchTx());
+        assertTrue(graph2.isBatchTx());
 
         graph1.close();
         graph2.close();

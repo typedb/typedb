@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,12 +47,12 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     }
 
     public ClusterSizeMapReduce(String clusterLabel) {
-        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+        this(clusterLabel, null);
     }
 
-    public ClusterSizeMapReduce(String clusterLabel, Long clusterSize) {
-        this(clusterLabel);
-        this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
+    public ClusterSizeMapReduce(String clusterLabel, @Nullable Long clusterSize) {
+        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+        if (clusterSize != null) this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 
     @Override
