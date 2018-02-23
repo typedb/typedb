@@ -85,10 +85,6 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    StreamObserver<TxResponse> responses(){
-        return serverResponses;
-    }
-
     public void setResponse(TxRequest request, TxResponse response) {
         setResponse(request, responses -> responses.onNext(response));
     }

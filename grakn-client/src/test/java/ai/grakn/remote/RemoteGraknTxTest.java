@@ -67,7 +67,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -358,17 +357,9 @@ public class RemoteGraknTxTest {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
-        doAnswer(args -> {
-            assert server.requests() != null;
-            server.responses().onNext(response);
-            return null;
-        }).when(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+        server.setResponse(GrpcUtil.execQueryRequest(expectedQuery), response);
 
-        doAnswer(args -> {
-            assert server.responses() != null;
-            server.responses().onNext(GrpcUtil.doneResponse());
-            return null;
-        }).when(server.requests()).onNext(GrpcUtil.nextRequest());
+        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
             verify(server.requests()).onNext(any()); // The open request
