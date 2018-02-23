@@ -42,7 +42,7 @@ import javax.annotation.CheckReturnValue;
  * @author fppt
  *
  */
-public interface Concept extends Comparable<Concept>{
+public interface Concept {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Get the unique ID associated with the Concept.

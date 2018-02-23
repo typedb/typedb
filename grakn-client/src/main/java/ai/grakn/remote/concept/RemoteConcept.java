@@ -49,8 +49,4 @@ abstract class RemoteConcept implements Concept {
         return false; // TODO: implement
     }
 
-    @Override
-    public final int compareTo(Concept concept) {
-        return getId().compareTo(concept.getId());
-    }
 }
