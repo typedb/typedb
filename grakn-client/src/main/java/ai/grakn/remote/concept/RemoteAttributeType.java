@@ -21,6 +21,7 @@ package ai.grakn.remote.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -32,10 +33,10 @@ import javax.annotation.Nullable;
  * @param <D> The data type of this attribute type
  */
 @AutoValue
-abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
-        extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
 
-    public static <D extends AttributeType.DataType<?>> RemoteAttributeType<D> create(RemoteGraknTx tx, ConceptId id) {
+    public static <D> RemoteAttributeType<D> create(
+            RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteAttributeType<>(tx, id);
     }
 
@@ -56,13 +57,13 @@ abstract class RemoteAttributeType<D extends AttributeType.DataType<?>>
     }
 
     @Override
-    public final DataType<D> getDataType() {
-        throw new UnsupportedOperationException(); // TODO: implement
+    public final AttributeType.DataType<D> getDataType() {
+        return (AttributeType.DataType<D>) getProperty(ConceptProperty.DATA_TYPE);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.REGEX);
     }
 }

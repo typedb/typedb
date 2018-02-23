@@ -22,6 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 
 /**
@@ -52,5 +53,9 @@ abstract class RemoteConcept implements Concept {
     @Override
     public final int compareTo(Concept concept) {
         return getId().compareTo(concept.getId());
+    }
+
+    protected final <T> T getProperty(ConceptProperty<T> property) {
+        return tx().client().getConceptProperty(getId(), property);
     }
 }

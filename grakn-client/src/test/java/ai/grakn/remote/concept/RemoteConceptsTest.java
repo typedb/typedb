@@ -20,10 +20,15 @@ package ai.grakn.remote.concept;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Pattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -35,8 +40,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
+import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptProperty.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptProperty.IS_INFERRED;
+import static ai.grakn.grpc.ConceptProperty.REGEX;
+import static ai.grakn.grpc.ConceptProperty.THEN;
+import static ai.grakn.grpc.ConceptProperty.VALUE;
+import static ai.grakn.grpc.ConceptProperty.WHEN;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -49,6 +61,8 @@ import static org.mockito.Mockito.verify;
 public class RemoteConceptsTest {
 
     private static final ConceptId ID = ConceptId.of("V123");
+    private static final Pattern PATTERN = var("x").isa("person");
+
     @Rule
     public final GrpcServerMock server = GrpcServerMock.create();
 
@@ -75,29 +89,11 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenGettingLabel_MakeAGrpcRequest() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-
-        concept.getLabel();
-
-        verify(server.requests()).onNext(GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.LABEL));
-    }
-
-    @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.LABEL), ConceptProperty.LABEL.response(LABEL));
 
         assertEquals(LABEL, concept.getLabel());
-    }
-
-    @Test
-    public void whenCallingIsImplicit_MakeAGrpcRequest() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-
-        concept.isImplicit();
-
-        verify(server.requests()).onNext(GrpcUtil.getConceptPropertyRequest(ID, IS_IMPLICIT));
     }
 
     @Test
@@ -112,15 +108,6 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingIsInferred_MakeAGrpcRequest() {
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
-
-        concept.isInferred();
-
-        verify(server.requests()).onNext(GrpcUtil.getConceptPropertyRequest(ID, IS_INFERRED));
-    }
-
-    @Test
     public void whenCallingIsInferred_GetTheExpectedResult() {
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -129,5 +116,64 @@ public class RemoteConceptsTest {
 
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_INFERRED), IS_INFERRED.response(false));
         assertFalse(concept.isInferred());
+    }
+
+    @Test
+    public void whenCallingIsAbstract_GetTheExpectedResult() {
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_ABSTRACT), IS_ABSTRACT.response(true));
+        assertTrue(concept.isAbstract());
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_ABSTRACT), IS_ABSTRACT.response(false));
+        assertFalse(concept.isAbstract());
+    }
+
+    @Test
+    public void whenCallingGetValue_GetTheExpectedResult() {
+        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, VALUE), VALUE.response(123));
+        assertEquals(123, concept.getValue());
+    }
+
+    @Test
+    public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
+        AttributeType<?> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DATA_TYPE), DATA_TYPE.response(DataType.LONG));
+        assertEquals(DataType.LONG, concept.getDataType());
+    }
+
+    @Test
+    public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
+        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DATA_TYPE), DATA_TYPE.response(DataType.LONG));
+        assertEquals(DataType.LONG, concept.dataType());
+    }
+
+    @Test
+    public void whenCallingGetRegex_GetTheExpectedResult() {
+        AttributeType<?> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, REGEX), REGEX.response("hello"));
+        assertEquals("hello", concept.getRegex());
+    }
+
+    @Test
+    public void whenCallingGetWhen_GetTheExpectedResult() {
+        ai.grakn.concept.Rule concept = RemoteConcepts.createRule(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, WHEN), WHEN.response(PATTERN));
+        assertEquals(PATTERN, concept.getWhen());
+    }
+
+    @Test
+    public void whenCallingGetThen_GetTheExpectedResult() {
+        ai.grakn.concept.Rule concept = RemoteConcepts.createRule(tx, ID);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, THEN), THEN.response(PATTERN));
+        assertEquals(PATTERN, concept.getThen());
     }
 }

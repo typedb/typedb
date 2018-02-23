@@ -78,6 +78,6 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final boolean isInferred() {
-        return tx().client().getConceptProperty(getId(), ConceptProperty.IS_INFERRED);
+        return getProperty(ConceptProperty.IS_INFERRED);
     }
 }

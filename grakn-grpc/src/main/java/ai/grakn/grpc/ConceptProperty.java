@@ -26,13 +26,18 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 
-import javax.annotation.Nullable;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DataTypeProperty;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsAbstract;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsInferred;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.Regex;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.Then;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.ValueProperty;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.When;
 
 /**
  * Wrapper for describing {@link Concept} properties that can be communicated over gRPC.
@@ -44,32 +49,69 @@ import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProper
  */
 public abstract class ConceptProperty<T> {
 
-    public static final ConceptProperty<Object> VALUE = create(null, null, null, null);
+    public static final ConceptProperty<Object> VALUE = create(
+            ValueProperty,
+            val -> val.asAttribute().getValue(),
+            val -> GrpcUtil.convert(val.getAttributeValue()),
+            (builder, val) -> builder.setAttributeValue(GrpcUtil.convertValue(val))
+    );
 
-    public static final ConceptProperty<AttributeType.DataType<?>> DATA_TYPE = create(null, null, null, null);
+    public static final ConceptProperty<AttributeType.DataType<?>> DATA_TYPE = create(
+            DataTypeProperty,
+            val -> val.isAttribute() ? val.asAttribute().dataType() : val.asAttributeType().getDataType(),
+            val -> GrpcUtil.convert(val.getDataType()),
+            (builder, val) -> builder.setDataType(GrpcUtil.convert(val))
+    );
 
-    public static final ConceptProperty<Label> LABEL = create(LabelProperty,
+    public static final ConceptProperty<Label> LABEL = create(
+            LabelProperty,
             concept -> concept.asSchemaConcept().getLabel(),
             val -> GrpcUtil.convert(val.getLabel()),
-            (builder, val) -> builder.setLabel(GrpcUtil.convert(val)));
+            (builder, val) -> builder.setLabel(GrpcUtil.convert(val))
+    );
 
-    public static final ConceptProperty<Boolean> IS_IMPLICIT = create(IsImplicit,
+    public static final ConceptProperty<Boolean> IS_IMPLICIT = create(
+            IsImplicit,
             concept -> concept.asSchemaConcept().isImplicit(),
-            ConceptPropertyValue::getIsImplicit, ConceptPropertyValue.Builder::setIsImplicit);
+            ConceptPropertyValue::getIsImplicit,
+            ConceptPropertyValue.Builder::setIsImplicit
+    );
 
-    public static final ConceptProperty<Boolean> IS_INFERRED = create(IsInferred,
+    public static final ConceptProperty<Boolean> IS_INFERRED = create(
+            IsInferred,
             concept -> concept.asThing().isInferred(),
-            ConceptPropertyValue::getIsInferred, ConceptPropertyValue.Builder::setIsInferred);
+            ConceptPropertyValue::getIsInferred,
+            ConceptPropertyValue.Builder::setIsInferred
+    );
 
-    public static final ConceptProperty<Boolean> IS_ABSTRACT = create(null, null, null, null);
+    public static final ConceptProperty<Boolean> IS_ABSTRACT = create(
+            IsAbstract,
+            concept -> concept.asType().isAbstract(),
+            ConceptPropertyValue::getIsInferred,
+            ConceptPropertyValue.Builder::setIsInferred
+    );
 
-    public static final ConceptProperty<Pattern> WHEN = create(null, null, null, null);
+    public static final ConceptProperty<Pattern> WHEN = create(
+            When,
+            concept -> concept.asRule().getWhen(),
+            val -> GrpcUtil.convert(val.getWhen()),
+            (builder, val) -> builder.setWhen(GrpcUtil.convert(val))
+    );
 
-    public static final ConceptProperty<Pattern> THEN = create(null, null, null, null);
+    public static final ConceptProperty<Pattern> THEN = create(
+            Then,
+            concept -> concept.asRule().getThen(),
+            val -> GrpcUtil.convert(val.getThen()),
+            (builder, val) -> builder.setThen(GrpcUtil.convert(val))
+    );
 
-    public static final ConceptProperty<String> REGEX = create(null, null, null, null);
+    public static final ConceptProperty<String> REGEX = create(
+            Regex,
+            concept -> concept.asAttributeType().getRegex(),
+            ConceptPropertyValue::getRegex,
+            ConceptPropertyValue.Builder::setRegex
+    );
 
-    @Nullable
     public static ConceptProperty<?> fromGrpc(GraknOuterClass.ConceptProperty conceptProperty) {
         switch (conceptProperty) {
             case ValueProperty:
@@ -92,7 +134,7 @@ public abstract class ConceptProperty<T> {
                 return REGEX;
             default:
             case UNRECOGNIZED:
-                return null;
+                throw new IllegalArgumentException("Unrecognised " + conceptProperty);
         }
     }
 

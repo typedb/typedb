@@ -35,12 +35,12 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Label getLabel() {
-        return tx().client().getConceptProperty(getId(), ConceptProperty.LABEL);
+        return getProperty(ConceptProperty.LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        return tx().client().getConceptProperty(getId(), ConceptProperty.IS_IMPLICIT);
+        return getProperty(ConceptProperty.IS_IMPLICIT);
     }
 
     @Override
