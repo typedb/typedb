@@ -44,8 +44,7 @@ public class RemoteConcepts {
         return RemoteAttribute.create(tx, id);
     }
 
-    public static <D> AttributeType<D> createAttributeType(
-            RemoteGraknTx tx, ConceptId id) {
+    public static <D> AttributeType<D> createAttributeType(RemoteGraknTx tx, ConceptId id) {
         return RemoteAttributeType.create(tx, id);
     }
 
