@@ -33,10 +33,19 @@ import java.util.Set;
  */
 
 public interface IndexStorage {
+    /**
+     * Add an index to the list of indices which needs to be post processed
+     */
     void addIndex(Keyspace keyspace, String index, Set<ConceptId> conceptIds);
 
+    /**
+     * Gets and removes the next index to post process
+     */
     @Nullable
     String popIndex(Keyspace keyspace);
 
+    /**
+     * Gets and removes all the ids which we need to post process
+     */
     Set<ConceptId> popIds(Keyspace keyspace, String index);
 }

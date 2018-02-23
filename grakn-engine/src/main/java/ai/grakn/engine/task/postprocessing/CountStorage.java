@@ -31,8 +31,41 @@ import ai.grakn.concept.ConceptId;
  * @author Ganeshwara Herawan Hananda
  */
 public interface CountStorage {
-    long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long count);
-    long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long count);
+    /**
+     * Adjusts the count for a specific concept.
+     *
+     * @param keyspace
+     * @param conceptId
+     * @param incrementBy the number to adjust the key by
+     * @return the final value after being adjusted
+     */
+    long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long incrementBy);
+
+    /**
+     * Adjusts the shard count for a specific concept.
+     *
+     * @param keyspace
+     * @param conceptId
+     * @param incrementBy the number to adjust the key by
+     * @return the final value after being adjusted
+     */
+    long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long incrementBy);
+
+    /**
+     * Get the instance count for a specific concept.
+     *
+     * @param keyspace
+     * @param conceptId
+     * @return the instance count
+     */
     long getInstanceCount(Keyspace keyspace, ConceptId conceptId);
+
+    /**
+     * Get the shard count for a specific concept.
+     *
+     * @param keyspace
+     * @param conceptId
+     * @return the shard count
+     */
     long getShardCount(Keyspace keyspace, ConceptId conceptId);
 }

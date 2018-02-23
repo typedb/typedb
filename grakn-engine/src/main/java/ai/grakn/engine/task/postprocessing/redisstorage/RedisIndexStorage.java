@@ -51,9 +51,6 @@ public class RedisIndexStorage implements IndexStorage {
         return new RedisIndexStorage(jedisPool, metricRegistry);
     }
 
-    /**
-     * Add an index to the list of indices which needs to be post processed
-     */
     @Override
     public void addIndex(Keyspace keyspace, String index, Set<ConceptId> conceptIds){
         String listOfIndicesKey = getIndicesKey(keyspace);
@@ -67,9 +64,6 @@ public class RedisIndexStorage implements IndexStorage {
         });
     }
 
-    /**
-     * Gets and removes the next index to post process
-     */
     @Override
     @Nullable
     public String popIndex(Keyspace keyspace){
@@ -77,9 +71,6 @@ public class RedisIndexStorage implements IndexStorage {
         return redisStorage.contactRedis(jedis -> jedis.spop(indexKey));
     }
 
-    /**
-     * Gets and removes all the ids which we need to post process
-     */
     @Override
     public Set<ConceptId> popIds(Keyspace keyspace, String index){
         String idKey = getConceptIdsKey(keyspace, index);

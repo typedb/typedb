@@ -46,13 +46,13 @@ public class RedisCountStorage implements CountStorage {
     }
 
     @Override
-    public long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long count) {
-        return incrementCount(getKeyNumInstances(keyspace, conceptId), count);
+    public long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long incrementBy) {
+        return incrementCount(getKeyNumInstances(keyspace, conceptId), incrementBy);
     }
 
     @Override
-    public long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long count) {
-        return incrementCount(getKeyNumShards(keyspace, conceptId), count);
+    public long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long incrementBy) {
+        return incrementCount(getKeyNumShards(keyspace, conceptId), incrementBy);
     }
 
     @Override
