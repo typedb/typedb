@@ -111,10 +111,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     private ImmutableList<Type> possibleTypes = null;
 
-    @Memoized
-    @Override
-    public abstract int hashCode();
-
     public static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery parent) {
         List<RelationPlayer> rps = new ArrayList<>();
         pattern.admin()
