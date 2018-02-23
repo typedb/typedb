@@ -100,6 +100,19 @@ public class GrpcServerIT {
     }
 
     @Test
+    public void whenPuttingEntityType_EnsureItIsAdded(){
+        String label = "Oliver";
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            tx.putEntityType(label);
+            tx.commit();
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)){
+            assertNotNull(tx.getEntityType(label));
+        }
+    }
+
+    @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
         try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
             tx.graql().define(label("person").sub("entity")).execute();

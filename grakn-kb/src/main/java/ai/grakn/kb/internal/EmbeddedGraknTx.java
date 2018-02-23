@@ -716,11 +716,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public void abort() {
-        close();
-    }
-
-    @Override
     public void commit() throws InvalidKBException {
         close(true, true);
     }
@@ -962,7 +957,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
          * Returns the current number of shards the provided {@link Type} has. This is used in creating more
          * efficient query plans.
          *
-         * @param type The {@link Type} which may contain some shards.
+         * @param concept The {@link Type} which may contain some shards.
          * @return the number of Shards the {@link Type} currently has.
          */
     public long getShardCount(Type concept){

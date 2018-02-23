@@ -86,8 +86,20 @@ public class TxGrpcCommunicator implements AutoCloseable {
 
     @Override
     public void close() {
-        requests.onCompleted();
+        try{
+            requests.onCompleted();
+        } catch (IllegalStateException e) {
+            //IGNORED
+            //This is needed to handle the fact that:
+            //1. Commits can lead to transaction closures and
+            //2. Error can lead to connection closures but the transaction may stay open
+            //When this occurs a "half-closed" state is thrown which we can safely ignore
+        }
         responses.close();
+    }
+
+    public boolean isClosed(){
+        return responses.terminated.get();
     }
 
     /**
