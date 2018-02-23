@@ -57,8 +57,10 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     private IdPredicate(IdPredicate a, ReasonerQuery parent) { super(a, parent);}
     */
 
-    public static IdPredicate create(VarPattern pattern, ReasonerQuery par) {
-        return new AutoValue_IdPredicate(pattern.admin().var(), pattern, par, extractPredicate(pattern));
+    public static IdPredicate create(VarPattern pattern, ReasonerQuery parent) {
+        IdPredicate predicate = new AutoValue_IdPredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
+        predicate.parent = parent;
+        return predicate;
     }
     public static IdPredicate create(Var varName, Label label, ReasonerQuery parent) {
         return create(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);

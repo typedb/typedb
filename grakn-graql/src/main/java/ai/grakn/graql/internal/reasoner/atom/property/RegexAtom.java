@@ -54,11 +54,15 @@ public abstract class RegexAtom extends AtomicBase {
     */
 
     public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), parent, prop.regex());
+        RegexAtom atom = new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), prop.regex());
+        atom.parent = parent;
+        return atom;
     }
 
     private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(a.getVarName(), a.getPattern(), parent, a.getRegex());
+        RegexAtom atom = new AutoValue_RegexAtom(a.getVarName(), a.getPattern(), a.getRegex());
+        atom.parent = parent;
+        return atom;
     }
 
     @Override

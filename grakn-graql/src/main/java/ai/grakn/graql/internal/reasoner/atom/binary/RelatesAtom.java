@@ -55,7 +55,9 @@ public abstract class RelatesAtom extends OntologicalAtom {
     */
 
     public static RelatesAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        return new AutoValue_RelatesAtom(pattern.admin().var(), pattern, parent, predicateVar, p);
+        RelatesAtom atom = new AutoValue_RelatesAtom(pattern.admin().var(), pattern, predicateVar, p);
+        atom.parent = parent;
+        return atom;
     }
 
     private static RelatesAtom create(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent) {

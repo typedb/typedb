@@ -114,6 +114,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     abstract ImmutableList<RelationPlayer> getRelationPlayers();
     abstract ImmutableSet<Label> getRoleLabels();
 
+
     @Memoized
     @Override
     public abstract int hashCode();
@@ -170,11 +171,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .flatMap(CommonUtil::optionalToStream)
                         .iterator()
         ).build();
-        return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicate, relationPlayers, roleLabels);
+        RelationshipAtom relationshipAtom = new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, predicateVar, predicate, relationPlayers, roleLabels);
+        relationshipAtom.parent = parent;
+        return relationshipAtom;
     }
 
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
-        return new AutoValue_RelationshipAtom(a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypePredicate(), a.getRelationPlayers(), a.getRoleLabels());
+        RelationshipAtom relationshipAtom = new AutoValue_RelationshipAtom(a.getVarName(), a.getPattern(), a.getPredicateVariable(), a.getTypePredicate(), a.getRelationPlayers(), a.getRoleLabels());
+        relationshipAtom.parent = parent;
+        return relationshipAtom;
     }
 
     @Override

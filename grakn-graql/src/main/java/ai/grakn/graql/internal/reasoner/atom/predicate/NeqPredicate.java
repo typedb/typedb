@@ -51,7 +51,9 @@ public abstract class NeqPredicate extends Predicate<Var> {
     */
 
     public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_NeqPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+        NeqPredicate predicate = new AutoValue_NeqPredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
+        predicate.parent = parent;
+        return predicate;
     }
     public static NeqPredicate create(Var varName, NeqProperty prop, ReasonerQuery parent) {
         VarPatternAdmin pattern = varName.neq(prop.var().var()).admin();

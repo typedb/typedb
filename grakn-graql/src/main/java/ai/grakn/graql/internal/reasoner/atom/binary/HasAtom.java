@@ -54,7 +54,9 @@ public abstract class HasAtom extends OntologicalAtom {
     */
 
     public static HasAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        return new AutoValue_HasAtom(pattern.admin().var(), pattern, parent, predicateVar, p);
+        HasAtom atom = new AutoValue_HasAtom(pattern.admin().var(), pattern, predicateVar, p);
+        atom.parent = parent;
+        return atom;
     }
 
     private static HasAtom create(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent) {

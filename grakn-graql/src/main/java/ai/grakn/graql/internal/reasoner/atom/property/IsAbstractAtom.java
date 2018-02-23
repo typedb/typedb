@@ -44,11 +44,15 @@ public abstract class IsAbstractAtom extends AtomicBase {
     */
 
     public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
-        return new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin(), parent);
+        IsAbstractAtom atom = new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin());
+        atom.parent = parent;
+        return atom;
     }
 
     private static IsAbstractAtom create(IsAbstractAtom a, ReasonerQuery parent) {
-        return new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern(), parent);
+        IsAbstractAtom atom = new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern());
+        atom.parent = parent;
+        return atom;
     }
 
     @Override

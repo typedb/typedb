@@ -54,7 +54,9 @@ public abstract class PlaysAtom extends OntologicalAtom {
     */
 
     public static PlaysAtom create(VarPattern pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        return new AutoValue_PlaysAtom(pattern.admin().var(), pattern, parent, predicateVar, predicate);
+        PlaysAtom atom = new AutoValue_PlaysAtom(pattern.admin().var(), pattern, predicateVar, predicate);
+        atom.parent = parent;
+        return atom;
     }
 
     private static PlaysAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {

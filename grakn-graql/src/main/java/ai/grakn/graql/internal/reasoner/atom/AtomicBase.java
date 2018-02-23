@@ -44,6 +44,9 @@ import java.util.Set;
  */
 public abstract class AtomicBase implements Atomic {
 
+    protected ReasonerQuery parent;
+    @Override public ReasonerQuery getParentQuery() { return parent; }
+
     /*
     private final Var varName;
     private final VarPattern atomPattern;

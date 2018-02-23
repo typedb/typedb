@@ -57,7 +57,9 @@ public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredi
     //private ValuePredicate(ValuePredicate pred, ReasonerQuery parent) { super(pred, parent);}
 
     public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_ValuePredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+        ValuePredicate predicate = new AutoValue_ValuePredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
+        predicate.parent = parent;
+        return predicate;
     }
 
     public static ValuePredicate create(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery parent) {

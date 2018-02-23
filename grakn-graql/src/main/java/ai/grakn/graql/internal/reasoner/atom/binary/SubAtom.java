@@ -55,7 +55,9 @@ public abstract class SubAtom extends OntologicalAtom {
     */
 
     public static SubAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        return new AutoValue_SubAtom(pattern.admin().var(), pattern, parent, predicateVar, p);
+        SubAtom atom = new AutoValue_SubAtom(pattern.admin().var(), pattern, predicateVar, p);
+        atom.parent = parent;
+        return atom;
     }
     private static SubAtom create(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         return create(var.sub(predicateVar), predicateVar, p, parent);

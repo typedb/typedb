@@ -75,7 +75,9 @@ public abstract class IsaAtom extends IsaAtomBase {
     */
 
     public static IsaAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        return new AutoValue_IsaAtom(pattern.admin().var(), pattern, parent, predicateVar, p);
+        IsaAtom atom = new AutoValue_IsaAtom(pattern.admin().var(), pattern, predicateVar, p);
+        atom.parent = parent;
+        return atom;
     }
     private static IsaAtom create(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         return create(var.isa(predicateVar).admin(), predicateVar, p, parent);
