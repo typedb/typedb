@@ -48,36 +48,22 @@ import java.util.Collections;
  * @author Michele Orsi
  */
 public class GraknEngineServerFactory {
-    private static GraknEngineServer graknEngineServer;
-
-    public static synchronized GraknEngineServer getOrCreateGraknEngineServer() throws IOException {
-        if (graknEngineServer == null) {
-            graknEngineServer = createGraknEngineServer();
-        }
-        return graknEngineServer;
-    }
-
-    public static synchronized GraknEngineServer getOrCreateGraknEngineServer(
-            EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
-            RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider,
-            Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
-        if (graknEngineServer == null) {
-            graknEngineServer = createGraknEngineServer(engineID, sparkService, graknEngineStatus, metricRegistry, graknEngineConfig,
-                    redisWrapper, indexStorage, countStorage, lockProvider, runtime, collaborators, factory);
-        }
-        return graknEngineServer;
-    }
-
     public static GraknEngineServer createGraknEngineServer() throws IOException {
+        EngineID engineID = EngineID.me();
         GraknConfig config = GraknConfig.create();
+        Service service = Service.ignite();
+        GraknEngineStatus status = new GraknEngineStatus();
         RedisWrapper redisWrapper = RedisWrapper.create(config);
         MetricRegistry metricRegistry = new MetricRegistry();
+        Runtime runtime = Runtime.getRuntime();
+        Collection<HttpController> httpCollaborators = Collections.emptyList();
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
-        return createGraknEngineServer(EngineID.me(), Service.ignite(), new GraknEngineStatus(), metricRegistry,
-                config, redisWrapper, indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
+
+        return createGraknEngineServer(engineID, service, status, metricRegistry, config, redisWrapper, indexStorage,
+                countStorage, lockProvider, runtime, httpCollaborators, engineGraknTxFactory);
     }
 
     public static GraknEngineServer createGraknEngineServer(
@@ -92,9 +78,11 @@ public class GraknEngineServerFactory {
         GrpcServer grpcServer = GrpcServer.create(grpcPort, factory);
         HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(graknEngineConfig, factory, indexPostProcessor);
-        graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
+
+        GraknEngineServer graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
         Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
         runtime.addShutdownHook(thread);
+
         return graknEngineServer;
     }
 
