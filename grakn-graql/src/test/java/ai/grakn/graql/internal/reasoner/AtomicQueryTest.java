@@ -846,7 +846,7 @@ public class AtomicQueryTest {
 
         String playsPatternString = "{$x plays role1;}";
         String relatesPatternString = "{$x relates role1;}";
-        String hasPatternString = "{$x has role1;}";
+        String hasPatternString = "{$x has resource;}";
         String subPatternString2 = "{$x sub role1;}";
 
         Conjunction<VarPatternAdmin> isaPattern = conjunction(isaPatternString, graph);

@@ -18,7 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.Label;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
@@ -38,10 +41,15 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class HasAtom extends OntologicalAtom {
 
-    public static HasAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        HasAtom atom = new AutoValue_HasAtom(var, var.has(predicateVar), predicateVar, predicate);
+    public static HasAtom create(VarPattern pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
+        HasAtom atom = new AutoValue_HasAtom(pattern.admin().var(), pattern, predicateVar, predicate);
         atom.parent = parent;
         return atom;
+    }
+
+    public static HasAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
+        Label label = parent.tx().getConcept(predicate.getPredicate()).asType().getLabel();
+        return create(var.has(Graql.label(label)), predicateVar, predicate, parent);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {
