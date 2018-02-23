@@ -20,7 +20,6 @@ package ai.grakn;
 
 import ai.grakn.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,14 +53,10 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<List<String>> REDIS_HOST =
             key("queue.host", required(GraknConfigKey::parseCSValue), GraknConfigKey::toStringCSValue);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key(
-            "redis.sentinel.host",
-            withDefault(GraknConfigKey::parseCSValue, ImmutableList.of()),
-            GraknConfigKey::toStringCSValue
-    );
+    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST =
+            key("redis.sentinel.host", required(GraknConfigKey::parseCSValue), GraknConfigKey::toStringCSValue);
     public static final GraknConfigKey<String> REDIS_BIND = key("bind");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
-            key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
+    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("redis.sentinel.master");
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
@@ -145,13 +140,6 @@ public abstract class GraknConfigKey<T> {
      */
     private static <T> Function<Optional<String>, Optional<T>> required(Function<String, T> parseFunction) {
         return opt -> opt.map(parseFunction);
-    }
-
-    /**
-     * A function for parsing a parameter using the given parse function, including a default value.
-     */
-    private static <T> Function<Optional<String>, Optional<T>> withDefault(Function<String, T> parseFunction, T def) {
-        return opt -> Optional.of(opt.map(parseFunction).orElse(def));
     }
 
     private static List<String> parseCSValue(String s) {
