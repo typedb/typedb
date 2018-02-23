@@ -38,10 +38,15 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class GraknConfigKey<T> {
 
+    interface KeyParser<T> {
+        Optional<T> parse(Optional<String> string);
+    }
+
     // These are helpful constants to describe how to parse required parameters of certain types.
-    private static final Function<Optional<String>, Optional<Integer>> INT = required(Integer::parseInt);
-    private static final Function<Optional<String>, Optional<Boolean>> BOOL = required(Boolean::parseBoolean);
-    private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
+    private static final KeyParser<String> STRING = str -> str;
+    private static final KeyParser<Integer> INT = required(Integer::parseInt);
+    private static final KeyParser<Boolean> BOOL = required(Boolean::parseBoolean);
+    private static final KeyParser<Long> LONG = required(Long::parseLong);
 
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
     public static final GraknConfigKey<Integer> NUM_BACKGROUND_THREADS = key("background-tasks.threads", INT);
@@ -82,7 +87,7 @@ public abstract class GraknConfigKey<T> {
     /**
      * The function used to parse the value of the property.
      */
-    abstract Function<Optional<String>, Optional<T>> parseFunction();
+    abstract KeyParser<T> parser();
 
     /**
      * The function used to write the property back into the properties file
@@ -101,7 +106,7 @@ public abstract class GraknConfigKey<T> {
      * @throws RuntimeException if the value is not present and there is no default value
      */
     public final T parse(Optional<String> value, Path configFilePath) {
-        return parseFunction().apply(value).orElseThrow(() ->
+        return parser().parse(value).orElseThrow(() ->
                 new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath))
         );
     }
@@ -117,28 +122,27 @@ public abstract class GraknConfigKey<T> {
      * Create a key for a required string property
      */
     public static GraknConfigKey<String> key(String value) {
-        return key(value, Function.identity());
+        return key(value, STRING);
     }
 
     /**
      * Create a key with the given parse function
      */
-    private static <T> GraknConfigKey<T> key(String value, Function<Optional<String>, Optional<T>> parseFunction) {
-        return new AutoValue_GraknConfigKey<>(value, parseFunction, Object::toString);
+    private static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser) {
+        return new AutoValue_GraknConfigKey<>(value, parser, Object::toString);
     }
 
     /**
      * Create a key with the given parse function and toString function
      */
-    private static <T> GraknConfigKey<T> key(
-            String value, Function<Optional<String>, Optional<T>> parseFunction, Function<T, String> toStringFunction) {
-        return new AutoValue_GraknConfigKey<>(value, parseFunction, toStringFunction);
+    private static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser, Function<T, String> toStringFunction) {
+        return new AutoValue_GraknConfigKey<>(value, parser, toStringFunction);
     }
 
     /**
      * A function for parsing a required parameter using the given parse function.
      */
-    private static <T> Function<Optional<String>, Optional<T>> required(Function<String, T> parseFunction) {
+    private static <T> KeyParser<T> required(Function<String, T> parseFunction) {
         return opt -> opt.map(parseFunction);
     }
 
