@@ -140,6 +140,27 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
     @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && (isUserDefined() == a2.isUserDefined())
+                && getVarNames().equals(a2.getVarNames())
+                && getRelationPlayers().equals(a2.getRelationPlayers());
+    }
+
+    @Memoized
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + getVarNames().hashCode();
+        hashCode = hashCode * 37 + getRelationPlayers().hashCode();
+        return hashCode;
+    }
+
+    @Override
     public void checkValid(){
         super.checkValid();
         getRoleLabels().stream()
