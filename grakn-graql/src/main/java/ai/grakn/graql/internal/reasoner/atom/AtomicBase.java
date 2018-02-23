@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -47,36 +46,7 @@ public abstract class AtomicBase implements Atomic {
     protected ReasonerQuery parent;
     @Override public ReasonerQuery getParentQuery() { return parent; }
 
-    /*
-    private final Var varName;
-    private final VarPattern atomPattern;
-    private final ReasonerQuery parent;
-
-    private Pattern combinedPattern = null;
-
-    protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
-        this.atomPattern = pattern;
-        this.varName = pattern.admin().var();
-        this.parent = par;
-    }
-
-    protected AtomicBase(AtomicBase a, ReasonerQuery parent) {
-        this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.admin().var();
-        this.parent = parent;
-    }
-
-    @Override
-    public Var getVarName(){ return varName;}
-
-    @Override
-    public VarPattern getPattern(){ return atomPattern;}
-
-    public ReasonerQuery getParentQuery(){ return parent;}
-    */
-
-    @Override
-    public void checkValid(){}
+    @Override public void checkValid(){}
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {

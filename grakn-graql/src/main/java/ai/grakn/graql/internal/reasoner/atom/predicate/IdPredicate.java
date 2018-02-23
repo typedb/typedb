@@ -43,20 +43,6 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class IdPredicate extends Predicate<ConceptId>{
 
-    /*
-    private IdPredicate(VarPattern pattern, ReasonerQuery par) {
-        super(pattern, par);
-    }
-    private IdPredicate(Var varName, Label label, ReasonerQuery parent) { super(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);}
-    private IdPredicate(Var varName, ConceptId id, ReasonerQuery parent) {
-        super(createIdVar(varName.asUserDefined(), id), parent);
-    }
-    private IdPredicate(Var varName, Concept con, ReasonerQuery parent) {
-        super(createIdVar(varName.asUserDefined(), con.getId()), parent);
-    }
-    private IdPredicate(IdPredicate a, ReasonerQuery parent) { super(a, parent);}
-    */
-
     public static IdPredicate create(VarPattern pattern, ReasonerQuery parent) {
         IdPredicate predicate = new AutoValue_IdPredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
         predicate.parent = parent;

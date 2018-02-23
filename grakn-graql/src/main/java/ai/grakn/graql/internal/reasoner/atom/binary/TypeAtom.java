@@ -19,17 +19,12 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -51,12 +46,6 @@ import java.util.Set;
  *
  */
 public abstract class TypeAtom extends Binary{
-
-    /*
-    protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery parent) {
-        super(pattern, predicateVar, p, parent);}
-    protected TypeAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
 
     @Override
     public boolean isType(){ return true;}

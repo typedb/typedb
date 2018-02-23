@@ -38,21 +38,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class DataTypeAtom extends AtomicBase {
 
-    //private final AttributeType.DataType<?> datatype;
-
     public abstract AttributeType.DataType<?> getDataType();
-
-    /*
-    private DataTypeAtom(Var varName, DataTypeProperty prop, ReasonerQuery parent){
-        super(varName.datatype(prop.dataType()).admin(), parent);
-        this.datatype = prop.dataType();
-    }
-
-    private DataTypeAtom(DataTypeAtom a, ReasonerQuery parent) {
-        super(a, parent);
-        this.datatype = a.getDataType();
-    }
-    */
 
     public static DataTypeAtom create(Var varName, DataTypeProperty prop, ReasonerQuery parent) {
         DataTypeAtom atom = new AutoValue_DataTypeAtom(varName, varName.datatype(prop.dataType()).admin(), prop.dataType());

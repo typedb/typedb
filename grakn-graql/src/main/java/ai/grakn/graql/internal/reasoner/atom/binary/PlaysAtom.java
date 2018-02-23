@@ -44,14 +44,6 @@ import java.util.stream.Collectors;
  */
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
-    /*
-    private PlaysAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        super(pattern, predicateVar, p, parent);}
-    private PlaysAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
-        this(var.plays(predicateVar), predicateVar, p, parent);
-    }
-    private PlaysAtom(PlaysAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
 
     public static PlaysAtom create(VarPattern pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
         PlaysAtom atom = new AutoValue_PlaysAtom(pattern.admin().var(), pattern, predicateVar, predicate);

@@ -45,14 +45,6 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class HasAtom extends OntologicalAtom {
 
-    /*
-    private HasAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) { super(pattern, predicateVar, p, parent);}
-    private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
-        super(var.has(predicateVar), predicateVar, p, parent);
-    }
-    private HasAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
-
     public static HasAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         HasAtom atom = new AutoValue_HasAtom(pattern.admin().var(), pattern, predicateVar, p);
         atom.parent = parent;

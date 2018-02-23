@@ -17,10 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -40,18 +37,7 @@ import java.util.Set;
 public abstract class Predicate<T> extends AtomicBase {
 
     public abstract T getPredicate();
-    /*
-
-    Predicate(VarPattern pattern, ReasonerQuery par) {
-        super(pattern, par);
-        this.predicate = extractPredicate(pattern);
-    }
-
-    Predicate(Predicate pred, ReasonerQuery parent) {
-        super(pred, parent);
-        this.predicate = extractPredicate(pred.getPattern());
-    }
-     */
+    public abstract String getPredicateValue();
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -82,9 +68,4 @@ public abstract class Predicate<T> extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    @Override
-    public Pattern getCombinedPattern() { return createCombinedPattern(); }
-
-    public abstract String getPredicateValue();
 }

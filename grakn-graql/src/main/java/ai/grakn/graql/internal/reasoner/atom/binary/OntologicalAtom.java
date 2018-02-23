@@ -19,17 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -41,12 +36,6 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class OntologicalAtom extends TypeAtom {
-
-    /*
-    OntologicalAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    OntologicalAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
 
     @Override
     public boolean isSelectable() {

@@ -87,31 +87,9 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
  */
 @AutoValue
 public abstract class ResourceAtom extends Binary{
-    /*
-    private final Var relationVariable;
-    private final ImmutableSet<ValuePredicate> multiPredicate;
-    */
 
     public abstract Var getRelationVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
-
-     /*
-    private ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern, attributeVar, idPred, par);
-        this.relationVariable = relationVariable;
-        this.multiPredicate = ImmutableSet.copyOf(ps);
-    }
-
-    private ResourceAtom(ResourceAtom a, ReasonerQuery parent) {
-        super(a, parent);
-        this.relationVariable = a.getRelationVariable();
-        this.multiPredicate = ImmutableSet.<ValuePredicate>builder().addAll(
-                a.getMultiPredicate().stream()
-                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, parent))
-                        .iterator()
-        ).build();
-    }
-    */
 
     public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery parent) {
         ResourceAtom atom = new AutoValue_ResourceAtom(pattern.admin().var(), pattern, attributeVar, idPred,  relationVariable, ImmutableSet.copyOf(ps));

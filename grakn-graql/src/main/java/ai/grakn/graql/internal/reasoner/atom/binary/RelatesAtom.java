@@ -45,14 +45,6 @@ import java.util.stream.Collectors;
  */
 @AutoValue
 public abstract class RelatesAtom extends OntologicalAtom {
-    /*
-    private RelatesAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        super(pattern, predicateVar, p, parent);}
-    private RelatesAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
-        this(var.relates(predicateVar), predicateVar, p, parent);
-    }
-    private RelatesAtom(RelatesAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
 
     public static RelatesAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         RelatesAtom atom = new AutoValue_RelatesAtom(pattern.admin().var(), pattern, predicateVar, p);

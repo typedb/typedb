@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -28,7 +27,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Collection;
@@ -52,20 +50,14 @@ public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredi
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract ai.grakn.graql.ValuePredicate getPredicate();
 
-    //private ValuePredicate(VarPattern pattern, ReasonerQuery parent) { super(pattern, parent);}
-    //private ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery parent){ this(createValueVar(varName, pred), parent);}
-    //private ValuePredicate(ValuePredicate pred, ReasonerQuery parent) { super(pred, parent);}
-
     public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
         ValuePredicate predicate = new AutoValue_ValuePredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
         predicate.parent = parent;
         return predicate;
     }
-
     public static ValuePredicate create(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery parent) {
         return create(createValueVar(varName, pred), parent);
     }
-
     private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
         return create(pred.getPattern(), parent);
     }

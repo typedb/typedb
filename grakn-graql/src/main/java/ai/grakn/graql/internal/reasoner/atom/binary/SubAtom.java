@@ -45,14 +45,6 @@ import java.util.stream.Collectors;
  */
 @AutoValue
 public abstract class SubAtom extends OntologicalAtom {
-    /*
-    private SubAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        super(pattern, predicateVar, p, parent);}
-    private SubAtom(SubAtom a, ReasonerQuery parent) { super(a, parent);}
-    private SubAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
-        this(var.sub(predicateVar), predicateVar, p, parent);
-    }
-    */
 
     public static SubAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         SubAtom atom = new AutoValue_SubAtom(pattern.admin().var(), pattern, predicateVar, p);

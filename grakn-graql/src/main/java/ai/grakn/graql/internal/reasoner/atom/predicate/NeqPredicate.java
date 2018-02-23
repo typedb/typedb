@@ -41,15 +41,6 @@ import java.util.Set;
 @AutoValue
 public abstract class NeqPredicate extends Predicate<Var> {
 
-    /*
-    private NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
-        super(varName.neq(prop.var().var()).admin(), parent);
-    }
-    private NeqPredicate(NeqPredicate a, ReasonerQuery parent){
-        super(a, parent);
-    }
-    */
-
     public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
         NeqPredicate predicate = new AutoValue_NeqPredicate(pattern.admin().var(), pattern, extractPredicate(pattern));
         predicate.parent = parent;

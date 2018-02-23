@@ -37,21 +37,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RegexAtom extends AtomicBase {
 
-    //private final String regex;
-
     public abstract String getRegex();
-
-    /*
-    private RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
-        super(varName.regex(prop.regex()).admin(), parent);
-        this.regex = prop.regex();
-    }
-
-    private RegexAtom(RegexAtom a, ReasonerQuery parent) {
-        super(a, parent);
-        this.regex = a.getRegex();
-    }
-    */
 
     public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
         RegexAtom atom = new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), prop.regex());

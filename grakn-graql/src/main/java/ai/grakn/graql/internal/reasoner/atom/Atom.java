@@ -22,11 +22,9 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
@@ -39,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -64,16 +63,6 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatib
 public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
-
-    /*
-    protected Atom(VarPattern pattern, ReasonerQuery parent) {
-        super(pattern, parent);
-    }
-    protected Atom(Atom a, ReasonerQuery parent) {
-        super(a, parent);
-        this.applicableRules = a.applicableRules;
-    }
-    */
 
     public RelationshipAtom toRelationshipAtom(){
         throw GraqlQueryException.illegalAtomConversion(this);
@@ -166,6 +155,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
+    @Memoized
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();

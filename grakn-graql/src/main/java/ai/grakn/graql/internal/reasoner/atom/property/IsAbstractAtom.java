@@ -36,13 +36,6 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class IsAbstractAtom extends AtomicBase {
 
-    /*
-    private IsAbstractAtom(Var varName, ReasonerQuery parent){
-        super(varName.isAbstract().admin(), parent);
-    }
-    private IsAbstractAtom(IsAbstractAtom a, ReasonerQuery parent){ super(a, parent);}
-    */
-
     public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
         IsAbstractAtom atom = new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin());
         atom.parent = parent;

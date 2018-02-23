@@ -21,21 +21,18 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -58,30 +55,9 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
-    /*
-    private final IdPredicate typePredicate;
-    private final Var predicateVariable;
-    */
 
     public abstract Var getPredicateVariable();
     @Nullable public abstract IdPredicate getTypePredicate();
-
-    private Type type = null;
-
-    /*
-    Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, par);
-        this.predicateVariable = predicateVar;
-        this.typePredicate = p;
-    }
-
-    Binary(Binary a, ReasonerQuery parent) {
-        super(a, parent);
-        this.predicateVariable = a.predicateVariable;
-        this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
-        this.type = a.type;
-    }
-    */
 
     @Override
     public void checkValid() {
@@ -89,14 +65,13 @@ public abstract class Binary extends Atom {
     }
 
     @Nullable
+    @Memoized
     @Override
     public SchemaConcept getSchemaConcept(){
-        if (type == null && getTypePredicate() != null) {
-            Concept concept = getParentQuery().tx().getConcept(getTypeId());
-            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
-            type = concept.asType();
-        }
-        return type;
+        if (getTypePredicate() == null) return null;
+        Concept concept = getParentQuery().tx().getConcept(getTypeId());
+        if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+        return concept.asType();
     }
 
     @Override

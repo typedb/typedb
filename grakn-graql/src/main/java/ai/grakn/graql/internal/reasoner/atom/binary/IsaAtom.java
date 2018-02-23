@@ -62,18 +62,6 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {
 
-    /*
-    IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
-        super(pattern, predicateVar, p, parent);}
-    private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery parent){
-        this(var.isa(predicateVar).admin(), predicateVar, p, parent);
-    }
-    private IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
-        this(var, predicateVar, IdPredicate.create(predicateVar, type.getLabel(), parent), parent);
-    }
-    IsaAtom(TypeAtom a, ReasonerQuery parent) { super(a, parent);}
-    */
-
     public static IsaAtom create(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery parent) {
         IsaAtom atom = new AutoValue_IsaAtom(pattern.admin().var(), pattern, predicateVar, p);
         atom.parent = parent;
