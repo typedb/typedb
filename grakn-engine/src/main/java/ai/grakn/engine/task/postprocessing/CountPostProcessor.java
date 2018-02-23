@@ -150,9 +150,9 @@ public class CountPostProcessor {
             if (incrementInstanceCountAndCheckIfShardingIsNeeded(countStorage, keyspace, conceptId, 0, shardingThreshold)) {
 
 
-                try(EmbeddedGraknTx<?> graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-                    graph.shard(conceptId);
-                    graph.commitSubmitNoLogs();
+                try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+                    tx.shard(conceptId);
+                    tx.commitSubmitNoLogs();
                 }
                 //Update number of shards
                 countStorage.incrementShardCount(keyspace, conceptId, 1);

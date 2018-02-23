@@ -115,16 +115,16 @@ public class IndexPostProcessor {
      * Checks that post processing was done successfully by doing two things:
      *  1. That there is only 1 valid conceptID left
      *  2. That the concept Index does not return null
-     * @param graph A grakn graph to run the checks against.
+     * @param tx A grakn tx to run the checks against.
      * @param conceptIndex The concept index which MUST return a valid concept
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private Optional<String> validateMerged(EmbeddedGraknTx<?> graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private Optional<String> validateMerged(EmbeddedGraknTx<?> tx, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {
-            if (graph.getConcept(conceptId) != null) {
+            if (tx.getConcept(conceptId) != null) {
                 numConceptFound++;
                 if (numConceptFound > 1) {
                     StringBuilder conceptIdValues = new StringBuilder();
@@ -137,7 +137,7 @@ public class IndexPostProcessor {
         }
 
         //Check index
-        if(graph.getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
+        if(tx.getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 
