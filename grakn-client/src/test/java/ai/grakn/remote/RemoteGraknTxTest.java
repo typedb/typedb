@@ -67,6 +67,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -352,29 +353,29 @@ public class RemoteGraknTxTest {
         if(extender != null) var = extender.apply(var);
         String expectedQuery = define(var).toString();
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
         doAnswer(args -> {
-            assert serverResponses != null;
-            serverResponses.onNext(response);
+            assert server.requests() != null;
+            server.responses().onNext(response);
             return null;
-        }).when(serverRequests).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+        }).when(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
 
         doAnswer(args -> {
-            assert serverResponses != null;
-            serverResponses.onNext(GrpcUtil.doneResponse());
+            assert server.responses() != null;
+            server.responses().onNext(GrpcUtil.doneResponse());
             return null;
-        }).when(serverRequests).onNext(GrpcUtil.nextRequest());
+        }).when(server.requests()).onNext(GrpcUtil.nextRequest());
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
-            verify(serverRequests).onNext(any()); // The open request
+            verify(server.requests()).onNext(any()); // The open request
             adder.accept(tx, Label.of(label));
         }
 
-        verify(serverRequests).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
     }
 
     @Test
