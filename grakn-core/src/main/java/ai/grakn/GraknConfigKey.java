@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,11 +47,12 @@ public abstract class GraknConfigKey<T> {
         }
     }
 
-    // These are helpful parser to describe how to parse required parameters of certain types.
+    // These are helpful parser to describe how to parse parameters of certain types.
     private static final KeyParser<String> STRING = string -> string;
-    private static final KeyParser<Integer> INT = required(Integer::parseInt);
-    private static final KeyParser<Boolean> BOOL = required(Boolean::parseBoolean);
-    private static final KeyParser<Long> LONG = required(Long::parseLong);
+    private static final KeyParser<Integer> INT = Integer::parseInt;
+    private static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
+    private static final KeyParser<Long> LONG = Long::parseLong;
+    private static final KeyParser<Path> PATH = Paths::get;
 
     private static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
         @Override
@@ -83,7 +83,7 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 
-    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
+    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", PATH);
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
@@ -133,7 +133,7 @@ public abstract class GraknConfigKey<T> {
     }
 
     /**
-     * Create a key for a required string property
+     * Create a key for a string property
      */
     public static GraknConfigKey<String> key(String value) {
         return key(value, STRING);
@@ -146,10 +146,4 @@ public abstract class GraknConfigKey<T> {
         return new AutoValue_GraknConfigKey<>(value, parser);
     }
 
-    /**
-     * A function for parsing a required parameter using the given parse function.
-     */
-    private static <T> KeyParser<T> required(Function<String, T> parseFunction) {
-        return parseFunction::apply;
-    }
 }
