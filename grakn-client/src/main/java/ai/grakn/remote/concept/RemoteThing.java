@@ -24,6 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.grpc.ConceptProperty;
 
 import java.util.stream.Stream;
 
@@ -77,6 +78,6 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final boolean isInferred() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return tx().client().getConceptProperty(getId(), ConceptProperty.IS_INFERRED);
     }
 }

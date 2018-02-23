@@ -33,7 +33,6 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
@@ -50,7 +49,6 @@ import io.grpc.Metadata;
 import io.grpc.Metadata.AsciiMarshaller;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -141,30 +139,16 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
-    public static TxRequest getConceptPropertyRequest(ConceptId id, ConceptProperty property) {
+    public static TxRequest getConceptPropertyRequest(ConceptId id, ai.grakn.grpc.ConceptProperty<?> property) {
         GetConceptProperty getConceptProperty = GetConceptProperty.newBuilder()
                 .setId(convert(id))
-                .setConceptProperty(property)
+                .setConceptProperty(property.toGrpc())
                 .build();
         return TxRequest.newBuilder().setGetConceptProperty(getConceptProperty).build();
     }
 
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
-    }
-
-    public static TxResponse conceptPropertyLabelResponse(Label label) {
-        return conceptPropertyResponse(val -> val.setLabel(convert(label)));
-    }
-
-    public static TxResponse conceptPropertyIsImplicitResponse(boolean isImplicit) {
-        return conceptPropertyResponse(val -> val.setIsImplicit(isImplicit));
-    }
-
-    public static TxResponse conceptPropertyResponse(Consumer<ConceptPropertyValue.Builder> setter) {
-        ConceptPropertyValue.Builder conceptPropertyValue = ConceptPropertyValue.newBuilder();
-        setter.accept(conceptPropertyValue);
-        return TxResponse.newBuilder().setConceptPropertyValue(conceptPropertyValue.build()).build();
     }
 
     public static Keyspace getKeyspace(Open open) {
@@ -226,7 +210,11 @@ public class GrpcUtil {
         return ConceptId.of(id.getValue());
     }
 
-    private static GraknOuterClass.Label convert(Label label) {
+    static GraknOuterClass.Label convert(Label label) {
         return GraknOuterClass.Label.newBuilder().setValue(label.getValue()).build();
+    }
+
+    static Label convert(GraknOuterClass.Label label) {
+        return Label.of(label.getValue());
     }
 }

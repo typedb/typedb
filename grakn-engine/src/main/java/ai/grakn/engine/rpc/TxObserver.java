@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -34,6 +33,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
@@ -235,28 +235,13 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private void getConceptProperty(GetConceptProperty getConceptProperty) {
         Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(getConceptProperty)));
 
-        TxResponse response;
+        ConceptProperty<?> conceptProperty = ConceptProperty.fromGrpc(getConceptProperty.getConceptProperty());
 
-        switch (getConceptProperty.getConceptProperty()) {
-            case LabelProperty:
-                Label label = concept.asSchemaConcept().getLabel();
-                response = GrpcUtil.conceptPropertyLabelResponse(label);
-                break;
-            case IsImplicit:
-                boolean isImplicit = concept.asSchemaConcept().isImplicit();
-                response = GrpcUtil.conceptPropertyIsImplicitResponse(isImplicit);
-                break;
-            case ValueProperty:
-            case DataTypeProperty:
-            case IsInferred:
-            case IsAbstract:
-            case When:
-            case Then:
-            case Regex:
-            default:
-            case UNRECOGNIZED:
-                throw error(Status.INVALID_ARGUMENT);
+        if (conceptProperty == null) {
+            throw error(Status.INVALID_ARGUMENT);
         }
+
+        TxResponse response = conceptProperty.response(concept);
 
         responseObserver.onNext(response);
     }

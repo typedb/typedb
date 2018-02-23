@@ -22,12 +22,12 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
@@ -46,9 +46,6 @@ import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
-
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -112,14 +109,9 @@ public final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Label getLabel(ConceptId id) {
-        communicator.send(GrpcUtil.getConceptPropertyRequest(id, LabelProperty));
-        return GrpcUtil.getLabel(responseOrThrow().getConceptPropertyValue());
-    }
-
-    public boolean isImplicit(ConceptId id) {
-        communicator.send(GrpcUtil.getConceptPropertyRequest(id, IsImplicit));
-        return responseOrThrow().getConceptPropertyValue().getIsImplicit();
+    public <T> T getConceptProperty(ConceptId id, ConceptProperty<T> conceptProperty) {
+        communicator.send(GrpcUtil.getConceptPropertyRequest(id, conceptProperty));
+        return conceptProperty.get(responseOrThrow());
     }
 
     @Override

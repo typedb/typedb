@@ -34,6 +34,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
@@ -72,9 +73,8 @@ import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
 import static ai.grakn.grpc.GrpcUtil.nextRequest;
 import static ai.grakn.grpc.GrpcUtil.openRequest;
 import static ai.grakn.grpc.GrpcUtil.stopRequest;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -408,9 +408,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, LabelProperty));
+            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
 
-            assertEquals(label, GrpcUtil.getLabel(tx.receive().ok().getConceptPropertyValue()));
+            assertEquals(label, ConceptProperty.LABEL.get(tx.receive().ok()));
         }
     }
 
@@ -427,9 +427,28 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, IsImplicit));
+            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_IMPLICIT));
 
-            assertTrue(tx.receive().ok().getConceptPropertyValue().getIsImplicit());
+            assertTrue(ConceptProperty.IS_IMPLICIT.get(tx.receive().ok()));
+        }
+    }
+
+    @Test
+    public void whenGettingIsInferredProperty_IsInferredIsReturned() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+
+        Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(id)).thenReturn(concept);
+        when(concept.isThing()).thenReturn(true);
+        when(concept.asThing().isInferred()).thenReturn(false);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_INFERRED));
+
+            assertFalse(ConceptProperty.IS_INFERRED.get(tx.receive().ok()));
         }
     }
 
@@ -443,7 +462,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, LabelProperty));
+            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -464,7 +483,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, LabelProperty));
+            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
