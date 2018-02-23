@@ -280,6 +280,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
+    public static GraqlQueryException illegalAtomCreation(String type){
+        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CREATION.getMessage(type));
+    }
+
     public static GraqlQueryException nonAtomicQuery(ReasonerQuery reasonerQuery) {
         return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
     }

@@ -184,8 +184,6 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
         Var predicateVar = var().asUserDefined();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         IdPredicate predicate = IdPredicate.create(predicateVar, schemaConcept, parent);
-        //isa part
-        VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
-        return HasAtom.create(resVar, predicateVar, predicate, parent);
+        return HasAtom.create(varName, predicateVar, predicate, parent);
     }
 }

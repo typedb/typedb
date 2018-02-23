@@ -19,19 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -45,18 +38,14 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
 
-    public static PlaysAtom create(VarPattern pattern, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        PlaysAtom atom = new AutoValue_PlaysAtom(pattern.admin().var(), pattern, predicateVar, predicate);
+    public static PlaysAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
+        PlaysAtom atom = new AutoValue_PlaysAtom(var, var.plays(predicateVar), predicateVar, predicate);
         atom.parent = parent;
         return atom;
     }
 
-    private static PlaysAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        return create(var.plays(predicateVar), predicateVar, predicate, parent);
-    }
-
     private static PlaysAtom create(PlaysAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getPredicateVariable(), a.getTypePredicate(), parent);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypePredicate(), parent);
     }
 
     @Override
@@ -66,24 +55,4 @@ public abstract class PlaysAtom extends OntologicalAtom {
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {return PlaysProperty.class;}
-
-    @Override
-    public Set<TypeAtom> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
-        return vars.isEmpty()?
-                Collections.singleton(this) :
-                vars.stream().map(v -> create(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
-    }
-
-    @Override
-    public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isUserDefinedName()?
-                create(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
-                this;
-    }
 }
