@@ -375,7 +375,9 @@ public interface GraknTx extends AutoCloseable{
      * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      */
-    void abort();
+    default void abort(){
+        close();
+    }
 
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to

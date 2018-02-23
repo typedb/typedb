@@ -120,6 +120,10 @@ public final class GrpcClient implements AutoCloseable {
         communicator.close();
     }
 
+    public boolean isClosed(){
+        return communicator.isClosed();
+    }
+
     private TxResponse responseOrThrow() {
         Response response;
 

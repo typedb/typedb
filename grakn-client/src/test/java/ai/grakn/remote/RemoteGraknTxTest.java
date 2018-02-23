@@ -21,13 +21,18 @@ package ai.grakn.remote;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
@@ -36,6 +41,7 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Metadata;
@@ -47,14 +53,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -303,6 +316,88 @@ public class RemoteGraknTxTest {
 
             tx.commit();
         }
+    }
+
+    @Test
+    public void whenPuttingEntityType_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GraknTx::putEntityType, null);
+    }
+
+    @Test
+    public void whenPuttingRelationType_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RELATIONSHIP, GraknTx::putRelationshipType, null);
+    }
+
+    @Test
+    public void whenPuttingAttributeType_EnsureCorrectQueryIsSent(){
+        AttributeType.DataType<String> string = AttributeType.DataType.STRING;
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ATTRIBUTE,
+                (tx, label) -> tx.putAttributeType(label, string),
+                var -> var.datatype(string));
+    }
+
+    @Test
+    public void whenPuttingRule_EnsureCorrectQueryIsSent(){
+        Pattern when = Graql.parser().parsePattern("$x isa Your-Type");
+        Pattern then = Graql.parser().parsePattern("$x isa Your-Other-Type");
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RULE, (tx, label) -> tx.putRule(label, when, then), var -> var.when(when).then(then));
+    }
+
+    @Test
+    public void whenPuttingRole_EnsureCorrectQueryIsSent(){
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ROLE, GraknTx::putRole, null);
+    }
+
+    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
+        VarPattern var = var().label(label).sub(metaSchema.getLabel().getValue());
+        if(extender != null) var = extender.apply(var);
+        String expectedQuery = define(var).toString();
+
+        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
+        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+
+        doAnswer(args -> {
+            assert server.requests() != null;
+            server.responses().onNext(response);
+            return null;
+        }).when(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+
+        doAnswer(args -> {
+            assert server.responses() != null;
+            server.responses().onNext(GrpcUtil.doneResponse());
+            return null;
+        }).when(server.requests()).onNext(GrpcUtil.nextRequest());
+
+        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+            verify(server.requests()).onNext(any()); // The open request
+            adder.accept(tx, Label.of(label));
+        }
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
+    }
+
+    @Test
+    public void whenClosingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::close);
+    }
+
+    @Test
+    public void whenCommittingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::commit);
+    }
+
+    @Test
+    public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed(){
+        assertTransactionClosedAfterAction(GraknTx::abort);
+    }
+
+    private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){
+        GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE);
+        assertFalse(tx.isClosed());
+        action.accept(tx);
+        assertTrue(tx.isClosed());
     }
 
     private void throwOn(TxRequest request, ErrorType errorType, String message) {
