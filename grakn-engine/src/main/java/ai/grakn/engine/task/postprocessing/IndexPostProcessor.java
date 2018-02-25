@@ -40,15 +40,15 @@ import java.util.concurrent.locks.Lock;
  */
 public class IndexPostProcessor {
     private final LockProvider lockProvider;
-    private final RedisIndexStorage redisIndexStorage;
+    private final IndexStorage indexStorage;
     private static final String LOCK_KEY = "post-processing-index-lock-%s-%s";
 
-    private IndexPostProcessor(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
+    private IndexPostProcessor(LockProvider lockProvider, IndexStorage indexStorage) {
         this.lockProvider = lockProvider;
-        this.redisIndexStorage = redisIndexStorage;
+        this.indexStorage = indexStorage;
     }
 
-    public static IndexPostProcessor create(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
+    public static IndexPostProcessor create(LockProvider lockProvider, IndexStorage redisIndexStorage) {
         return new IndexPostProcessor(lockProvider, redisIndexStorage);
     }
 
@@ -57,21 +57,21 @@ public class IndexPostProcessor {
     }
 
     public String popIndex(Keyspace keyspace){
-        return redisIndexStorage.popIndex(keyspace);
+        return indexStorage.popIndex(keyspace);
     }
 
     public Set<ConceptId> popIds(Keyspace keyspace, String index){
-        return redisIndexStorage.popIds(keyspace, index);
+        return indexStorage.popIds(keyspace, index);
     }
 
     /**
-     * Adds all the new {@link ai.grakn.concept.Attribute}s of a {@link CommitLog} to {@link RedisIndexStorage} for storage.
+     * Adds all the new {@link ai.grakn.concept.Attribute}s of a {@link CommitLog} to {@link IndexStorage} for storage.
      * This data will be retrieved later and post processed.
      *
      * @param commitLog The {@link CommitLog} which contains the new {@link ai.grakn.concept.Attribute}s to post process
      */
     public void updateIndices(CommitLog commitLog){
-        commitLog.attributes().forEach((index, ids) -> redisIndexStorage.addIndex(commitLog.keyspace(), index, ids));
+        commitLog.attributes().forEach((index, ids) -> indexStorage.addIndex(commitLog.keyspace(), index, ids));
     }
 
     /**
@@ -115,7 +115,7 @@ public class IndexPostProcessor {
      * Checks that post processing was done successfully by doing two things:
      *  1. That there is only 1 valid conceptID left
      *  2. That the concept Index does not return null
-     * @param tx A grakn graph to run the checks against.
+     * @param tx A grakn tx to run the checks against.
      * @param conceptIndex The concept index which MUST return a valid concept
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.

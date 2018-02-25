@@ -16,10 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.task.postprocessing.redisstorage;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.task.postprocessing.CountStorage;
 import com.codahale.metrics.MetricRegistry;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
@@ -33,7 +34,7 @@ import redis.clients.util.Pool;
  *
  * @author fppt
  */
-public class RedisCountStorage {
+public class RedisCountStorage implements CountStorage {
     private final RedisStorage redisStorage;
 
     private RedisCountStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
@@ -42,6 +43,26 @@ public class RedisCountStorage {
 
     public static RedisCountStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
         return new RedisCountStorage(jedisPool, metricRegistry);
+    }
+
+    @Override
+    public long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long incrementBy) {
+        return incrementCount(getKeyNumInstances(keyspace, conceptId), incrementBy);
+    }
+
+    @Override
+    public long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long incrementBy) {
+        return incrementCount(getKeyNumShards(keyspace, conceptId), incrementBy);
+    }
+
+    @Override
+    public long getInstanceCount(Keyspace keyspace, ConceptId conceptId) {
+        return getCount(getKeyNumInstances(keyspace, conceptId));
+    }
+
+    @Override
+    public long getShardCount(Keyspace keyspace, ConceptId conceptId) {
+        return getCount(getKeyNumShards(keyspace, conceptId));
     }
 
     /**
@@ -56,7 +77,7 @@ public class RedisCountStorage {
             if(incrementBy != 0) {
                 return jedis.incrBy(key, incrementBy); //Number is decremented when count is negative
             } else {
-               return getCount(key);
+                return getCount(key);
             }
         });
     }
@@ -85,3 +106,4 @@ public class RedisCountStorage {
         return "NS_" + keyspace + "_" + conceptId.getValue();
     }
 }
+

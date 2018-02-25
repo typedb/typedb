@@ -16,10 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.task.postprocessing.redisstorage;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.task.postprocessing.IndexStorage;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import redis.clients.jedis.Jedis;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-public class RedisIndexStorage {
+public class RedisIndexStorage implements IndexStorage {
     private final RedisStorage redisStorage;
 
     private RedisIndexStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
@@ -50,9 +51,7 @@ public class RedisIndexStorage {
         return new RedisIndexStorage(jedisPool, metricRegistry);
     }
 
-    /**
-     * Add an index to the list of indices which needs to be post processed
-     */
+    @Override
     public void addIndex(Keyspace keyspace, String index, Set<ConceptId> conceptIds){
         String listOfIndicesKey = getIndicesKey(keyspace);
         String listOfIdsKey = getConceptIdsKey(keyspace, index);
@@ -65,18 +64,14 @@ public class RedisIndexStorage {
         });
     }
 
-    /**
-     * Gets and removes the next index to post process
-     */
+    @Override
     @Nullable
     public String popIndex(Keyspace keyspace){
         String indexKey = getIndicesKey(keyspace);
         return redisStorage.contactRedis(jedis -> jedis.spop(indexKey));
     }
 
-    /**
-     * Gets and removes all the ids which we need to post process
-     */
+    @Override
     public Set<ConceptId> popIds(Keyspace keyspace, String index){
         String idKey = getConceptIdsKey(keyspace, index);
         return redisStorage.contactRedis(jedis -> {
@@ -92,7 +87,7 @@ public class RedisIndexStorage {
      * The key which refers to  a list of all the indices in a certain {@link Keyspace} which need to be post processed
      */
     @VisibleForTesting
-    static String getIndicesKey(Keyspace keyspace){
+    public static String getIndicesKey(Keyspace keyspace){
         return "IndicesToProcess_" + keyspace.getValue();
     }
 
@@ -100,7 +95,7 @@ public class RedisIndexStorage {
      * The key which refers to a set of vertices currently pointing to the same index
      */
     @VisibleForTesting
-    static String getConceptIdsKey(Keyspace keyspace, String index){
+    public static String getConceptIdsKey(Keyspace keyspace, String index){
         return "IdsToPostProcess_" + keyspace.getValue() + "_Id_" + index;
     }
 }

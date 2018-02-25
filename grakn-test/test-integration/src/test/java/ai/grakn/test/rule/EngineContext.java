@@ -22,12 +22,18 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknCreator;
+import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.task.postprocessing.RedisCountStorage;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.JedisLockProvider;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.task.postprocessing.CountStorage;
+import ai.grakn.engine.task.postprocessing.IndexStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.GraknTestUtil;
@@ -42,6 +48,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import spark.Service;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -127,14 +134,6 @@ public class EngineContext extends CompositeTestRule {
         return config.uri();
     }
 
-    public String host() {
-        return config.uri().getHost();
-    }
-
-    public int port() {
-        return config.uri().getPort();
-    }
-
     public SimpleURI grpcUri() {
         return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
@@ -176,14 +175,10 @@ public class EngineContext extends CompositeTestRule {
         // start engine
         setRestAssuredUri(config);
 
-        EngineID id = EngineID.me();
         spark = Service.ignite();
-        GraknEngineStatus status = new GraknEngineStatus();
-        MetricRegistry metricRegistry = new MetricRegistry();
         RedisWrapper redis = RedisWrapper.create(config);
 
-        GraknCreator creator = GraknCreator.create(id, spark, status, metricRegistry, config, redis);
-        server = creator.instantiateGraknEngineServer(Runtime.getRuntime());
+        server = createGraknEngineServer(redis);
         server.start();
 
         LOG.info("engine started on " + uri());
@@ -268,5 +263,17 @@ public class EngineContext extends CompositeTestRule {
 
     public JedisPool getJedisPool() {
         return jedisPool;
+    }
+
+    private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
+        EngineID id = EngineID.me();
+        GraknEngineStatus status = new GraknEngineStatus();
+        MetricRegistry metricRegistry = new MetricRegistry();
+        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
+        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
+        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        return GraknEngineServerFactory.createGraknEngineServer(id, spark, status, metricRegistry, config, redisWrapper,
+                indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory);
     }
 }
