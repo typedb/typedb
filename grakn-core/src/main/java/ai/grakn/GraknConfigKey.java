@@ -147,7 +147,7 @@ public abstract class GraknConfigKey<T> {
     /**
      * Create a key with the given parser
      */
-    private static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser) {
+    public static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser) {
         return new AutoValue_GraknConfigKey<>(value, parser);
     }
 
