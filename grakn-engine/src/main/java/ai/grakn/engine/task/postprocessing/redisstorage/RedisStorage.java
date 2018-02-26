@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.task.postprocessing.redisstorage;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -42,12 +42,12 @@ import static com.codahale.metrics.MetricRegistry.name;
  *
  * @author fppt
  */
-class RedisStorage {
+public class RedisStorage {
     private final static Logger LOG = LoggerFactory.getLogger(RedisStorage.class);
     private final Timer contactRedisTimer;
     private Pool<Jedis> jedisPool;
 
-    RedisStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
+    public RedisStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
         this.jedisPool = jedisPool;
         this.contactRedisTimer = metricRegistry.timer(name(RedisCountStorage.class, "contact"));
     }
@@ -60,7 +60,7 @@ class RedisStorage {
      * @param <X> The type of the result returned.
      * @return The result of contacting redis.
      */
-    <X> X contactRedis(Function<Jedis, X> function){
+    public <X> X contactRedis(Function<Jedis, X> function){
         try(Jedis jedis = jedisPool.getResource(); Timer.Context ignored = contactRedisTimer.time()){
             return function.apply(jedis);
         } catch (JedisException e) {

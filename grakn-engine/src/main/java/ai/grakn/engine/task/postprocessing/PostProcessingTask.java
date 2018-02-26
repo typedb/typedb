@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
