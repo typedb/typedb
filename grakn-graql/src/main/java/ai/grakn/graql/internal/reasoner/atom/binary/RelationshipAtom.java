@@ -53,6 +53,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -107,8 +108,12 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 public abstract class RelationshipAtom extends IsaAtomBase {
 
+    @Override @IgnoreHashEquals public abstract Var getVarName();
+    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
     public abstract ImmutableList<RelationPlayer> getRelationPlayers();
-    public abstract ImmutableSet<Label> getRoleLabels();
+    @IgnoreHashEquals public abstract ImmutableSet<Label> getRoleLabels();
 
     private ImmutableList<Type> possibleTypes = null;
 
@@ -129,11 +134,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .flatMap(CommonUtil::optionalToStream)
                         .iterator()
         ).build();
-        return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
+        return new AutoValue_RelationshipAtom( predicateId, pattern.admin().var(), predicateVar, pattern, parent,  relationPlayers, roleLabels);
     }
 
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
-        return new AutoValue_RelationshipAtom(a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(),  a.getRelationPlayers(), a.getRoleLabels());
+        return new AutoValue_RelationshipAtom( a.getTypeId(), a.getVarName(), a.getPredicateVariable(), a.getPattern(), parent, a.getRelationPlayers(), a.getRoleLabels());
     }
 
     @Override
@@ -162,24 +167,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 typeString +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
-    }
-
-
-    @Override
-    public final boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && getRelationPlayers().equals(a2.getRelationPlayers());
-    }
-
-    @Override
-    public final int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + getRelationPlayers().hashCode();
-        return hashCode;
     }
 
     /**
@@ -511,6 +498,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
      * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
+     * NB: Not using Memoized as memoized methods can't have parameters
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */

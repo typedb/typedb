@@ -36,7 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
-import ai.grakn.graql.internal.reasoner.utils.autovalue.IgnoreHashEquals;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;

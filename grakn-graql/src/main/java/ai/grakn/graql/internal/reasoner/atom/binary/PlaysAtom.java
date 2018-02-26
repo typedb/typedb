@@ -25,7 +25,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
-import ai.grakn.graql.internal.reasoner.utils.autovalue.IgnoreHashEquals;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
