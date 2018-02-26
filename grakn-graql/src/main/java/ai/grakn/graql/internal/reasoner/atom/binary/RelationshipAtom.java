@@ -455,7 +455,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        //TODO cleanup
         return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
@@ -727,7 +726,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         VarPatternAdmin newPattern = relationPattern(getVarName(), inferredRelationPlayers)
                 .isa(getPredicateVariable()).admin();
-        //return create(newPattern, getPredicateVariable(), getTypePredicate(), possibleRelations, getParentQuery());
         return create(newPattern, getPredicateVariable(), getTypeId(), getParentQuery());
     }
 

@@ -53,6 +53,11 @@ public abstract class PlaysAtom extends OntologicalAtom {
     }
 
     @Override
+    OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return PlaysAtom.create(var, predicateVar, predicateId, parent);
+    }
+
+    @Override
     public Atomic copy(ReasonerQuery parent){
         return create(this, parent);
     }

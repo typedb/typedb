@@ -60,6 +60,11 @@ public abstract class HasAtom extends OntologicalAtom {
     }
 
     @Override
+    OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return HasAtom.create(var, predicateVar, predicateId, parent);
+    }
+
+    @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent); }
 
     @Override

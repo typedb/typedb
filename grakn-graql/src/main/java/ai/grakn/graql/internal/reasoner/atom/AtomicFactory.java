@@ -18,24 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.binary.HasAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.PlaysAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelatesAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -47,23 +38,6 @@ import javax.annotation.Nullable;
  *
  */
 public class AtomicFactory {
-
-    /**
-     * @param atomType to create
-     * @param var atom variable name
-     * @param predicateVar predicate variable name
-     * @param predicateId atom's predicate
-     * @param parent reasoner query the atom should belong to
-     * @param <T> atom type parameter
-     * @return fresh ontological atom
-     */
-   public static <T extends OntologicalAtom> OntologicalAtom createOntologicalAtom(Class<T> atomType, Var var, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        if (atomType.equals(PlaysAtom.class)) { return PlaysAtom.create(var, predicateVar, predicateId, parent); }
-        else if (atomType.equals(HasAtom.class)){ return HasAtom.create(var, predicateVar, predicateId, parent); }
-        else if (atomType.equals(RelatesAtom.class)){ return RelatesAtom.create(var, predicateVar, predicateId, parent); }
-        else if (atomType.equals(SubAtom.class)){ return SubAtom.create(var, predicateVar, predicateId, parent); }
-        else{ throw GraqlQueryException.illegalAtomCreation(atomType.getName()); }
-    }
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms

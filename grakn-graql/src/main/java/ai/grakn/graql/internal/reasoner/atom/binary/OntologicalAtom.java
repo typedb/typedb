@@ -18,11 +18,12 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -43,6 +44,8 @@ import java.util.stream.Stream;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
+    abstract OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent);
+
     @Override
     public boolean isSelectable() {
         return true;
@@ -61,18 +64,18 @@ public abstract class OntologicalAtom extends TypeAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> AtomicFactory.createOntologicalAtom(this.getClass(), v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
+        return createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
-                AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
+                createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
                 this;
     }
 }
