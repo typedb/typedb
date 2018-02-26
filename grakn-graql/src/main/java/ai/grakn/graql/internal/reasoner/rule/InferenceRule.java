@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -252,7 +251,7 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
-                }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));
+                }).forEach(t -> bodyAtoms.add(t.copy(body)));
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, tx),

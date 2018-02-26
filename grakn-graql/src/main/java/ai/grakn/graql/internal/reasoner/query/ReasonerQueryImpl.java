@@ -117,7 +117,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 
@@ -126,7 +126,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
                         .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
-                        .map(at -> AtomicFactory.create(at, this)).iterator())
+                        .map(at -> at.copy(this)).iterator())
                 .build();
     }
 
@@ -138,7 +138,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.tx = q.tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
-                .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .addAll(q.getAtoms().stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 

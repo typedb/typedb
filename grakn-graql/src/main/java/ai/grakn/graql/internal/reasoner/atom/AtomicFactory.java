@@ -64,14 +64,6 @@ public class AtomicFactory {
         else if (atomType.equals(SubAtom.class)){ return SubAtom.create(var, predicateVar, predicateId, parent); }
         else{ throw GraqlQueryException.illegalAtomCreation(atomType.getName()); }
     }
-    /**
-     * @param atom to be copied
-     * @param parent query the copied atom should belong to
-     * @return atom copy
-     */
-    public static Atomic create(Atomic atom, ReasonerQuery parent) {
-        return atom.copy(parent);
-    }
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms
