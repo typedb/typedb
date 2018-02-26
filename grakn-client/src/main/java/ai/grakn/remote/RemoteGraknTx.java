@@ -122,9 +122,10 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta,
                                                    @Nullable Function<VarPattern, VarPattern> extender){
-        VarPattern var = var().label(label).sub(var().label(meta.getLabel()));
-        if(extender != null) var = extender.apply(var);
-        return (X) queryRunner().run(Graql.define(var)).get("x");
+        Var var = var("x");
+        VarPattern pattern = var.label(label).sub(var().label(meta.getLabel()));
+        if(extender != null) pattern = extender.apply(pattern);
+        return (X) queryRunner().run(Graql.define(pattern)).get(var);
     }
 
     @Nullable
