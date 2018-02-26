@@ -38,6 +38,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
@@ -46,7 +47,9 @@ import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
@@ -91,37 +94,40 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, ENTITY);
+        return putSchemaConcept(label, ENTITY, () -> getEntityType(label.getValue()));
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        return putSchemaConcept(label, ATTRIBUTE, var -> var.datatype(dataType));
+        return putSchemaConcept(label, ATTRIBUTE, () -> getAttributeType(label.getValue()), var -> var.datatype(dataType));
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, RULE, var -> var.when(when).then(then));
+        return putSchemaConcept(label, RULE, () -> getRule(label.getValue()), var -> var.when(when).then(then));
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putSchemaConcept(label, RELATIONSHIP);
+        return putSchemaConcept(label, RELATIONSHIP, () -> getRelationshipType(label.getValue()));
     }
 
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, ROLE);
+        return putSchemaConcept(label, ROLE, () -> getRole(label.getValue()));
     }
 
-    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta){
-        return putSchemaConcept(label, meta, null);
+    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta, Supplier<X> supplier){
+        return putSchemaConcept(label, meta, supplier,null);
     }
 
-    private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta, @Nullable Function<VarPattern, VarPattern> extender){
+    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta,
+                                                   Supplier<X> supplier,
+                                                   @Nullable Function<VarPattern, VarPattern> extender){
         VarPattern var = var().label(label).sub(var().label(meta.getLabel()));
         if(extender != null) var = extender.apply(var);
-        return (X) Iterables.getOnlyElement(queryRunner().run(Graql.define(var)).concepts());
+        queryRunner().run(Graql.define(var));
+        return supplier.get();
     }
 
     @Nullable
@@ -133,13 +139,13 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(label);
     }
 
     @Nullable
     @Override
     public <T extends Type> T getType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(label);
     }
 
     @Override
@@ -150,31 +156,44 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ENTITY);
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label), Schema.MetaSchema.RELATIONSHIP);
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ATTRIBUTE);
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ROLE);
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label), Schema.MetaSchema.RULE);
+    }
+
+    @Nullable
+    private <X extends SchemaConcept> X getSchemaConcept(Label label, @Nullable Schema.MetaSchema meta){
+        VarPattern pattern = var().label(label);
+        if(meta != null) pattern = pattern.sub(var().label(meta.getLabel()));
+        Optional<Answer> result = queryRunner().run(Graql.match(pattern).get()).findAny();
+        if(result.isPresent()){
+            Collection<Concept> answer = result.get().concepts();
+            if (!answer.isEmpty()) return (X) Iterables.getOnlyElement(answer);
+        }
+
+        return null;
     }
 
     @Override
@@ -215,32 +234,32 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Type getMetaConcept() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
     }
 
     @Override
     public RelationshipType getMetaRelationType() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
     }
 
     @Override
     public Role getMetaRole() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
     }
 
     @Override
     public AttributeType getMetaAttributeType() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
     }
 
     @Override
     public Rule getMetaRule() {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
     }
 
     @Override
