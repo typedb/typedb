@@ -139,7 +139,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return getSchemaConcept(label);
+        return getSchemaConcept(label, null);
     }
 
     @Nullable
