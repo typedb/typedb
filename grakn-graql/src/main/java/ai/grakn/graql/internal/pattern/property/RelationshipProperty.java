@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
@@ -256,9 +257,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        //TODO remove forcing user definition
         Var typeVariable = isaProp != null? isaProp.type().var() : Graql.var();
-        //Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
 
         //Isa present
         if (isaProp != null) {
@@ -271,7 +270,8 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
         relVar = relVar.isa(typeVariable.asUserDefined());
-        return RelationshipAtom.create(relVar.admin(), typeVariable, predicate, parent);
+        return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }
 }

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -177,15 +178,15 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.var().asUserDefined();
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        IdPredicate predicate = IdPredicate.create(predicateVar, schemaConcept, parent);
+        ConceptId predicateId = schemaConcept != null? schemaConcept.getId() : null;
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
-        return HasAtom.create(resVar, predicateVar, predicate, parent);
+        return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 }

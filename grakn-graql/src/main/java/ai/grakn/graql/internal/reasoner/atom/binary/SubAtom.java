@@ -18,13 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.utils.autovalue.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 import java.util.stream.Collectors;
 
@@ -40,14 +42,16 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class SubAtom extends OntologicalAtom {
 
-    public static SubAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        SubAtom atom = new AutoValue_SubAtom(var, var.sub(predicateVar), predicateVar, predicate);
-        atom.parent = parent;
-        return atom;
+    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    public static SubAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_SubAtom(var, predicateId, predicateVar, var.sub(predicateVar), parent);
     }
 
     private static SubAtom create(SubAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypePredicate(), parent);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent);
     }
 
     @Override

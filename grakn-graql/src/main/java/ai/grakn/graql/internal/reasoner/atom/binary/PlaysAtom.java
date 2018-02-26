@@ -18,12 +18,14 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.utils.autovalue.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -38,14 +40,16 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
 
-    public static PlaysAtom create(Var var, Var predicateVar, IdPredicate predicate, ReasonerQuery parent) {
-        PlaysAtom atom = new AutoValue_PlaysAtom(var, var.plays(predicateVar), predicateVar, predicate);
-        atom.parent = parent;
-        return atom;
+    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    public static PlaysAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_PlaysAtom(var, predicateId, predicateVar, var.plays(predicateVar), parent);
     }
 
     private static PlaysAtom create(PlaysAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypePredicate(), parent);
+        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeId(), parent);
     }
 
     @Override

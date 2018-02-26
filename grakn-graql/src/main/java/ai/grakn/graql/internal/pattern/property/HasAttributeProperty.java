@@ -200,12 +200,13 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
-        IdPredicate idPredicate = typeVar != null? getIdPredicate(attributeVariable, typeVar, vars, parent) : null;
+        IdPredicate predicate = typeVar != null? getIdPredicate(attributeVariable, typeVar, vars, parent) : null;
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
 
         //add resource atom
         VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
                 varName.has(type(), attributeVariable, relationVariable).admin() :
                 varName.has(type(), attributeVariable).admin();
-        return ResourceAtom.create(resVar, attributeVariable, relationVariable, idPredicate, predicates, parent);
+        return ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateId, predicates, parent);
     }
 }

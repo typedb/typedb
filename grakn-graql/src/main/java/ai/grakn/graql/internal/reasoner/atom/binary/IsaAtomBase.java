@@ -55,6 +55,6 @@ public abstract class IsaAtomBase extends TypeAtom{
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> IsaAtom.create(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
     }
 }

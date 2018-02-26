@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -116,6 +117,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
         VarPatternAdmin typeVar = this.role();
         Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-        return PlaysAtom.create(varName, typeVariable, predicate, parent);
+        ConceptId predicateId = predicate == null? null : predicate.getPredicate();
+        return PlaysAtom.create(varName, typeVariable, predicateId, parent);
     }
 }

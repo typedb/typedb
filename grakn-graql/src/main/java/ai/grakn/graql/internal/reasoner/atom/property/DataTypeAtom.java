@@ -41,15 +41,11 @@ public abstract class DataTypeAtom extends AtomicBase {
     public abstract AttributeType.DataType<?> getDataType();
 
     public static DataTypeAtom create(Var varName, DataTypeProperty prop, ReasonerQuery parent) {
-        DataTypeAtom atom = new AutoValue_DataTypeAtom(varName, varName.datatype(prop.dataType()).admin(), prop.dataType());
-        atom.parent = parent;
-        return atom;
+        return new AutoValue_DataTypeAtom(varName, varName.datatype(prop.dataType()).admin(), parent, prop.dataType());
     }
 
     private static DataTypeAtom create(DataTypeAtom a, ReasonerQuery parent) {
-        DataTypeAtom atom = new AutoValue_DataTypeAtom(a.getVarName(), a.getPattern(), a.getDataType());
-        atom.parent = parent;
-        return atom;
+        return new AutoValue_DataTypeAtom(a.getVarName(), a.getPattern(), parent, a.getDataType());
     }
 
     @Override

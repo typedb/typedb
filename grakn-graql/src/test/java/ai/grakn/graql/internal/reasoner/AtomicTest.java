@@ -159,7 +159,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testEquivalence_RelationsWithSubstitution_differentRolesMapped(){
+    public void testEquivalence_DifferentRelationVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String pattern = "{(role1: $x, role2: $y) isa binary;}";
         String pattern2 = "{(role1: $x, role2: $y);}";

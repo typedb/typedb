@@ -230,7 +230,7 @@ public class InferenceRule {
                     headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),
-                    resourceHead.getTypePredicate(),
+                    resourceHead.getTypeId(),
                     innerVps,
                     headAtom.getParentQuery()
             );

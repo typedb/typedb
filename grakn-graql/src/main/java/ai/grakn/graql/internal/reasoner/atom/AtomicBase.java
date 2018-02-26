@@ -23,7 +23,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
@@ -43,8 +42,8 @@ import java.util.Set;
  */
 public abstract class AtomicBase implements Atomic {
 
-    protected ReasonerQuery parent;
-    @Override public ReasonerQuery getParentQuery() { return parent; }
+    //@Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    //@Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
 
     @Override public void checkValid(){}
 

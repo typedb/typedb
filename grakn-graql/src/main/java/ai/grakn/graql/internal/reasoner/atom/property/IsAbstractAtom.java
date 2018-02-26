@@ -37,15 +37,11 @@ import com.google.auto.value.AutoValue;
 public abstract class IsAbstractAtom extends AtomicBase {
 
     public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
-        IsAbstractAtom atom = new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin());
-        atom.parent = parent;
-        return atom;
+        return new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin(), parent);
     }
 
     private static IsAbstractAtom create(IsAbstractAtom a, ReasonerQuery parent) {
-        IsAbstractAtom atom = new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern());
-        atom.parent = parent;
-        return atom;
+        return new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern(), parent);
     }
 
     @Override

@@ -21,6 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
@@ -59,7 +60,6 @@ import com.google.common.collect.Iterables;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -91,13 +91,11 @@ public abstract class ResourceAtom extends Binary{
     public abstract Var getRelationVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        ResourceAtom atom = new AutoValue_ResourceAtom(pattern.admin().var(), pattern, attributeVar, idPred,  relationVariable, ImmutableSet.copyOf(ps));
-        atom.parent = parent;
-        return atom;
+    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, attributeVar, predicateId,  relationVariable, ImmutableSet.copyOf(ps));
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getPredicateVariable(),  a.getRelationVariable(), a.getTypePredicate(), a.getMultiPredicate(), parent);
+        return create(a.getPattern(), a.getPredicateVariable(),  a.getRelationVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
     @Override
@@ -119,7 +117,7 @@ public abstract class ResourceAtom extends Binary{
                         .isa(typeLabel.getValue())
                 .admin(),
                 getPredicateVariable(),
-                IdPredicate.create(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
+                tx.getSchemaConcept(typeLabel).getId(),
                 getParentQuery()
         );
     }
@@ -136,7 +134,7 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ResourceAtom a2 = (ResourceAtom) obj;
@@ -146,7 +144,7 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         int hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
@@ -379,12 +377,12 @@ public abstract class ResourceAtom extends Binary{
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
-        return create(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(newVar.admin(), attributeVariable, relationVariable, getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

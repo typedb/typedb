@@ -57,42 +57,29 @@ import java.util.Set;
 public abstract class Binary extends Atom {
 
     public abstract Var getPredicateVariable();
-    @Nullable public abstract IdPredicate getTypePredicate();
+    @Nullable @Override public abstract ConceptId getTypeId();
 
-    @Override
-    public void checkValid() {
-        if (getTypePredicate() != null) getTypePredicate().checkValid();
+    @Nullable
+    @Memoized
+    public IdPredicate getTypePredicate(){
+        return getTypeId() == null?
+                null :
+                IdPredicate.create(getPredicateVariable().id(getTypeId()), getParentQuery());
     }
 
     @Nullable
     @Memoized
     @Override
     public SchemaConcept getSchemaConcept(){
-        if (getTypePredicate() == null) return null;
+        if (getTypeId() == null) return null;
         Concept concept = getParentQuery().tx().getConcept(getTypeId());
         if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
         return concept.asType();
     }
 
     @Override
-    public ConceptId getTypeId(){ return getTypePredicate() != null? getTypePredicate().getPredicate() : null;}
-
-    //NB: overriding since we need to ignore predicate variable
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarName().equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
+    public void checkValid() {
+        if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
 
     @Override

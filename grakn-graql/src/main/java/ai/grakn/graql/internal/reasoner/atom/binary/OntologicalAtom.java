@@ -61,18 +61,18 @@ public abstract class OntologicalAtom extends TypeAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> AtomicFactory.createOntologicalAtom(this.getClass(), v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> AtomicFactory.createOntologicalAtom(this.getClass(), v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+        return AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
-                AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                AtomicFactory.createOntologicalAtom(this.getClass(), getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
                 this;
     }
 }
