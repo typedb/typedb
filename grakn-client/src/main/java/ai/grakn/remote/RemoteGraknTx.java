@@ -42,6 +42,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -120,8 +121,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private <X extends Concept> X putSchemaConcept(Label label, Schema.MetaSchema meta, @Nullable Function<VarPattern, VarPattern> extender){
         VarPattern var = var().label(label).sub(var().label(meta.getLabel()));
         if(extender != null) var = extender.apply(var);
-        queryRunner().run(Graql.define(var));
-        return null;
+        return (X) Iterables.getOnlyElement(queryRunner().run(Graql.define(var)).concepts());
     }
 
     @Nullable

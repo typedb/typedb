@@ -176,7 +176,7 @@ final class GrpcClient implements AutoCloseable {
         return new QueryAnswer(map.build());
     }
 
-    private static Concept convert(RemoteGraknTx tx, GraknOuterClass.Concept concept) {
+    public static Concept convert(RemoteGraknTx tx, GraknOuterClass.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId().getValue());
 
         switch (concept.getBaseType()) {
