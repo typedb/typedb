@@ -23,6 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
@@ -34,12 +35,16 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
 import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
@@ -175,5 +180,23 @@ public class RemoteConceptsTest {
 
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, THEN), THEN.createTxResponse(PATTERN));
         assertEquals(PATTERN, concept.getThen());
+    }
+
+    @Test
+    public void whenCallingIsDeleted_ExecuteAnAskQuery() {
+        String query = match(var().id(ID)).aggregate(ask()).toString();
+
+        Concept concept = RemoteConcepts.createEntity(tx, ID);
+
+        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse("true"));
+        assertFalse(concept.isDeleted());
+
+        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse("false"));
+        assertTrue(concept.isDeleted());
+    }
+
+    private static TxResponse queryResultResponse(String value) {
+        QueryResult queryResult = QueryResult.newBuilder().setOtherResult(value).build();
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
 }

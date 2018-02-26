@@ -25,6 +25,9 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 
+import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.var;
+
 /**
  * @author Felix Chapman
  */
@@ -47,7 +50,7 @@ abstract class RemoteConcept implements Concept {
 
     @Override
     public final boolean isDeleted() {
-        return false; // TODO: implement
+        return !tx().graql().match(var().id(getId())).aggregate(ask()).execute();
     }
 
     protected final <T> T getProperty(ConceptProperty<T> property) {

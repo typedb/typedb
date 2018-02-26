@@ -194,9 +194,9 @@ public class GrpcServerIT {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x")).get();
+            List<Answer> answers = remoteTx.graql().match(var("x")).get().execute();
 
-            for (Answer answer : query) {
+            for (Answer answer : answers) {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.getId());
 
