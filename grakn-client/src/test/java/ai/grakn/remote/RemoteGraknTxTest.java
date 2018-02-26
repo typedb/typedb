@@ -396,6 +396,6 @@ public class RemoteGraknTxTest {
         trailers.put(ErrorType.KEY, errorType);
         StatusRuntimeException exception = Status.UNKNOWN.withDescription(message).asRuntimeException(trailers);
 
-        server.setResponse(request, responses -> responses.onError(exception));
+        server.setResponse(request, exception);
     }
 }

@@ -20,6 +20,7 @@ package ai.grakn.remote.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
@@ -64,5 +65,10 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final String getRegex() {
         return getProperty(ConceptProperty.REGEX);
+    }
+
+    @Override
+    final AttributeType<D> asSelf(Concept concept) {
+        return concept.asAttributeType();
     }
 }

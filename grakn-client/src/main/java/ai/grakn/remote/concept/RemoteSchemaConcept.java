@@ -18,13 +18,19 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptProperty;
 
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.MetaSchema.THING;
 
 /**
  * @author Felix Chapman
@@ -55,7 +61,16 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> sups() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Var x = var("x");
+        GetQuery query = tx().graql().match(var().id(getId()).sub(x)).get();
+        return query.stream()
+                .map(answer -> answer.get(x))
+                .filter(RemoteSchemaConcept::notMetaThing)
+                .map(this::asSelf);
+    }
+
+    private static boolean notMetaThing(Concept concept) {
+        return !concept.isSchemaConcept() || !concept.asSchemaConcept().getLabel().equals(THING.getLabel());
     }
 
     @Override
@@ -77,4 +92,6 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     public final Stream<Rule> getRulesOfConclusion() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
+
+    abstract Self asSelf(Concept concept);
 }

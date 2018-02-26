@@ -37,7 +37,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
@@ -167,10 +166,6 @@ public class GrpcUtil {
 
     public static ConceptId getConceptId(GetConceptProperty getConceptPropertyRequest) {
         return convert(getConceptPropertyRequest.getId());
-    }
-
-    public static Label getLabel(ConceptPropertyValue conceptPropertyValue) {
-        return Label.of(conceptPropertyValue.getLabel().getValue());
     }
 
     private static GraknTxType convert(TxType txType) {

@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -55,5 +56,10 @@ abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
     @Override
     public final Stream<Type> playedByTypes() {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final Role asSelf(Concept concept) {
+        return concept.asRole();
     }
 }

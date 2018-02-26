@@ -35,6 +35,7 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
@@ -42,6 +43,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Set;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.match;
@@ -54,8 +57,16 @@ import static ai.grakn.grpc.ConceptProperty.REGEX;
 import static ai.grakn.grpc.ConceptProperty.THEN;
 import static ai.grakn.grpc.ConceptProperty.VALUE;
 import static ai.grakn.grpc.ConceptProperty.WHEN;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
+import static ai.grakn.util.Schema.MetaSchema.THING;
+import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -96,7 +107,7 @@ public class RemoteConceptsTest {
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.LABEL), ConceptProperty.LABEL.createTxResponse(LABEL));
+        mockLabelResponse(ID, LABEL);
 
         assertEquals(LABEL, concept.getLabel());
     }
@@ -195,8 +206,60 @@ public class RemoteConceptsTest {
         assertTrue(concept.isDeleted());
     }
 
+    @Test
+    public void whenCallingSups_ExecuteAQuery() {
+        String query = match(var().id(ID).sub(var("x"))).get().toString();
+
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        Label labelId = Label.of("yes");
+        ConceptId a = ConceptId.of("A");
+        Label labelA = Label.of("A");
+        ConceptId b = ConceptId.of("B");
+        Label labelB = Label.of("B");
+        ConceptId metaType = ConceptId.of("C");
+        Label labelMetaType = THING.getLabel();
+
+        mockLabelResponse(ID, labelId);
+        mockLabelResponse(a, labelA);
+        mockLabelResponse(b, labelB);
+        mockLabelResponse(metaType, labelMetaType);
+
+        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse(ID, EntityType));
+        server.setResponse(GrpcUtil.nextRequest(),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType),
+                GrpcUtil.doneResponse()
+        );
+
+        Set<ConceptId> sups = concept.sups().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(ID, a, b));
+        assertThat(sups, not(hasItem(metaType)));
+    }
+
+    private void mockLabelResponse(ConceptId id, Label label) {
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),
+                ConceptProperty.LABEL.createTxResponse(label)
+        );
+    }
+
     private static TxResponse queryResultResponse(String value) {
         QueryResult queryResult = QueryResult.newBuilder().setOtherResult(value).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
+
+    private static TxResponse queryResultResponse(ConceptId id, GraknOuterClass.BaseType baseType) {
+        GraknOuterClass.ConceptId conceptId = GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
+
+        GraknOuterClass.Concept concept =
+                GraknOuterClass.Concept.newBuilder().setId(conceptId).setBaseType(baseType).build();
+
+        GraknOuterClass.Answer answer = GraknOuterClass.Answer.newBuilder().putAnswer("x", concept).build();
+
+        QueryResult queryResult = QueryResult.newBuilder().setAnswer(answer).build();
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
+    }
+
 }

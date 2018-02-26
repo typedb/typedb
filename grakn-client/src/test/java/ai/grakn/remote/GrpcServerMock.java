@@ -24,12 +24,15 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import org.junit.rules.TestRule;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -51,7 +54,7 @@ import static org.mockito.Mockito.when;
  *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
  * </p>
  * <p>
- *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse)}.
+ *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse...)}.
  * </p>
  *
  * @author Felix Chapman
@@ -85,13 +88,25 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    public void setResponse(TxRequest request, TxResponse response) {
-        setResponse(request, responses -> responses.onNext(response));
+    public void setResponse(TxRequest request, TxResponse... responses) {
+        UnmodifiableIterator<TxResponse> responseIterator = Iterators.forArray(responses);
+
+        // Create an iterator of methods that will each call `responseObserver.onNext(response)
+        Iterator<Consumer<StreamObserver<TxResponse>>> consumers = Iterators.transform(
+                responseIterator,
+                response -> (responseObserver -> responseObserver.onNext(response))
+        );
+
+        setResponse(request, consumers);
     }
 
-    void setResponse(TxRequest request, Consumer<StreamObserver<TxResponse>> response) {
+    public void setResponse(TxRequest request, Throwable throwable) {
+        setResponse(request, Iterators.singletonIterator(responseObserver ->  responseObserver.onError(throwable)));
+    }
+
+    private void setResponse(TxRequest request, Iterator<Consumer<StreamObserver<TxResponse>>> responses) {
         doAnswer(args -> {
-            response.accept(serverResponses);
+            responses.next().accept(serverResponses);
             return null;
         }).when(serverRequests).onNext(request);
     }
