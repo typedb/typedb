@@ -17,14 +17,11 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -69,15 +66,6 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean requiresMaterialisation() {
         return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
-    }
-
-    @Nullable
-    @Override
-    public SchemaConcept getSchemaConcept() {
-        if (getTypePredicate() == null) return null;
-        SchemaConcept schemaConcept = tx().getConcept(getTypePredicate().getPredicate());
-        if (schemaConcept == null) throw GraqlQueryException.idNotFound(getTypePredicate().getPredicate());
-        return schemaConcept;
     }
 
     /**

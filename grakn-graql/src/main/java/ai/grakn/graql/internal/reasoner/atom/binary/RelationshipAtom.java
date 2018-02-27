@@ -53,8 +53,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
-import ai.grakn.graql.internal.reasoner.utils.IncludeHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -150,8 +148,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
+    @Memoized
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + getVarNames().hashCode();

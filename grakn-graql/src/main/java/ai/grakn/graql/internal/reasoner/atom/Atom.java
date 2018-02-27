@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -155,7 +154,6 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    @Memoized
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();

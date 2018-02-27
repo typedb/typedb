@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
@@ -32,7 +31,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -59,22 +57,26 @@ public abstract class Binary extends Atom {
     public abstract Var getPredicateVariable();
     @Nullable @Override public abstract ConceptId getTypeId();
 
+    private SchemaConcept type = null;
+    private IdPredicate typePredicate = null;
+
     @Nullable
-    @Memoized
     public IdPredicate getTypePredicate(){
-        return getTypeId() == null?
-                null :
-                IdPredicate.create(getPredicateVariable().id(getTypeId()), getParentQuery());
+        if (typePredicate == null && getTypeId() != null) {
+            typePredicate = IdPredicate.create(getPredicateVariable().id(getTypeId()), getParentQuery());
+        }
+        return typePredicate;
     }
 
     @Nullable
-    @Memoized
     @Override
     public SchemaConcept getSchemaConcept(){
-        if (getTypeId() == null) return null;
-        Concept concept = getParentQuery().tx().getConcept(getTypeId());
-        if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
-        return concept.asType();
+        if (type == null && getTypeId() != null) {
+            SchemaConcept concept = tx().getConcept(getTypeId());
+            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+            type = concept;
+        }
+        return type;
     }
 
     @Override
