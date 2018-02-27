@@ -59,6 +59,8 @@ import static ai.grakn.grpc.ConceptProperty.REGEX;
 import static ai.grakn.grpc.ConceptProperty.THEN;
 import static ai.grakn.grpc.ConceptProperty.VALUE;
 import static ai.grakn.grpc.ConceptProperty.WHEN;
+import static ai.grakn.remote.concept.RemoteConcept.ME;
+import static ai.grakn.remote.concept.RemoteConcept.TARGET;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
@@ -212,7 +214,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingSups_ExecuteAQuery() {
-        String query = match(var().id(ID).sub(var("x"))).get().toString();
+        String query = match(ME.id(ID), ME.sub(TARGET)).get().toString();
 
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
 
@@ -243,7 +245,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingSubs_ExecuteAQuery() {
-        String query = match(var("x").sub(var("y")), var("y").id(ID)).get().toString();
+        String query = match(ME.id(ID), TARGET.sub(ME)).get().toString();
 
         SchemaConcept concept = RemoteConcepts.createRelationshipType(tx, ID);
 
@@ -279,10 +281,10 @@ public class RemoteConceptsTest {
         ConceptId metaType = ConceptId.of("C");
         Label labelMetaType = THING.getLabel();
 
-        String supsId = match(var().id(ID).sub(var("x"))).get().toString();
-        String supsA = match(var().id(a).sub(var("x"))).get().toString();
-        String supsB = match(var().id(b).sub(var("x"))).get().toString();
-        String supsMetaType = match(var().id(metaType).sub(var("x"))).get().toString();
+        String supsId = match(ME.id(ID), ME.sub(TARGET)).get().toString();
+        String supsA = match(ME.id(a), ME.sub(TARGET)).get().toString();
+        String supsB = match(ME.id(b), ME.sub(TARGET)).get().toString();
+        String supsMetaType = match(ME.id(metaType), ME.sub(TARGET)).get().toString();
 
         mockLabelResponse(ID, labelId);
         mockLabelResponse(a, labelA);
@@ -325,10 +327,10 @@ public class RemoteConceptsTest {
         ConceptId metaType = ConceptId.of("C");
         Label labelMetaType = THING.getLabel();
 
-        String typeId = match(var().id(ID).isa(var("x"))).get().toString();
-        String supsA = match(var().id(a).sub(var("x"))).get().toString();
-        String supsB = match(var().id(b).sub(var("x"))).get().toString();
-        String supsMetaType = match(var().id(metaType).sub(var("x"))).get().toString();
+        String typeId = match(ME.id(ID), ME.isa(TARGET)).get().toString();
+        String supsA = match(ME.id(a), ME.sub(TARGET)).get().toString();
+        String supsB = match(ME.id(b), ME.sub(TARGET)).get().toString();
+        String supsMetaType = match(ME.id(metaType), ME.sub(TARGET)).get().toString();
 
         mockLabelResponse(a, labelA);
         mockLabelResponse(b, labelB);
@@ -360,7 +362,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingAttributesWithNoArguments_ExecuteAQueryForAllAttributes() {
-        String query = match(var().id(ID).has(Schema.MetaSchema.ATTRIBUTE.getLabel(), var("x"))).get().toString();
+        String query = match(ME.id(ID), ME.has(Schema.MetaSchema.ATTRIBUTE.getLabel(), TARGET)).get().toString();
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -394,11 +396,14 @@ public class RemoteConceptsTest {
         mockLabelResponse(barId, barLabel);
         mockLabelResponse(bazId, bazLabel);
 
-        String query = match(Graql.or(
-                var().id(ID).has(fooLabel, var("x")),
-                var().id(ID).has(barLabel, var("x")),
-                var().id(ID).has(bazLabel, var("x"))
-        )).get().toString();
+        String query = match(
+                ME.id(ID),
+                Graql.or(
+                        ME.has(fooLabel, TARGET),
+                        ME.has(barLabel, TARGET),
+                        ME.has(bazLabel, TARGET)
+                )
+        ).get().toString();
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -434,7 +439,8 @@ public class RemoteConceptsTest {
         GraknOuterClass.Concept concept =
                 GraknOuterClass.Concept.newBuilder().setId(conceptId).setBaseType(baseType).build();
 
-        GraknOuterClass.Answer answer = GraknOuterClass.Answer.newBuilder().putAnswer("x", concept).build();
+        GraknOuterClass.Answer answer =
+                GraknOuterClass.Answer.newBuilder().putAnswer(TARGET.getValue(), concept).build();
 
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(answer).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();

@@ -22,8 +22,14 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
+import com.google.common.collect.ImmutableList;
+
+import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
@@ -32,6 +38,9 @@ import static ai.grakn.graql.Graql.var;
  * @author Felix Chapman
  */
 abstract class RemoteConcept implements Concept {
+
+    static final Var ME = var("me");
+    static final Var TARGET = var("target");
 
     abstract RemoteGraknTx tx();
 
@@ -55,5 +64,13 @@ abstract class RemoteConcept implements Concept {
 
     protected final <T> T getProperty(ConceptProperty<T> property) {
         return tx().client().getConceptProperty(getId(), property);
+    }
+
+    protected final Stream<Concept> query(Pattern... patterns) {
+        Pattern myId = ME.id(getId());
+
+        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(myId).add(patterns).build();
+
+        return tx().graql().match(patternCollection).get().stream().map(answer -> answer.get(TARGET));
     }
 }

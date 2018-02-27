@@ -27,8 +27,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.util.CommonUtil;
@@ -40,7 +38,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 
@@ -56,10 +53,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     public final MyType type() {
         // TODO: We use a trick here because there's no "direct isa" in Graql and we don't want to use gRPC for this.
         // The direct type of this concept will have the same indirect super-types as the indirect types of this concept
-        Var x = var("x");
-        GetQuery query = tx().graql().match(var().id(getId()).isa(x)).get();
-        Set<MyType> indirectTypes = query.stream()
-                .map(answer -> answer.get(x))
+        Set<MyType> indirectTypes = query(ME.isa(TARGET))
                 .filter(RemoteThing::notMetaThing)
                 .map(this::asMyType)
                 .collect(toImmutableSet());
@@ -101,13 +95,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
             attributeTypeLabels = Stream.of(Schema.MetaSchema.ATTRIBUTE.getLabel());
         }
 
-        Var x = var("x");
+        Set<VarPattern> patterns = attributeTypeLabels.map(label -> ME.has(label, TARGET)).collect(toImmutableSet());
 
-        Set<VarPattern> patterns =
-                attributeTypeLabels.map(label -> var().id(getId()).has(label, x)).collect(toImmutableSet());
-
-        GetQuery query = tx().graql().match(or(patterns)).get();
-        return query.stream().map(answer -> answer.get(x).asAttribute());
+        return query(or(patterns)).map(Concept::asAttribute);
     }
 
     @Override
