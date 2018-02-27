@@ -154,31 +154,31 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ENTITY);
+        return getSchemaConcept(Label.of(label), ENTITY);
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.MetaSchema.RELATIONSHIP);
+        return getSchemaConcept(Label.of(label), RELATIONSHIP);
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ATTRIBUTE);
+        return getSchemaConcept(Label.of(label), ATTRIBUTE);
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), Schema.MetaSchema.ROLE);
+        return getSchemaConcept(Label.of(label), ROLE);
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), Schema.MetaSchema.RULE);
+        return getSchemaConcept(Label.of(label), RULE);
     }
 
     @Nullable
