@@ -76,7 +76,8 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Override
     public final Stream<Self> subs() {
         Var x = var("x");
-        GetQuery query = tx().graql().match(x.sub(var().id(getId()))).get();
+        Var y = var("y");
+        GetQuery query = tx().graql().match(x.sub(y), y.id(getId())).get();
         return query.stream()
                 .map(answer -> answer.get(x))
                 .map(this::asSelf);

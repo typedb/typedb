@@ -240,7 +240,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingSubs_ExecuteAQuery() {
-        String query = match(var("x").sub(var().id(ID))).get().toString();
+        String query = match(var("x").sub(var("y")), var("y").id(ID)).get().toString();
 
         SchemaConcept concept = RemoteConcepts.createRelationshipType(tx, ID);
 
