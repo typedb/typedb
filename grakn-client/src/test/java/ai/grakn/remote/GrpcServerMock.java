@@ -24,17 +24,19 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.UnmodifiableIterator;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import org.junit.rules.TestRule;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -89,26 +91,64 @@ public final class GrpcServerMock extends CompositeTestRule {
     }
 
     public void setResponse(TxRequest request, TxResponse... responses) {
-        UnmodifiableIterator<TxResponse> responseIterator = Iterators.forArray(responses);
+        setResponse(request, Arrays.asList(responses));
+    }
 
-        // Create an iterator of methods that will each call `responseObserver.onNext(response)
-        Iterator<Consumer<StreamObserver<TxResponse>>> consumers = Iterators.transform(
-                responseIterator,
-                response -> (responseObserver -> responseObserver.onNext(response))
-        );
-
-        setResponse(request, consumers);
+    public void setResponseSequence(TxRequest request, TxResponse... responses) {
+        setResponseHandlers(request, Collections.singletonList(TxResponseHandler.sequence(this, responses)));
     }
 
     public void setResponse(TxRequest request, Throwable throwable) {
-        setResponse(request, Iterators.singletonIterator(responseObserver ->  responseObserver.onError(throwable)));
+        setResponseHandlers(request, ImmutableList.of(TxResponseHandler.onError(throwable)));
     }
 
-    private void setResponse(TxRequest request, Iterator<Consumer<StreamObserver<TxResponse>>> responses) {
+    private void setResponse(TxRequest request, List<TxResponse> responses) {
+        setResponseHandlers(request, Lists.transform(responses, TxResponseHandler::onNext));
+    }
+
+    private void setResponseHandlers(TxRequest request, List<TxResponseHandler> responses) {
+        Supplier<TxResponseHandler> next;
+
+        // If there is only one mocked response, just return it again and again
+        if (responses.size() > 1) {
+            Iterator<TxResponseHandler> iterator = responses.iterator();
+            next = iterator::next;
+        } else {
+            next = () -> Iterables.getOnlyElement(responses);
+        }
+
         doAnswer(args -> {
-            responses.next().accept(serverResponses);
+            if (serverResponses == null) {
+                throw new IllegalArgumentException("Set-up of rule not called");
+            }
+            next.get().handle(serverResponses);
             return null;
         }).when(serverRequests).onNext(request);
+    }
+
+    private interface TxResponseHandler {
+        static TxResponseHandler onNext(TxResponse response) {
+            return streamObserver -> streamObserver.onNext(response);
+        }
+
+        static TxResponseHandler onError(Throwable throwable) {
+            return streamObserver -> streamObserver.onError(throwable);
+        }
+
+        static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
+            return streamObserver -> {
+                List<TxResponse> responsesList =
+                        ImmutableList.<TxResponse>builder().add(responses).add(GrpcUtil.doneResponse()).build();
+
+                TxResponse firstResponse = responsesList.get(0);
+                List<TxResponse> responsesAfterFirst = responsesList.subList(0, responsesList.size());
+
+                server.setResponse(GrpcUtil.nextRequest(), responsesAfterFirst);
+                streamObserver.onNext(firstResponse);
+            };
+        }
+
+        void handle(StreamObserver<TxResponse> streamObserver);
     }
 
     @Override

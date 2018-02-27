@@ -226,12 +226,11 @@ public class RemoteConceptsTest {
         mockLabelResponse(b, labelB);
         mockLabelResponse(metaType, labelMetaType);
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse(ID, EntityType));
-        server.setResponse(GrpcUtil.nextRequest(),
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(ID, EntityType),
                 queryResultResponse(a, EntityType),
                 queryResultResponse(b, EntityType),
-                queryResultResponse(metaType, MetaType),
-                GrpcUtil.doneResponse()
+                queryResultResponse(metaType, MetaType)
         );
 
         Set<ConceptId> sups = concept.sups().map(Concept::getId).collect(toSet());
@@ -255,11 +254,10 @@ public class RemoteConceptsTest {
         mockLabelResponse(a, labelA);
         mockLabelResponse(b, labelB);
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse(ID, RelationshipType));
-        server.setResponse(GrpcUtil.nextRequest(),
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(ID, RelationshipType),
                 queryResultResponse(a, RelationshipType),
-                queryResultResponse(b, RelationshipType),
-                GrpcUtil.doneResponse()
+                queryResultResponse(b, RelationshipType)
         );
 
         Set<ConceptId> sups = concept.subs().map(Concept::getId).collect(toSet());
