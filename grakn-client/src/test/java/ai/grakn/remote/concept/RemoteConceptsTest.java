@@ -59,6 +59,7 @@ import static ai.grakn.grpc.ConceptProperty.VALUE;
 import static ai.grakn.grpc.ConceptProperty.WHEN;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.RelationshipType;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -236,6 +237,33 @@ public class RemoteConceptsTest {
         Set<ConceptId> sups = concept.sups().map(Concept::getId).collect(toSet());
         assertThat(sups, containsInAnyOrder(ID, a, b));
         assertThat(sups, not(hasItem(metaType)));
+    }
+
+    @Test
+    public void whenCallingSubs_ExecuteAQuery() {
+        String query = match(var("x").sub(var().id(ID))).get().toString();
+
+        SchemaConcept concept = RemoteConcepts.createRelationshipType(tx, ID);
+
+        Label labelId = Label.of("yes");
+        ConceptId a = ConceptId.of("A");
+        Label labelA = Label.of("A");
+        ConceptId b = ConceptId.of("B");
+        Label labelB = Label.of("B");
+
+        mockLabelResponse(ID, labelId);
+        mockLabelResponse(a, labelA);
+        mockLabelResponse(b, labelB);
+
+        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse(ID, RelationshipType));
+        server.setResponse(GrpcUtil.nextRequest(),
+                queryResultResponse(a, RelationshipType),
+                queryResultResponse(b, RelationshipType),
+                GrpcUtil.doneResponse()
+        );
+
+        Set<ConceptId> sups = concept.subs().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(ID, a, b));
     }
 
     private void mockLabelResponse(ConceptId id, Label label) {

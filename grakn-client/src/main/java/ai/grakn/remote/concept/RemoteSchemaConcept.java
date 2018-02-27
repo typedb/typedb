@@ -75,7 +75,11 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> subs() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Var x = var("x");
+        GetQuery query = tx().graql().match(x.sub(var().id(getId()))).get();
+        return query.stream()
+                .map(answer -> answer.get(x))
+                .map(this::asSelf);
     }
 
     @Override
