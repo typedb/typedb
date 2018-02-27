@@ -54,6 +54,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
+import ai.grakn.graql.internal.reasoner.utils.IncludeHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -108,12 +109,8 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 public abstract class RelationshipAtom extends IsaAtomBase {
 
-    @Override @IgnoreHashEquals public abstract Var getVarName();
-    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
     public abstract ImmutableList<RelationPlayer> getRelationPlayers();
-    @IgnoreHashEquals public abstract ImmutableSet<Label> getRoleLabels();
+    public abstract ImmutableSet<Label> getRoleLabels();
 
     private ImmutableList<Type> possibleTypes = null;
 
@@ -134,13 +131,34 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .flatMap(CommonUtil::optionalToStream)
                         .iterator()
         ).build();
-        return new AutoValue_RelationshipAtom( predicateId, pattern.admin().var(), predicateVar, pattern, parent,  relationPlayers, roleLabels);
+        return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
-        return new AutoValue_RelationshipAtom( a.getTypeId(), a.getVarName(), a.getPredicateVariable(), a.getPattern(), parent, a.getRelationPlayers(), a.getRoleLabels());
+        return new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
     }
 
+    //NB: overriding as these require a derived property
+    @Override
+    public final boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && isUserDefined() == a2.isUserDefined()
+                && getVarNames().equals(a2.getVarNames())
+                && getRelationPlayers().equals(a2.getRelationPlayers());
+    }
+
+    @Override
+    public final int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + getVarNames().hashCode();
+        hashCode = hashCode * 37 + getRelationPlayers().hashCode();
+        return hashCode;
+    }
+    
     @Override
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
@@ -167,6 +185,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 typeString +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
+    }
+
+    @Override
+    public Set<Var> getVarNames() {
+        Set<Var> vars = super.getVarNames();
+        vars.addAll(getRolePlayers());
+        vars.addAll(getRoleVariables());
+        return vars;
     }
 
     /**
@@ -581,14 +607,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .sorted(Comparator.comparing(at -> -at.getRoleLabels().size()))
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = super.getVarNames();
-        vars.addAll(getRolePlayers());
-        vars.addAll(getRoleVariables());
-        return vars;
     }
 
     @Override

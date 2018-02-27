@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
@@ -27,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -36,14 +34,12 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -162,18 +158,22 @@ public class AtomicTest {
     public void testEquivalence_DifferentRelationVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String pattern = "{(role1: $x, role2: $y) isa binary;}";
-        String pattern2 = "{(role1: $x, role2: $y);}";
-        String pattern3 = "{(role1: $z, role2: $v) isa binary;}";
-        String pattern4 = "{(role: $x, role2: $y) isa binary;}";
-        String pattern5 = "{(role1: $x, role2: $y) isa $type;}";
-        String pattern6 = "{(role1: $x, role2: $y) isa $type;$type label binary;}";
+        String pattern2 = "{$r (role1: $x, role2: $y) isa binary;}";
+        String pattern3 = "{$z (role1: $x, role2: $y) isa binary;}";
+        String pattern4 = "{(role1: $x, role2: $y);}";
+        String pattern5 = "{(role1: $z, role2: $v) isa binary;}";
+        String pattern6 = "{(role: $x, role2: $y) isa binary;}";
+        String pattern7 = "{(role1: $x, role2: $y) isa $type;}";
+        String pattern8 = "{(role1: $x, role2: $y) isa $type;$type label binary;}";
 
         atomicEquality(pattern, pattern, true, graph);
         atomicEquality(pattern, pattern2, false, graph);
         atomicEquality(pattern, pattern3, false, graph);
         atomicEquality(pattern, pattern4, false, graph);
         atomicEquality(pattern, pattern5, false, graph);
-        atomicEquality(pattern, pattern6, true, graph);
+        atomicEquality(pattern, pattern6, false, graph);
+        atomicEquality(pattern, pattern7, false, graph);
+        atomicEquality(pattern, pattern8, false, graph);
     }
 
     private void testEquality_DifferentTypeVariants(EmbeddedGraknTx<?> graph, String keyword, String label, String label2){
@@ -206,12 +206,14 @@ public class AtomicTest {
     private void atomicEquality(String patternA, String patternB, boolean expectation, EmbeddedGraknTx<?> graph){
         Atom atomA = ReasonerQueries.atomic(conjunction(patternA, graph), graph).getAtom();
         Atom atomB = ReasonerQueries.atomic(conjunction(patternB, graph), graph).getAtom();
+        atomicEquality(atomA, atomA, true);
+        atomicEquality(atomB, atomB, true);
         atomicEquality(atomA, atomB, expectation);
+        atomicEquality(atomB, atomA, expectation);
     }
 
     private void atomicEquality(Atomic a, Atomic b, boolean expectation){
         assertEquals("Atomic: " + a.toString() + " =? " + b.toString(), a.equals(b), expectation);
-        assertEquals("Atomic: " + b.toString() + " =? " + a.toString(), b.equals(a), expectation);
 
         //check hash additionally if need to be equal
         if (expectation) {

@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -37,6 +39,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RegexAtom extends AtomicBase {
 
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
     public abstract String getRegex();
 
     public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {

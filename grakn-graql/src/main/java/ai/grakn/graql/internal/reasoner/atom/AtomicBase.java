@@ -42,9 +42,6 @@ import java.util.Set;
  */
 public abstract class AtomicBase implements Atomic {
 
-    //@Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    //@Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
-
     @Override public void checkValid(){}
 
     @Override

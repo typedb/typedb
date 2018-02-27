@@ -29,7 +29,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 /**
  *
  * <p>
- * Annotation for ignoring a property in equals/hash auto-value generation.
+ * Annotation for including a property in equals/hash auto-value generation.
  * NB: It has to be defined in the most specialised class.
  * </p>
  *
@@ -38,5 +38,5 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  */
 @Retention(SOURCE)
 @Target({METHOD, PARAMETER, FIELD})
-public @interface IgnoreHashEquals {
+public @interface IncludeHashEquals {
 }

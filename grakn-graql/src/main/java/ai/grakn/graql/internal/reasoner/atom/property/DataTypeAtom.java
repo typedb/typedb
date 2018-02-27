@@ -20,10 +20,12 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -38,6 +40,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class DataTypeAtom extends AtomicBase {
 
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
     public abstract AttributeType.DataType<?> getDataType();
 
     public static DataTypeAtom create(Var varName, DataTypeProperty prop, ReasonerQuery parent) {

@@ -19,9 +19,11 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -35,6 +37,9 @@ import com.google.auto.value.AutoValue;
  */
 @AutoValue
 public abstract class IsAbstractAtom extends AtomicBase {
+
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
 
     public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
         return new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin(), parent);

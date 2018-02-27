@@ -1335,9 +1335,28 @@ public class AtomicQueryTest {
         queryEquivalence(a, b, expectation, expectation, structuralExpectation);
     }
 
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
+        queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
+        queryEquivalence(a, b, structuralExpectation, ReasonerQueryEquivalence.StructuralEquivalence);
+        atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation);
+    }
+
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
+        singleQueryEquivalence(a, a, true, equiv);
+        singleQueryEquivalence(b, b, true, equiv);
+        singleQueryEquivalence(a, b, queryExpectation, equiv);
+        singleQueryEquivalence(b, a, queryExpectation, equiv);
+    }
+
+    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
+        singleAtomicEquivalence(a, a, true);
+        singleAtomicEquivalence(b, b, true);
+        singleAtomicEquivalence(a, b, expectation);
+        singleAtomicEquivalence(b, a, expectation);
+    }
+
+    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
         assertEquals("Query: " + a.toString() + " =? " + b.toString(), equiv.equivalent(a, b), queryExpectation);
-        assertEquals("Query: " + b.toString() + " =? " + a.toString(), equiv.equivalent(b, a), queryExpectation);
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
@@ -1345,15 +1364,8 @@ public class AtomicQueryTest {
         }
     }
 
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
-        queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
-        queryEquivalence(a, b, structuralExpectation, ReasonerQueryEquivalence.StructuralEquivalence);
-        atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation);
-    }
-
-    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
+    private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation){
         assertEquals("Atom: " + a.toString() + " =? " + b.toString(), a.isAlphaEquivalent(b), expectation);
-        assertEquals("Atom: " + b.toString() + " =? " + a.toString(), b.isAlphaEquivalent(a), expectation);
 
         //check hash additionally if need to be equal
         if (expectation) {
