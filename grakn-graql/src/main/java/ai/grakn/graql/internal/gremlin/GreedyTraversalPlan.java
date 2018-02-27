@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
@@ -178,55 +179,13 @@ public class GreedyTraversalPlan {
     }
 
     private static void inferRelationshipTypes(EmbeddedGraknTx<?> tx, Set<Fragment> allFragments) {
-        // find all vars representing types
-        Map<Var, Type> labelVarTypeMap = new HashMap<>();
-        allFragments.stream()
-                .filter(LabelFragment.class::isInstance)
-                .forEach(fragment -> {
-                    // TODO: labels() should return ONE label instead of a set
-                    Type type = tx.getSchemaConcept(
-                            Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                    if (type != null && !type.isRole() && !type.isRule()) labelVarTypeMap.put(fragment.start(), type);
-                });
+
+        Map<Var, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
         if (labelVarTypeMap.isEmpty()) return;
 
-        // find all vars with direct or indirect out isa edges
-        Multimap<Var, Type> instanceVarTypeMap = HashMultimap.create();
-        int oldSize;
-        do {
-            oldSize = instanceVarTypeMap.size();
-            allFragments.stream()
-                    .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
-                    .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubFragment)
-                    .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
-        } while (oldSize != instanceVarTypeMap.size());
+        Multimap<Var, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
 
-        // relationship vars and its role player vars
-        Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
-        allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
-                .forEach(fragment -> relationshipRolePlayerMap.put(fragment.start(), fragment.end()));
-
-        // find all the relationships requiring type inference
-        Iterator<Var> iterator = relationshipRolePlayerMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            Var relationship = iterator.next();
-
-            // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relationship) ||
-                    relationshipRolePlayerMap.get(relationship).size() < 2) {
-                iterator.remove();
-            } else {
-                int numRolePlayersHaveType = 0;
-                for (Var rolePlayer : relationshipRolePlayerMap.get(relationship)) {
-                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
-                        numRolePlayersHaveType++;
-                    }
-                }
-                if (numRolePlayersHaveType < 2) {
-                    iterator.remove();
-                }
-            }
-        }
+        Multimap<Var, Var> relationshipRolePlayerMap = getRelationshipRolePlayerMap(allFragments, instanceVarTypeMap);
         if (relationshipRolePlayerMap.isEmpty()) return;
 
         // for each type, get all possible relationship type it could be in
@@ -254,6 +213,68 @@ public class GreedyTraversalPlan {
                         relationshipVar, labelVar, relationshipType.isImplicit()).fragments());
             }
         });
+    }
+
+    private static Multimap<Var, Var> getRelationshipRolePlayerMap(
+            Set<Fragment> allFragments, Multimap<Var, Type> instanceVarTypeMap) {
+        // relationship vars and its role player vars
+        Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
+        allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
+                .forEach(fragment -> relationshipRolePlayerMap.put(fragment.start(), fragment.end()));
+
+        // find all the relationships requiring type inference
+        Iterator<Var> iterator = relationshipRolePlayerMap.keySet().iterator();
+        while (iterator.hasNext()) {
+            Var relationship = iterator.next();
+
+            // the relation should have at least 2 known role players so we can infer something useful
+            if (instanceVarTypeMap.containsKey(relationship) ||
+                    relationshipRolePlayerMap.get(relationship).size() < 2) {
+                iterator.remove();
+            } else {
+                int numRolePlayersHaveType = 0;
+                for (Var rolePlayer : relationshipRolePlayerMap.get(relationship)) {
+                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                        numRolePlayersHaveType++;
+                    }
+                }
+                if (numRolePlayersHaveType < 2) {
+                    iterator.remove();
+                }
+            }
+        }
+        return relationshipRolePlayerMap;
+    }
+
+    // find all vars with direct or indirect out isa edges
+    private static Multimap<Var, Type> getInstanceVarTypeMap(
+            Set<Fragment> allFragments, Map<Var, Type> labelVarTypeMap) {
+        Multimap<Var, Type> instanceVarTypeMap = HashMultimap.create();
+        int oldSize;
+        do {
+            oldSize = instanceVarTypeMap.size();
+            allFragments.stream()
+                    .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
+                    .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubFragment)
+                    .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
+        } while (oldSize != instanceVarTypeMap.size());
+        return instanceVarTypeMap;
+    }
+
+    // find all vars representing types
+    private static Map<Var, Type> getLabelVarTypeMap(EmbeddedGraknTx<?> tx, Set<Fragment> allFragments) {
+        Map<Var, Type> labelVarTypeMap = new HashMap<>();
+        allFragments.stream()
+                .filter(LabelFragment.class::isInstance)
+                .forEach(fragment -> {
+                    // TODO: labels() should return ONE label instead of a set
+                    SchemaConcept schemaConcept = tx.getSchemaConcept(
+                            Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
+                    if (schemaConcept != null && !schemaConcept.isRole() && !schemaConcept.isRule()) {
+                        labelVarTypeMap.put(fragment.start(), schemaConcept.asType());
+                    }
+                });
+        return labelVarTypeMap;
     }
 
     private static Set<Type> getAllPossibleRelationshipTypes(

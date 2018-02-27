@@ -140,9 +140,11 @@ public class QueryPlannerTest {
                 y.isa(thingy4),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
+
         // Relationship type can now be inferred, so one more relationship type label
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
+        // Should start from the inferred relationship type, instead of role players
         String relationship = plan.get(3).start().getValue();
         assertNotEquals(relationship, x.getValue());
         assertNotEquals(relationship, y.getValue());
@@ -236,6 +238,8 @@ public class QueryPlannerTest {
         assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(4L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+
+        // Should start from the inferred relationship type, instead of role players
         String relationship = plan.get(4).start().getValue();
         assertNotEquals(relationship, x.getValue());
         assertNotEquals(relationship, y.getValue());
@@ -279,7 +283,7 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
         String relationship = plan.get(4).start().getValue();
 
-        // should  start from relationship
+        // should start from relationship
         assertNotEquals(relationship, x.getValue());
         assertNotEquals(relationship, y.getValue());
 
@@ -291,7 +295,7 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
         relationship = plan.get(4).start().getValue();
 
-        // should start from role player
+        // should start from a role player
         assertTrue(relationship.equals(x.getValue()) || relationship.equals(y.getValue()));
         assertTrue(plan.get(5) instanceof OutIsaFragment);
     }
