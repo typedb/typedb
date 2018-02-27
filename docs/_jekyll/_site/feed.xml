@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title></title>
+        <description>A Distributed Knowledge Graph</description>
+        <link>http://grakn.ai/pages//</link>
+        <atom:link href="http://grakn.ai/pages//feed.xml" rel="self" type="application/rss+xml"/>
+        <pubDate>Tue, 27 Feb 2018 16:19:27 +0000</pubDate>
+        <lastBuildDate>Tue, 27 Feb 2018 16:19:27 +0000</lastBuildDate>
+        <generator>Jekyll v3.6.2</generator>
+        
+    </channel>
+</rss>

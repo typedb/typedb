@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+
+
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/index</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//contributors/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/graql-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/advantages.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/analytics-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//contributors/conduct.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/grakn-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/loading-files.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/reasoner-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/schema-elements.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/applications.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/conceptual-modeling-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//contributors/contributor-faq.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/csv-migration.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/get-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/inference-rules.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/setup.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/statistics-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/advanced-rules.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/comparison.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/graph-analytics.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/insert-delete-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/schema-building.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/xml-migration.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/other-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/schema-building-continued.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/system-properties.html</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/graql-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/ideology.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/schema-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/faqs.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//overview/use-case.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/CSV-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/JSON-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/SQL-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/advanced</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/aggregate-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/analytics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/api-references/rest-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/basic-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/compute-connected-components</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/compute-degrees</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/compute-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/compute-shortest-path</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/compute-statistics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/core-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/knowledge-model/data</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/api-references/ddl</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/defining-rules</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/defining-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/delete-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/api-references/dml</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/resources/downloads</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/examples-overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/resources/faq</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/get-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/language-drivers/grakn-haskell</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/language-drivers/grakn-node-js</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/language-drivers/grakn-python</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/get-started/grakn-server</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/graql-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/api-references/graql-cheatsheet</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/get-started/graql-console</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/graql-reasoning</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/hierarchical-schema</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/knowledge-model/inference</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/insert-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/java-analytics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/java-api-example</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/loader-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/match-clause</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/migrating-csv</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/migrating-json</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/migrating-sql</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/migrating-xml</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/migration-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/migration-language</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/knowledge-model/model</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/modern</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/migration-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/analytics-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//academy/reasoner-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//js/mydoc_scroll.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/querying-data/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/resources/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/distributed-analytics/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/migrating-data/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/pokemon</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/projects</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/querying-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/get-started/quickstart-tutorial</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/building-schema/rule-driven-schema</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/get-started/setup-guide</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/java-library/setup</loc>
+  </url>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/visualisation-dashboard/visualiser</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/resources/windows-os</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://grakn.ai/pages//docs/examples/working-with-tweets</loc>
+  </url>
+  
+  
+</urlset>
