@@ -108,21 +108,15 @@ public final class Schema {
 
         @CheckReturnValue
         public static boolean isMetaLabel(Label label) {
-            for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getLabel().equals(label)) return true;
-            }
-            return false;
+            return valueOf(label) != null;
         }
 
         @Nullable
         @CheckReturnValue
         public static MetaSchema valueOf(Label label){
-            if(THING.getLabel().equals(label)) return THING;
-            if(ENTITY.getLabel().equals(label)) return ENTITY;
-            if(ROLE.getLabel().equals(label)) return ROLE;
-            if(ATTRIBUTE.getLabel().equals(label)) return ATTRIBUTE;
-            if(RELATIONSHIP.getLabel().equals(label)) return RELATIONSHIP;
-            if(RULE.getLabel().equals(label)) return RULE;
+            for (MetaSchema metaSchema : MetaSchema.values()) {
+                if (metaSchema.getLabel().equals(label)) return metaSchema;
+            }
             return null;
         }
     }
