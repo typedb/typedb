@@ -123,8 +123,8 @@ public class GreedyTraversalPlan {
 
             final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
 
-            final Set<Node> startingNodeSet = new HashSet<>();
-            final Set<Node> startingNodeSet2 = new HashSet<>(); // implicit types, low priority
+            final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
+            final Set<Node> lowPriorityStartingNodeSet = new HashSet<>(); // implicit types, low priority
             final Set<Fragment> edgeFragmentSet = new HashSet<>();
 
             fragmentSet.forEach(fragment -> {
@@ -133,15 +133,16 @@ public class GreedyTraversalPlan {
                     updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
 
                 } else if (fragment.hasFixedFragmentCost()) {
+                    Node node = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
                     if (fragment instanceof LabelFragment) {
                         Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                         if (type != null && type.isImplicit()) {
-                            startingNodeSet2.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                            lowPriorityStartingNodeSet.add(node);
                         } else {
-                            startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                            highPriorityStartingNodeSet.add(node);
                         }
                     } else {
-                        startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                        highPriorityStartingNodeSet.add(node);
                     }
                 }
             });
@@ -153,12 +154,13 @@ public class GreedyTraversalPlan {
                 SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
 
                 Collection<Node> startingNodes;
-                if (!startingNodeSet.isEmpty()) {
-                    startingNodes = startingNodeSet;
+                if (!highPriorityStartingNodeSet.isEmpty()) {
+                    startingNodes = highPriorityStartingNodeSet;
+                } else if (!lowPriorityStartingNodeSet.isEmpty()) {
+                    startingNodes = lowPriorityStartingNodeSet;
                 } else {
-                    startingNodes = !startingNodeSet2.isEmpty() ? startingNodeSet2 :
-                            sparseWeightedGraph.getNodes().stream()
-                                    .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+                    startingNodes = sparseWeightedGraph.getNodes().stream()
+                            .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
                 }
 
                 Arborescence<Node> arborescence = startingNodes.stream()
@@ -182,21 +184,22 @@ public class GreedyTraversalPlan {
                 .filter(LabelFragment.class::isInstance)
                 .forEach(fragment -> {
                     // TODO: labels() should return ONE label instead of a set
-                    Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                    if (type != null && !type.isRole()) labelVarTypeMap.put(fragment.start(), type);
+                    Type type = tx.getSchemaConcept(
+                            Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
+                    if (type != null && !type.isRole() && !type.isRule()) labelVarTypeMap.put(fragment.start(), type);
                 });
         if (labelVarTypeMap.isEmpty()) return;
 
         // find all vars with direct or indirect out isa edges
         Multimap<Var, Type> instanceVarTypeMap = HashMultimap.create();
-        int size;
+        int oldSize;
         do {
-            size = instanceVarTypeMap.size();
+            oldSize = instanceVarTypeMap.size();
             allFragments.stream()
                     .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
                     .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubFragment)
                     .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
-        } while (size != instanceVarTypeMap.size());
+        } while (oldSize != instanceVarTypeMap.size());
 
         // relationship vars and its role player vars
         Multimap<Var, Var> relationshipRolePlayerMap = HashMultimap.create();
@@ -213,14 +216,13 @@ public class GreedyTraversalPlan {
                     relationshipRolePlayerMap.get(relationship).size() < 2) {
                 iterator.remove();
             } else {
-                final int[] numRolePlayersHaveType = {0};
-                relationshipRolePlayerMap.get(relationship).forEach(
-                        rolePlayer -> {
-                            if (instanceVarTypeMap.containsKey(rolePlayer)) {
-                                numRolePlayersHaveType[0]++;
-                            }
-                        });
-                if (numRolePlayersHaveType[0] < 2) {
+                int numRolePlayersHaveType = 0;
+                for (Var rolePlayer : relationshipRolePlayerMap.get(relationship)) {
+                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                        numRolePlayersHaveType++;
+                    }
+                }
+                if (numRolePlayersHaveType < 2) {
                     iterator.remove();
                 }
             }
@@ -228,36 +230,25 @@ public class GreedyTraversalPlan {
         if (relationshipRolePlayerMap.isEmpty()) return;
 
         // for each type, get all possible relationship type it could be in
-        Map<Type, Set<RelationshipType>> relationshipMap = new HashMap<>();
+        Multimap<Type, RelationshipType> relationshipMap = HashMultimap.create();
         labelVarTypeMap.values().stream().distinct().forEach(
-                type -> getAllPossibleRelationships(relationshipMap, type));
+                type -> addAllPossibleRelationships(relationshipMap, type));
 
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
-            Iterator<Var> rolePlayerVarIterator = rolePlayerVars.iterator();
 
-            Var firstRolePlayer = rolePlayerVarIterator.next();
-            while (!instanceVarTypeMap.containsKey(firstRolePlayer)) {
-                firstRolePlayer = rolePlayerVarIterator.next();
-            }
+            Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
+                    .filter(instanceVarTypeMap::containsKey)
+                    .map(rolePlayer -> getAllPossibleRelationshipTypes(
+                            instanceVarTypeMap.get(rolePlayer), relationshipMap))
+                    .reduce(Sets::intersection).orElse(Collections.emptySet());
 
-            Set<Type> possibleRelationShipTypes = getAllPossibleRelationShipTypesOfARolePlayer(
-                    firstRolePlayer, instanceVarTypeMap, relationshipMap);
-            while (rolePlayerVarIterator.hasNext()) {
-                Var nextRolePlayer = rolePlayerVarIterator.next();
-                if (instanceVarTypeMap.containsKey(nextRolePlayer)) {
+            //TODO: if possibleRelationshipTypes here is empty, the query will not match any data
+            if (possibleRelationshipTypes.size() == 1) {
 
-                    // compute the intersection of possible relationship types
-                    possibleRelationShipTypes.retainAll(getAllPossibleRelationShipTypesOfARolePlayer(
-                            nextRolePlayer, instanceVarTypeMap, relationshipMap));
-                }
-            }
-
-            //TODO: if possibleRelationShipTypes here is empty, the query will not match any data
-            if (possibleRelationShipTypes.size() == 1) {
-
-                Type relationshipType = possibleRelationShipTypes.iterator().next();
+                Type relationshipType = possibleRelationshipTypes.iterator().next();
                 Label label = relationshipType.getLabel();
                 Var labelVar = var();
+                // TODO: DUPLICATE FRAGMENTS MIGHT BE ADDED MORE THAN ONCE, also split and add comments
                 allFragments.add(Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label)));
                 allFragments.addAll(EquivalentFragmentSets.isa(IsaProperty.of(label(label).admin()),
                         relationshipVar, labelVar, relationshipType.isImplicit()).fragments());
@@ -265,30 +256,17 @@ public class GreedyTraversalPlan {
         });
     }
 
-    private static Set<Type> getAllPossibleRelationShipTypesOfARolePlayer(
-            Var rolePlayer, Multimap<Var, Type> instanceVarTypeMap, Map<Type, Set<RelationshipType>> relationshipMap) {
+    private static Set<Type> getAllPossibleRelationshipTypes(
+            Collection<Type> instanceVarTypes, Multimap<Type, RelationshipType> relationshipMap) {
 
-        Iterator<Type> typeIterator = instanceVarTypeMap.get(rolePlayer).iterator();
-        Type firstRolePlayerType = typeIterator.next(); // the role player here has at least one type
-
-        Set<Type> relationshipTypes = new HashSet<>(relationshipMap.get(firstRolePlayerType));
-
-        // we can stop doing intersection when relationshipTypes is empty
-        while (typeIterator.hasNext() && !relationshipTypes.isEmpty()) {
-            Type nextRolePlayerType = typeIterator.next();
-            relationshipTypes.retainAll(relationshipMap.get(nextRolePlayerType));
-        }
-
-        //TODO: if relationshipTypes here is empty, the query will not match any data
-        return relationshipTypes;
+        return instanceVarTypes.stream()
+                .map(rolePlayerType -> (Set<Type>) new HashSet<Type>(relationshipMap.get(rolePlayerType)))
+                .reduce(Sets::intersection).orElse(Collections.emptySet());
     }
 
-    private static void getAllPossibleRelationships(Map<Type, Set<RelationshipType>> relationshipMap, Type metaType) {
-        metaType.subs().forEach(type -> {
-            Set<RelationshipType> relationshipTypeSet = type.plays()
-                    .flatMap(Role::relationshipTypes).collect(Collectors.toSet());
-            relationshipMap.put(type, relationshipTypeSet);
-        });
+    private static void addAllPossibleRelationships(Multimap<Type, RelationshipType> relationshipMap, Type metaType) {
+        metaType.subs().forEach(type -> type.plays().flatMap(Role::relationshipTypes)
+                .forEach(relationshipType -> relationshipMap.put(type, relationshipType)));
     }
 
     private static void addUnvisitedNodeFragments(List<Fragment> plan,

@@ -140,6 +140,7 @@ public class QueryPlannerTest {
                 y.isa(thingy4),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
+        // Relationship type can now be inferred, so one more relationship type label
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
         String relationship = plan.get(3).start().getValue();
@@ -166,6 +167,7 @@ public class QueryPlannerTest {
                 z.isa(thingy4),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
+        // Relationship type can now be inferred, so one more relationship type label
         assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(4L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
@@ -188,6 +190,7 @@ public class QueryPlannerTest {
                 z.isa(thingy4),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
+        // Relationship type can now be inferred, so one more relationship type label
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(3L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
@@ -211,6 +214,7 @@ public class QueryPlannerTest {
                 z.isa(thingy4),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
+        // Relationship type can now be inferred, so one more relationship type label
         assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(4L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
@@ -228,6 +232,7 @@ public class QueryPlannerTest {
                 var().rel(x).rel(y));
 
         plan = getPlan(pattern);
+        // Relationship type can now be inferred, so one more relationship type label plus existing 3 labels
         assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(4L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
