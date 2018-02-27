@@ -21,20 +21,25 @@ package ai.grakn.remote.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.Schema;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.THING;
@@ -89,7 +94,20 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Label> attributeTypeLabels;
+        if (attributeTypes.length > 0) {
+            attributeTypeLabels = Stream.of(attributeTypes).map(SchemaConcept::getLabel);
+        } else {
+            attributeTypeLabels = Stream.of(Schema.MetaSchema.ATTRIBUTE.getLabel());
+        }
+
+        Var x = var("x");
+
+        Set<VarPattern> patterns =
+                attributeTypeLabels.map(label -> var().id(getId()).has(label, x)).collect(toImmutableSet());
+
+        GetQuery query = tx().graql().match(or(patterns)).get();
+        return query.stream().map(answer -> answer.get(x).asAttribute());
     }
 
     @Override

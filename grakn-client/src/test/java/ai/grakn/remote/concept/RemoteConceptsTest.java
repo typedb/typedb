@@ -29,6 +29,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
@@ -38,6 +39,7 @@ import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
 import org.junit.After;
 import org.junit.Before;
@@ -57,6 +59,7 @@ import static ai.grakn.grpc.ConceptProperty.REGEX;
 import static ai.grakn.grpc.ConceptProperty.THEN;
 import static ai.grakn.grpc.ConceptProperty.VALUE;
 import static ai.grakn.grpc.ConceptProperty.WHEN;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.RelationshipType;
@@ -353,6 +356,64 @@ public class RemoteConceptsTest {
         );
 
         assertEquals(a, concept.type().getId());
+    }
+
+    @Test
+    public void whenCallingAttributesWithNoArguments_ExecuteAQueryForAllAttributes() {
+        String query = match(var().id(ID).has(Schema.MetaSchema.ATTRIBUTE.getLabel(), var("x"))).get().toString();
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Attribute),
+                queryResultResponse(b, Attribute),
+                queryResultResponse(c, Attribute)
+        );
+
+        Set<ConceptId> sups = concept.attributes().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingAttributesWithArguments_ExecuteAQueryForThoseTypesOnly() {
+        ConceptId fooId = ConceptId.of("foo");
+        Label fooLabel = Label.of("foo");
+        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, fooId);
+        ConceptId barId = ConceptId.of("bar");
+        Label barLabel = Label.of("bar");
+        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, barId);
+        ConceptId bazId = ConceptId.of("baz");
+        Label bazLabel = Label.of("baz");
+        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, bazId);
+
+        mockLabelResponse(fooId, fooLabel);
+        mockLabelResponse(barId, barLabel);
+        mockLabelResponse(bazId, bazLabel);
+
+        String query = match(Graql.or(
+                var().id(ID).has(fooLabel, var("x")),
+                var().id(ID).has(barLabel, var("x")),
+                var().id(ID).has(bazLabel, var("x"))
+        )).get().toString();
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Attribute),
+                queryResultResponse(b, Attribute),
+                queryResultResponse(c, Attribute)
+        );
+
+        Set<ConceptId> sups = concept.attributes(foo, bar, baz).map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
     }
 
     private void mockLabelResponse(ConceptId id, Label label) {
