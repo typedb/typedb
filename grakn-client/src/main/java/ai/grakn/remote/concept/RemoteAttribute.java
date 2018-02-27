@@ -20,6 +20,7 @@ package ai.grakn.remote.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.grpc.ConceptProperty;
@@ -60,5 +61,10 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
     @Override
     public final Thing owner() {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final AttributeType<D> asMyType(Concept concept) {
+        return concept.asAttributeType();
     }
 }

@@ -311,6 +311,50 @@ public class RemoteConceptsTest {
         assertEquals(a, concept.sup().getId());
     }
 
+    @Test
+    public void whenCallingIsa_ExecuteSeveralQueries() {
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        Label labelA = Label.of("A");
+        ConceptId b = ConceptId.of("B");
+        Label labelB = Label.of("B");
+        ConceptId metaType = ConceptId.of("C");
+        Label labelMetaType = THING.getLabel();
+
+        String typeId = match(var().id(ID).isa(var("x"))).get().toString();
+        String supsA = match(var().id(a).sub(var("x"))).get().toString();
+        String supsB = match(var().id(b).sub(var("x"))).get().toString();
+        String supsMetaType = match(var().id(metaType).sub(var("x"))).get().toString();
+
+        mockLabelResponse(a, labelA);
+        mockLabelResponse(b, labelB);
+        mockLabelResponse(metaType, labelMetaType);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(typeId),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsA),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsB),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsMetaType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        assertEquals(a, concept.type().getId());
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),

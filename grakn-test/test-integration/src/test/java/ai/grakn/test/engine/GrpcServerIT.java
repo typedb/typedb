@@ -243,7 +243,7 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("thing")).get();
-            Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
+            Thing remoteConcept = query.execute().stream().findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());

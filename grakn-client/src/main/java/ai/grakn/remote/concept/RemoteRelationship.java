@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -58,5 +59,10 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final RelationshipType asMyType(Concept concept) {
+        return concept.asRelationshipType();
     }
 }
