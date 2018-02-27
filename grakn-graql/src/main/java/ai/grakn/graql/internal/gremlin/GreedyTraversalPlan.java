@@ -66,7 +66,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -193,6 +192,7 @@ public class GreedyTraversalPlan {
         labelVarTypeMap.values().stream().distinct().forEach(
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
+        Map<Label, Var> existingLabels = new HashMap<>();
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
 
             Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
@@ -206,11 +206,21 @@ public class GreedyTraversalPlan {
 
                 Type relationshipType = possibleRelationshipTypes.iterator().next();
                 Label label = relationshipType.getLabel();
-                Var labelVar = var();
-                // TODO: DUPLICATE FRAGMENTS MIGHT BE ADDED MORE THAN ONCE, also split and add comments
-                allFragments.add(Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label)));
-                allFragments.addAll(EquivalentFragmentSets.isa(IsaProperty.of(label(label).admin()),
-                        relationshipVar, labelVar, relationshipType.isImplicit()).fragments());
+
+                // add label fragment if this label has not been inferred
+                if (!existingLabels.containsKey(label)) {
+                    Var labelVar = var();
+                    existingLabels.put(label, labelVar);
+                    Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
+                    allFragments.add(labelFragment);
+                }
+
+                // finally, add inferred isa fragments
+                Var labelVar = existingLabels.get(label);
+                IsaProperty isaProperty = IsaProperty.of(labelVar.admin());
+                EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
+                        relationshipVar, labelVar, relationshipType.isImplicit());
+                allFragments.addAll(isaEquivalentFragmentSet.fragments());
             }
         });
     }
