@@ -349,7 +349,7 @@ public class RemoteGraknTxTest {
     }
 
     private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, GraknOuterClass.BaseType baseType, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
-        VarPattern var = var().label(label).sub(metaSchema.getLabel().getValue());
+        VarPattern var = var("x").label(label).sub(metaSchema.getLabel().getValue());
         if(extender != null) var = extender.apply(var);
         String expectedQuery = define(var).toString();
 
