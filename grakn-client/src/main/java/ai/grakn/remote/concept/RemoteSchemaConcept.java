@@ -27,9 +27,12 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptProperty;
 
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 
 /**
@@ -56,7 +59,11 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Self sup() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        // TODO: We use a trick here because there's no "direct super" in Graql and we don't want to use gRPC for this.
+        // The direct super of this concept will have all of its indirect super-types, except the concept itself
+        Set<Self> expectedSups = sups().filter(concept -> !concept.equals(this)).collect(toImmutableSet());
+        Predicate<Self> hasExpectedSups = concept1 -> concept1.sups().collect(toImmutableSet()).equals(expectedSups);
+        return expectedSups.stream().filter(hasExpectedSups).findAny().orElse(null);
     }
 
     @Override

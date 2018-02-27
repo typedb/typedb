@@ -264,6 +264,53 @@ public class RemoteConceptsTest {
         assertThat(sups, containsInAnyOrder(ID, a, b));
     }
 
+    @Test
+    public void whenCallingSup_ExecuteSeveralQueries() {
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        Label labelId = Label.of("yes");
+        ConceptId a = ConceptId.of("A");
+        Label labelA = Label.of("A");
+        ConceptId b = ConceptId.of("B");
+        Label labelB = Label.of("B");
+        ConceptId metaType = ConceptId.of("C");
+        Label labelMetaType = THING.getLabel();
+
+        String supsId = match(var().id(ID).sub(var("x"))).get().toString();
+        String supsA = match(var().id(a).sub(var("x"))).get().toString();
+        String supsB = match(var().id(b).sub(var("x"))).get().toString();
+        String supsMetaType = match(var().id(metaType).sub(var("x"))).get().toString();
+
+        mockLabelResponse(ID, labelId);
+        mockLabelResponse(a, labelA);
+        mockLabelResponse(b, labelB);
+        mockLabelResponse(metaType, labelMetaType);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsId),
+                queryResultResponse(ID, EntityType),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsA),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsB),
+                queryResultResponse(b, EntityType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(supsMetaType),
+                queryResultResponse(metaType, MetaType)
+        );
+
+        assertEquals(a, concept.sup().getId());
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),

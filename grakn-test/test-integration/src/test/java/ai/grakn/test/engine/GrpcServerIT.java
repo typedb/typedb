@@ -42,6 +42,7 @@ import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import io.grpc.Status;
 import org.junit.AfterClass;
@@ -218,14 +219,13 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("role")).get();
-            SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
+            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
+            SchemaConcept remoteConcept = Iterables.getOnlyElement(query).get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
