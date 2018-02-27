@@ -23,6 +23,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.grpc.ConceptProperty;
 
 import java.util.stream.Stream;
 
@@ -84,7 +85,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Boolean isAbstract() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.IS_ABSTRACT);
     }
 
     @Override

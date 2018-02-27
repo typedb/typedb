@@ -189,7 +189,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAConcept_TheInformationOnTheConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -305,7 +304,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAnEntityType_TheInformationOnTheEntityTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -334,7 +332,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAnAttributeType_TheInformationOnTheAttributeTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -349,7 +346,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAnEntity_TheInformationOnTheEntityIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);

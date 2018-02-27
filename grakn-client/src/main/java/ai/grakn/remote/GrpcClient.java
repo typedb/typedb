@@ -27,6 +27,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
@@ -56,7 +57,7 @@ import java.util.Iterator;
  *
  * @author Felix Chapman
  */
-final class GrpcClient implements AutoCloseable {
+public final class GrpcClient implements AutoCloseable {
 
     private final TxGrpcCommunicator communicator;
 
@@ -106,6 +107,12 @@ final class GrpcClient implements AutoCloseable {
     public void commit() {
         communicator.send(GrpcUtil.commitRequest());
         responseOrThrow();
+    }
+
+    @Nullable
+    public <T> T getConceptProperty(ConceptId id, ConceptProperty<T> conceptProperty) {
+        communicator.send(GrpcUtil.getConceptPropertyRequest(id, conceptProperty));
+        return conceptProperty.get(responseOrThrow());
     }
 
     @Override

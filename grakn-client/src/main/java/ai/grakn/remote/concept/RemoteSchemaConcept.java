@@ -22,6 +22,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.grpc.ConceptProperty;
 
 import java.util.stream.Stream;
 
@@ -34,12 +35,12 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Label getLabel() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.IS_IMPLICIT);
     }
 
     @Override

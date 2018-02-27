@@ -66,7 +66,14 @@ public final class GrpcServerMock extends CompositeTestRule {
     @SuppressWarnings("unchecked") // safe because mock
     private StreamObserver<TxRequest> serverRequests = mock(StreamObserver.class);
 
-    ManagedChannel channel() {
+    private GrpcServerMock() {
+    }
+
+    public static GrpcServerMock create() {
+        return new GrpcServerMock();
+    }
+
+    public ManagedChannel channel() {
         return serverRule.getChannel();
     }
 
@@ -74,15 +81,11 @@ public final class GrpcServerMock extends CompositeTestRule {
         return service;
     }
 
-    StreamObserver<TxRequest> requests() {
+    public StreamObserver<TxRequest> requests() {
         return serverRequests;
     }
 
-    StreamObserver<TxResponse> responses(){
-        return serverResponses;
-    }
-
-    void setResponse(TxRequest request, TxResponse response) {
+    public void setResponse(TxRequest request, TxResponse response) {
         setResponse(request, responses -> responses.onNext(response));
     }
 

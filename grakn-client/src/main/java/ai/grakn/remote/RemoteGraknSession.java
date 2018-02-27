@@ -19,7 +19,6 @@
 package ai.grakn.remote;
 
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
@@ -38,7 +37,7 @@ import io.grpc.ManagedChannelBuilder;
  *
  * @author Felix Chapman
  */
-class RemoteGraknSession implements GraknSession {
+public class RemoteGraknSession implements GraknSession {
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
@@ -68,7 +67,7 @@ class RemoteGraknSession implements GraknSession {
     }
 
     @Override
-    public GraknTx open(GraknTxType transactionType) {
+    public RemoteGraknTx open(GraknTxType transactionType) {
         return RemoteGraknTx.create(this, transactionType);
     }
 

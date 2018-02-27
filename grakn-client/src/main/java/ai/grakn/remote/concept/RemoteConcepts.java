@@ -40,12 +40,11 @@ public class RemoteConcepts {
 
     private RemoteConcepts() {}
 
-    public static <D extends AttributeType.DataType<?>> Attribute<D> createAttribute(RemoteGraknTx tx, ConceptId id) {
+    public static <D> Attribute<D> createAttribute(RemoteGraknTx tx, ConceptId id) {
         return RemoteAttribute.create(tx, id);
     }
 
-    public static <D extends AttributeType.DataType<?>> AttributeType<D> createAttributeType(
-            RemoteGraknTx tx, ConceptId id) {
+    public static <D> AttributeType<D> createAttributeType(RemoteGraknTx tx, ConceptId id) {
         return RemoteAttributeType.create(tx, id);
     }
 

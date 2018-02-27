@@ -20,6 +20,9 @@ package ai.grakn.grpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -29,10 +32,15 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
+import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
@@ -45,6 +53,8 @@ import io.grpc.Metadata;
 import io.grpc.Metadata.AsciiMarshaller;
 
 import javax.annotation.Nullable;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.function.Function;
 
 /**
@@ -135,6 +145,14 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
+    public static TxRequest getConceptPropertyRequest(ConceptId id, ai.grakn.grpc.ConceptProperty<?> property) {
+        GetConceptProperty getConceptProperty = GetConceptProperty.newBuilder()
+                .setId(convert(id))
+                .setConceptProperty(property.toGrpc())
+                .build();
+        return TxRequest.newBuilder().setGetConceptProperty(getConceptProperty).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
@@ -145,6 +163,14 @@ public class GrpcUtil {
 
     public static GraknTxType getTxType(Open open) {
         return convert(open.getTxType());
+    }
+
+    public static ConceptId getConceptId(GetConceptProperty getConceptPropertyRequest) {
+        return convert(getConceptPropertyRequest.getId());
+    }
+
+    public static Label getLabel(ConceptPropertyValue conceptPropertyValue) {
+        return Label.of(conceptPropertyValue.getLabel().getValue());
     }
 
     private static GraknTxType convert(TxType txType) {
@@ -182,4 +208,114 @@ public class GrpcUtil {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 
+    private static GraknOuterClass.ConceptId convert(ConceptId id) {
+        return GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
+    }
+
+    private static ConceptId convert(GraknOuterClass.ConceptId id) {
+        return ConceptId.of(id.getValue());
+    }
+
+    static GraknOuterClass.Label convert(Label label) {
+        return GraknOuterClass.Label.newBuilder().setValue(label.getValue()).build();
+    }
+
+    static Label convert(GraknOuterClass.Label label) {
+        return Label.of(label.getValue());
+    }
+
+    static Object convert(AttributeValue value) {
+        switch (value.getValueCase()) {
+            case STRING:
+                return value.getString();
+            case BOOLEAN:
+                return value.getBoolean();
+            case INTEGER:
+                return value.getInteger();
+            case LONG:
+                return value.getLong();
+            case FLOAT:
+                return value.getFloat();
+            case DOUBLE:
+                return value.getDouble();
+            case DATE:
+                return value.getDate();
+            default:
+            case VALUE_NOT_SET:
+                throw new IllegalArgumentException("Unrecognised " + value);
+        }
+    }
+
+    static AttributeValue convertValue(Object value) {
+        AttributeValue.Builder builder = AttributeValue.newBuilder();
+        if (value instanceof String) {
+            builder.setString((String) value);
+        } else if (value instanceof Boolean) {
+            builder.setBoolean((boolean) value);
+        } else if (value instanceof Integer) {
+            builder.setInteger((int) value);
+        } else if (value instanceof Long) {
+            builder.setLong((long) value);
+        } else if (value instanceof Float) {
+            builder.setFloat((float) value);
+        } else if (value instanceof Double) {
+            builder.setDouble((double) value);
+        } else if (value instanceof LocalDateTime) {
+            builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + value);
+        }
+
+        return builder.build();
+    }
+
+    static AttributeType.DataType<?> convert(GraknOuterClass.DataType dataType) {
+        switch (dataType) {
+            case String:
+                return AttributeType.DataType.STRING;
+            case Boolean:
+                return AttributeType.DataType.BOOLEAN;
+            case Integer:
+                return AttributeType.DataType.INTEGER;
+            case Long:
+                return AttributeType.DataType.LONG;
+            case Float:
+                return AttributeType.DataType.FLOAT;
+            case Double:
+                return AttributeType.DataType.DOUBLE;
+            case Date:
+                return AttributeType.DataType.DATE;
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + dataType);
+        }
+    }
+
+    public static GraknOuterClass.DataType convert(AttributeType.DataType<?> dataType) {
+        if (dataType.equals(AttributeType.DataType.STRING)) {
+            return GraknOuterClass.DataType.String;
+        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+            return GraknOuterClass.DataType.Boolean;
+        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+            return GraknOuterClass.DataType.Integer;
+        } else if (dataType.equals(AttributeType.DataType.LONG)) {
+            return GraknOuterClass.DataType.Long;
+        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+            return GraknOuterClass.DataType.Float;
+        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+            return GraknOuterClass.DataType.Double;
+        } else if (dataType.equals(AttributeType.DataType.DATE)) {
+            return GraknOuterClass.DataType.Date;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+        }
+    }
+
+    public static GraknOuterClass.Pattern convert(Pattern pattern) {
+        return GraknOuterClass.Pattern.newBuilder().setValue(pattern.toString()).build();
+    }
+
+    public static Pattern convert(GraknOuterClass.Pattern pattern) {
+        return Graql.parser().parsePattern(pattern.getValue());
+    }
 }
