@@ -35,6 +35,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
@@ -108,6 +109,7 @@ public class GrpcServerTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
+    private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
 
     private GrpcServer server;
 
@@ -423,7 +425,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
 
-            assertEquals(label, ConceptProperty.LABEL.get(null, tx.receive().ok()));
+            assertEquals(label, ConceptProperty.LABEL.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -442,7 +444,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_IMPLICIT));
 
-            assertTrue(ConceptProperty.IS_IMPLICIT.get(null, tx.receive().ok()));
+            assertTrue(ConceptProperty.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -461,7 +463,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_INFERRED));
 
-            assertFalse(ConceptProperty.IS_INFERRED.get(null, tx.receive().ok()));
+            assertFalse(ConceptProperty.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
         }
     }
 
