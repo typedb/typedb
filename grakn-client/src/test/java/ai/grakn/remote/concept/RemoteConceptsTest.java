@@ -645,6 +645,69 @@ public class RemoteConceptsTest {
         assertEquals(expected, allRolePlayers);
     }
 
+    @Test
+    public void whenCallingRolePlayersWithNoArguments_ExecuteAQueryForAllRolePlayers() {
+        String query = match(ME.id(ID), ME.rel(TARGET)).get().toString();
+
+        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, BaseType.Entity),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Attribute)
+        );
+
+        Set<ConceptId> sups = concept.rolePlayers().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingRolePlayersWithRoles_ExecuteAQueryForAllSpecifiedRoles() {
+        ConceptId fooId = ConceptId.of("foo");
+        Label fooLabel = Label.of("foo");
+        Role foo = RemoteConcepts.createRole(tx, fooId);
+        ConceptId barId = ConceptId.of("bar");
+        Label barLabel = Label.of("bar");
+        Role bar = RemoteConcepts.createRole(tx, barId);
+        ConceptId bazId = ConceptId.of("baz");
+        Label bazLabel = Label.of("baz");
+        Role baz = RemoteConcepts.createRole(tx, bazId);
+
+        mockLabelResponse(fooId, fooLabel);
+        mockLabelResponse(barId, barLabel);
+        mockLabelResponse(bazId, bazLabel);
+
+        Var role = var("role");
+        String query = match(
+                ME.id(ID),
+                ME.rel(role, TARGET),
+                or(
+                        role.label(fooLabel),
+                        role.label(barLabel),
+                        role.label(bazLabel)
+                )
+        ).get().toString();
+
+        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, BaseType.Entity),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Attribute)
+        );
+
+        Set<ConceptId> sups = concept.rolePlayers(foo, bar, baz).map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),

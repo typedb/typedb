@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
@@ -35,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
@@ -64,7 +66,15 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Concept> concepts;
+        if (roles.length != 0) {
+            Var roleVar = var("role");
+            Set<VarPattern> patterns = Stream.of(roles).map(role -> roleVar.label(role.getLabel())).collect(toSet());
+            concepts = query(ME.rel(roleVar, TARGET), or(patterns));
+        } else {
+            concepts = query(ME.rel(TARGET));
+        }
+        return concepts.map(Concept::asThing);
     }
 
     @Override
