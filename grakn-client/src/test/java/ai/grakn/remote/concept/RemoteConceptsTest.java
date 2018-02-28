@@ -26,6 +26,7 @@ import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -37,6 +38,7 @@ import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
@@ -66,7 +68,6 @@ import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Relationship;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.RelationshipType;
-import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Role;
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toSet;
@@ -435,9 +436,9 @@ public class RemoteConceptsTest {
         ConceptId c = ConceptId.of("C");
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(a, Role),
-                queryResultResponse(b, Role),
-                queryResultResponse(c, Role)
+                queryResultResponse(a, BaseType.Role),
+                queryResultResponse(b, BaseType.Role),
+                queryResultResponse(c, BaseType.Role)
         );
 
         Set<ConceptId> sups = concept.plays().map(Concept::getId).collect(toSet());
@@ -475,9 +476,9 @@ public class RemoteConceptsTest {
         ConceptId c = ConceptId.of("C");
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(a, Role),
-                queryResultResponse(b, Role),
-                queryResultResponse(c, Role)
+                queryResultResponse(a, BaseType.Role),
+                queryResultResponse(b, BaseType.Role),
+                queryResultResponse(c, BaseType.Role)
         );
 
         Set<ConceptId> sups = concept.plays().map(Concept::getId).collect(toSet());
@@ -508,13 +509,13 @@ public class RemoteConceptsTest {
     public void whenCallingRelationshipsWithRoles_ExecuteAQueryForAllRelationshipsOfTheSpecifiedRoles() {
         ConceptId fooId = ConceptId.of("foo");
         Label fooLabel = Label.of("foo");
-        ai.grakn.concept.Role foo = RemoteConcepts.createRole(tx, fooId);
+        Role foo = RemoteConcepts.createRole(tx, fooId);
         ConceptId barId = ConceptId.of("bar");
         Label barLabel = Label.of("bar");
-        ai.grakn.concept.Role bar = RemoteConcepts.createRole(tx, barId);
+        Role bar = RemoteConcepts.createRole(tx, barId);
         ConceptId bazId = ConceptId.of("baz");
         Label bazLabel = Label.of("baz");
-        ai.grakn.concept.Role baz = RemoteConcepts.createRole(tx, bazId);
+        Role baz = RemoteConcepts.createRole(tx, bazId);
 
         mockLabelResponse(fooId, fooLabel);
         mockLabelResponse(barId, barLabel);
@@ -547,6 +548,46 @@ public class RemoteConceptsTest {
         assertThat(sups, containsInAnyOrder(a, b, c));
     }
 
+    @Test
+    public void whenCallingRelationshipTypes_ExecuteAQuery() {
+        String query = match(ME.id(ID), TARGET.relates(ME)).get().toString();
+
+        Role concept = RemoteConcepts.createRole(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, RelationshipType),
+                queryResultResponse(b, RelationshipType),
+                queryResultResponse(c, RelationshipType)
+        );
+
+        Set<ConceptId> sups = concept.relationshipTypes().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingPlayedByTypes_ExecuteAQuery() {
+        String query = match(ME.id(ID), TARGET.plays(ME)).get().toString();
+
+        Role concept = RemoteConcepts.createRole(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, EntityType),
+                queryResultResponse(b, RelationshipType),
+                queryResultResponse(c, BaseType.AttributeType)
+        );
+
+        Set<ConceptId> sups = concept.playedByTypes().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),
@@ -559,7 +600,7 @@ public class RemoteConceptsTest {
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
 
-    private static TxResponse queryResultResponse(ConceptId id, GraknOuterClass.BaseType baseType) {
+    private static TxResponse queryResultResponse(ConceptId id, BaseType baseType) {
         GraknOuterClass.ConceptId conceptId = GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
 
         GraknOuterClass.Concept concept =
