@@ -37,13 +37,11 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.grpc.GrpcTestUtil;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Sets;
-import io.grpc.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -185,19 +183,17 @@ public class GrpcServerIT {
         assertEquals(answers1, answers2);
     }
 
-    @Test // This behaviour is temporary - we should eventually support it correctly
-    public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
+    @Test
+    public void whenExecutingTwoParallelQueries_GetBothResults() throws Throwable {
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
             Iterator<Answer> iterator1 = query.iterator();
             Iterator<Answer> iterator2 = query.iterator();
 
-            exception.expect(GrpcTestUtil.hasStatus(Status.FAILED_PRECONDITION));
-
             while (iterator1.hasNext() || iterator2.hasNext()) {
-                if (iterator1.hasNext()) iterator1.next();
-                if (iterator2.hasNext()) iterator2.next();
+                assertEquals(iterator1.next(), iterator2.next());
+                assertEquals(iterator1.hasNext(), iterator2.hasNext());
             }
         }
     }
