@@ -107,7 +107,7 @@ import static java.util.stream.Collectors.toSet;
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  * @author fppt
  */
-public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, GraknAdmin {
+public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
     private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
@@ -618,6 +618,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+        Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
+        if(meta != null) return getSchemaConcept(meta.getId());
         return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
@@ -649,36 +651,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx, Grakn
     @Override
     public Rule getRule(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
-    }
-
-    @Override
-    public Type getMetaConcept() {
-        return getSchemaConcept(Schema.MetaSchema.THING.getId());
-    }
-
-    @Override
-    public RelationshipType getMetaRelationType() {
-        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getId());
-    }
-
-    @Override
-    public Role getMetaRole() {
-        return getSchemaConcept(Schema.MetaSchema.ROLE.getId());
-    }
-
-    @Override
-    public AttributeType getMetaAttributeType() {
-        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
-    }
-
-    @Override
-    public EntityType getMetaEntityType() {
-        return getSchemaConcept(Schema.MetaSchema.ENTITY.getId());
-    }
-
-    @Override
-    public Rule getMetaRule() {
-        return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
     @Override

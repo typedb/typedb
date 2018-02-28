@@ -227,36 +227,6 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public Type getMetaConcept() {
-        return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
-    }
-
-    @Override
-    public RelationshipType getMetaRelationType() {
-        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
-    }
-
-    @Override
-    public Role getMetaRole() {
-        return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
-    }
-
-    @Override
-    public AttributeType getMetaAttributeType() {
-        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
-    }
-
-    @Override
-    public EntityType getMetaEntityType() {
-        return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
-    }
-
-    @Override
-    public Rule getMetaRule() {
-        return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
-    }
-
-    @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
         throw new UnsupportedOperationException(); // TODO
     }
