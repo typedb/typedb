@@ -423,7 +423,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
 
-            assertEquals(label, ConceptProperty.LABEL.get(tx.receive().ok()));
+            assertEquals(label, ConceptProperty.LABEL.get(null, tx.receive().ok()));
         }
     }
 
@@ -442,7 +442,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_IMPLICIT));
 
-            assertTrue(ConceptProperty.IS_IMPLICIT.get(tx.receive().ok()));
+            assertTrue(ConceptProperty.IS_IMPLICIT.get(null, tx.receive().ok()));
         }
     }
 
@@ -461,7 +461,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_INFERRED));
 
-            assertFalse(ConceptProperty.IS_INFERRED.get(tx.receive().ok()));
+            assertFalse(ConceptProperty.IS_INFERRED.get(null, tx.receive().ok()));
         }
     }
 

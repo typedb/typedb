@@ -26,19 +26,16 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -53,15 +50,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        Var roleVar = var("role");
-        Var playerVar = var("player");
-
-        Stream<Answer> concepts = queryAnswers(ME.rel(roleVar, playerVar));
-
-        Function<Answer, Thing> player = answer -> answer.get(playerVar).asThing();
-        Function<Answer, Role> role = answer -> answer.get(roleVar).asRole();
-
-        return concepts.collect(groupingBy(role, Collectors.mapping(player, toSet())));
+        return getProperty(ConceptProperty.ALL_ROLE_PLAYERS);
     }
 
     @Override

@@ -364,7 +364,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after fixing allRolePlayers
     @Test
     public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);

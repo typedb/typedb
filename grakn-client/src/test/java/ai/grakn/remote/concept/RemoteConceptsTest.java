@@ -36,7 +36,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -66,6 +65,7 @@ import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.grpc.ConceptProperty.ALL_ROLE_PLAYERS;
 import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
 import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptProperty.IS_IMPLICIT;
@@ -535,11 +535,6 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingAllRolePlayers_ExecuteAQuery() {
-        Var role = var("role");
-        Var player = var("player");
-
-        Query<?> query = match(ME.id(ID), ME.rel(role, player)).get();
-
         Relationship concept = RemoteConcepts.createRelationship(tx, ID);
 
         Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
@@ -549,16 +544,14 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, foo, player, a))),
-                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, bar, player, b))),
-                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, bar, player, c)))
-        );
-
         Map<Role, Set<Thing>> expected = ImmutableMap.of(
                 foo, ImmutableSet.of(a),
                 bar, ImmutableSet.of(b, c)
         );
+
+        TxResponse response = ALL_ROLE_PLAYERS.createTxResponse(expected);
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ALL_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = concept.allRolePlayers();
         assertEquals(expected, allRolePlayers);

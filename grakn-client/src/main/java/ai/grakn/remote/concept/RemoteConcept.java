@@ -64,7 +64,7 @@ abstract class RemoteConcept implements Concept {
     }
 
     protected final <T> T getProperty(ConceptProperty<T> property) {
-        return tx().client().getConceptProperty(getId(), property);
+        return tx().client().getConceptProperty(tx(), getId(), property);
     }
 
     protected final Stream<Concept> query(Pattern... patterns) {

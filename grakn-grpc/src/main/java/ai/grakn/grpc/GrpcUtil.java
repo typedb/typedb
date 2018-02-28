@@ -24,6 +24,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -37,6 +39,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.AllRolePlayers;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
@@ -46,17 +49,22 @@ import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
+import ai.grakn.rpc.generated.GraknOuterClass.RolePlayer;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimaps;
 import io.grpc.Metadata;
 import io.grpc.Metadata.AsciiMarshaller;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -354,5 +362,29 @@ public class GrpcUtil {
 
     public static Pattern convert(GraknOuterClass.Pattern pattern) {
         return Graql.parser().parsePattern(pattern.getValue());
+    }
+
+    public static Map<Role, Set<Thing>> convert(Function<GraknOuterClass.Concept, Concept> converter, AllRolePlayers allRolePlayers) {
+        ImmutableSetMultimap.Builder<Role, Thing> map = ImmutableSetMultimap.builder();
+
+        for (RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
+            map.put(converter.apply(rolePlayer.getRole()).asRole(), converter.apply(rolePlayer.getPlayer()).asThing());
+        }
+
+        return Multimaps.asMap(map.build());
+    }
+
+    public static AllRolePlayers convert(Map<Role, Set<Thing>> rolePlayers) {
+        AllRolePlayers.Builder builder = AllRolePlayers.newBuilder();
+
+        rolePlayers.forEach((role, players) -> {
+            players.forEach(player -> {
+                RolePlayer rolePlayer =
+                        RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(player)).build();
+                builder.addRolePlayer(rolePlayer);
+            });
+        });
+
+        return builder.build();
     }
 }

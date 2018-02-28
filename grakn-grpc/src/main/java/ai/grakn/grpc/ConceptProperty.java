@@ -21,15 +21,21 @@ package ai.grakn.grpc;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 
 import javax.annotation.Nullable;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.AllRolePlayersProperty;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DataTypeProperty;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsAbstract;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
@@ -113,6 +119,13 @@ public abstract class ConceptProperty<T> {
             ConceptPropertyValue.Builder::setRegex
     );
 
+    public static final ConceptProperty<Map<Role, Set<Thing>>> ALL_ROLE_PLAYERS = create(
+            AllRolePlayersProperty,
+            concept -> concept.asRelationship().allRolePlayers(),
+            (converter, val) -> GrpcUtil.convert(converter, val.getAllRolePlayers()),
+            (builder, val) -> builder.setAllRolePlayers(GrpcUtil.convert(val))
+    );
+
     public static ConceptProperty<?> fromGrpc(GraknOuterClass.ConceptProperty conceptProperty) {
         switch (conceptProperty) {
             case ValueProperty:
@@ -133,6 +146,8 @@ public abstract class ConceptProperty<T> {
                 return THEN;
             case Regex:
                 return REGEX;
+            case AllRolePlayersProperty:
+                return ALL_ROLE_PLAYERS;
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + conceptProperty);
@@ -148,7 +163,7 @@ public abstract class ConceptProperty<T> {
     public abstract TxResponse createTxResponse(Concept concept);
 
     @Nullable
-    public abstract T get(TxResponse value);
+    public abstract T get(Function<GraknOuterClass.Concept, Concept> conceptConverter, TxResponse value);
 
     abstract void set(ConceptPropertyValue.Builder builder, @Nullable T value);
 
@@ -167,6 +182,15 @@ public abstract class ConceptProperty<T> {
             Function<ConceptPropertyValue, T> responseGetter,
             BiConsumer<ConceptPropertyValue.Builder, T> setter
     ) {
+        return create(grpcProperty, conceptGetter, (conceptConverter, val) -> responseGetter.apply(val), setter);
+    }
+
+    private static <T> ConceptProperty<T> create(
+                GraknOuterClass.ConceptProperty grpcProperty,
+                Function<Concept, T> conceptGetter,
+                BiFunction<Function<GraknOuterClass.Concept, Concept>, ConceptPropertyValue, T> responseGetter,
+                BiConsumer<ConceptPropertyValue.Builder, T> setter
+    ) {
         return new ConceptProperty<T>() {
             @Override
             public TxResponse createTxResponse(Concept concept) {
@@ -175,12 +199,12 @@ public abstract class ConceptProperty<T> {
 
             @Nullable
             @Override
-            public T get(TxResponse txResponse) {
+            public T get(Function<GraknOuterClass.Concept, Concept> conceptConverter, TxResponse txResponse) {
                 ConceptPropertyValue conceptPropertyValue = txResponse.getConceptPropertyValue();
                 if (conceptPropertyValue.getValueCase().equals(ConceptPropertyValue.ValueCase.VALUE_NOT_SET)) {
                     return null;
                 } else {
-                    return responseGetter.apply(conceptPropertyValue);
+                    return responseGetter.apply(conceptConverter, conceptPropertyValue);
                 }
             }
 
