@@ -163,7 +163,7 @@ public abstract class ConceptProperty<T> {
     public abstract TxResponse createTxResponse(Concept concept);
 
     @Nullable
-    public abstract T get(Function<GraknOuterClass.Concept, Concept> conceptConverter, TxResponse value);
+    public abstract T get(GrpcConceptConverter conceptConverter, TxResponse value);
 
     abstract void set(ConceptPropertyValue.Builder builder, @Nullable T value);
 
@@ -188,7 +188,7 @@ public abstract class ConceptProperty<T> {
     private static <T> ConceptProperty<T> create(
                 GraknOuterClass.ConceptProperty grpcProperty,
                 Function<Concept, T> conceptGetter,
-                BiFunction<Function<GraknOuterClass.Concept, Concept>, ConceptPropertyValue, T> responseGetter,
+                BiFunction<GrpcConceptConverter, ConceptPropertyValue, T> responseGetter,
                 BiConsumer<ConceptPropertyValue.Builder, T> setter
     ) {
         return new ConceptProperty<T>() {
@@ -199,7 +199,7 @@ public abstract class ConceptProperty<T> {
 
             @Nullable
             @Override
-            public T get(Function<GraknOuterClass.Concept, Concept> conceptConverter, TxResponse txResponse) {
+            public T get(GrpcConceptConverter conceptConverter, TxResponse txResponse) {
                 ConceptPropertyValue conceptPropertyValue = txResponse.getConceptPropertyValue();
                 if (conceptPropertyValue.getValueCase().equals(ConceptPropertyValue.ValueCase.VALUE_NOT_SET)) {
                     return null;

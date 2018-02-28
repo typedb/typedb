@@ -364,11 +364,13 @@ public class GrpcUtil {
         return Graql.parser().parsePattern(pattern.getValue());
     }
 
-    public static Map<Role, Set<Thing>> convert(Function<GraknOuterClass.Concept, Concept> converter, AllRolePlayers allRolePlayers) {
+    public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, AllRolePlayers allRolePlayers) {
         ImmutableSetMultimap.Builder<Role, Thing> map = ImmutableSetMultimap.builder();
 
         for (RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
-            map.put(converter.apply(rolePlayer.getRole()).asRole(), converter.apply(rolePlayer.getPlayer()).asThing());
+            Role role = converter.convert(rolePlayer.getRole()).asRole();
+            Thing player = converter.convert(rolePlayer.getPlayer()).asThing();
+            map.put(role, player);
         }
 
         return Multimaps.asMap(map.build());
