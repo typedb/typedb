@@ -708,6 +708,26 @@ public class RemoteConceptsTest {
         assertThat(sups, containsInAnyOrder(a, b, c));
     }
 
+    @Test
+    public void whenCallingOwnerInstances_ExecuteAQuery() {
+        String query = match(ME.id(ID), TARGET.has(ATTRIBUTE.getLabel(), ME)).get().toString();
+
+        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, BaseType.Entity),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Attribute)
+        );
+
+        Set<ConceptId> sups = concept.ownerInstances().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),
