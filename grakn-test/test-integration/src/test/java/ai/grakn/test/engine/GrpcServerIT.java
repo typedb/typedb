@@ -313,8 +313,6 @@ public class GrpcServerIT {
 
             assertEquals(localConcept.getWhen(), remoteConcept.getWhen());
             assertEquals(localConcept.getThen(), remoteConcept.getThen());
-            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getConclusionTypes);
-            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getHypothesisTypes);
         }
     }
 

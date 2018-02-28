@@ -54,12 +54,12 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
     @Override
     public final Stream<Type> getHypothesisTypes() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
     public final Stream<Type> getConclusionTypes() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
