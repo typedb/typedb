@@ -42,7 +42,6 @@ import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import io.grpc.Status;
 import org.junit.AfterClass;
@@ -208,9 +207,9 @@ public class GrpcServerIT {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            List<Answer> answers = remoteTx.graql().match(var("x")).get().execute();
+            GetQuery query = remoteTx.graql().match(var("x")).get();
 
-            for (Answer answer : answers) {
+            for (Answer answer : query) {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.getId());
 
@@ -237,8 +236,8 @@ public class GrpcServerIT {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
-            SchemaConcept remoteConcept = Iterables.getOnlyElement(query).get("x").asSchemaConcept();
+            GetQuery query = remoteTx.graql().match(var("x").label("role")).get();
+            SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
@@ -256,7 +255,7 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("thing")).get();
-            Thing remoteConcept = query.execute().stream().findAny().get().get("x").asThing();
+            Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
@@ -275,7 +274,7 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
-            Type remoteConcept = query.execute().stream().findAny().get().get("x").asType();
+            Type remoteConcept = query.stream().findAny().get().get("x").asType();
             Type localConcept = localTx.getConcept(remoteConcept.getId()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
