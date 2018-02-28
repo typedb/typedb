@@ -35,6 +35,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
@@ -122,6 +123,10 @@ public class GrpcUtil {
 
     public static TxRequest commitRequest() {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
+    }
+
+    public static TxRequest execQueryRequest(Query<?> query) {
+        return execQueryRequest(query.toString());
     }
 
     public static TxRequest execQueryRequest(String queryString) {
