@@ -192,7 +192,8 @@ public class GreedyTraversalPlan {
         labelVarTypeMap.values().stream().distinct().forEach(
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
-        Map<Label, Var> existingLabels = new HashMap<>();
+        // inferred labels should be kept separately, even if they are already in allFragments set
+        Map<Label, Var> inferredLabels = new HashMap<>();
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
 
             Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
@@ -208,15 +209,15 @@ public class GreedyTraversalPlan {
                 Label label = relationshipType.getLabel();
 
                 // add label fragment if this label has not been inferred
-                if (!existingLabels.containsKey(label)) {
+                if (!inferredLabels.containsKey(label)) {
                     Var labelVar = var();
-                    existingLabels.put(label, labelVar);
+                    inferredLabels.put(label, labelVar);
                     Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
-                Var labelVar = existingLabels.get(label);
+                Var labelVar = inferredLabels.get(label);
                 IsaProperty isaProperty = IsaProperty.of(labelVar.admin());
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());

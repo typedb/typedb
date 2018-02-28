@@ -301,6 +301,27 @@ public class QueryPlannerTest {
     }
 
     @Test
+    public void sameLabelFragmentShouldNotBeAddedTwice() {
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
+                x.isa(thingy2),
+                y.isa(thingy4),
+                z.isa(thingy2),
+                var().rel(x).rel(y),
+                var().rel(z).rel(y));
+        plan = getPlan(pattern);
+
+        // 2 thingy2 label, 1 thingy4, 1 inferred relationship label
+        assertEquals(4L, plan.stream().filter(LabelFragment.class::isInstance).count());
+
+        // 5 isa fragments: x, y, z, relationship between x and y, relationship between z and y
+        assertEquals(5L, plan.stream()
+                .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+    }
+
+    @Test
     public void shardCountIsUsed() {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
