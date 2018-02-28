@@ -64,10 +64,13 @@ import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -353,7 +356,27 @@ public class RemoteGraknTxTest {
     private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, GraknOuterClass.BaseType baseType, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
         VarPattern var = var("x").label(label).sub(metaSchema.getLabel().getValue());
         if(extender != null) var = extender.apply(var);
-        String expectedQuery = define(var).toString();
+        verifyCorrectQuerySent(define(var), baseType, tx -> adder.accept(tx, Label.of(label)));
+    }
+
+    @Test
+    public void whenGettingConceptViaID_EnsureCorrectQueryIsSent(){
+        Var var = var("x");
+        ConceptId id = ConceptId.of(V123.getValue());
+        GetQuery getQuery = match(var.id(id)).get(ImmutableSet.of(var));
+        verifyCorrectQuerySent(getQuery, GraknOuterClass.BaseType.Entity, tx -> assertNotNull(tx.getConcept(id)));
+    }
+
+    @Test
+    public void whenGettingAttributesViaID_EnsureCorrectQueryIsSent(){
+        Var var = var("x");
+        String value = "Hello Oli";
+        GetQuery getQuery = match(var.val(value)).get(ImmutableSet.of(var));
+        verifyCorrectQuerySent(getQuery, GraknOuterClass.BaseType.Attribute, tx -> assertThat(tx.getAttributesByValue(value), not(empty())));
+    }
+
+    private void verifyCorrectQuerySent(Query query, GraknOuterClass.BaseType baseType, Consumer<GraknTx> txConsumer){
+        String expectedQuery = query.toString();
 
         GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setBaseType(baseType).setId(V123).build();
         GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
@@ -361,35 +384,11 @@ public class RemoteGraknTxTest {
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
         server.setResponse(GrpcUtil.execQueryRequest(expectedQuery), response);
-
         server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
             verify(server.requests()).onNext(any()); // The open request
-            adder.accept(tx, Label.of(label));
-        }
-
-        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
-    }
-
-    @Test
-    public void whenGettingConceptViaID_EnsureCorrectQueryIsSent(){
-        Var var = var("x");
-        ConceptId id = ConceptId.of(V123.getValue());
-        VarPattern pattern = var.id(id);
-        String expectedQuery = match(pattern).get(ImmutableSet.of(var)).toString();
-
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setBaseType(GraknOuterClass.BaseType.Entity).setId(V123).build();
-        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
-        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
-
-        server.setResponse(GrpcUtil.execQueryRequest(expectedQuery), response);
-        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
-
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-            assertNotNull(tx.getConcept(id));
+            txConsumer.accept(tx);
         }
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(expectedQuery));
