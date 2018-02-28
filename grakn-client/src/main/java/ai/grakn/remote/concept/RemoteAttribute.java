@@ -27,7 +27,6 @@ import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
@@ -57,12 +56,6 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
     @Override
     public final Stream<Thing> ownerInstances() {
         return query(TARGET.has(ATTRIBUTE.getLabel(), ME)).map(Concept::asThing);
-    }
-
-    @Nullable
-    @Override
-    public final Thing owner() {
-        throw new UnsupportedOperationException(); // TODO: implement
     }
 
     @Override
