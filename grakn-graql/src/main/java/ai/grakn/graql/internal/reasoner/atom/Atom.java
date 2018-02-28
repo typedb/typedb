@@ -61,7 +61,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatib
  */
 public abstract class Atom extends AtomicBase {
 
-    private Set<InferenceRule> applicableRules = null;
+    //NB: protected to be able to assign it when copying
+    protected Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom(){
         throw GraqlQueryException.illegalAtomConversion(this);

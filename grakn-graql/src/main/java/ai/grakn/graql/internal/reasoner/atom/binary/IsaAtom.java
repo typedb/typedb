@@ -78,8 +78,10 @@ public abstract class IsaAtom extends IsaAtomBase {
     public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
         return create(var, predicateVar, type.getId(), parent);
     }
-    private static IsaAtom create(TypeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
+    private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
+        IsaAtom atom = create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
+        atom.applicableRules = a.applicableRules;
+        return atom;
     }
 
     @Override

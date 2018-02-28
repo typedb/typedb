@@ -133,7 +133,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
-        return new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
+        RelationshipAtom atom = new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
+        atom.applicableRules = a.applicableRules;
+        return atom;
     }
 
     //NB: overriding as these require a derived property
