@@ -20,6 +20,7 @@ package ai.grakn.remote;
 
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
+import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
@@ -63,6 +64,7 @@ import static org.mockito.Mockito.when;
  */
 public final class GrpcServerMock extends CompositeTestRule {
 
+    private int iteratorIdCounter = 0;
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     private final GraknImplBase service = mock(GraknImplBase.class);
 
@@ -88,6 +90,10 @@ public final class GrpcServerMock extends CompositeTestRule {
 
     public StreamObserver<TxRequest> requests() {
         return serverRequests;
+    }
+
+    private GraknOuterClass.IteratorId createIteratorId() {
+        return GraknOuterClass.IteratorId.newBuilder().setId(++iteratorIdCounter).build();
     }
 
     public void setResponse(TxRequest request, TxResponse... responses) {
@@ -136,15 +142,14 @@ public final class GrpcServerMock extends CompositeTestRule {
         }
 
         static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
+            GraknOuterClass.IteratorId iteratorId = server.createIteratorId();
+
             return streamObserver -> {
                 List<TxResponse> responsesList =
                         ImmutableList.<TxResponse>builder().add(responses).add(GrpcUtil.doneResponse()).build();
 
-                TxResponse firstResponse = responsesList.get(0);
-                List<TxResponse> responsesAfterFirst = responsesList.subList(0, responsesList.size());
-
-                server.setResponse(GrpcUtil.nextRequest(), responsesAfterFirst);
-                streamObserver.onNext(firstResponse);
+                server.setResponse(GrpcUtil.nextRequest(iteratorId), responsesList);
+                streamObserver.onNext(GrpcUtil.iteratorResponse(iteratorId));
             };
         }
 

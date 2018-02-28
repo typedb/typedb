@@ -232,7 +232,7 @@ public class GrpcServerIT {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("role")).get();
+            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
 
@@ -389,7 +389,7 @@ public class GrpcServerIT {
             ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
             remoteConcept.allRolePlayers().forEach((role, players) -> {
                 for (Thing player : players) {
-                    localRolePlayers.put(role.getId(), player.getId());
+                    remoteRolePlayers.put(role.getId(), player.getId());
                 }
             });
 
@@ -409,7 +409,7 @@ public class GrpcServerIT {
 
             assertEquals(localConcept.dataType(), remoteConcept.dataType());
             assertEquals(localConcept.getValue(), remoteConcept.getValue());
-            assertEquals(localConcept.owner(), remoteConcept.owner());
+            assertEquals(localConcept.owner().getId(), remoteConcept.owner().getId());
             assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
         }
     }
