@@ -45,7 +45,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Stream<Role> relates() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(ME.relates(TARGET)).map(Concept::asRole);
     }
 
     @Override
