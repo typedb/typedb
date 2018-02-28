@@ -39,7 +39,6 @@ import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +63,10 @@ import static ai.grakn.remote.concept.RemoteConcept.TARGET;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Relationship;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.RelationshipType;
+import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Role;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -362,7 +364,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingAttributesWithNoArguments_ExecuteAQueryForAllAttributes() {
-        String query = match(ME.id(ID), ME.has(Schema.MetaSchema.ATTRIBUTE.getLabel(), TARGET)).get().toString();
+        String query = match(ME.id(ID), ME.has(ATTRIBUTE.getLabel(), TARGET)).get().toString();
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -418,6 +420,46 @@ public class RemoteConceptsTest {
         );
 
         Set<ConceptId> sups = concept.attributes(foo, bar, baz).map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingPlays_ExecuteAQuery() {
+        String query = match(ME.id(ID), ME.plays(TARGET)).get().toString();
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Role),
+                queryResultResponse(b, Role),
+                queryResultResponse(c, Role)
+        );
+
+        Set<ConceptId> sups = concept.plays().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingInstances_ExecuteAQuery() {
+        String query = match(ME.id(ID), TARGET.isa(ME)).get().toString();
+
+        Type concept = RemoteConcepts.createRelationshipType(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Relationship),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Relationship)
+        );
+
+        Set<ConceptId> sups = concept.instances().map(Concept::getId).collect(toSet());
         assertThat(sups, containsInAnyOrder(a, b, c));
     }
 

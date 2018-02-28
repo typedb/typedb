@@ -275,13 +275,14 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
-            Type remoteConcept = query.stream().findAny().get().get("x").asType();
+            Type remoteConcept = query.execute().stream().findAny().get().get("x").asType();
             Type localConcept = localTx.getConcept(remoteConcept.getId()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
             assertEqualConcepts(localConcept, remoteConcept, Type::plays);
             assertEqualConcepts(localConcept, remoteConcept, Type::instances);
             assertEqualConcepts(localConcept, remoteConcept, Type::attributes);
+            assertEqualConcepts(localConcept, remoteConcept, Type::keys);
         }
     }
 

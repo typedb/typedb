@@ -44,4 +44,9 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
     final EntityType asSelf(Concept concept) {
         return concept.asEntityType();
     }
+
+    @Override
+    protected final Entity asInstance(Concept concept) {
+        return concept.asEntity();
+    }
 }

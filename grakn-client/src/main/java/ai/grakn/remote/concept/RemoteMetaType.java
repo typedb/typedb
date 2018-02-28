@@ -39,4 +39,9 @@ abstract class RemoteMetaType extends RemoteType<Type, Thing> {
     final Type asSelf(Concept concept) {
         return concept.asType();
     }
+
+    @Override
+    protected final Thing asInstance(Concept concept) {
+        return concept.asThing();
+    }
 }

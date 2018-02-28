@@ -62,4 +62,9 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     final RelationshipType asSelf(Concept concept) {
         return concept.asRelationshipType();
     }
+
+    @Override
+    protected final Relationship asInstance(Concept concept) {
+        return concept.asRelationship();
+    }
 }
