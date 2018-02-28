@@ -239,9 +239,7 @@ public class RemoteConceptsTest {
 
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
 
-        Label labelId = Label.of("yes");
-
-        mockLabelResponse(ID, labelId);
+        mockLabelResponse(ID, Label.of("yes"));
         mockLabelResponse(A, Label.of("A"));
         mockLabelResponse(B, Label.of("B"));
         mockLabelResponse(C, THING.getLabel());
@@ -281,8 +279,6 @@ public class RemoteConceptsTest {
     public void whenCallingSup_ExecuteSeveralQueries() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
 
-        Label labelMetaType = THING.getLabel();
-
         String supsId = match(ME.id(ID), ME.sub(TARGET)).get().toString();
         String supsA = match(ME.id(A), ME.sub(TARGET)).get().toString();
         String supsB = match(ME.id(B), ME.sub(TARGET)).get().toString();
@@ -291,7 +287,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(ID, Label.of("yes"));
         mockLabelResponse(A, Label.of("A"));
         mockLabelResponse(B, Label.of("B"));
-        mockLabelResponse(C, labelMetaType);
+        mockLabelResponse(C, THING.getLabel());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(supsId),
                 queryResultResponse(ID, EntityType),
@@ -372,26 +368,20 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingAttributesWithArguments_ExecuteAQueryForThoseTypesOnly() {
-        ConceptId fooId = ConceptId.of("foo");
-        Label fooLabel = Label.of("foo");
-        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, fooId);
-        ConceptId barId = ConceptId.of("bar");
-        Label barLabel = Label.of("bar");
-        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, barId);
-        ConceptId bazId = ConceptId.of("baz");
-        Label bazLabel = Label.of("baz");
-        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, bazId);
+        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, ConceptId.of("foo"));
+        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, ConceptId.of("bar"));
+        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(fooId, fooLabel);
-        mockLabelResponse(barId, barLabel);
-        mockLabelResponse(bazId, bazLabel);
+        mockLabelResponse(foo, Label.of("foo"));
+        mockLabelResponse(bar, Label.of("bar"));
+        mockLabelResponse(baz, Label.of("baz"));
 
         String query = match(
                 ME.id(ID),
                 or(
-                        ME.has(fooLabel, TARGET),
-                        ME.has(barLabel, TARGET),
-                        ME.has(bazLabel, TARGET)
+                        ME.has(foo.getLabel(), TARGET),
+                        ME.has(bar.getLabel(), TARGET),
+                        ME.has(baz.getLabel(), TARGET)
                 )
         ).get().toString();
 
@@ -468,28 +458,22 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingRelationshipsWithRoles_ExecuteAQueryForAllRelationshipsOfTheSpecifiedRoles() {
-        ConceptId fooId = ConceptId.of("foo");
-        Label fooLabel = Label.of("foo");
-        Role foo = RemoteConcepts.createRole(tx, fooId);
-        ConceptId barId = ConceptId.of("bar");
-        Label barLabel = Label.of("bar");
-        Role bar = RemoteConcepts.createRole(tx, barId);
-        ConceptId bazId = ConceptId.of("baz");
-        Label bazLabel = Label.of("baz");
-        Role baz = RemoteConcepts.createRole(tx, bazId);
+        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
+        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
+        Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(fooId, fooLabel);
-        mockLabelResponse(barId, barLabel);
-        mockLabelResponse(bazId, bazLabel);
+        mockLabelResponse(foo, Label.of("foo"));
+        mockLabelResponse(bar, Label.of("bar"));
+        mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
         String query = match(
                 ME.id(ID),
                 TARGET.rel(role, ME),
                 or(
-                        role.label(fooLabel),
-                        role.label(barLabel),
-                        role.label(bazLabel)
+                        role.label(foo.getLabel()),
+                        role.label(bar.getLabel()),
+                        role.label(baz.getLabel())
                 )
         ).get().toString();
 
@@ -597,28 +581,22 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingRolePlayersWithRoles_ExecuteAQueryForAllSpecifiedRoles() {
-        ConceptId fooId = ConceptId.of("foo");
-        Label fooLabel = Label.of("foo");
-        Role foo = RemoteConcepts.createRole(tx, fooId);
-        ConceptId barId = ConceptId.of("bar");
-        Label barLabel = Label.of("bar");
-        Role bar = RemoteConcepts.createRole(tx, barId);
-        ConceptId bazId = ConceptId.of("baz");
-        Label bazLabel = Label.of("baz");
-        Role baz = RemoteConcepts.createRole(tx, bazId);
+        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
+        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
+        Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(fooId, fooLabel);
-        mockLabelResponse(barId, barLabel);
-        mockLabelResponse(bazId, bazLabel);
+        mockLabelResponse(foo, Label.of("foo"));
+        mockLabelResponse(bar, Label.of("bar"));
+        mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
         String query = match(
                 ME.id(ID),
                 ME.rel(role, TARGET),
                 or(
-                        role.label(fooLabel),
-                        role.label(barLabel),
-                        role.label(bazLabel)
+                        role.label(foo.getLabel()),
+                        role.label(bar.getLabel()),
+                        role.label(baz.getLabel())
                 )
         ).get().toString();
 
@@ -646,6 +624,10 @@ public class RemoteConceptsTest {
         );
 
         assertThat(concept.ownerInstances(), containsIds(A, B, C));
+    }
+
+    private void mockLabelResponse(Concept concept, Label label) {
+        mockLabelResponse(concept.getId(), label);
     }
 
     private void mockLabelResponse(ConceptId id, Label label) {
