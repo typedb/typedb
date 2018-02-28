@@ -29,8 +29,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -49,6 +49,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
 import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
@@ -400,7 +401,7 @@ public class RemoteConceptsTest {
 
         String query = match(
                 ME.id(ID),
-                Graql.or(
+                or(
                         ME.has(fooLabel, TARGET),
                         ME.has(barLabel, TARGET),
                         ME.has(bazLabel, TARGET)
@@ -460,6 +461,89 @@ public class RemoteConceptsTest {
         );
 
         Set<ConceptId> sups = concept.instances().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingThingPlays_ExecuteAQuery() {
+        String query = match(ME.id(ID), var().rel(TARGET, ME)).get().toString();
+
+        Thing concept = RemoteConcepts.createAttribute(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Role),
+                queryResultResponse(b, Role),
+                queryResultResponse(c, Role)
+        );
+
+        Set<ConceptId> sups = concept.plays().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingRelationshipsWithNoArguments_ExecuteAQueryForAllRelationships() {
+        String query = match(ME.id(ID), TARGET.rel(ME)).get().toString();
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Relationship),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Relationship)
+        );
+
+        Set<ConceptId> sups = concept.relationships().map(Concept::getId).collect(toSet());
+        assertThat(sups, containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingRelationshipsWithRoles_ExecuteAQueryForAllRelationshipsOfTheSpecifiedRoles() {
+        ConceptId fooId = ConceptId.of("foo");
+        Label fooLabel = Label.of("foo");
+        ai.grakn.concept.Role foo = RemoteConcepts.createRole(tx, fooId);
+        ConceptId barId = ConceptId.of("bar");
+        Label barLabel = Label.of("bar");
+        ai.grakn.concept.Role bar = RemoteConcepts.createRole(tx, barId);
+        ConceptId bazId = ConceptId.of("baz");
+        Label bazLabel = Label.of("baz");
+        ai.grakn.concept.Role baz = RemoteConcepts.createRole(tx, bazId);
+
+        mockLabelResponse(fooId, fooLabel);
+        mockLabelResponse(barId, barLabel);
+        mockLabelResponse(bazId, bazLabel);
+
+        Var role = var("role");
+        String query = match(
+                ME.id(ID),
+                TARGET.rel(role, ME),
+                or(
+                        role.label(fooLabel),
+                        role.label(barLabel),
+                        role.label(bazLabel)
+                )
+        ).get().toString();
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+
+        ConceptId a = ConceptId.of("A");
+        ConceptId b = ConceptId.of("B");
+        ConceptId c = ConceptId.of("C");
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(a, Relationship),
+                queryResultResponse(b, Relationship),
+                queryResultResponse(c, Relationship)
+        );
+
+        Set<ConceptId> sups = concept.relationships(foo, bar, baz).map(Concept::getId).collect(toSet());
         assertThat(sups, containsInAnyOrder(a, b, c));
     }
 

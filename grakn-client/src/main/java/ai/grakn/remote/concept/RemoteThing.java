@@ -27,6 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.util.CommonUtil;
@@ -38,8 +39,10 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.THING;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -68,12 +71,20 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Concept> concepts;
+        if (roles.length != 0) {
+            Var roleVar = var("role");
+            Set<VarPattern> patterns = Stream.of(roles).map(role -> roleVar.label(role.getLabel())).collect(toSet());
+            concepts = query(TARGET.rel(roleVar, ME), or(patterns));
+        } else {
+            concepts = query(TARGET.rel(ME));
+        }
+        return concepts.map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(var().rel(TARGET, ME)).map(Concept::asRole);
     }
 
     @Override
