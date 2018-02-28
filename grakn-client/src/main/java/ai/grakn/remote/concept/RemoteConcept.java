@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
@@ -67,10 +68,14 @@ abstract class RemoteConcept implements Concept {
     }
 
     protected final Stream<Concept> query(Pattern... patterns) {
+        return queryAnswers(patterns).map(answer -> answer.get(TARGET));
+    }
+
+    protected final Stream<Answer> queryAnswers(Pattern... patterns) {
         Pattern myId = ME.id(getId());
 
         Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(myId).add(patterns).build();
 
-        return tx().graql().match(patternCollection).get().stream().map(answer -> answer.get(TARGET));
+        return tx().graql().match(patternCollection).get().stream();
     }
 }

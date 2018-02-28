@@ -21,6 +21,7 @@ package ai.grakn.grpc;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
@@ -168,6 +169,13 @@ public class GrpcUtil {
         return convert(getConceptPropertyRequest.getId());
     }
 
+    public static GraknOuterClass.Concept convert(Concept concept) {
+        return GraknOuterClass.Concept.newBuilder()
+                .setId(GraknOuterClass.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
+                .setBaseType(getBaseType(concept))
+                .build();
+    }
+
     private static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
@@ -303,6 +311,30 @@ public class GrpcUtil {
             return GraknOuterClass.DataType.Date;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+        }
+    }
+
+    private static GraknOuterClass.BaseType getBaseType(Concept concept) {
+        if (concept.isEntityType()) {
+            return GraknOuterClass.BaseType.EntityType;
+        } else if (concept.isRelationshipType()) {
+            return GraknOuterClass.BaseType.RelationshipType;
+        } else if (concept.isAttributeType()) {
+            return GraknOuterClass.BaseType.AttributeType;
+        } else if (concept.isEntity()) {
+            return GraknOuterClass.BaseType.Entity;
+        } else if (concept.isRelationship()) {
+            return GraknOuterClass.BaseType.Relationship;
+        } else if (concept.isAttribute()) {
+            return GraknOuterClass.BaseType.Attribute;
+        } else if (concept.isRole()) {
+            return GraknOuterClass.BaseType.Role;
+        } else if (concept.isRule()) {
+            return GraknOuterClass.BaseType.Rule;
+        } else if (concept.isType()) {
+            return GraknOuterClass.BaseType.MetaType;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 

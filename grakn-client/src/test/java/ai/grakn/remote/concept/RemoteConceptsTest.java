@@ -26,6 +26,7 @@ import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -33,6 +34,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -43,11 +46,14 @@ import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.SimpleURI;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.ask;
@@ -608,6 +614,37 @@ public class RemoteConceptsTest {
         assertThat(sups, containsInAnyOrder(a, b, c));
     }
 
+    @Test
+    public void whenCallingAllRolePlayers_ExecuteAQuery() {
+        Var role = var("role");
+        Var player = var("player");
+
+        String query = match(ME.id(ID), ME.rel(role, player)).get().toString();
+
+        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
+
+        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
+        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
+
+        Thing a = RemoteConcepts.createEntity(tx, ConceptId.of("A"));
+        Thing b = RemoteConcepts.createRelationship(tx, ConceptId.of("B"));
+        Thing c = RemoteConcepts.createAttribute(tx, ConceptId.of("C"));
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
+                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, foo, player, a))),
+                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, bar, player, b))),
+                queryResultResponse(new QueryAnswer(ImmutableMap.of(role, bar, player, c)))
+        );
+
+        Map<Role, Set<Thing>> expected = ImmutableMap.of(
+                foo, ImmutableSet.of(a),
+                bar, ImmutableSet.of(b, c)
+        );
+
+        Map<Role, Set<Thing>> allRolePlayers = concept.allRolePlayers();
+        assertEquals(expected, allRolePlayers);
+    }
+
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
                 GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),
@@ -620,6 +657,16 @@ public class RemoteConceptsTest {
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
 
+    private static TxResponse queryResultResponse(Answer answer) {
+        GraknOuterClass.Answer.Builder grpcAnswer = GraknOuterClass.Answer.newBuilder();
+
+        answer.forEach((var, concept) -> {
+            grpcAnswer.putAnswer(var.getValue(), GrpcUtil.convert(concept));
+        });
+
+        return queryResultResponse(grpcAnswer.build());
+    }
+
     private static TxResponse queryResultResponse(ConceptId id, BaseType baseType) {
         GraknOuterClass.ConceptId conceptId = GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
 
@@ -629,6 +676,10 @@ public class RemoteConceptsTest {
         GraknOuterClass.Answer answer =
                 GraknOuterClass.Answer.newBuilder().putAnswer(TARGET.getValue(), concept).build();
 
+        return queryResultResponse(answer);
+    }
+
+    private static TxResponse queryResultResponse(GraknOuterClass.Answer answer) {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(answer).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
