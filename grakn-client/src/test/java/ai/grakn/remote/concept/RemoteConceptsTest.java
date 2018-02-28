@@ -226,10 +226,10 @@ public class RemoteConceptsTest {
 
         Concept concept = RemoteConcepts.createEntity(tx, ID);
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse("true"));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("true"));
         assertFalse(concept.isDeleted());
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), queryResultResponse("false"));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("false"));
         assertTrue(concept.isDeleted());
     }
 
