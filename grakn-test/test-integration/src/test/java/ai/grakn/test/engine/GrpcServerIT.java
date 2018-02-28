@@ -281,7 +281,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARole_TheInformationOnTheRoleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -296,7 +295,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -325,7 +323,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARelationshipType_TheInformationOnTheRelationshipTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -367,7 +364,7 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
+    @Ignore // TODO: re-enable after fixing allRolePlayers
     @Test
     public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -397,7 +394,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
