@@ -28,6 +28,8 @@ import ai.grakn.grpc.ConceptProperty;
 
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
+
 /**
  * @author Felix Chapman
  *
@@ -36,32 +38,28 @@ import java.util.stream.Stream;
  */
 abstract class RemoteType<Self extends Type, Instance extends Thing> extends RemoteSchemaConcept<Self> implements Type {
 
-    public final Self sup(Self type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    public final Self sub(Self type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
     @Override
     public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        if (isAbstract) {
+            return define(ME.isAbstract());
+        } else {
+            return undefine(ME.isAbstract());
+        }
     }
 
     @Override
     public final Self plays(Role role) throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(role, ME.plays(TARGET));
     }
 
     @Override
     public final Self key(AttributeType attributeType) throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(ME.key(var().label(attributeType.getLabel())));
     }
 
     @Override
     public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(ME.has(var().label(attributeType.getLabel())));
     }
 
     @Override
@@ -91,17 +89,17 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self deletePlays(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return undefine(role, ME.plays(TARGET));
     }
 
     @Override
     public final Self deleteAttribute(AttributeType attributeType) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return undefine(ME.has(var().label(attributeType.getLabel())));
     }
 
     @Override
     public final Self deleteKey(AttributeType attributeType) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return undefine(ME.key(var().label(attributeType.getLabel())));
     }
 
     protected abstract Instance asInstance(Concept concept);

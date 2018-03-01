@@ -25,6 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -35,7 +36,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -62,8 +62,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptProperty.ALL_ROLE_PLAYERS;
 import static ai.grakn.grpc.ConceptProperty.ATTRIBUTE_TYPES;
@@ -81,7 +83,6 @@ import static ai.grakn.grpc.ConceptProperty.WHEN;
 import static ai.grakn.remote.concept.RemoteConcept.ME;
 import static ai.grakn.remote.concept.RemoteConcept.TARGET;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
-import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.EntityType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Relationship;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -250,9 +251,9 @@ public class RemoteConceptsTest {
         mockLabelResponse(C, THING.getLabel());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(ID, EntityType),
-                queryResultResponse(A, EntityType),
-                queryResultResponse(B, EntityType),
+                queryResultResponse(ID, BaseType.EntityType),
+                queryResultResponse(A, BaseType.EntityType),
+                queryResultResponse(B, BaseType.EntityType),
                 queryResultResponse(C, MetaType)
         );
 
@@ -474,7 +475,7 @@ public class RemoteConceptsTest {
         Role concept = RemoteConcepts.createRole(tx, ID);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, EntityType),
+                queryResultResponse(A, BaseType.EntityType),
                 queryResultResponse(B, BaseType.RelationshipType),
                 queryResultResponse(C, BaseType.AttributeType)
         );
@@ -628,6 +629,185 @@ public class RemoteConceptsTest {
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
+    @Test
+    public void whenSettingSuper_ExecuteAQuery() {
+        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.sub(TARGET));
+
+        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
+        EntityType sup = RemoteConcepts.createEntityType(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.sup(sup));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingSub_ExecuteAQuery() {
+        Query<?> query = define(ME.id(ID), TARGET.id(A), TARGET.sub(ME));
+
+        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
+        EntityType sub = RemoteConcepts.createEntityType(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.sub(sub));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingLabel_ExecuteAQuery() {
+        Label label = Label.of("Dunstan");
+
+        Query<?> query = define(ME.id(ID), ME.label(label));
+
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.setLabel(label));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingRelates_ExecuteAQuery() {
+        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.relates(TARGET));
+
+        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Role role = RemoteConcepts.createRole(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.relates(role));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingPlays_ExecuteAQuery() {
+        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.plays(TARGET));
+
+        Type concept = RemoteConcepts.createAttributeType(tx, ID);
+        Role role = RemoteConcepts.createRole(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.plays(role));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingAbstractOn_ExecuteAQuery() {
+        Query<?> query = define(ME.id(ID), ME.isAbstract());
+
+        Type concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.setAbstract(true));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingAbstractOff_ExecuteAQuery() {
+        Query<?> query = undefine(ME.id(ID), ME.isAbstract());
+
+        Type concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.setAbstract(false));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingAttributeType_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Query<?> query = define(ME.id(ID), ME.has(var().label(label)));
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        mockLabelResponse(A, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.attribute(attributeType));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingKeyType_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Query<?> query = define(ME.id(ID), ME.key(var().label(label)));
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        mockLabelResponse(A, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.key(attributeType));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenDeletingAttributeType_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Query<?> query = undefine(ME.id(ID), ME.has(var().label(label)));
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        mockLabelResponse(A, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.deleteAttribute(attributeType));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenDeletingKeyType_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Query<?> query = undefine(ME.id(ID), ME.key(var().label(label)));
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        mockLabelResponse(A, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.deleteKey(attributeType));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenDeletingPlays_ExecuteAQuery() {
+        Query<?> query = undefine(ME.id(ID), TARGET.id(A), ME.plays(TARGET));
+
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        Role role = RemoteConcepts.createRole(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.deletePlays(role));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
     private void mockLabelResponse(Concept concept, Label label) {
         mockLabelResponse(concept.getId(), label);
     }
@@ -639,19 +819,13 @@ public class RemoteConceptsTest {
         );
     }
 
+    private static TxResponse emptyQueryResultResponse() {
+        return queryResultResponse(GraknOuterClass.Answer.getDefaultInstance());
+    }
+
     private static TxResponse queryResultResponse(String value) {
         QueryResult queryResult = QueryResult.newBuilder().setOtherResult(value).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
-    }
-
-    private static TxResponse queryResultResponse(Answer answer) {
-        GraknOuterClass.Answer.Builder grpcAnswer = GraknOuterClass.Answer.newBuilder();
-
-        answer.forEach((var, concept) -> {
-            grpcAnswer.putAnswer(var.getValue(), GrpcUtil.convert(concept));
-        });
-
-        return queryResultResponse(grpcAnswer.build());
     }
 
     private static TxResponse queryResultResponse(ConceptId id, BaseType baseType) {

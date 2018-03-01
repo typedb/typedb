@@ -50,7 +50,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final RelationshipType relates(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(role, ME.relates(TARGET));
     }
 
     @Override

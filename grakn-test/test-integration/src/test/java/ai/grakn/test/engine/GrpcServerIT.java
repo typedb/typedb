@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -41,6 +42,7 @@ import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -427,6 +429,71 @@ public class GrpcServerIT {
 
         try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
             assertNull(tx.getSchemaConcept(label));
+        }
+    }
+
+    @Test
+    public void whenDefiningASchema_TheSchemaIsDefined() {
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            EntityType animal = tx.putEntityType("animal");
+            EntityType dog = tx.putEntityType("dog").sup(animal);
+            EntityType cat = tx.putEntityType("cat");
+            animal.sub(cat);
+
+            cat.setLabel(Label.of("feline"));
+            dog.setAbstract(true).setAbstract(false);
+            cat.setAbstract(true);
+
+            RelationshipType chases = tx.putRelationshipType("chases");
+            Role chased = tx.putRole("chased");
+            Role chaser = tx.putRole("chaser");
+            chases.relates(chased).relates(chaser);
+
+            dog.plays(chaser);
+            cat.plays(chased);
+
+            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING);
+            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
+
+            animal.attribute(name);
+            animal.key(id);
+
+            dog.attribute(age).deleteAttribute(age);
+            cat.key(age).deleteKey(age);
+            cat.plays(chaser).deletePlays(chaser);
+
+            tx.commit();
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            EntityType animal = tx.getEntityType("animal");
+            EntityType dog = tx.getEntityType("dog");
+            EntityType cat = tx.getEntityType("feline");
+            RelationshipType chases = tx.getRelationshipType("chases");
+            Role chased = tx.getRole("chased");
+            Role chaser = tx.getRole("chaser");
+            AttributeType<String> name = tx.getAttributeType("name");
+            AttributeType<String> id = tx.getAttributeType("id");
+
+            assertEquals(animal, dog.sup());
+            assertEquals(animal, cat.sup());
+
+            assertEquals(ImmutableSet.of(chased, chaser), chases.relates().collect(toSet()));
+            assertEquals(ImmutableSet.of(chaser), dog.plays().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chased), cat.plays().filter(role -> !role.isImplicit()).collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), animal.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), animal.keys().collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), dog.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), dog.keys().collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), cat.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), cat.keys().collect(toSet()));
+
+            assertFalse(dog.isAbstract());
+            assertTrue(cat.isAbstract());
         }
     }
 

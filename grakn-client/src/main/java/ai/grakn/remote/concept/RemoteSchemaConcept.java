@@ -23,8 +23,12 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
+import com.google.common.collect.ImmutableList;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.Schema.MetaSchema.THING;
@@ -35,6 +39,14 @@ import static ai.grakn.util.Schema.MetaSchema.THING;
  * @param <Self> The exact type of this class
  */
 abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+
+    public final Self sup(Self type) {
+        return define(type, ME.sub(TARGET));
+    }
+
+    public final Self sub(Self type) {
+        return define(type, TARGET.sub(ME));
+    }
 
     @Override
     public final Label getLabel() {
@@ -48,7 +60,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Self setLabel(Label label) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(ME.label(label));
     }
 
     @Override
@@ -91,4 +103,36 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     }
 
     abstract Self asSelf(Concept concept);
+
+    protected final Self define(Concept target, VarPattern... patterns) {
+        return define(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
+    }
+
+    protected final Self define(VarPattern... patterns) {
+        return define(Arrays.asList(patterns));
+    }
+
+    private Self define(Collection<? extends VarPattern> patterns) {
+        Collection<VarPattern> patternCollection =
+                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
+
+        tx().graql().define(patternCollection).execute();
+        return asSelf(this);
+    }
+
+    protected final Self undefine(Concept target, VarPattern... patterns) {
+        return undefine(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
+    }
+
+    protected final Self undefine(VarPattern... patterns) {
+        return undefine(Arrays.asList(patterns));
+    }
+
+    private Self undefine(Collection<? extends VarPattern> patterns) {
+        Collection<VarPattern> patternCollection =
+                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
+
+        tx().graql().undefine(patternCollection).execute();
+        return asSelf(this);
+    }
 }

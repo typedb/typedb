@@ -63,16 +63,6 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     }
 
     @Override
-    public final Rule sup(Rule superRule) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Rule sub(Rule type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
     final Rule asSelf(Concept concept) {
         return concept.asRule();
     }
