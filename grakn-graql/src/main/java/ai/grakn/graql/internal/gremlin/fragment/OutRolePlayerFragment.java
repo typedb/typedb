@@ -50,7 +50,7 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
+public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
