@@ -66,10 +66,12 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptProperty.ALL_ROLE_PLAYERS;
+import static ai.grakn.grpc.ConceptProperty.ATTRIBUTE_TYPES;
 import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
 import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptProperty.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptProperty.IS_INFERRED;
+import static ai.grakn.grpc.ConceptProperty.KEY_TYPES;
 import static ai.grakn.grpc.ConceptProperty.REGEX;
 import static ai.grakn.grpc.ConceptProperty.THEN;
 import static ai.grakn.grpc.ConceptProperty.VALUE;
@@ -617,6 +619,38 @@ public class RemoteConceptsTest {
         );
 
         assertThat(concept.ownerInstances(), containsIds(A, B, C));
+    }
+
+    @Test
+    public void whenCallingAttributeTypes_GetTheExpectedResult() {
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+
+        ImmutableSet<AttributeType> attributeTypes = ImmutableSet.of(
+                RemoteConcepts.createAttributeType(tx, A),
+                RemoteConcepts.createAttributeType(tx, B),
+                RemoteConcepts.createAttributeType(tx, C)
+        );
+
+        TxResponse response = ATTRIBUTE_TYPES.createTxResponse(attributeTypes.stream());
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ATTRIBUTE_TYPES), response);
+
+        assertEquals(attributeTypes, concept.attributes().collect(toSet()));
+    }
+
+    @Test
+    public void whenCallingKeyTypes_GetTheExpectedResult() {
+        Type concept = RemoteConcepts.createEntityType(tx, ID);
+
+        ImmutableSet<AttributeType> keyTypes = ImmutableSet.of(
+                RemoteConcepts.createAttributeType(tx, A),
+                RemoteConcepts.createAttributeType(tx, B),
+                RemoteConcepts.createAttributeType(tx, C)
+        );
+
+        TxResponse response = KEY_TYPES.createTxResponse(keyTypes.stream());
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, KEY_TYPES), response);
+
+        assertEquals(keyTypes, concept.keys().collect(toSet()));
     }
 
     private void mockLabelResponse(Concept concept, Label label) {

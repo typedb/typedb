@@ -42,6 +42,7 @@ import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.AllRolePlayers;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
+import ai.grakn.rpc.generated.GraknOuterClass.Concepts;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
@@ -66,6 +67,9 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Felix Chapman
@@ -192,6 +196,16 @@ public class GrpcUtil {
                 .setId(GraknOuterClass.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
                 .setBaseType(getBaseType(concept))
                 .build();
+    }
+
+    public static Concepts convert(Stream<? extends Concept> concepts) {
+        Concepts.Builder grpcConcepts = Concepts.newBuilder();
+        grpcConcepts.addAllConcept(concepts.map(GrpcUtil::convert).collect(toList()));
+        return grpcConcepts.build();
+    }
+
+    public static Stream<? extends Concept> convert(GrpcConceptConverter conceptConverter, Concepts concepts) {
+        return concepts.getConceptList().stream().map(conceptConverter::convert);
     }
 
     private static GraknTxType convert(TxType txType) {

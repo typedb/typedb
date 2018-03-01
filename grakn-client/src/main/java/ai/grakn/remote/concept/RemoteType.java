@@ -71,12 +71,12 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<AttributeType> attributes() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.ATTRIBUTE_TYPES);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return getProperty(ConceptProperty.KEY_TYPES);
     }
 
     @Override

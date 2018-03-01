@@ -34,12 +34,15 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.AllRolePlayersProperty;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.AttributeTypes;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DataTypeProperty;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsAbstract;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsInferred;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.KeyTypes;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.LabelProperty;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.Regex;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.Then;
@@ -126,6 +129,20 @@ public abstract class ConceptProperty<T> {
             (builder, val) -> builder.setAllRolePlayers(GrpcUtil.convert(val))
     );
 
+    public static final ConceptProperty<Stream<AttributeType>> ATTRIBUTE_TYPES = create(
+            AttributeTypes,
+            concept -> concept.asType().attributes(),
+            (converter, val) -> GrpcUtil.convert(converter, val.getAttributeTypes()).map(Concept::asAttributeType),
+            (builder, val) -> builder.setAttributeTypes(GrpcUtil.convert(val))
+    );
+
+    public static final ConceptProperty<Stream<AttributeType>> KEY_TYPES = create(
+            KeyTypes,
+            concept -> concept.asType().keys(),
+            (converter, val) -> GrpcUtil.convert(converter, val.getKeyTypes()).map(Concept::asAttributeType),
+            (builder, val) -> builder.setKeyTypes(GrpcUtil.convert(val))
+    );
+
     public static ConceptProperty<?> fromGrpc(GraknOuterClass.ConceptProperty conceptProperty) {
         switch (conceptProperty) {
             case ValueProperty:
@@ -148,6 +165,10 @@ public abstract class ConceptProperty<T> {
                 return REGEX;
             case AllRolePlayersProperty:
                 return ALL_ROLE_PLAYERS;
+            case AttributeTypes:
+                return ATTRIBUTE_TYPES;
+            case KeyTypes:
+                return KEY_TYPES;
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + conceptProperty);
