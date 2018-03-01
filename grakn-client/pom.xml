@@ -98,10 +98,7 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-test-tools</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-test-tools</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
