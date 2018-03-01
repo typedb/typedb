@@ -61,9 +61,11 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Felix Chapman
@@ -403,6 +405,28 @@ public class GrpcServerIT {
             assertEquals(localConcept.getValue(), remoteConcept.getValue());
             assertEquals(localConcept.owner().getId(), remoteConcept.owner().getId());
             assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
+        }
+    }
+
+    @Test
+    public void whenDeletingAConcept_TheConceptIsDeleted() {
+        Label label = Label.of("hello");
+
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            tx.putEntityType(label);
+            tx.commit();
+        }
+
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            SchemaConcept schemaConcept = tx.getSchemaConcept(label);
+            assertFalse(schemaConcept.isDeleted());
+            schemaConcept.delete();
+            assertTrue(schemaConcept.isDeleted());
+            tx.commit();
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            assertNull(tx.getSchemaConcept(label));
         }
     }
 

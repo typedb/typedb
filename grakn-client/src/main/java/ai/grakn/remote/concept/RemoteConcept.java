@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
@@ -55,16 +56,20 @@ abstract class RemoteConcept implements Concept {
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        tx().graql().match(me()).delete(ME).execute();
     }
 
     @Override
     public final boolean isDeleted() {
-        return !tx().graql().match(var().id(getId())).aggregate(ask()).execute();
+        return !tx().graql().match(me()).aggregate(ask()).execute();
     }
 
     protected final <T> T getProperty(ConceptProperty<T> property) {
         return tx().client().getConceptProperty(getId(), property);
+    }
+
+    protected final VarPattern me() {
+        return ME.id(getId());
     }
 
     protected final Stream<Concept> query(Pattern... patterns) {
@@ -72,9 +77,7 @@ abstract class RemoteConcept implements Concept {
     }
 
     protected final Stream<Answer> queryAnswers(Pattern... patterns) {
-        Pattern myId = ME.id(getId());
-
-        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(myId).add(patterns).build();
+        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(me()).add(patterns).build();
 
         return tx().graql().match(patternCollection).get().stream();
     }

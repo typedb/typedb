@@ -227,7 +227,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_ExecuteAnAskQuery() {
-        Query<?> query = match(var().id(ID)).aggregate(ask());
+        Query<?> query = match(ME.id(ID)).aggregate(ask());
 
         Concept concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -613,6 +613,19 @@ public class RemoteConceptsTest {
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, KEY_TYPES), response);
 
         assertEquals(keyTypes, concept.keys().collect(toSet()));
+    }
+
+    @Test
+    public void whenCallingDelete_ExecuteAQuery() {
+        Query<?> query = match(ME.id(ID)).delete(ME);
+
+        Thing concept = RemoteConcepts.createAttribute(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query));
+
+        concept.delete();
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     private void mockLabelResponse(Concept concept, Label label) {
