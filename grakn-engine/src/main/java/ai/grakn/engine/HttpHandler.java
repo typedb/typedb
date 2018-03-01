@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import spark.Response;
 import spark.Service;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 
@@ -79,11 +80,12 @@ public class HttpHandler {
     }
 
 
-    public void startHTTP() {
+    public void startHTTP() throws IOException {
         configureSpark(spark, prop);
 
         startCollaborators();
 
+        grpcServer.start();
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }

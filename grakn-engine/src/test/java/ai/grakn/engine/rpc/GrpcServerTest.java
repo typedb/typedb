@@ -35,6 +35,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
@@ -120,7 +121,8 @@ public class GrpcServerTest {
 
     @Before
     public void setUp() throws IOException {
-        server = GrpcServer.create(PORT, txFactory);
+        GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(txFactory);
+        server = GrpcServer.create(PORT, requestExecutor);
 
         QueryBuilder qb = mock(QueryBuilder.class);
 

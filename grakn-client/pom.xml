@@ -95,5 +95,13 @@
             <artifactId>grpc-testing</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+        </dependency>
     </dependencies>
 </project>

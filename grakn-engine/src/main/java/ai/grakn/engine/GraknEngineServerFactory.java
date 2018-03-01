@@ -24,6 +24,8 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.rpc.GrpcGraknService;
+import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
@@ -35,7 +37,10 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import com.codahale.metrics.MetricRegistry;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import spark.Service;
 
 import java.io.IOException;
@@ -61,21 +66,21 @@ public class GraknEngineServerFactory {
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        GrpcServer grpcServer = configureGrpcServer(config, engineGraknTxFactory);
+
 
         return createGraknEngineServer(engineID, service, status, metricRegistry, config, redisWrapper, indexStorage,
-                countStorage, lockProvider, runtime, httpCollaborators, engineGraknTxFactory);
+                countStorage, lockProvider, runtime, httpCollaborators, engineGraknTxFactory, grpcServer);
     }
 
     public static GraknEngineServer createGraknEngineServer(
             EngineID engineID, Service sparkService, GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry, GraknConfig graknEngineConfig,
             RedisWrapper redisWrapper, IndexStorage indexStorage, CountStorage countStorage, LockProvider lockProvider,
-            Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory) throws IOException {
+            Runtime runtime, Collection<HttpController> collaborators, EngineGraknTxFactory factory, GrpcServer grpcServer) {
 
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-        int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
-        GrpcServer grpcServer = GrpcServer.create(grpcPort, factory);
         HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(graknEngineConfig, factory, indexPostProcessor);
 
@@ -91,6 +96,13 @@ public class GraknEngineServerFactory {
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
         taskRunner.register(postProcessingTask);
         return taskRunner;
+    }
+
+    private static GrpcServer configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory){
+        int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
+        GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
+        Server grpcServer = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor)).build();
+        return GrpcServer.create(grpcServer);
     }
 
 }

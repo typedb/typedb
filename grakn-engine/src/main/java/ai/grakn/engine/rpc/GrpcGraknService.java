@@ -18,38 +18,29 @@
 
 package ai.grakn.engine.rpc;
 
-import io.grpc.Server;
+import ai.grakn.grpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknOuterClass;
+import io.grpc.stub.StreamObserver;
 
-import java.io.IOException;
 
 /**
- * @author Felix Chapman
+ *  Service used by GrpcServer to provide Grakn core functionality via gRPC
+ *
+ *  @author marcoscoppetta
  */
-public class GrpcServer implements AutoCloseable {
-
-    private final Server server;
-
-    private GrpcServer(Server server) {
-        this.server = server;
-    }
 
 
-    public static GrpcServer create(Server server) {
-        return new GrpcServer(server);
-    }
+public class GrpcGraknService extends GraknGrpc.GraknImplBase {
 
-    /**
-     * @throws IOException if unable to bind
-     */
-    public void start() throws IOException {
-        server.start();
+    private final GrpcOpenRequestExecutor executor;
+
+    public GrpcGraknService(GrpcOpenRequestExecutor executor) {
+        this.executor = executor;
     }
 
     @Override
-    public void close() throws InterruptedException {
-        server.shutdown();
-        server.awaitTermination();
+    public StreamObserver<GraknOuterClass.TxRequest> tx(StreamObserver<GraknOuterClass.TxResponse> responseObserver) {
+        return TxObserver.create(responseObserver, executor);
     }
-
 }
-

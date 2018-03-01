@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -70,7 +71,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.backgroundTaskRunner = backgroundTaskRunner;
     }
 
-    public void start() {
+    public void start() throws IOException {
         redisWrapper.testConnection();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
