@@ -32,6 +32,8 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Optional;
 import java.util.Set;
@@ -113,7 +115,18 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        // Cheat by looking up allowed keys
+        // TODO: don't cheat
+        Set<AttributeType> keys;
+        Set<AttributeType> allowedKeys = type().keys().collect(toSet());
+
+        if (attributeTypes.length > 0) {
+            keys = Sets.intersection(allowedKeys, ImmutableSet.copyOf(attributeTypes));
+        } else {
+            keys = allowedKeys;
+        }
+
+        return attributes(keys.toArray(new AttributeType[keys.size()]));
     }
 
     @Override

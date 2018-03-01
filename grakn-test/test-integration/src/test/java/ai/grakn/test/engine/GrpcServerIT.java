@@ -45,7 +45,6 @@ import com.google.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -244,7 +243,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAThing_TheInformationOnTheThingIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
