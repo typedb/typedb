@@ -36,8 +36,10 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
+import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -50,11 +52,14 @@ import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -72,8 +77,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService executor;
 
+    private final AtomicInteger iteratorIdCounter = new AtomicInteger();
+    private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
+
     private @Nullable GraknTx tx = null;
-    private @Nullable Iterator<QueryResult> queryResults = null;
 
     private TxObserver(
             EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver, ExecutorService executor) {
@@ -103,10 +110,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                         execQuery(request.getExecQuery());
                         break;
                     case NEXT:
-                        next();
+                        next(request.getNext());
                         break;
                     case STOP:
-                        stop();
+                        stop(request.getStop());
                         break;
                     case GETCONCEPTPROPERTY:
                         getConceptProperty(request.getGetConceptProperty());
@@ -193,10 +200,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void execQuery(ExecQuery request) {
-        if (queryResults != null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
         String queryString = request.getQuery().getValue();
 
         QueryBuilder graql = tx().graql();
@@ -205,30 +208,35 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
+        Iterator<QueryResult> iterator = graql.parse(queryString).results(GrpcConverter.get()).iterator();
+        IteratorId iteratorId =
+                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
 
-        next();
+        iterators.put(iteratorId, iterator);
+
+        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
-    private void next() {
-        Iterator<QueryResult> nonNullResults = nonNull(queryResults);
+    private void next(GraknOuterClass.Next next) {
+        IteratorId iteratorId = next.getIteratorId();
+
+        Iterator<QueryResult> iterator = nonNull(iterators.get(iteratorId));
 
         TxResponse response;
 
-        if (nonNullResults.hasNext()) {
-            QueryResult queryResult = nonNullResults.next();
+        if (iterator.hasNext()) {
+            QueryResult queryResult = iterator.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
             response = GrpcUtil.doneResponse();
-            queryResults = null;
+            iterators.remove(iteratorId);
         }
 
         responseObserver.onNext(response);
     }
 
-    private void stop() {
-        nonNull(queryResults);
-        queryResults = null;
+    private void stop(GraknOuterClass.Stop stop) {
+        nonNull(iterators.remove(stop.getIteratorId()));
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
