@@ -24,6 +24,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.JedisLockProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -54,6 +56,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import org.junit.After;
 import org.junit.Before;
@@ -110,7 +114,7 @@ public class GrpcServerTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
 
-    private GrpcServer server;
+    private GrpcServer grpcServer;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -122,7 +126,9 @@ public class GrpcServerTest {
     @Before
     public void setUp() throws IOException {
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(txFactory);
-        server = GrpcServer.create(PORT, requestExecutor);
+        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor)).build();
+        grpcServer = GrpcServer.create(server);
+        grpcServer.start();
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
@@ -135,7 +141,7 @@ public class GrpcServerTest {
 
     @After
     public void tearDown() throws InterruptedException {
-        server.close();
+        grpcServer.close();
     }
 
     @Test
