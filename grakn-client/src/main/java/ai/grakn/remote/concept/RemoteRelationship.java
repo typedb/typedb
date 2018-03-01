@@ -53,6 +53,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
+        // TODO: this impl is buggy because `$me ($role: $player)` will get all super-roles
         Var roleVar = var("role");
         Var playerVar = var("player");
 
