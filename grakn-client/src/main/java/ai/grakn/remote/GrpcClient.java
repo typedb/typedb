@@ -28,11 +28,11 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
-import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
@@ -60,15 +60,17 @@ import java.util.Iterator;
  */
 public final class GrpcClient implements AutoCloseable {
 
+    private final GrpcConceptConverter conceptConverter;
     private final TxGrpcCommunicator communicator;
 
-    private GrpcClient(TxGrpcCommunicator communicator) {
+    private GrpcClient(GrpcConceptConverter conceptConverter, TxGrpcCommunicator communicator) {
+        this.conceptConverter = conceptConverter;
         this.communicator = communicator;
     }
 
-    public static GrpcClient create(GraknGrpc.GraknStub stub) {
+    public static GrpcClient create(GrpcConceptConverter conceptConverter, GraknGrpc.GraknStub stub) {
         TxGrpcCommunicator observer = TxGrpcCommunicator.create(stub);
-        return new GrpcClient(observer);
+        return new GrpcClient(conceptConverter, observer);
     }
 
     public void open(Keyspace keyspace, GraknTxType txType) {
@@ -90,7 +92,7 @@ public final class GrpcClient implements AutoCloseable {
 
                 switch (response.getResponseCase()) {
                     case QUERYRESULT:
-                        return convert(tx, response.getQueryResult());
+                        return convert(response.getQueryResult());
                     case DONE:
                         return endOfData();
                     default:
@@ -107,9 +109,9 @@ public final class GrpcClient implements AutoCloseable {
     }
 
     @Nullable
-    public <T> T getConceptProperty(RemoteGraknTx tx, ConceptId id, ConceptProperty<T> conceptProperty) {
+    public <T> T getConceptProperty(ConceptId id, ConceptProperty<T> conceptProperty) {
         communicator.send(GrpcUtil.getConceptPropertyRequest(id, conceptProperty));
-        return conceptProperty.get(concept -> convert(tx, concept), responseOrThrow());
+        return conceptProperty.get(conceptConverter, responseOrThrow());
     }
 
     @Override
@@ -158,10 +160,10 @@ public final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private static Object convert(RemoteGraknTx tx, GraknOuterClass.QueryResult queryResult) {
+    private Object convert(GraknOuterClass.QueryResult queryResult) {
         switch (queryResult.getQueryResultCase()) {
             case ANSWER:
-                return convert(tx, queryResult.getAnswer());
+                return convert(queryResult.getAnswer());
             case OTHERRESULT:
                 return Json.read(queryResult.getOtherResult()).getValue();
             default:
@@ -170,41 +172,13 @@ public final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private static Answer convert(RemoteGraknTx tx, GraknOuterClass.Answer answer) {
+    private Answer convert(GraknOuterClass.Answer answer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            map.put(Graql.var(grpcVar), convert(tx, grpcConcept));
+            map.put(Graql.var(grpcVar), conceptConverter.convert(grpcConcept));
         });
 
         return new QueryAnswer(map.build());
-    }
-
-    public static Concept convert(RemoteGraknTx tx, GraknOuterClass.Concept concept) {
-        ConceptId id = ConceptId.of(concept.getId().getValue());
-
-        switch (concept.getBaseType()) {
-            case Entity:
-                return RemoteConcepts.createEntity(tx, id);
-            case Relationship:
-                return RemoteConcepts.createRelationship(tx, id);
-            case Attribute:
-                return RemoteConcepts.createAttribute(tx, id);
-            case EntityType:
-                return RemoteConcepts.createEntityType(tx, id);
-            case RelationshipType:
-                return RemoteConcepts.createRelationshipType(tx, id);
-            case AttributeType:
-                return RemoteConcepts.createAttributeType(tx, id);
-            case Role:
-                return RemoteConcepts.createRole(tx, id);
-            case Rule:
-                return RemoteConcepts.createRule(tx, id);
-            case MetaType:
-                return RemoteConcepts.createMetaType(tx, id);
-            default:
-            case UNRECOGNIZED:
-                throw new IllegalArgumentException("Unrecognised " + concept);
-        }
     }
 }

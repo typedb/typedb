@@ -42,7 +42,9 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
+import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
@@ -74,17 +76,16 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private RemoteGraknTx(GraknSession session, GraknTxType txType, GrpcClient client) {
+    private RemoteGraknTx(GraknSession session, GraknTxType txType, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.client = client;
+        client = GrpcClient.create(this::convert, stub);
+        client.open(session.keyspace(), txType);
     }
 
     static RemoteGraknTx create(RemoteGraknSession session, GraknTxType txType) {
-        GraknGrpc.GraknStub stub = session.stub();
-        GrpcClient client = GrpcClient.create(stub);
-        client.open(session.keyspace(), txType);
-        return new RemoteGraknTx(session, txType, client);
+        GraknStub stub = session.stub();
+        return new RemoteGraknTx(session, txType, stub);
     }
 
     public GrpcClient client() {
@@ -239,5 +240,33 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Override
     public QueryRunner queryRunner() {
         return RemoteQueryRunner.create(this, client, null);
+    }
+
+    private Concept convert(GraknOuterClass.Concept concept) {
+        ConceptId id = ConceptId.of(concept.getId().getValue());
+
+        switch (concept.getBaseType()) {
+            case Entity:
+                return RemoteConcepts.createEntity(this, id);
+            case Relationship:
+                return RemoteConcepts.createRelationship(this, id);
+            case Attribute:
+                return RemoteConcepts.createAttribute(this, id);
+            case EntityType:
+                return RemoteConcepts.createEntityType(this, id);
+            case RelationshipType:
+                return RemoteConcepts.createRelationshipType(this, id);
+            case AttributeType:
+                return RemoteConcepts.createAttributeType(this, id);
+            case Role:
+                return RemoteConcepts.createRole(this, id);
+            case Rule:
+                return RemoteConcepts.createRule(this, id);
+            case MetaType:
+                return RemoteConcepts.createMetaType(this, id);
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
     }
 }
