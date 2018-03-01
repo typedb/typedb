@@ -39,6 +39,7 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
@@ -94,6 +95,7 @@ public class RemoteGraknTxTest {
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
     private static final GraknOuterClass.ConceptId V123 =
             GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
+    private static final IteratorId ITERATOR = IteratorId.newBuilder().setId(100).build();
 
     @Before
     public void setUp() {
@@ -167,8 +169,13 @@ public class RemoteGraknTxTest {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(queryString), response);
-        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
+        server.setResponse(GrpcUtil.execQueryRequest(queryString), GrpcUtil.iteratorResponse(ITERATOR));
+
+        // Mock next response after this one
+        server.setResponse(GrpcUtil.nextRequest(ITERATOR), responseObserver -> {
+            responseObserver.onNext(response);
+            server.setResponse(GrpcUtil.nextRequest(ITERATOR), GrpcUtil.doneResponse());
+        });
 
         List<Answer> results;
 
@@ -198,12 +205,16 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
         String queryString = "match $x isa person; aggregate ask;";
 
-        server.setResponse(
-                GrpcUtil.execQueryRequest(queryString),
-                TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("true")).build()
-        );
+        TxResponse response =
+                TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("true")).build();
 
-        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
+        server.setResponse(GrpcUtil.execQueryRequest(queryString), GrpcUtil.iteratorResponse(ITERATOR));
+
+        // Mock next response after this one
+        server.setResponse(GrpcUtil.nextRequest(ITERATOR), responseObserver -> {
+            responseObserver.onNext(response);
+            server.setResponse(GrpcUtil.nextRequest(ITERATOR), GrpcUtil.doneResponse());
+        });
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
             verify(server.requests()).onNext(any()); // The open request
@@ -220,8 +231,13 @@ public class RemoteGraknTxTest {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(queryString), response);
-        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
+        server.setResponse(GrpcUtil.execQueryRequest(queryString), GrpcUtil.iteratorResponse(ITERATOR));
+
+        // Mock next response after this one
+        server.setResponse(GrpcUtil.nextRequest(ITERATOR), responseObserver -> {
+            responseObserver.onNext(response);
+            server.setResponse(GrpcUtil.nextRequest(ITERATOR), GrpcUtil.doneResponse());
+        });
 
         Answer answer;
 
@@ -243,8 +259,8 @@ public class RemoteGraknTxTest {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(queryString), response);
-        server.setResponse(GrpcUtil.nextRequest(), response);
+        server.setResponse(GrpcUtil.execQueryRequest(queryString), GrpcUtil.iteratorResponse(ITERATOR));
+        server.setResponse(GrpcUtil.nextRequest(ITERATOR), response);
 
         List<Answer> answers;
         int numAnswers = 10;
@@ -383,8 +399,12 @@ public class RemoteGraknTxTest {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(expectedQuery), response);
-        server.setResponse(GrpcUtil.nextRequest(), GrpcUtil.doneResponse());
+        server.setResponse(GrpcUtil.execQueryRequest(expectedQuery), GrpcUtil.iteratorResponse(ITERATOR));
+
+        // Mock nextresponseafter this one
+
+server.setResponse(GrpcUtil.nextRequest(ITERATOR), responseObserver -> {
+            responseObserver.onNext(response);        server.setResponse(GrpcUtil.nextRequest(ITERATOR), GrpcUtil.doneResponse());});
 
         try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
             verify(server.requests()).onNext(any()); // The open request

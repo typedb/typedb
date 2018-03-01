@@ -42,6 +42,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
+import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
@@ -137,12 +138,12 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
-    public static TxRequest nextRequest() {
-        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
+    public static TxRequest nextRequest(IteratorId iteratorId) {
+        return TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId).build()).build();
     }
 
-    public static TxRequest stopRequest() {
-        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
+    public static TxRequest stopRequest(IteratorId iteratorId) {
+        return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId).build()).build();
     }
 
     public static TxRequest getConceptPropertyRequest(ConceptId id, ai.grakn.grpc.ConceptProperty<?> property) {
@@ -155,6 +156,10 @@ public class GrpcUtil {
 
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+    }
+
+    public static TxResponse iteratorResponse(IteratorId iteratorId) {
+        return TxResponse.newBuilder().setIteratorId(iteratorId).build();
     }
 
     public static Keyspace getKeyspace(Open open) {
