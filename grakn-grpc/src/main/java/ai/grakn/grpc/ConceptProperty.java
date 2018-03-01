@@ -22,7 +22,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
@@ -39,6 +41,8 @@ import java.util.stream.Stream;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.AllRolePlayersProperty;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.AttributeTypes;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DataTypeProperty;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DirectSuper;
+import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.DirectType;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsAbstract;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsImplicit;
 import static ai.grakn.rpc.generated.GraknOuterClass.ConceptProperty.IsInferred;
@@ -143,6 +147,20 @@ public abstract class ConceptProperty<T> {
             (builder, val) -> builder.setKeyTypes(GrpcUtil.convert(val))
     );
 
+    public static final ConceptProperty<Type> DIRECT_TYPE = create(
+            DirectType,
+            concept -> concept.asThing().type(),
+            (converter, val) -> converter.convert(val.getDirectType()).asType(),
+            (builder, val) -> builder.setDirectType(GrpcUtil.convert(val))
+    );
+
+    public static final ConceptProperty<SchemaConcept> DIRECT_SUPER = create(
+            DirectSuper,
+            concept -> concept.asSchemaConcept().sup(),
+            (converter, val) -> converter.convert(val.getDirectSuper()).asSchemaConcept(),
+            (builder, val) -> builder.setDirectSuper(GrpcUtil.convert(val))
+    );
+
     public static ConceptProperty<?> fromGrpc(GraknOuterClass.ConceptProperty conceptProperty) {
         switch (conceptProperty) {
             case ValueProperty:
@@ -169,6 +187,10 @@ public abstract class ConceptProperty<T> {
                 return ATTRIBUTE_TYPES;
             case KeyTypes:
                 return KEY_TYPES;
+            case DirectType:
+                return DIRECT_TYPE;
+            case DirectSuper:
+                return DIRECT_SUPER;
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + conceptProperty);

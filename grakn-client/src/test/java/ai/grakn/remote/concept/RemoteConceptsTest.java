@@ -68,6 +68,8 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptProperty.ALL_ROLE_PLAYERS;
 import static ai.grakn.grpc.ConceptProperty.ATTRIBUTE_TYPES;
 import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
+import static ai.grakn.grpc.ConceptProperty.DIRECT_SUPER;
+import static ai.grakn.grpc.ConceptProperty.DIRECT_TYPE;
 import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptProperty.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptProperty.IS_INFERRED;
@@ -91,6 +93,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -278,79 +281,38 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingSup_ExecuteSeveralQueries() {
+    public void whenCallingSup_GetTheExpectedResult() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
 
-        String supsId = match(ME.id(ID), ME.sub(TARGET)).get().toString();
-        String supsA = match(ME.id(A), ME.sub(TARGET)).get().toString();
-        String supsB = match(ME.id(B), ME.sub(TARGET)).get().toString();
-        String supsMetaType = match(ME.id(C), ME.sub(TARGET)).get().toString();
-
-        mockLabelResponse(ID, Label.of("yes"));
+        SchemaConcept sup = RemoteConcepts.createEntityType(tx, A);
         mockLabelResponse(A, Label.of("A"));
-        mockLabelResponse(B, Label.of("B"));
-        mockLabelResponse(C, THING.getLabel());
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsId),
-                queryResultResponse(ID, EntityType),
-                queryResultResponse(A, EntityType),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_SUPER), DIRECT_SUPER.createTxResponse(sup));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsA),
-                queryResultResponse(A, EntityType),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsB),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsMetaType),
-                queryResultResponse(C, MetaType)
-        );
-
-        assertEquals(A, concept.sup().getId());
+        assertEquals(sup, concept.sup());
     }
 
     @Test
-    public void whenCallingIsa_ExecuteSeveralQueries() {
+    public void whenCallingSupOnMetaType_GetNull() {
+        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+
+        SchemaConcept sup = RemoteConcepts.createMetaType(tx, A);
+        mockLabelResponse(A, THING.getLabel());
+
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_SUPER), DIRECT_SUPER.createTxResponse(sup));
+
+        assertNull(concept.sup());
+    }
+
+    @Test
+    public void whenCallingType_GetTheExpectedResult() {
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
-        String typeId = match(ME.id(ID), ME.isa(TARGET)).get().toString();
-        String supsA = match(ME.id(A), ME.sub(TARGET)).get().toString();
-        String supsB = match(ME.id(B), ME.sub(TARGET)).get().toString();
-        String supsMetaType = match(ME.id(C), ME.sub(TARGET)).get().toString();
+        Type type = RemoteConcepts.createEntityType(tx, A);
 
-        mockLabelResponse(A, Label.of("A"));
-        mockLabelResponse(B, Label.of("B"));
-        mockLabelResponse(C, THING.getLabel());
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_TYPE), DIRECT_TYPE.createTxResponse(type));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(typeId),
-                queryResultResponse(A, EntityType),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsA),
-                queryResultResponse(A, EntityType),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsB),
-                queryResultResponse(B, EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(supsMetaType),
-                queryResultResponse(C, MetaType)
-        );
-
-        assertEquals(A, concept.type().getId());
+        assertEquals(type, concept.type());
     }
 
     @Test
