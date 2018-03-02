@@ -292,7 +292,7 @@ public class QueryAnswer implements Answer {
         Set<Var> varNames = parent.getVarNames();
         return entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> new IdPredicate(e.getKey(), e.getValue(), parent))
+                .map(e -> IdPredicate.create(e.getKey(), e.getValue(), parent))
                 .collect(Collectors.toSet());
     }
 }
