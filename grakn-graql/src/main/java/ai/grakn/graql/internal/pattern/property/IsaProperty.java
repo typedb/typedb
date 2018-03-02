@@ -18,9 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -92,7 +90,7 @@ public abstract class IsaProperty extends AbstractIsaProperty implements UniqueV
         Var typeVariable = typePattern.var();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
-        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
