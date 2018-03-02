@@ -37,6 +37,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
@@ -108,6 +109,7 @@ import static org.mockito.Mockito.verify;
 public class RemoteConceptsTest {
 
     private static final ConceptId ID = ConceptId.of("V123");
+    private static final VarPattern ME_ID = ME.id(ID);
     private static final Pattern PATTERN = var("x").isa("person");
 
     private static final ConceptId A = ConceptId.of("A");
@@ -122,11 +124,38 @@ public class RemoteConceptsTest {
     private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
 
+    private SchemaConcept schemaConcept;
+    private Type type;
+    private EntityType entityType;
+    private AttributeType<String> attributeType;
+    private RelationshipType relationshipType;
+    private Role role;
+    private ai.grakn.concept.Rule rule;
+    private Entity entity;
+    private Attribute<String> attribute;
+    private Relationship relationship;
+    private Thing thing;
+    private Concept concept;
+
     @Before
     public void setUp() {
         session = RemoteGraknSession.create(Keyspace.of("whatever"), URI, server.channel());
         tx = session.open(GraknTxType.WRITE);
         verify(server.requests()).onNext(any()); // The open request
+
+        entityType = RemoteConcepts.createEntityType(tx, ID);
+        attributeType = RemoteConcepts.createAttributeType(tx, ID);
+        relationshipType = RemoteConcepts.createRelationshipType(tx, ID);
+        role = RemoteConcepts.createRole(tx, ID);
+        rule = RemoteConcepts.createRule(tx, ID);
+        schemaConcept = role;
+        type = entityType;
+
+        entity = RemoteConcepts.createEntity(tx, ID);
+        attribute = RemoteConcepts.createAttribute(tx, ID);
+        relationship = RemoteConcepts.createRelationship(tx, ID);
+        thing = entity;
+        concept = entity;
     }
 
     @After
@@ -141,138 +170,111 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
         mockLabelResponse(ID, LABEL);
-
-        assertEquals(LABEL, concept.getLabel());
+        assertEquals(LABEL, schemaConcept.getLabel());
     }
 
     @Test
     public void whenCallingIsImplicit_GetTheExpectedResult() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+        mockPropertyResponse(IS_IMPLICIT, true);
+        assertTrue(schemaConcept.isImplicit());
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_IMPLICIT), IS_IMPLICIT.createTxResponse(true));
-        assertTrue(concept.isImplicit());
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_IMPLICIT), IS_IMPLICIT.createTxResponse(false));
-        assertFalse(concept.isImplicit());
+        mockPropertyResponse(IS_IMPLICIT, false);
+        assertFalse(schemaConcept.isImplicit());
     }
 
     @Test
     public void whenCallingIsInferred_GetTheExpectedResult() {
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        mockPropertyResponse(IS_INFERRED, true);
+        assertTrue(thing.isInferred());
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_INFERRED), IS_INFERRED.createTxResponse(true));
-        assertTrue(concept.isInferred());
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_INFERRED), IS_INFERRED.createTxResponse(false));
-        assertFalse(concept.isInferred());
+        mockPropertyResponse(IS_INFERRED, false);
+        assertFalse(thing.isInferred());
     }
 
     @Test
     public void whenCallingIsAbstract_GetTheExpectedResult() {
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        mockPropertyResponse(IS_ABSTRACT, true);
+        assertTrue(type.isAbstract());
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_ABSTRACT), IS_ABSTRACT.createTxResponse(true));
-        assertTrue(concept.isAbstract());
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, IS_ABSTRACT), IS_ABSTRACT.createTxResponse(false));
-        assertFalse(concept.isAbstract());
+        mockPropertyResponse(IS_ABSTRACT, false);
+        assertFalse(type.isAbstract());
     }
 
     @Test
     public void whenCallingGetValue_GetTheExpectedResult() {
-        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, VALUE), VALUE.createTxResponse(123));
-        assertEquals(123, concept.getValue());
+        mockPropertyResponse(VALUE, 123);
+        assertEquals(123, ((Attribute<?>) attribute).getValue());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
-        AttributeType<?> concept = RemoteConcepts.createAttributeType(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DATA_TYPE), DATA_TYPE.createTxResponse(DataType.LONG));
-        assertEquals(DataType.LONG, concept.getDataType());
+        mockPropertyResponse(DATA_TYPE, DataType.LONG);
+        assertEquals(DataType.LONG, ((AttributeType<?>) attributeType).getDataType());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
-        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DATA_TYPE), DATA_TYPE.createTxResponse(DataType.LONG));
-        assertEquals(DataType.LONG, concept.dataType());
+        mockPropertyResponse(DATA_TYPE, DataType.LONG);
+        assertEquals(DataType.LONG, ((Attribute<?>) attribute).dataType());
     }
 
     @Test
     public void whenCallingGetRegex_GetTheExpectedResult() {
-        AttributeType<?> concept = RemoteConcepts.createAttributeType(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, REGEX), REGEX.createTxResponse("hello"));
-        assertEquals("hello", concept.getRegex());
+        mockPropertyResponse(REGEX, "hello");
+        assertEquals("hello", attributeType.getRegex());
     }
 
     @Test
     public void whenCallingGetAttribute_ExecuteAQuery() {
-        long value = 999;
+        String value = "Dunstan again";
 
-        Query<?> query = match(ME.id(ID), TARGET.val(value).isa(ME)).get();
+        Query<?> query = match(ME_ID, TARGET.val(value).isa(ME)).get();
 
-        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
-        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
 
-        assertEquals(attribute, concept.getAttribute(value));
+        assertEquals(attribute, attributeType.getAttribute(value));
     }
 
     @Test
     public void whenCallingGetAttributeWhenThereIsNoResult_ExecuteAQuery() {
-        long value = 999;
+        String value = "Dunstan > Oliver";
 
-        Query<?> query = match(ME.id(ID), TARGET.val(value).isa(ME)).get();
-
-        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.val(value).isa(ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query));
 
-        assertNull(concept.getAttribute(value));
+        assertNull(attributeType.getAttribute(value));
     }
 
     @Test
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        ai.grakn.concept.Rule concept = RemoteConcepts.createRule(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, WHEN), WHEN.createTxResponse(PATTERN));
-        assertEquals(PATTERN, concept.getWhen());
+        mockPropertyResponse(WHEN, PATTERN);
+        assertEquals(PATTERN, rule.getWhen());
     }
 
     @Test
     public void whenCallingGetThen_GetTheExpectedResult() {
-        ai.grakn.concept.Rule concept = RemoteConcepts.createRule(tx, ID);
-
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, THEN), THEN.createTxResponse(PATTERN));
-        assertEquals(PATTERN, concept.getThen());
+        mockPropertyResponse(THEN, PATTERN);
+        assertEquals(PATTERN, rule.getThen());
     }
 
     @Test
     public void whenCallingIsDeleted_ExecuteAnAskQuery() {
-        Query<?> query = match(ME.id(ID)).aggregate(ask());
-
-        Concept concept = RemoteConcepts.createEntity(tx, ID);
+        Query<?> query = match(ME_ID).aggregate(ask());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("true"));
-        assertFalse(concept.isDeleted());
+        assertFalse(entity.isDeleted());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("false"));
-        assertTrue(concept.isDeleted());
+        assertTrue(entity.isDeleted());
     }
 
     @Test
     public void whenCallingSups_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), ME.sub(TARGET)).get();
-
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+        Query<?> query = match(ME_ID, ME.sub(TARGET)).get();
 
         mockLabelResponse(ID, Label.of("yes"));
         mockLabelResponse(A, Label.of("A"));
@@ -286,16 +288,14 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, MetaType)
         );
 
-        Set<ConceptId> sups = concept.sups().map(Concept::getId).collect(toSet());
+        Set<ConceptId> sups = entityType.sups().map(Concept::getId).collect(toSet());
         assertThat(sups, containsInAnyOrder(ID, A, B));
         assertThat(sups, not(hasItem(C)));
     }
 
     @Test
     public void whenCallingSubs_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), TARGET.sub(ME)).get();
-
-        SchemaConcept concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.sub(ME)).get();
 
         mockLabelResponse(ID, Label.of("yes"));
         mockLabelResponse(A, Label.of("A"));
@@ -307,49 +307,41 @@ public class RemoteConceptsTest {
                 queryResultResponse(B, BaseType.RelationshipType)
         );
 
-        assertThat(concept.subs(), containsIds(ID, A, B));
+        assertThat(relationshipType.subs(), containsIds(ID, A, B));
     }
 
     @Test
     public void whenCallingSup_GetTheExpectedResult() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-
         SchemaConcept sup = RemoteConcepts.createEntityType(tx, A);
         mockLabelResponse(A, Label.of("A"));
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_SUPER), DIRECT_SUPER.createTxResponse(sup));
+        mockPropertyResponse(DIRECT_SUPER, sup);
 
-        assertEquals(sup, concept.sup());
+        assertEquals(sup, entityType.sup());
     }
 
     @Test
     public void whenCallingSupOnMetaType_GetNull() {
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
-
         SchemaConcept sup = RemoteConcepts.createMetaType(tx, A);
         mockLabelResponse(A, THING.getLabel());
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_SUPER), DIRECT_SUPER.createTxResponse(sup));
+        mockPropertyResponse(DIRECT_SUPER, sup);
 
-        assertNull(concept.sup());
+        assertNull(schemaConcept.sup());
     }
 
     @Test
     public void whenCallingType_GetTheExpectedResult() {
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
-
         Type type = RemoteConcepts.createEntityType(tx, A);
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, DIRECT_TYPE), DIRECT_TYPE.createTxResponse(type));
+        mockPropertyResponse(DIRECT_TYPE, type);
 
-        assertEquals(type, concept.type());
+        assertEquals(type, thing.type());
     }
 
     @Test
     public void whenCallingAttributesWithNoArguments_ExecuteAQueryForAllAttributes() {
-        Query<?> query = match(ME.id(ID), ME.has(ATTRIBUTE.getLabel(), TARGET)).get();
-
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        Query<?> query = match(ME_ID, ME.has(ATTRIBUTE.getLabel(), TARGET)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Attribute),
@@ -357,7 +349,7 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, Attribute)
         );
 
-        assertThat(concept.attributes(), containsIds(A, B, C));
+        assertThat(entity.attributes(), containsIds(A, B, C));
     }
 
     @Test
@@ -371,7 +363,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(baz, Label.of("baz"));
 
         String query = match(
-                ME.id(ID),
+                ME_ID,
                 or(
                         ME.has(foo.getLabel(), TARGET),
                         ME.has(bar.getLabel(), TARGET),
@@ -379,22 +371,18 @@ public class RemoteConceptsTest {
                 )
         ).get().toString();
 
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
-
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Attribute),
                 queryResultResponse(B, Attribute),
                 queryResultResponse(C, Attribute)
         );
 
-        assertThat(concept.attributes(foo, bar, baz), containsIds(A, B, C));
+        assertThat(thing.attributes(foo, bar, baz), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingPlays_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), ME.plays(TARGET)).get();
-
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
+        Query<?> query = match(ME_ID, ME.plays(TARGET)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Role),
@@ -402,14 +390,12 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, BaseType.Role)
         );
 
-        assertThat(concept.plays(), containsIds(A, B, C));
+        assertThat(type.plays(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingInstances_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), TARGET.isa(ME)).get();
-
-        Type concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.isa(ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Relationship),
@@ -417,14 +403,12 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, Relationship)
         );
 
-        assertThat(concept.instances(), containsIds(A, B, C));
+        assertThat(((Type) relationshipType).instances(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingThingPlays_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), var().rel(TARGET, ME)).get();
-
-        Thing concept = RemoteConcepts.createAttribute(tx, ID);
+        Query<?> query = match(ME_ID, var().rel(TARGET, ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Role),
@@ -432,14 +416,12 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, BaseType.Role)
         );
 
-        assertThat(concept.plays(), containsIds(A, B, C));
+        assertThat(thing.plays(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingRelationshipsWithNoArguments_ExecuteAQueryForAllRelationships() {
-        Query<?> query = match(ME.id(ID), TARGET.rel(ME)).get();
-
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.rel(ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Relationship),
@@ -447,7 +429,7 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, Relationship)
         );
 
-        assertThat(concept.relationships(), containsIds(A, B, C));
+        assertThat(thing.relationships(), containsIds(A, B, C));
     }
 
     @Test
@@ -462,7 +444,7 @@ public class RemoteConceptsTest {
 
         Var role = var("role");
         String query = match(
-                ME.id(ID),
+                ME_ID,
                 TARGET.rel(role, ME),
                 or(
                         role.label(foo.getLabel()),
@@ -471,22 +453,18 @@ public class RemoteConceptsTest {
                 )
         ).get().toString();
 
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
-
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Relationship),
                 queryResultResponse(B, Relationship),
                 queryResultResponse(C, Relationship)
         );
 
-        assertThat(concept.relationships(foo, bar, baz), containsIds(A, B, C));
+        assertThat(thing.relationships(foo, bar, baz), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingRelationshipTypes_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), TARGET.relates(ME)).get();
-
-        Role concept = RemoteConcepts.createRole(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.relates(ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.RelationshipType),
@@ -494,14 +472,12 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, BaseType.RelationshipType)
         );
 
-        assertThat(concept.relationshipTypes(), containsIds(A, B, C));
+        assertThat(role.relationshipTypes(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingPlayedByTypes_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), TARGET.plays(ME)).get();
-
-        Role concept = RemoteConcepts.createRole(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.plays(ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.EntityType),
@@ -509,14 +485,12 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, BaseType.AttributeType)
         );
 
-        assertThat(concept.playedByTypes(), containsIds(A, B, C));
+        assertThat(role.playedByTypes(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingRelates_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), ME.relates(TARGET)).get();
-
-        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Query<?> query = match(ME_ID, ME.relates(TARGET)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Role),
@@ -524,13 +498,11 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, BaseType.Role)
         );
 
-        assertThat(concept.relates(), containsIds(A, B, C));
+        assertThat(relationshipType.relates(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingAllRolePlayers_ExecuteAQuery() {
-        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
-
         Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
         Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
 
@@ -547,15 +519,13 @@ public class RemoteConceptsTest {
 
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ALL_ROLE_PLAYERS), response);
 
-        Map<Role, Set<Thing>> allRolePlayers = concept.allRolePlayers();
+        Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
         assertEquals(expected, allRolePlayers);
     }
 
     @Test
     public void whenCallingRolePlayersWithNoArguments_ExecuteAQueryForAllRolePlayers() {
-        Query<?> query = match(ME.id(ID), ME.rel(TARGET)).get();
-
-        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
+        Query<?> query = match(ME_ID, ME.rel(TARGET)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Entity),
@@ -563,7 +533,7 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, Attribute)
         );
 
-        assertThat(concept.rolePlayers(), containsIds(A, B, C));
+        assertThat(relationship.rolePlayers(), containsIds(A, B, C));
     }
 
     @Test
@@ -578,7 +548,7 @@ public class RemoteConceptsTest {
 
         Var role = var("role");
         String query = match(
-                ME.id(ID),
+                ME_ID,
                 ME.rel(role, TARGET),
                 or(
                         role.label(foo.getLabel()),
@@ -587,22 +557,18 @@ public class RemoteConceptsTest {
                 )
         ).get().toString();
 
-        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
-
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Entity),
                 queryResultResponse(B, Relationship),
                 queryResultResponse(C, Attribute)
         );
 
-        assertThat(concept.rolePlayers(foo, bar, baz), containsIds(A, B, C));
+        assertThat(relationship.rolePlayers(foo, bar, baz), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingOwnerInstances_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID), TARGET.has(ATTRIBUTE.getLabel(), ME)).get();
-
-        Attribute<?> concept = RemoteConcepts.createAttribute(tx, ID);
+        Query<?> query = match(ME_ID, TARGET.has(ATTRIBUTE.getLabel(), ME)).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Entity),
@@ -610,12 +576,11 @@ public class RemoteConceptsTest {
                 queryResultResponse(C, Attribute)
         );
 
-        assertThat(concept.ownerInstances(), containsIds(A, B, C));
+        assertThat(attribute.ownerInstances(), containsIds(A, B, C));
     }
 
     @Test
     public void whenCallingAttributeTypes_GetTheExpectedResult() {
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
 
         ImmutableSet<AttributeType> attributeTypes = ImmutableSet.of(
                 RemoteConcepts.createAttributeType(tx, A),
@@ -623,15 +588,13 @@ public class RemoteConceptsTest {
                 RemoteConcepts.createAttributeType(tx, C)
         );
 
-        TxResponse response = ATTRIBUTE_TYPES.createTxResponse(attributeTypes.stream());
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ATTRIBUTE_TYPES), response);
+        mockPropertyResponse(ATTRIBUTE_TYPES, attributeTypes.stream());
 
-        assertEquals(attributeTypes, concept.attributes().collect(toSet()));
+        assertEquals(attributeTypes, type.attributes().collect(toSet()));
     }
 
     @Test
     public void whenCallingKeyTypes_GetTheExpectedResult() {
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
 
         ImmutableSet<AttributeType> keyTypes = ImmutableSet.of(
                 RemoteConcepts.createAttributeType(tx, A),
@@ -639,17 +602,14 @@ public class RemoteConceptsTest {
                 RemoteConcepts.createAttributeType(tx, C)
         );
 
-        TxResponse response = KEY_TYPES.createTxResponse(keyTypes.stream());
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, KEY_TYPES), response);
+        mockPropertyResponse(KEY_TYPES, keyTypes.stream());
 
-        assertEquals(keyTypes, concept.keys().collect(toSet()));
+        assertEquals(keyTypes, type.keys().collect(toSet()));
     }
 
     @Test
     public void whenCallingDelete_ExecuteAQuery() {
-        Query<?> query = match(ME.id(ID)).delete(ME);
-
-        Thing concept = RemoteConcepts.createAttribute(tx, ID);
+        Query<?> query = match(ME_ID).delete(ME);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query));
 
@@ -660,28 +620,26 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenSettingSuper_ExecuteAQuery() {
-        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.sub(TARGET));
+        Query<?> query = define(ME_ID, TARGET.id(A), ME.sub(TARGET));
 
-        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
         EntityType sup = RemoteConcepts.createEntityType(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.sup(sup));
+        assertEquals(entityType, entityType.sup(sup));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenSettingSub_ExecuteAQuery() {
-        Query<?> query = define(ME.id(ID), TARGET.id(A), TARGET.sub(ME));
+        Query<?> query = define(ME_ID, TARGET.id(A), TARGET.sub(ME));
 
-        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
         EntityType sub = RemoteConcepts.createEntityType(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.sub(sub));
+        assertEquals(entityType, entityType.sub(sub));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -690,67 +648,59 @@ public class RemoteConceptsTest {
     public void whenSettingLabel_ExecuteAQuery() {
         Label label = Label.of("Dunstan");
 
-        Query<?> query = define(ME.id(ID), ME.label(label));
-
-        SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
+        Query<?> query = define(ME_ID, ME.label(label));
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.setLabel(label));
+        assertEquals(schemaConcept, schemaConcept.setLabel(label));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenSettingRelates_ExecuteAQuery() {
-        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.relates(TARGET));
+        Query<?> query = define(ME_ID, TARGET.id(A), ME.relates(TARGET));
 
-        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
         Role role = RemoteConcepts.createRole(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.relates(role));
+        assertEquals(relationshipType, relationshipType.relates(role));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenSettingPlays_ExecuteAQuery() {
-        Query<?> query = define(ME.id(ID), TARGET.id(A), ME.plays(TARGET));
+        Query<?> query = define(ME_ID, TARGET.id(A), ME.plays(TARGET));
 
-        Type concept = RemoteConcepts.createAttributeType(tx, ID);
         Role role = RemoteConcepts.createRole(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.plays(role));
+        assertEquals(attributeType, attributeType.plays(role));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenSettingAbstractOn_ExecuteAQuery() {
-        Query<?> query = define(ME.id(ID), ME.isAbstract());
-
-        Type concept = RemoteConcepts.createAttributeType(tx, ID);
+        Query<?> query = define(ME_ID, ME.isAbstract());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.setAbstract(true));
+        assertEquals(attributeType, attributeType.setAbstract(true));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenSettingAbstractOff_ExecuteAQuery() {
-        Query<?> query = undefine(ME.id(ID), ME.isAbstract());
-
-        Type concept = RemoteConcepts.createAttributeType(tx, ID);
+        Query<?> query = undefine(ME_ID, ME.isAbstract());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.setAbstract(false));
+        assertEquals(attributeType, attributeType.setAbstract(false));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -759,15 +709,14 @@ public class RemoteConceptsTest {
     public void whenSettingAttributeType_ExecuteAQuery() {
         Label label = Label.of("yes");
 
-        Query<?> query = define(ME.id(ID), ME.has(var().label(label)));
+        Query<?> query = define(ME_ID, ME.has(var().label(label)));
 
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         mockLabelResponse(A, label);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.attribute(attributeType));
+        assertEquals(type, type.attribute(attributeType));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -776,15 +725,14 @@ public class RemoteConceptsTest {
     public void whenSettingKeyType_ExecuteAQuery() {
         Label label = Label.of("yes");
 
-        Query<?> query = define(ME.id(ID), ME.key(var().label(label)));
+        Query<?> query = define(ME_ID, ME.key(var().label(label)));
 
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         mockLabelResponse(A, label);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.key(attributeType));
+        assertEquals(type, type.key(attributeType));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -793,15 +741,14 @@ public class RemoteConceptsTest {
     public void whenDeletingAttributeType_ExecuteAQuery() {
         Label label = Label.of("yes");
 
-        Query<?> query = undefine(ME.id(ID), ME.has(var().label(label)));
+        Query<?> query = undefine(ME_ID, ME.has(var().label(label)));
 
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         mockLabelResponse(A, label);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.deleteAttribute(attributeType));
+        assertEquals(type, type.deleteAttribute(attributeType));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -810,81 +757,75 @@ public class RemoteConceptsTest {
     public void whenDeletingKeyType_ExecuteAQuery() {
         Label label = Label.of("yes");
 
-        Query<?> query = undefine(ME.id(ID), ME.key(var().label(label)));
+        Query<?> query = undefine(ME_ID, ME.key(var().label(label)));
 
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         mockLabelResponse(A, label);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.deleteKey(attributeType));
+        assertEquals(type, type.deleteKey(attributeType));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenDeletingPlays_ExecuteAQuery() {
-        Query<?> query = undefine(ME.id(ID), TARGET.id(A), ME.plays(TARGET));
+        Query<?> query = undefine(ME_ID, TARGET.id(A), ME.plays(TARGET));
 
-        Type concept = RemoteConcepts.createEntityType(tx, ID);
         Role role = RemoteConcepts.createRole(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.deletePlays(role));
+        assertEquals(type, type.deletePlays(role));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test
     public void whenCallingAddEntity_ExecuteAQuery() {
-        Query<?> query = insert(ME.id(ID), TARGET.isa(ME));
+        Query<?> query = insert(ME_ID, TARGET.isa(ME));
 
-        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
         Entity entity = RemoteConcepts.createEntity(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Entity));
 
-        assertEquals(entity, concept.addEntity());
+        assertEquals(entity, entityType.addEntity());
     }
 
     @Test
     public void whenCallingAddRelationship_ExecuteAQuery() {
-        Query<?> query = insert(ME.id(ID), TARGET.isa(ME));
+        Query<?> query = insert(ME_ID, TARGET.isa(ME));
 
-        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
         Relationship relationship = RemoteConcepts.createRelationship(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Relationship));
 
-        assertEquals(relationship, concept.addRelationship());
+        assertEquals(relationship, relationshipType.addRelationship());
     }
 
     @Test
     public void whenCallingPutAttribute_ExecuteAQuery() {
-        long value = 1001;
+        String value = "Dunstan";
 
-        Query<?> query = insert(ME.id(ID), TARGET.val(value).isa(ME));
+        Query<?> query = insert(ME_ID, TARGET.val(value).isa(ME));
 
-        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
-        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
 
-        assertEquals(attribute, concept.putAttribute(value));
+        assertEquals(attribute, attributeType.putAttribute(value));
     }
 
     @Test
     public void whenCallingDeleteRelates_ExecuteAQuery() {
-        Query<?> query = undefine(ME.id(ID), TARGET.id(A), ME.relates(TARGET));
+        Query<?> query = undefine(ME_ID, TARGET.id(A), ME.relates(TARGET));
 
-        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
         Role role = RemoteConcepts.createRole(tx, A);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.deleteRelates(role));
+        assertEquals(relationshipType, relationshipType.deleteRelates(role));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -893,13 +834,11 @@ public class RemoteConceptsTest {
     public void whenSettingRegex_ExecuteAQuery() {
         String regex = "[abc]";
 
-        Query<?> query = define(ME.id(ID), ME.regex(regex));
-
-        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
+        Query<?> query = define(ME_ID, ME.regex(regex));
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.setRegex(regex));
+        assertEquals(attributeType, attributeType.setRegex(regex));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -913,13 +852,11 @@ public class RemoteConceptsTest {
                 ConceptProperty.REGEX.createTxResponse(regex)
         );
 
-        Query<?> query = undefine(ME.id(ID), ME.regex(regex));
-
-        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
+        Query<?> query = undefine(ME_ID, ME.regex(regex));
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
-        assertEquals(concept, concept.setRegex(null));
+        assertEquals(attributeType, attributeType.setRegex(null));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -931,9 +868,7 @@ public class RemoteConceptsTest {
                 ConceptProperty.REGEX.createTxResponse((String) null)
         );
 
-        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
-
-        assertEquals(concept, concept.setRegex(null));
+        assertEquals(attributeType, attributeType.setRegex(null));
     }
 
     @Test
@@ -942,9 +877,8 @@ public class RemoteConceptsTest {
 
         Var attributeVar = var("attribute");
 
-        Query<?> query = insert(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET));
+        Query<?> query = insert(ME_ID, attributeVar.id(A), ME.has(label, attributeVar, TARGET));
 
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
 
@@ -956,7 +890,7 @@ public class RemoteConceptsTest {
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(C, BaseType.Relationship));
 
-        assertEquals(concept, concept.attribute(attribute));
+        assertEquals(thing, thing.attribute(attribute));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -967,9 +901,8 @@ public class RemoteConceptsTest {
 
         Var attributeVar = var("attribute");
 
-        Query<?> query = insert(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET));
+        Query<?> query = insert(ME_ID, attributeVar.id(A), ME.has(label, attributeVar, TARGET));
 
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
         Relationship relationship = RemoteConcepts.createRelationship(tx, C);
@@ -982,7 +915,7 @@ public class RemoteConceptsTest {
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(C, BaseType.Relationship));
 
-        assertEquals(relationship, concept.attributeRelationship(attribute));
+        assertEquals(relationship, thing.attributeRelationship(attribute));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -993,9 +926,8 @@ public class RemoteConceptsTest {
 
         Var attributeVar = var("attribute");
 
-        Query<?> query = match(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET)).delete(TARGET);
+        Query<?> query = match(ME_ID, attributeVar.id(A), ME.has(label, attributeVar, TARGET)).delete(TARGET);
 
-        Thing concept = RemoteConcepts.createEntity(tx, ID);
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
 
@@ -1007,7 +939,7 @@ public class RemoteConceptsTest {
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query));
 
-        assertEquals(concept, concept.deleteAttribute(attribute));
+        assertEquals(thing, thing.deleteAttribute(attribute));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -1016,15 +948,14 @@ public class RemoteConceptsTest {
     public void whenCallingAddRolePlayer_ExecuteAQuery() {
         Var roleVar = var("role");
 
-        Query<?> query = insert(ME.id(ID), roleVar.id(A), TARGET.id(B), ME.rel(roleVar, TARGET));
+        Query<?> query = insert(ME_ID, roleVar.id(A), TARGET.id(B), ME.rel(roleVar, TARGET));
 
-        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
         Role role = RemoteConcepts.createRole(tx, A);
         Thing thing = RemoteConcepts.createEntity(tx, B);
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(B, BaseType.Entity));
 
-        assertEquals(concept, concept.addRolePlayer(role, thing));
+        assertEquals(relationship, relationship.addRolePlayer(role, thing));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
@@ -1081,5 +1012,9 @@ public class RemoteConceptsTest {
                 description.appendText("Contains IDs " + Arrays.toString(expectedIds));
             }
         };
+    }
+
+    private <T> void mockPropertyResponse(ConceptProperty<T> property, T value) {
+        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, property), property.createTxResponse(value));
     }
 }
