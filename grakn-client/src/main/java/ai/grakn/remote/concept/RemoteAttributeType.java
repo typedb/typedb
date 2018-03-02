@@ -27,6 +27,7 @@ import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
+import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
@@ -42,18 +43,27 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
     @Override
     public final AttributeType<D> setRegex(@Nullable String regex) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        if (regex == null) {
+            String oldRegex = getRegex();
+            if (oldRegex != null) {
+                undefine(ME.regex(oldRegex));
+            }
+        } else {
+            define(ME.regex(regex));
+        }
+        return asSelf(this);
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return asInstance(insert(TARGET.val(value).isa(ME)));
     }
 
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Concept> concepts = query(TARGET.val(value).isa(ME));
+        return concepts.findAny().map(this::asInstance).orElse(null);
     }
 
     @Override

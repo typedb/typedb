@@ -41,8 +41,11 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -343,11 +346,15 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
-            AttributeType<?> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
-            AttributeType<?> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
+            AttributeType<String> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
+            AttributeType<String> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
 
             assertEquals(localConcept.getDataType(), remoteConcept.getDataType());
             assertEquals(localConcept.getRegex(), remoteConcept.getRegex());
+            assertEquals(
+                    localConcept.getAttribute("The Muppets").getId(),
+                    remoteConcept.getAttribute("The Muppets").getId()
+            );
         }
     }
 
@@ -449,11 +456,16 @@ public class GrpcServerIT {
             Role chaser = tx.putRole("chaser");
             chases.relates(chased).relates(chaser);
 
+            Role pointlessRole = tx.putRole("pointless-role");
+            tx.putRelationshipType("pointless").relates(pointlessRole);
+
+            chases.relates(pointlessRole).deleteRelates(pointlessRole);
+
             dog.plays(chaser);
             cat.plays(chased);
 
             AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
-            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING);
+            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).setRegex("(good|bad)-dog");
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
 
             animal.attribute(name);
@@ -462,6 +474,12 @@ public class GrpcServerIT {
             dog.attribute(age).deleteAttribute(age);
             cat.key(age).deleteKey(age);
             cat.plays(chaser).deletePlays(chaser);
+
+            Entity dunstan = dog.addEntity();
+            Attribute<String> dunstanId = id.putAttribute("good-dog");
+            dunstan.attribute(dunstanId);
+
+            Relationship aChase = chases.addRelationship().addRolePlayer(chaser, dunstan);
 
             tx.commit();
         }
@@ -475,6 +493,8 @@ public class GrpcServerIT {
             Role chaser = tx.getRole("chaser");
             AttributeType<String> name = tx.getAttributeType("name");
             AttributeType<String> id = tx.getAttributeType("id");
+            Entity dunstan = Iterators.getOnlyElement(dog.instances().iterator());
+            Relationship aChase = Iterators.getOnlyElement(chases.instances().iterator());
 
             assertEquals(animal, dog.sup());
             assertEquals(animal, cat.sup());
@@ -491,6 +511,15 @@ public class GrpcServerIT {
 
             assertEquals(ImmutableSet.of(name, id), cat.attributes().collect(toSet()));
             assertEquals(ImmutableSet.of(id), cat.keys().collect(toSet()));
+
+            assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).getValue());
+
+            ImmutableMap<Role, ImmutableSet<?>> expectedRolePlayers =
+                    ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
+
+            assertEquals(expectedRolePlayers, aChase.allRolePlayers());
+
+            assertEquals("(good|bad)-dog", id.getRegex());
 
             assertFalse(dog.isAbstract());
             assertTrue(cat.isAbstract());

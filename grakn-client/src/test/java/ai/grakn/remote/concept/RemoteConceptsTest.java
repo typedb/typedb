@@ -25,6 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
@@ -63,6 +64,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.define;
+import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.undefine;
@@ -208,6 +210,33 @@ public class RemoteConceptsTest {
 
         server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, REGEX), REGEX.createTxResponse("hello"));
         assertEquals("hello", concept.getRegex());
+    }
+
+    @Test
+    public void whenCallingGetAttribute_ExecuteAQuery() {
+        long value = 999;
+
+        Query<?> query = match(ME.id(ID), TARGET.val(value).isa(ME)).get();
+
+        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
+        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+
+        assertEquals(attribute, concept.getAttribute(value));
+    }
+
+    @Test
+    public void whenCallingGetAttributeWhenThereIsNoResult_ExecuteAQuery() {
+        long value = 999;
+
+        Query<?> query = match(ME.id(ID), TARGET.val(value).isa(ME)).get();
+
+        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query));
+
+        assertNull(concept.getAttribute(value));
     }
 
     @Test
@@ -804,6 +833,145 @@ public class RemoteConceptsTest {
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
 
         assertEquals(concept, concept.deletePlays(role));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenCallingAddEntity_ExecuteAQuery() {
+        Query<?> query = insert(ME.id(ID), TARGET.isa(ME));
+
+        EntityType concept = RemoteConcepts.createEntityType(tx, ID);
+        Entity entity = RemoteConcepts.createEntity(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Entity));
+
+        assertEquals(entity, concept.addEntity());
+    }
+
+    @Test
+    public void whenCallingAddRelationship_ExecuteAQuery() {
+        Query<?> query = insert(ME.id(ID), TARGET.isa(ME));
+
+        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Relationship relationship = RemoteConcepts.createRelationship(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Relationship));
+
+        assertEquals(relationship, concept.addRelationship());
+    }
+
+    @Test
+    public void whenCallingPutAttribute_ExecuteAQuery() {
+        long value = 1001;
+
+        Query<?> query = insert(ME.id(ID), TARGET.val(value).isa(ME));
+
+        AttributeType<Long> concept = RemoteConcepts.createAttributeType(tx, ID);
+        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+
+        assertEquals(attribute, concept.putAttribute(value));
+    }
+
+    @Test
+    public void whenCallingDeleteRelates_ExecuteAQuery() {
+        Query<?> query = undefine(ME.id(ID), TARGET.id(A), ME.relates(TARGET));
+
+        RelationshipType concept = RemoteConcepts.createRelationshipType(tx, ID);
+        Role role = RemoteConcepts.createRole(tx, A);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.deleteRelates(role));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenSettingRegex_ExecuteAQuery() {
+        String regex = "[abc]";
+
+        Query<?> query = define(ME.id(ID), ME.regex(regex));
+
+        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.setRegex(regex));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenResettingRegex_ExecuteAQuery() {
+        String regex = "[abc]";
+
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.REGEX),
+                ConceptProperty.REGEX.createTxResponse(regex)
+        );
+
+        Query<?> query = undefine(ME.id(ID), ME.regex(regex));
+
+        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
+
+        assertEquals(concept, concept.setRegex(null));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenResettingUnsetRegex_DontCrash() {
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.REGEX),
+                ConceptProperty.REGEX.createTxResponse((String) null)
+        );
+
+        AttributeType<String> concept = RemoteConcepts.createAttributeType(tx, ID);
+
+        assertEquals(concept, concept.setRegex(null));
+    }
+
+    @Test
+    public void whenCallingAddAttributeOnThing_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Query<?> query = insert(ME.id(ID), TARGET.id(A), ME.has(label, TARGET));
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
+
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
+                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+        );
+        mockLabelResponse(attributeType, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+
+        assertEquals(concept, concept.attribute(attribute));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenCallingAddRolePlayer_ExecuteAQuery() {
+        Var roleVar = var("role");
+
+        Query<?> query = insert(ME.id(ID), roleVar.id(A), TARGET.id(B), ME.rel(roleVar, TARGET));
+
+        Relationship concept = RemoteConcepts.createRelationship(tx, ID);
+        Role role = RemoteConcepts.createRole(tx, A);
+        Thing thing = RemoteConcepts.createEntity(tx, B);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(B, BaseType.Entity));
+
+        assertEquals(concept, concept.addRolePlayer(role, thing));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }

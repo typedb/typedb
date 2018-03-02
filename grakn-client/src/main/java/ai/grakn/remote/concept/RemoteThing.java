@@ -48,7 +48,7 @@ import static java.util.stream.Collectors.toSet;
  * @param <Self> The exact type of this class
  * @param <MyType> the type of an instance of this class
  */
-abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept implements Thing {
+abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept<Self> implements Thing {
 
     @Override
     public final MyType type() {
@@ -75,7 +75,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self attribute(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Label label = attribute.type().getLabel();
+        insert(TARGET.id(attribute.getId()), ME.has(label, TARGET));
+        return asSelf(this);
     }
 
     @Override

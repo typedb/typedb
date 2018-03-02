@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -39,7 +40,7 @@ import static ai.grakn.graql.Graql.var;
 /**
  * @author Felix Chapman
  */
-abstract class RemoteConcept implements Concept {
+abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     static final Var ME = var("me");
     static final Var TARGET = var("target");
@@ -81,4 +82,12 @@ abstract class RemoteConcept implements Concept {
 
         return tx().graql().match(patternCollection).get().stream();
     }
+
+    protected final Concept insert(VarPattern... patterns) {
+        Collection<VarPattern> patternCollection = ImmutableList.<VarPattern>builder().add(me()).add(patterns).build();
+
+        return Iterables.getOnlyElement(tx().graql().insert(patternCollection).execute()).get(TARGET);
+    }
+
+    abstract Self asSelf(Concept concept);
 }

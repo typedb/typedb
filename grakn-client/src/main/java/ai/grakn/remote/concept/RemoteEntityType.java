@@ -37,7 +37,7 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
 
     @Override
     public final Entity addEntity() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return asInstance(insert(TARGET.isa(ME)));
     }
 
     @Override

@@ -44,6 +44,8 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
 
+    private static final Var ROLE = var("role");
+
     public static RemoteRelationship create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteRelationship(tx, id);
     }
@@ -57,9 +59,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     public final Stream<Thing> rolePlayers(Role... roles) {
         Stream<Concept> concepts;
         if (roles.length != 0) {
-            Var roleVar = var("role");
-            Set<VarPattern> patterns = Stream.of(roles).map(role -> roleVar.label(role.getLabel())).collect(toSet());
-            concepts = query(ME.rel(roleVar, TARGET), or(patterns));
+            Set<VarPattern> patterns = Stream.of(roles).map(role -> ROLE.label(role.getLabel())).collect(toSet());
+            concepts = query(ME.rel(ROLE, TARGET), or(patterns));
         } else {
             concepts = query(ME.rel(TARGET));
         }
@@ -68,7 +69,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        insert(ROLE.id(role.getId()), TARGET.id(thing.getId()), ME.rel(ROLE, TARGET));
+        return asSelf(this);
     }
 
     @Override
@@ -79,5 +81,10 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     final RelationshipType asMyType(Concept concept) {
         return concept.asRelationshipType();
+    }
+
+    @Override
+    final Relationship asSelf(Concept concept) {
+        return concept.asRelationship();
     }
 }

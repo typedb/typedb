@@ -38,7 +38,7 @@ import static ai.grakn.util.Schema.MetaSchema.THING;
  *
  * @param <Self> The exact type of this class
  */
-abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
 
     public final Self sup(Self type) {
         return define(type, ME.sub(TARGET));
@@ -101,8 +101,6 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     public final Stream<Rule> getRulesOfConclusion() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
-
-    abstract Self asSelf(Concept concept);
 
     protected final Self define(Concept target, VarPattern... patterns) {
         return define(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());

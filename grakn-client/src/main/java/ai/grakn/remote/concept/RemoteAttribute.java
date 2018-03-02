@@ -62,4 +62,9 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
     final AttributeType<D> asMyType(Concept concept) {
         return concept.asAttributeType();
     }
+
+    @Override
+    final Attribute<D> asSelf(Concept concept) {
+        return concept.asAttribute();
+    }
 }
