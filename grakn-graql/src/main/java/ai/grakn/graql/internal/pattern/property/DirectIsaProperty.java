@@ -18,11 +18,8 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -38,7 +35,6 @@ import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
@@ -59,7 +55,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * @author Jason Liu
  */
 @AutoValue
-public abstract class DirectIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class DirectIsaProperty extends AbstractIsaProperty implements UniqueVarProperty, NamedProperty {
 
     public static final String NAME = "isa!";
 
@@ -67,53 +63,16 @@ public abstract class DirectIsaProperty extends AbstractVarProperty implements U
         return new AutoValue_DirectIsaProperty(directType);
     }
 
-    public abstract VarPatternAdmin directType();
-
     @Override
     public String getName() {
         return NAME;
     }
 
     @Override
-    public String getProperty() {
-        return directType().getPrintableName();
-    }
-
-    @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, directType().var(), true)
+                EquivalentFragmentSets.isa(this, start, type().var(), true)
         );
-    }
-
-    @Override
-    public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(directType());
-    }
-
-    @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
-        return Stream.of(directType());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(this.directType().var()).asType();
-            executor.builder(var).isa(type);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(directType().var()).produces(var).build());
-    }
-
-    @Override
-    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
-        directType().getTypeLabel().ifPresent(typeLabel -> {
-            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
-            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
-                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
-            }
-        });
     }
 
     @Nullable
@@ -123,7 +82,7 @@ public abstract class DirectIsaProperty extends AbstractVarProperty implements U
         if (var.hasProperty(RelationshipProperty.class)) return null;
 
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin typePattern = this.directType();
+        VarPatternAdmin typePattern = this.type();
         Var typeVariable = typePattern.var();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);

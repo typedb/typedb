@@ -18,11 +18,8 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -39,34 +36,34 @@ import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code isa} property on a {@link Thing}.
- *
+ * <p>
  * This property can be queried and inserted.
- *
+ * </p>
+ * <p>
  * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
- *
+ * </p>
+ * <p>
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
+ * </p>
  *
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class IsaProperty extends AbstractIsaProperty implements UniqueVarProperty, NamedProperty {
 
     public static final String NAME = "isa";
 
     public static IsaProperty of(VarPatternAdmin type) {
-        return new AutoValue_IsaProperty(Graql.var(), type);
+        return new AutoValue_IsaProperty(type, Graql.var());
     }
 
-    public abstract Var directType();
-
-    public abstract VarPatternAdmin type();
+    public abstract Var directTypeVar();
 
     @Override
     public String getName() {
@@ -74,46 +71,11 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     }
 
     @Override
-    public String getProperty() {
-        return type().getPrintableName();
-    }
-
-    @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, directType(), true),
-                EquivalentFragmentSets.sub(this, directType(), type().var())
+                EquivalentFragmentSets.isa(this, start, directTypeVar(), true),
+                EquivalentFragmentSets.sub(this, directTypeVar(), type().var())
         );
-    }
-
-    @Override
-    public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(type());
-    }
-
-    @Override
-    public Stream<VarPatternAdmin> innerVarPatterns() {
-        return Stream.of(type());
-    }
-
-    @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Type type = executor.get(this.type().var()).asType();
-            executor.builder(var).isa(type);
-        };
-
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(type().var()).produces(var).build());
-    }
-
-    @Override
-    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
-        type().getTypeLabel().ifPresent(typeLabel -> {
-            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
-            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
-                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
-            }
-        });
     }
 
     @Nullable
