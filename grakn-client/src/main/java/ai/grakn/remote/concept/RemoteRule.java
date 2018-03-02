@@ -43,13 +43,13 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Nullable
     @Override
     public final Pattern getWhen() {
-        return getProperty(ConceptProperty.WHEN);
+        return getNullableProperty(ConceptProperty.WHEN);
     }
 
     @Nullable
     @Override
     public final Pattern getThen() {
-        return getProperty(ConceptProperty.THEN);
+        return getNullableProperty(ConceptProperty.THEN);
     }
 
     @Override

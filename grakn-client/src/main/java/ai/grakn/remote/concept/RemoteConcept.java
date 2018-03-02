@@ -31,7 +31,9 @@ import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
@@ -66,6 +68,11 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
     }
 
     protected final <T> T getProperty(ConceptProperty<T> property) {
+        return Objects.requireNonNull(getNullableProperty(property));
+    }
+
+    @Nullable
+    protected final <T> T getNullableProperty(ConceptProperty<T> property) {
         return tx().client().getConceptProperty(getId(), property);
     }
 

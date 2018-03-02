@@ -27,6 +27,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
 import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -63,9 +64,10 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         return define(ME.label(label));
     }
 
+    @Nullable
     @Override
     public final Self sup() {
-        SchemaConcept schemaConcept = getProperty(ConceptProperty.DIRECT_SUPER);
+        SchemaConcept schemaConcept = getNullableProperty(ConceptProperty.DIRECT_SUPER);
         if (schemaConcept != null && notMetaThing(schemaConcept)) {
             return asSelf(schemaConcept);
         } else {

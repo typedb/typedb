@@ -66,15 +66,16 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         return concepts.findAny().map(this::asInstance).orElse(null);
     }
 
+    @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        return (AttributeType.DataType<D>) getProperty(ConceptProperty.DATA_TYPE);
+        return (AttributeType.DataType<D>) getNullableProperty(ConceptProperty.DATA_TYPE);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        return getProperty(ConceptProperty.REGEX);
+        return getNullableProperty(ConceptProperty.REGEX);
     }
 
     @Override
