@@ -18,18 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -42,9 +44,7 @@ import javax.annotation.Nullable;
  */
 public abstract class OntologicalAtom extends TypeAtom {
 
-    protected OntologicalAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    protected OntologicalAtom(TypeAtom a) { super(a);}
+    abstract OntologicalAtom createSelf(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent);
 
     @Override
     public boolean isSelectable() {
@@ -57,5 +57,25 @@ public abstract class OntologicalAtom extends TypeAtom {
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
+
+    @Override
+    public Set<TypeAtom> unify(Unifier u){
+        Collection<Var> vars = u.get(getVarName());
+        return vars.isEmpty()?
+                Collections.singleton(this) :
+                vars.stream().map(v -> createSelf(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Atom rewriteWithTypeVariable() {
+        return createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
+    }
+
+    @Override
+    public Atom rewriteToUserDefined(Atom parentAtom) {
+        return parentAtom.getPredicateVariable().isUserDefinedName()?
+                createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
+                this;
     }
 }

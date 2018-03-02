@@ -16,13 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary.type;
+package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -34,12 +33,13 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 
@@ -61,29 +62,40 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * @author Kasper Piskorski
  *
  */
-public class IsaAtom extends TypeAtom {
+@AutoValue
+public abstract class IsaAtom extends IsaAtomBase {
 
-    public IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery par) {
-        this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), par), par);
+    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    public static IsaAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_IsaAtom(pattern.admin().var(), predicateId, predicateVar, pattern, parent);
     }
-    private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(var.isa(predicateVar).admin(), predicateVar, p, par);
+    private static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+        return create(var.isa(predicateVar).admin(), predicateVar, predicateId, parent);
     }
-    protected IsaAtom(TypeAtom a) { super(a);}
+    public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
+        return create(var, predicateVar, type.getId(), parent);
+    }
+    private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
+        IsaAtom atom = create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
+        atom.applicableRules = a.applicableRules;
+        return atom;
+    }
+
+    @Override
+    public Atomic copy(ReasonerQuery parent){
+        return create(this, parent);
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
 
+    @Override
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
         return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
-    }
-
-    @Override
-    public Atomic copy(){
-        return new IsaAtom(this);
     }
 
     @Override
@@ -92,19 +104,11 @@ public class IsaAtom extends TypeAtom {
         return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
     }
 
-    protected Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
-        ConceptId typeId = type.getId();
-        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
-
-        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
-        return new Pair<>(getPattern(), newPredicate);
-    }
-
     @Override
     public IsaAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
+        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
     private IsaAtom inferEntityType(Answer sub){
@@ -147,12 +151,12 @@ public class IsaAtom extends TypeAtom {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> new IsaAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> create(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return new IsaAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
     }
 
     @Override
