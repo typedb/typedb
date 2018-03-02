@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -32,5 +33,10 @@ abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements E
 
     public static RemoteEntity create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteEntity(tx, id);
+    }
+
+    @Override
+    final EntityType asMyType(Concept concept) {
+        return concept.asEntityType();
     }
 }

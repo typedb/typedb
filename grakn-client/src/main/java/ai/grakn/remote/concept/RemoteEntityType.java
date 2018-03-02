@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -37,5 +38,15 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
     @Override
     public final Entity addEntity() {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final EntityType asSelf(Concept concept) {
+        return concept.asEntityType();
+    }
+
+    @Override
+    protected final Entity asInstance(Concept concept) {
+        return concept.asEntity();
     }
 }

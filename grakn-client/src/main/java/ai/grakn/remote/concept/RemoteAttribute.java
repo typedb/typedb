@@ -20,14 +20,16 @@ package ai.grakn.remote.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.grpc.ConceptProperty;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 
 /**
  * @author Felix Chapman
@@ -53,12 +55,11 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(TARGET.has(ATTRIBUTE.getLabel(), ME)).map(Concept::asThing);
     }
 
-    @Nullable
     @Override
-    public final Thing owner() {
-        throw new UnsupportedOperationException(); // TODO: implement
+    final AttributeType<D> asMyType(Concept concept) {
+        return concept.asAttributeType();
     }
 }

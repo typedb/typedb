@@ -227,13 +227,12 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("role")).get();
+            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
 
@@ -278,10 +277,10 @@ public class GrpcServerIT {
             assertEqualConcepts(localConcept, remoteConcept, Type::plays);
             assertEqualConcepts(localConcept, remoteConcept, Type::instances);
             assertEqualConcepts(localConcept, remoteConcept, Type::attributes);
+            assertEqualConcepts(localConcept, remoteConcept, Type::keys);
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARole_TheInformationOnTheRoleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -296,7 +295,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -308,8 +306,6 @@ public class GrpcServerIT {
 
             assertEquals(localConcept.getWhen(), remoteConcept.getWhen());
             assertEquals(localConcept.getThen(), remoteConcept.getThen());
-            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getConclusionTypes);
-            assertEqualConcepts(localConcept, remoteConcept, ai.grakn.concept.Rule::getHypothesisTypes);
         }
     }
 
@@ -327,7 +323,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingARelationshipType_TheInformationOnTheRelationshipTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -369,7 +364,7 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
+    @Ignore // TODO: re-enable after fixing allRolePlayers
     @Test
     public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -391,7 +386,7 @@ public class GrpcServerIT {
             ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
             remoteConcept.allRolePlayers().forEach((role, players) -> {
                 for (Thing player : players) {
-                    localRolePlayers.put(role.getId(), player.getId());
+                    remoteRolePlayers.put(role.getId(), player.getId());
                 }
             });
 
@@ -399,7 +394,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -411,7 +405,7 @@ public class GrpcServerIT {
 
             assertEquals(localConcept.dataType(), remoteConcept.dataType());
             assertEquals(localConcept.getValue(), remoteConcept.getValue());
-            assertEquals(localConcept.owner(), remoteConcept.owner());
+            assertEquals(localConcept.owner().getId(), remoteConcept.owner().getId());
             assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
         }
     }
