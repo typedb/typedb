@@ -28,7 +28,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -61,13 +60,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
             throw GraqlQueryException.noPatterns();
         }
 
-        InsertQueryImpl insert = new AutoValue_InsertQueryImpl(tx, match, ImmutableList.copyOf(vars));
-
-        insert.allVarPatterns().forEach(var -> {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
-        });
-
-        return insert;
+        return new AutoValue_InsertQueryImpl(tx, match, ImmutableList.copyOf(vars));
     }
 
     @Override

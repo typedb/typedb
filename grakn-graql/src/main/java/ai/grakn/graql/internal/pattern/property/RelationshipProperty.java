@@ -178,13 +178,6 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
-        if (!var.hasProperty(IsaProperty.class)) {
-            throw GraqlQueryException.insertRelationWithoutType();
-        }
-    }
-
-    @Override
     public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Relationship relationship = executor.get(var).asRelationship();

@@ -42,12 +42,6 @@ public interface VarPropertyInternal extends VarProperty {
     void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
 
     /**
-     * Check if the given property can be inserted
-     */
-    default void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
-    }
-
-    /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
      */
     Collection<EquivalentFragmentSet> match(Var start);

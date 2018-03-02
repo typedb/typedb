@@ -80,13 +80,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void checkInsertable(VarPatternAdmin var) {
-        if (!predicate().equalsValue().isPresent()) {
-            throw GraqlQueryException.insertPredicate();
-        }
-    }
-
-    @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
