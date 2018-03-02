@@ -63,14 +63,14 @@ varPattern     : VARIABLE | variable? property (','? property)* ;
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # directIsa
                | 'sub' variable                     # sub
-               | 'relates' variable                 # relates
+               | 'relates' role=variable ('as' superRole=variable)? # relates
                | 'plays' variable                   # plays
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
