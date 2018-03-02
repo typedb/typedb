@@ -61,7 +61,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public String getProperty() {
-        return StringUtil.valueToString(regex());
+        return "/" + StringUtil.escapeString(regex()) + "/";
     }
 
     @Override
