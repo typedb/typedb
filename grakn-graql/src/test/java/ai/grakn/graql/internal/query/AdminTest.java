@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -28,8 +28,8 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -105,12 +105,18 @@ public class AdminTest {
     public void testInsertQueryMatchPatternEmpty() {
         InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
         assertFalse(query.admin().match().isPresent());
+
+        query = qb.insert(var().id(ConceptId.of("123")).directIsa("movie"));
+        assertFalse(query.admin().match().isPresent());
     }
 
     @Test
     public void testInsertQueryWithMatch() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals(Optional.of("match $x isa movie;"), query.admin().match().map(Object::toString));
+
+        query = qb.match(var("x").directIsa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        assertEquals(Optional.of("match $x isa! movie;"), query.admin().match().map(Object::toString));
     }
 
     @Test
@@ -124,6 +130,9 @@ public class AdminTest {
     public void testDeleteQueryPattern() {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.admin().match().toString());
+
+        query = qb.match(var("x").directIsa("movie")).delete("x");
+        assertEquals("match $x isa! movie;", query.admin().match().toString());
     }
 
     @Test
@@ -136,7 +145,7 @@ public class AdminTest {
     @Test
     public void testMatchInsertQueryGetTypes() {
         InsertQuery query = qb.match(var("y").isa("movie"))
-                        .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
+                .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<SchemaConcept> types =
                 Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());

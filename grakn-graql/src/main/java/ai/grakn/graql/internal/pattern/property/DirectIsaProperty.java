@@ -61,7 +61,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
 @AutoValue
 public abstract class DirectIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    public static final String NAME = "direct-isa";
+    public static final String NAME = "isa!";
 
     public static DirectIsaProperty of(VarPatternAdmin directType) {
         return new AutoValue_DirectIsaProperty(directType);
@@ -100,7 +100,7 @@ public abstract class DirectIsaProperty extends AbstractVarProperty implements U
     public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(this.directType().var()).asType();
-            executor.builder(var).directIsa(type);
+            executor.builder(var).isa(type);
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(directType().var()).produces(var).build());
@@ -129,7 +129,7 @@ public abstract class DirectIsaProperty extends AbstractVarProperty implements U
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
 
         //isa part
-        VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
+        VarPatternAdmin isaVar = varName.directIsa(typeVariable).admin();
         return new IsaAtom(isaVar, typeVariable, predicate, parent);
     }
 }

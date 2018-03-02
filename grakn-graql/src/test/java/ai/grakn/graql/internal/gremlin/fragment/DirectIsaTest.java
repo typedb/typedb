@@ -22,7 +22,11 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -91,7 +95,42 @@ public class DirectIsaTest {
     }
 
     @Test
-    public void testIsaAndDirectIsaReturnDifferentPlans() {
+    public void testMatchSyntax() {
+        QueryBuilder queryBuilder = tx.graql();
+        Match matchQuery;
+        GetQuery getQuery;
+
+        matchQuery = queryBuilder.match(x.directIsa(thingy1));
+        assertEquals("match $x isa! thingy1;", matchQuery.toString());
+
+        matchQuery = queryBuilder.match(x.directIsa(y));
+        assertEquals("match $x isa! $y;", matchQuery.toString());
+
+        getQuery = queryBuilder.parse("match $x isa! thingy1; get;");
+        assertEquals(queryBuilder.match(x.directIsa(thingy1)), getQuery.match());
+
+        getQuery = queryBuilder.parse("match $x isa! $y; get;");
+        assertEquals(queryBuilder.match(x.directIsa(y)), getQuery.match());
+    }
+
+    @Test
+    public void testInsert() {
+        QueryBuilder queryBuilder = tx.graql();
+        InsertQuery insertQuery;
+
+        insertQuery = queryBuilder.insert(x.directIsa(thingy));
+        assertEquals("insert $x isa! thingy;", insertQuery.toString());
+
+        insertQuery = queryBuilder.parse("insert $x isa! thingy;");
+        assertEquals(queryBuilder.insert(x.directIsa(thingy)), insertQuery);
+
+        insertQuery.execute();
+        assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
+        assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
+    }
+
+    @Test
+    public void testMatchIsaAndDirectIsaReturnDifferentPlans() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 

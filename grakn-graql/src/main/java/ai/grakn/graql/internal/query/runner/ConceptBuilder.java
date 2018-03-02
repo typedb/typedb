@@ -129,10 +129,6 @@ public class ConceptBuilder {
         return set(TYPE, type);
     }
 
-    public ConceptBuilder directIsa(Type directType) {
-        return set(DIRECT_TYPE, directType);
-    }
-
     public ConceptBuilder sub(SchemaConcept superConcept) {
         return set(SUPER_CONCEPT, superConcept);
     }
