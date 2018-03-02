@@ -477,9 +477,12 @@ public class GrpcServerIT {
 
             Entity dunstan = dog.addEntity();
             Attribute<String> dunstanId = id.putAttribute("good-dog");
-            dunstan.attribute(dunstanId);
+            assertNotNull(dunstan.attributeRelationship(dunstanId));
 
-            Relationship aChase = chases.addRelationship().addRolePlayer(chaser, dunstan);
+            Attribute<String> dunstanName = name.putAttribute("Dunstan");
+            dunstan.attribute(dunstanName).deleteAttribute(dunstanName);
+
+            chases.addRelationship().addRolePlayer(chaser, dunstan);
 
             tx.commit();
         }

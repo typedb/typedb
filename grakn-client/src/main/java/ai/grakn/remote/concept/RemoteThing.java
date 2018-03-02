@@ -27,6 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
@@ -75,14 +76,15 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self attribute(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        insert(TARGET.id(attribute.getId()), ME.has(label, TARGET));
+        attributeRelationship(attribute);
         return asSelf(this);
     }
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Label label = attribute.type().getLabel();
+        Var attributeVar = var("attribute");
+        return insert(attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET)).asRelationship();
     }
 
     @Override
@@ -117,7 +119,11 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Label label = attribute.type().getLabel();
+        Var attributeVar = var("attribute");
+        Match match = tx().graql().match(me(), attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET));
+        match.delete(TARGET).execute();
+        return asSelf(this);
     }
 
     @Override

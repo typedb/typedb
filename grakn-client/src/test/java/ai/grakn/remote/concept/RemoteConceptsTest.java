@@ -940,7 +940,9 @@ public class RemoteConceptsTest {
     public void whenCallingAddAttributeOnThing_ExecuteAQuery() {
         Label label = Label.of("yes");
 
-        Query<?> query = insert(ME.id(ID), TARGET.id(A), ME.has(label, TARGET));
+        Var attributeVar = var("attribute");
+
+        Query<?> query = insert(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET));
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
@@ -952,9 +954,60 @@ public class RemoteConceptsTest {
         );
         mockLabelResponse(attributeType, label);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(C, BaseType.Relationship));
 
         assertEquals(concept, concept.attribute(attribute));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenCallingAddAttributeRelationshipOnThing_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Var attributeVar = var("attribute");
+
+        Query<?> query = insert(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET));
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
+        Relationship relationship = RemoteConcepts.createRelationship(tx, C);
+
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
+                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+        );
+        mockLabelResponse(attributeType, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(C, BaseType.Relationship));
+
+        assertEquals(relationship, concept.attributeRelationship(attribute));
+
+        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+    }
+
+    @Test
+    public void whenCallingDeleteAttribute_ExecuteAQuery() {
+        Label label = Label.of("yes");
+
+        Var attributeVar = var("attribute");
+
+        Query<?> query = match(ME.id(ID), attributeVar.id(A), ME.has(label, attributeVar, TARGET)).delete(TARGET);
+
+        Thing concept = RemoteConcepts.createEntity(tx, ID);
+        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
+
+        server.setResponse(
+                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
+                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+        );
+        mockLabelResponse(attributeType, label);
+
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query));
+
+        assertEquals(concept, concept.deleteAttribute(attribute));
 
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
