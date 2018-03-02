@@ -93,6 +93,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate(var.var(), this.predicate(), parent);
+        return ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
     }
 }

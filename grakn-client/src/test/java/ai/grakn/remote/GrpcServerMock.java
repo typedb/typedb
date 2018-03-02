@@ -20,18 +20,24 @@ package ai.grakn.remote;
 
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
+import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import org.junit.rules.TestRule;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -51,13 +57,14 @@ import static org.mockito.Mockito.when;
  *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
  * </p>
  * <p>
- *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse)}.
+ *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse...)}.
  * </p>
  *
  * @author Felix Chapman
  */
 public final class GrpcServerMock extends CompositeTestRule {
 
+    private int iteratorIdCounter = 0;
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     private final GraknImplBase service = mock(GraknImplBase.class);
 
@@ -85,15 +92,68 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    public void setResponse(TxRequest request, TxResponse response) {
-        setResponse(request, responses -> responses.onNext(response));
+    private GraknOuterClass.IteratorId createIteratorId() {
+        return GraknOuterClass.IteratorId.newBuilder().setId(++iteratorIdCounter).build();
     }
 
-    void setResponse(TxRequest request, Consumer<StreamObserver<TxResponse>> response) {
+    public void setResponse(TxRequest request, TxResponse... responses) {
+        setResponse(request, Arrays.asList(responses));
+    }
+
+    public void setResponseSequence(TxRequest request, TxResponse... responses) {
+        setResponseHandlers(request, Collections.singletonList(TxResponseHandler.sequence(this, responses)));
+    }
+
+    public void setResponse(TxRequest request, Throwable throwable) {
+        setResponseHandlers(request, ImmutableList.of(TxResponseHandler.onError(throwable)));
+    }
+
+    private void setResponse(TxRequest request, List<TxResponse> responses) {
+        setResponseHandlers(request, Lists.transform(responses, TxResponseHandler::onNext));
+    }
+
+    private void setResponseHandlers(TxRequest request, List<TxResponseHandler> responses) {
+        Supplier<TxResponseHandler> next;
+
+        // If there is only one mocked response, just return it again and again
+        if (responses.size() > 1) {
+            Iterator<TxResponseHandler> iterator = responses.iterator();
+            next = iterator::next;
+        } else {
+            next = () -> Iterables.getOnlyElement(responses);
+        }
+
         doAnswer(args -> {
-            response.accept(serverResponses);
+            if (serverResponses == null) {
+                throw new IllegalArgumentException("Set-up of rule not called");
+            }
+            next.get().handle(serverResponses);
             return null;
         }).when(serverRequests).onNext(request);
+    }
+
+    private interface TxResponseHandler {
+        static TxResponseHandler onNext(TxResponse response) {
+            return streamObserver -> streamObserver.onNext(response);
+        }
+
+        static TxResponseHandler onError(Throwable throwable) {
+            return streamObserver -> streamObserver.onError(throwable);
+        }
+
+        static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
+            GraknOuterClass.IteratorId iteratorId = server.createIteratorId();
+
+            return streamObserver -> {
+                List<TxResponse> responsesList =
+                        ImmutableList.<TxResponse>builder().add(responses).add(GrpcUtil.doneResponse()).build();
+
+                server.setResponse(GrpcUtil.nextRequest(iteratorId), responsesList);
+                streamObserver.onNext(GrpcUtil.iteratorResponse(iteratorId));
+            };
+        }
+
+        void handle(StreamObserver<TxResponse> streamObserver);
     }
 
     @Override

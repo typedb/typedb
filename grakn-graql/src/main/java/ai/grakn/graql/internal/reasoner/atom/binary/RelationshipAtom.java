@@ -19,6 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
@@ -48,7 +49,6 @@ import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -61,6 +61,8 @@ import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -102,24 +104,24 @@ import static java.util.stream.Collectors.toSet;
  * @author Kasper Piskorski
  *
  */
-public class RelationshipAtom extends IsaAtom {
+@AutoValue
+public abstract class RelationshipAtom extends IsaAtomBase {
 
-    private int hashCode = 0;
-    private ImmutableMultimap<Role, Var> roleVarMap = null;
-    private ImmutableMultimap<Role, Type> roleTypeMap = null;
-    private ImmutableMultimap<Role, String> roleConceptIdMap = null;
-    private ImmutableList<Type> possibleRelations = null;
-    private final ImmutableList<RelationPlayer> relationPlayers;
-    private final ImmutableSet<Label> roleLabels;
+    public abstract ImmutableList<RelationPlayer> getRelationPlayers();
+    public abstract ImmutableSet<Label> getRoleLabels();
 
-    public RelationshipAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
-        super(pattern, predicateVar, predicate, par);
+    private ImmutableList<Type> possibleTypes = null;
+
+    public static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationPlayer> rps = new ArrayList<>();
-        getPattern().admin()
+        pattern.admin()
                 .getProperty(RelationshipProperty.class)
-                .ifPresent(prop -> rps.addAll(prop.relationPlayers()));
-        this.relationPlayers = ImmutableList.copyOf(rps);
-        this.roleLabels = ImmutableSet.<Label>builder().addAll(
+                .ifPresent(prop -> prop.relationPlayers().stream()
+                        .sorted(Comparator.comparing(Object::hashCode))
+                        .forEach(rps::add)
+                );
+        ImmutableList<RelationPlayer> relationPlayers = ImmutableList.copyOf(rps);
+        ImmutableSet<Label> roleLabels = ImmutableSet.<Label>builder().addAll(
                 relationPlayers.stream()
                         .map(RelationPlayer::getRole)
                         .flatMap(CommonUtil::optionalToStream)
@@ -127,21 +129,37 @@ public class RelationshipAtom extends IsaAtom {
                         .flatMap(CommonUtil::optionalToStream)
                         .iterator()
         ).build();
+        return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
-    private RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ImmutableList<Type> possibleRelations, ReasonerQuery par) {
-        this(pattern, predicateVar, predicate, par);
-        this.possibleRelations = possibleRelations;
+    private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
+        RelationshipAtom atom = new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
+        atom.applicableRules = a.applicableRules;
+        return atom;
     }
 
-    private RelationshipAtom(RelationshipAtom a) {
-        super(a);
-        this.relationPlayers = a.relationPlayers;
-        this.roleLabels = a.roleLabels;
-        this.roleVarMap = a.roleVarMap;
-        this.possibleRelations = a.possibleRelations;
+    //NB: overriding as these require a derived property
+    @Override
+    public final boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && isUserDefined() == a2.isUserDefined()
+                && getVarNames().equals(a2.getVarNames())
+                && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
+    @Memoized
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + getVarNames().hashCode();
+        hashCode = hashCode * 37 + getRelationPlayers().hashCode();
+        return hashCode;
+    }
+    
     @Override
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
@@ -170,8 +188,13 @@ public class RelationshipAtom extends IsaAtom {
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
 
-    private ImmutableSet<Label> getRoleLabels() { return roleLabels;}
-    private ImmutableList<RelationPlayer> getRelationPlayers() { return relationPlayers;}
+    @Override
+    public Set<Var> getVarNames() {
+        Set<Var> vars = super.getVarNames();
+        vars.addAll(getRolePlayers());
+        vars.addAll(getRoleVariables());
+        return vars;
+    }
 
     /**
      * @return set constituting the role player var names
@@ -199,8 +222,8 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Atomic copy() {
-        return new RelationshipAtom(this);
+    public Atomic copy(ReasonerQuery parent) {
+        return create(this, parent);
     }
 
     @Override
@@ -226,28 +249,6 @@ public class RelationshipAtom extends IsaAtom {
             var = rolePattern != null? var.rel(rolePattern, rp.getRolePlayer()) : var.rel(rp.getRolePlayer());
         }
         return var.admin();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && (isUserDefined() == a2.isUserDefined())
-                && getVarNames().equals(a2.getVarNames())
-                && getRelationPlayers().equals(a2.getRelationPlayers());
-    }
-
-    @Override
-    public int hashCode() {
-        if (hashCode == 0) {
-            hashCode = 1;
-            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-            hashCode = hashCode * 37 + getVarNames().hashCode();
-            hashCode = hashCode * 37 + getRelationPlayers().hashCode();
-        }
-        return hashCode;
     }
 
     private boolean isBaseEquivalent(Object obj){
@@ -403,43 +404,39 @@ public class RelationshipAtom extends IsaAtom {
                 .filter(vp -> vp.getTypeLabel().isPresent())
                 .map(vp -> {
                     Label label = vp.getTypeLabel().orElse(null);
-                    return new IdPredicate(vp.var(), tx().getRole(label.getValue()), getParentQuery());
+                    return IdPredicate.create(vp.var(), tx().getRole(label.getValue()), getParentQuery());
                 });
     }
 
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
-    private Multimap<Role, String> getRoleConceptIdMap() {
-        if (roleConceptIdMap == null) {
-            ImmutableMultimap.Builder<Role, String> builder = ImmutableMultimap.builder();
+    @Memoized
+    public Multimap<Role, String> getRoleConceptIdMap() {
+        ImmutableMultimap.Builder<Role, String> builder = ImmutableMultimap.builder();
 
-            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
-                    .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
-            Multimap<Role, Var> roleMap = getRoleVarMap();
+        Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
+                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
+        Multimap<Role, Var> roleMap = getRoleVarMap();
 
-            roleMap.entries().stream()
-                    .filter(e -> varSubMap.containsKey(e.getValue()))
-                    .sorted(Comparator.comparing(e -> varSubMap.get(e.getValue()).getPredicateValue()))
-                    .forEach(e -> builder.put(e.getKey(), varSubMap.get(e.getValue()).getPredicateValue()));
-            this.roleConceptIdMap = builder.build();
-        }
-        return roleConceptIdMap;
+        roleMap.entries().stream()
+                .filter(e -> varSubMap.containsKey(e.getValue()))
+                .sorted(Comparator.comparing(e -> varSubMap.get(e.getValue()).getPredicateValue()))
+                .forEach(e -> builder.put(e.getKey(), varSubMap.get(e.getValue()).getPredicateValue()));
+        return builder.build();
     }
 
-    private Multimap<Role, Type> getRoleTypeMap() {
-        if (roleTypeMap == null) {
-            ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
-            Multimap<Role, Var> roleMap = getRoleVarMap();
-            Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+    @Memoized
+    public Multimap<Role, Type> getRoleTypeMap() {
+        ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
+        Multimap<Role, Var> roleMap = getRoleVarMap();
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
-            roleMap.entries().stream()
-                    .filter(e -> varTypeMap.containsKey(e.getValue()))
-                    .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
-                    .forEach(e -> builder.put(e.getKey(), varTypeMap.get(e.getValue())));
-            this.roleTypeMap = builder.build();
-        }
-        return roleTypeMap;
+        roleMap.entries().stream()
+                .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
+                .forEach(e -> builder.put(e.getKey(), varTypeMap.get(e.getValue())));
+        return builder.build();
     }
 
     private Stream<Role> getExplicitRoles() {
@@ -472,7 +469,7 @@ public class RelationshipAtom extends IsaAtom {
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return new RelationshipAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
+        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
     /**
@@ -528,12 +525,14 @@ public class RelationshipAtom extends IsaAtom {
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
      * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
+     * NB: Not using Memoized as memoized methods can't have parameters
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
     public ImmutableList<Type> inferPossibleTypes(Answer sub) {
-        if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
-        if (possibleRelations == null) {
+        if (possibleTypes == null) {
+            if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
+
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
             Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
             Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
@@ -555,7 +554,7 @@ public class RelationshipAtom extends IsaAtom {
 
                         Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
                         Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypePlayers(sub);
-                        while(neighbourIterator.hasNext()){
+                        while (neighbourIterator.hasNext()) {
                             typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
                         }
 
@@ -575,9 +574,9 @@ public class RelationshipAtom extends IsaAtom {
                     .forEach(builder::add);
 
             //TODO need to add THING and meta relation type as well to make it complete
-            this.possibleRelations = builder.build();
+            this.possibleTypes = builder.build();
         }
-        return possibleRelations;
+        return possibleTypes;
     }
 
     /**
@@ -609,14 +608,6 @@ public class RelationshipAtom extends IsaAtom {
                 .sorted(Comparator.comparing(at -> -at.getRoleLabels().size()))
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = super.getVarNames();
-        vars.addAll(getRolePlayers());
-        vars.addAll(getRoleVariables());
-        return vars;
     }
 
     @Override
@@ -656,7 +647,7 @@ public class RelationshipAtom extends IsaAtom {
                         .filter(vp -> vp.var().isUserDefinedName())
                         .map(vp -> new Pair<>(vp.var(), vp.getTypeLabel().orElse(null)))
                         .filter(p -> Objects.nonNull(p.getValue()))
-                        .map(p -> new IdPredicate(p.getKey(), p.getValue(), getParentQuery()))
+                        .map(p -> IdPredicate.create(p.getKey(), p.getValue(), getParentQuery()))
         );
     }
 
@@ -742,39 +733,37 @@ public class RelationshipAtom extends IsaAtom {
 
         VarPatternAdmin newPattern = relationPattern(getVarName(), inferredRelationPlayers)
                 .isa(getPredicateVariable()).admin();
-        return new RelationshipAtom(newPattern, getPredicateVariable(), getTypePredicate(), possibleRelations, getParentQuery());
+        return create(newPattern, getPredicateVariable(), getTypeId(), getParentQuery());
     }
 
     /**
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
+    @Memoized
     public Multimap<Role, Var> getRoleVarMap() {
-        if (roleVarMap == null){
-            ImmutableMultimap.Builder<Role, Var> builder = ImmutableMultimap.builder();
+        ImmutableMultimap.Builder<Role, Var> builder = ImmutableMultimap.builder();
 
-            GraknTx graph = getParentQuery().tx();
-            getRelationPlayers().forEach(c -> {
-                Var varName = c.getRolePlayer().var();
-                VarPatternAdmin rolePattern = c.getRole().orElse(null);
-                if (rolePattern != null) {
-                    //try directly
-                    Label typeLabel = rolePattern.getTypeLabel().orElse(null);
-                    Role role = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
-                    //try indirectly
-                    if (role == null && rolePattern.var().isUserDefinedName()) {
-                        IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
-                        if (rolePredicate != null){
-                            Role r = graph.getConcept(rolePredicate.getPredicate());
-                            if (r == null) throw GraqlQueryException.idNotFound(rolePredicate.getPredicate());
-                            role = r;
-                        }
+        GraknTx graph = getParentQuery().tx();
+        getRelationPlayers().forEach(c -> {
+            Var varName = c.getRolePlayer().var();
+            VarPatternAdmin rolePattern = c.getRole().orElse(null);
+            if (rolePattern != null) {
+                //try directly
+                Label typeLabel = rolePattern.getTypeLabel().orElse(null);
+                Role role = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
+                //try indirectly
+                if (role == null && rolePattern.var().isUserDefinedName()) {
+                    IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
+                    if (rolePredicate != null){
+                        Role r = graph.getConcept(rolePredicate.getPredicate());
+                        if (r == null) throw GraqlQueryException.idNotFound(rolePredicate.getPredicate());
+                        role = r;
                     }
-                    if (role != null) builder.put(role, varName);
                 }
-            });
-            this.roleVarMap = builder.build();
-        }
-        return roleVarMap;
+                if (role != null) builder.put(role, varName);
+            }
+        });
+        return builder.build();
     }
 
     private Multimap<Role, RelationPlayer> getRoleRelationPlayerMap(){
@@ -976,7 +965,7 @@ public class RelationshipAtom extends IsaAtom {
                 relVar = relVar.rel(rp.getRolePlayer());
             }
         }
-        return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        return create(relVar.admin(), getPredicateVariable(), getTypeId(), getParentQuery());
     }
 
     /**
@@ -1003,12 +992,12 @@ public class RelationshipAtom extends IsaAtom {
                 relVar = relVar.rel(c.getRolePlayer());
             }
         }
-        return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        return create(relVar.admin(), getPredicateVariable(), getTypeId(), getParentQuery());
     }
 
     @Override
     public RelationshipAtom rewriteWithTypeVariable(){
-        return new RelationshipAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
     }
 
     @Override

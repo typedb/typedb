@@ -19,10 +19,13 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
+import com.google.auto.value.AutoValue;
 
 /**
  *
@@ -33,35 +36,23 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  * @author Kasper Piskorski
  *
  */
-public class RegexAtom extends AtomicBase {
+@AutoValue
+public abstract class RegexAtom extends AtomicBase {
 
-    private final String regex;
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    public abstract String getRegex();
 
-    public RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
-        super(varName.regex(prop.regex()).admin(), parent);
-        this.regex = prop.regex();
+    public static RegexAtom create(Var varName, RegexProperty prop, ReasonerQuery parent) {
+        return new AutoValue_RegexAtom(varName, varName.regex(prop.regex()).admin(), parent, prop.regex());
     }
 
-    private RegexAtom(RegexAtom a) {
-        super(a);
-        this.regex = a.getRegex();
-    }
-
-    @Override
-    public boolean equals(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        RegexAtom a2 = (RegexAtom) obj;
-        return this.getRegex().equals(a2.getRegex()) &&
-                this.getRegex().equals(((RegexAtom)obj).getRegex());
+    private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {
+        return new AutoValue_RegexAtom(a.getVarName(), a.getPattern(), parent, a.getRegex());
     }
 
     @Override
-    public int hashCode(){
-        int hashCode = alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
@@ -74,7 +65,7 @@ public class RegexAtom extends AtomicBase {
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.regex.hashCode();
+        hashCode = hashCode * 37 + this.getRegex().hashCode();
         return hashCode;
     }
 
@@ -85,8 +76,4 @@ public class RegexAtom extends AtomicBase {
 
     @Override
     public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
-
-    @Override
-    public Atomic copy() { return new RegexAtom(this);}
-    public String getRegex(){ return regex;}
 }

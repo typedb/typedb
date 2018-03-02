@@ -18,6 +18,9 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -28,7 +31,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -89,10 +92,11 @@ public abstract class IsaProperty extends AbstractIsaProperty implements UniqueV
         Var typeVariable = typePattern.var();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
 
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
-        return new IsaAtom(isaVar, typeVariable, predicate, parent);
+        return IsaAtom.create(isaVar, typeVariable, predicateId, parent);
     }
 
     // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary

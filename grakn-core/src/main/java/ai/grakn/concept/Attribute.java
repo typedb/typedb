@@ -21,6 +21,7 @@ package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
@@ -80,7 +81,14 @@ public interface Attribute<D> extends Thing {
      */
     @CheckReturnValue
     @Nullable
-    Thing owner();
+    default Thing owner() {
+        Iterator<Thing> owners = ownerInstances().iterator();
+        if(owners.hasNext()) {
+            return owners.next();
+        } else {
+            return null;
+        }
+    }
 
     /**
      * Creates a relation from this instance to the provided {@link Attribute}.

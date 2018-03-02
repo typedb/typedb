@@ -21,6 +21,7 @@ package ai.grakn.grpc;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
@@ -34,14 +35,15 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.ConceptPropertyValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
+import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
@@ -124,6 +126,10 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
+    public static TxRequest execQueryRequest(Query<?> query) {
+        return execQueryRequest(query.toString());
+    }
+
     public static TxRequest execQueryRequest(String queryString) {
         return execQueryRequest(queryString, null);
     }
@@ -137,12 +143,12 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
-    public static TxRequest nextRequest() {
-        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
+    public static TxRequest nextRequest(IteratorId iteratorId) {
+        return TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId).build()).build();
     }
 
-    public static TxRequest stopRequest() {
-        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
+    public static TxRequest stopRequest(IteratorId iteratorId) {
+        return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId).build()).build();
     }
 
     public static TxRequest getConceptPropertyRequest(ConceptId id, ai.grakn.grpc.ConceptProperty<?> property) {
@@ -157,6 +163,10 @@ public class GrpcUtil {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
+    public static TxResponse iteratorResponse(IteratorId iteratorId) {
+        return TxResponse.newBuilder().setIteratorId(iteratorId).build();
+    }
+
     public static Keyspace getKeyspace(Open open) {
         return convert(open.getKeyspace());
     }
@@ -169,8 +179,11 @@ public class GrpcUtil {
         return convert(getConceptPropertyRequest.getId());
     }
 
-    public static Label getLabel(ConceptPropertyValue conceptPropertyValue) {
-        return Label.of(conceptPropertyValue.getLabel().getValue());
+    public static GraknOuterClass.Concept convert(Concept concept) {
+        return GraknOuterClass.Concept.newBuilder()
+                .setId(GraknOuterClass.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
+                .setBaseType(getBaseType(concept))
+                .build();
     }
 
     private static GraknTxType convert(TxType txType) {
@@ -308,6 +321,30 @@ public class GrpcUtil {
             return GraknOuterClass.DataType.Date;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+        }
+    }
+
+    private static GraknOuterClass.BaseType getBaseType(Concept concept) {
+        if (concept.isEntityType()) {
+            return GraknOuterClass.BaseType.EntityType;
+        } else if (concept.isRelationshipType()) {
+            return GraknOuterClass.BaseType.RelationshipType;
+        } else if (concept.isAttributeType()) {
+            return GraknOuterClass.BaseType.AttributeType;
+        } else if (concept.isEntity()) {
+            return GraknOuterClass.BaseType.Entity;
+        } else if (concept.isRelationship()) {
+            return GraknOuterClass.BaseType.Relationship;
+        } else if (concept.isAttribute()) {
+            return GraknOuterClass.BaseType.Attribute;
+        } else if (concept.isRole()) {
+            return GraknOuterClass.BaseType.Role;
+        } else if (concept.isRule()) {
+            return GraknOuterClass.BaseType.Rule;
+        } else if (concept.isType()) {
+            return GraknOuterClass.BaseType.MetaType;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 

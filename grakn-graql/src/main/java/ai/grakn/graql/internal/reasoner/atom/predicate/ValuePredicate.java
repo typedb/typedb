@@ -26,6 +26,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Collection;
@@ -43,15 +45,39 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
+@AutoValue
+public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
 
-    public ValuePredicate(VarPattern pattern, ReasonerQuery par) { super(pattern, par);}
-    public ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery par){ this(createValueVar(varName, pred), par);}
-    private ValuePredicate(ValuePredicate pred) { super(pred);}
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    //need to have it explicitly here cause autovalue gets confused with the generic
+    public abstract ai.grakn.graql.ValuePredicate getPredicate();
+
+    public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
+        return new AutoValue_ValuePredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
+    }
+    public static ValuePredicate create(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery parent) {
+        return create(createValueVar(varName, pred), parent);
+    }
+    private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
+        return create(pred.getPattern(), parent);
+    }
+
+    public static VarPattern createValueVar(Var name, ai.grakn.graql.ValuePredicate pred) { return name.val(pred);}
+
+    private static ai.grakn.graql.ValuePredicate extractPredicate(VarPattern pattern) {
+        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
+        ValueProperty property = properties.next();
+        if (properties.hasNext()) {
+            throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
+        }
+        return property.predicate();
+    }
 
     @Override
-    public Atomic copy() {
-        return new ValuePredicate(this);
+    public Atomic copy(ReasonerQuery parent) {
+        return create(this, parent);
     }
 
     @Override
@@ -61,29 +87,7 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> new ValuePredicate(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
-    }
-
-    public static VarPattern createValueVar(Var name, ai.grakn.graql.ValuePredicate pred) {
-        return name.val(pred);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Predicate a2 = (Predicate) obj;
-        return this.getVarName().equals(a2.getVarName())
-                && this.getPredicate().getClass().equals(a2.getPredicate().getClass())
-                && this.getPredicateValue().equals(a2.getPredicateValue());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getPredicate().getClass().hashCode();
-        return hashCode;
+                vars.stream().map(v -> create(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
     @Override
@@ -96,6 +100,13 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     }
 
     @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = super.alphaEquivalenceHashCode();
+        hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
+        return hashCode;
+    }
+
+    @Override
     public boolean isCompatibleWith(Object obj) {
         if (this.isAlphaEquivalent(obj)) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
@@ -105,25 +116,8 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     }
 
     @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = super.alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public String getPredicateValue() {
         return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
-    }
-
-    @Override
-    protected ai.grakn.graql.ValuePredicate extractPredicate(VarPattern pattern) {
-        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
-        ValueProperty property = properties.next();
-        if (properties.hasNext()) {
-            throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
-        }
-        return property.predicate();
     }
 
     @Override

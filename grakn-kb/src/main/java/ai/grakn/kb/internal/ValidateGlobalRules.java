@@ -329,7 +329,8 @@ class ValidateGlobalRules {
             Set<Atomic> headAtoms = headQuery.getAtoms();
             combinedQuery.getAtoms().stream()
                     .filter(headAtoms::contains)
-                    .map(at -> at.validateAsRuleHead(rule)).forEach(errors::addAll);
+                    .map(at -> at.validateAsRuleHead(rule))
+                    .forEach(errors::addAll);
             Set<Atomic> selectableHeadAtoms = headAtoms.stream()
                     .filter(Atomic::isAtom)
                     .filter(Atomic::isSelectable)

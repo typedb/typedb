@@ -35,6 +35,7 @@ import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
@@ -78,16 +79,12 @@ public final class GrpcClient implements AutoCloseable {
     public Iterator<Object> execQuery(RemoteGraknTx tx, Query<?> query, @Nullable Boolean infer) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
 
-        return new AbstractIterator<Object>() {
-            private boolean firstElem = true;
+        IteratorId iteratorId = responseOrThrow().getIteratorId();
 
+        return new AbstractIterator<Object>() {
             @Override
             protected Object computeNext() {
-                if (firstElem) {
-                    firstElem = false;
-                } else {
-                    communicator.send(GrpcUtil.nextRequest());
-                }
+                communicator.send(GrpcUtil.nextRequest(iteratorId));
 
                 TxResponse response = responseOrThrow();
 

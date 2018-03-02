@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -53,12 +54,12 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
     @Override
     public final Stream<Type> getHypothesisTypes() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
     public final Stream<Type> getConclusionTypes() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
@@ -69,5 +70,10 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Override
     public final Rule sub(Rule type) {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final Rule asSelf(Concept concept) {
+        return concept.asRule();
     }
 }

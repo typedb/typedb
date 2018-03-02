@@ -38,17 +38,6 @@ import java.util.stream.Stream;
  *
  */
 public class AtomicFactory {
-    
-    /**
-     * @param atom to be copied
-     * @param parent query the copied atom should belong to
-     * @return atom copy
-     */
-    public static Atomic create(Atomic atom, ReasonerQuery parent) {
-        Atomic copy = atom.copy();
-        copy.setParentQuery(parent);
-        return copy;
-    }
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms
@@ -63,11 +52,11 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
 
         return atoms.stream()
-                .filter(at -> !atoms.stream()
+                .filter(at -> atoms.stream()
                         .filter(Atom.class::isInstance)
                         .map(Atom.class::cast)
                         .flatMap(Atom::getInnerPredicates)
-                        .anyMatch(at::equals)
+                        .noneMatch(at::equals)
                 );
     }
 
