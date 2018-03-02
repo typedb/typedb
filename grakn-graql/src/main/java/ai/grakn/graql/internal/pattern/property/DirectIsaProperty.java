@@ -56,7 +56,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * @author Jason Liu
  */
 @AutoValue
-public abstract class DirectIsaProperty extends AbstractIsaProperty implements UniqueVarProperty, NamedProperty {
+public abstract class DirectIsaProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa!";
 

@@ -25,7 +25,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -56,7 +55,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class IsaProperty extends AbstractIsaProperty implements UniqueVarProperty, NamedProperty {
+public abstract class IsaProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa";
 
