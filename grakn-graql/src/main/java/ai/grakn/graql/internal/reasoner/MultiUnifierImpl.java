@@ -104,8 +104,8 @@ public class MultiUnifierImpl implements MultiUnifier{
 
     @Override
     public boolean containsAll(MultiUnifier mu) {
-        return !mu.unifiers().stream()
-                .anyMatch(u -> !this.contains(u));
+        return mu.unifiers().stream()
+                .allMatch(this::contains);
     }
 
     @Override

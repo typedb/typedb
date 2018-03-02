@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
@@ -225,8 +226,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .filter(prop -> !IsaProperty.class.isInstance(prop))
-                .findFirst().isPresent();
+                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
@@ -257,22 +257,21 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        //TODO remove forcing user definition
         Var typeVariable = isaProp != null? isaProp.type().var() : Graql.var();
-        //Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
 
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                predicate = new IdPredicate(typeVariable, label, parent);
+                predicate = IdPredicate.create(typeVariable, label, parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
         relVar = relVar.isa(typeVariable.asUserDefined());
-        return new RelationshipAtom(relVar.admin(), typeVariable, predicate, parent);
+        return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }
 }

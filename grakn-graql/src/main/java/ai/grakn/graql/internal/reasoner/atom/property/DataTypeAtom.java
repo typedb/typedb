@@ -20,10 +20,13 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
+import com.google.auto.value.AutoValue;
 
 /**
  *
@@ -34,35 +37,23 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  * @author Kasper Piskorski
  *
  */
-public class DataTypeAtom extends AtomicBase {
+@AutoValue
+public abstract class DataTypeAtom extends AtomicBase {
 
-    private final AttributeType.DataType<?> datatype;
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    public abstract AttributeType.DataType<?> getDataType();
 
-    public DataTypeAtom(Var varName, DataTypeProperty prop, ReasonerQuery parent){
-        super(varName.datatype(prop.dataType()).admin(), parent);
-        this.datatype = prop.dataType();
+    public static DataTypeAtom create(Var varName, DataTypeProperty prop, ReasonerQuery parent) {
+        return new AutoValue_DataTypeAtom(varName, varName.datatype(prop.dataType()).admin(), parent, prop.dataType());
     }
 
-    private DataTypeAtom(DataTypeAtom a) {
-        super(a);
-        this.datatype = a.getDataType();
-    }
-
-    @Override
-    public boolean equals(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        DataTypeAtom a2 = (DataTypeAtom) obj;
-        return this.getDataType().equals(a2.getDataType()) &&
-                this.getDataType().equals(((DataTypeAtom)obj).getDataType());
+    private static DataTypeAtom create(DataTypeAtom a, ReasonerQuery parent) {
+        return new AutoValue_DataTypeAtom(a.getVarName(), a.getPattern(), parent, a.getDataType());
     }
 
     @Override
-    public int hashCode(){
-        int hashCode = alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
@@ -75,7 +66,7 @@ public class DataTypeAtom extends AtomicBase {
     @Override
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.datatype.hashCode();
+        hashCode = hashCode * 37 + this.getDataType().hashCode();
         return hashCode;
     }
 
@@ -88,9 +79,4 @@ public class DataTypeAtom extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    @Override
-    public Atomic copy() { return new DataTypeAtom(this);}
-
-    public AttributeType.DataType<?> getDataType(){ return datatype;}
 }
