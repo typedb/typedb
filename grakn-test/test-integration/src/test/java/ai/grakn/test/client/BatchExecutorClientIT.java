@@ -44,6 +44,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import rx.Observable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -80,7 +81,7 @@ public class BatchExecutorClientIT {
     }
 
     @Test
-    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException, IOException {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
