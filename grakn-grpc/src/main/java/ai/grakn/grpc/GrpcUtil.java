@@ -346,7 +346,7 @@ public class GrpcUtil {
         }
     }
 
-    private static GraknOuterClass.BaseType getBaseType(Concept concept) {
+    public static GraknOuterClass.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
             return GraknOuterClass.BaseType.EntityType;
         } else if (concept.isRelationshipType()) {

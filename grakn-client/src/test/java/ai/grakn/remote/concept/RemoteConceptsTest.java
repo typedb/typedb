@@ -233,7 +233,7 @@ public class RemoteConceptsTest {
 
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(attribute));
 
         assertEquals(attribute, attributeType.getAttribute(value));
     }
@@ -282,7 +282,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(C, THING.getLabel());
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(ID, BaseType.EntityType),
+                queryResultResponse(entityType),
                 queryResultResponse(A, BaseType.EntityType),
                 queryResultResponse(B, BaseType.EntityType),
                 queryResultResponse(C, MetaType)
@@ -788,7 +788,7 @@ public class RemoteConceptsTest {
 
         Entity entity = RemoteConcepts.createEntity(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Entity));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(entity));
 
         assertEquals(entity, entityType.addEntity());
     }
@@ -799,7 +799,7 @@ public class RemoteConceptsTest {
 
         Relationship relationship = RemoteConcepts.createRelationship(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Relationship));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(relationship));
 
         assertEquals(relationship, relationshipType.addRelationship());
     }
@@ -812,7 +812,7 @@ public class RemoteConceptsTest {
 
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(A, BaseType.Attribute));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(attribute));
 
         assertEquals(attribute, attributeType.putAttribute(value));
     }
@@ -913,7 +913,7 @@ public class RemoteConceptsTest {
         );
         mockLabelResponse(attributeType, label);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(C, BaseType.Relationship));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(relationship));
 
         assertEquals(relationship, thing.attributeRelationship(attribute));
 
@@ -953,7 +953,7 @@ public class RemoteConceptsTest {
         Role role = RemoteConcepts.createRole(tx, A);
         Thing thing = RemoteConcepts.createEntity(tx, B);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(B, BaseType.Entity));
+        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(thing));
 
         assertEquals(relationship, relationship.addRolePlayer(role, thing));
 
@@ -978,6 +978,10 @@ public class RemoteConceptsTest {
     private static TxResponse queryResultResponse(String value) {
         QueryResult queryResult = QueryResult.newBuilder().setOtherResult(value).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
+    }
+
+    private static TxResponse queryResultResponse(Concept concept) {
+        return queryResultResponse(concept.getId(), GrpcUtil.getBaseType(concept));
     }
 
     private static TxResponse queryResultResponse(ConceptId id, BaseType baseType) {
