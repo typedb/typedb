@@ -18,25 +18,17 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Set;
-
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code direct-isa} property on a {@link Thing}.
@@ -48,7 +40,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * </p>
  * <p>
  * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
- * {@code person sub entity} then it only follows {@code $bob isa person}, not {@code bob isa entity}.
+ * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  * </p>
  *
  * @author Felix Chapman
@@ -75,21 +67,8 @@ public abstract class DirectIsaProperty extends AbstractIsaProperty {
         );
     }
 
-    @Nullable
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationshipProperty.class)) return null;
-
-        Var varName = var.var().asUserDefined();
-        VarPatternAdmin typePattern = this.type();
-        Var typeVariable = typePattern.var();
-
-        IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //isa part
-        VarPatternAdmin isaVar = varName.directIsa(typeVariable).admin();
-        return IsaAtom.create(isaVar, typeVariable, predicateId, parent);
+    protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
+        return varName.directIsa(typeVariable);
     }
 }

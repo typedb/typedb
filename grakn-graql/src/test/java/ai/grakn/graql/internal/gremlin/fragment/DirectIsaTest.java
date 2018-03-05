@@ -95,6 +95,26 @@ public class DirectIsaTest {
     }
 
     @Test
+    public void testInsertSyntax() {
+        QueryBuilder queryBuilder = tx.graql();
+        InsertQuery insertQuery;
+
+        insertQuery = queryBuilder.insert(x.directIsa(thingy));
+        assertEquals("insert $x isa! thingy;", insertQuery.toString());
+
+        insertQuery = queryBuilder.parse("insert $x isa! thingy;");
+        assertEquals(queryBuilder.insert(x.directIsa(thingy)), insertQuery);
+    }
+
+    @Test
+    public void whenInsertDirectIsa_InsertsADirectInstanceOfAType() {
+        QueryBuilder queryBuilder = tx.graql();
+        queryBuilder.insert(x.directIsa(thingy)).execute();
+        assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
+        assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
+    }
+
+    @Test
     public void testMatchSyntax() {
         QueryBuilder queryBuilder = tx.graql();
         Match matchQuery;
@@ -111,22 +131,6 @@ public class DirectIsaTest {
 
         getQuery = queryBuilder.parse("match $x isa! $y; get;");
         assertEquals(queryBuilder.match(x.directIsa(y)), getQuery.match());
-    }
-
-    @Test
-    public void testInsert() {
-        QueryBuilder queryBuilder = tx.graql();
-        InsertQuery insertQuery;
-
-        insertQuery = queryBuilder.insert(x.directIsa(thingy));
-        assertEquals("insert $x isa! thingy;", insertQuery.toString());
-
-        insertQuery = queryBuilder.parse("insert $x isa! thingy;");
-        assertEquals(queryBuilder.insert(x.directIsa(thingy)), insertQuery);
-
-        insertQuery.execute();
-        assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
-        assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
     }
 
     @Test

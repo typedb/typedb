@@ -105,9 +105,6 @@ public class AdminTest {
     public void testInsertQueryMatchPatternEmpty() {
         InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
         assertFalse(query.admin().match().isPresent());
-
-        query = qb.insert(var().id(ConceptId.of("123")).directIsa("movie"));
-        assertFalse(query.admin().match().isPresent());
     }
 
     @Test

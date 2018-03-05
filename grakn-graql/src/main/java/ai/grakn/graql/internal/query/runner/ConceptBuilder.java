@@ -33,7 +33,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
@@ -56,16 +55,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Class for building a {@link Concept}, by providing properties.
- *
  * <p>
- *     A {@link ai.grakn.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
- *     some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
- *     an {@link IsaProperty} and a {@link ValueProperty}.
+ * <p>
+ * A {@link ai.grakn.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
+ * some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
+ * an {@link IsaProperty} and a {@link ValueProperty}.
  * </p>
  * <p>
- *     Therefore, these properties do not create the {@link Concept} themselves.
- *     instead they provide the necessary information to the {@link ConceptBuilder}, which will create the
- *     {@link Concept} at a later time:
+ * Therefore, these properties do not create the {@link Concept} themselves.
+ * instead they provide the necessary information to the {@link ConceptBuilder}, which will create the
+ * {@link Concept} at a later time:
  * </p>
  * <pre>
  *     // Executor:
@@ -98,11 +97,11 @@ public class ConceptBuilder {
      * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
      * considered "unexpected". If it is present in the field {@link #preProvidedParams}, then an error is thrown.
      * </p>
-     *
      * <p>
-     *     Simplified example of how this operates:
+     * <p>
+     * Simplified example of how this operates:
      * </p>
-     *
+     * <p>
      * <pre>
      * // preProvidedParams = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
      * // usedParams = {}
@@ -244,7 +243,7 @@ public class ConceptBuilder {
             concept = rule;
         } else if (has(SUPER_CONCEPT)) {
             concept = putSchemaConcept();
-        } else if (has(TYPE) || has(DIRECT_TYPE)) {
+        } else if (has(TYPE)) {
             concept = putInstance();
         } else {
             throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
@@ -263,9 +262,9 @@ public class ConceptBuilder {
     /**
      * Describes a parameter that can be set on a {@link ConceptBuilder}.
      * <p>
-     *     We could instead just represent these parameters as fields of {@link ConceptBuilder}. Instead, we use a
-     *     {@code Map<BuilderParam<?>, Object>}. This allows us to do clever stuff like iterate over the parameters,
-     *     or check for unexpected parameters without lots of boilerplate.
+     * We could instead just represent these parameters as fields of {@link ConceptBuilder}. Instead, we use a
+     * {@code Map<BuilderParam<?>, Object>}. This allows us to do clever stuff like iterate over the parameters,
+     * or check for unexpected parameters without lots of boilerplate.
      * </p>
      */
     // The generic is technically unused, but is useful to constrain the values of the parameter
@@ -292,7 +291,6 @@ public class ConceptBuilder {
     }
 
     private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
-    private static final BuilderParam<Type> DIRECT_TYPE = BuilderParam.of(DirectIsaProperty.NAME);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
     private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
     private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
@@ -305,14 +303,15 @@ public class ConceptBuilder {
 
     /**
      * Class with no fields and exactly one instance.
-     *
+     * <p>
      * Similar in use to {@link Void}, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
      * when {@code null} is not allowed.
      *
      * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
     private static final class Unit {
-        private Unit() {}
+        private Unit() {
+        }
 
         private static Unit INSTANCE = new Unit();
 
@@ -346,8 +345,8 @@ public class ConceptBuilder {
     /**
      * Called during {@link #build()} whenever a particular parameter is expected in order to build the {@link Concept}.
      * <p>
-     *     This method will return the parameter, if present and also record that it was expected, so that we can later
-     *     check for any unexpected properties.
+     * This method will return the parameter, if present and also record that it was expected, so that we can later
+     * check for any unexpected properties.
      * </p>
      *
      * @throws GraqlQueryException if the parameter is not present
@@ -377,7 +376,6 @@ public class ConceptBuilder {
      */
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
-        validateParam(concept, DIRECT_TYPE, Thing.class, Thing::type);
         validateParam(concept, SUPER_CONCEPT, SchemaConcept.class, SchemaConcept::sup);
         validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::getLabel);
         validateParam(concept, ID, Concept.class, Concept::getId);
