@@ -18,8 +18,6 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Graql;
@@ -36,6 +34,7 @@ import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
+import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
@@ -71,8 +70,8 @@ public final class GrpcClient implements AutoCloseable {
         return new GrpcClient(observer);
     }
 
-    public void open(Keyspace keyspace, GraknTxType txType) {
-        communicator.send(GrpcUtil.openRequest(keyspace, txType));
+    public void open(TxRequest openRequest) {
+        communicator.send(openRequest);
         responseOrThrow();
     }
 
