@@ -20,13 +20,29 @@ package ai.grakn.remote.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.util.CommonUtil;
+import ai.grakn.util.Schema;
 
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.Schema.MetaSchema.THING;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -38,17 +54,37 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final MyType type() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        // TODO: We use a trick here because there's no "direct isa" in Graql and we don't want to use gRPC for this.
+        // The direct type of this concept will have the same indirect super-types as the indirect types of this concept
+        Set<MyType> indirectTypes = query(ME.isa(TARGET))
+                .filter(RemoteThing::notMetaThing)
+                .map(this::asMyType)
+                .collect(toImmutableSet());
+        Predicate<MyType> hasExpectedSups = concept -> concept.sups().collect(toImmutableSet()).equals(indirectTypes);
+        Optional<MyType> type = indirectTypes.stream().filter(hasExpectedSups).findAny();
+        return type.orElseThrow(() -> CommonUtil.unreachableStatement("Thing has no type"));
+    }
+
+    private static boolean notMetaThing(Concept concept) {
+        return !concept.isSchemaConcept() || !concept.asSchemaConcept().getLabel().equals(THING.getLabel());
     }
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Concept> concepts;
+        if (roles.length != 0) {
+            Var roleVar = var("role");
+            Set<VarPattern> patterns = Stream.of(roles).map(role -> roleVar.label(role.getLabel())).collect(toSet());
+            concepts = query(TARGET.rel(roleVar, ME), or(patterns));
+        } else {
+            concepts = query(TARGET.rel(ME));
+        }
+        return concepts.map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(var().rel(TARGET, ME)).map(Concept::asRole);
     }
 
     @Override
@@ -63,7 +99,16 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        Stream<Label> attributeTypeLabels;
+        if (attributeTypes.length > 0) {
+            attributeTypeLabels = Stream.of(attributeTypes).map(SchemaConcept::getLabel);
+        } else {
+            attributeTypeLabels = Stream.of(Schema.MetaSchema.ATTRIBUTE.getLabel());
+        }
+
+        Set<VarPattern> patterns = attributeTypeLabels.map(label -> ME.has(label, TARGET)).collect(toImmutableSet());
+
+        return query(or(patterns)).map(Concept::asAttribute);
     }
 
     @Override
@@ -80,4 +125,6 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     public final boolean isInferred() {
         return getProperty(ConceptProperty.IS_INFERRED);
     }
+
+    abstract MyType asMyType(Concept concept);
 }

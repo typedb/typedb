@@ -111,7 +111,7 @@ public class GraqlTraversalPlanner {
 
                 Set<IdPredicate> extraSubs = first.getVarNames().stream()
                         .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                        .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of("placeholderId"), query))
                         .collect(Collectors.toSet());
 
                 return Stream.concat(

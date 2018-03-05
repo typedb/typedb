@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -44,7 +45,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Stream<Role> relates() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(ME.relates(TARGET)).map(Concept::asRole);
     }
 
     @Override
@@ -55,5 +56,15 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     @Override
     public final RelationshipType deleteRelates(Role role) {
         throw new UnsupportedOperationException(); // TODO: implement
+    }
+
+    @Override
+    final RelationshipType asSelf(Concept concept) {
+        return concept.asRelationshipType();
+    }
+
+    @Override
+    protected final Relationship asInstance(Concept concept) {
+        return concept.asRelationship();
     }
 }
