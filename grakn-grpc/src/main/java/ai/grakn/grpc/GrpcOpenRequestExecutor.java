@@ -16,40 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
+package ai.grakn.grpc;
 
-import io.grpc.Server;
-
-import java.io.IOException;
+import ai.grakn.GraknTx;
+import ai.grakn.rpc.generated.GraknOuterClass.Open;
 
 /**
- * @author Felix Chapman
+ * Interface implemented by classes that handle gRPC Open requests
+ *
+ * @author marcoscoppetta
  */
-public class GrpcServer implements AutoCloseable {
 
-    private final Server server;
+public interface GrpcOpenRequestExecutor {
 
-    private GrpcServer(Server server) {
-        this.server = server;
-    }
-
-
-    public static GrpcServer create(Server server) {
-        return new GrpcServer(server);
-    }
-
-    /**
-     * @throws IOException if unable to bind
-     */
-    public void start() throws IOException {
-        server.start();
-    }
-
-    @Override
-    public void close() throws InterruptedException {
-        server.shutdown();
-        server.awaitTermination();
-    }
-
+    GraknTx execute(Open open);
 }
-

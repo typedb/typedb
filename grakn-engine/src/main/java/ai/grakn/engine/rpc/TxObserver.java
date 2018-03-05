@@ -19,10 +19,7 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -34,6 +31,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -73,26 +71,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private final StreamObserver<TxResponse> responseObserver;
-    private final EngineGraknTxFactory txFactory;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
-    private final ExecutorService executor;
+    private final ExecutorService threadExecutor;
+    private final GrpcOpenRequestExecutor requestExecutor;
 
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
     private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
 
-    private @Nullable GraknTx tx = null;
+    private @Nullable
+    GraknTx tx = null;
 
-    private TxObserver(
-            EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver, ExecutorService executor) {
+    private TxObserver(StreamObserver<TxResponse> responseObserver, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor) {
         this.responseObserver = responseObserver;
-        this.txFactory = txFactory;
-        this.executor = executor;
+        this.threadExecutor = threadExecutor;
+        this.requestExecutor = requestExecutor;
     }
 
-    public static TxObserver create(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
+    public static TxObserver create(StreamObserver<TxResponse> responseObserver, GrpcOpenRequestExecutor requestExecutor) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
-        ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
-        return new TxObserver(txFactory, responseObserver, executor);
+        ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
+        return new TxObserver(responseObserver, threadExecutor, requestExecutor);
     }
 
     @Override
@@ -167,12 +165,12 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             }
         });
 
-        executor.shutdown();
+        threadExecutor.shutdown();
     }
 
     private void submit(Runnable runnable) {
         try {
-            executor.submit(runnable).get();
+            threadExecutor.submit(runnable).get();
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
@@ -186,11 +184,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         if (tx != null) {
             throw error(Status.FAILED_PRECONDITION);
         }
-
-        Keyspace keyspace = GrpcUtil.getKeyspace(request);
-        GraknTxType txType = GrpcUtil.getTxType(request);
-        tx = txFactory.tx(keyspace, txType);
-
+        tx = requestExecutor.execute(request);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 

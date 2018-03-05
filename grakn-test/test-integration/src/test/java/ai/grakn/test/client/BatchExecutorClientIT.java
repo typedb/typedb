@@ -44,6 +44,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import rx.Observable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -79,8 +80,9 @@ public class BatchExecutorClientIT {
         this.session = EmbeddedGraknSession.create(keyspace, engine.uri());
     }
 
+    @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")
     @Test
-    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException, IOException {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
