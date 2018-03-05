@@ -24,7 +24,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
@@ -51,12 +51,12 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Label getLabel() {
-        return getProperty(ConceptProperty.LABEL);
+        return runMethod(ConceptMethod.GET_LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        return getProperty(ConceptProperty.IS_IMPLICIT);
+        return runMethod(ConceptMethod.IS_IMPLICIT);
     }
 
     @Override
@@ -67,7 +67,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Nullable
     @Override
     public final Self sup() {
-        SchemaConcept schemaConcept = getNullableProperty(ConceptProperty.DIRECT_SUPER);
+        SchemaConcept schemaConcept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
         if (schemaConcept != null && notMetaThing(schemaConcept)) {
             return asSelf(schemaConcept);
         } else {

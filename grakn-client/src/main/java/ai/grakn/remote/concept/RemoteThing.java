@@ -30,7 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -53,7 +53,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final MyType type() {
-        return asMyType(getProperty(ConceptProperty.DIRECT_TYPE));
+        return asMyType(runMethod(ConceptMethod.GET_DIRECT_TYPE));
     }
 
     @Override
@@ -128,7 +128,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final boolean isInferred() {
-        return getProperty(ConceptProperty.IS_INFERRED);
+        return runMethod(ConceptMethod.IS_INFERRED);
     }
 
     abstract MyType asMyType(Concept concept);

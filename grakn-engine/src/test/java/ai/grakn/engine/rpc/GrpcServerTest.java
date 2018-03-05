@@ -34,7 +34,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
@@ -434,9 +434,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
-            assertEquals(label, ConceptProperty.LABEL.get(conceptConverter, tx.receive().ok()));
+            assertEquals(label, ConceptMethod.GET_LABEL.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -453,9 +453,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_IMPLICIT));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
 
-            assertTrue(ConceptProperty.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
+            assertTrue(ConceptMethod.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -472,9 +472,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_INFERRED));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
 
-            assertFalse(ConceptProperty.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
+            assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -488,7 +488,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -509,7 +509,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 

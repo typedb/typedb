@@ -39,7 +39,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.AllRolePlayers;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Concepts;
@@ -47,12 +46,13 @@ import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.DeleteResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Next;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.RolePlayer;
+import ai.grakn.rpc.generated.GraknOuterClass.RolePlayers;
+import ai.grakn.rpc.generated.GraknOuterClass.RunConceptMethod;
 import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
@@ -165,12 +165,12 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId).build()).build();
     }
 
-    public static TxRequest getConceptPropertyRequest(ConceptId id, ai.grakn.grpc.ConceptProperty<?> property) {
-        GetConceptProperty getConceptProperty = GetConceptProperty.newBuilder()
+    public static TxRequest runConceptMethodRequest(ConceptId id, ConceptMethod<?> conceptMethod) {
+        RunConceptMethod runConceptMethod = RunConceptMethod.newBuilder()
                 .setId(convert(id))
-                .setConceptProperty(property.toGrpc())
+                .setConceptMethod(conceptMethod.toGrpc())
                 .build();
-        return TxRequest.newBuilder().setGetConceptProperty(getConceptProperty).build();
+        return TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
     }
 
     public static TxResponse doneResponse() {
@@ -197,8 +197,8 @@ public class GrpcUtil {
         return convert(open.getTxType());
     }
 
-    public static ConceptId getConceptId(GetConceptProperty getConceptPropertyRequest) {
-        return convert(getConceptPropertyRequest.getId());
+    public static ConceptId getConceptId(RunConceptMethod runConceptMethodRequest) {
+        return convert(runConceptMethodRequest.getId());
     }
 
     public static GraknOuterClass.Concept convert(Concept concept) {
@@ -388,7 +388,7 @@ public class GrpcUtil {
         return Graql.parser().parsePattern(pattern.getValue());
     }
 
-    public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, AllRolePlayers allRolePlayers) {
+    public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, RolePlayers allRolePlayers) {
         ImmutableSetMultimap.Builder<Role, Thing> map = ImmutableSetMultimap.builder();
 
         for (RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
@@ -400,8 +400,8 @@ public class GrpcUtil {
         return Multimaps.asMap(map.build());
     }
 
-    public static AllRolePlayers convert(Map<Role, Set<Thing>> rolePlayers) {
-        AllRolePlayers.Builder builder = AllRolePlayers.newBuilder();
+    public static RolePlayers convert(Map<Role, Set<Thing>> rolePlayers) {
+        RolePlayers.Builder builder = RolePlayers.newBuilder();
 
         rolePlayers.forEach((role, players) -> {
             players.forEach(player -> {

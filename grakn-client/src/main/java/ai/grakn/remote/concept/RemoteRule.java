@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -43,13 +43,13 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Nullable
     @Override
     public final Pattern getWhen() {
-        return getNullableProperty(ConceptProperty.WHEN);
+        return runNullableMethod(ConceptMethod.GET_WHEN);
     }
 
     @Nullable
     @Override
     public final Pattern getThen() {
-        return getNullableProperty(ConceptProperty.THEN);
+        return runNullableMethod(ConceptMethod.GET_THEN);
     }
 
     @Override

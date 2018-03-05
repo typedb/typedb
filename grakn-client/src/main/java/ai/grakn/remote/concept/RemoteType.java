@@ -24,7 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 
 import java.util.stream.Stream;
 
@@ -69,12 +69,12 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<AttributeType> attributes() {
-        return getProperty(ConceptProperty.ATTRIBUTE_TYPES);
+        return runMethod(ConceptMethod.GET_ATTRIBUTE_TYPES);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        return getProperty(ConceptProperty.KEY_TYPES);
+        return runMethod(ConceptMethod.GET_KEY_TYPES);
     }
 
     @Override
@@ -84,7 +84,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Boolean isAbstract() {
-        return getProperty(ConceptProperty.IS_ABSTRACT);
+        return runMethod(ConceptMethod.IS_ABSTRACT);
     }
 
     @Override

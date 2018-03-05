@@ -26,7 +26,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -52,7 +52,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        return getProperty(ConceptProperty.ALL_ROLE_PLAYERS);
+        return runMethod(ConceptMethod.GET_ALL_ROLE_PLAYERS);
     }
 
     @Override

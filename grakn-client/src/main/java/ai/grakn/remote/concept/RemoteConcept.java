@@ -26,7 +26,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -67,13 +67,13 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
         return !tx().graql().match(me()).aggregate(ask()).execute();
     }
 
-    protected final <T> T getProperty(ConceptProperty<T> property) {
-        return Objects.requireNonNull(getNullableProperty(property));
+    protected final <T> T runMethod(ConceptMethod<T> property) {
+        return Objects.requireNonNull(runNullableMethod(property));
     }
 
     @Nullable
-    protected final <T> T getNullableProperty(ConceptProperty<T> property) {
-        return tx().client().getConceptProperty(getId(), property);
+    protected final <T> T runNullableMethod(ConceptMethod<T> property) {
+        return tx().client().runConceptMethod(getId(), property);
     }
 
     protected final VarPattern me() {

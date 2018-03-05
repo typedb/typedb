@@ -23,7 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -45,12 +45,12 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final D getValue() {
-        return (D) getProperty(ConceptProperty.VALUE);
+        return (D) runMethod(ConceptMethod.GET_VALUE);
     }
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        return (AttributeType.DataType<D>) getProperty(ConceptProperty.DATA_TYPE);
+        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE);
     }
 
     @Override

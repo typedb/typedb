@@ -22,7 +22,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -69,13 +69,13 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        return (AttributeType.DataType<D>) getNullableProperty(ConceptProperty.DATA_TYPE);
+        return (AttributeType.DataType<D>) runNullableMethod(ConceptMethod.GET_DATA_TYPE);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        return getNullableProperty(ConceptProperty.REGEX);
+        return runNullableMethod(ConceptMethod.GET_REGEX);
     }
 
     @Override

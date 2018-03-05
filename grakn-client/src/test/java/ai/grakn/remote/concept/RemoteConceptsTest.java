@@ -38,7 +38,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
@@ -70,19 +70,19 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.grpc.ConceptProperty.ALL_ROLE_PLAYERS;
-import static ai.grakn.grpc.ConceptProperty.ATTRIBUTE_TYPES;
-import static ai.grakn.grpc.ConceptProperty.DATA_TYPE;
-import static ai.grakn.grpc.ConceptProperty.DIRECT_SUPER;
-import static ai.grakn.grpc.ConceptProperty.DIRECT_TYPE;
-import static ai.grakn.grpc.ConceptProperty.IS_ABSTRACT;
-import static ai.grakn.grpc.ConceptProperty.IS_IMPLICIT;
-import static ai.grakn.grpc.ConceptProperty.IS_INFERRED;
-import static ai.grakn.grpc.ConceptProperty.KEY_TYPES;
-import static ai.grakn.grpc.ConceptProperty.REGEX;
-import static ai.grakn.grpc.ConceptProperty.THEN;
-import static ai.grakn.grpc.ConceptProperty.VALUE;
-import static ai.grakn.grpc.ConceptProperty.WHEN;
+import static ai.grakn.grpc.ConceptMethod.GET_ALL_ROLE_PLAYERS;
+import static ai.grakn.grpc.ConceptMethod.GET_ATTRIBUTE_TYPES;
+import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE;
+import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_SUPER;
+import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_TYPE;
+import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
+import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
+import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
+import static ai.grakn.grpc.ConceptMethod.GET_KEY_TYPES;
+import static ai.grakn.grpc.ConceptMethod.GET_REGEX;
+import static ai.grakn.grpc.ConceptMethod.GET_THEN;
+import static ai.grakn.grpc.ConceptMethod.GET_VALUE;
+import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
 import static ai.grakn.remote.concept.RemoteConcept.ME;
 import static ai.grakn.remote.concept.RemoteConcept.TARGET;
 import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
@@ -203,25 +203,25 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingGetValue_GetTheExpectedResult() {
-        mockPropertyResponse(VALUE, 123);
+        mockPropertyResponse(GET_VALUE, 123);
         assertEquals(123, ((Attribute<?>) attribute).getValue());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
-        mockPropertyResponse(DATA_TYPE, DataType.LONG);
+        mockPropertyResponse(GET_DATA_TYPE, DataType.LONG);
         assertEquals(DataType.LONG, ((AttributeType<?>) attributeType).getDataType());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
-        mockPropertyResponse(DATA_TYPE, DataType.LONG);
+        mockPropertyResponse(GET_DATA_TYPE, DataType.LONG);
         assertEquals(DataType.LONG, ((Attribute<?>) attribute).dataType());
     }
 
     @Test
     public void whenCallingGetRegex_GetTheExpectedResult() {
-        mockPropertyResponse(REGEX, "hello");
+        mockPropertyResponse(GET_REGEX, "hello");
         assertEquals("hello", attributeType.getRegex());
     }
 
@@ -251,13 +251,13 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        mockPropertyResponse(WHEN, PATTERN);
+        mockPropertyResponse(GET_WHEN, PATTERN);
         assertEquals(PATTERN, rule.getWhen());
     }
 
     @Test
     public void whenCallingGetThen_GetTheExpectedResult() {
-        mockPropertyResponse(THEN, PATTERN);
+        mockPropertyResponse(GET_THEN, PATTERN);
         assertEquals(PATTERN, rule.getThen());
     }
 
@@ -315,7 +315,7 @@ public class RemoteConceptsTest {
         SchemaConcept sup = RemoteConcepts.createEntityType(tx, A);
         mockLabelResponse(A, Label.of("A"));
 
-        mockPropertyResponse(DIRECT_SUPER, sup);
+        mockPropertyResponse(GET_DIRECT_SUPER, sup);
 
         assertEquals(sup, entityType.sup());
     }
@@ -325,7 +325,7 @@ public class RemoteConceptsTest {
         SchemaConcept sup = RemoteConcepts.createMetaType(tx, A);
         mockLabelResponse(A, THING.getLabel());
 
-        mockPropertyResponse(DIRECT_SUPER, sup);
+        mockPropertyResponse(GET_DIRECT_SUPER, sup);
 
         assertNull(schemaConcept.sup());
     }
@@ -334,7 +334,7 @@ public class RemoteConceptsTest {
     public void whenCallingType_GetTheExpectedResult() {
         Type type = RemoteConcepts.createEntityType(tx, A);
 
-        mockPropertyResponse(DIRECT_TYPE, type);
+        mockPropertyResponse(GET_DIRECT_TYPE, type);
 
         assertEquals(type, thing.type());
     }
@@ -515,9 +515,9 @@ public class RemoteConceptsTest {
                 bar, ImmutableSet.of(b, c)
         );
 
-        TxResponse response = ALL_ROLE_PLAYERS.createTxResponse(expected);
+        TxResponse response = GET_ALL_ROLE_PLAYERS.createTxResponse(expected);
 
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, ALL_ROLE_PLAYERS), response);
+        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ALL_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
         assertEquals(expected, allRolePlayers);
@@ -588,7 +588,7 @@ public class RemoteConceptsTest {
                 RemoteConcepts.createAttributeType(tx, C)
         );
 
-        mockPropertyResponse(ATTRIBUTE_TYPES, attributeTypes.stream());
+        mockPropertyResponse(GET_ATTRIBUTE_TYPES, attributeTypes.stream());
 
         assertEquals(attributeTypes, type.attributes().collect(toSet()));
     }
@@ -602,7 +602,7 @@ public class RemoteConceptsTest {
                 RemoteConcepts.createAttributeType(tx, C)
         );
 
-        mockPropertyResponse(KEY_TYPES, keyTypes.stream());
+        mockPropertyResponse(GET_KEY_TYPES, keyTypes.stream());
 
         assertEquals(keyTypes, type.keys().collect(toSet()));
     }
@@ -848,8 +848,8 @@ public class RemoteConceptsTest {
         String regex = "[abc]";
 
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.REGEX),
-                ConceptProperty.REGEX.createTxResponse(regex)
+                GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.GET_REGEX),
+                ConceptMethod.GET_REGEX.createTxResponse(regex)
         );
 
         Query<?> query = undefine(ME_ID, ME.regex(regex));
@@ -864,8 +864,8 @@ public class RemoteConceptsTest {
     @Test
     public void whenResettingUnsetRegex_DontCrash() {
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(ID, ConceptProperty.REGEX),
-                ConceptProperty.REGEX.createTxResponse((String) null)
+                GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.GET_REGEX),
+                ConceptMethod.GET_REGEX.createTxResponse((String) null)
         );
 
         assertEquals(attributeType, attributeType.setRegex(null));
@@ -883,8 +883,8 @@ public class RemoteConceptsTest {
         AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
 
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
-                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+                GrpcUtil.runConceptMethodRequest(A, ConceptMethod.GET_DIRECT_TYPE),
+                ConceptMethod.GET_DIRECT_TYPE.createTxResponse(attributeType)
         );
         mockLabelResponse(attributeType, label);
 
@@ -908,8 +908,8 @@ public class RemoteConceptsTest {
         Relationship relationship = RemoteConcepts.createRelationship(tx, C);
 
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
-                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+                GrpcUtil.runConceptMethodRequest(A, ConceptMethod.GET_DIRECT_TYPE),
+                ConceptMethod.GET_DIRECT_TYPE.createTxResponse(attributeType)
         );
         mockLabelResponse(attributeType, label);
 
@@ -932,8 +932,8 @@ public class RemoteConceptsTest {
         AttributeType<Long> attributeType = RemoteConcepts.createAttributeType(tx, B);
 
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(A, ConceptProperty.DIRECT_TYPE),
-                ConceptProperty.DIRECT_TYPE.createTxResponse(attributeType)
+                GrpcUtil.runConceptMethodRequest(A, ConceptMethod.GET_DIRECT_TYPE),
+                ConceptMethod.GET_DIRECT_TYPE.createTxResponse(attributeType)
         );
         mockLabelResponse(attributeType, label);
 
@@ -966,8 +966,8 @@ public class RemoteConceptsTest {
 
     private void mockLabelResponse(ConceptId id, Label label) {
         server.setResponse(
-                GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL),
-                ConceptProperty.LABEL.createTxResponse(label)
+                GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL),
+                ConceptMethod.GET_LABEL.createTxResponse(label)
         );
     }
 
@@ -1018,7 +1018,7 @@ public class RemoteConceptsTest {
         };
     }
 
-    private <T> void mockPropertyResponse(ConceptProperty<T> property, T value) {
-        server.setResponse(GrpcUtil.getConceptPropertyRequest(ID, property), property.createTxResponse(value));
+    private <T> void mockPropertyResponse(ConceptMethod<T> property, T value) {
+        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, property), property.createTxResponse(value));
     }
 }

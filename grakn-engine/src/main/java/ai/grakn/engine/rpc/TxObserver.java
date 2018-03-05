@@ -21,15 +21,15 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.generated.GraknOuterClass.RunConceptMethod;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -112,8 +112,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             case STOP:
                 stop(request.getStop());
                 break;
-            case GETCONCEPTPROPERTY:
-                getConceptProperty(request.getGetConceptProperty());
+            case RUNCONCEPTMETHOD:
+                runConceptMethod(request.getRunConceptMethod());
                 break;
             default:
             case REQUEST_NOT_SET:
@@ -212,12 +212,12 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
-    private void getConceptProperty(GetConceptProperty getConceptProperty) {
-        Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(getConceptProperty)));
+    private void runConceptMethod(RunConceptMethod runConceptMethod) {
+        Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(runConceptMethod)));
 
-        ConceptProperty<?> conceptProperty = ConceptProperty.fromGrpc(getConceptProperty.getConceptProperty());
+        ConceptMethod<?> conceptMethod = ConceptMethod.fromGrpc(runConceptMethod.getConceptMethod());
 
-        TxResponse response = conceptProperty.createTxResponse(concept);
+        TxResponse response = conceptMethod.run(concept);
 
         responseObserver.onNext(response);
     }
