@@ -34,6 +34,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -237,7 +238,10 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        throw new UnsupportedOperationException(); // TODO
+        Var me = Graql.var("me");
+        Var target = Graql.var("target");
+        GetQuery query = graql().match(me.id(schemaConcept.getId()), me.sub(target)).get();
+        return query.stream().map(answer -> answer.get(target).asSchemaConcept());
     }
 
     @Override

@@ -77,7 +77,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> sups() {
-        return query(ME.sub(TARGET)).filter(RemoteSchemaConcept::notMetaThing).map(this::asSelf);
+        return tx().admin().sups(this).filter(RemoteSchemaConcept::notMetaThing).map(this::asSelf);
     }
 
     private static boolean notMetaThing(Concept concept) {
