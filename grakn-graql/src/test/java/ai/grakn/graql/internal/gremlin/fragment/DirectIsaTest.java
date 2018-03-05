@@ -38,8 +38,10 @@ import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 public class DirectIsaTest {
 
@@ -143,8 +145,10 @@ public class DirectIsaTest {
         pattern = x.directIsa(thingy1);
         plan = getPlan(pattern);
         assertEquals(2, plan.size());
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof InIsaFragment);
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(InIsaFragment.class)
+        ));
 
         pattern = and(
                 x.directIsa(thingy1),
@@ -154,31 +158,37 @@ public class DirectIsaTest {
 
         assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof LabelFragment);
-        assertTrue(plan.get(2) instanceof LabelFragment);
-        assertTrue(plan.get(3) instanceof InIsaFragment); // start from relationship type
-        assertTrue(plan.get(4) instanceof OutRolePlayerFragment); // go to a role player
-        assertTrue(plan.get(5) instanceof OutIsaFragment); // check the role player's type
-        assertTrue(plan.get(6) instanceof OutRolePlayerFragment); // go to the other role player
-        assertTrue(plan.get(7) instanceof NeqFragment); // check two players are different
-        assertTrue(plan.get(8) instanceof OutIsaFragment); // check the role player's type
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(OutRolePlayerFragment.class), // go to a role player
+                instanceOf(OutIsaFragment.class), // check the role player's type
+                instanceOf(OutRolePlayerFragment.class), // go to the other role player
+                instanceOf(NeqFragment.class), // check two players are different
+                instanceOf(OutIsaFragment.class) // check the role player's type
+        ));
 
         // test type with subtypes
 
         pattern = x.directIsa(thingy);
         plan = getPlan(pattern);
         assertEquals(2, plan.size());
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof InIsaFragment);
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(InIsaFragment.class)
+        ));
 
         pattern = x.isa(thingy);
         plan = getPlan(pattern);
 
         assertEquals(3, plan.size());
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof InSubFragment);
-        assertTrue(plan.get(2) instanceof InIsaFragment);
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(InSubFragment.class),
+                instanceOf(InIsaFragment.class)
+        ));
 
         pattern = and(
                 x.directIsa(thingy),
@@ -188,15 +198,17 @@ public class DirectIsaTest {
 
         assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof LabelFragment);
-        assertTrue(plan.get(2) instanceof LabelFragment);
-        assertTrue(plan.get(3) instanceof InIsaFragment); // start from relationship type
-        assertTrue(plan.get(4) instanceof OutRolePlayerFragment); // go to a role player
-        assertTrue(plan.get(5) instanceof OutIsaFragment); // check the role player's type
-        assertTrue(plan.get(6) instanceof OutRolePlayerFragment); // go to the other role player
-        assertTrue(plan.get(7) instanceof NeqFragment); // check two players are different
-        assertTrue(plan.get(8) instanceof OutIsaFragment); // check the role player's type
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(OutRolePlayerFragment.class), // go to a role player
+                instanceOf(OutIsaFragment.class), // check the role player's type
+                instanceOf(OutRolePlayerFragment.class), // go to the other role player
+                instanceOf(NeqFragment.class), // check two players are different
+                instanceOf(OutIsaFragment.class) // check the role player's type
+        ));
 
         // combine isa and direct isa
 
@@ -208,16 +220,18 @@ public class DirectIsaTest {
 
         assertEquals(10, plan.size());
         // 3 labels: thingy, thingy and related
-        assertTrue(plan.get(0) instanceof LabelFragment);
-        assertTrue(plan.get(1) instanceof LabelFragment);
-        assertTrue(plan.get(2) instanceof LabelFragment);
-        assertTrue(plan.get(3) instanceof InIsaFragment); // start from relationship type
-        assertTrue(plan.get(4) instanceof OutRolePlayerFragment); // go to a role player with direct isa
-        assertTrue(plan.get(5) instanceof OutIsaFragment); // check the role player's type
-        assertTrue(plan.get(6) instanceof OutRolePlayerFragment); // go to the other role player
-        assertTrue(plan.get(7) instanceof NeqFragment); // check two players are different
-        assertTrue(plan.get(8) instanceof OutIsaFragment); // check the role player's type
-        assertTrue(plan.get(9) instanceof OutSubFragment); // check the subtypes
+        assertThat(plan, contains(
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(LabelFragment.class),
+                instanceOf(InIsaFragment.class), // start from relationship type
+                instanceOf(OutRolePlayerFragment.class), // go to a role player
+                instanceOf(OutIsaFragment.class), // check the role player's type
+                instanceOf(OutRolePlayerFragment.class), // go to the other role player
+                instanceOf(NeqFragment.class), // check two players are different
+                instanceOf(OutIsaFragment.class), // check the role player's type
+                instanceOf(OutSubFragment.class) // check the subtypes
+        ));
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
