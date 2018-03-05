@@ -16,27 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.graql.internal.reasoner.utils;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.remote.RemoteGraknTx;
-import com.google.auto.value.AutoValue;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
- * @author Felix Chapman
+ *
+ * <p>
+ * Annotation for ignoring a property in equals/hash auto-value generation.
+ * NB: It has to be defined in the most specialised class.
+ * </p>
+ *
+ * @author Robert Eggar
+ *
  */
-@AutoValue
-abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
-
-    public static RemoteEntity create(RemoteGraknTx tx, ConceptId id) {
-        return new AutoValue_RemoteEntity(tx, id);
-    }
-
-    @Override
-    final EntityType asMyType(Concept concept) {
-        return concept.asEntityType();
-    }
+@Retention(SOURCE)
+@Target({METHOD, PARAMETER, FIELD})
+public @interface IgnoreHashEquals {
 }

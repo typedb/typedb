@@ -19,6 +19,7 @@
 package ai.grakn.remote.concept;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -65,7 +66,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Role> plays() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(ME.plays(TARGET)).map(Concept::asRole);
     }
 
     @Override
@@ -80,7 +81,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Instance> instances() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return query(TARGET.isa(ME)).map(this::asInstance);
     }
 
     @Override
@@ -102,4 +103,6 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     public final Self deleteKey(AttributeType attributeType) {
         throw new UnsupportedOperationException(); // TODO: implement
     }
+
+    protected abstract Instance asInstance(Concept concept);
 }

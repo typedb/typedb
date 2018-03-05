@@ -39,7 +39,24 @@ import java.util.Set;
 public interface Atomic {
 
     @CheckReturnValue
-    Atomic copy();
+    Atomic copy(ReasonerQuery parent);
+
+    /**
+     * @return variable name of this atomic
+     */
+    @CheckReturnValue
+    Var getVarName();
+
+    /**
+     * @return the corresponding base pattern
+     * */
+    @CheckReturnValue
+    VarPattern getPattern();
+
+    /**
+     * @return the {@link ReasonerQuery} this atomic belongs to
+     */
+    ReasonerQuery getParentQuery();
 
     /**
      * validate wrt transaction the atomic is defined in
@@ -118,27 +135,10 @@ public interface Atomic {
     default Set<String> validateOntologically(){ return new HashSet<>();}
 
     /**
-     * @return the corresponding base pattern
-     * */
-    @CheckReturnValue
-    VarPattern getPattern();
-
-    /**
      * @return the base pattern combined with possible predicate patterns
      */
     @CheckReturnValue
     Pattern getCombinedPattern();
-
-    /**
-     * @param q query this atomic is supposed to belong to
-     */
-    void setParentQuery(ReasonerQuery q);
-
-    /**
-     * @return variable name of this atomic
-     */
-    @CheckReturnValue
-    Var getVarName();
 
     /**
      * @return all addressable variable names in this atomic

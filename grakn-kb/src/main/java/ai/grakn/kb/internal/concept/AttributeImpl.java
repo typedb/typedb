@@ -26,7 +26,6 @@ import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
@@ -114,16 +113,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
 
         return Stream.concat(implicitOwners, edgeOwners);
-    }
-
-    @Override
-    public Thing owner() {
-        Iterator<Thing> owners = ownerInstances().iterator();
-        if(owners.hasNext()) {
-            return owners.next();
-        } else {
-            return null;
-        }
     }
 
     /**

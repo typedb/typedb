@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -27,7 +28,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -123,9 +124,8 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
         Var varName = var.var().asUserDefined();
         VarPatternAdmin roleVar = this.role();
         Var roleVariable = roleVar.var().asUserDefined();
-        IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
-
-        VarPatternAdmin hrVar = varName.relates(roleVariable).admin();
-        return new RelatesAtom(hrVar, roleVariable, rolePredicate, parent);
+        IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        return RelatesAtom.create(varName, roleVariable, predicateId, parent);
     }
 }

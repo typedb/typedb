@@ -17,9 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.VarPattern;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -38,34 +36,8 @@ import java.util.Set;
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    private final T predicate;
-
-    Predicate(VarPattern pattern, ReasonerQuery par) {
-        super(pattern, par);
-        this.predicate = extractPredicate(pattern);
-    }
-
-    Predicate(Predicate pred) {
-        super(pred);
-        this.predicate = extractPredicate(pred.getPattern());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Predicate a2 = (Predicate) obj;
-        return this.getVarName().equals(a2.getVarName())
-                && this.getPredicateValue().equals(a2.getPredicateValue());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    public abstract T getPredicate();
+    public abstract String getPredicateValue();
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -96,8 +68,4 @@ public abstract class Predicate<T> extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    public T getPredicate(){ return predicate;}
-    public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarPattern pattern);
 }

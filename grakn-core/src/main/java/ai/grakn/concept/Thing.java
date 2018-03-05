@@ -63,10 +63,10 @@ public interface Thing extends Concept{
     Stream<Relationship> relationships(Role... roles);
 
     /**
-     * Determine the Role Types that this Thing may play.
+     * Determine the {@link Role}s that this {@link Thing} is currently playing.
      * @see Role
      *
-     * @return A set of all the Role Types which this instance plays.
+     * @return A set of all the {@link Role}s which this {@link Thing} is currently playing.
      */
     @CheckReturnValue
     Stream<Role> plays();
