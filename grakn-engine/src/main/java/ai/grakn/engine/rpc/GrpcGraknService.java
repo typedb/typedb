@@ -18,10 +18,29 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.GraknTx;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknServerException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteResponse;
+import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -40,7 +59,62 @@ public class GrpcGraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public StreamObserver<GraknOuterClass.TxRequest> tx(StreamObserver<GraknOuterClass.TxResponse> responseObserver) {
+    public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
         return TxObserver.create(responseObserver, executor);
+    }
+
+    @Override
+    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+        try {
+            runAndConvertGraknExceptions(() -> {
+                try (GraknTx tx = executor.execute(request.getOpen())) {
+                    tx.admin().delete();
+                }
+
+                responseObserver.onNext(GrpcUtil.deleteResponse());
+                responseObserver.onCompleted();
+            });
+        } catch (StatusRuntimeException e) {
+            responseObserver.onError(e);
+        }
+    }
+
+    static void runAndConvertGraknExceptions(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (TemporaryWriteException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.TEMPORARY_WRITE_EXCEPTION);
+        } catch (GraknServerException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_SERVER_EXCEPTION);
+        } catch (GraknBackendException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_BACKEND_EXCEPTION);
+        } catch (PropertyNotUniqueException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
+        } catch (GraknTxOperationException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_TX_OPERATION_EXCEPTION);
+        } catch (GraqlQueryException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.GRAQL_QUERY_EXCEPTION);
+        } catch (GraqlSyntaxException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.GRAQL_SYNTAX_EXCEPTION);
+        } catch (InvalidKBException e) {
+            throw convertGraknException(e, GrpcUtil.ErrorType.INVALID_KB_EXCEPTION);
+        } catch (GraknException e) {
+            // We shouldn't normally encounter this case unless someone adds a new exception class
+            throw convertGraknException(e, GrpcUtil.ErrorType.UNKNOWN);
+        }
+    }
+
+    private static StatusRuntimeException convertGraknException(GraknException exception, GrpcUtil.ErrorType errorType) {
+        Metadata trailers = new Metadata();
+        trailers.put(GrpcUtil.ErrorType.KEY, errorType);
+        return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
+    }
+
+    static StatusRuntimeException error(Status status) {
+        return error(status, null);
+    }
+
+    private static StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
+        return new StatusRuntimeException(status, trailers);
     }
 }

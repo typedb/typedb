@@ -21,6 +21,7 @@ package ai.grakn.remote;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
@@ -167,6 +168,13 @@ public final class GrpcServerMock extends CompositeTestRule {
             serverResponses = args.getArgument(0);
             return serverRequests;
         });
+
+        doAnswer(args -> {
+            StreamObserver<DeleteResponse> deleteResponses = args.getArgument(1);
+            deleteResponses.onNext(GrpcUtil.deleteResponse());
+            deleteResponses.onCompleted();
+            return null;
+        }).when(service).delete(any(), any());
 
         // Return a default "done" response to every message from the client
         doAnswer(args -> {

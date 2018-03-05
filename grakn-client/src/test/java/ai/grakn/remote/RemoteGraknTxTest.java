@@ -39,6 +39,7 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -74,6 +75,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -100,6 +102,7 @@ public class RemoteGraknTxTest {
     @Before
     public void setUp() {
         when(session.stub()).thenReturn(GraknGrpc.newStub(server.channel()));
+        when(session.blockingStub()).thenReturn(GraknGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
     }
 
@@ -404,6 +407,17 @@ public class RemoteGraknTxTest {
     @Test
     public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed(){
         assertTransactionClosedAfterAction(GraknTx::abort);
+    }
+
+    @Test
+    public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
+        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE).getOpen());
+
+        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+            tx.admin().delete();
+        }
+
+        verify(server.service()).delete(eq(request), any());
     }
 
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){

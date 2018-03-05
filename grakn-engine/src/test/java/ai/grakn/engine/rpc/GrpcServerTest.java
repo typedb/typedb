@@ -42,6 +42,7 @@ import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
@@ -73,6 +74,8 @@ import java.util.stream.Stream;
 import static ai.grakn.grpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.grpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.grpc.GrpcUtil.commitRequest;
+import static ai.grakn.grpc.GrpcUtil.convert;
+import static ai.grakn.grpc.GrpcUtil.deleteRequest;
 import static ai.grakn.grpc.GrpcUtil.doneResponse;
 import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
 import static ai.grakn.grpc.GrpcUtil.nextRequest;
@@ -122,6 +125,7 @@ public class GrpcServerTest {
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
     private final GraknStub stub = GraknGrpc.newStub(channel);
+    private final GraknBlockingStub blockingStub = GraknGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {
@@ -132,6 +136,7 @@ public class GrpcServerTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
+        when(tx.admin()).thenReturn(tx);
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
@@ -693,6 +698,28 @@ public class GrpcServerTest {
             tx.send(stopRequest(iterator2));
             tx.receive().ok();
         }
+    }
+
+    @Test
+    public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
+        Open open = Open.newBuilder().setKeyspace(convert(MYKS)).setTxType(TxType.Write).build();
+
+        blockingStub.delete(deleteRequest(open));
+
+        verify(tx).delete();
+    }
+
+    @Test
+    public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
+        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+
+        Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
+
+        String message = GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage();
+        exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
+        exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAKN_TX_OPERATION_EXCEPTION));
+
+        blockingStub.delete(deleteRequest(open));
     }
 }
 

@@ -42,10 +42,12 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -75,11 +77,11 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
  */
 public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
-    private final GraknSession session;
+    private final RemoteGraknSession session;
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private RemoteGraknTx(GraknSession session, GraknTxType txType, GraknStub stub) {
+    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, GraknStub stub) {
         this.session = session;
         this.txType = txType;
         client = GrpcClient.create(this::convert, stub);
@@ -246,7 +248,9 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void delete() {
-        throw new UnsupportedOperationException(); // TODO
+        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
+        session.blockingStub().delete(request);
+        close();
     }
 
     @Override

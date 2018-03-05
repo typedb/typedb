@@ -529,6 +529,26 @@ public class GrpcServerIT {
         }
     }
 
+    @Test
+    public void whenDeletingAKeyspace_TheKeyspaceIsDeleted() {
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            tx.putEntityType("easter");
+            tx.commit();
+        }
+
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            assertNotNull(tx.getEntityType("easter"));
+
+            tx.admin().delete();
+
+            assertTrue(tx.isClosed());
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            assertNull(tx.getEntityType("easter"));
+        }
+    }
+
     private <T extends Concept> void assertEqualConcepts(
             T concept1, T concept2, Function<T, Stream<? extends Concept>> function
     ) {

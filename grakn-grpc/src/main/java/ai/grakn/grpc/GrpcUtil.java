@@ -43,6 +43,8 @@ import ai.grakn.rpc.generated.GraknOuterClass.AllRolePlayers;
 import ai.grakn.rpc.generated.GraknOuterClass.AttributeValue;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
 import ai.grakn.rpc.generated.GraknOuterClass.Concepts;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.DeleteResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.GetConceptProperty;
@@ -179,6 +181,14 @@ public class GrpcUtil {
         return TxResponse.newBuilder().setIteratorId(iteratorId).build();
     }
 
+    public static DeleteRequest deleteRequest(Open open) {
+        return DeleteRequest.newBuilder().setOpen(open).build();
+    }
+
+    public static DeleteResponse deleteResponse() {
+        return DeleteResponse.getDefaultInstance();
+    }
+
     public static Keyspace getKeyspace(Open open) {
         return convert(open.getKeyspace());
     }
@@ -239,7 +249,7 @@ public class GrpcUtil {
         return Keyspace.of(keyspace.getValue());
     }
 
-    private static GraknOuterClass.Keyspace convert(Keyspace keyspace) {
+    public static GraknOuterClass.Keyspace convert(Keyspace keyspace) {
         return GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
     }
 
