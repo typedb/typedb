@@ -25,6 +25,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 
@@ -72,6 +73,12 @@ abstract class MatchModifier extends AbstractMatch {
      * @return a string representation of this modifier
      */
     protected abstract String modifierString();
+
+    @Nullable
+    @Override
+    public Boolean inferring() {
+        return inner.inferring();
+    }
 
     @Override
     public final String toString() {

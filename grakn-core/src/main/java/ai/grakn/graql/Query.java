@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -71,4 +72,7 @@ public interface Query<T> {
      * Get the transaction associated with this query
      */
     Optional<? extends GraknTx> tx();
+
+    @Nullable
+    Boolean inferring();
 }

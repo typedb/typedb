@@ -76,8 +76,8 @@ public final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Iterator<Object> execQuery(RemoteGraknTx tx, Query<?> query, @Nullable Boolean infer) {
-        communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
+    public Iterator<Object> execQuery(RemoteGraknTx tx, Query<?> query) {
+        communicator.send(GrpcUtil.execQueryRequest(query.toString(), query.inferring()));
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 

@@ -45,7 +45,6 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import com.google.common.collect.Iterators;
 
-import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -67,16 +66,14 @@ final class RemoteQueryRunner implements QueryRunner {
 
     private final RemoteGraknTx tx;
     private final GrpcClient client;
-    private final @Nullable Boolean infer;
 
-    private RemoteQueryRunner(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
+    private RemoteQueryRunner(RemoteGraknTx tx, GrpcClient client) {
         this.tx = tx;
         this.client = client;
-        this.infer = infer;
     }
 
-    public static RemoteQueryRunner create(RemoteGraknTx tx, GrpcClient client, @Nullable Boolean infer) {
-        return new RemoteQueryRunner(tx, client, infer);
+    public static RemoteQueryRunner create(RemoteGraknTx tx, GrpcClient client) {
+        return new RemoteQueryRunner(tx, client);
     }
 
     @Override
@@ -175,7 +172,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(tx, query, infer);
+        return client.execQuery(tx, query);
     }
 
     private void runVoid(Query<?> query) {
