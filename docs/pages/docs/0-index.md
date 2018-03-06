@@ -21,8 +21,8 @@ toc: false
 
   <div role="tabpanel" class="tab-pane active" id="getstarted">
     <h2>Get Started</h2>
-    <p>Check out our guide to <b><a href="./get-started/setup-guide">download and set up Grakn</a></b>.</p>
-    <p>When you're set up, there's an <a href="./get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
+    <p>Check out our guide to <b><a href="./docs/get-started/setup-guide">download and set up Grakn</a></b>.</p>
+    <p>When you're set up, there's an <a href="./docs/get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
   </div>
 
   <div role="tabpanel" class="tab-pane" id="contribute">

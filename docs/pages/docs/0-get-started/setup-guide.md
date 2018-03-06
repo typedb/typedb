@@ -10,7 +10,7 @@ folder: docs
 
 ## First: Download GRAKN.AI
 
-[Download Grakn 1.0](https://grakn.ai/download/latest)
+[Download Grakn 1.0](https://grakn.ai/download/)
 {: #download-btn }
 
 For more information on how to download older versions of GRAKN.AI, compile from source code, or import the Grakn Java API library as a development dependency, please visit our [Downloads page](../resources/downloads).
