@@ -130,6 +130,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
     }
 
+    public static GraqlQueryException insertPredicate() {
+        return new GraqlQueryException(ErrorMessage.INSERT_PREDICATE.getMessage());
+    }
+
     public static GraqlQueryException insertRecursive(VarPatternAdmin var) {
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
