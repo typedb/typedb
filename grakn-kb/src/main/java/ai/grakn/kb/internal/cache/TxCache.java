@@ -218,6 +218,10 @@ public class TxCache{
         }
     }
 
+    public void remove(Casting casting){
+        modifiedCastings.remove(casting);
+    }
+
     /**
      * Caches a concept so it does not have to be rebuilt later.
      *
