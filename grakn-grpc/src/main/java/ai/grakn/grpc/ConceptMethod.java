@@ -27,6 +27,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.Builder;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 
@@ -37,21 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetAllRolePlayers;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetAttributeTypes;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDataType;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDirectSuper;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDirectType;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetKeyTypes;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetLabel;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetRegex;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetThen;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetValue;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetWhen;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsAbstract;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsImplicit;
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsInferred;
 
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
@@ -64,135 +50,135 @@ import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsInferred;
 public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Object> GET_VALUE = create(
-            GetValue,
+            GrpcConcept.ConceptMethod.Builder::setGetValue,
             val -> val.asAttribute().getValue(),
             val -> GrpcUtil.convert(val.getAttributeValue()),
             (builder, val) -> builder.setAttributeValue(GrpcUtil.convertValue(val))
     );
 
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE = create(
-            GetDataType,
+            GrpcConcept.ConceptMethod.Builder::setGetDataType,
             val -> val.isAttribute() ? val.asAttribute().dataType() : val.asAttributeType().getDataType(),
             val -> GrpcUtil.convert(val.getDataType()),
             (builder, val) -> builder.setDataType(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Label> GET_LABEL = create(
-            GetLabel,
+            GrpcConcept.ConceptMethod.Builder::setGetLabel,
             concept -> concept.asSchemaConcept().getLabel(),
             val -> GrpcUtil.convert(val.getLabel()),
             (builder, val) -> builder.setLabel(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Boolean> IS_IMPLICIT = create(
-            IsImplicit,
+            GrpcConcept.ConceptMethod.Builder::setIsImplicit,
             concept -> concept.asSchemaConcept().isImplicit(),
             ConceptResponse::getBool,
             ConceptResponse.Builder::setBool
     );
 
     public static final ConceptMethod<Boolean> IS_INFERRED = create(
-            IsInferred,
+            GrpcConcept.ConceptMethod.Builder::setIsInferred,
             concept -> concept.asThing().isInferred(),
             ConceptResponse::getBool,
             ConceptResponse.Builder::setBool
     );
 
     public static final ConceptMethod<Boolean> IS_ABSTRACT = create(
-            IsAbstract,
+            GrpcConcept.ConceptMethod.Builder::setIsAbstract,
             concept -> concept.asType().isAbstract(),
             ConceptResponse::getBool,
             ConceptResponse.Builder::setBool
     );
 
     public static final ConceptMethod<Pattern> GET_WHEN = create(
-            GetWhen,
+            GrpcConcept.ConceptMethod.Builder::setGetWhen,
             concept -> concept.asRule().getWhen(),
             val -> GrpcUtil.convert(val.getPattern()),
             (builder, val) -> builder.setPattern(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Pattern> GET_THEN = create(
-            GetThen,
+            GrpcConcept.ConceptMethod.Builder::setGetThen,
             concept -> concept.asRule().getThen(),
             val -> GrpcUtil.convert(val.getPattern()),
             (builder, val) -> builder.setPattern(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<String> GET_REGEX = create(
-            GetRegex,
+            GrpcConcept.ConceptMethod.Builder::setGetRegex,
             concept -> concept.asAttributeType().getRegex(),
             ConceptResponse::getString,
             ConceptResponse.Builder::setString
     );
 
     public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ALL_ROLE_PLAYERS = create(
-            GetAllRolePlayers,
+            GrpcConcept.ConceptMethod.Builder::setGetAllRolePlayers,
             concept -> concept.asRelationship().allRolePlayers(),
             (converter, val) -> GrpcUtil.convert(converter, val.getRolePlayers()),
             (builder, val) -> builder.setRolePlayers(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Stream<AttributeType>> GET_ATTRIBUTE_TYPES = create(
-            GetAttributeTypes,
+            GrpcConcept.ConceptMethod.Builder::setGetAttributeTypes,
             concept -> concept.asType().attributes(),
             (converter, val) -> GrpcUtil.convert(converter, val.getConcepts()).map(Concept::asAttributeType),
             (builder, val) -> builder.setConcepts(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Stream<AttributeType>> GET_KEY_TYPES = create(
-            GetKeyTypes,
+            GrpcConcept.ConceptMethod.Builder::setGetKeyTypes,
             concept -> concept.asType().keys(),
             (converter, val) -> GrpcUtil.convert(converter, val.getConcepts()).map(Concept::asAttributeType),
             (builder, val) -> builder.setConcepts(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<Type> GET_DIRECT_TYPE = create(
-            GetDirectType,
+            GrpcConcept.ConceptMethod.Builder::setGetDirectType,
             concept -> concept.asThing().type(),
             (converter, val) -> converter.convert(val.getConcept()).asType(),
             (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
     );
 
     public static final ConceptMethod<SchemaConcept> GET_DIRECT_SUPER = create(
-            GetDirectSuper,
+            GrpcConcept.ConceptMethod.Builder::setGetDirectSuper,
             concept -> concept.asSchemaConcept().sup(),
             (converter, val) -> converter.convert(val.getConcept()).asSchemaConcept(),
             (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
     );
 
     public static ConceptMethod<?> fromGrpc(GrpcConcept.ConceptMethod conceptMethod) {
-        switch (conceptMethod) {
-            case GetValue:
+        switch (conceptMethod.getConceptMethodCase()) {
+            case GETVALUE:
                 return GET_VALUE;
-            case GetDataType:
+            case GETDATATYPE:
                 return GET_DATA_TYPE;
-            case GetLabel:
+            case GETLABEL:
                 return GET_LABEL;
-            case IsImplicit:
+            case ISIMPLICIT:
                 return IS_IMPLICIT;
-            case IsInferred:
+            case ISINFERRED:
                 return IS_INFERRED;
-            case IsAbstract:
+            case ISABSTRACT:
                 return IS_ABSTRACT;
-            case GetWhen:
+            case GETWHEN:
                 return GET_WHEN;
-            case GetThen:
+            case GETTHEN:
                 return GET_THEN;
-            case GetRegex:
+            case GETREGEX:
                 return GET_REGEX;
-            case GetAllRolePlayers:
+            case GETALLROLEPLAYERS:
                 return GET_ALL_ROLE_PLAYERS;
-            case GetAttributeTypes:
+            case GETATTRIBUTETYPES:
                 return GET_ATTRIBUTE_TYPES;
-            case GetKeyTypes:
+            case GETKEYTYPES:
                 return GET_KEY_TYPES;
-            case GetDirectType:
+            case GETDIRECTTYPE:
                 return GET_DIRECT_TYPE;
-            case GetDirectSuper:
+            case GETDIRECTSUPER:
                 return GET_DIRECT_SUPER;
             default:
-            case UNRECOGNIZED:
+            case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);
         }
     }
@@ -213,23 +199,23 @@ public abstract class ConceptMethod<T> {
     abstract GrpcConcept.ConceptMethod toGrpc();
 
     /**
-     * @param grpcProperty the gRPC {@link GrpcConcept.ConceptMethod} equivalent of this with the same name
+     * @param requestSetter a function to specify this method on a gRPC message
      * @param conceptGetter a method to retrieve a property value from a {@link Concept}
      * @param responseGetter a method to retrieve a property value from inside a gRPC response
-     * @param setter a method to set the property value inside a gRPC response
+     * @param responseSetter a method to set the property value inside a gRPC response
      * @param <T> The type of values of the property
      */
     private static <T> ConceptMethod<T> create(
-            GrpcConcept.ConceptMethod grpcProperty,
+            BiConsumer<GrpcConcept.ConceptMethod.Builder, GrpcConcept.Unit> requestSetter,
             Function<Concept, T> conceptGetter,
             Function<ConceptResponse, T> responseGetter,
-            BiConsumer<ConceptResponse.Builder, T> setter
+            BiConsumer<ConceptResponse.Builder, T> responseSetter
     ) {
-        return create(grpcProperty, conceptGetter, (conceptConverter, val) -> responseGetter.apply(val), setter);
+        return create(requestSetter, conceptGetter, (conceptConverter, val) -> responseGetter.apply(val), responseSetter);
     }
 
     private static <T> ConceptMethod<T> create(
-                GrpcConcept.ConceptMethod grpcProperty,
+                BiConsumer<GrpcConcept.ConceptMethod.Builder, GrpcConcept.Unit> grpcSetter,
                 Function<Concept, T> conceptGetter,
                 BiFunction<GrpcConceptConverter, ConceptResponse, T> responseGetter,
                 BiConsumer<ConceptResponse.Builder, T> setter
@@ -260,7 +246,9 @@ public abstract class ConceptMethod<T> {
 
             @Override
             GrpcConcept.ConceptMethod toGrpc() {
-                return grpcProperty;
+                Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                grpcSetter.accept(builder, GrpcConcept.Unit.getDefaultInstance());
+                return builder.build();
             }
         };
     }
