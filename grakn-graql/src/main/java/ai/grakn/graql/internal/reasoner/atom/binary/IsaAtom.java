@@ -30,16 +30,17 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
@@ -65,9 +66,9 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {
 
-    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract Var getPredicateVariable();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
 
     public static IsaAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_IsaAtom(pattern.admin().var(), predicateId, predicateVar, pattern, parent);
@@ -92,6 +93,27 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
 
+    //NB: overriding as these require a derived property
+    @Override
+    public final boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        IsaAtom that = (IsaAtom) obj;
+        return this.getVarName().equals(that.getVarName())
+                && this.isDirect() == that.isDirect()
+                && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()))
+                && this.getPredicateVariable().equals(that.getPredicateVariable());
+    }
+
+    @Memoized
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + getVarName().hashCode();
+        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        return hashCode;
+    }
+
     @Override
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
@@ -101,7 +123,11 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
-        return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
+        return getSchemaConcept() == null?
+                getVarName().isa(getPredicateVariable()) :
+                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent()?
+                        getVarName().directIsa(getSchemaConcept().getLabel().getValue()) :
+                        getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
     }
 
     @Override

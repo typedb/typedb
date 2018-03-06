@@ -1123,6 +1123,7 @@ public class AtomicQueryTest {
 
                 "{($x, $y);}",
                 "{($x, $y) isa binary;}",
+                "{($x, $y) isa! binary;}",
                 "{(role1: $x, role2: $y) isa binary;}",
                 "{(role: $y, role2: $z) isa binary;}",
                 "{(role: $x, role: $x, role2: $z) isa binary;}",

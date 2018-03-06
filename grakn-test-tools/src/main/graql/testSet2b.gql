@@ -11,13 +11,13 @@ directDerivedEntity sub derivedEntity;
 
 #Rules
 
-#isaRule sub rule
- #   when {
-  #  	$x isa subEntity;
-   # }
-    #then {
-    #	$x isa derivedEntity;
-    #};
+isaRule sub rule
+    when {
+    	$x isa subEntity;
+    }
+    then {
+    	$x isa derivedEntity;
+    };
 
 directIsaRule sub rule
     when {
@@ -31,6 +31,6 @@ insert
 
 #Data
 
-isa baseEntity;
-isa subEntity;
-isa subSubEntity;
+$x isa baseEntity;
+$y isa subEntity;    # -> derivedEntity, directDerivedEntity
+$z isa subSubEntity; # -> derivedEntity
