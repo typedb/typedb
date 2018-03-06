@@ -69,12 +69,12 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<AttributeType> attributes() {
-        return runMethod(ConceptMethod.GET_ATTRIBUTE_TYPES);
+        return runMethod(ConceptMethod.GET_ATTRIBUTE_TYPES).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        return runMethod(ConceptMethod.GET_KEY_TYPES);
+        return runMethod(ConceptMethod.GET_KEY_TYPES).map(Concept::asAttributeType);
     }
 
     @Override
