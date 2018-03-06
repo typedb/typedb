@@ -226,7 +226,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
+                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {

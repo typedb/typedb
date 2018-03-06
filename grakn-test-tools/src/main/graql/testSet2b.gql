@@ -1,0 +1,36 @@
+define
+
+#Entities
+
+baseEntity sub entity;
+subEntity sub baseEntity;
+subSubEntity sub subEntity;
+
+derivedEntity sub entity;
+directDerivedEntity sub derivedEntity;
+
+#Rules
+
+#isaRule sub rule
+ #   when {
+  #  	$x isa subEntity;
+   # }
+    #then {
+    #	$x isa derivedEntity;
+    #};
+
+directIsaRule sub rule
+    when {
+    	$x isa! subEntity;
+    }
+    then {
+    	$x isa directDerivedEntity;
+    };
+
+insert
+
+#Data
+
+isa baseEntity;
+isa subEntity;
+isa subSubEntity;
