@@ -101,8 +101,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         IsaAtom that = (IsaAtom) obj;
         return this.getVarName().equals(that.getVarName())
                 && this.isDirect() == that.isDirect()
-                && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()))
-                && this.getPredicateVariable().equals(that.getPredicateVariable());
+                && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
     }
 
     @Memoized
@@ -117,7 +116,9 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
-        return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
+        return typeString +
+                (isDirect()? "!" : "") +
+                getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override

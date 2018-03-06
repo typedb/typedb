@@ -185,6 +185,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
+                (isDirect()? "!" : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
