@@ -22,7 +22,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -476,6 +478,41 @@ public class GrpcServerTest {
             tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
 
             assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
+        }
+    }
+
+    @Test
+    public void whenRemovingRolePlayer_RolePlayerIsRemoved() throws InterruptedException {
+        ConceptId conceptId = ConceptId.of("V123456");
+        ConceptId roleId = ConceptId.of("ROLE");
+        ConceptId playerId = ConceptId.of("PLAYER");
+
+        Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(conceptId)).thenReturn(concept);
+        when(concept.isRelationship()).thenReturn(true);
+
+        Role role = mock(Role.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(roleId)).thenReturn(role);
+        when(role.isRole()).thenReturn(true);
+        when(role.asRole()).thenReturn(role);
+        when(role.getId()).thenReturn(roleId);
+
+        Entity player = mock(Entity.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(playerId)).thenReturn(player);
+        when(player.isEntity()).thenReturn(true);
+        when(player.asEntity()).thenReturn(player);
+        when(player.isThing()).thenReturn(true);
+        when(player.asThing()).thenReturn(player);
+        when(player.getId()).thenReturn(playerId);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, ConceptMethod.removeRolePlayer(role, player)));
+            tx.receive().ok();
+
+            verify(concept.asRelationship()).removeRolePlayer(role, player);
         }
     }
 

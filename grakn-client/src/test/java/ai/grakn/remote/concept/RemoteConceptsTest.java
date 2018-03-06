@@ -961,6 +961,17 @@ public class RemoteConceptsTest {
         verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
+    @Test
+    public void whenCallingRemoveRolePlayer_ExecuteAConceptMethod() {
+        Role role = RemoteConcepts.createRole(tx, A);
+        Thing thing = RemoteConcepts.createEntity(tx, B);
+
+        mockPropertyResponse(GET_THEN, PATTERN);
+        assertEquals(PATTERN, rule.getThen());
+
+        relationship.removeRolePlayer(role, thing);
+    }
+
     private void mockLabelResponse(Concept concept, Label label) {
         mockLabelResponse(concept.getId(), label);
     }

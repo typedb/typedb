@@ -76,6 +76,10 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
         return tx().client().runConceptMethod(getId(), property);
     }
 
+    protected final void runVoidMethod(ConceptMethod<Void> property) {
+        runNullableMethod(property);
+    }
+
     protected final VarPattern me() {
         return ME.id(getId());
     }

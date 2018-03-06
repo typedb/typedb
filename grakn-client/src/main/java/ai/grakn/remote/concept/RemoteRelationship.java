@@ -75,7 +75,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        runVoidMethod(ConceptMethod.removeRolePlayer(role, thing));
     }
 
     @Override

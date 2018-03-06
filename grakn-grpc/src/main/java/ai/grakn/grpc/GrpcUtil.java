@@ -258,7 +258,7 @@ public class GrpcUtil {
         return GrpcConcept.ConceptId.newBuilder().setValue(id.getValue()).build();
     }
 
-    private static ConceptId convert(GrpcConcept.ConceptId id) {
+    public static ConceptId convert(GrpcConcept.ConceptId id) {
         return ConceptId.of(id.getValue());
     }
 
@@ -406,12 +406,14 @@ public class GrpcUtil {
 
         rolePlayers.forEach((role, players) -> {
             players.forEach(player -> {
-                RolePlayer rolePlayer =
-                        RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(player)).build();
-                builder.addRolePlayer(rolePlayer);
+                builder.addRolePlayer(convert(role, player));
             });
         });
 
         return builder.build();
+    }
+
+    public static RolePlayer convert(Role role, Thing thing) {
+        return RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(thing)).build();
     }
 }
