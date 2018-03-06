@@ -26,9 +26,9 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.ConceptResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -38,20 +38,20 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetAllRolePlayers;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetAttributeTypes;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetDataType;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetDirectSuper;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetDirectType;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetKeyTypes;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetLabel;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetRegex;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetThen;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetValue;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.GetWhen;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.IsAbstract;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.IsImplicit;
-import static ai.grakn.rpc.generated.GraknOuterClass.ConceptMethod.IsInferred;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetAllRolePlayers;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetAttributeTypes;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDataType;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDirectSuper;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetDirectType;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetKeyTypes;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetLabel;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetRegex;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetThen;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetValue;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.GetWhen;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsAbstract;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsImplicit;
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.IsInferred;
 
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
@@ -161,7 +161,7 @@ public abstract class ConceptMethod<T> {
             (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
     );
 
-    public static ConceptMethod<?> fromGrpc(GraknOuterClass.ConceptMethod conceptMethod) {
+    public static ConceptMethod<?> fromGrpc(GrpcConcept.ConceptMethod conceptMethod) {
         switch (conceptMethod) {
             case GetValue:
                 return GET_VALUE;
@@ -210,17 +210,17 @@ public abstract class ConceptMethod<T> {
 
     abstract void set(ConceptResponse.Builder builder, @Nullable T value);
 
-    abstract GraknOuterClass.ConceptMethod toGrpc();
+    abstract GrpcConcept.ConceptMethod toGrpc();
 
     /**
-     * @param grpcProperty the gRPC {@link GraknOuterClass.ConceptMethod} equivalent of this with the same name
+     * @param grpcProperty the gRPC {@link GrpcConcept.ConceptMethod} equivalent of this with the same name
      * @param conceptGetter a method to retrieve a property value from a {@link Concept}
      * @param responseGetter a method to retrieve a property value from inside a gRPC response
      * @param setter a method to set the property value inside a gRPC response
      * @param <T> The type of values of the property
      */
     private static <T> ConceptMethod<T> create(
-            GraknOuterClass.ConceptMethod grpcProperty,
+            GrpcConcept.ConceptMethod grpcProperty,
             Function<Concept, T> conceptGetter,
             Function<ConceptResponse, T> responseGetter,
             BiConsumer<ConceptResponse.Builder, T> setter
@@ -229,7 +229,7 @@ public abstract class ConceptMethod<T> {
     }
 
     private static <T> ConceptMethod<T> create(
-                GraknOuterClass.ConceptMethod grpcProperty,
+                GrpcConcept.ConceptMethod grpcProperty,
                 Function<Concept, T> conceptGetter,
                 BiFunction<GrpcConceptConverter, ConceptResponse, T> responseGetter,
                 BiConsumer<ConceptResponse.Builder, T> setter
@@ -259,7 +259,7 @@ public abstract class ConceptMethod<T> {
             }
 
             @Override
-            GraknOuterClass.ConceptMethod toGrpc() {
+            GrpcConcept.ConceptMethod toGrpc() {
                 return grpcProperty;
             }
         };

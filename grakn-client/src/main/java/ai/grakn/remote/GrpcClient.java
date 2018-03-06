@@ -34,9 +34,9 @@ import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
@@ -160,7 +160,7 @@ public final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private Object convert(GraknOuterClass.QueryResult queryResult) {
+    private Object convert(GrpcGrakn.QueryResult queryResult) {
         switch (queryResult.getQueryResultCase()) {
             case ANSWER:
                 return convert(queryResult.getAnswer());
@@ -172,7 +172,7 @@ public final class GrpcClient implements AutoCloseable {
         }
     }
 
-    private Answer convert(GraknOuterClass.Answer answer) {
+    private Answer convert(GrpcGrakn.Answer answer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {

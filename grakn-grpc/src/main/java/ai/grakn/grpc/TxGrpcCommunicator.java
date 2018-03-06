@@ -19,8 +19,8 @@
 package ai.grakn.grpc;
 
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;

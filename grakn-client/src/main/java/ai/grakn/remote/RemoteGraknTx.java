@@ -46,8 +46,8 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -258,7 +258,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return RemoteQueryRunner.create(this, client, null);
     }
 
-    private Concept convert(GraknOuterClass.Concept concept) {
+    private Concept convert(GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId().getValue());
 
         switch (concept.getBaseType()) {

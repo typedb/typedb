@@ -43,10 +43,11 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.BaseType;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -75,19 +76,19 @@ import static ai.grakn.grpc.ConceptMethod.GET_ATTRIBUTE_TYPES;
 import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_SUPER;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_TYPE;
-import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
-import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
-import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
 import static ai.grakn.grpc.ConceptMethod.GET_KEY_TYPES;
 import static ai.grakn.grpc.ConceptMethod.GET_REGEX;
 import static ai.grakn.grpc.ConceptMethod.GET_THEN;
 import static ai.grakn.grpc.ConceptMethod.GET_VALUE;
 import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
+import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
+import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
+import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
 import static ai.grakn.remote.concept.RemoteConcept.ME;
 import static ai.grakn.remote.concept.RemoteConcept.TARGET;
-import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Attribute;
-import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.MetaType;
-import static ai.grakn.rpc.generated.GraknOuterClass.BaseType.Relationship;
+import static ai.grakn.rpc.generated.GrpcConcept.BaseType.Attribute;
+import static ai.grakn.rpc.generated.GrpcConcept.BaseType.MetaType;
+import static ai.grakn.rpc.generated.GrpcConcept.BaseType.Relationship;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.THING;
@@ -972,7 +973,7 @@ public class RemoteConceptsTest {
     }
 
     private static TxResponse emptyQueryResultResponse() {
-        return queryResultResponse(GraknOuterClass.Answer.getDefaultInstance());
+        return queryResultResponse(GrpcGrakn.Answer.getDefaultInstance());
     }
 
     private static TxResponse queryResultResponse(String value) {
@@ -985,18 +986,18 @@ public class RemoteConceptsTest {
     }
 
     private static TxResponse queryResultResponse(ConceptId id, BaseType baseType) {
-        GraknOuterClass.ConceptId conceptId = GraknOuterClass.ConceptId.newBuilder().setValue(id.getValue()).build();
+        GrpcConcept.ConceptId conceptId = GrpcConcept.ConceptId.newBuilder().setValue(id.getValue()).build();
 
-        GraknOuterClass.Concept concept =
-                GraknOuterClass.Concept.newBuilder().setId(conceptId).setBaseType(baseType).build();
+        GrpcConcept.Concept concept =
+                GrpcConcept.Concept.newBuilder().setId(conceptId).setBaseType(baseType).build();
 
-        GraknOuterClass.Answer answer =
-                GraknOuterClass.Answer.newBuilder().putAnswer(TARGET.getValue(), concept).build();
+        GrpcGrakn.Answer answer =
+                GrpcGrakn.Answer.newBuilder().putAnswer(TARGET.getValue(), concept).build();
 
         return queryResultResponse(answer);
     }
 
-    private static TxResponse queryResultResponse(GraknOuterClass.Answer answer) {
+    private static TxResponse queryResultResponse(GrpcGrakn.Answer answer) {
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(answer).build();
         return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }

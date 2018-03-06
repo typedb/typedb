@@ -38,12 +38,13 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.DeleteRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -95,8 +96,8 @@ public class RemoteGraknTxTest {
     private final RemoteGraknSession session = mock(RemoteGraknSession.class);
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
-    private static final GraknOuterClass.ConceptId V123 =
-            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
+    private static final GrpcConcept.ConceptId V123 =
+            GrpcConcept.ConceptId.newBuilder().setValue("V123").build();
     private static final IteratorId ITERATOR = IteratorId.newBuilder().setId(100).build();
 
     @Before
@@ -167,8 +168,8 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQuery_GetAResultBack() {
         String queryString = "match $x isa person; get $x;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
-        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
@@ -217,8 +218,8 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
         String queryString = "define label person sub entity;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
-        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
@@ -239,8 +240,8 @@ public class RemoteGraknTxTest {
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         String queryString = "match $x sub thing; get $x;";
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setId(V123).build();
-        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 
@@ -326,18 +327,18 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingEntityType_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GraknOuterClass.BaseType.EntityType, GraknTx::putEntityType, null);
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GrpcConcept.BaseType.EntityType, GraknTx::putEntityType, null);
     }
 
     @Test
     public void whenPuttingRelationType_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RELATIONSHIP, GraknOuterClass.BaseType.RelationshipType, GraknTx::putRelationshipType, null);
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RELATIONSHIP, GrpcConcept.BaseType.RelationshipType, GraknTx::putRelationshipType, null);
     }
 
     @Test
     public void whenPuttingAttributeType_EnsureCorrectQueryIsSent(){
         AttributeType.DataType<String> string = AttributeType.DataType.STRING;
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ATTRIBUTE, GraknOuterClass.BaseType.AttributeType,
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ATTRIBUTE, GrpcConcept.BaseType.AttributeType,
                 (tx, label) -> tx.putAttributeType(label, string),
                 var -> var.datatype(string));
     }
@@ -346,15 +347,15 @@ public class RemoteGraknTxTest {
     public void whenPuttingRule_EnsureCorrectQueryIsSent(){
         Pattern when = Graql.parser().parsePattern("$x isa Your-Type");
         Pattern then = Graql.parser().parsePattern("$x isa Your-Other-Type");
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RULE, GraknOuterClass.BaseType.Rule, (tx, label) -> tx.putRule(label, when, then), var -> var.when(when).then(then));
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RULE, GrpcConcept.BaseType.Rule, (tx, label) -> tx.putRule(label, when, then), var -> var.when(when).then(then));
     }
 
     @Test
     public void whenPuttingRole_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ROLE, GraknOuterClass.BaseType.Role, GraknTx::putRole, null);
+        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ROLE, GrpcConcept.BaseType.Role, GraknTx::putRole, null);
     }
 
-    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, GraknOuterClass.BaseType baseType, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
+    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, GrpcConcept.BaseType baseType, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
         VarPattern var = var("x").label(label).sub(metaSchema.getLabel().getValue());
         if(extender != null) var = extender.apply(var);
         verifyCorrectQuerySent(define(var), baseType, tx -> adder.accept(tx, Label.of(label)));
@@ -365,7 +366,7 @@ public class RemoteGraknTxTest {
         Var var = var("x");
         ConceptId id = ConceptId.of(V123.getValue());
         GetQuery getQuery = match(var.id(id)).get(ImmutableSet.of(var));
-        verifyCorrectQuerySent(getQuery, GraknOuterClass.BaseType.Entity, tx -> assertNotNull(tx.getConcept(id)));
+        verifyCorrectQuerySent(getQuery, GrpcConcept.BaseType.Entity, tx -> assertNotNull(tx.getConcept(id)));
     }
 
     @Test
@@ -373,14 +374,14 @@ public class RemoteGraknTxTest {
         Var var = var("x");
         String value = "Hello Oli";
         GetQuery getQuery = match(var.val(value)).get(ImmutableSet.of(var));
-        verifyCorrectQuerySent(getQuery, GraknOuterClass.BaseType.Attribute, tx -> assertThat(tx.getAttributesByValue(value), not(empty())));
+        verifyCorrectQuerySent(getQuery, GrpcConcept.BaseType.Attribute, tx -> assertThat(tx.getAttributesByValue(value), not(empty())));
     }
 
-    private void verifyCorrectQuerySent(Query query, GraknOuterClass.BaseType baseType, Consumer<GraknTx> txConsumer){
+    private void verifyCorrectQuerySent(Query query, GrpcConcept.BaseType baseType, Consumer<GraknTx> txConsumer){
         String expectedQuery = query.toString();
 
-        GraknOuterClass.Concept v123 = GraknOuterClass.Concept.newBuilder().setBaseType(baseType).setId(V123).build();
-        GraknOuterClass.Answer grpcAnswer = GraknOuterClass.Answer.newBuilder().putAnswer("x", v123).build();
+        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setBaseType(baseType).setId(V123).build();
+        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
         QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
 

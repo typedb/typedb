@@ -44,14 +44,15 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
-import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.BaseType;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
+import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -107,10 +108,10 @@ public class GrpcServerTest {
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
-    private static final GraknOuterClass.ConceptId V123 =
-            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
-    private static final GraknOuterClass.ConceptId V456 =
-            GraknOuterClass.ConceptId.newBuilder().setValue("V456").build();
+    private static final GrpcConcept.ConceptId V123 =
+            GrpcConcept.ConceptId.newBuilder().setValue("V123").build();
+    private static final GrpcConcept.ConceptId V456 =
+            GrpcConcept.ConceptId.newBuilder().setValue("V456").build();
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
@@ -231,7 +232,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
@@ -309,18 +310,18 @@ public class GrpcServerTest {
             tx.send(nextRequest(iterator));
             TxResponse response1 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcX =
-                    GraknOuterClass.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
-            GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
+            GrpcConcept.Concept rpcX =
+                    GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
+            GrpcGrakn.Answer.Builder answerX = GrpcGrakn.Answer.newBuilder().putAnswer("x", rpcX);
             QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
 
             tx.send(nextRequest(iterator));
             TxResponse response2 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcY =
-                    GraknOuterClass.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
-            GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
+            GrpcConcept.Concept rpcY =
+                    GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
+            GrpcGrakn.Answer.Builder answerY = GrpcGrakn.Answer.newBuilder().putAnswer("y", rpcY);
             QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
 
@@ -711,7 +712,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
 
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 

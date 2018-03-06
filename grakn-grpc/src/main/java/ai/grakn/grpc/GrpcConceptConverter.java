@@ -19,11 +19,11 @@
 package ai.grakn.grpc;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GrpcConcept;
 
 /**
  * @author Felix Chapman
  */
 public interface GrpcConceptConverter {
-    Concept convert(GraknOuterClass.Concept concept);
+    Concept convert(GrpcConcept.Concept concept);
 }
