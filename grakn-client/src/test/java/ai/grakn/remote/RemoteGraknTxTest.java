@@ -25,6 +25,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
@@ -318,6 +320,47 @@ public class RemoteGraknTxTest {
             exception.expectMessage("do it better next time");
 
             tx.commit();
+        }
+    }
+
+    @Test
+    public void whenAnErrorOccurs_TheTxCloses() {
+        Query<?> query = match(var("x")).get();
+
+        TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
+        throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+
+        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+            try {
+                tx.graql().match(var("x")).get().execute();
+            } catch (GraqlQueryException e) {
+                // Ignore
+            }
+
+            assertTrue(tx.isClosed());
+        }
+    }
+
+    @Test
+    public void whenAnErrorOccurs_AllFutureActionsThrow() {
+        Query<?> query = match(var("x")).get();
+
+        TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
+        throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+
+        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+            try {
+                tx.graql().match(var("x")).get().execute();
+            } catch (GraqlQueryException e) {
+                // Ignore
+            }
+
+            exception.expect(GraknTxOperationException.class);
+            exception.expectMessage(
+                    GraknTxOperationException.transactionClosed(null, "The gRPC connection closed").getMessage()
+            );
+
+            tx.admin().getMetaConcept();
         }
     }
 

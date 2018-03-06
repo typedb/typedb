@@ -74,6 +74,10 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-grpc</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>
