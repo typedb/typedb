@@ -107,7 +107,8 @@ public class GrpcUtil {
         GRAKN_BACKEND_EXCEPTION(GraknBackendException::create),
         UNKNOWN(UnknownGraknException::create);
 
-        private final Function<String, GraknException> converter;
+        // Enums are meant to be serializable, but functions can't be serialized
+        private transient final Function<String, GraknException> converter;
 
         ErrorType(Function<String, GraknException> converter) {
             this.converter = converter;
