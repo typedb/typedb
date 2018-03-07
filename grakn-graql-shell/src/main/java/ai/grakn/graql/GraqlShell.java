@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -30,6 +31,7 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.shell.ErrorMessage;
@@ -154,11 +156,11 @@ public class GraqlShell implements AutoCloseable {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
-        boolean success = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
+        boolean success = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, GraknConfig.create());
         System.exit(success ? 0 : 1);
     }
 
-    public static boolean runShell(String[] args, String version, String historyFilename) {
+    public static boolean runShell(String[] args, String version, String historyFilename, GraknConfig config) {
 
         Options options = new Options();
         options.addOption("k", "keyspace", true, "keyspace of the graph");
@@ -210,7 +212,7 @@ public class GraqlShell implements AutoCloseable {
 
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
 
-        int defaultGrpcPort = 48555;
+        int defaultGrpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         SimpleURI defaultGrpcUri = new SimpleURI(Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
 
         Optional<SimpleURI> location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new);

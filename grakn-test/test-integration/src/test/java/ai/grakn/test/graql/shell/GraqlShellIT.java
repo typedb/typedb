@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.shell;
 
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.test.rule.DistributionContext;
@@ -71,6 +72,7 @@ public class GraqlShellIT {
 
     @ClassRule
     public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
+    private static final GraknConfig CONFIG = GraknConfig.create();
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
@@ -686,7 +688,7 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
 
-            success = GraqlShell.runShell(args, expectedVersion, historyFile);
+            success = GraqlShell.runShell(args, expectedVersion, historyFile, CONFIG);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
