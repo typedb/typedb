@@ -132,10 +132,22 @@ MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+ASC            : 'asc' ;
+DESC           : 'desc' ;
+LONG_TYPE      : 'long' ;
+DOUBLE_TYPE    : 'double' ;
+STRING_TYPE    : 'string' ;
+BOOLEAN_TYPE   : 'boolean' ;
+DATE_TYPE      : 'date' ;
+TRUE           : 'true' ;
+FALSE          : 'false' ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
-ORDER          : 'asc' | 'desc' ;
-BOOLEAN        : 'true' | 'false' ;
+// In StringConverter.java we inspect the lexer to find out which values are keywords.
+// If literals are used in an alternation (e.g. `'true' | 'false'`) in the grammar, then they don't register as keywords.
+// Therefore, we never use an alternation of literals and instead given them proper rule names (e.g. `TRUE | FALSE`).
+DATATYPE       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
+ORDER          : ASC | DESC ;
+BOOLEAN        : TRUE | FALSE ;
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
 ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';

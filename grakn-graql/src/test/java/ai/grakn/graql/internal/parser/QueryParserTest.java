@@ -525,6 +525,11 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
+    }
+
+    @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse(
