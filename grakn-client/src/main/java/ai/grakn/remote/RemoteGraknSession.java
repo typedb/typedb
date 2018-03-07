@@ -25,8 +25,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.util.SimpleURI;
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
@@ -46,7 +44,7 @@ public class RemoteGraknSession implements GraknSession {
     private final SimpleURI uri;
     private final ManagedChannel channel;
 
-    private RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+    protected RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
         this.keyspace = keyspace;
         this.uri = uri;
         this.channel = channel;

@@ -41,6 +41,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -81,11 +82,11 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         this.client = client;
     }
 
-    static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
+    public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
         GraknGrpc.GraknStub stub = session.stub();
         GrpcClient client = GrpcClient.create(stub);
         client.open(openRequest);
-        return new RemoteGraknTx(session, GraknTxType.valueOf(openRequest.getOpen().getTxType().name()), client);
+        return new RemoteGraknTx(session, GrpcUtil.convert(openRequest.getOpen().getTxType()), client);
     }
 
     public GrpcClient client() {

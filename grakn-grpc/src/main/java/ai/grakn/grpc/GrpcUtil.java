@@ -186,7 +186,7 @@ public class GrpcUtil {
                 .build();
     }
 
-    private static GraknTxType convert(TxType txType) {
+    public static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
                 return GraknTxType.READ;

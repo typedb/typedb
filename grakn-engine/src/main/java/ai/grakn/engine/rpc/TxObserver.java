@@ -21,7 +21,6 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -136,8 +135,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 throw convertGraknException(e, ErrorType.GRAQL_SYNTAX_EXCEPTION);
             } catch (InvalidKBException e) {
                 throw convertGraknException(e, ErrorType.INVALID_KB_EXCEPTION);
-            } catch (GraknException e) {
-                // We shouldn't normally encounter this case unless someone adds a new exception class
+            } catch (RuntimeException e) {
                 throw convertGraknException(e, ErrorType.UNKNOWN);
             }
         });
@@ -256,7 +254,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         }
     }
 
-    private StatusRuntimeException convertGraknException(GraknException exception, ErrorType errorType) {
+    private StatusRuntimeException convertGraknException(RuntimeException exception, ErrorType errorType) {
         Metadata trailers = new Metadata();
         trailers.put(ErrorType.KEY, errorType);
         return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
