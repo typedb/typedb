@@ -168,6 +168,15 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
+    public static final ConceptMethod<Void> DELETE =
+            builder(ConceptResponseType.UNIT)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setDelete)
+                    .function(concept -> {
+                        concept.delete();
+                        return null;
+                    })
+                    .build();
+
     public static ConceptMethod<?> fromGrpc(GrpcConceptConverter converter, GrpcConcept.ConceptMethod conceptMethod) {
         switch (conceptMethod.getConceptMethodCase()) {
             case GETVALUE:
@@ -203,6 +212,8 @@ public final class ConceptMethod<T> {
                 Role role = converter.convert(removeRolePlayer.getRole()).asRole();
                 Thing player = converter.convert(removeRolePlayer.getPlayer()).asThing();
                 return removeRolePlayer(role, player);
+            case DELETE:
+                return DELETE;
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);

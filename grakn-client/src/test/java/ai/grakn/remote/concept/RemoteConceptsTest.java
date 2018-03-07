@@ -609,14 +609,9 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingDelete_ExecuteAQuery() {
-        Query<?> query = match(ME_ID).delete(ME);
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query));
-
+    public void whenCallingDelete_ExecuteAConceptMethod() {
         concept.delete();
-
-        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+        verify(server.requests()).onNext(GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.DELETE));
     }
 
     @Test
@@ -966,10 +961,10 @@ public class RemoteConceptsTest {
         Role role = RemoteConcepts.createRole(tx, A);
         Thing thing = RemoteConcepts.createEntity(tx, B);
 
-        mockPropertyResponse(GET_THEN, PATTERN);
-        assertEquals(PATTERN, rule.getThen());
-
         relationship.removeRolePlayer(role, thing);
+
+        GrpcGrakn.TxRequest request = GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.removeRolePlayer(role, thing));
+        verify(server.requests()).onNext(request);
     }
 
     private void mockLabelResponse(Concept concept, Label label) {

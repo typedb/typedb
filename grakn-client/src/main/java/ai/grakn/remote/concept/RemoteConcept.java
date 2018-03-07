@@ -59,7 +59,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        tx().graql().match(me()).delete(ME).execute();
+        runVoidMethod(ConceptMethod.DELETE);
     }
 
     @Override
