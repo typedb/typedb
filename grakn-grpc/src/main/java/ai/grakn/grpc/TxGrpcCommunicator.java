@@ -18,6 +18,7 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
@@ -131,6 +132,20 @@ public class TxGrpcCommunicator implements AutoCloseable {
         }
 
         Response poll() throws InterruptedException {
+            // First check for a response without blocking
+            Response response = queue.poll();
+
+            if (response != null) {
+                return response;
+            }
+
+            // Only after checking for existing messages, we check if the connection was already terminated, so we don't
+            // block for a response forever
+            if (terminated.get()) {
+                throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+            }
+
+            // Block for a response (because we are confident there are no responses and the connection has not closed)
             return queue.take();
         }
 

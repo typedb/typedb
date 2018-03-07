@@ -226,7 +226,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
+                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
@@ -252,8 +252,8 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             else relVar = relVar.rel(rolePlayer);
         }
 
-        //id part
-        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+        //isa part
+        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
@@ -271,7 +271,9 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             }
         }
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-        relVar = relVar.isa(typeVariable.asUserDefined());
+        relVar = isaProp instanceof DirectIsaProperty?
+                relVar.directIsa(typeVariable.asUserDefined()) :
+                relVar.isa(typeVariable.asUserDefined());
         return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }
 }

@@ -549,4 +549,21 @@ public class ValidatorTest extends TxTestBase {
         tx.commit();
     }
 
+
+    @Test
+    public void whenRemovingInvalidRolePlayers_EnsureValidationPasses(){
+        Role chased = tx.putRole("chased");
+        Role chaser = tx.putRole("chaser");
+        RelationshipType chases = tx.putRelationshipType("chases").relates(chased).relates(chaser);
+
+        EntityType puppy = tx.putEntityType("puppy").plays(chaser);
+        Entity dunstan = puppy.addEntity();
+
+        Relationship rel = chases.addRelationship();
+        rel.addRolePlayer(chaser, dunstan);
+        rel.addRolePlayer(chased, dunstan).removeRolePlayer(chased, dunstan);
+
+        tx.commit();
+    }
+
 }

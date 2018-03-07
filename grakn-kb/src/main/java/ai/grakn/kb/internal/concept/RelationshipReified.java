@@ -96,7 +96,10 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     void removeRolePlayer(Role role, Thing thing) {
         castingsRelation().filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
                 findAny().
-                ifPresent(Casting::delete);
+                ifPresent(casting -> {
+                   casting.delete();
+                   vertex().tx().txCache().remove(casting);
+                });
     }
 
     public void addRolePlayer(Role role, Thing thing) {

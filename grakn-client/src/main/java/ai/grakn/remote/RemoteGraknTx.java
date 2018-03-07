@@ -46,11 +46,13 @@ import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
@@ -133,7 +135,10 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        throw new UnsupportedOperationException(); // TODO
+        Var var = var("x");
+        VarPattern pattern = var.id(id);
+        Optional<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var))).findAny();
+        return answer.map(answer1 -> (T) answer1.get(var)).orElse(null);
     }
 
     @Nullable
@@ -150,7 +155,10 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        throw new UnsupportedOperationException(); // TODO
+        Var var = var("x");
+        VarPattern pattern = var.val(value);
+        Stream<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var)));
+        return answer.map(a -> (Attribute<V>) a.get(var)).collect(Collectors.toList());
     }
 
     @Nullable
