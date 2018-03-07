@@ -28,8 +28,6 @@ import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.internal.printer.Printers;
@@ -164,7 +162,7 @@ public class GraqlShell implements AutoCloseable {
     private GraknTx tx;
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
-    private final GraqlCompleter graqlCompleter = new GraqlCompleter();
+    private final GraqlCompleter graqlCompleter;
     private final ExternalEditor editor = ExternalEditor.create();
 
     private boolean errorOccurred = false;
@@ -343,8 +341,7 @@ public class GraqlShell implements AutoCloseable {
         session = RemoteGrakn.session(uri, keyspace);
         tx = session.open(GraknTxType.WRITE);
 
-        Set<String> types = getTypes(tx).map(Label::getValue).collect(toImmutableSet());
-        graqlCompleter.setTypes(types);
+        graqlCompleter = GraqlCompleter.create(session);
     }
 
     public static BatchExecutorClient loaderClient(SimpleURI uri) {
@@ -564,10 +561,6 @@ public class GraqlShell implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static Stream<Label> getTypes(GraknTx tx) {
-        return tx.admin().getMetaConcept().subs().map(SchemaConcept::getLabel);
     }
 
     private void reopenTx() {
