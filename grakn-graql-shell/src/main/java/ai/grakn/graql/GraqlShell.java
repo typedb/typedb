@@ -46,7 +46,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
-import jline.console.history.FileHistory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -58,7 +57,6 @@ import rx.Observable;
 
 import javax.annotation.Nullable;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileInputStream;
 
 /* uncover the secret
@@ -156,7 +154,7 @@ public class GraqlShell implements AutoCloseable {
     private final boolean infer;
     private ConsoleReader console;
 
-    private final String historyFilename;
+    private final HistoryFile historyFile;
 
     private final GraknSession session;
     private GraknTx tx;
@@ -332,8 +330,6 @@ public class GraqlShell implements AutoCloseable {
     GraqlShell(
             String historyFilename, Keyspace keyspace, SimpleURI uri, String outputFormat, boolean infer
     ) throws Throwable {
-
-        this.historyFilename = historyFilename;
         this.outputFormat = outputFormat;
         this.infer = infer;
         console = new ConsoleReader(System.in, System.out);
@@ -342,6 +338,7 @@ public class GraqlShell implements AutoCloseable {
         tx = session.open(GraknTxType.WRITE);
 
         graqlCompleter = GraqlCompleter.create(session);
+        historyFile = HistoryFile.create(console, historyFilename);
     }
 
     public static BatchExecutorClient loaderClient(SimpleURI uri) {
@@ -388,8 +385,6 @@ public class GraqlShell implements AutoCloseable {
         console.setExpandEvents(false);
 
         console.setPrompt(PROMPT);
-
-        setupHistory();
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -468,25 +463,6 @@ public class GraqlShell implements AutoCloseable {
 
             executeQuery(queryString);
         }
-    }
-
-    private boolean setupHistory() throws IOException {
-        // Create history file
-        File historyFile = new File(historyFilename);
-        boolean fileCreated = historyFile.createNewFile();
-        FileHistory history = new FileHistory(historyFile);
-        console.setHistory(history);
-
-        // Make sure history is saved on shutdown
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                history.flush();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }));
-
-        return fileCreated;
     }
 
     private void printLicense() {
@@ -572,5 +548,6 @@ public class GraqlShell implements AutoCloseable {
     public final void close() throws Exception {
         tx.close();
         session.close();
+        historyFile.close();
     }
 }
