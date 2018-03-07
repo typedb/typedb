@@ -28,8 +28,10 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -45,6 +47,7 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
@@ -86,15 +89,12 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Stream<Answer> run(InsertQuery query) {
-        Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
-                .collect(toImmutableList());
+        Collection<VarPatternAdmin> varPatterns = innerVarPatterns(query.admin().varPatterns());
 
-        return query.admin().match().map(
-                match -> match.stream().map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer))
-        ).orElseGet(
-                () -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx))
-        );
+        Stream<Answer> singleAnswer = Stream.of(new QueryAnswer());
+        Stream<Answer> answers = query.admin().match().map(Match::stream).orElse(singleAnswer);
+
+        return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer));
     }
 
     @Override
@@ -105,19 +105,13 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public Answer run(DefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
-                .collect(toImmutableList());
-
+        ImmutableList<VarPatternAdmin> allPatterns = innerVarPatterns(query.varPatterns());
         return QueryOperationExecutor.defineAll(allPatterns, tx);
     }
 
     @Override
     public void run(UndefineQuery query) {
-        ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
-                .collect(toImmutableList());
-
+        ImmutableList<VarPatternAdmin> allPatterns = innerVarPatterns(query.varPatterns());
         QueryOperationExecutor.undefineAll(allPatterns, tx);
     }
 
@@ -203,5 +197,11 @@ public class TinkerQueryRunner implements QueryRunner {
 
             concept.delete();
         }
+    }
+
+    private static ImmutableList<VarPatternAdmin> innerVarPatterns(Collection<? extends VarPattern> varPatterns) {
+        return AdminConverter.getVarAdmins(varPatterns).stream()
+                .flatMap(v -> v.innerVarPatterns().stream())
+                .collect(toImmutableList());
     }
 }

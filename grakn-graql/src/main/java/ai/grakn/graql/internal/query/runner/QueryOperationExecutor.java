@@ -254,7 +254,9 @@ public class QueryOperationExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(property -> property.executor().execute(this));
+        for (VarAndProperty property : sortProperties()) {
+            property.executor().execute(this);
+        }
 
         conceptBuilders.forEach(this::buildConcept);
 
