@@ -51,18 +51,18 @@ public final class ConceptMethod<T> {
     private final Function<Concept, T> function;
     private final ConceptResponseType<T> responseType;
 
-    public final TxResponse createTxResponse(@Nullable T value) {
+    public TxResponse createTxResponse(@Nullable T value) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         set(conceptResponse, value);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public final TxResponse run(Concept concept) {
+    public TxResponse run(Concept concept) {
         return createTxResponse(function.apply(concept));
     }
 
     @Nullable
-    public final T get(GrpcConceptConverter conceptConverter, TxResponse txResponse) {
+    public T get(GrpcConceptConverter conceptConverter, TxResponse txResponse) {
         ConceptResponse conceptResponse = txResponse.getConceptResponse();
         if (conceptResponse.getValueCase().equals(ConceptResponse.ValueCase.VALUE_NOT_SET)) {
             return null;
@@ -71,13 +71,13 @@ public final class ConceptMethod<T> {
         }
     }
 
-    public final void set(ConceptResponse.Builder builder, @Nullable T value) {
+    public void set(ConceptResponse.Builder builder, @Nullable T value) {
         if (value != null) {
             responseType.set(builder, value);
         }
     }
 
-    public final GrpcConcept.ConceptMethod toGrpc() {
+    public GrpcConcept.ConceptMethod toGrpc() {
         GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
         responseSetter.accept(builder);
         return builder.build();
