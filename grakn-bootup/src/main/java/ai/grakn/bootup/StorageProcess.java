@@ -54,6 +54,8 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
+        StorageConfigProcessor.updateConfig();
+
         System.out.print("Starting "+NAME+"...");
         System.out.flush();
         if(STORAGE_PID.toFile().exists()) {
