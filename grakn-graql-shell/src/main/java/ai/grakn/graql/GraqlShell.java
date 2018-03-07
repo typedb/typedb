@@ -135,6 +135,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
     private final String outputFormat;
+    private final boolean infer;
     private ConsoleReader console;
 
     private final String historyFilename;
@@ -316,6 +317,7 @@ public class GraqlShell implements AutoCloseable {
 
         this.historyFilename = historyFilename;
         this.outputFormat = outputFormat;
+        this.infer = infer;
         console = new ConsoleReader(System.in, System.out);
 
         session = RemoteGrakn.session(uri, keyspace);
@@ -492,7 +494,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void executeQuery(String queryString) throws IOException {
         handleGraknExceptions(() -> {
-            Stream<Query<?>> queries = tx.graql().parser().parseList(queryString);
+            Stream<Query<?>> queries = tx.graql().infer(infer).parser().parseList(queryString);
             queries.flatMap(query -> query.results(printer())).forEach(this::println);
         });
 
