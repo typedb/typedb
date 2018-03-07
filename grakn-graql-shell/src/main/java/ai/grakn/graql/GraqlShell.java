@@ -101,7 +101,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
@@ -151,13 +150,10 @@ public class GraqlShell implements AutoCloseable {
             LICENSE_COMMAND, CLEAN_COMMAND
     );
 
-    private static final String TEMP_FILENAME = "/graql-tmp.gql";
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
-    private static final String DEFAULT_EDITOR = "vim";
     private static final int DEFAULT_MAX_RETRY = 1;
 
-    private final File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
     private final String outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -169,6 +165,7 @@ public class GraqlShell implements AutoCloseable {
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
+    private final ExternalEditor editor = ExternalEditor.create();
 
     private boolean errorOccurred = false;
 
@@ -369,7 +366,7 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private void start(Optional<List<String>> queryStrings) throws IOException {
+    private void start(Optional<List<String>> queryStrings) throws IOException, InterruptedException {
         try {
             if (queryStrings.isPresent()) {
                 for (String queryString : queryStrings.get()) {
@@ -387,19 +384,13 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Run a Read-Evaluate-Print loop until the input terminates
      */
-    void executeRepl() throws IOException {
+    void executeRepl() throws IOException, InterruptedException {
         console.print(LICENSE_PROMPT);
 
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 
         console.setPrompt(PROMPT);
-
-        // Create temporary file
-        if (!tempFile.exists()) {
-            boolean success = tempFile.createNewFile();
-            if (!success) println(ErrorMessage.COULD_NOT_CREATE_TEMP_FILE.getMessage());
-        }
 
         setupHistory();
 
@@ -416,7 +407,7 @@ public class GraqlShell implements AutoCloseable {
             if (matcher.matches()) {
                 switch (matcher.group(1)) {
                     case EDIT_COMMAND:
-                        executeQuery(runEditor());
+                        executeQuery(editor.execute());
                         continue;
                     case COMMIT_COMMAND:
                         commit();
@@ -555,33 +546,6 @@ public class GraqlShell implements AutoCloseable {
         } else {
             console.println("Cancelling clean.");
         }
-    }
-
-    /**
-     * load the user's preferred editor to edit a query
-     *
-     * @return the string written to the editor
-     */
-    private String runEditor() throws IOException {
-        // Get preferred editor
-        Map<String, String> env = System.getenv();
-        String editor = Optional.ofNullable(env.get("EDITOR")).orElse(DEFAULT_EDITOR);
-
-        // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
-        ProcessBuilder builder = new ProcessBuilder(
-                "/bin/bash",
-                "-c",
-                editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath()
-        );
-
-        // Wait for user to finish editing
-        try {
-            builder.start().waitFor();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
 
     private void handleGraknExceptions(Runnable runnable) {
