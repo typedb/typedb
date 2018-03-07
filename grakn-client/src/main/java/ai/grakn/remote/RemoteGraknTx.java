@@ -240,8 +240,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Var me = Graql.var("me");
-        Var target = Graql.var("target");
+        Var me = var("me");
+        Var target = var("target");
         GetQuery query = graql().match(me.id(schemaConcept.getId()), me.sub(target)).get();
         return query.stream().map(answer -> answer.get(target).asSchemaConcept());
     }
