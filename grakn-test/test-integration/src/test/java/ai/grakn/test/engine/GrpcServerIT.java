@@ -47,8 +47,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,8 +86,8 @@ public class GrpcServerIT {
     private static GraknSession localSession;
     private static GraknSession remoteSession;
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         localSession = engine.sessionWithNewKeyspace();
 
         try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
@@ -98,8 +98,8 @@ public class GrpcServerIT {
         remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
-    @AfterClass
-    public static void tearDown() {
+    @After
+    public void tearDown() {
         remoteSession.close();
     }
 
