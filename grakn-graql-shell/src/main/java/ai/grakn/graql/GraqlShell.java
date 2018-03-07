@@ -25,7 +25,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.Client;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
@@ -46,6 +45,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -221,11 +222,6 @@ public class GraqlShell implements AutoCloseable {
         SimpleURI httpUri = location.orElse(Grakn.DEFAULT_URI);
         SimpleURI grpcUri = location.orElse(defaultGrpcUri);
 
-        if (!Client.serverIsRunning(httpUri)) {
-            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
-            return false;
-        }
-
         boolean infer = !cmd.hasOption("n");
 
         if (cmd.hasOption("b")) {
@@ -254,8 +250,12 @@ public class GraqlShell implements AutoCloseable {
             // Start shell
             shell.start(queries);
             return !shell.errorOccurred;
-        } catch (java.net.ConnectException e) {
-            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
+                System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            } else {
+                System.err.println(getFullStackTrace(e));
+            }
             return false;
         } catch (Throwable e) {
             System.err.println(getFullStackTrace(e));
