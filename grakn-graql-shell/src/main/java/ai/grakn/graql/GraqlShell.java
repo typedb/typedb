@@ -19,24 +19,34 @@
 package ai.grakn.graql;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
+import ai.grakn.client.Client;
+import ai.grakn.client.GraknClient;
 import ai.grakn.client.QueryResponse;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraknException;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
-import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
-import mjson.Json;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -47,7 +57,6 @@ import org.apache.commons.io.Charsets;
 import rx.Observable;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,7 +66,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -72,26 +80,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
-import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
-import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
-import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
-import static ai.grakn.util.REST.RemoteShell.DISPLAY;
-import static ai.grakn.util.REST.RemoteShell.ERROR;
-import static ai.grakn.util.REST.RemoteShell.INFER;
-import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.QUERY;
-import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
-import static ai.grakn.util.REST.RemoteShell.TYPES;
-import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static java.util.stream.Collectors.joining;
@@ -104,7 +93,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author Felix Chapman
  */
-public class GraqlShell {
+public class GraqlShell implements AutoCloseable {
     private static final String LICENSE_PROMPT = "\n" +
             "Grakn  Copyright (C) 2018  Grakn Labs Limited \n" +
             "This is free software, and you are welcome to redistribute it \n" +
@@ -130,8 +119,6 @@ public class GraqlShell {
             HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
                     Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
-    private static final int QUERY_CHUNK_SIZE = 50000;
-
     /**
      * Array of available commands in shell
      */
@@ -144,13 +131,17 @@ public class GraqlShell {
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
     private static final String DEFAULT_EDITOR = "vim";
+    private static final int DEFAULT_MAX_RETRY = 1;
 
     private final File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
+    private final String outputFormat;
     private ConsoleReader console;
 
     private final String historyFilename;
 
-    private JsonSession session;
+    private final GraknSession session;
+    private GraknTx tx;
+    private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
@@ -162,16 +153,11 @@ public class GraqlShell {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
-        int exitCode = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
-        System.exit(exitCode);
+        boolean success = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
+        System.exit(success ? 0 : 1);
     }
 
-    public static int runShell(String[] args, String version, String historyFilename) {
-        boolean success = runShell(args, version, historyFilename, new GraqlClient());
-        return success ? 0 : 1;
-    }
-
-    public static boolean runShell(String[] args, String version, String historyFilename, GraqlClient client) {
+    public static boolean runShell(String[] args, String version, String historyFilename) {
 
         Options options = new Options();
         options.addOption("k", "keyspace", true, "keyspace of the graph");
@@ -222,10 +208,17 @@ public class GraqlShell {
         }
 
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
-        SimpleURI location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new).orElse(Grakn.DEFAULT_URI);
+
+        int defaultGrpcPort = 48555;
+        SimpleURI defaultGrpcUri = new SimpleURI(Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
+
+        Optional<SimpleURI> location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
-        if (!client.serverIsRunning(location)) {
+        SimpleURI httpUri = location.orElse(Grakn.DEFAULT_URI);
+        SimpleURI grpcUri = location.orElse(defaultGrpcUri);
+
+        if (!Client.serverIsRunning(httpUri)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
             return false;
         }
@@ -234,7 +227,7 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(client.loaderClient(location), cmd.getOptionValue("b"), keyspace);
+                sendBatchRequest(loaderClient(httpUri), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
                 return false;
@@ -250,17 +243,10 @@ public class GraqlShell {
         }
 
 
-        try {
+        try (GraqlShell shell = new GraqlShell(historyFilename, keyspace, grpcUri, outputFormat, infer)) {
             if (filePaths != null) {
                 queries = Optional.of(loadQueries(filePaths));
             }
-
-            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws").path(REMOTE_SHELL_URI).build();
-
-            GraqlShell shell = new GraqlShell(
-                    historyFilename, keyspace, client, uri, outputFormat,
-                    infer
-            );
 
             // Start shell
             shell.start(queries);
@@ -271,8 +257,6 @@ public class GraqlShell {
         } catch (Throwable e) {
             System.err.println(getFullStackTrace(e));
             return false;
-        } finally {
-            client.close();
         }
     }
 
@@ -327,40 +311,41 @@ public class GraqlShell {
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, Keyspace keyspace,
-            GraqlClient client, URI uri, String outputFormat, boolean infer
+            String historyFilename, Keyspace keyspace, SimpleURI uri, String outputFormat, boolean infer
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
+        this.outputFormat = outputFormat;
         console = new ConsoleReader(System.in, System.out);
-        session = new JsonSession(client, uri);
 
-        // Send the requested keyspace and output format to the server once connected
-        Json initJson = Json.object(
-                ACTION, ACTION_INIT,
-                KEYSPACE, keyspace.getValue(),
-                OUTPUT_FORMAT, outputFormat,
-                INFER, infer
-        );
-        session.sendJson(initJson);
+        session = RemoteGrakn.session(uri, keyspace);
+        tx = session.open(GraknTxType.WRITE);
 
-        // Wait to receive confirmation
-        handleMessagesFromServer();
+        Set<String> types = getTypes(tx).map(Label::getValue).collect(toImmutableSet());
+        graqlCompleter.setTypes(types);
+    }
+
+    public static BatchExecutorClient loaderClient(SimpleURI uri) {
+        return BatchExecutorClient.newBuilder()
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
+                .taskClient(GraknClient.of(uri))
+                .maxRetries(DEFAULT_MAX_RETRY)
+                .build();
+    }
+
+    private GraqlConverter<?, String> printer() {
+        switch (outputFormat) {
+            case "json":
+                return Printers.json();
+            case "graql":
+            default:
+                AttributeType<?>[] array = displayAttributes.toArray(new AttributeType[displayAttributes.size()]);
+                return Printers.graql(true, array);
+        }
     }
 
     private void start(Optional<List<String>> queryStrings) throws IOException {
         try {
-            // If session has closed, then we couldn't authorise
-            if (!session.isOpen()) {
-                errorOccurred = true;
-                return;
-            }
-
-            // Begin sending pings
-            Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
-            thread.setDaemon(true);
-            thread.start();
-
             if (queryStrings.isPresent()) {
                 for (String queryString : queryStrings.get()) {
                     executeQuery(queryString);
@@ -388,7 +373,7 @@ public class GraqlShell {
         // Create temporary file
         if (!tempFile.exists()) {
             boolean success = tempFile.createNewFile();
-            if (!success) print(ErrorMessage.COULD_NOT_CREATE_TEMP_FILE.getMessage());
+            if (!success) println(ErrorMessage.COULD_NOT_CREATE_TEMP_FILE.getMessage());
         }
 
         setupHistory();
@@ -502,75 +487,31 @@ public class GraqlShell {
         result.append("\n");
         scanner.close();
 
-        this.print(result.toString());
+        this.println(result.toString());
     }
 
-    private boolean executeQuery(String queryString) throws IOException {
-        // Split query into chunks
-        Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
-
-        for (String queryChunk : splitQuery) {
-            Json jsonObject = Json.object(
-                    ACTION, ACTION_QUERY,
-                    QUERY, queryChunk
-            );
-            session.sendJson(jsonObject);
-        }
-
-        session.sendJson(Json.object(ACTION, ACTION_END));
-        handleMessagesFromServer();
+    private void executeQuery(String queryString) throws IOException {
+        handleGraknExceptions(() -> {
+            Stream<Query<?>> queries = tx.graql().parser().parseList(queryString);
+            queries.flatMap(query -> query.results(printer())).forEach(this::println);
+        });
 
         // Flush the console so the output is all displayed before the next command
         console.flush();
-
-        return true;
-    }
-
-    private void handleMessagesFromServer() {
-        session.getMessagesUntilEnd().forEach(this::handleMessage);
-    }
-
-    /**
-     * Handle the given server message
-     *
-     * @param message the message to handle
-     */
-    private void handleMessage(Json message) {
-        switch (message.at(ACTION).asString()) {
-            case ACTION_QUERY:
-                String result = message.at(QUERY_RESULT).asString();
-                print(result);
-                break;
-            case ACTION_TYPES:
-                Set<String> types = message.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
-                graqlCompleter.setTypes(types);
-                break;
-            case ACTION_ERROR:
-                System.err.print(message.at(ERROR).asString());
-                errorOccurred = true;
-                break;
-            case ACTION_PING:
-                // Ignore
-                break;
-            default:
-                throw new RuntimeException("Unrecognized message: " + message);
-        }
     }
 
     private void setDisplayOptions(Set<String> displayOptions) throws IOException {
-        session.sendJson(Json.object(
-                ACTION, ACTION_DISPLAY,
-                DISPLAY, displayOptions
-        ));
+        displayAttributes = displayOptions.stream().map(tx::getAttributeType).collect(toImmutableSet());
     }
 
     private void commit() throws IOException {
-        session.sendJson(Json.object(ACTION, ACTION_COMMIT));
-        handleMessagesFromServer();
+        handleGraknExceptions(() -> tx.commit());
+        reopenTx();
     }
 
     private void rollback() throws IOException {
-        session.sendJson(Json.object(ACTION, ACTION_ROLLBACK));
+        handleGraknExceptions(() -> tx.close());
+        reopenTx();
     }
 
     private void clean() throws IOException {
@@ -580,7 +521,8 @@ public class GraqlShell {
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
             console.println("Cleaning...");
-            session.sendJson(Json.object(ACTION, ACTION_CLEAN));
+            tx.admin().delete();
+            reopenTx();
         } else {
             console.println("Cancelling clean.");
         }
@@ -613,11 +555,36 @@ public class GraqlShell {
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
 
-    private void print(String string) {
+    private void handleGraknExceptions(Runnable runnable) {
         try {
-            console.print(string);
+            runnable.run();
+        } catch (GraknException e) {
+            System.err.println(e);
+            errorOccurred = true;
+            reopenTx();
+        }
+    }
+
+    private void println(String string) {
+        try {
+            console.println(string);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Stream<Label> getTypes(GraknTx tx) {
+        return tx.admin().getMetaConcept().subs().map(SchemaConcept::getLabel);
+    }
+
+    private void reopenTx() {
+        if (!tx.isClosed()) tx.close();
+        tx = session.open(GraknTxType.WRITE);
+    }
+
+    @Override
+    public final void close() throws Exception {
+        tx.close();
+        session.close();
     }
 }

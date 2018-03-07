@@ -410,8 +410,7 @@ public class GraqlShellIT {
     @Test
     @Ignore
     /* TODO: Fix this test
-     * Sometimes we see this: "Websocket closed, code: 1005, reason: null".
-     * Other times, JLine crashes when receiving certain input.
+     * Sometimes, JLine crashes when receiving certain input.
      */
     public void fuzzTest() throws Exception {
         int repeats = 100;
@@ -605,13 +604,13 @@ public class GraqlShellIT {
     @Test
     public void whenErrorDoesNotOccurs_Return0() throws Exception {
         ShellResponse response = runShell("match $x sub entity; get;\n");
-        assertEquals(0, response.exitCode());
+        assertTrue(response.success());
     }
 
     @Test
     public void whenErrorOccurs_Return1() throws Exception {
         ShellResponse response = runShell("match fofobjiojasd\n");
-        assertEquals(1, response.exitCode());
+        assertFalse(response.success());
     }
 
     private static String randomString(int length) {
@@ -678,7 +677,7 @@ public class GraqlShellIT {
         PrintStream out = new PrintStream(tout);
         PrintStream err = new PrintStream(terr);
 
-        Integer exitCode = null;
+        Boolean success = null;
 
         try {
             System.out.flush();
@@ -687,7 +686,7 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
 
-            exitCode = GraqlShell.runShell(args, expectedVersion, historyFile);
+            success = GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
@@ -700,9 +699,9 @@ public class GraqlShellIT {
         out.flush();
         err.flush();
 
-        assertNotNull(exitCode);
+        assertNotNull(success);
 
-        return ShellResponse.of(bout.toString(), berr.toString(), exitCode);
+        return ShellResponse.of(bout.toString(), berr.toString(), success);
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
@@ -725,10 +724,10 @@ public class GraqlShellIT {
     static abstract class ShellResponse {
         abstract String out();
         abstract String err();
-        abstract int exitCode();
+        abstract boolean success();
 
-        static ShellResponse of(String out, String err, int exitCode) {
-            return new AutoValue_GraqlShellIT_ShellResponse(out, err, exitCode);
+        static ShellResponse of(String out, String err, boolean success) {
+            return new AutoValue_GraqlShellIT_ShellResponse(out, err, success);
         }
     }
 }
