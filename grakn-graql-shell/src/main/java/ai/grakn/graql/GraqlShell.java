@@ -24,9 +24,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
@@ -52,12 +49,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.Charsets;
-import rx.Observable;
 
-import javax.annotation.Nullable;
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
 
 /* uncover the secret
 
@@ -88,19 +81,17 @@ import java.io.FileInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -148,8 +139,6 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
-    private static final int DEFAULT_MAX_RETRY = 1;
-
     private final String outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -183,8 +172,6 @@ public class GraqlShell implements AutoCloseable {
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("r", "uri", true, "uri to factory to engine");
         options.addOption("b", "batch", true, "graql file path to batch load");
-        options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
-        options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
         options.addOption("n", "no_infer", false, "do not perform inference on results");
         options.addOption("h", "help", false, "print usage message");
@@ -216,7 +203,7 @@ public class GraqlShell implements AutoCloseable {
 
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
-            printUsage(options, null);
+            printUsage(options);
             return true;
         }
 
@@ -240,21 +227,14 @@ public class GraqlShell implements AutoCloseable {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(loaderClient(httpUri), cmd.getOptionValue("b"), keyspace);
-            } catch (NumberFormatException e) {
-                printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
-                return false;
+                Path path = Paths.get(cmd.getOptionValue("b"));
+                BatchLoader.sendBatchRequest(httpUri, keyspace, path);
             } catch (Exception e) {
-                System.out.println("Batch failed \n" + CommonUtil
-                        .simplifyExceptionMessage(e));
+                System.out.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
                 return false;
             }
             return true;
-        } else if (cmd.hasOption("a") || cmd.hasOption("s")) {
-            printUsage(options, "The active or size option has been specified without batch.");
-            return false;
         }
-
 
         try (GraqlShell shell = new GraqlShell(historyFilename, keyspace, grpcUri, outputFormat, infer)) {
             if (filePaths != null) {
@@ -277,14 +257,14 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private static void printUsage(Options options, @Nullable String footer) {
+    private static void printUsage(Options options) {
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, footer);
+        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, null);
         printWriter.flush();
     }
 
@@ -303,27 +283,6 @@ public class GraqlShell implements AutoCloseable {
         return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        AtomicInteger queriesExecuted = new AtomicInteger(0);
-
-        FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
-
-        try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
-            Graql.parser().parseList(queryReader).forEach(query -> {
-                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
-
-                observable.subscribe(
-                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                    /* On error:   */ System.err::println
-                );
-            });
-        }
-
-        batchExecutorClient.close();
-
-        System.out.println("Statements executed: " + queriesExecuted.get());
-    }
-
     /**
      * Create a new Graql shell
      */
@@ -339,14 +298,6 @@ public class GraqlShell implements AutoCloseable {
 
         graqlCompleter = GraqlCompleter.create(session);
         historyFile = HistoryFile.create(console, historyFilename);
-    }
-
-    public static BatchExecutorClient loaderClient(SimpleURI uri) {
-        return BatchExecutorClient.newBuilder()
-                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
-                .taskClient(GraknClient.of(uri))
-                .maxRetries(DEFAULT_MAX_RETRY)
-                .build();
     }
 
     private GraqlConverter<?, String> printer() {
