@@ -425,6 +425,30 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingAs_ResultIsSameAsSub() {
+        DefineQuery expected = define(
+                var().label("parent").sub("role"),
+                var().label("child").sub("role"),
+                var().label("parenthood").sub("relationship")
+                        .relates(var().label("parent"))
+                        .relates(var().label("child")),
+                var().label("fatherhood").sub("parenthood")
+                        .relates(var().label("father"), var().label("parent"))
+                        .relates(var().label("son"), var().label("child"))
+        );
+
+        DefineQuery parsed = parse("define " +
+                "parent sub role;\n" +
+                "child sub role;\n" +
+                "parenthood sub relationship, relates parent, relates child;\n" +
+                "fatherhood sub parenthood, relates father as parent, relates son as child;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
         DefineQuery expected = define(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),

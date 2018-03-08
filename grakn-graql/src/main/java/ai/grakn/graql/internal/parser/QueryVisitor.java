@@ -542,7 +542,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<VarPattern> visitRelates(GraqlParser.RelatesContext ctx) {
         if (ctx.superRole == null) return var -> var.relates(visitVariable(ctx.role));
-        return var -> var.relates(visitVariable(ctx.role).sub(visitVariable(ctx.superRole)));
+        return var -> var.relates(visitVariable(ctx.role), visitVariable(ctx.superRole));
     }
 
     @Override

@@ -33,31 +33,40 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.relates;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code relates} property on a {@link RelationshipType}.
- *
+ * <p>
  * This property can be queried, inserted or deleted.
- *
+ * <p>
  * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
  * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
  *
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RelatesProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class RelatesProperty extends AbstractVarProperty implements VarPropertyInternal {
+
+    public static RelatesProperty of(VarPatternAdmin role, VarPatternAdmin superRole) {
+        return new AutoValue_RelatesProperty(role, superRole);
+    }
 
     public static RelatesProperty of(VarPatternAdmin role) {
-        return new AutoValue_RelatesProperty(role);
+        return RelatesProperty.of(role, null);
     }
 
     abstract VarPatternAdmin role();
+
+    @Nullable
+    abstract VarPatternAdmin superRole();
 
     @Override
     public String getName() {
@@ -65,13 +74,23 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public String getProperty() {
-        return role().getPrintableName();
+    public void buildString(StringBuilder builder) {
+        VarPatternAdmin superRole = superRole();
+        builder.append("relates").append(" ").append(role().getPrintableName());
+        if (superRole != null) {
+            builder.append(" as ").append(superRole.getPrintableName());
+        }
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(relates(this, start, role().var()));
+        VarPatternAdmin superRole = superRole();
+        EquivalentFragmentSet relates = relates(this, start, role().var());
+        if (superRole == null) {
+            return ImmutableSet.of(relates);
+        } else {
+            return ImmutableSet.of(relates, sub(this, role().var(), superRole.var()));
+        }
     }
 
     @Override
@@ -96,12 +115,23 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
         PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
 
         // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-        PropertyExecutor.Method isRoleMethod = executor -> {
-            executor.builder(roleVar).isRole();
-        };
+        PropertyExecutor.Method isRoleMethod = executor -> executor.builder(roleVar).isRole();
 
         PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
 
+        VarPatternAdmin superRoleVarPattern = superRole();
+        if (superRoleVarPattern != null) {
+            Var superRoleVar = superRoleVarPattern.var();
+            PropertyExecutor.Method subMethod = executor -> {
+                Role superRole = executor.get(superRoleVar).asRole();
+                executor.builder(roleVar).sub(superRole);
+            };
+
+            PropertyExecutor subExecutor = PropertyExecutor.builder(subMethod)
+                    .requires(superRoleVar).produces(roleVar).build();
+
+            return ImmutableSet.of(relatesExecutor, isRoleExecutor, subExecutor);
+        }
         return ImmutableSet.of(relatesExecutor, isRoleExecutor);
     }
 
@@ -125,7 +155,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
         VarPatternAdmin roleVar = this.role();
         Var roleVariable = roleVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
-        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return RelatesAtom.create(varName, roleVariable, predicateId, parent);
     }
 }
