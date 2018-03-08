@@ -563,7 +563,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             runnable.run();
         } catch (GraknException e) {
-            System.err.println(e);
+            System.err.println(e.getMessage());
             errorOccurred = true;
             reopenTx();
         }
