@@ -105,11 +105,12 @@ esac
 launch_service()
 {
     pidpath="$1"
-    foreground="$2"
-    props="$3"
-    class="$4"
+    logpath="$2"
+    foreground="$3"
+    props="$4"
+    class="$5"
     cassandra_parms+=("-Dlogback.configurationFile=`abs_path`/../../services/cassandra/cassandra-logback.xml")
-    cassandra_parms+=("-Dcassandra.logdir=`abs_path`/../../logs")
+    cassandra_parms+=("-Dcassandra.logdir=$logpath")
 
     if [ "x$pidpath" != "x" ]; then
         cassandra_parms+=("-Dcassandra-pidfile=$pidpath")
@@ -131,7 +132,7 @@ launch_service()
 }
 
 # Parse any command line options.
-args=`getopt vfhp:bD:H:E: "$@"`
+args=`getopt vfhp:f:bD:H:E: "$@"`
 eval set -- "$args"
 
 classname="org.apache.cassandra.service.CassandraDaemon"
@@ -142,12 +143,16 @@ while true; do
             pidfile="$2"
             shift 2
         ;;
+        -l)
+            logdir="$2"
+            shift 2
+        ;;
         -f)
             foreground="yes"
             shift
         ;;
         -h)
-            echo "Usage: $0 [-f] [-h] [-p pidfile] [-H dumpfile] [-E errorfile]"
+            echo "Usage: $0 [-f] [-h] [-p pidfile] [-l logdir] [-H dumpfile] [-E errorfile]"
             exit 0
         ;;
         -v)
@@ -185,7 +190,7 @@ if [ $? -ne "1" ]; then
 fi
 
 # Start up the service
-launch_service "$pidfile" "$foreground" "$properties" "$classname"
+launch_service "$pidfile" "$logdir" "$foreground" "$properties" "$classname"
 
 exit $?
 
