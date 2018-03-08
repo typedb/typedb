@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  *
@@ -31,33 +30,30 @@ import java.nio.file.Paths;
  */
 public class StorageConfigProcessor {
 
-    private static final String CONFIG_PATH = "services/cassandra/";
-    private static final String CONFIG_NAME = "cassandra.yaml";
-
-    public static void updateConfig() {
-        Path configPath = Paths.get(CONFIG_PATH, CONFIG_NAME);
-
-        //parse config
-        String yamlString;
+    public static String getYamlStringFromFile(Path configPath){
         try {
             byte[] bytes = Files.readAllBytes(configPath);
-            yamlString = new String(bytes, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        GraknConfig graknConfig = GraknConfig.create();
-        String updatedYamlString = StorageConfig.of(yamlString)
-                .update(graknConfig)
-                .updateDataParams(graknConfig)
-                .toYaml();
-
-        //save config
-        try {
-            Files.write(configPath, updatedYamlString.getBytes(StandardCharsets.UTF_8));
+            return new String(bytes, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public static void saveYamlStringToFile(String yamlString, Path configPath){
+        try {
+            Files.write(configPath, yamlString.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void updateConfigFromGraknConfig(Path storageConfigPath, GraknConfig graknConfig) {
+        String yamlString = getYamlStringFromFile(storageConfigPath);
+
+        String updatedYamlString = StorageConfig.of(yamlString)
+                .updateFromConfig(graknConfig)
+                .toYamlString();
+
+        saveYamlStringToFile(updatedYamlString, storageConfigPath);
+    }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.bootup;
 
+import ai.grakn.engine.GraknConfig;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,7 +36,11 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
+    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
+    private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
+
     private static final String CASSANDRA = "cassandra";
+
     private static final String NAME = "Storage";
 
     private final Path homePath;
@@ -54,7 +59,8 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
-        StorageConfigProcessor.updateConfig();
+        GraknConfig graknConfig = GraknConfig.create();
+        StorageConfigProcessor.updateConfigFromGraknConfig(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), graknConfig);
 
         System.out.print("Starting "+NAME+"...");
         System.out.flush();
