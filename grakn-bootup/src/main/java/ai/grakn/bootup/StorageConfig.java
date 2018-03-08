@@ -23,12 +23,13 @@ import ai.grakn.engine.GraknConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -39,21 +40,18 @@ import java.util.stream.Collectors;
 public class StorageConfig {
 
     private final ImmutableMap<String, Object> params;
-
+    private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
 
-    private static final Map<String, String> dataParams = ImmutableMap.of(
-            "data_file_directories", "cassandra/data",
-            "saved_caches_directory", "cassandra/saved_caches",
-            "commitlog_directory", "cassandra/commitlog"
-    );
-
     private StorageConfig(Map<String, Object> p){
-        this.params = ImmutableMap.copyOf(p);
+        this.params = ImmutableMap.copyOf(
+                p.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == null ? EMPTY_VALUE : e.getValue()))
+        );
     }
 
     public static StorageConfig of(String yaml) {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
         try {
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>(){};
             return new StorageConfig(mapper.readValue(yaml, reference));
@@ -63,35 +61,33 @@ public class StorageConfig {
     }
 
     public String toYaml() {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
         try {
-            Map<String, Object> curatedParams = params.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == null ? "" : e.getValue()));
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
-            mapper.writeValue(outputstream, curatedParams);
+            mapper.writeValue(outputstream, params);
             return outputstream.toString(StandardCharsets.UTF_8.name());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Map<String, Object> params(){ return params;}
-
     public StorageConfig updateDataParams(GraknConfig config) {
         String dbDir = config.getProperty(GraknConfigKey.DB_DIR);
-        if (dbDir.isEmpty()) return this;
-
-        Map<String, Object> updatedParams = Maps.newHashMap(params());
-
+        ImmutableMap<String, Object> dataParams = ImmutableMap.of(
+                "data_file_directories", Collections.singletonList(dbDir + "cassandra/data"),
+                "saved_caches_directory", dbDir + "cassandra/saved_caches",
+                "commitlog_directory", dbDir + "cassandra/commitlog"
+        );
+        Map<String, Object> updatedParams = Maps.newHashMap(params);
         dataParams.keySet().stream()
                 .filter(updatedParams::containsKey)
-                .forEach(dp -> updatedParams.put(dp, Paths.get(dbDir, dataParams.get(dp))));
+                .forEach(dp -> updatedParams.put(dp, dataParams.get(dp)));
         return new StorageConfig(updatedParams);
     }
 
     public StorageConfig update(GraknConfig config){
         //overwrite params with params from grakn config
-        Map<String, Object> params = Maps.newHashMap(params());
+        Map<String, Object> updatedParams = Maps.newHashMap(params);
         config.properties()
                 .stringPropertyNames()
                 .stream()
@@ -102,6 +98,6 @@ public class StorageConfig {
                         params.put(param, config.properties().getProperty(prop));
                     }
                 });
-        return new StorageConfig(params);
+        return new StorageConfig(updatedParams);
     }
 }
