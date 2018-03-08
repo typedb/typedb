@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -34,13 +35,15 @@ import io.grpc.stub.StreamObserver;
 public class GrpcGraknService extends GraknGrpc.GraknImplBase {
 
     private final GrpcOpenRequestExecutor executor;
+    private PostProcessor postProcessor;
 
-    public GrpcGraknService(GrpcOpenRequestExecutor executor) {
+    public GrpcGraknService(GrpcOpenRequestExecutor executor, PostProcessor postProcessor) {
         this.executor = executor;
+        this.postProcessor = postProcessor;
     }
 
     @Override
     public StreamObserver<GraknOuterClass.TxRequest> tx(StreamObserver<GraknOuterClass.TxResponse> responseObserver) {
-        return TxObserver.create(responseObserver, executor);
+        return TxObserver.create(responseObserver, executor, postProcessor);
     }
 }
