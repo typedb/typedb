@@ -53,7 +53,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RelatesProperty extends AbstractVarProperty implements VarPropertyInternal {
+public abstract class RelatesProperty extends AbstractVarProperty {
 
     public static RelatesProperty of(VarPatternAdmin role, VarPatternAdmin superRole) {
         return new AutoValue_RelatesProperty(role, superRole);
