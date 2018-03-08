@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 
@@ -37,13 +38,14 @@ final class HistoryFile implements AutoCloseable {
         this.jlineHistory = jlineHistory;
     }
 
+    // The result of createNewFile indicates if the file already existed, but that doesn't matter
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
     public static HistoryFile create(ConsoleReader consoleReader, String historyFilename) throws IOException {
 
         // Create history file
         File historyFile = new File(historyFilename);
 
-        // The result of this method indicates if the file already existed, but that doesn't matter
-        //noinspection ResultOfMethodCallIgnored
         historyFile.createNewFile();
 
         FileHistory jlineHistory = new FileHistory(historyFile);

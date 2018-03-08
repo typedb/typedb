@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import com.google.common.base.StandardSystemProperty;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,9 @@ final class ExternalEditor {
         this.tempFile = tempFile;
     }
 
+    // The result of createNewFile indicates if the file already existed, but that doesn't matter
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
     public static ExternalEditor create() throws IOException {
         // Get preferred editor
         Map<String, String> env = System.getenv();
@@ -51,8 +55,6 @@ final class ExternalEditor {
 
         File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
 
-        // The result of this method indicates if the file already existed, but that doesn't matter
-        //noinspection ResultOfMethodCallIgnored
         tempFile.createNewFile();
 
         return new ExternalEditor(editor, tempFile);
