@@ -27,7 +27,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -43,15 +42,10 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import javax.annotation.Nullable;
-import java.io.BufferedWriter;
+import java.io.IOException;
 
 /* uncover the secret
 
@@ -80,17 +74,12 @@ import java.io.BufferedWriter;
 \u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079
 \u002e \u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070 \u003b\u002f\u002a */
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -115,9 +104,6 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    public static final String DEFAULT_KEYSPACE = "grakn";
-    private static final String DEFAULT_OUTPUT_FORMAT = "graql";
-
     private static final String PROMPT = ">>> ";
 
     private static final String EDIT_COMMAND = "edit";
@@ -140,7 +126,7 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
-    private final String outputFormat;
+    private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
 
@@ -166,23 +152,10 @@ public class GraqlShell implements AutoCloseable {
     }
 
     public static boolean runShell(String[] args, String version, String historyFilename, GraknConfig config) {
-
-        Options options = new Options();
-        options.addOption("k", "keyspace", true, "keyspace of the graph");
-        options.addOption("e", "execute", true, "query to execute");
-        options.addOption("f", "file", true, "graql file path to execute");
-        options.addOption("r", "uri", true, "uri to factory to engine");
-        options.addOption("b", "batch", true, "graql file path to batch load");
-        options.addOption("o", "output", true, "output format for results");
-        options.addOption("n", "no_infer", false, "do not perform inference on results");
-        options.addOption("h", "help", false, "print usage message");
-        options.addOption("v", "version", false, "print version");
-
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd;
+        GraqlShellOptions options;
 
         try {
-            cmd = parser.parse(options, args);
+            options = GraqlShellOptions.create(args);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
             return false;
@@ -190,7 +163,7 @@ public class GraqlShell implements AutoCloseable {
 
         List<String> queries = null;
 
-        String query = cmd.getOptionValue("e");
+        String query = options.getQuery();
 
         // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
         if (query != null) {
@@ -201,35 +174,36 @@ public class GraqlShell implements AutoCloseable {
             }
         }
 
-        String[] filePaths = cmd.getOptionValues("f");
+        List<Path> filePaths = options.getFiles();
 
         // Print usage message if requested or if invalid arguments provided
-        if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
-            printUsage(options);
+        if (options.displayHelp()) {
+            GraqlShellOptions.printUsage();
             return true;
         }
 
-        if (cmd.hasOption("v")) {
+        if (options.displayVersion()) {
             System.out.println(version);
             return true;
         }
 
-        Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
+        Keyspace keyspace = options.getKeyspace();
 
         int defaultGrpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         SimpleURI defaultGrpcUri = new SimpleURI(Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
 
-        Optional<SimpleURI> location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new);
-        String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
+        SimpleURI location = options.getUri();
+        OutputFormat outputFormat = options.getOutputFormat();
 
-        SimpleURI httpUri = location.orElse(Grakn.DEFAULT_URI);
-        SimpleURI grpcUri = location.orElse(defaultGrpcUri);
+        SimpleURI httpUri = location != null ? location : Grakn.DEFAULT_URI;
+        SimpleURI grpcUri = location != null ? location : defaultGrpcUri;
 
-        boolean infer = !cmd.hasOption("n");
+        boolean infer = options.shouldInfer();
 
-        if (cmd.hasOption("b")) {
+        Path path = options.getBatchLoadPath();
+
+        if (path != null) {
             try {
-                Path path = Paths.get(cmd.getOptionValue("b"));
                 BatchLoader.sendBatchRequest(httpUri, keyspace, path);
             } catch (Exception e) {
                 System.out.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
@@ -259,29 +233,18 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private static void printUsage(Options options) {
-        HelpFormatter helpFormatter = new HelpFormatter();
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
-        PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
-        int width = helpFormatter.getWidth();
-        int leftPadding = helpFormatter.getLeftPadding();
-        int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, null);
-        printWriter.flush();
-    }
-
-    private static List<String> loadQueries(String[] filePaths) throws IOException {
+    private static List<String> loadQueries(Iterable<Path> filePaths) throws IOException {
         List<String> queries = Lists.newArrayList();
 
-        for (String filePath : filePaths) {
+        for (Path filePath : filePaths) {
             queries.add(loadQuery(filePath));
         }
 
         return queries;
     }
 
-    private static String loadQuery(String filePath) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+    private static String loadQuery(Path filePath) throws IOException {
+        List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
         return lines.stream().collect(joining("\n"));
     }
 
@@ -289,7 +252,7 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      */
     private GraqlShell(
-            String historyFilename, Keyspace keyspace, SimpleURI uri, String outputFormat, boolean infer
+            String historyFilename, Keyspace keyspace, SimpleURI uri, OutputFormat outputFormat, boolean infer
     ) throws IOException {
         this.outputFormat = outputFormat;
         this.infer = infer;
@@ -300,17 +263,6 @@ public class GraqlShell implements AutoCloseable {
 
         graqlCompleter = GraqlCompleter.create(session);
         historyFile = HistoryFile.create(console, historyFilename);
-    }
-
-    private GraqlConverter<?, String> printer() {
-        switch (outputFormat) {
-            case "json":
-                return Printers.json();
-            case "graql":
-            default:
-                AttributeType<?>[] array = displayAttributes.toArray(new AttributeType[displayAttributes.size()]);
-                return Printers.graql(true, array);
-        }
     }
 
     private void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -388,8 +340,8 @@ public class GraqlShell implements AutoCloseable {
 
             // Load from a file if load command used
             if (queryString.startsWith(LOAD_COMMAND + " ")) {
-                String path = queryString.substring(LOAD_COMMAND.length() + 1);
-                path = unescapeJavaScript(path);
+                String pathString = queryString.substring(LOAD_COMMAND.length() + 1);
+                Path path = Paths.get(unescapeJavaScript(pathString));
 
                 try {
                     queryString = loadQuery(path);
@@ -437,9 +389,11 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
+        GraqlConverter<?, String> converter = outputFormat.getConverter(displayAttributes);
+
         handleGraknExceptions(() -> {
             Stream<Query<?>> queries = tx.graql().infer(infer).parser().parseList(queryString);
-            queries.flatMap(query -> query.results(printer())).forEach(this::println);
+            queries.flatMap(query -> query.results(converter)).forEach(this::println);
         });
 
         // Flush the console so the output is all displayed before the next command

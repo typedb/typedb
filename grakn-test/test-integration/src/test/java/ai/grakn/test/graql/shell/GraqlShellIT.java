@@ -20,6 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.GraqlShell;
+import ai.grakn.graql.GraqlShellOptions;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.util.GraknTestUtil;
@@ -713,7 +714,7 @@ public class GraqlShellIT {
         int keyspaceIndex = argList.indexOf("-k") + 1;
         if (keyspaceIndex == 0) {
             argList.add("-k");
-            argList.add(GraqlShell.DEFAULT_KEYSPACE);
+            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE.getValue());
             keyspaceIndex = argList.size() - 1;
         }
 
