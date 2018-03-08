@@ -42,6 +42,10 @@ public class StorageConfig {
     private final ImmutableMap<String, Object> yamlParams;
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
+    private static final String DB_DEFAULT = "db/";
+    private static final String SAVED_CACHES_SUBDIR = "cassandra/saved_caches";
+    private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
+    private static final String DATA_SUBDIR = "cassandra/data";
 
     private StorageConfig(Map<String, Object> yamlParams){
         this.yamlParams = ImmutableMap.copyOf(yamlParams);
@@ -75,11 +79,13 @@ public class StorageConfig {
     }
 
     private StorageConfig updateDataDirs(GraknConfig config) {
-        String dbDir = config.getProperty(GraknConfigKey.DB_DIR);
+        String dbDir = config.properties().containsKey(GraknConfigKey.DB_DIR)?
+                config.getProperty(GraknConfigKey.DB_DIR) : DB_DEFAULT;
+
         ImmutableMap<String, Object> dataParams = ImmutableMap.of(
-                "data_file_directories", Collections.singletonList(dbDir + "cassandra/data"),
-                "saved_caches_directory", dbDir + "cassandra/saved_caches",
-                "commitlog_directory", dbDir + "cassandra/commitlog"
+                "data_file_directories", Collections.singletonList(dbDir + DATA_SUBDIR),
+                "saved_caches_directory", dbDir + SAVED_CACHES_SUBDIR,
+                "commitlog_directory", dbDir + COMMITLOG_SUBDIR
         );
         Map<String, Object> updatedParams = Maps.newHashMap(yamlParams);
         dataParams.keySet().stream()

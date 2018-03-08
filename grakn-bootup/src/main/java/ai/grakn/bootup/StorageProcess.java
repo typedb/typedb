@@ -40,13 +40,14 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
     private static final String CASSANDRA = "cassandra";
-
     private static final String NAME = "Storage";
 
     private final Path homePath;
+    private final GraknConfig graknConfig;
 
-    public StorageProcess(Path homePath) {
+    public StorageProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
+        this.graknConfig = GraknConfig.read(configPath.toFile());
     }
 
     public void start() {
@@ -59,7 +60,6 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
-        GraknConfig graknConfig = GraknConfig.create();
         StorageConfigProcessor.updateConfigFromGraknConfig(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), graknConfig);
 
         System.out.print("Starting "+NAME+"...");
