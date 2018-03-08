@@ -50,6 +50,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 
 /* uncover the secret
@@ -187,15 +188,16 @@ public class GraqlShell implements AutoCloseable {
             return false;
         }
 
-        Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
+        List<String> queries = null;
 
-        if (queries.isPresent()) {
-            for (String query : queries.get()) {
-                // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
-                if (!query.contains("$") && query.trim().startsWith("match")) {
-                    System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
-                    break;
-                }
+        String query = cmd.getOptionValue("e");
+
+        // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
+        if (query != null) {
+            queries = ImmutableList.of(query);
+
+            if (!query.contains("$") && query.trim().startsWith("match")) {
+                System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
             }
         }
 
@@ -238,7 +240,7 @@ public class GraqlShell implements AutoCloseable {
 
         try (GraqlShell shell = new GraqlShell(historyFilename, keyspace, grpcUri, outputFormat, infer)) {
             if (filePaths != null) {
-                queries = Optional.of(loadQueries(filePaths));
+                queries = loadQueries(filePaths);
             }
 
             // Start shell
@@ -286,9 +288,9 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Create a new Graql shell
      */
-    GraqlShell(
+    private GraqlShell(
             String historyFilename, Keyspace keyspace, SimpleURI uri, String outputFormat, boolean infer
-    ) throws Throwable {
+    ) throws IOException {
         this.outputFormat = outputFormat;
         this.infer = infer;
         console = new ConsoleReader(System.in, System.out);
@@ -311,10 +313,10 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private void start(Optional<List<String>> queryStrings) throws IOException, InterruptedException {
+    private void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
         try {
-            if (queryStrings.isPresent()) {
-                for (String queryString : queryStrings.get()) {
+            if (queryStrings != null) {
+                for (String queryString : queryStrings) {
                     executeQuery(queryString);
                     commit();
                 }
@@ -329,7 +331,7 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Run a Read-Evaluate-Print loop until the input terminates
      */
-    void executeRepl() throws IOException, InterruptedException {
+    private void executeRepl() throws IOException, InterruptedException {
         console.print(LICENSE_PROMPT);
 
         // Disable JLine feature when seeing a '!', which is used in our queries
@@ -444,16 +446,16 @@ public class GraqlShell implements AutoCloseable {
         console.flush();
     }
 
-    private void setDisplayOptions(Set<String> displayOptions) throws IOException {
+    private void setDisplayOptions(Set<String> displayOptions) {
         displayAttributes = displayOptions.stream().map(tx::getAttributeType).collect(toImmutableSet());
     }
 
-    private void commit() throws IOException {
+    private void commit() {
         handleGraknExceptions(() -> tx.commit());
         reopenTx();
     }
 
-    private void rollback() throws IOException {
+    private void rollback() {
         handleGraknExceptions(() -> tx.close());
         reopenTx();
     }
