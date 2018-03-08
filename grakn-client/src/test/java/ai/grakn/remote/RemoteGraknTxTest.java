@@ -330,7 +330,7 @@ public class RemoteGraknTxTest {
         TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
         throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
@@ -348,7 +348,7 @@ public class RemoteGraknTxTest {
         TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
         throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
