@@ -126,7 +126,7 @@ public class GrpcServerTest {
     @Before
     public void setUp() throws IOException {
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(txFactory);
-        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor)).build();
+        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor, null)).build();
         grpcServer = GrpcServer.create(server);
         grpcServer.start();
 
