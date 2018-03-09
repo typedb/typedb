@@ -40,7 +40,7 @@ We recommend changing this to another location to make upgrading Grakn easier an
 
 ### Grakn Cluster
 
-Grakn's clustering functionality is part of [Grakn KBMS](https://grakn.ai/kbms).
+Grakn's clustering functionality is part of [Grakn KGMS](https://grakn.ai/kbms).
 
 ## Upgrading Grakn
 
