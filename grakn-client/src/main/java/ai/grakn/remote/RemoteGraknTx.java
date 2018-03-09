@@ -84,6 +84,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         this.client = client;
     }
 
+    // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
     public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
         GraknGrpc.GraknStub stub = session.stub();
         GrpcClient client = GrpcClient.create(stub);
