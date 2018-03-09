@@ -367,7 +367,12 @@ public class GraqlShell implements AutoCloseable {
 
         handleGraknExceptions(() -> {
             Stream<Query<?>> queries = tx.graql().infer(infer).parser().parseList(queryString);
-            queries.flatMap(query -> query.results(converter)).forEach(this::println);
+
+            Iterable<String> results = () -> queries.flatMap(query -> query.results(converter)).iterator();
+
+            for (String result : results) {
+                console.println(result);
+            }
         });
 
         // Flush the console so the output is all displayed before the next command
@@ -378,12 +383,12 @@ public class GraqlShell implements AutoCloseable {
         displayAttributes = displayOptions.stream().map(tx::getAttributeType).collect(toImmutableSet());
     }
 
-    private void commit() {
+    private void commit() throws IOException {
         handleGraknExceptions(() -> tx.commit());
         reopenTx();
     }
 
-    private void rollback() {
+    private void rollback() throws IOException {
         handleGraknExceptions(() -> tx.close());
         reopenTx();
     }
@@ -402,7 +407,7 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private void handleGraknExceptions(Runnable runnable) {
+    private void handleGraknExceptions(RunnableThrowsIO runnable) throws IOException {
         try {
             runnable.run();
         } catch (GraknException e) {
@@ -412,12 +417,8 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private void println(String string) {
-        try {
-            console.println(string);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private interface RunnableThrowsIO {
+        void run() throws IOException;
     }
 
     private void reopenTx() {
