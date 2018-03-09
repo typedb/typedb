@@ -8,7 +8,7 @@ permalink: /docs/examples/java-api-example
 folder: docs
 ---
 
-This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up a schema, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge base). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-java-api-genealogy).
+This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up a schema, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge graph). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-java-api-genealogy).
 
 ## Dependencies
 All Grakn applications have the following Maven dependency:
@@ -43,13 +43,13 @@ cd [your Grakn install directory]
 
 ## Java API: GraknTx
 
-The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge base programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge base.
+The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge graph programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge graph.
 
 ### Building the Schema
 
 We will look at the same schema as is covered in the [Basic Schema documentation](../building-schema/basic-schema) using Graql, which you may already be familiar with. If you’re not, the schema is fully specified in Graql [here](../building-schema/basic-schema#the-complete-schema).
 
-First we need a [knowledge base](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
+First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java
 GraknSession session = Grakn.session(uri, keyspace);
@@ -166,7 +166,7 @@ for (Thing p: tx.getEntityType("person").instances()) {
 
 ## Querying the Knowledge Graph Using QueryBuilder
 
-It is also possible to interact with the knowledge base using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
+It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
 for (Answer a: tx.graql().match(var("x").isa("person"))) {
@@ -179,8 +179,8 @@ Which leads us to the common question...
 ## When to use GraknTx and when to use QueryBuilder?
 
 **Java API**
-If you are primarily interested in mutating the knowledge base, as well as doing simple concept lookups the Java API will be sufficient, e.g. for
-Manipulation, such as insertions into the knowledge base.
+If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the Java API will be sufficient, e.g. for
+Manipulation, such as insertions into the knowledge graph.
 
 
 **QueryBuilder — the “Java Graql” API**
@@ -201,7 +201,7 @@ tx.close();
 ```
 
 
-This example has been created, as much as anything, as a template that you can take to form the basis of your own projects. Feel free to add some more people to the knowledge base, or make some additional queries. If you need some ideas, you’ll find extra examples of using Java Graql in the Graql documentation for match, insert, delete and aggregate queries.
+This example has been created, as much as anything, as a template that you can take to form the basis of your own projects. Feel free to add some more people to the knowledge graph, or make some additional queries. If you need some ideas, you’ll find extra examples of using Java Graql in the Graql documentation for match, insert, delete and aggregate queries.
 
 ## Where Next?
 If you haven't already, please take a look at our [documentation on the Java APIs](../java-library/setup), and our growing set of [Javadocs](http://javadoc.io/doc/ai.grakn/grakn).

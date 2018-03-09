@@ -7,10 +7,10 @@ permalink: /docs/distributed-analytics/compute-shortest-path
 folder: docs
 ---
 
-## How are two instances in the knowledge base related?
+## How are two instances in the knowledge graph related?
 When starting a task you don't always know in advance what you are looking for.
-Finding the shortest path between two instances in a knowledge base can be a great way to explore connections because you do not need to provide any guidance.
-In the knowledge base below I have displayed two specific people using the query:
+Finding the shortest path between two instances in a knowledge graph can be a great way to explore connections because you do not need to provide any guidance.
+In the knowledge graph below I have displayed two specific people using the query:
 
 ```graql
 match
@@ -38,7 +38,7 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 ## Subgraph
 
 If you are looking for more specific connections you can of course use the [subgraph](./overview) functionality.
-In the following query only the blood relationships (parent/child relationships) are investigated and the resulting knowledge base is shown below.
+In the following query only the blood relationships (parent/child relationships) are investigated and the resulting knowledge graph is shown below.
 We have excluded marriage in this subgraph and as a result the shortest path is longer than before - it turns out the Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, their father being Jacob Young).
 
 <!-- Ignoring because uses made-up IDs -->

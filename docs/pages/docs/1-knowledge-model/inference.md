@@ -15,7 +15,7 @@ Inference is a process of extracting implicit information from explicit data. Gr
 1. type inference, based on the semantics of the `sub` hierarchies included in the schema
 2. rule-based inference involving user-defined IF-THEN rules.
 
-Both mechanisms can be employed when querying the knowledge base with Graql, thus supporting retrieval of both explicit and implicit information at query time.
+Both mechanisms can be employed when querying the knowledge graph with Graql, thus supporting retrieval of both explicit and implicit information at query time.
 
 ### Type Inference
 The type inference is based on a simple traversal along the `sub` links. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the schema, every instance of `customer` will be retrieved on the query `match $x isa human`.

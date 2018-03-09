@@ -23,7 +23,7 @@ Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) 
 
 ### Minimum Requirements
 
-Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge base is small enough.
+Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge graph is small enough.
 Recommended production settings are at least 4GB machine with 3GB heap.
 
 ### Standalone Grakn
