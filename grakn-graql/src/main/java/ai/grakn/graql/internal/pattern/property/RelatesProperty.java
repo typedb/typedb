@@ -55,7 +55,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
 @AutoValue
 public abstract class RelatesProperty extends AbstractVarProperty {
 
-    public static RelatesProperty of(VarPatternAdmin role, VarPatternAdmin superRole) {
+    public static RelatesProperty of(VarPatternAdmin role, @Nullable VarPatternAdmin superRole) {
         return new AutoValue_RelatesProperty(role, superRole);
     }
 
@@ -131,8 +131,9 @@ public abstract class RelatesProperty extends AbstractVarProperty {
                     .requires(superRoleVar).produces(roleVar).build();
 
             return ImmutableSet.of(relatesExecutor, isRoleExecutor, subExecutor);
+        } else {
+            return ImmutableSet.of(relatesExecutor, isRoleExecutor);
         }
-        return ImmutableSet.of(relatesExecutor, isRoleExecutor);
     }
 
     @Override

@@ -28,6 +28,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * A variable together with its properties.
@@ -199,14 +200,14 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern relates(String roleType, String superRoleType);
+    VarPattern relates(String roleType, @Nullable String superRoleType);
 
     /**
      * @param roleType a {@link Role} that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
-    VarPattern relates(VarPattern roleType, VarPattern superRoleType);
+    VarPattern relates(VarPattern roleType, @Nullable VarPattern superRoleType);
 
     /**
      * @param type a {@link Role} id that this concept type variable must play
