@@ -42,7 +42,7 @@ public class StorageConfig {
     private final ImmutableMap<String, Object> yamlParams;
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
-    private static final String DB_DEFAULT = "db/";
+    private static final String DEFAULT_DATA_DIR = "db/";
     private static final String SAVED_CACHES_SUBDIR = "cassandra/saved_caches";
     private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
     private static final String DATA_SUBDIR = "cassandra/data";
@@ -79,8 +79,8 @@ public class StorageConfig {
     }
 
     private StorageConfig updateDataDirs(GraknConfig config) {
-        String dbDir = config.properties().containsKey(GraknConfigKey.DB_DIR)?
-                config.getProperty(GraknConfigKey.DB_DIR) : DB_DEFAULT;
+        String dbDir = config.properties().containsKey(GraknConfigKey.DATA_DIR)?
+                config.getProperty(GraknConfigKey.DATA_DIR) : DEFAULT_DATA_DIR;
 
         ImmutableMap<String, Object> dataParams = ImmutableMap.of(
                 "data_file_directories", Collections.singletonList(dbDir + DATA_SUBDIR),
