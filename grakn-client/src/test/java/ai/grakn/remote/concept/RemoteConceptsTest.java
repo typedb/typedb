@@ -51,7 +51,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -279,10 +279,10 @@ public class RemoteConceptsTest {
     public void whenCallingSup_ExecuteSeveralQueries() {
         SchemaConcept concept = RemoteConcepts.createEntityType(tx, ID);
 
-        String supsId = match(ME.id(ID), ME.sub(TARGET)).get().toString();
-        String supsA = match(ME.id(A), ME.sub(TARGET)).get().toString();
-        String supsB = match(ME.id(B), ME.sub(TARGET)).get().toString();
-        String supsMetaType = match(ME.id(C), ME.sub(TARGET)).get().toString();
+        Query<?> supsId = match(ME.id(ID), ME.sub(TARGET)).get();
+        Query<?> supsA = match(ME.id(A), ME.sub(TARGET)).get();
+        Query<?> supsB = match(ME.id(B), ME.sub(TARGET)).get();
+        Query<?> supsMetaType = match(ME.id(C), ME.sub(TARGET)).get();
 
         mockLabelResponse(ID, Label.of("yes"));
         mockLabelResponse(A, Label.of("A"));
@@ -318,10 +318,10 @@ public class RemoteConceptsTest {
     public void whenCallingIsa_ExecuteSeveralQueries() {
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
-        String typeId = match(ME.id(ID), ME.isa(TARGET)).get().toString();
-        String supsA = match(ME.id(A), ME.sub(TARGET)).get().toString();
-        String supsB = match(ME.id(B), ME.sub(TARGET)).get().toString();
-        String supsMetaType = match(ME.id(C), ME.sub(TARGET)).get().toString();
+        Query<?> typeId = match(ME.id(ID), ME.isa(TARGET)).get();
+        Query<?> supsA = match(ME.id(A), ME.sub(TARGET)).get();
+        Query<?> supsB = match(ME.id(B), ME.sub(TARGET)).get();
+        Query<?> supsMetaType = match(ME.id(C), ME.sub(TARGET)).get();
 
         mockLabelResponse(A, Label.of("A"));
         mockLabelResponse(B, Label.of("B"));
@@ -376,14 +376,14 @@ public class RemoteConceptsTest {
         mockLabelResponse(bar, Label.of("bar"));
         mockLabelResponse(baz, Label.of("baz"));
 
-        String query = match(
+        Query<?> query = match(
                 ME.id(ID),
                 or(
                         ME.has(foo.getLabel(), TARGET),
                         ME.has(bar.getLabel(), TARGET),
                         ME.has(baz.getLabel(), TARGET)
                 )
-        ).get().toString();
+        ).get();
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -467,7 +467,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
-        String query = match(
+        Query<?> query = match(
                 ME.id(ID),
                 TARGET.rel(role, ME),
                 or(
@@ -475,7 +475,7 @@ public class RemoteConceptsTest {
                         role.label(bar.getLabel()),
                         role.label(baz.getLabel())
                 )
-        ).get().toString();
+        ).get();
 
         Thing concept = RemoteConcepts.createEntity(tx, ID);
 
@@ -590,7 +590,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
-        String query = match(
+        Query<?> query = match(
                 ME.id(ID),
                 ME.rel(role, TARGET),
                 or(
@@ -598,7 +598,7 @@ public class RemoteConceptsTest {
                         role.label(bar.getLabel()),
                         role.label(baz.getLabel())
                 )
-        ).get().toString();
+        ).get();
 
         Relationship concept = RemoteConcepts.createRelationship(tx, ID);
 
@@ -672,11 +672,17 @@ public class RemoteConceptsTest {
     private Matcher<? super Stream<? extends Concept>> containsIds(ConceptId... expectedIds) {
         Set<ConceptId> expectedSet = ImmutableSet.copyOf(expectedIds);
 
-        return new TypeSafeMatcher<Stream<? extends Concept>>() {
+        return new TypeSafeDiagnosingMatcher<Stream<? extends Concept>>() {
             @Override
-            protected boolean matchesSafely(Stream<? extends Concept> stream) {
+            protected boolean matchesSafely(Stream<? extends Concept> stream, Description mismatchDescription) {
                 Set<ConceptId> ids = stream.map(Concept::getId).collect(toImmutableSet());
-                return ids.equals(expectedSet);
+
+                if (!ids.equals(expectedSet)) {
+                    mismatchDescription.appendText("Contains IDs " + ids.toString());
+                    return false;
+                } else {
+                    return true;
+                }
             }
 
             @Override

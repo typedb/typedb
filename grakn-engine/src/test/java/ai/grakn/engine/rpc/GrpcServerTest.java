@@ -24,8 +24,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.JedisLockProvider;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -266,7 +264,7 @@ public class GrpcServerTest {
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
         }
 
         ai.grakn.graql.Query<?> query = tx.graql().parse(QUERY);
@@ -298,7 +296,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(nextRequest(iterator));
@@ -356,7 +354,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(nextRequest(iterator));
@@ -377,7 +375,7 @@ public class GrpcServerTest {
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(nextRequest(iterator));
@@ -526,7 +524,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -592,7 +590,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAQL_SYNTAX_EXCEPTION));
@@ -612,7 +610,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAQL_QUERY_EXCEPTION));
@@ -655,7 +653,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(stopRequest(iterator));
@@ -675,10 +673,10 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator1 = tx.receive().ok().getIteratorId();
 
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, null));
             IteratorId iterator2 = tx.receive().ok().getIteratorId();
 
             tx.send(nextRequest(iterator1));
