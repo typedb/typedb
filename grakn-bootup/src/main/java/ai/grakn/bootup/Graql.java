@@ -26,6 +26,7 @@ import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.util.GraknVersion;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -40,11 +41,11 @@ public class Graql {
      *
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         new Graql().run(args);
     }
 
-    public void run(String[] args) {
+    public void run(String[] args) throws IOException, InterruptedException {
         String context = args.length > 0 ? args[0] : "";
 
         switch (context) {

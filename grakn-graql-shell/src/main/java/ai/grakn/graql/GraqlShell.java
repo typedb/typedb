@@ -46,6 +46,19 @@ import org.apache.commons.cli.ParseException;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.stream.Stream;
+
+import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 
 /* uncover the secret
 
@@ -73,21 +86,6 @@ import java.io.IOException;
 \u002e
 \u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079
 \u002e \u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070 \u003b\u002f\u002a */
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -138,12 +136,15 @@ public class GraqlShell implements AutoCloseable {
      *
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException, IOException {
         boolean success = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, GraknConfig.create());
         System.exit(success ? 0 : 1);
     }
 
-    public static boolean runShell(String[] args, String version, String historyFilename, GraknConfig config) {
+    public static boolean runShell(
+            String[] args, String version, String historyFilename, GraknConfig config
+    ) throws InterruptedException, IOException {
+
         GraqlShellOptions options;
 
         try {
@@ -215,13 +216,10 @@ public class GraqlShell implements AutoCloseable {
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
                 System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+                return false;
             } else {
-                System.err.println(getFullStackTrace(e));
+                throw e;
             }
-            return false;
-        } catch (Throwable e) {
-            System.err.println(getFullStackTrace(e));
-            return false;
         }
     }
 
@@ -427,7 +425,7 @@ public class GraqlShell implements AutoCloseable {
     }
 
     @Override
-    public final void close() throws Exception {
+    public final void close() throws IOException {
         tx.close();
         session.close();
         historyFile.close();
