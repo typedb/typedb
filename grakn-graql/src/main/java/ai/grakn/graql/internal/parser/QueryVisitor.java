@@ -531,6 +531,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<VarPattern> visitDirectIsa(GraqlParser.DirectIsaContext ctx) {
+        return var -> var.directIsa(visitVariable(ctx.variable()));
+    }
+
+    @Override
     public UnaryOperator<VarPattern> visitSub(GraqlParser.SubContext ctx) {
         return var -> var.sub(visitVariable(ctx.variable()));
     }
@@ -548,7 +553,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Label visitLabel(GraqlParser.LabelContext ctx) {
         GraqlParser.IdentifierContext label = ctx.identifier();
-        if(label == null){
+        if (label == null) {
             return Label.of(ctx.IMPLICIT_IDENTIFIER().getText());
         }
         return Label.of(visitIdentifier(label));

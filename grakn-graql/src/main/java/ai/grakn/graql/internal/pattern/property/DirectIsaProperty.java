@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -32,7 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 
 /**
- * Represents the {@code isa} property on a {@link Thing}.
+ * Represents the {@code direct-isa} property on a {@link Thing}.
  * <p>
  * This property can be queried and inserted.
  * </p>
@@ -40,22 +39,21 @@ import java.util.Collection;
  * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
  * </p>
  * <p>
- * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
- * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
+ * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
+ * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  * </p>
  *
  * @author Felix Chapman
+ * @author Jason Liu
  */
 @AutoValue
-public abstract class IsaProperty extends AbstractIsaProperty {
+public abstract class DirectIsaProperty extends AbstractIsaProperty {
 
-    public static final String NAME = "isa";
+    public static final String NAME = "isa!";
 
-    public static IsaProperty of(VarPatternAdmin type) {
-        return new AutoValue_IsaProperty(type, Graql.var());
+    public static DirectIsaProperty of(VarPatternAdmin directType) {
+        return new AutoValue_DirectIsaProperty(directType);
     }
-
-    public abstract Var directTypeVar();
 
     @Override
     public String getName() {
@@ -65,35 +63,12 @@ public abstract class IsaProperty extends AbstractIsaProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, directTypeVar(), true),
-                EquivalentFragmentSets.sub(this, directTypeVar(), type().var())
+                EquivalentFragmentSets.isa(this, start, type().var(), true)
         );
     }
 
     @Override
     protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
-        return varName.isa(typeVariable);
+        return varName.directIsa(typeVariable);
     }
-
-    // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof IsaProperty) {
-            IsaProperty that = (IsaProperty) o;
-            return this.type().equals(that.type());
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.type().hashCode();
-        return h;
-    }
-
 }

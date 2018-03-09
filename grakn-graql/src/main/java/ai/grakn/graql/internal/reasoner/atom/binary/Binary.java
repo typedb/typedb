@@ -26,6 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -84,14 +85,19 @@ public abstract class Binary extends Atom {
         if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
 
+    public boolean isDirect(){
+        return getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent();
+    }
+
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return  (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
-                && hasEquivalentPredicatesWith(a2);
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Binary that = (Binary) obj;
+        return  (this.isUserDefined() == that.isUserDefined())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId())
+                && this.hasEquivalentPredicatesWith(that);
     }
 
     @Override
@@ -103,12 +109,13 @@ public abstract class Binary extends Atom {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return  (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
-                && predicateBindingsAreEquivalent(a2);
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Binary that = (Binary) obj;
+        return  (this.isUserDefined() == that.isUserDefined())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId())
+                && this.predicateBindingsAreEquivalent(that);
     }
 
     @Override
