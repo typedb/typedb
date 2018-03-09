@@ -53,7 +53,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -363,14 +363,14 @@ public class RemoteConceptsTest {
         mockLabelResponse(bar, Label.of("bar"));
         mockLabelResponse(baz, Label.of("baz"));
 
-        String query = match(
+        Query<?> query = match(
                 ME_ID,
                 or(
                         ME.has(foo.getLabel(), TARGET),
                         ME.has(bar.getLabel(), TARGET),
                         ME.has(baz.getLabel(), TARGET)
                 )
-        ).get().toString();
+        ).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Attribute),
@@ -444,7 +444,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
-        String query = match(
+        Query<?> query = match(
                 ME_ID,
                 TARGET.rel(role, ME),
                 or(
@@ -452,7 +452,7 @@ public class RemoteConceptsTest {
                         role.label(bar.getLabel()),
                         role.label(baz.getLabel())
                 )
-        ).get().toString();
+        ).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, Relationship),
@@ -548,7 +548,7 @@ public class RemoteConceptsTest {
         mockLabelResponse(baz, Label.of("baz"));
 
         Var role = var("role");
-        String query = match(
+        Query<?> query = match(
                 ME_ID,
                 ME.rel(role, TARGET),
                 or(
@@ -556,7 +556,7 @@ public class RemoteConceptsTest {
                         role.label(bar.getLabel()),
                         role.label(baz.getLabel())
                 )
-        ).get().toString();
+        ).get();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query),
                 queryResultResponse(A, BaseType.Entity),
@@ -1011,11 +1011,17 @@ public class RemoteConceptsTest {
     private Matcher<? super Stream<? extends Concept>> containsIds(ConceptId... expectedIds) {
         Set<ConceptId> expectedSet = ImmutableSet.copyOf(expectedIds);
 
-        return new TypeSafeMatcher<Stream<? extends Concept>>() {
+        return new TypeSafeDiagnosingMatcher<Stream<? extends Concept>>() {
             @Override
-            protected boolean matchesSafely(Stream<? extends Concept> stream) {
+            protected boolean matchesSafely(Stream<? extends Concept> stream, Description mismatchDescription) {
                 Set<ConceptId> ids = stream.map(Concept::getId).collect(toImmutableSet());
-                return ids.equals(expectedSet);
+
+                if (!ids.equals(expectedSet)) {
+                    mismatchDescription.appendText("Contains IDs " + ids.toString());
+                    return false;
+                } else {
+                    return true;
+                }
             }
 
             @Override

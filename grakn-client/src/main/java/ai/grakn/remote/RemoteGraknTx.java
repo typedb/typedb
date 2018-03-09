@@ -255,7 +255,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(this, client, null);
+        return RemoteQueryRunner.create(this, client);
     }
 
     private Concept convert(GrpcConcept.Concept concept) {

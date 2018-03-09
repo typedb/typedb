@@ -143,11 +143,7 @@ public class GrpcUtil {
     }
 
     public static TxRequest execQueryRequest(Query<?> query) {
-        return execQueryRequest(query.toString());
-    }
-
-    public static TxRequest execQueryRequest(String queryString) {
-        return execQueryRequest(queryString, null);
+        return execQueryRequest(query.toString(), query.inferring());
     }
 
     public static TxRequest execQueryRequest(String queryString, @Nullable Boolean infer) {
