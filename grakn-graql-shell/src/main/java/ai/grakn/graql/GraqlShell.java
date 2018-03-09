@@ -74,13 +74,11 @@ import java.io.IOException;
 \u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079
 \u002e \u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070 \u003b\u002f\u002a */
 
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -97,12 +95,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Felix Chapman
  */
 public class GraqlShell implements AutoCloseable {
-    private static final String LICENSE_PROMPT = "\n" +
-            "Grakn  Copyright (C) 2018  Grakn Labs Limited \n" +
-            "This is free software, and you are welcome to redistribute it \n" +
-            "under certain conditions; type 'license' for details.\n";
-
-    private static final String LICENSE_LOCATION = "LICENSE.txt";
 
     private static final String PROMPT = ">>> ";
 
@@ -284,7 +276,7 @@ public class GraqlShell implements AutoCloseable {
      * Run a Read-Evaluate-Print loop until the input terminates
      */
     private void executeRepl() throws IOException, InterruptedException {
-        console.print(LICENSE_PROMPT);
+        License.printLicensePrompt(console);
 
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
@@ -319,7 +311,7 @@ public class GraqlShell implements AutoCloseable {
                         console.clearScreen();
                         continue;
                     case LICENSE_COMMAND:
-                        printLicense();
+                        License.printLicense(console);
                         continue;
                     case EXIT_COMMAND:
                         return;
@@ -368,24 +360,6 @@ public class GraqlShell implements AutoCloseable {
 
             executeQuery(queryString);
         }
-    }
-
-    private void printLicense() {
-        StringBuilder result = new StringBuilder("");
-
-        //Get file from resources folder
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        InputStream is = classloader.getResourceAsStream(LICENSE_LOCATION);
-
-        Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name());
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            result.append(line).append("\n");
-        }
-        result.append("\n");
-        scanner.close();
-
-        this.println(result.toString());
     }
 
     private void executeQuery(String queryString) throws IOException {
