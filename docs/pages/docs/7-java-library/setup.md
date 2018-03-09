@@ -110,7 +110,7 @@ All knowledge bases are also singletons specific to their keyspaces so be aware 
 
 any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge base.
 
-## Controlling The Behaviour of Knowledge Base Transactions
+## Controlling The Behaviour of Knowledge Graph Transactions
 
 When initialising a transaction on a knowledge base it is possible to define the type of transaction with `GraknTxType`.      
 We currently support three types of transactions:

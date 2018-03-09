@@ -26,7 +26,7 @@ Let us tart with the most basic question.
 
 In simple and cheesy terms, GRAKN is a database on steroids that makes it easy to build intelligent applications.
 
-More precisely, it is what we call a [Knowledge Based System](https://en.wikipedia.org/wiki/Knowledge-based_systems): a piece of software that allows to model complex problems, made of several components:
+More precisely, it is what we call a [Knowledge Graph System](https://en.wikipedia.org/wiki/Knowledge-based_systems): a piece of software that allows to model complex problems, made of several components:
 
   * __Data layer.__ A data storage component that allows to store and efficiently access your data. A database. In order to be able to store highly interconnected data at a scale, GRAKN uses a graph database, but that is just because it happens to be the best tool for th job. As you will see, GRAKN is a much more than a graph database. And much more than a relational database for all that matters. That is why we call GRAKN a _hyper-relational database_.
 

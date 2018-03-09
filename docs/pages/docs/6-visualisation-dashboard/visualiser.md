@@ -13,7 +13,7 @@ folder: docs
 ## Introduction
 The Grakn visualiser provides a graphical tool to inspect and query your knowledge base data. This article shows how to run it with a basic example and introduces the visualiser's key features.
 
-## Loading an Example Knowledge Base
+## Loading an Example Knowledge Graph
 If you have not yet set up the Grakn environment, please see the [Setup guide](../get-started/setup-guide).
 
 You can find the *basic-genealogy.gql* example that we will work with in the *examples* directory of the Grakn distribution zip. You can also find this file on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
@@ -76,7 +76,7 @@ If you click and hold on any of the entities, a pop-up will open to allow you to
 If you make a query that you think you'll need to repeat regularly, and don't want to type it, or copy and paste it each time, you can save your query. The small plus sign in a circle on the right hand side of the form will bring up a summary of the query, allowing you to assign it a name and save it. Saved queries can then be retrieved using the star button on the left hand side of the horizontal icon set.
 
 
-### Clear the Knowledge Base
+### Clear the Knowledge Graph
 To clear the query from the form, press the "Clear" button (the circle with the cross through it).  
 
 To clear the entire knowledge base area, press Shift + the "Clear" button.

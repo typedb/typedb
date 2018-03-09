@@ -148,7 +148,7 @@ Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0
 theMarriage.attribute(marriageDate);
 ```
 
-## Querying the Knowledge Base Using GraknTx
+## Querying the Knowledge Graph Using GraknTx
 
 The `runSampleQueries()` method shows how to run a simple query using the `GraknTx` API. For example, take the query "What are the instances of type person?". In Graql, this is simply:
 
@@ -164,7 +164,7 @@ for (Thing p: tx.getEntityType("person").instances()) {
 }
 ```
 
-## Querying the Knowledge Base Using QueryBuilder
+## Querying the Knowledge Graph Using QueryBuilder
 
 It is also possible to interact with the knowledge base using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 

@@ -123,9 +123,9 @@ $40972456 (spouse2: $40964120, spouse1: $8248) isa marriage;
 $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 ```
 
-Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge base.  We will show how to add more data in the [Extending The Knowledge Base](#extending-the-knowledge-base) section. First, however, it is time to query the graph in the Graql shell.
+Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge base.  We will show how to add more data in the [Extending The Knowledge Graph](#extending-the-knowledge-base) section. First, however, it is time to query the graph in the Graql shell.
 
-## Querying the Knowledge Base
+## Querying the Knowledge Graph
 
 Having started Grakn engine and the Graql shell in its interactive mode, we are ready to make a number queries. First, we will make a couple of `get` queries.
 
@@ -157,7 +157,7 @@ match $x isa person, has identifier $y; $y val contains "Elizabeth"; get;
 
 Querying the knowledge base is more fully described in the [Graql documentation](../querying-data/overview).
 
-## Extending the Knowledge Base
+## Extending the Knowledge Graph
 
 Besides making `get` queries, it is also possible to `insert` data
 [(see further documentation)](../querying-data/insert-queries) and `delete` items

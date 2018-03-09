@@ -329,7 +329,7 @@ public static void main(String[] args) {
 }
 ```
 
-## Inserting Tweets Into The Knowledge Base
+## Inserting Tweets Into The Knowledge Graph
 
 At this point our little program already has a clearly defined schema, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
 

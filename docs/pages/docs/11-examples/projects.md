@@ -62,7 +62,7 @@ Using Machine Learning to work with the semantics of the knowledge base.
 ### Publication Topology Based Ranking   
 Semantic search engine for computer science publications. How do ranking results based on topology compare to user data? Can we use an ensemble measure to get “better” results?
 
-### Life Sciences Knowledge Base
+### Life Sciences Knowledge Graph
 There is potential to use the open data from Elixir and Bioschemas.org to build a life science knowledge base.
 
 ### European Broadcast Union
