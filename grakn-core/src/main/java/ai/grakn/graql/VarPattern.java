@@ -139,18 +139,32 @@ public interface VarPattern extends Pattern {
     VarPattern has(Label type, VarPattern attribute, VarPattern relationship);
 
     /**
-     * @param type a concept type id that the variable must be of this type
+     * @param type a concept type id that the variable must be of this type directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(String type);
 
     /**
-     * @param type a concept type that this variable must be an instance of
+     * @param type a concept type that this variable must be an instance of directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(VarPattern type);
+
+    /**
+     * @param type a concept type id that the variable must be of this type directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(String type);
+
+    /**
+     * @param type a concept type that this variable must be an instance of directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of

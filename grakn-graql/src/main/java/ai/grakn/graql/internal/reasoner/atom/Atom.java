@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -149,7 +150,10 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
+        return RuleUtils.getRulesWithType(
+                getSchemaConcept(),
+                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent(),
+                tx());
     }
 
     /**
