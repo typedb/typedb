@@ -48,6 +48,16 @@ public class GraqlShellOptions {
 
     public static final Keyspace DEFAULT_KEYSPACE = Keyspace.of("grakn");
 
+    private static final String KEYSPACE = "k";
+    private static final String EXECUTE = "e";
+    private static final String FILE = "f";
+    private static final String URI = "r";
+    private static final String BATCH = "b";
+    private static final String OUTPUT = "o";
+    private static final String NO_INFER = "n";
+    private static final String HELP = "h";
+    private static final String VERSION = "v";
+
     private CommandLine cmd;
 
     private GraqlShellOptions(CommandLine cmd) {
@@ -56,15 +66,15 @@ public class GraqlShellOptions {
 
     private static Options options() {
         Options options = new Options();
-        options.addOption("k", "keyspace", true, "keyspace of the graph");
-        options.addOption("e", "execute", true, "query to execute");
-        options.addOption("f", "file", true, "graql file path to execute");
-        options.addOption("r", "uri", true, "uri to factory to engine");
-        options.addOption("b", "batch", true, "graql file path to batch load");
-        options.addOption("o", "output", true, "output format for results");
-        options.addOption("n", "no_infer", false, "do not perform inference on results");
-        options.addOption("h", "help", false, "print usage message");
-        options.addOption("v", "version", false, "print version");
+        options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
+        options.addOption(EXECUTE, "execute", true, "query to execute");
+        options.addOption(FILE, "file", true, "graql file path to execute");
+        options.addOption(URI, "uri", true, "uri to factory to engine");
+        options.addOption(BATCH, "batch", true, "graql file path to batch load");
+        options.addOption(OUTPUT, "output", true, "output format for results");
+        options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
+        options.addOption(HELP, "help", false, "print usage message");
+        options.addOption(VERSION, "version", false, "print version");
         return options;
     }
 
@@ -87,46 +97,46 @@ public class GraqlShellOptions {
 
     @Nullable
     public Path getBatchLoadPath() {
-        String path = cmd.getOptionValue("b");
+        String path = cmd.getOptionValue(BATCH);
         return path != null ? Paths.get(path) : null;
     }
 
     public boolean shouldInfer() {
-        return !cmd.hasOption("n");
+        return !cmd.hasOption(NO_INFER);
     }
 
     public OutputFormat getOutputFormat() {
-        String format = cmd.getOptionValue("o");
+        String format = cmd.getOptionValue(OUTPUT);
         return format != null ? OutputFormat.get(format) : OutputFormat.DEFAULT;
     }
 
     @Nullable
     public SimpleURI getUri() {
-        String uri = cmd.getOptionValue("r");
+        String uri = cmd.getOptionValue(URI);
         return uri != null ? new SimpleURI(uri) : null;
     }
 
     public boolean displayVersion() {
-        return cmd.hasOption("v");
+        return cmd.hasOption(VERSION);
     }
 
     public boolean displayHelp() {
-        return cmd.hasOption("h") || !cmd.getArgList().isEmpty();
+        return cmd.hasOption(HELP) || !cmd.getArgList().isEmpty();
     }
 
     public Keyspace getKeyspace() {
-        String keyspace = cmd.getOptionValue("k");
+        String keyspace = cmd.getOptionValue(KEYSPACE);
         return keyspace != null ? Keyspace.of(keyspace) : DEFAULT_KEYSPACE;
     }
 
     @Nullable
     public List<Path> getFiles() {
-        String[] paths = cmd.getOptionValues("f");
+        String[] paths = cmd.getOptionValues(FILE);
         return paths != null ? Stream.of(paths).map(Paths::get).collect(toImmutableList()) : null;
     }
 
     @Nullable
     public String getQuery() {
-        return cmd.getOptionValue("e");
+        return cmd.getOptionValue(EXECUTE);
     }
 }
