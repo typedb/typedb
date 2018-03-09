@@ -33,7 +33,7 @@ There are two types of Analytics queries: Statistics and Graph analytics ones.
 
 **Statistics queries** are used to compute things like mean, maximums, standard deviation and the like. You could achieve the same result with an aggregate query (more on the subject in the next lesson), but that would be very inefficient if your knowledge graph is very large.
 
-**Graph queries** exploit the fact that as a high level hyper-relational database, GRAKN is not married to a specific data representation, so it can take the best of all worlds. Since knowledge is often structured like a graph (or better a [hypergraph](https://en.wikipedia.org/wiki/Hypergraph)), GRAKN can be used to exploit this fact and efficiently compute things like the degree of a certain concept (i.e. the number of relationships into which it appears) or the length of the shortest path between two concepts.
+**Graph queries** exploit the fact that as a high level knowledge graph, GRAKN is not married to a specific data representation, so it can take the best of all worlds. Since knowledge is often structured like a graph (or better a [hypergraph](https://en.wikipedia.org/wiki/Hypergraph)), GRAKN can be used to exploit this fact and efficiently compute things like the degree of a certain concept (i.e. the number of relationships into which it appears) or the length of the shortest path between two concepts.
 The latter kind of queries are particularly useful when you are dealing with things the analysis of communities and machine learning predictions, but this is a bit out of the scope of the Academy.
 
 ### What you have learned?
