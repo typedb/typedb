@@ -1067,6 +1067,13 @@ public class QueryParserTest {
         assertFalse(property.type().var().isUserDefinedName());
     }
 
+    @Test
+    public void whenValueEqualityToString_CreateValidQueryString() {
+        Query<?> query = match(var("x").val(eq(var("y")))).get();
+
+        assertEquals(query, Graql.parse(query.toString()));
+    }
+
     private static void assertParseEquivalence(String query) {
         assertEquals(query, parse(query).toString());
     }
