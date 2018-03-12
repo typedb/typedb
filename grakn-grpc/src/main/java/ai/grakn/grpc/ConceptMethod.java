@@ -130,7 +130,7 @@ public final class ConceptMethod<T> {
 
     public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ALL_ROLE_PLAYERS =
             builder(ConceptResponseType.ROLE_PLAYERS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetAllRolePlayers)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
                     .function(concept -> concept.asRelationship().allRolePlayers())
                     .build();
 
@@ -154,13 +154,13 @@ public final class ConceptMethod<T> {
 
     public static final ConceptMethod<Concept> GET_DIRECT_SUPER =
             builder(ConceptResponseType.CONCEPT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuper)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
                     .function(concept -> concept.asSchemaConcept().sup())
                     .build();
 
     public static ConceptMethod<Void> removeRolePlayer(Role role, Thing player) {
         return builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setRemoveRolePlayer(convert(role, player)))
+                .requestSetter(builder -> builder.setUnsetRolePlayer(convert(role, player)))
                 .function(concept -> {
                     concept.asRelationship().removeRolePlayer(role, player);
                     return null;
@@ -197,7 +197,7 @@ public final class ConceptMethod<T> {
                 return GET_THEN;
             case GETREGEX:
                 return GET_REGEX;
-            case GETALLROLEPLAYERS:
+            case GETROLEPLAYERS:
                 return GET_ALL_ROLE_PLAYERS;
             case GETATTRIBUTETYPES:
                 return GET_ATTRIBUTE_TYPES;
@@ -205,10 +205,10 @@ public final class ConceptMethod<T> {
                 return GET_KEY_TYPES;
             case GETDIRECTTYPE:
                 return GET_DIRECT_TYPE;
-            case GETDIRECTSUPER:
+            case GETDIRECTSUPERCONCEPT:
                 return GET_DIRECT_SUPER;
-            case REMOVEROLEPLAYER:
-                GrpcConcept.RolePlayer removeRolePlayer = conceptMethod.getRemoveRolePlayer();
+            case UNSETROLEPLAYER:
+                GrpcConcept.RolePlayer removeRolePlayer = conceptMethod.getUnsetRolePlayer();
                 Role role = converter.convert(removeRolePlayer.getRole()).asRole();
                 Thing player = converter.convert(removeRolePlayer.getPlayer()).asThing();
                 return removeRolePlayer(role, player);
