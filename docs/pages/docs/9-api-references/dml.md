@@ -47,6 +47,10 @@ Within the [patterns](#pattern), the following [properties](../querying-data/ove
 
 `$x isa $A` is _satisfied_ if `$x` is indirectly an _instance_ of the _type_ `$A`.
 
+### isa!
+
+`$x isa! $A` is _satisfied_ if `$x` is directly an _instance_ of the _type_ `$A`.
+
 ### relationship
 
 `$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a _relation_ where for each `$Ai: $xi`, `$xi` is a role-player
@@ -215,6 +219,10 @@ supported:
 ## isa
 
 `$x isa $A` creates a new direct instance of the _type_ `$A` and binds it to `$x`.
+
+## isa!
+
+`$x isa! $A` creates a new direct instance of the _type_ `$A` and binds it to `$x`.
 
 ## relationship
 
