@@ -26,13 +26,11 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.rpc.GrpcServer;
-import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -44,8 +42,6 @@ import spark.Service;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-
-import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
 /**
  * @author Michele Orsi
@@ -91,10 +87,6 @@ public class HttpHandler {
     }
 
     protected void startCollaborators() {
-        // Start the websocket for Graql
-        RemoteSession graqlWebSocket = RemoteSession.create();
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
-
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
@@ -129,7 +121,6 @@ public class HttpHandler {
         spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
-        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register exception handlers
         spark.exception(GraknServerException.class, (e, req, res) -> {

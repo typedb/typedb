@@ -52,6 +52,7 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -129,8 +130,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         // decide which ordering method to use
         Var var = getVariable(ctx.VARIABLE());
-        if (ctx.ORDER() != null) {
-            return match.orderBy(var, getOrder(ctx.ORDER()));
+        if (ctx.order() != null) {
+            return match.orderBy(var, visitOrder(ctx.order()));
         } else {
             return match.orderBy(var);
         }
@@ -497,7 +498,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
-        return var -> var.datatype(getDatatype(ctx.DATATYPE()));
+        return var -> var.datatype(visitDatatype(ctx.datatype()));
     }
 
     @Override
@@ -631,6 +632,16 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Order visitOrder(GraqlParser.OrderContext ctx) {
+        if (ctx.ASC() != null) {
+            return Order.asc;
+        } else {
+            assert ctx.DESC() != null;
+            return Order.desc;
+        }
+    }
+
+    @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
@@ -652,7 +663,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Boolean visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
-        return Boolean.valueOf(ctx.BOOLEAN().getText());
+        return visitBool(ctx.bool());
     }
 
     @Override
@@ -663,6 +674,28 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
         return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+
+    @Override
+    public Boolean visitBool(GraqlParser.BoolContext ctx) {
+        return ctx.TRUE() != null;
+    }
+
+    @Override
+    public AttributeType.DataType<?> visitDatatype(GraqlParser.DatatypeContext datatype) {
+        if (datatype.BOOLEAN_TYPE() != null) {
+            return AttributeType.DataType.BOOLEAN;
+        } else if (datatype.DATE_TYPE() != null) {
+            return AttributeType.DataType.DATE;
+        } else if (datatype.DOUBLE_TYPE() != null) {
+            return AttributeType.DataType.DOUBLE;
+        } else if (datatype.LONG_TYPE() != null) {
+            return AttributeType.DataType.LONG;
+        } else if (datatype.STRING_TYPE() != null) {
+            return AttributeType.DataType.STRING;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
+        }
     }
 
     private Match visitMatchPart(GraqlParser.MatchPartContext ctx) {
@@ -736,14 +769,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return Long.parseLong(integer.getText());
     }
 
-    private Order getOrder(TerminalNode order) {
-        if (order.getText().equals("asc")) {
-            return Order.asc;
-        } else {
-            return Order.desc;
-        }
-    }
-
     private <T> ValuePredicate applyPredicate(
             Function<T, ValuePredicate> valPred, Function<VarPattern, ValuePredicate> varPred, Object obj
     ) {
@@ -752,10 +777,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else {
             return valPred.apply((T) obj);
         }
-    }
-
-    private AttributeType.DataType getDatatype(TerminalNode datatype) {
-        return QueryParserImpl.DATA_TYPES.get(datatype.getText());
     }
 
     private Var var() {
