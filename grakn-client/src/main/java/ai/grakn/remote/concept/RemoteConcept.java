@@ -24,12 +24,16 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
@@ -38,7 +42,7 @@ import static ai.grakn.graql.Graql.var;
 /**
  * @author Felix Chapman
  */
-abstract class RemoteConcept implements Concept {
+abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     static final Var ME = var("me");
     static final Var TARGET = var("target");
@@ -55,16 +59,29 @@ abstract class RemoteConcept implements Concept {
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        throw new UnsupportedOperationException(); // TODO: implement
+        runVoidMethod(ConceptMethod.DELETE);
     }
 
     @Override
     public final boolean isDeleted() {
-        return !tx().graql().match(var().id(getId())).aggregate(ask()).execute();
+        return !tx().graql().match(me()).aggregate(ask()).execute();
     }
 
-    protected final <T> T getProperty(ConceptProperty<T> property) {
-        return tx().client().getConceptProperty(getId(), property);
+    protected final <T> T runMethod(ConceptMethod<T> property) {
+        return Objects.requireNonNull(runNullableMethod(property));
+    }
+
+    @Nullable
+    protected final <T> T runNullableMethod(ConceptMethod<T> property) {
+        return tx().client().runConceptMethod(getId(), property);
+    }
+
+    protected final void runVoidMethod(ConceptMethod<Void> property) {
+        runNullableMethod(property);
+    }
+
+    protected final VarPattern me() {
+        return ME.id(getId());
     }
 
     protected final Stream<Concept> query(Pattern... patterns) {
@@ -72,10 +89,16 @@ abstract class RemoteConcept implements Concept {
     }
 
     protected final Stream<Answer> queryAnswers(Pattern... patterns) {
-        Pattern myId = ME.id(getId());
-
-        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(myId).add(patterns).build();
+        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(me()).add(patterns).build();
 
         return tx().graql().match(patternCollection).get().stream();
     }
+
+    protected final Concept insert(VarPattern... patterns) {
+        Collection<VarPattern> patternCollection = ImmutableList.<VarPattern>builder().add(me()).add(patterns).build();
+
+        return Iterables.getOnlyElement(tx().graql().insert(patternCollection).execute()).get(TARGET);
+    }
+
+    abstract Self asSelf(Concept concept);
 }

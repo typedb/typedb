@@ -22,7 +22,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -34,22 +36,25 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.BaseType;
-import ai.grakn.rpc.generated.GraknOuterClass.IteratorId;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.BaseType;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
+import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -72,6 +77,8 @@ import java.util.stream.Stream;
 import static ai.grakn.grpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.grpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.grpc.GrpcUtil.commitRequest;
+import static ai.grakn.grpc.GrpcUtil.convert;
+import static ai.grakn.grpc.GrpcUtil.deleteRequest;
 import static ai.grakn.grpc.GrpcUtil.doneResponse;
 import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
 import static ai.grakn.grpc.GrpcUtil.nextRequest;
@@ -103,14 +110,15 @@ public class GrpcServerTest {
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
-    private static final GraknOuterClass.ConceptId V123 =
-            GraknOuterClass.ConceptId.newBuilder().setValue("V123").build();
-    private static final GraknOuterClass.ConceptId V456 =
-            GraknOuterClass.ConceptId.newBuilder().setValue("V456").build();
+    private static final GrpcConcept.ConceptId V123 =
+            GrpcConcept.ConceptId.newBuilder().setValue("V123").build();
+    private static final GrpcConcept.ConceptId V456 =
+            GrpcConcept.ConceptId.newBuilder().setValue("V456").build();
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
+    private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
 
     private GrpcServer grpcServer;
 
@@ -120,6 +128,7 @@ public class GrpcServerTest {
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
     private final GraknStub stub = GraknGrpc.newStub(channel);
+    private final GraknBlockingStub blockingStub = GraknGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {
@@ -130,6 +139,7 @@ public class GrpcServerTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
+        when(tx.admin()).thenReturn(tx);
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
@@ -224,7 +234,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
@@ -302,18 +312,18 @@ public class GrpcServerTest {
             tx.send(nextRequest(iterator));
             TxResponse response1 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcX =
-                    GraknOuterClass.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
-            GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
+            GrpcConcept.Concept rpcX =
+                    GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
+            GrpcGrakn.Answer.Builder answerX = GrpcGrakn.Answer.newBuilder().putAnswer("x", rpcX);
             QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
 
             tx.send(nextRequest(iterator));
             TxResponse response2 = tx.receive().ok();
 
-            GraknOuterClass.Concept rpcY =
-                    GraknOuterClass.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
-            GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
+            GrpcConcept.Concept rpcY =
+                    GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
+            GrpcGrakn.Answer.Builder answerY = GrpcGrakn.Answer.newBuilder().putAnswer("y", rpcY);
             QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
 
@@ -427,9 +437,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
-            assertEquals(label, ConceptProperty.LABEL.get(tx.receive().ok()));
+            assertEquals(label, ConceptMethod.GET_LABEL.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -446,9 +456,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_IMPLICIT));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
 
-            assertTrue(ConceptProperty.IS_IMPLICIT.get(tx.receive().ok()));
+            assertTrue(ConceptMethod.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
         }
     }
 
@@ -465,9 +475,44 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.IS_INFERRED));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
 
-            assertFalse(ConceptProperty.IS_INFERRED.get(tx.receive().ok()));
+            assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
+        }
+    }
+
+    @Test
+    public void whenRemovingRolePlayer_RolePlayerIsRemoved() throws InterruptedException {
+        ConceptId conceptId = ConceptId.of("V123456");
+        ConceptId roleId = ConceptId.of("ROLE");
+        ConceptId playerId = ConceptId.of("PLAYER");
+
+        Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(conceptId)).thenReturn(concept);
+        when(concept.isRelationship()).thenReturn(true);
+
+        Role role = mock(Role.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(roleId)).thenReturn(role);
+        when(role.isRole()).thenReturn(true);
+        when(role.asRole()).thenReturn(role);
+        when(role.getId()).thenReturn(roleId);
+
+        Entity player = mock(Entity.class, RETURNS_DEEP_STUBS);
+        when(tx.getConcept(playerId)).thenReturn(player);
+        when(player.isEntity()).thenReturn(true);
+        when(player.asEntity()).thenReturn(player);
+        when(player.isThing()).thenReturn(true);
+        when(player.asThing()).thenReturn(player);
+        when(player.getId()).thenReturn(playerId);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, ConceptMethod.removeRolePlayer(role, player)));
+            tx.receive().ok();
+
+            verify(concept.asRelationship()).removeRolePlayer(role, player);
         }
     }
 
@@ -481,7 +526,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -502,7 +547,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.getConceptPropertyRequest(id, ConceptProperty.LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -691,6 +736,28 @@ public class GrpcServerTest {
             tx.send(stopRequest(iterator2));
             tx.receive().ok();
         }
+    }
+
+    @Test
+    public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
+        Open open = Open.newBuilder().setKeyspace(convert(MYKS)).setTxType(TxType.Write).build();
+
+        blockingStub.delete(deleteRequest(open));
+
+        verify(tx).delete();
+    }
+
+    @Test
+    public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
+        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+
+        Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
+
+        String message = GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage();
+        exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
+        exception.expect(hasMetadata(ErrorType.KEY, ErrorType.GRAKN_TX_OPERATION_EXCEPTION));
+
+        blockingStub.delete(deleteRequest(open));
     }
 }
 
