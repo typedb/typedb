@@ -59,25 +59,24 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.grpc.ConceptMethod.GET_ALL_ROLE_PLAYERS;
 import static ai.grakn.grpc.ConceptMethod.GET_ATTRIBUTE_TYPES;
 import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_SUPER;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_TYPE;
 import static ai.grakn.grpc.ConceptMethod.GET_KEY_TYPES;
 import static ai.grakn.grpc.ConceptMethod.GET_REGEX;
+import static ai.grakn.grpc.ConceptMethod.GET_ROLE_PLAYERS;
 import static ai.grakn.grpc.ConceptMethod.GET_THEN;
 import static ai.grakn.grpc.ConceptMethod.GET_VALUE;
 import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
@@ -86,11 +85,7 @@ import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
 import static ai.grakn.remote.concept.RemoteConcept.ME;
 import static ai.grakn.remote.concept.RemoteConcept.TARGET;
-import static ai.grakn.rpc.generated.GrpcConcept.BaseType.Attribute;
-import static ai.grakn.rpc.generated.GrpcConcept.BaseType.MetaType;
-import static ai.grakn.rpc.generated.GrpcConcept.BaseType.Relationship;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -227,26 +222,19 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingGetAttribute_ExecuteAQuery() {
+    public void whenCallingGetAttribute_GetTheExpectedResult() {
         String value = "Dunstan again";
-
-        Query<?> query = match(ME_ID, TARGET.val(value).isa(ME)).get();
-
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse(attribute));
+        mockPropertyResponse(ConceptMethod.getAttribute(value), attribute);
 
         assertEquals(attribute, attributeType.getAttribute(value));
     }
 
     @Test
-    public void whenCallingGetAttributeWhenThereIsNoResult_ExecuteAQuery() {
+    public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
         String value = "Dunstan > Oliver";
-
-        Query<?> query = match(ME_ID, TARGET.val(value).isa(ME)).get();
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query));
-
+        mockPropertyResponse(ConceptMethod.getAttribute(value), null);
         assertNull(attributeType.getAttribute(value));
     }
 
@@ -263,52 +251,36 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingIsDeleted_ExecuteAnAskQuery() {
-        Query<?> query = match(ME_ID).aggregate(ask());
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("true"));
+    public void whenCallingIsDeleted_GetTheExpectedResult() {
+        mockPropertyResponse(ConceptMethod.EXISTS, false);
         assertFalse(entity.isDeleted());
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), queryResultResponse("false"));
+        mockPropertyResponse(ConceptMethod.EXISTS, true);
         assertTrue(entity.isDeleted());
     }
 
     @Test
-    public void whenCallingSups_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, ME.sub(TARGET)).get();
+    public void whenCallingSups_GetTheExpectedResult() {
+        Type me = entityType;
+        Type mySuper = RemoteConcepts.createEntityType(tx, A);
+        Type mySupersSuper = RemoteConcepts.createEntityType(tx, B);
+        Type metaType = RemoteConcepts.createMetaType(tx, C);
 
-        mockLabelResponse(ID, Label.of("yes"));
-        mockLabelResponse(A, Label.of("A"));
-        mockLabelResponse(B, Label.of("B"));
-        mockLabelResponse(C, THING.getLabel());
+        mockPropertyResponse(ConceptMethod.GET_SUPER_CONCEPTS, Stream.of(me, mySuper, mySupersSuper, metaType));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(entityType),
-                queryResultResponse(A, BaseType.EntityType),
-                queryResultResponse(B, BaseType.EntityType),
-                queryResultResponse(C, MetaType)
-        );
-
-        Set<ConceptId> sups = entityType.sups().map(Concept::getId).collect(toSet());
-        assertThat(sups, containsInAnyOrder(ID, A, B));
-        assertThat(sups, not(hasItem(C)));
+        Set<Type> sups = entityType.sups().collect(toSet());
+        assertThat(sups, containsInAnyOrder(me, mySuper, mySupersSuper));
+        assertThat(sups, not(hasItem(metaType)));
     }
 
     @Test
-    public void whenCallingSubs_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, TARGET.sub(ME)).get();
+    public void whenCallingSubs_GetTheExpectedResult() {
+        Type me = relationshipType;
+        Type mySub = RemoteConcepts.createRelationshipType(tx, A);
+        Type mySubsSub = RemoteConcepts.createRelationshipType(tx, B);
 
-        mockLabelResponse(ID, Label.of("yes"));
-        mockLabelResponse(A, Label.of("A"));
-        mockLabelResponse(B, Label.of("B"));
+        mockPropertyResponse(ConceptMethod.GET_SUB_CONCEPTS, Stream.of(me, mySub, mySubsSub));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(ID, BaseType.RelationshipType),
-                queryResultResponse(A, BaseType.RelationshipType),
-                queryResultResponse(B, BaseType.RelationshipType)
-        );
-
-        assertThat(relationshipType.subs(), containsIds(ID, A, B));
+        assertThat(relationshipType.subs().collect(toSet()), containsInAnyOrder(me, mySub, mySubsSub));
     }
 
     @Test
@@ -341,169 +313,125 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenCallingAttributesWithNoArguments_ExecuteAQueryForAllAttributes() {
-        Query<?> query = match(ME_ID, ME.has(ATTRIBUTE.getLabel(), TARGET)).get();
+    public void whenCallingAttributesWithNoArguments_GetTheExpectedResult() {
+        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
+        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
+        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, Attribute),
-                queryResultResponse(B, Attribute),
-                queryResultResponse(C, Attribute)
-        );
+        mockPropertyResponse(ConceptMethod.GET_ATTRIBUTES, Stream.of(a, b, c));
 
-        assertThat(entity.attributes(), containsIds(A, B, C));
+        assertThat(thing.attributes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingAttributesWithArguments_ExecuteAQueryForThoseTypesOnly() {
+    public void whenCallingAttributesWithArguments_GetTheExpectedResult() {
         AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, ConceptId.of("foo"));
         AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, ConceptId.of("bar"));
         AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(foo, Label.of("foo"));
-        mockLabelResponse(bar, Label.of("bar"));
-        mockLabelResponse(baz, Label.of("baz"));
+        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
+        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
+        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        Query<?> query = match(
-                ME_ID,
-                or(
-                        ME.has(foo.getLabel(), TARGET),
-                        ME.has(bar.getLabel(), TARGET),
-                        ME.has(baz.getLabel(), TARGET)
-                )
-        ).get();
+        mockPropertyResponse(ConceptMethod.getAttributesByTypes(foo, bar, baz), Stream.of(a, b, c));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, Attribute),
-                queryResultResponse(B, Attribute),
-                queryResultResponse(C, Attribute)
-        );
-
-        assertThat(thing.attributes(foo, bar, baz), containsIds(A, B, C));
+        assertThat(thing.attributes(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingPlays_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, ME.plays(TARGET)).get();
+    public void whenCallingPlays_GetTheExpectedResult() {
+        Role a = RemoteConcepts.createRole(tx, A);
+        Role b = RemoteConcepts.createRole(tx, B);
+        Role c = RemoteConcepts.createRole(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Role),
-                queryResultResponse(B, BaseType.Role),
-                queryResultResponse(C, BaseType.Role)
-        );
+        mockPropertyResponse(ConceptMethod.GET_ROLES_PLAYED_BY_TYPE, Stream.of(a, b, c));
 
-        assertThat(type.plays(), containsIds(A, B, C));
+        assertThat(type.plays().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingInstances_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, TARGET.isa(ME)).get();
+    public void whenCallingInstances_GetTheExpectedResult() {
+        Thing a = RemoteConcepts.createRelationship(tx, A);
+        Thing b = RemoteConcepts.createRelationship(tx, B);
+        Thing c = RemoteConcepts.createRelationship(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, Relationship),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Relationship)
-        );
+        mockPropertyResponse(ConceptMethod.GET_INSTANCES, Stream.of(a, b, c));
 
-        assertThat(((Type) relationshipType).instances(), containsIds(A, B, C));
+        assertThat(relationshipType.instances().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingThingPlays_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, var().rel(TARGET, ME)).get();
+    public void whenCallingThingPlays_GetTheExpectedResult() {
+        Role a = RemoteConcepts.createRole(tx, A);
+        Role b = RemoteConcepts.createRole(tx, B);
+        Role c = RemoteConcepts.createRole(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Role),
-                queryResultResponse(B, BaseType.Role),
-                queryResultResponse(C, BaseType.Role)
-        );
+        mockPropertyResponse(ConceptMethod.GET_ROLES_PLAYED_BY_THING, Stream.of(a, b, c));
 
-        assertThat(thing.plays(), containsIds(A, B, C));
+        assertThat(thing.plays().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingRelationshipsWithNoArguments_ExecuteAQueryForAllRelationships() {
-        Query<?> query = match(ME_ID, TARGET.rel(ME)).get();
+    public void whenCallingRelationshipsWithNoArguments_GetTheExpectedResult() {
+        Relationship a = RemoteConcepts.createRelationship(tx, A);
+        Relationship b = RemoteConcepts.createRelationship(tx, B);
+        Relationship c = RemoteConcepts.createRelationship(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, Relationship),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Relationship)
-        );
+        mockPropertyResponse(ConceptMethod.GET_RELATIONSHIPS, Stream.of(a, b, c));
 
-        assertThat(thing.relationships(), containsIds(A, B, C));
+        assertThat(thing.relationships().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingRelationshipsWithRoles_ExecuteAQueryForAllRelationshipsOfTheSpecifiedRoles() {
+    public void whenCallingRelationshipsWithRoles_GetTheExpectedResult() {
         Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
         Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
         Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(foo, Label.of("foo"));
-        mockLabelResponse(bar, Label.of("bar"));
-        mockLabelResponse(baz, Label.of("baz"));
+        Relationship a = RemoteConcepts.createRelationship(tx, A);
+        Relationship b = RemoteConcepts.createRelationship(tx, B);
+        Relationship c = RemoteConcepts.createRelationship(tx, C);
 
-        Var role = var("role");
-        Query<?> query = match(
-                ME_ID,
-                TARGET.rel(role, ME),
-                or(
-                        role.label(foo.getLabel()),
-                        role.label(bar.getLabel()),
-                        role.label(baz.getLabel())
-                )
-        ).get();
+        mockPropertyResponse(ConceptMethod.getRelationshipsByRoles(foo, bar, baz), Stream.of(a, b, c));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, Relationship),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Relationship)
-        );
-
-        assertThat(thing.relationships(foo, bar, baz), containsIds(A, B, C));
+        assertThat(thing.relationships(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingRelationshipTypes_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, TARGET.relates(ME)).get();
+    public void whenCallingRelationshipTypes_GetTheExpectedResult() {
+        RelationshipType a = RemoteConcepts.createRelationshipType(tx, A);
+        RelationshipType b = RemoteConcepts.createRelationshipType(tx, B);
+        RelationshipType c = RemoteConcepts.createRelationshipType(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.RelationshipType),
-                queryResultResponse(B, BaseType.RelationshipType),
-                queryResultResponse(C, BaseType.RelationshipType)
-        );
+        mockPropertyResponse(ConceptMethod.GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE, Stream.of(a, b, c));
 
-        assertThat(role.relationshipTypes(), containsIds(A, B, C));
+        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingPlayedByTypes_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, TARGET.plays(ME)).get();
+    public void whenCallingPlayedByTypes_GetTheExpectedResult() {
+        Type a = RemoteConcepts.createEntityType(tx, A);
+        Type b = RemoteConcepts.createRelationshipType(tx, B);
+        Type c = RemoteConcepts.createAttributeType(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.EntityType),
-                queryResultResponse(B, BaseType.RelationshipType),
-                queryResultResponse(C, BaseType.AttributeType)
-        );
+        mockPropertyResponse(ConceptMethod.GET_TYPES_THAT_PLAY_ROLE, Stream.of(a, b, c));
 
-        assertThat(role.playedByTypes(), containsIds(A, B, C));
+        assertThat(role.playedByTypes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingRelates_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, ME.relates(TARGET)).get();
+    public void whenCallingRelates_GetTheExpectedResult() {
+        Role a = RemoteConcepts.createRole(tx, A);
+        Role b = RemoteConcepts.createRole(tx, B);
+        Role c = RemoteConcepts.createRole(tx, C);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Role),
-                queryResultResponse(B, BaseType.Role),
-                queryResultResponse(C, BaseType.Role)
-        );
+        mockPropertyResponse(ConceptMethod.GET_RELATED_ROLES, Stream.of(a, b, c));
 
-        assertThat(relationshipType.relates(), containsIds(A, B, C));
+        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingAllRolePlayers_ExecuteAQuery() {
+    public void whenCallingAllRolePlayers_GetTheExpectedResult() {
         Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
         Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
 
@@ -516,68 +444,51 @@ public class RemoteConceptsTest {
                 bar, ImmutableSet.of(b, c)
         );
 
-        TxResponse response = GET_ALL_ROLE_PLAYERS.createTxResponse(expected);
+        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(expected);
 
-        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ALL_ROLE_PLAYERS), response);
+        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
         assertEquals(expected, allRolePlayers);
     }
 
     @Test
-    public void whenCallingRolePlayersWithNoArguments_ExecuteAQueryForAllRolePlayers() {
-        Query<?> query = match(ME_ID, ME.rel(TARGET)).get();
+    public void whenCallingRolePlayersWithNoArguments_GetTheExpectedResult() {
+        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Entity),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Attribute)
-        );
+        Thing a = RemoteConcepts.createEntity(tx, A);
+        Thing b = RemoteConcepts.createRelationship(tx, B);
+        Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        assertThat(relationship.rolePlayers(), containsIds(A, B, C));
+        mockPropertyResponse(ConceptMethod.GET_ROLE_PLAYERS, ImmutableMap.of(foo, ImmutableSet.of(a, b, c)));
+
+        assertThat(relationship.rolePlayers().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingRolePlayersWithRoles_ExecuteAQueryForAllSpecifiedRoles() {
+    public void whenCallingRolePlayersWithRoles_GetTheExpectedResult() {
         Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
         Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
         Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
 
-        mockLabelResponse(foo, Label.of("foo"));
-        mockLabelResponse(bar, Label.of("bar"));
-        mockLabelResponse(baz, Label.of("baz"));
+        Thing a = RemoteConcepts.createEntity(tx, A);
+        Thing b = RemoteConcepts.createRelationship(tx, B);
+        Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        Var role = var("role");
-        Query<?> query = match(
-                ME_ID,
-                ME.rel(role, TARGET),
-                or(
-                        role.label(foo.getLabel()),
-                        role.label(bar.getLabel()),
-                        role.label(baz.getLabel())
-                )
-        ).get();
+        mockPropertyResponse(ConceptMethod.getRolePlayersByRoles(foo, bar, baz), Stream.of(a, b, c));
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Entity),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Attribute)
-        );
-
-        assertThat(relationship.rolePlayers(foo, bar, baz), containsIds(A, B, C));
+        assertThat(relationship.rolePlayers(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
-    public void whenCallingOwnerInstances_ExecuteAQuery() {
-        Query<?> query = match(ME_ID, TARGET.has(ATTRIBUTE.getLabel(), ME)).get();
+    public void whenCallingOwnerInstances_GetTheExpectedResult() {
+        Thing a = RemoteConcepts.createEntity(tx, A);
+        Thing b = RemoteConcepts.createRelationship(tx, A);
+        Thing c = RemoteConcepts.createAttribute(tx, A);
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query),
-                queryResultResponse(A, BaseType.Entity),
-                queryResultResponse(B, Relationship),
-                queryResultResponse(C, Attribute)
-        );
+        mockPropertyResponse(ConceptMethod.GET_OWNERS, Stream.of(a, b, c));
 
-        assertThat(attribute.ownerInstances(), containsIds(A, B, C));
+        assertThat(attribute.ownerInstances().collect(toSet()), containsInAnyOrder(a, b, c));
     }
 
     @Test
@@ -982,11 +893,6 @@ public class RemoteConceptsTest {
         return queryResultResponse(GrpcGrakn.Answer.getDefaultInstance());
     }
 
-    private static TxResponse queryResultResponse(String value) {
-        QueryResult queryResult = QueryResult.newBuilder().setOtherResult(value).build();
-        return TxResponse.newBuilder().setQueryResult(queryResult).build();
-    }
-
     private static TxResponse queryResultResponse(Concept concept) {
         return queryResultResponse(concept.getId(), GrpcUtil.getBaseType(concept));
     }
@@ -1031,7 +937,7 @@ public class RemoteConceptsTest {
         };
     }
 
-    private <T> void mockPropertyResponse(ConceptMethod<T> property, T value) {
+    private <T> void mockPropertyResponse(ConceptMethod<T> property, @Nullable T value) {
         server.setResponse(GrpcUtil.runConceptMethodRequest(ID, property), property.createTxResponse(value));
     }
 }

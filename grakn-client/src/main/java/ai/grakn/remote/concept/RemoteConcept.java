@@ -22,10 +22,8 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.ImmutableList;
@@ -34,9 +32,7 @@ import com.google.common.collect.Iterables;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -64,7 +60,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final boolean isDeleted() {
-        return !tx().graql().match(me()).aggregate(ask()).execute();
+        return runMethod(ConceptMethod.EXISTS);
     }
 
     protected final <T> T runMethod(ConceptMethod<T> property) {
@@ -82,16 +78,6 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     protected final VarPattern me() {
         return ME.id(getId());
-    }
-
-    protected final Stream<Concept> query(Pattern... patterns) {
-        return queryAnswers(patterns).map(answer -> answer.get(TARGET));
-    }
-
-    protected final Stream<Answer> queryAnswers(Pattern... patterns) {
-        Collection<Pattern> patternCollection = ImmutableList.<Pattern>builder().add(me()).add(patterns).build();
-
-        return tx().graql().match(patternCollection).get().stream();
     }
 
     protected final Concept insert(VarPattern... patterns) {

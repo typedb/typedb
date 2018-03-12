@@ -29,7 +29,6 @@ import com.google.auto.value.AutoValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
@@ -64,8 +63,8 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        Stream<Concept> concepts = query(TARGET.val(value).isa(ME));
-        return concepts.findAny().map(this::asInstance).orElse(null);
+        Concept concept = runNullableMethod(ConceptMethod.getAttribute(value));
+        return concept != null ? concept.asAttribute() : null;
     }
 
     @Nullable
@@ -83,6 +82,11 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     final AttributeType<D> asSelf(Concept concept) {
         return concept.asAttributeType();
+    }
+
+    @Override
+    final boolean isSelf(Concept concept) {
+        return concept.isAttributeType();
     }
 
     @Override

@@ -32,8 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.Schema.MetaSchema.THING;
-
 /**
  * @author Felix Chapman
  *
@@ -68,7 +66,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Override
     public Self sup() {
         Concept concept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
-        if (concept != null && notMetaThing(concept)) {
+        if (concept != null && isSelf(concept)) {
             return asSelf(concept);
         } else {
             return null;
@@ -77,16 +75,12 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> sups() {
-        return tx().admin().sups(this).filter(RemoteSchemaConcept::notMetaThing).map(this::asSelf);
-    }
-
-    private static boolean notMetaThing(Concept concept) {
-        return !concept.isSchemaConcept() || !concept.asSchemaConcept().getLabel().equals(THING.getLabel());
+        return tx().admin().sups(this).filter(this::isSelf).map(this::asSelf);
     }
 
     @Override
     public final Stream<Self> subs() {
-        return query(TARGET.sub(ME)).map(this::asSelf);
+        return runMethod(ConceptMethod.GET_SUB_CONCEPTS).map(this::asSelf);
     }
 
     @Override
@@ -135,4 +129,6 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         tx().graql().undefine(patternCollection).execute();
         return asSelf(this);
     }
+
+    abstract boolean isSelf(Concept concept);
 }

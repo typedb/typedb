@@ -38,6 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.grpc.GrpcUtil.convert;
+import static ai.grakn.grpc.GrpcUtil.convertValue;
 
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
@@ -57,7 +58,7 @@ public final class ConceptMethod<T> {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public TxResponse run(Concept concept) {
+    public TxResponse run(@Nullable Concept concept) {
         return createTxResponse(function.apply(concept));
     }
 
@@ -128,7 +129,7 @@ public final class ConceptMethod<T> {
             .function(concept -> concept.asAttributeType().getRegex())
             .build();
 
-    public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ALL_ROLE_PLAYERS =
+    public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ROLE_PLAYERS =
             builder(ConceptResponseType.ROLE_PLAYERS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
                     .function(concept -> concept.asRelationship().allRolePlayers())
@@ -177,6 +178,106 @@ public final class ConceptMethod<T> {
                     })
                     .build();
 
+    public static ConceptMethod<Concept> getAttribute(Object value) {
+        return builder(ConceptResponseType.CONCEPT)
+                .requestSetter(builder -> builder.setGetAttribute(convertValue(value)))
+                .function(concept -> concept.asAttributeType().getAttribute(value))
+                .build();
+    }
+
+    public static final ConceptMethod<Boolean> EXISTS =
+            builder(ConceptResponseType.BOOL)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setExists)
+                    .function(Concept::isDeleted)
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetSuperConcepts)
+                    .function(concept -> concept.asSchemaConcept().sups())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetSubConcepts)
+                    .function(concept -> concept.asSchemaConcept().subs())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributes)
+                    .function(concept -> concept.asThing().attributes())
+                    .build();
+
+    public static ConceptMethod<Stream<? extends Concept>> getAttributesByTypes(AttributeType<?>... attributeTypes) {
+        return builder(ConceptResponseType.CONCEPTS)
+                .requestSetter(builder -> builder.setGetAttributesByTypes(convert(Stream.of(attributeTypes))))
+                .function(concept -> concept.asThing().attributes(attributeTypes))
+                .build();
+    }
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByType)
+                    .function(concept -> concept.asType().plays())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetInstances)
+                    .function(concept -> concept.asType().instances())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByThing)
+                    .function(concept -> concept.asThing().plays())
+                    .build();
+
+    public static ConceptMethod<Stream<? extends Concept>> getRolePlayersByRoles(Role... roles) {
+        return builder(ConceptResponseType.CONCEPTS)
+                .requestSetter(builder -> builder.setGetRolePlayersByRoles(convert(Stream.of(roles))))
+                .function(concept -> concept.asRelationship().rolePlayers(roles))
+                .build();
+    }
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationships)
+                    .function(concept -> concept.asThing().relationships())
+                    .build();
+
+    public static ConceptMethod<Stream<? extends Concept>> getRelationshipsByRoles(Role... roles) {
+        return builder(ConceptResponseType.CONCEPTS)
+                .requestSetter(builder -> builder.setGetRelationshipsByRoles(convert(Stream.of(roles))))
+                .function(concept -> concept.asThing().relationships(roles))
+                .build();
+    }
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationshipTypesThatRelateRole)
+                    .function(concept -> concept.asRole().relationshipTypes())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetTypesThatPlayRole)
+                    .function(concept -> concept.asRole().playedByTypes())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelatedRoles)
+                    .function(concept -> concept.asRelationshipType().relates())
+                    .build();
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetOwners)
+                    .function(concept -> concept.asAttribute().ownerInstances())
+                    .build();
+
     public static ConceptMethod<?> fromGrpc(GrpcConceptConverter converter, GrpcConcept.ConceptMethod conceptMethod) {
         switch (conceptMethod.getConceptMethodCase()) {
             case GETVALUE:
@@ -198,7 +299,7 @@ public final class ConceptMethod<T> {
             case GETREGEX:
                 return GET_REGEX;
             case GETROLEPLAYERS:
-                return GET_ALL_ROLE_PLAYERS;
+                return GET_ROLE_PLAYERS;
             case GETATTRIBUTETYPES:
                 return GET_ATTRIBUTE_TYPES;
             case GETKEYTYPES:
@@ -214,6 +315,32 @@ public final class ConceptMethod<T> {
                 return removeRolePlayer(role, player);
             case DELETE:
                 return DELETE;
+            case GETATTRIBUTE:
+                return getAttribute(convert(conceptMethod.getGetAttribute()));
+            case EXISTS:
+                return EXISTS;
+            case GETOWNERS:
+                return GET_OWNERS;
+            case GETTYPESTHATPLAYROLE:
+                return GET_TYPES_THAT_PLAY_ROLE;
+            case GETROLESPLAYEDBYTYPE:
+                return GET_ROLES_PLAYED_BY_TYPE;
+            case GETINSTANCES:
+                return GET_INSTANCES;
+            case GETRELATEDROLES:
+                return GET_RELATED_ROLES;
+            case GETATTRIBUTES:
+                return GET_ATTRIBUTES;
+            case GETSUPERCONCEPTS:
+                return GET_SUPER_CONCEPTS;
+            case GETRELATIONSHIPTYPESTHATRELATEROLE:
+                return GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE;
+            case GETATTRIBUTESBYTYPES:
+                GrpcConcept.Concepts getAttributeTypes = conceptMethod.getGetAttributesByTypes();
+                AttributeType<?>[] attributeTypes = convert(converter, getAttributeTypes).toArray(AttributeType[]::new);
+                return getAttributesByTypes(attributeTypes);
+            case GETRELATIONSHIPS:
+                return GET_RELATIONSHIPS;
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);

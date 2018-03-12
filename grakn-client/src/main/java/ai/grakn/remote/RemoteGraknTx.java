@@ -34,7 +34,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -42,6 +41,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;
@@ -53,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -240,10 +241,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Var me = var("me");
-        Var target = var("target");
-        GetQuery query = graql().match(me.id(schemaConcept.getId()), me.sub(target)).get();
-        return query.stream().map(answer -> answer.get(target).asSchemaConcept());
+        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethod.GET_SUPER_CONCEPTS);
+        return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 
     @Override
