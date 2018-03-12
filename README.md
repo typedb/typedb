@@ -16,7 +16,7 @@
 [stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-grakn-blue.svg
 [stackoverflow-link]: https://stackoverflow.com/questions/tagged/grakn
 
-Grakn is a hyper-relational database for knowledge engineering. Rooted in Knowledge Representation and  Automated Reasoning, Grakn provides the knowledge base foundation for intelligent/cognitive systems.
+Grakn is the knowledge graph engine to organise complex networks of data and making it queryable.
 
 | Get Started | Documentation | Discussion | _Join the Academy!_ |
 |:------------|:--------------|:-----------|:---------------------|
@@ -24,7 +24,9 @@ Grakn is a hyper-relational database for knowledge engineering. Rooted in Knowle
 
 # Meet Grakn and Graql
 
-Grakn is a hyper-relational database for [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering). Rooted in [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), Grakn provides the [knowledge base](https://en.wikipedia.org/wiki/Knowledge_base) foundation for [intelligent/cognitive systems](https://en.wikipedia.org/wiki/Knowledge-based_systems). Being a distributed system, Grakn is designed to be sharded and replicated over a network of computers. Under the hood, Grakn has built an expressive knowledge representation system based on [hypergraph theory](https://en.wikipedia.org/wiki/Hypergraph) (a subfield in mathematics that generalises an edge to be a set of vertices) with a transactional query interface, Graql. Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
+Grakn is the knowledge graph engine to organise complex networks of data and making it queryable, by performing [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering). Rooted in [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), Grakn provides the [knowledge foundation](https://en.wikipedia.org/wiki/Knowledge_base) for [cognitive and intelligent (e.g. AI) systems](https://en.wikipedia.org/wiki/Knowledge-based_systems), by providing an intelligent language for modelling, transactions and analytics. Being a distributed database, Grakn is designed to scale over a network of computers through partitioning and replication.
+
+Under the hood, Grakn has built an expressive knowledge representation system based on [hypergraph theory](https://en.wikipedia.org/wiki/Hypergraph) (a subfield in mathematics that generalises an edge to be a set of vertices) with a transactional query interface, Graql. Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
 
 ## Knowledge Schema
 

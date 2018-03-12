@@ -26,6 +26,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -40,7 +42,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return asInstance(insert(TARGET.isa(ME)));
     }
 
     @Override
@@ -50,12 +52,12 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final RelationshipType relates(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(role, ME.relates(TARGET));
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return undefine(role, ME.relates(TARGET));
     }
 
     @Override
@@ -66,5 +68,11 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     @Override
     protected final Relationship asInstance(Concept concept) {
         return concept.asRelationship();
+    }
+
+    @Nonnull
+    @Override
+    public RelationshipType sup() {
+        return Objects.requireNonNull(super.sup());
     }
 }
