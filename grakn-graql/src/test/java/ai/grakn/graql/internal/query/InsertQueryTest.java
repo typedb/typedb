@@ -285,7 +285,7 @@ public class InsertQueryTest {
     @Test
     public void testErrorWhenSubRelation() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty("sub").getMessage());
         qb.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
                 var("x").id(ConceptId.of("Godfather")).isa("movie"),

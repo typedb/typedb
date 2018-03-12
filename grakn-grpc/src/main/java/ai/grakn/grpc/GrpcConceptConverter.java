@@ -18,16 +18,12 @@
 
 package ai.grakn.grpc;
 
-import ai.grakn.GraknTx;
-import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.concept.Concept;
+import ai.grakn.rpc.generated.GrpcConcept;
 
 /**
- * Interface implemented by classes that handle gRPC Open requests
- *
- * @author marcoscoppetta
+ * @author Felix Chapman
  */
-
-public interface GrpcOpenRequestExecutor {
-
-    GraknTx execute(Open open);
+public interface GrpcConceptConverter {
+    Concept convert(GrpcConcept.Concept concept);
 }
