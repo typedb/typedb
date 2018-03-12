@@ -67,6 +67,32 @@ qb.match(label("parentship").relates(var("x"))).get();
 </div> <!-- tab-content -->
 
 
+### relates
+Match hierarchy of roles in `relates`.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
+    <li><a href="#java8" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell8">
+<pre class="language-graql">
+<code>
+match fatherhood relates $x as parent; get;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java8">
+<pre class="language-java">
+<code>
+qb.match(label("fatherhood").relates(var("x"), label("parent"))).get();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+
 ### plays
 Match types that play the given role.
 <ul id="profileTabs" class="nav nav-tabs">

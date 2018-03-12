@@ -425,16 +425,16 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParsingAs_ResultIsSameAsSub() {
+    public void whenParsingAsInDefine_ResultIsSameAsSub() {
         DefineQuery expected = define(
-                var().label("parent").sub("role"),
-                var().label("child").sub("role"),
-                var().label("parenthood").sub("relationship")
+                label("parent").sub("role"),
+                label("child").sub("role"),
+                label("parenthood").sub("relationship")
                         .relates(var().label("parent"))
                         .relates(var().label("child")),
-                var().label("fatherhood").sub("parenthood")
-                        .relates(var().label("father"), var().label("parent"))
-                        .relates(var().label("son"), var().label("child"))
+                label("fatherhood").sub("parenthood")
+                        .relates(label("father"), label("parent"))
+                        .relates(label("son"), label("child"))
         );
 
         DefineQuery parsed = parse("define " +
@@ -442,6 +442,22 @@ public class QueryParserTest {
                 "child sub role;\n" +
                 "parenthood sub relationship, relates parent, relates child;\n" +
                 "fatherhood sub parenthood, relates father as parent, relates son as child;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
+    public void whenParsingAsInMatch_ResultIsSameAsSub() {
+        GetQuery expected = match(
+                label("fatherhood").sub("parenthood")
+                        .relates(var("x"), label("parent"))
+                        .relates(label("son"), var("y"))
+        ).get();
+
+        GetQuery parsed = parse("match " +
+                "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
         );
 
         assertEquals(expected, parsed);
