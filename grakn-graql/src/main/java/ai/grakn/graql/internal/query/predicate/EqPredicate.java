@@ -26,14 +26,11 @@ import java.util.Optional;
 
 class EqPredicate extends ComparatorPredicate {
 
-    private final Object value;
-
     /**
      * @param value the value that this predicate is testing against
      */
     EqPredicate(Object value) {
         super(value);
-        this.value = value;
     }
 
     @Override
@@ -53,12 +50,17 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     public Optional<Object> equalsValue() {
-        return Optional.of(value);
+        return persistedValue();
     }
 
     @Override
     public String toString() {
-        return StringUtil.valueToString(value);
+        if (persistedValue().isPresent()) {
+            // Omit the `=` if we're using a literal value, not a var
+            return StringUtil.valueToString(persistedValue().get());
+        } else {
+            return super.toString();
+        }
     }
 
     @Override
