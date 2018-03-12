@@ -67,7 +67,7 @@ qb.match(label("parentship").relates(var("x"))).get();
 </div> <!-- tab-content -->
 
 
-### relates
+### as
 Match hierarchy of roles in `relates`.
 
 <ul id="profileTabs" class="nav nav-tabs">
