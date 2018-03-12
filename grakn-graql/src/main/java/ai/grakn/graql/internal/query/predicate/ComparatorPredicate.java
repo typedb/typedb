@@ -80,7 +80,7 @@ abstract class ComparatorPredicate implements ValuePredicate {
     abstract <V> P<V> gremlinPredicate(V value);
 
     final Optional<Object> persistedValue() {
-        return value.map(value -> {
+        return value().map(value -> {
 
             // Convert values to how they are stored in the graph
             DataType dataType = DataType.SUPPORTED_TYPES.get(value.getClass().getName());
@@ -95,14 +95,14 @@ abstract class ComparatorPredicate implements ValuePredicate {
         });
     }
 
-    final Optional<VarPatternAdmin> var() {
-        return var;
+    final Optional<Object> value() {
+        return value;
     }
 
     public String toString() {
         // If there is no value, then there must be a var
         //noinspection OptionalGetWithoutIsPresent
-        String argument = persistedValue().map(StringUtil::valueToString).orElseGet(() -> var().get().getPrintableName());
+        String argument = persistedValue().map(StringUtil::valueToString).orElseGet(() -> var.get().getPrintableName());
 
         return getSymbol() + " " + argument;
     }
@@ -139,12 +139,12 @@ abstract class ComparatorPredicate implements ValuePredicate {
 
     @Override
     public Optional<VarPatternAdmin> getInnerVar() {
-        return var();
+        return var;
     }
 
     @Override
     public final <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
-        var().ifPresent(theVar -> {
+        var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
             Var otherVar = theVar.var();
@@ -159,11 +159,12 @@ abstract class ComparatorPredicate implements ValuePredicate {
 
         persistedValue().ifPresent(theValue -> {
             // Compare to a given value
-            DataType<?> dataType = DataType.SUPPORTED_TYPES.get(value.get().getClass().getTypeName());
+            DataType<?> dataType = DataType.SUPPORTED_TYPES.get(value().get().getClass().getTypeName());
             Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
 
         return traversal;
     }
+
 }

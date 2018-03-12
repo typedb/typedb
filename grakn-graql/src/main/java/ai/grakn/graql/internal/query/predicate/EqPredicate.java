@@ -50,7 +50,7 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     public Optional<Object> equalsValue() {
-        return persistedValue();
+        return value();
     }
 
     @Override
