@@ -62,4 +62,10 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
     public String toString() {
         return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
+
+    @Nullable
+    @Override
+    public Boolean inferring() {
+        return null;
+    }
 }

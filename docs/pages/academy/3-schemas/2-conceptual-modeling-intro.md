@@ -35,7 +35,7 @@ If you have written your concepts in a list, it should look something like the f
 ## Identifying types (entities, relationships and attributes)
 Once you have your basic list of concepts, it is time to start and assign their basic types. It is not a hard and fast rule, but it is usually a good idea to begin with finding the entities. Those tend to be the common nouns in your list.
 
-Before going on, try and find the main entities in the list above. Remember: the entities are usually the main actors in your knowledge base, the things about you want to know and ask questions.
+Before going on, try and find the main entities in the list above. Remember: the entities are usually the main actors in your knowledge graph, the things about you want to know and ask questions.
 
 Done? Let’s review them. There are a few obvious ones:
 

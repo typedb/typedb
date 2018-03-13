@@ -9,7 +9,7 @@ folder: docs
 KB: genealogy-plus
 ---
 
-A match describes a pattern to find in the knowledge base. The results of the match can be modified with various
+A match describes a pattern to find in the knowledge graph. The results of the match can be modified with various
 [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the
 *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).

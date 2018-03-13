@@ -31,13 +31,13 @@ Begin by importing the client:
 >>> import grakn
 ```
 
-Now you can connect to a knowledge base:
+Now you can connect to a knowledge graph:
 
 ```python
 >>> client = grakn.Client(uri='http://localhost:4567', keyspace='mykb')
 ```
 
-You can write to the knowledge base:
+You can write to the knowledge graph:
 
 ```python
 >>> client.execute('define person sub entity;')
