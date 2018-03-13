@@ -74,7 +74,7 @@ public class QueryParserImpl implements QueryParser {
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
-    public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
+    public static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
             "long", AttributeType.DataType.LONG,
             "double", AttributeType.DataType.DOUBLE,
             "string", AttributeType.DataType.STRING,

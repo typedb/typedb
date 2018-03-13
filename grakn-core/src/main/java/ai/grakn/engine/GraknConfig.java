@@ -53,8 +53,6 @@ public class GraknConfig {
      */
     private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "main", "grakn.properties");
 
-    public static final int WEBSOCKET_TIMEOUT = 3600000;
-
     public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
 

@@ -425,6 +425,46 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingAsInDefine_ResultIsSameAsSub() {
+        DefineQuery expected = define(
+                label("parent").sub("role"),
+                label("child").sub("role"),
+                label("parenthood").sub("relationship")
+                        .relates(var().label("parent"))
+                        .relates(var().label("child")),
+                label("fatherhood").sub("parenthood")
+                        .relates(label("father"), label("parent"))
+                        .relates(label("son"), label("child"))
+        );
+
+        DefineQuery parsed = parse("define " +
+                "parent sub role;\n" +
+                "child sub role;\n" +
+                "parenthood sub relationship, relates parent, relates child;\n" +
+                "fatherhood sub parenthood, relates father as parent, relates son as child;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
+    public void whenParsingAsInMatch_ResultIsSameAsSub() {
+        GetQuery expected = match(
+                label("fatherhood").sub("parenthood")
+                        .relates(var("x"), label("parent"))
+                        .relates(label("son"), var("y"))
+        ).get();
+
+        GetQuery parsed = parse("match " +
+                "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
         DefineQuery expected = define(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
@@ -522,6 +562,11 @@ public class QueryParserTest {
         InsertQuery expected = insert(var().isa("movie").has("title", unescaped));
         InsertQuery parsed = parse("insert isa movie has title '" + escaped + "';");
         assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
     }
 
     @Test
@@ -1060,6 +1105,13 @@ public class QueryParserTest {
         IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
+    }
+
+    @Test
+    public void whenValueEqualityToString_CreateValidQueryString() {
+        Query<?> query = match(var("x").val(eq(var("y")))).get();
+
+        assertEquals(query, Graql.parse(query.toString()));
     }
 
     private static void assertParseEquivalence(String query) {

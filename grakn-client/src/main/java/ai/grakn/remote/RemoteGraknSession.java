@@ -24,6 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.util.SimpleURI;
 import com.google.common.annotations.VisibleForTesting;
@@ -64,6 +65,10 @@ public class RemoteGraknSession implements GraknSession {
 
     GraknStub stub() {
         return GraknGrpc.newStub(channel);
+    }
+
+    GraknBlockingStub blockingStub() {
+        return GraknGrpc.newBlockingStub(channel);
     }
 
     @Override

@@ -78,7 +78,7 @@ public class ComparatorPredicateTest {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(INVALID_VALUE.getMessage(value.getClass()));
-        new MyComparatorPredicate(value);
+        new MyComparatorPredicate(value).persistedValue();
     }
 }
 
