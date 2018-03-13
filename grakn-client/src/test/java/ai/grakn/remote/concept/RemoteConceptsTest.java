@@ -45,8 +45,10 @@ import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.BaseType;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
@@ -83,6 +85,7 @@ import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
 import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
+import static ai.grakn.grpc.GrpcUtil.convert;
 import static ai.grakn.remote.concept.RemoteConcept.ME;
 import static ai.grakn.remote.concept.RemoteConcept.TARGET;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -252,9 +255,18 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        mockPropertyResponse(ConceptMethod.EXISTS, false);
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(convert(concept)).build();
+        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+
+        server.setResponse(GrpcUtil.getConceptRequest(ID), response);
+
         assertFalse(entity.isDeleted());
-        mockPropertyResponse(ConceptMethod.EXISTS, true);
+
+        TxResponse nullResponse =
+                TxResponse.newBuilder().setConceptResponse(ConceptResponse.getDefaultInstance()).build();
+
+        server.setResponse(GrpcUtil.getConceptRequest(ID), nullResponse);
+
         assertTrue(entity.isDeleted());
     }
 
@@ -874,7 +886,7 @@ public class RemoteConceptsTest {
 
         relationship.removeRolePlayer(role, thing);
 
-        GrpcGrakn.TxRequest request = GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.removeRolePlayer(role, thing));
+        TxRequest request = GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.removeRolePlayer(role, thing));
         verify(server.requests()).onNext(request);
     }
 

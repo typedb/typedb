@@ -556,6 +556,47 @@ public class GrpcServerTest {
     }
 
     @Test
+    public void whenGettingAConcept_ReturnTheConcept() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+
+        Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(concept.getId()).thenReturn(id);
+        when(concept.isRelationship()).thenReturn(true);
+
+        when(tx.getConcept(id)).thenReturn(concept);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(GrpcUtil.getConceptRequest(id));
+
+            GrpcConcept.Concept response = tx.receive().ok().getConceptResponse().getConcept();
+
+            assertEquals(id.getValue(), response.getId().getValue());
+            assertEquals(BaseType.Relationship, response.getBaseType());
+        }
+    }
+
+    @Test
+    public void whenGettingANonExistentConcept_ReturnNothing() throws InterruptedException {
+        ConceptId id = ConceptId.of("V123456");
+
+        when(tx.getConcept(id)).thenReturn(null);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.receive().ok();
+
+            tx.send(GrpcUtil.getConceptRequest(id));
+
+            GrpcConcept.ConceptResponse response = tx.receive().ok().getConceptResponse();
+
+            assertEquals(GrpcConcept.ConceptResponse.ValueCase.VALUE_NOT_SET, response.getValueCase());
+        }
+    }
+
+    @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(commitRequest());

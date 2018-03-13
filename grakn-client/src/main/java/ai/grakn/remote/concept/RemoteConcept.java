@@ -60,7 +60,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final boolean isDeleted() {
-        return runMethod(ConceptMethod.EXISTS);
+        return tx().client().getConcept(getId()) == null;
     }
 
     protected final <T> T runMethod(ConceptMethod<T> property) {

@@ -185,12 +185,6 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
-    public static final ConceptMethod<Boolean> EXISTS =
-            builder(ConceptResponseType.BOOL)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setExists)
-                    .function(Concept::isDeleted)
-                    .build();
-
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetSuperConcepts)
@@ -317,8 +311,6 @@ public final class ConceptMethod<T> {
                 return DELETE;
             case GETATTRIBUTE:
                 return getAttribute(convert(conceptMethod.getGetAttribute()));
-            case EXISTS:
-                return EXISTS;
             case GETOWNERS:
                 return GET_OWNERS;
             case GETTYPESTHATPLAYROLE:
