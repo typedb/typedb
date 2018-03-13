@@ -40,7 +40,7 @@ You can use the drop down selector to choose previous versions of the API refere
   }
   ```
 
-  `application/hal+json` <a name="halJsonContentType"></a> provides a [HAL](http://stateless.co/hal_specification.html) representation of a Graql query that easily allows for API navigation between knowledge base concepts.
+  `application/hal+json` <a name="halJsonContentType"></a> provides a [HAL](http://stateless.co/hal_specification.html) representation of a Graql query that easily allows for API navigation between knowledge graph concepts.
 
   ```json
   [
@@ -120,7 +120,7 @@ Graql query that should be executed on the server.
 
 **Response JSON Object**
 
-+ **response** Query response from the knowledge base formatted as specified by the provided `Accept` header.
++ **response** Query response from the knowledge graph formatted as specified by the provided `Accept` header.
 + **originalQuery** Query from the Request body
 
 **Status Codes**
@@ -136,7 +136,7 @@ Graql query that should be executed on the server.
 
   `{"exception":"Unsupported Content-Type [*/*] requested"}⏎`
 
-+ 422 *Unprocessable Entity* Invalid knowledge base operation was attempted.
++ 422 *Unprocessable Entity* Invalid knowledge graph operation was attempted.
 
 **Request:**
 
@@ -158,7 +158,7 @@ $x id "4240" isa person;
 
 #### `GET /` *Deprecated*
 
-Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries are defined as `match`, `compute` or `aggregate` queries that do not modify the knowledge base.
+Execute **read-only** graql queries on a Grakn knowledge graph. Read-only queries are defined as `match`, `compute` or `aggregate` queries that do not modify the knowledge graph.
 
 **Request Headers**
 
@@ -182,7 +182,7 @@ Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries
 
 **Response**
 
-Query response from the knowledge base formatted as specified by the provided `Accept` header.
+Query response from the knowledge graph formatted as specified by the provided `Accept` header.
 
 **Status Codes**
 
@@ -202,7 +202,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 
   `{"exception":"Unsupported Content-Type [*/*] requested"}`
 
-- 422 *Unprocessable Entity* Invalid knowledge base operation was attempted.
+- 422 *Unprocessable Entity* Invalid knowledge graph operation was attempted.
 
 **Request:**
 
@@ -231,7 +231,7 @@ Server: Jetty(9.3.6.v20151106)
 
 #### `POST /` *Deprecated*
 
-Execute **insert** graql queries on a Grakn knowledge base.
+Execute **insert** graql queries on a Grakn knowledge graph.
 
 **Request Headers**
 
@@ -258,7 +258,7 @@ Graql insert query that should be executed on the server.
 
 **Response**
 
-Query response from the knowledge base formatted as specified by the provided `Accept` header.
+Query response from the knowledge graph formatted as specified by the provided `Accept` header.
 
 **Status Codes**
 
@@ -278,7 +278,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 
   `{"exception":"Unsupported Content-Type [*/*] requested"}`
 
-- 422 *Unprocessable Entity* Invalid knowledge base operation was attempted.
+- 422 *Unprocessable Entity* Invalid knowledge graph operation was attempted.
 
 **Request:**
 
@@ -300,7 +300,7 @@ $x id "40964320" isa person;
 
 #### `DELETE /` *Deprecated*
 
-Execute **delete** graql queries on a Grakn knowledge base.
+Execute **delete** graql queries on a Grakn knowledge graph.
 
 **Request Headers**
 
@@ -335,7 +335,7 @@ Graql delete query that should be executed on the server.
 
   `{"exception":"Only DELETE queries are allowed."}  `
 
-- 422 *Unprocessable Entity* Invalid knowledge base operation was attempted.
+- 422 *Unprocessable Entity* Invalid knowledge graph operation was attempted.
 
 **Request:**
 
@@ -384,7 +384,7 @@ Returns the HAL representation of the specified concept.
 
 - 401 *Unauthorized* Provided privileges are not authorized.
 
-- 404 *Not Found* The requested concept was not found in the specified knowledge base.
+- 404 *Not Found* The requested concept was not found in the specified knowledge graph.
 
   `{"exception":"No concept with ID [1] exists in keyspace [grakn]"}`
 
@@ -429,7 +429,7 @@ Server: Jetty(9.3.6.v20151106)
 
 #### `GET /schema`
 
-Returns all schema concepts in the specified knowledge base in a JSON object.
+Returns all schema concepts in the specified knowledge graph in a JSON object.
 
 **Request Headers**
 

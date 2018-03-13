@@ -14,7 +14,7 @@ mvn exec:java --batch-mode --projects grakn-test/test-snb \
     -P ${LDBC_VALIDATION_CONFIG} \
     -vdb ${CSV_DATA}/validation_params.csv \
     -p ldbc.snb.interactive.parameters_dir ${CSV_DATA} \
-    -p ai.grakn.uri ${ENGINE} \
+    -p ai.grakn.uri ${ENGINE_REST} \
     -p ai.grakn.keyspace ${KEYSPACE}"
 
 # check for errors from LDBC

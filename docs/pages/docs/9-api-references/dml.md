@@ -12,7 +12,7 @@ folder: docs
 
 `match` [`<pattern> ...`](#pattern) [`(<modifier> ...)`](#modifier)
 
-A [match](#match) will find all [answers](../querying-data/overview#answer) in the knowledge base that _satisfy_ all of the given
+A [match](#match) will find all [answers](../querying-data/overview#answer) in the knowledge graph that _satisfy_ all of the given
 [patterns](#pattern). Any optional [modifiers](#modifier) are applied to the [answers](../querying-data/overview#answer) to the
 [match](#match).
 
@@ -202,7 +202,7 @@ The [get query](#get-queries) will project each [answer](../querying-data/overvi
 [`(<match>)`](#match) `insert` [`<variable pattern> ...`](../querying-data/overview#variable-pattern)
 
 The [insert query](#insert-queries) will insert the given [variable patterns](../querying-data/overview#variable-pattern) into the
-knowledge base and return an [answer](../querying-data/overview#answer) with variables bound to concepts mentioned in the
+knowledge graph and return an [answer](../querying-data/overview#answer) with variables bound to concepts mentioned in the
 [variable patterns](../querying-data/overview#variable-pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-queries) will operate for every

@@ -9,7 +9,7 @@ folder: docs
 KB: genealogy-plus
 ---
 
-The schema can be queried using the [match clause](../querying-data/match-clause) A match describes a pattern to find in the knowledge base, and the following properties only apply to schema types.
+The schema can be queried using the [match clause](../querying-data/match-clause) A match describes a pattern to find in the knowledge graph, and the following properties only apply to schema types.
 
 ### sub
 Match types that are a subclass of the given type.

@@ -13,7 +13,7 @@ KB: academy
 
 At this point in the academy it should be somewhat clear that GRAKN is not a graph database. So why a lesson about graph analytics?
 
-Well the answer is that an entity-relationship conceptual model (thus a GRAKN knowledge base) can actually be represented in the form of a graph.
+Well the answer is that an entity-relationship conceptual model (thus a GRAKN knowledge graph) can actually be represented in the form of a graph.
 
 And if you have a graph, then it is often useful to be able to do perform graph analytics.
 
@@ -21,10 +21,10 @@ And if you have a graph, then it is often useful to be able to do perform graph 
 ## A few words before going on
 As you will see, it is quite straightforward to perform graph analytics with Grakn. There are two caveats though:
 
-  1. GRAKN is not a graph database, so to forse a knowledge based with a underlying hypergraph structure into a graph in order to perform graph analytics requires some getting used to.
+  1. GRAKN is not a graph database, so to force a knowledge graph with a underlying hypergraph structure into a graph in order to perform graph analytics requires some getting used to.
   2. Actually using the results of graph analytics queries requires some programming expertise (except for the shortest path). So this is probably the most advanced topic covered so far in the Academy.
 
-To cast GRAKN hyper-relational knowledge bases as a graph, imagine that each concept (i.e. an entity, a relationship or an attribute) is a node in your graph and two nodes are connected via an edge if there is a relationship in which both concept play a role. This is easier to visualise in some cases and requires a bit more imagination in some other, but it is quite natural.
+Imagine that each concept (i.e. an entity, a relationship or an attribute) is a node in your graph and two nodes are connected via an edge if there is a relationship in which both concept play a role. This is easier to visualise in some cases and requires a bit more imagination in some other, but it is quite natural.
 
 One last thing to keep in mind is that each Graph Analytics query type is different, so the results will look different for each query type. We will look at them one by one in the following sections.
 
@@ -127,7 +127,7 @@ If you want to know the actual clusters, just append `members;` to the query abo
 
 ### What have you learned?
 
-In this lesson, you have learned about the graph analytics capabilities of GRAKN; you have learned what how to compute shortest paths, cluster and degrees in a GRAKN knowledge base and what these terms mean.
+In this lesson, you have learned about the graph analytics capabilities of GRAKN; you have learned what how to compute shortest paths, cluster and degrees in a GRAKN knowledge graph and what these terms mean.
 
 ## What next
 

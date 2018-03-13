@@ -18,6 +18,8 @@
 
 package ai.grakn.bootup;
 
+import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.GraknConfig;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,9 +41,11 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String COMPONENT_NAME = "Storage";
 
     private final Path homePath;
+    private final GraknConfig graknConfig;
 
-    public StorageProcess(Path homePath) {
+    public StorageProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
+        this.graknConfig = GraknConfig.read(configPath.toFile());
     }
 
     public void start() {
@@ -51,6 +55,13 @@ public class StorageProcess extends AbstractProcessHandler {
         } else {
             storageStartProcess();
         }
+    }
+
+    private Path getStorageLogPath(){
+        //make the path absolute to avoid cassandra confusion
+        String logDirString = graknConfig.getProperty(GraknConfigKey.LOG_DIR);
+        Path logDirPath = Paths.get(graknConfig.getProperty(GraknConfigKey.LOG_DIR));
+        return logDirPath.isAbsolute() ? logDirPath : Paths.get(homePath.toString(), logDirString);
     }
 
     private void storageStartProcess() {
@@ -66,7 +77,9 @@ public class StorageProcess extends AbstractProcessHandler {
         OutputCommand outputCommand = executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA)) + " -p " + STORAGE_PID
+                homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA))
+                        + " -p " + STORAGE_PID
+                        + " -l " + getStorageLogPath()
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);

@@ -2,7 +2,7 @@
 title: Insert and Delete Queries
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn the GRAQL syntax to insert and delete things from your knowledge base
+summary: In this lesson you will learn the GRAQL syntax to insert and delete things from your knowledge graph
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/insert-delete-queries.html
@@ -14,7 +14,7 @@ KB: academy
 Let us kick off this lesson with an exercise: open the dashboard and write a query to get a company named "GRAKN".
 
 What? There is no GRAKN in your GRAKN? We have to fix this!
-We need to learn how to insert data into your knowledge base.
+We need to learn how to insert data into your knowledge graph.
 
 
 ## Insert queries
@@ -24,7 +24,7 @@ insert $x isa company has name "GRAKN";
 ```
 You should see a big red box warning you that you cannot run insert queries into the dashboard. The reason for this is that the dashboard is an application independent of the main GRAKN engine and that you could expose as a web interface if you so desired. And you definitely would not want to have anybody visiting your website to be able to insert stuff into your graph, would you?
 
-To insert new data into your knowledge base you need the GRAQL shell. As you should recall, to start it in the appropriate keyspace, you have to go into the directory `grakn` from the VM terminal and then run `./graql console -k academy`.
+To insert new data into your knowledge graph you need the GRAQL shell. As you should recall, to start it in the appropriate keyspace, you have to go into the directory `grakn` from the VM terminal and then run `./graql console -k academy`.
 
 Once you have done that, you can try again the query
 ```graql
@@ -50,21 +50,21 @@ match $x isa company has name "GRAKN"; get;
 
 What? There is nothing? What happened?
 
-What happened is that whenever we make a change to the knowledge base from the GRAQL shell, the change is temporary until it gets stored in the graph.
+What happened is that whenever we make a change to the knowledge graph from the GRAQL shell, the change is temporary until it gets stored in the graph.
 
 To actually confirm  the change, go back into the GRAQL shell and type `commit`. When the query gets executed you will see the new companies inserted. Notice that there are two of them, as we run two insert queries. For GRAQL when you say
 ```graql
 insert $x isa company has name "GRAKN";
 ```
-you mean "Create a new company entity and assign to it the name ‘GRAKN’". We have never said that there could not be more than one company with the same name, so a new one is added to the knowledge base each time we run the query or an equivalent one.
+you mean "Create a new company entity and assign to it the name ‘GRAKN’". We have never said that there could not be more than one company with the same name, so a new one is added to the knowledge graph each time we run the query or an equivalent one.
 
   ![Two GRAKN](/images/academy/2-graql/two-grakn.png)
 
 
 ## Adding relationships
-So we have added GRAKN to our knowledge base. Actually we have added two copies of it, but we will take care of it later. Our "GRAKN" companies, though are quite alone in the graph, so we do not know much about them. How can we add into the knowledge base, for example the information that GRAKN is in the UK? The company is there, the country is there, we know that the relation type is call `located-in` because we have used it before, but how can we connect the two?
+So we have added GRAKN to our knowledge graph. Actually we have added two copies of it, but we will take care of it later. Our "GRAKN" companies, though are quite alone in the graph, so we do not know much about them. How can we add into the knowledge graph, for example the information that GRAKN is in the UK? The company is there, the country is there, we know that the relation type is call `located-in` because we have used it before, but how can we connect the two?
 
-Well that is what the `match` part of the query is for: to apply our insert action to something that is already in the knowledge base. It looks like this:
+Well that is what the `match` part of the query is for: to apply our insert action to something that is already in the knowledge graph. It looks like this:
 
 
 ```graql
@@ -90,7 +90,7 @@ into the dashboard and double click on one of the two copies of the company that
   ![GRAKN in the UK](/images/academy/2-graql/grakn-uk.png)
 
 ## Deleting things
-How do we delete things that we don’t want in the knowledge base? But with a delete query of course…
+How do we delete things that we don’t want in the knowledge graph? But with a delete query of course…
 
 A delete query is nothing more than a get query that uses `delete` as the action keyword there is no difference in syntax. Try this, for example:
 
@@ -123,7 +123,7 @@ As a parting thought: if you omit the variables in the delete or get actions, it
 
 
 ### What have you learned?
-In this tutorial we have learned the basics of inserting and deleting data from a GRAKN knowledge base. We also have learned how to match relations. By now you should have a solid foundation of GRAQL and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
+In this tutorial we have learned the basics of inserting and deleting data from a GRAKN knowledge graph. We also have learned how to match relations. By now you should have a solid foundation of GRAQL and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
 
 
 ## What next?

@@ -74,7 +74,8 @@ public class GraknBootup {
     }
 
     private static GraknBootup newGraknBootup(Path homePathFolder, Path configPath) {
-        return new GraknBootup(new StorageProcess(homePathFolder),
+        return new GraknBootup(
+                new StorageProcess(homePathFolder, configPath),
                 new QueueProcess(homePathFolder),
                 new EngineProcess(homePathFolder, configPath));
     }

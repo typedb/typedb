@@ -16,15 +16,15 @@ folder: docs
 
 In this section we are going to run through the construction of a basic schema. We recommend that you refer to the [Knowledge Model](../knowledge-model/model) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing a schema.
 
-The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
+The schema we will be building will be used for a genealogy knowledge graph used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
 
 
 ## Identifying Entity Types
 
-The first step is about identifying the categories of things that will be in your knowledge base.
+The first step is about identifying the categories of things that will be in your knowledge graph.
 For example if you are modelling a retail store, valid categories may be `product`, `electronics`, `books`, etc.  It is up to you to decide the granularity of your categories.
 
-For our genealogy knowledge base we know that it will mostly be filled with people. So we can create an entity type:
+For our genealogy knowledge graph we know that it will mostly be filled with people. So we can create an entity type:
 
 ```graql
 define
@@ -167,7 +167,7 @@ define
 
 In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating a schema. It is typically good practice to group entity type definitions together as above.
 
-{% include note.html content="It is worth noting that the schema does not need to be completely finalised before loading data. The schema of a Grakn knowledge base can be expanded even after loading data." %}
+{% include note.html content="It is worth noting that the schema does not need to be completely finalised before loading data. The schema of a Grakn knowledge graph can be expanded even after loading data." %}
 
 ## Where Next?
 
