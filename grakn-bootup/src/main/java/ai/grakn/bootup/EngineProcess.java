@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *
  * @author Michele Orsi
  */
-public class GraknProcess extends AbstractProcessHandler {
+public class EngineProcess extends AbstractProcessHandler {
 
     protected final Path homePath;
     protected final Path configPath;
@@ -53,7 +53,7 @@ public class GraknProcess extends AbstractProcessHandler {
     private final String COMPONENT_NAME = "Engine";
     private final String GRAKN_NAME = "Grakn";
 
-    public GraknProcess(Path homePath, Path configPath) {
+    public EngineProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
         this.configPath = configPath;
         this.graknConfig = GraknConfig.read(configPath.toFile());
