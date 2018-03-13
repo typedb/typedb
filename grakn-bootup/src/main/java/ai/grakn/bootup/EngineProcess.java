@@ -43,15 +43,14 @@ import java.util.stream.Stream;
  * @author Michele Orsi
  */
 public class EngineProcess extends AbstractProcessHandler {
+    private static final String COMPONENT_NAME = "Engine";
+    private static final String GRAKN_NAME = "Grakn";
+    private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
+    public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
 
     protected final Path homePath;
     protected final Path configPath;
     private final GraknConfig graknConfig;
-
-    private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
-    public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
-    private final String COMPONENT_NAME = "Engine";
-    private final String GRAKN_NAME = "Grakn";
 
     public EngineProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
