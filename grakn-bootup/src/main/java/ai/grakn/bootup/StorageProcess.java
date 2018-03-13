@@ -30,11 +30,12 @@ import java.util.Comparator;
  *
  * @author Michele Orsi
  */
-public class StorageProcess extends AbstractProcessHandler implements ProcessHandler {
+public class StorageProcess extends AbstractProcessHandler {
 
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
+    private static final String CASSANDRA = "cassandra";
     private static final String NAME = "Storage";
 
     private final Path homePath;
@@ -55,7 +56,7 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
     private void storageStartProcess() {
         System.out.print("Starting "+NAME+"...");
         System.out.flush();
-        if(Files.exists(STORAGE_PID)) {
+        if(STORAGE_PID.toFile().exists()) {
             try {
                 Files.delete(STORAGE_PID);
             } catch (IOException e) {
@@ -63,9 +64,9 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
             }
         }
         OutputCommand outputCommand = executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
-                homePath.resolve(Paths.get("services","cassandra","cassandra")) + " -p " + STORAGE_PID
+                homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA)) + " -p " + STORAGE_PID
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);
@@ -75,7 +76,7 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
             System.out.flush();
 
             OutputCommand storageStatus = executeAndWait(new String[]{
-                    "/bin/sh",
+                    SH,
                     "-c",
                     homePath + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);
@@ -110,14 +111,14 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
         System.out.print("Cleaning "+NAME+"...");
         System.out.flush();
         try {
-            Path dirPath = Paths.get("db","cassandra");
+            Path dirPath = Paths.get("db", CASSANDRA);
             Files.walk( dirPath )
                     .map( Path::toFile )
                     .sorted( Comparator.comparing( File::isDirectory ) )
                     .forEach( File::delete );
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","data")));
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","commitlog")));
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","saved_caches")));
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"data")));
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"commitlog")));
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"saved_caches")));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");

@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
@@ -228,6 +229,11 @@ public class Graql {
      */
     @CheckReturnValue
     public static Pattern or(Collection<? extends Pattern> patterns) {
+        // Simplify representation when there is only one alternative
+        if (patterns.size() == 1) {
+            return Iterables.getOnlyElement(patterns);
+        }
+
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }

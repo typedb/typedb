@@ -53,7 +53,8 @@ public abstract class WhenProperty extends RuleProperty {
     @Override
     public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).when(pattern());
+            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
+            executor.builder(var).isRule().when(pattern());
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());

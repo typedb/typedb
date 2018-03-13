@@ -73,17 +73,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     @Override
     public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            executor.builder(var).value(predicate().equalsValue().get()); // TODO
+            Object value = predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
+            executor.builder(var).value(value);
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
-    }
-
-    @Override
-    public void checkInsertable(VarPatternAdmin var) {
-        if (!predicate().equalsValue().isPresent()) {
-            throw GraqlQueryException.insertPredicate();
-        }
     }
 
     @Override
@@ -93,6 +87,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate(var.var(), this.predicate(), parent);
+        return ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
     }
 }

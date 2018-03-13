@@ -30,10 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -69,7 +71,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.backgroundTaskRunner = backgroundTaskRunner;
     }
 
-    public void start() {
+    public void start() throws IOException {
         redisWrapper.testConnection();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
@@ -102,7 +104,11 @@ public class GraknEngineServer implements AutoCloseable {
     @Override
     public void close() {
         synchronized (this) {
-            httpHandler.stopHTTP();
+            try {
+                httpHandler.stopHTTP();
+            } catch (InterruptedException e){
+                LOG.error(getFullStackTrace(e));
+            }
             redisWrapper.close();
             backgroundTaskRunner.close();
         }

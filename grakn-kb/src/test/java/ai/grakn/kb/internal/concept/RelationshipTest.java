@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -32,7 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -110,7 +109,7 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("Role 1");
         Role role2 = tx.putRole("Role 2");
         Role role3 = tx.putRole("Role 3");
-        RelationshipType relType = tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
+        tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
         EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
@@ -147,12 +146,12 @@ public class RelationshipTest extends TxTestBase {
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(GraknTx graph, Thing thing) {
-        List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
+    private Set<Concept> followRolePlayerEdgesToNeighbours(EmbeddedGraknTx<?> tx, Thing thing) {
+        List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> tx.buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test
@@ -271,7 +270,7 @@ public class RelationshipTest extends TxTestBase {
         rel2.attribute(r2);
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) session.open(GraknTxType.WRITE);
+        tx = session.open(GraknTxType.WRITE);
 
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

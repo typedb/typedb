@@ -22,17 +22,18 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableCollection;
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -40,17 +41,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
-
 /**
  * A query that will insert a collection of variables into a graph
  */
-class InsertQueryImpl implements InsertQueryAdmin {
-
-    private final Optional<MatchAdmin> match;
-    private final Optional<GraknTx> tx;
-    private final ImmutableCollection<VarPatternAdmin> originalVars;
-    private final ImmutableCollection<VarPatternAdmin> vars;
+@AutoValue
+abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -59,44 +54,23 @@ class InsertQueryImpl implements InsertQueryAdmin {
      * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
-        // match and graph should never both be present (should get graph from inner match)
-        assert(!match.isPresent() || !tx.isPresent());
+    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
+        match.ifPresent(answers -> Preconditions.checkArgument(answers.tx().equals(tx)));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        this.match = match;
-        this.tx = tx;
-
-        this.originalVars = vars;
-
-        // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
-
-        for (VarPatternAdmin var : this.vars) {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
-        }
+        return new AutoValue_InsertQueryImpl(tx, match, ImmutableList.copyOf(vars));
     }
 
     @Override
-    public InsertQuery withTx(GraknTx tx) {
-        return match.map(
-                m -> Queries.insert(vars, m.withTx(tx).admin())
+    public final InsertQuery withTx(GraknTx tx) {
+        return match().map(
+                m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
         ).orElseGet(
-                () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(tx))
+                () -> Queries.insert(varPatterns(), Optional.of(tx))
         );
-    }
-
-    @Override
-    public List<Answer> execute() {
-        return stream().collect(Collectors.toList());
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        return stream().map(converter::convert);
     }
 
     @Override
@@ -105,14 +79,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Stream<Answer> stream() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
-
-        return match.map(
-                query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(vars, theGraph, answer))
-        ).orElseGet(
-                () -> Stream.of(QueryOperationExecutor.insertAll(vars, theGraph))
-        );
+    public final Stream<Answer> stream() {
+        return queryRunner().run(this);
     }
 
     @Override
@@ -121,59 +89,43 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<? extends Match> match() {
-        return match;
-    }
-
-    @Override
     public Set<SchemaConcept> getSchemaConcepts() {
         GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
-        Set<SchemaConcept> types = vars.stream()
-                .flatMap(v -> v.innerVarPatterns().stream())
+        Set<SchemaConcept> types = allVarPatterns()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        match.ifPresent(mq -> types.addAll(mq.getSchemaConcepts()));
+        match().ifPresent(mq -> types.addAll(mq.admin().getSchemaConcepts()));
 
         return types;
     }
 
-    @Override
-    public Collection<VarPatternAdmin> varPatterns() {
-        return originalVars;
+    private Stream<VarPatternAdmin> allVarPatterns() {
+        return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
+    }
+
+    private Optional<? extends GraknTx> getTx() {
+        Optional<Optional<? extends GraknTx>> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
+        return matchTx.orElse(tx());
     }
 
     @Override
-    public Optional<GraknTx> getTx() {
-        return match.map(MatchAdmin::tx).orElse(tx);
+    public final String toString() {
+        String mq = match().map(match -> match + "\n").orElse("");
+        return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override
-    public String toString() {
-        String mq = match.map(match -> match + "\n").orElse("");
-        return mq + "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    public final List<Answer> execute() {
+        return stream().collect(Collectors.toList());
     }
 
+    @Nullable
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        InsertQueryImpl maps = (InsertQueryImpl) o;
-
-        if (!match.equals(maps.match)) return false;
-        if (!tx.equals(maps.tx)) return false;
-        return originalVars.equals(maps.originalVars);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = match.hashCode();
-        result = 31 * result + tx.hashCode();
-        result = 31 * result + originalVars.hashCode();
-        return result;
+    public final Boolean inferring() {
+        return match().map(match -> match.admin().inferring()).orElse(null);
     }
 }

@@ -38,6 +38,7 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -95,7 +96,7 @@ import static org.apache.http.HttpStatus.SC_OK;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-public class GraqlController {
+public class GraqlController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
@@ -107,14 +108,17 @@ public class GraqlController {
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
+    }
 
+    @Override
+    public void start(Service spark) {
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
@@ -179,7 +183,7 @@ public class GraqlController {
         LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
-            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+            try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
 
@@ -250,7 +254,7 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+    private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
@@ -275,7 +279,7 @@ public class GraqlController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.admin().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

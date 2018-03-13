@@ -19,20 +19,17 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.toImmutableList;
 
 /**
  * Implementation for {@link DefineQuery}
@@ -40,13 +37,10 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class DefineQueryImpl implements DefineQuery {
+abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
 
-    abstract ImmutableList<VarPatternAdmin> varPatterns();
-    abstract @Nullable GraknTx tx();
-
-    static DefineQueryImpl of(ImmutableList<VarPatternAdmin> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_DefineQueryImpl(varPatterns, tx);
+    static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
+        return new AutoValue_DefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
     }
 
     @Override
@@ -55,19 +49,8 @@ abstract class DefineQueryImpl implements DefineQuery {
     }
 
     @Override
-    public Answer execute() {
-        GraknTx tx = tx();
-        if (tx == null) throw GraqlQueryException.noTx();
-
-        ImmutableList<VarPatternAdmin> allPatterns =
-                varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
-        
-        return QueryOperationExecutor.defineAll(allPatterns, tx);
-    }
-
-    @Override
-    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
-        return Stream.of(converter.convert(execute()));
+    public final Answer execute() {
+        return queryRunner().run(this);
     }
 
     @Override
@@ -78,5 +61,11 @@ abstract class DefineQueryImpl implements DefineQuery {
     @Override
     public String toString() {
         return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Nullable
+    @Override
+    public Boolean inferring() {
+        return null;
     }
 }

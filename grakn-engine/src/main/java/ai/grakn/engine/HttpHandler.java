@@ -23,14 +23,14 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
+import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
-import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -39,56 +39,63 @@ import org.slf4j.LoggerFactory;
 import spark.Response;
 import spark.Service;
 
+import java.io.IOException;
 import java.nio.file.Path;
-
-import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
+import java.util.Collection;
 
 /**
- *
  * @author Michele Orsi
  */
 public class HttpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
-    protected final GraknConfig prop;
-    protected final Service spark;
-    protected final EngineGraknTxFactory factory;
-    protected final MetricRegistry metricRegistry;
-    protected final GraknEngineStatus graknEngineStatus;
-    protected final PostProcessor postProcessor;
+    private final GraknConfig prop;
+    private final Service spark;
+    private final EngineGraknTxFactory factory;
+    private final MetricRegistry metricRegistry;
+    private final GraknEngineStatus graknEngineStatus;
+    private final PostProcessor postProcessor;
+    private final GrpcServer grpcServer;
+    private final Collection<HttpController> additionalCollaborators;
 
-    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, PostProcessor postProcessor) {
+    public HttpHandler(
+            GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
+            GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
+            GrpcServer grpcServer,
+            Collection<HttpController> additionalCollaborators
+    ) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
         this.postProcessor = postProcessor;
+        this.grpcServer = grpcServer;
+        this.additionalCollaborators = additionalCollaborators;
     }
 
 
-    public void startHTTP() {
+    public void startHTTP() throws IOException {
         configureSpark(spark, prop);
 
         startCollaborators();
 
+        grpcServer.start();
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
 
     protected void startCollaborators() {
-        // Start the websocket for Graql
-        RemoteSession graqlWebSocket = RemoteSession.create();
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
-
         JacksonPrinter printer = JacksonPrinter.create();
 
-        // Start all the controllers
-        new GraqlController(factory, spark, postProcessor, printer, metricRegistry);
-        new ConceptController(factory, spark, metricRegistry);
-        new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessor);
+        // Start all the DEFAULT controllers
+        new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
+        new ConceptController(factory, metricRegistry).start(spark);
+        new SystemController(prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry).start(spark);
+        new CommitLogController(postProcessor).start(spark);
+
+        additionalCollaborators.forEach(httpController -> httpController.start(spark));
     }
 
     public static void configureSpark(Service spark, GraknConfig prop) {
@@ -103,7 +110,7 @@ public class HttpHandler {
                                       String hostName,
                                       int port,
                                       Path staticFolder,
-                                      int maxThreads){
+                                      int maxThreads) {
         // Set host name
         spark.ipAddress(hostName);
 
@@ -114,7 +121,6 @@ public class HttpHandler {
         spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
-        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register exception handlers
         spark.exception(GraknServerException.class, (e, req, res) -> {
@@ -126,7 +132,9 @@ public class HttpHandler {
     }
 
 
-    public void stopHTTP() {
+    public void stopHTTP() throws InterruptedException {
+        grpcServer.close();
+
         spark.stop();
 
         // Block until server is truly stopped
@@ -135,8 +143,7 @@ public class HttpHandler {
         while (running) {
             try {
                 spark.port();
-            }
-            catch(IllegalStateException e){
+            } catch (IllegalStateException e) {
                 LOG.debug("Spark server has been stopped");
                 running = false;
             }
@@ -148,9 +155,9 @@ public class HttpHandler {
      * the correct JSON response.
      *
      * @param exception exception thrown by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    protected static void handleGraknServerError(GraknServerException exception, Response response){
+    protected static void handleGraknServerError(GraknServerException exception, Response response) {
         LOG.error("REST error", exception);
         response.status(exception.getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
@@ -159,10 +166,11 @@ public class HttpHandler {
 
     /**
      * Handle any exception thrown by the server
+     *
      * @param exception Exception by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    protected static void handleInternalError(Exception exception, Response response){
+    protected static void handleInternalError(Exception exception, Response response) {
         LOG.error("REST error", exception);
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());

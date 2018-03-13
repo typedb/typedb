@@ -1,6 +1,6 @@
 define
 
-rule-1 sub rule,
+rule-1
 when {$x isa person;
 $t isa tag;$t has name 'Ludwig van Beethoven';
 ($x, $t) isa tagging;
@@ -8,7 +8,7 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-2 sub rule,
+rule-2
 when {$x isa person;
 $t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
@@ -16,7 +16,7 @@ $y isa tag;$y has name 'Pink Floyd';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-rule-3 sub rule,
+rule-3
 when {$x isa person;
 $x has gender 'male';$x has age >=18;
 $y isa product;$y has min-age >=18;

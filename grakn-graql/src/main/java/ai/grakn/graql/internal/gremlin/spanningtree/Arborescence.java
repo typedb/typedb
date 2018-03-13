@@ -74,10 +74,6 @@ public class Arborescence<V> {
         return root;
     }
 
-    public int size() {
-        return parents.size();
-    }
-
     public ImmutableMap<V, V> getParents() {
         return parents;
     }

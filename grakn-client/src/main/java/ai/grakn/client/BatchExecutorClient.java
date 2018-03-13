@@ -18,6 +18,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.API;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
@@ -72,7 +73,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class BatchExecutorClient implements Closeable {
 
-    private final static Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
 
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
@@ -131,10 +132,10 @@ public class BatchExecutorClient implements Closeable {
         QueryRequest queryRequest = new QueryRequest(query);
         queryRequest.acquirePermit();
 
-        Context context = addTimer.time();
+        Context contextAddTimer = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace)
                 .observe()
-                .doOnError((error) -> failureMeter.mark())
+                .doOnError(error -> failureMeter.mark())
                 .doOnEach(a -> {
                     if (a.getThrowable() != null) {
                         LOG.error("Error while executing statement", a.getThrowable());
@@ -143,7 +144,7 @@ public class BatchExecutorClient implements Closeable {
                     }
                 })
                 .subscribeOn(scheduler)
-                .doOnTerminate(context::close);
+                .doOnTerminate(contextAddTimer::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
@@ -178,7 +179,7 @@ public class BatchExecutorClient implements Closeable {
         return new Builder();
     }
 
-    //TODO: Remove this method used only by docs tests
+    @API
     public static Builder newBuilderforURI(SimpleURI simpleURI) {
         return new Builder().taskClient(GraknClient.of(simpleURI));
     }
@@ -224,11 +225,6 @@ public class BatchExecutorClient implements Closeable {
 
         public Builder metricRegistry(MetricRegistry val) {
             metricRegistry = val;
-            return this;
-        }
-
-        public Builder metricRegistry(int val) {
-            timeoutMs = val;
             return this;
         }
 
@@ -346,7 +342,7 @@ public class BatchExecutorClient implements Closeable {
         private final Keyspace keyspace;
         private final Timer graqlExecuteTimer;
         private final Meter attemptMeter;
-        private final Retryer<List<QueryResponse>> retryer;
+        private final Retryer<List> retryer;
 
         CommandQueries(List<QueryRequest> queries, Keyspace keyspace) {
             super(Setter
@@ -368,8 +364,8 @@ public class BatchExecutorClient implements Closeable {
             this.keyspace = keyspace;
             this.graqlExecuteTimer = metricRegistry.timer(name(this.getClass(), "execute"));
             this.attemptMeter = metricRegistry.meter(name(this.getClass(), "attempt"));
-            this.retryer = RetryerBuilder.<List<QueryResponse>>newBuilder()
-                    .retryIfException((throwable) ->
+            this.retryer = RetryerBuilder.<List>newBuilder()
+                    .retryIfException(throwable ->
                             throwable instanceof GraknClientException
                                     && ((GraknClientException) throwable).isRetriable())
                     .retryIfExceptionOfType(ConnectException.class)
@@ -385,7 +381,7 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected List<QueryResponse> run() throws GraknClientException {
+        protected List run() throws GraknClientException {
             List<Query<?>> queryList = queries.stream().map(QueryRequest::getQuery)
                     .collect(Collectors.toList());
             try {
@@ -413,8 +409,7 @@ public class BatchExecutorClient implements Closeable {
      *
      * @author Domenico Corapi
      */
-    private class QueriesObservableCollapser extends
-            HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
+    private class QueriesObservableCollapser extends HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
 
         private final QueryRequest query;
         private Keyspace keyspace;
@@ -455,14 +450,14 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected void mapResponseToRequests(List<QueryResponse> batchResponse,
-                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
+        protected void mapResponseToRequests(List<QueryResponse> batchResponse, Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
             int count = 0;
             for (CollapsedRequest<QueryResponse, QueryRequest> request : collapsedRequests) {
                 QueryResponse response = batchResponse.get(count++);
                 request.setResponse(response);
+                request.setComplete();
             }
-            metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size")).update(count);
+            metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size")).update(collapsedRequests.size());
         }
     }
 

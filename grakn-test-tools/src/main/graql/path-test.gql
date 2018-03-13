@@ -27,13 +27,13 @@ index sub attribute, datatype string;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (arc-from: $x, arc-to: $y) isa arc;},
 then {
 (path-from: $x, path-to: $y) isa path;};
 
-rule-2 sub rule,
+rule-2
 when {
 (path-from: $x, path-to: $z) isa path;
 (path-from: $z, path-to: $y) isa path;},

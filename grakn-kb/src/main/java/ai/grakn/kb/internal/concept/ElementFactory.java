@@ -28,7 +28,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.structure.AbstractElement;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
@@ -62,9 +62,9 @@ import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
  * @author fppt
  */
 public final class ElementFactory {
-    private final GraknTxAbstract tx;
+    private final EmbeddedGraknTx tx;
 
-    public ElementFactory(GraknTxAbstract tx){
+    public ElementFactory(EmbeddedGraknTx tx){
         this.tx = tx;
     }
 

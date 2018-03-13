@@ -71,7 +71,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
             VertexComputeKey.of(MESSAGE_COUNT, true),
             VertexComputeKey.of(IMPLICIT_MESSAGE_COUNT, true));
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public CorenessVertexProgram() {
     }
 

@@ -18,71 +18,84 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.GraqlConverter;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements ComputeQuery<T> {
+abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
+        extends AbstractExecutableQuery<T> implements ComputeQuery<T> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
+    private Optional<GraknTx> tx;
+    private boolean includeAttribute;
+    private ImmutableSet<Label> subLabels = ImmutableSet.of();
 
-    Optional<GraknTx> tx = Optional.empty();
-    private GraknComputer graknComputer = null;
-    boolean includeAttribute = false;
+    private Set<ComputeJob<T>> runningJobs = ConcurrentHashMap.newKeySet();
 
-    Set<Label> subLabels = new HashSet<>();
-    Set<Type> subTypes = new HashSet<>();
+    private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
+
+    AbstractComputeQuery(Optional<GraknTx> tx) {
+        this(tx, DEFAULT_INCLUDE_ATTRIBUTE);
+    }
+
+    AbstractComputeQuery(Optional<GraknTx> tx, boolean includeAttribute) {
+        this.tx = tx;
+        this.includeAttribute = includeAttribute;
+    }
 
     @Override
-    public V withTx(GraknTx tx) {
+    public final T execute() {
+        ComputeJob<T> job = createJob();
+
+        runningJobs.add(job);
+
+        try {
+            return job.get();
+        } finally {
+            runningJobs.remove(job);
+        }
+    }
+
+    protected abstract ComputeJob<T> createJob();
+
+    @Override
+    public final Optional<GraknTx> tx() {
+        return tx;
+    }
+
+    @Override
+    public final V withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
         return (V) this;
     }
 
     @Override
-    public V in(String... subTypeLabels) {
-        this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
+    public final V in(String... subTypeLabels) {
+        return in(Arrays.stream(subTypeLabels).map(Label::of).collect(toImmutableSet()));
+    }
+
+    @Override
+    public final V in(Collection<? extends Label> subLabels) {
+        this.subLabels = ImmutableSet.copyOf(subLabels);
         return (V) this;
     }
 
     @Override
-    public V in(Collection<Label> subLabels) {
-        this.subLabels = Sets.newHashSet(subLabels);
-        return (V) this;
+    public final ImmutableSet<Label> subLabels() {
+        return subLabels;
     }
 
     @Override
@@ -92,108 +105,13 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
     }
 
     @Override
-    public void kill() {
-        if (graknComputer != null) {
-            graknComputer.killJobs();
-        }
+    public final boolean isAttributeIncluded() {
+        return includeAttribute;
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
-        // TODO: clarify or remove this special-case behaviour
-        Object computeResult = execute();
-        if (computeResult instanceof Map) {
-            if (((Map) computeResult).isEmpty()) {
-                return Stream.of("There are no instances of the selected type(s).");
-            }
-            if (((Map) computeResult).values().iterator().next() instanceof Set) {
-                Map<?, ?> map = (Map) computeResult;
-                return map.entrySet().stream().map(entry -> {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    for (Object s : (Iterable) entry.getValue()) {
-                        stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
-                    }
-                    return stringBuilder.toString();
-                });
-            }
-        }
-        return Stream.of(printer.graqlString(computeResult));
-    }
-
-    @Override
-    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
-        return Stream.of(converter.convert(execute()));
-    }
-
-    void initSubGraph() {
-        if (this.isStatisticsQuery()) {
-            includeAttribute = true;
-        }
-    }
-
-    void getAllSubTypes() {
-        // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        GraknTx graknTx = tx.get();
-        if (subLabels.isEmpty()) {
-            if (includeAttribute) {
-                graknTx.admin().getMetaConcept().subs().forEach(subTypes::add);
-            } else {
-                graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
-                graknTx.admin().getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
-            }
-        } else {
-            subTypes = subLabels.stream().map(label -> {
-                SchemaConcept type = graknTx.getSchemaConcept(label);
-                if (type == null) throw GraqlQueryException.labelNotFound(label);
-                if (!type.isType()) {
-                    throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
-                }
-                if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
-                    includeAttribute = true;
-                }
-                return type.asType();
-            }).collect(Collectors.toSet());
-
-            if (includeAttribute) {
-                subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
-            } else {
-                subTypes = subTypes.stream().flatMap(Type::subs)
-                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(Collectors.toSet());
-            }
-        }
-        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
-    }
-
-    GraknComputer getGraphComputer() {
-        if (graknComputer == null) {
-            if (tx.isPresent()) {
-                graknComputer = tx.get().session().getGraphComputer();
-            } else {
-                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
-            }
-        }
-        return graknComputer;
-    }
-
-    boolean selectedTypesHaveInstance() {
-        if (subLabels.isEmpty()) {
-            LOGGER.info("No types found while looking for instances");
-            return false;
-        }
-
-        List<Pattern> checkSubtypes = subLabels.stream()
-                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
-    }
-
-    boolean verticesExistInSubgraph(ConceptId... ids) {
-        for (ConceptId id : ids) {
-            Thing thing = this.tx.get().getConcept(id);
-            if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
-        }
-        return true;
+    public final void kill() {
+        runningJobs.forEach(ComputeJob::kill);
     }
 
     abstract String graqlString();
@@ -204,20 +122,14 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "compute " + graqlString();
     }
 
-    Set<LabelId> getRolePlayerLabelIds() {
-        return subTypes.stream()
-                .filter(Concept::isRelationshipType)
-                .map(Concept::asRelationshipType)
-                .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::relates)
-                .flatMap(Role::playedByTypes)
-                .map(type -> tx.get().admin().convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+    @Nullable
+    @Override
+    public Boolean inferring() {
+        return null;
     }
 
     @Override
@@ -236,23 +148,5 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
         result = 31 * result + Boolean.hashCode(includeAttribute);
         result = 31 * result + subLabels.hashCode();
         return result;
-    }
-
-    Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
-        return labelSet.stream()
-                .map(tx.get().admin()::convertToId)
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
-    }
-
-    static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
-        return subTypes.stream()
-                .filter(Concept::isAttributeType)
-                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
-                .collect(Collectors.toSet());
-    }
-
-    static String getRandomJobId() {
-        return Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
     }
 }

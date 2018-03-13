@@ -28,6 +28,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -180,7 +181,7 @@ public class ValidatorTest extends TxTestBase {
         }
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -194,7 +195,7 @@ public class ValidatorTest extends TxTestBase {
         godfather.delete();
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 
@@ -544,6 +545,23 @@ public class ValidatorTest extends TxTestBase {
     public void whenARelationTypeHasOnlyOneRole_TheGraphIsValid() {
         Role role = tx.putRole("role-1");
         tx.putRelationshipType("my-relation").relates(role);
+
+        tx.commit();
+    }
+
+
+    @Test
+    public void whenRemovingInvalidRolePlayers_EnsureValidationPasses(){
+        Role chased = tx.putRole("chased");
+        Role chaser = tx.putRole("chaser");
+        RelationshipType chases = tx.putRelationshipType("chases").relates(chased).relates(chaser);
+
+        EntityType puppy = tx.putEntityType("puppy").plays(chaser);
+        Entity dunstan = puppy.addEntity();
+
+        Relationship rel = chases.addRelationship();
+        rel.addRolePlayer(chaser, dunstan);
+        rel.addRolePlayer(chased, dunstan).removeRolePlayer(chased, dunstan);
 
         tx.commit();
     }

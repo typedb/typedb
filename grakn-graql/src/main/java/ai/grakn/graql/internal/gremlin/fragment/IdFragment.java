@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import java.util.Map;
@@ -48,7 +48,7 @@ abstract class IdFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
         if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.query.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -55,7 +55,11 @@ import com.google.common.collect.ImmutableSet;
 public abstract class PropertyExecutor {
 
     public static PropertyExecutor.Builder builder(Method executeMethod) {
-        return new AutoValue_PropertyExecutor.Builder().executeMethod(executeMethod);
+        return builder().executeMethod(executeMethod);
+    }
+
+    private static PropertyExecutor.Builder builder() {
+        return new AutoValue_PropertyExecutor.Builder();
     }
 
     /**
@@ -115,11 +119,6 @@ public abstract class PropertyExecutor {
 
         public Builder produces(Var... values) {
             producedVarsBuilder().add(values);
-            return this;
-        }
-
-        public Builder produces(Iterable<Var> values) {
-            producedVarsBuilder().addAll(values);
             return this;
         }
 

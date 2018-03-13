@@ -21,6 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
@@ -39,10 +40,8 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -53,6 +52,7 @@ import ai.grakn.kb.internal.concept.EntityImpl;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -60,7 +60,6 @@ import com.google.common.collect.Iterables;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -86,25 +85,23 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
  * @author Kasper Piskorski
  *
  */
-public class ResourceAtom extends Binary{
-    private final Var relationVariable;
-    private final ImmutableSet<ValuePredicate> multiPredicate;
+@AutoValue
+public abstract class ResourceAtom extends Binary{
 
-    public ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern, attributeVar, idPred, par);
-        this.relationVariable = relationVariable;
-        this.multiPredicate = ImmutableSet.copyOf(ps);
+    public abstract Var getRelationVariable();
+    public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
+
+    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, attributeVar, predicateId,  relationVariable, ImmutableSet.copyOf(ps));
+    }
+    private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
+        ResourceAtom atom = create(a.getPattern(), a.getPredicateVariable(),  a.getRelationVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
+        atom.applicableRules = a.applicableRules;
+        return atom;
     }
 
-    private ResourceAtom(ResourceAtom a) {
-        super(a);
-        this.relationVariable = a.getRelationVariable();
-        this.multiPredicate = ImmutableSet.<ValuePredicate>builder().addAll(
-                a.getMultiPredicate().stream()
-                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
-                        .iterator()
-        ).build();
-    }
+    @Override
+    public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
@@ -115,14 +112,14 @@ public class ResourceAtom extends Binary{
         if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
         GraknTx tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.getLabel());
-        return new RelationshipAtom(
+        return RelationshipAtom.create(
                 Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.getLabel()).getValue(), getVarName())
                         .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.getLabel()).getValue(), getPredicateVariable())
                         .isa(typeLabel.getValue())
                 .admin(),
                 getPredicateVariable(),
-                new IdPredicate(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
+                tx.getSchemaConcept(typeLabel).getId(),
                 getParentQuery()
         );
     }
@@ -135,11 +132,11 @@ public class ResourceAtom extends Binary{
         return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
                 getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
-                (relationVariable.isUserDefinedName()? "(" + relationVariable + ")" : "");
+                (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ResourceAtom a2 = (ResourceAtom) obj;
@@ -149,7 +146,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         int hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
@@ -209,21 +206,12 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public void setParentQuery(ReasonerQuery q) {
-        super.setParentQuery(q);
-        multiPredicate.forEach(pred -> pred.setParentQuery(q));
-    }
-
-    public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
-    public Var getRelationVariable(){ return relationVariable;}
-
-    @Override
     protected Pattern createCombinedPattern(){
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().admin());
+        vars.add(getPattern().admin());
         return Patterns.conjunction(vars);
     }
 
@@ -257,16 +245,10 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public Atomic copy(){ return new ResourceAtom(this);}
-
-    @Override
     public boolean isResource(){ return true;}
 
     @Override
     public boolean isSelectable(){ return true;}
-
-    @Override
-    public boolean isUserDefined(){ return relationVariable.isUserDefinedName();}
 
     @Override
     public boolean requiresMaterialisation(){ return true;}
@@ -297,8 +279,8 @@ public class ResourceAtom extends Binary{
     @Override
     public Set<Var> getVarNames() {
         Set<Var> varNames = super.getVarNames();
-        multiPredicate.stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
-        if (getRelationVariable().isUserDefinedName()) varNames.add(relationVariable);
+        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
+        if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
         return varNames;
     }
 
@@ -320,64 +302,6 @@ public class ResourceAtom extends Binary{
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
-    }
-
-    private boolean isSuperNode(){
-        return tx().graql().match(getCombinedPattern()).admin().stream()
-                .skip(SimplePlanner.RESOURCE_SUPERNODE_SIZE)
-                .findFirst().isPresent();
-    }
-
-    @Override
-    public int computePriority(Set<Var> subbedVars){
-        int priority = super.computePriority(subbedVars);
-        Set<ai.grakn.graql.ValuePredicate> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
-        priority += SimplePlanner.IS_RESOURCE_ATOM;
-
-        if (vps.isEmpty()) {
-            if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
-                    && !isSuperNode()) {
-                    priority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-            } else{
-                    priority += SimplePlanner.VARIABLE_VALUE_PREDICATE;
-            }
-        } else {
-            int vpsPriority = 0;
-            for (ai.grakn.graql.ValuePredicate vp : vps) {
-                //vp with a value
-                if (vp.isSpecific() && !isSuperNode()) {
-                    vpsPriority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-                } //vp with a variable
-                else if (vp.getInnerVar().isPresent()) {
-                    VarPatternAdmin inner = vp.getInnerVar().orElse(null);
-                    //variable mapped inside the query
-                    if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.var())
-                            && !isSuperNode()) {
-                        vpsPriority += SimplePlanner.SPECIFIC_VALUE_PREDICATE;
-                    } //variable equality
-                    else if (vp.equalsValue().isPresent()){
-                        vpsPriority += SimplePlanner.VARIABLE_VALUE_PREDICATE;
-                    } //variable inequality
-                    else {
-                        vpsPriority += SimplePlanner.COMPARISON_VARIABLE_VALUE_PREDICATE;
-                    }
-                } else {
-                    vpsPriority += SimplePlanner.NON_SPECIFIC_VALUE_PREDICATE;
-                }
-            }
-            //normalise
-            vpsPriority = vpsPriority/vps.size();
-            priority += vpsPriority;
-        }
-
-        boolean reifiesRelation = getNeighbours(Atom.class)
-                .filter(Atom::isRelation)
-                .anyMatch(at -> at.getVarName().equals(this.getVarName()));
-
-        priority += reifiesRelation ? SimplePlanner.RESOURCE_REIFYING_RELATION : 0;
-
-        return priority;
     }
 
     @Override
@@ -455,12 +379,12 @@ public class ResourceAtom extends Binary{
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
-        return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(newVar.admin(), attributeVariable, relationVariable, getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return new ResourceAtom(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

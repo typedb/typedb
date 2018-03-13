@@ -98,10 +98,10 @@ public class GraqlControllerTest {
 
     public static SampleKBContext genealogyKB = GenealogyKB.context();
 
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new GraqlController(factory, spark, mock(PostProcessor.class), printer, new MetricRegistry());
+        new GraqlController(factory, mock(PostProcessor.class), printer, new MetricRegistry()).start(spark);
     });
 
     @ClassRule

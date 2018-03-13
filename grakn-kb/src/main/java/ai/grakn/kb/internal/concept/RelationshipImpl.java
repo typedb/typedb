@@ -21,7 +21,6 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -121,11 +120,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        if(reified().isPresent()){
-            return reified().get().attributes(attributeTypes);
-        } else {
-            return Stream.empty();
-        }
+        return reified().map(relationshipReified -> relationshipReified.attributes(attributeTypes)).orElseGet(Stream::empty);
     }
 
     @Override
@@ -239,11 +234,6 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     @Override
     public boolean isDeleted() {
         return structure().isDeleted();
-    }
-
-    @Override
-    public int compareTo(Concept o) {
-        return getId().compareTo(o.getId());
     }
 
     @Override

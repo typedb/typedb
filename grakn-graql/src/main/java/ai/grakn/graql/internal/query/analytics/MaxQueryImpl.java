@@ -18,50 +18,21 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> implements MaxQuery {
 
-    MaxQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MaxQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MaxMapReduce is called");
-        long startTime = System.currentTimeMillis();
-
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                new MaxMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE),
-                allSubLabelIds);
-        Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
-
-        LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));
-        LOGGER.info("MaxMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(max.get(MapReduce.NullObject.instance()));
+    public final ComputeJob<Optional<Number>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

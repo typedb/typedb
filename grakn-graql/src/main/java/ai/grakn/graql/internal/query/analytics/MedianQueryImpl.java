@@ -18,44 +18,21 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.internal.analytics.MedianVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Optional;
-import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    MedianQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MedianVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-
-        initSubGraph();
-        getAllSubTypes();
-
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
-        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
-        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(statisticsResourceLabelIds, dataType),
-                null, allSubLabelIds);
-
-        Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
-        LOGGER.debug("Median = " + finalResult);
-
-        LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(finalResult);
+    public final ComputeJob<Optional<Number>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

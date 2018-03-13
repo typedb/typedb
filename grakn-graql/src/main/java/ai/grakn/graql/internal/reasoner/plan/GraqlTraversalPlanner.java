@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.plan;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -32,10 +31,13 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -54,17 +56,6 @@ import java.util.stream.Stream;
  *
  */
 public class GraqlTraversalPlanner {
-
-    /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    public static ImmutableList<Atom> plan(ReasonerQueryImpl query){
-        List<Atom> atoms = query.getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toList());
-        return planFromTraversal(atoms, query.getPattern(), query.tx());
-    }
 
     /**
      *
@@ -87,6 +78,7 @@ public class GraqlTraversalPlanner {
         return ImmutableList.copyOf(refinedPlan(query, startCandidates, subs));
     }
 
+    @Nullable
     private static Atom optimalCandidate(List<Atom> candidates){
         return candidates.stream()
                 .sorted(Comparator.comparing(at -> !at.isGround()))
@@ -112,18 +104,23 @@ public class GraqlTraversalPlanner {
             return initialPlan;
         } else {
             Atom first = optimalCandidate(candidates);
-
             List<Atom> atomsToPlan = new ArrayList<>(atoms);
-            atomsToPlan.remove(first);
 
-            Set<IdPredicate> extraSubs = first.getVarNames().stream()
-                    .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                    .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
-                    .collect(Collectors.toSet());
-            return Stream.concat(
-                    Stream.of(first),
-                    refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
-            ).collect(Collectors.toList());
+            if(first != null){
+                atomsToPlan.remove(first);
+
+                Set<IdPredicate> extraSubs = first.getVarNames().stream()
+                        .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
+                        .map(v -> IdPredicate.create(v, ConceptId.of("placeholderId"), query))
+                        .collect(Collectors.toSet());
+
+                return Stream.concat(
+                        Stream.of(first),
+                        refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
+                ).collect(Collectors.toList());
+            } else {
+                return refinedPlan(query, atomsToPlan, subs);
+            }
         }
     }
 
@@ -150,7 +147,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, GraknTx tx){
+    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))

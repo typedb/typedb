@@ -22,21 +22,18 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
@@ -44,13 +41,13 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 
@@ -65,16 +62,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatib
  */
 public abstract class Atom extends AtomicBase {
 
-    private int basePriority = Integer.MAX_VALUE;
-    private Set<InferenceRule> applicableRules = null;
-
-    protected Atom(VarPattern pattern, ReasonerQuery par) {
-        super(pattern, par);
-    }
-    protected Atom(Atom a) {
-        super(a);
-        this.applicableRules = a.applicableRules;
-    }
+    //NB: protected to be able to assign it when copying
+    protected Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom(){
         throw GraqlQueryException.illegalAtomConversion(this);
@@ -83,12 +72,10 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom(){ return true;}
 
-    @Override
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
     }
 
-    @Override
     public boolean isRecursive(){
         if (isResource() || getSchemaConcept() == null) return false;
         SchemaConcept schemaConcept = getSchemaConcept();
@@ -122,7 +109,7 @@ public abstract class Atom extends AtomicBase {
                 this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
         );
         boolean unboundVariables = varNames.stream()
-                .anyMatch(var -> !parentAtoms.stream().anyMatch(at -> at.getVarNames().contains(var)));
+                .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -146,55 +133,12 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
+    public Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
     /**
      * @return set of variables that need to be have their roles expanded
      */
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
-
-    /**
-     * compute base resolution priority of this atom
-     * @return priority value
-     */
-    private int computePriority(){
-        return computePriority(getPartialSubstitutions().map(IdPredicate::getVarName).collect(Collectors.toSet()));
-    }
-
-    /**
-     * compute resolution priority based on provided substitution variables
-     * @param subbedVars variables having a substitution
-     * @return resolution priority value
-     */
-    public int computePriority(Set<Var> subbedVars){
-        int priority = 0;
-        priority += Sets.intersection(getVarNames(), subbedVars).size() * SimplePlanner.PARTIAL_SUBSTITUTION;
-        priority += isRuleResolvable()? SimplePlanner.RULE_RESOLVABLE_ATOM : 0;
-        priority += isRecursive()? SimplePlanner.RECURSIVE_ATOM : 0;
-
-        priority += getTypeConstraints().count() * SimplePlanner.GUARD;
-        Set<Var> otherVars = getParentQuery().getAtoms().stream()
-                .filter(a -> a != this)
-                .flatMap(at -> at.getVarNames().stream())
-                .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * SimplePlanner.BOUND_VARIABLE;
-
-        //inequality predicates with unmapped variable
-        priority += getPredicates(NeqPredicate.class)
-                .map(Predicate::getPredicate)
-                .filter(v -> !subbedVars.contains(v)).count() * SimplePlanner.INEQUALITY_PREDICATE;
-        return priority;
-    }
-
-    /**
-     * @return measure of priority with which this atom should be resolved
-     */
-    public int baseResolutionPriority(){
-        if (basePriority == Integer.MAX_VALUE) {
-            basePriority = computePriority();
-        }
-        return basePriority;
-    }
 
     private boolean isRuleApplicable(InferenceRule child){
         return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
@@ -206,7 +150,10 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
+        return RuleUtils.getRulesWithType(
+                getSchemaConcept(),
+                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent(),
+                tx());
     }
 
     /**

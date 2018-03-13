@@ -18,8 +18,6 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.macro.Macro;
-
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
@@ -78,12 +76,6 @@ public interface QueryParser {
      * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
      */
     void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
-
-    /**
-     * Register a macro that can be used when parsing a Graql template
-     * @param macro the macro to register
-     */
-    void registerMacro(Macro macro);
 
     /**
      * Set whether the parser should set all {@link Var}s as user-defined. If it does, then every variable will

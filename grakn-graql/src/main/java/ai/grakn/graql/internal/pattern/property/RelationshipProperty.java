@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
@@ -36,7 +37,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
@@ -178,13 +179,6 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
-        if (!var.hasProperty(IsaProperty.class)) {
-            throw GraqlQueryException.insertRelationWithoutType();
-        }
-    }
-
-    @Override
     public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Relationship relationship = executor.get(var).asRelationship();
@@ -225,8 +219,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .filter(prop -> !IsaProperty.class.isInstance(prop))
-                .findFirst().isPresent();
+                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
@@ -252,27 +245,28 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             else relVar = relVar.rel(rolePlayer);
         }
 
-        //id part
-        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+        //isa part
+        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        //TODO remove forcing user definition
         Var typeVariable = isaProp != null? isaProp.type().var() : Graql.var();
-        //Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
 
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                predicate = new IdPredicate(typeVariable, label, parent);
+                predicate = IdPredicate.create(typeVariable, label, parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
-        relVar = relVar.isa(typeVariable.asUserDefined());
-        return new RelationshipAtom(relVar.admin(), typeVariable, predicate, parent);
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        relVar = isaProp instanceof DirectIsaProperty?
+                relVar.directIsa(typeVariable.asUserDefined()) :
+                relVar.isa(typeVariable.asUserDefined());
+        return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }
 }

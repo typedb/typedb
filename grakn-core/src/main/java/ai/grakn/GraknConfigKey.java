@@ -20,15 +20,14 @@ package ai.grakn;
 
 import ai.grakn.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Class for keys of properties in the file {@code grakn.properties}.
@@ -39,32 +38,57 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class GraknConfigKey<T> {
 
-    // These are helpful constants to describe how to parse required parameters of certain types.
-    private static final Function<Optional<String>, Optional<Integer>> INT = required(Integer::parseInt);
-    private static final Function<Optional<String>, Optional<Boolean>> BOOL = required(Boolean::parseBoolean);
-    private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
+    /**
+     * Parser for a {@link GraknConfigKey}.
+     * Describes how to {@link #read(String)} and {@link #write(Object)} properties.
+     *
+     * @param <T> The type of the property value
+     */
+    public interface KeyParser<T> {
+
+        T read(String string);
+
+        default String write(T value) {
+            return value.toString();
+        }
+    }
+
+    // These are helpful parser to describe how to parse parameters of certain types.
+    public static final KeyParser<String> STRING = string -> string;
+    public static final KeyParser<Integer> INT = Integer::parseInt;
+    public static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
+    public static final KeyParser<Long> LONG = Long::parseLong;
+    public static final KeyParser<Path> PATH = Paths::get;
+    public static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
+        @Override
+        public List<String> read(String string) {
+            Stream<String> split = Arrays.stream(string.split(","));
+            return split.map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
+        }
+
+        @Override
+        public String write(List<String> value) {
+            return value.stream().collect(Collectors.joining(","));
+        }
+    };
 
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
     public static final GraknConfigKey<Integer> NUM_BACKGROUND_THREADS = key("background-tasks.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
+    public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
 
-    public static final GraknConfigKey<List<String>> REDIS_HOST =
-            key("queue.host", required(GraknConfigKey::parseCSValue), GraknConfigKey::toStringCSValue);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key(
-            "redis.sentinel.host",
-            withDefault(GraknConfigKey::parseCSValue, ImmutableList.of()),
-            GraknConfigKey::toStringCSValue
-    );
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
-            key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
+    public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
+    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("redis.sentinel.host", CSV);
+    public static final GraknConfigKey<String> REDIS_BIND = key("bind");
+    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("redis.sentinel.master");
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 
-    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
+    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", PATH);
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
@@ -83,14 +107,9 @@ public abstract class GraknConfigKey<T> {
     public abstract String name();
 
     /**
-     * The function used to parse the value of the property.
+     * The parser used to read and write the property.
      */
-    abstract Function<Optional<String>, Optional<T>> parseFunction();
-
-    /**
-     * The function used to write the property back into the properties file
-     */
-    abstract Function<T, String> toStringFunction();
+    abstract KeyParser<T> parser();
 
     /**
      * Parse the value of a property.
@@ -104,60 +123,32 @@ public abstract class GraknConfigKey<T> {
      * @throws RuntimeException if the value is not present and there is no default value
      */
     public final T parse(Optional<String> value, Path configFilePath) {
-        return parseFunction().apply(value).orElseThrow(() ->
-                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath))
-        );
+        if (!value.isPresent()) {
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath));
+        }
+
+        return parser().read(value.get());
     }
 
     /**
      * Convert the value of the property into a string to store in a properties file
      */
     public final String valueToString(T value) {
-        return toStringFunction().apply(value);
+        return parser().write(value);
     }
 
     /**
-     * Create a key for a required string property
+     * Create a key for a string property
      */
     public static GraknConfigKey<String> key(String value) {
-        return key(value, Function.identity());
+        return key(value, STRING);
     }
 
     /**
-     * Create a key with the given parse function
+     * Create a key with the given parser
      */
-    private static <T> GraknConfigKey<T> key(String value, Function<Optional<String>, Optional<T>> parseFunction) {
-        return new AutoValue_GraknConfigKey<>(value, parseFunction, Object::toString);
-    }
-
-    /**
-     * Create a key with the given parse function and toString function
-     */
-    private static <T> GraknConfigKey<T> key(
-            String value, Function<Optional<String>, Optional<T>> parseFunction, Function<T, String> toStringFunction) {
-        return new AutoValue_GraknConfigKey<>(value, parseFunction, toStringFunction);
-    }
-
-    /**
-     * A function for parsing a required parameter using the given parse function.
-     */
-    private static <T> Function<Optional<String>, Optional<T>> required(Function<String, T> parseFunction) {
-        return opt -> opt.map(parseFunction);
-    }
-
-    /**
-     * A function for parsing a parameter using the given parse function, including a default value.
-     */
-    private static <T> Function<Optional<String>, Optional<T>> withDefault(Function<String, T> parseFunction, T def) {
-        return opt -> Optional.of(opt.map(parseFunction).orElse(def));
-    }
-
-    private static List<String> parseCSValue(String s) {
-        return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
-    }
-
-    private static String toStringCSValue(List<String> values) {
-        return values.stream().collect(Collectors.joining(","));
+    public static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser) {
+        return new AutoValue_GraknConfigKey<>(value, parser);
     }
 
 }

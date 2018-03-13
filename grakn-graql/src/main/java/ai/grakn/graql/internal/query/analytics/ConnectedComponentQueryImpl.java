@@ -18,20 +18,12 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.LabelId;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
-import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
-import java.util.Collections;
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,54 +36,13 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
     private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
-    ConnectedComponentQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    ConnectedComponentQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public T execute() {
-        LOGGER.info("ConnectedComponentsVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Selected types don't have instances");
-            return (T) Collections.emptyMap();
-        }
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-
-        GraknVertexProgram<?> vertexProgram;
-        if (sourceId.isPresent()) {
-            ConceptId conceptId = sourceId.get();
-            if (!verticesExistInSubgraph(conceptId)) {
-                throw GraqlQueryException.instanceDoesNotExist();
-            }
-            vertexProgram = new ConnectedComponentVertexProgram(conceptId);
-        } else {
-            vertexProgram = new ConnectedComponentsVertexProgram();
-        }
-
-        GraknMapReduce<?> mapReduce;
-        if (members) {
-            if (anySize) {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            } else {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-            }
-        } else {
-            if (anySize) {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            } else {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
-            }
-        }
-
-        Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
-        LOGGER.info("ConnectedComponentsVertexProgram is done in "
-                + (System.currentTimeMillis() - startTime) + " ms");
-        return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
+    public final ComputeJob<T> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override
@@ -101,9 +52,19 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
     }
 
     @Override
+    public final boolean isMembersSet() {
+        return members;
+    }
+
+    @Override
     public ConnectedComponentQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
+    }
+
+    @Override
+    public final Optional<ConceptId> sourceId() {
+        return sourceId;
     }
 
     @Override
@@ -111,6 +72,12 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;
+    }
+
+    @Override
+    @Nullable
+    public final Long clusterSize() {
+        return anySize ? null : clusterSize;
     }
 
     @Override

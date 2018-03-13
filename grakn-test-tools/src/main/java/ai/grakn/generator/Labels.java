@@ -66,7 +66,8 @@ public class Labels extends FromTxGenerator<Label> {
         }
     }
 
-    public void configure(Unused unused) {
+    @SuppressWarnings("unused") /** Used through {@link Unused} annotation*/
+    public void configure(@SuppressWarnings("unused") Unused unused) {
         mustBeUnused();
     }
 

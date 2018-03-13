@@ -17,14 +17,17 @@
  */
 
 package ai.grakn.bootup.graknengine;
+
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
-import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
-import ai.grakn.engine.GraknCreator;
+import ai.grakn.bootup.graknengine.pid.GraknPidManager;
+import ai.grakn.bootup.graknengine.pid.GraknPidManagerFactory;
+import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -49,19 +52,25 @@ public class Grakn {
      * @param args
      */
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(newUncaughtExceptionHandler(LOG));
+
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
-                    .orElseThrow(() -> new RuntimeException("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"));
+                    .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
             Path pidfile = Paths.get(graknPidFileProperty);
             GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
             graknPidManager.trackGraknPid();
 
             // Start Engine
-            GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
+            GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
             graknEngineServer.start();
-        } catch (Exception e) {
-            LOG.error("An exception has occurred", e);
+        } catch (IOException e) {
+            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
         }
+    }
+
+    private static Thread.UncaughtExceptionHandler newUncaughtExceptionHandler(Logger logger) {
+        return (Thread t, Throwable e) -> logger.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e);
     }
 }
 

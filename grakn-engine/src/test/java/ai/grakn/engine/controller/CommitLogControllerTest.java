@@ -46,7 +46,7 @@ public class CommitLogControllerTest {
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(spark -> new CommitLogController(spark, postProcessor));
+    public final SparkContext sparkContext = SparkContext.withControllers(new CommitLogController(postProcessor));
 
     @Before
     public void resetMock(){

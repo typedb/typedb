@@ -18,8 +18,6 @@
 
 package ai.grakn.test.client;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -29,8 +27,10 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import com.netflix.hystrix.HystrixCommand;
@@ -44,6 +44,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import rx.Observable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +62,7 @@ import static org.mockito.Mockito.spy;
 public class BatchExecutorClientIT {
 
     public static final int MAX_DELAY = 100;
-    private GraknSession session;
+    private EmbeddedGraknSession session;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -76,11 +77,12 @@ public class BatchExecutorClientIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = EmbeddedGraknSession.create(keyspace, engine.uri());
     }
 
+    @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")
     @Test
-    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() {
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException, IOException {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
@@ -165,7 +167,7 @@ public class BatchExecutorClientIT {
                 all.add(
                         loader
                                 .add(query(), keyspace, true)
-                                .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
+                                .doOnError(ex -> System.out.println("Error " + ex)));
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);
@@ -187,7 +189,7 @@ public class BatchExecutorClientIT {
 
     private BatchExecutorClient loader(int maxDelay) {
         // load schema
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graph = session.open(GraknTxType.WRITE)) {
             Role role = graph.putRole("some-role");
             graph.putRelationshipType("some-relationship").relates(role);
 
@@ -199,7 +201,7 @@ public class BatchExecutorClientIT {
 
             nameTag.attribute(nameTagString);
             nameTag.attribute(nameTagId);
-            graph.admin().commitSubmitNoLogs();
+            graph.commitSubmitNoLogs();
 
             GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(

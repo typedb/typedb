@@ -34,6 +34,7 @@ import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
@@ -87,7 +88,6 @@ public final class Schema {
         RELATIONSHIP("relationship", 5),
         RULE("rule", 6);
 
-
         private final Label label;
         private final LabelId id;
 
@@ -108,10 +108,16 @@ public final class Schema {
 
         @CheckReturnValue
         public static boolean isMetaLabel(Label label) {
+            return valueOf(label) != null;
+        }
+
+        @Nullable
+        @CheckReturnValue
+        public static MetaSchema valueOf(Label label){
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getLabel().equals(label)) return true;
+                if (metaSchema.getLabel().equals(label)) return metaSchema;
             }
-            return false;
+            return null;
         }
     }
 
@@ -281,26 +287,6 @@ public final class Schema {
             }
 
             return Label.of(implicitType.getValue().substring(4, endIndex));
-        }
-    }
-
-    /**
-     * An enum representing analytics schema elements
-     */
-    public enum Analytics {
-
-        DEGREE("degree"),
-        CLUSTER("cluster");
-
-        private final String label;
-
-        Analytics(String label) {
-            this.label = label;
-        }
-
-        @CheckReturnValue
-        public Label getLabel() {
-            return Label.of(label);
         }
     }
 

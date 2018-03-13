@@ -157,7 +157,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append("{}");
             } else {
                 answer.forEach((name, concept) ->
-                        sb.append(name).append(" ").append(convert(concept)).append("; ")
+                        build(concept).apply(sb.append(name).append(" ")).append("; ")
                 );
             }
             return sb;

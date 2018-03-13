@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -27,6 +26,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerDeleteTest {
 
-    private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+    private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
@@ -62,9 +62,7 @@ public class GraqlControllerDeleteTest {
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, postProcessor, printer, new MetricRegistry());
-    });
+    public static SparkContext sparkContext = SparkContext.withControllers(new GraqlController(mockFactory, postProcessor, printer, new MetricRegistry()));
 
     @Before
     public void setupMock(){
@@ -85,16 +83,16 @@ public class GraqlControllerDeleteTest {
     public void DELETEGraqlDelete_GraphCommitSubmitNoLogsCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
 
-        verify(tx.admin(), times(0)).commitSubmitNoLogs();
+        verify(tx, times(0)).commitSubmitNoLogs();
 
         sendRequest(query);
 
-        verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        verify(tx, times(1)).commitSubmitNoLogs();
     }
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseStatusIs400(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
 
         String query = "match $x isa ; delete;";
@@ -105,7 +103,7 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
 
         String query = "match $x isa ; delete;";
@@ -139,10 +137,10 @@ public class GraqlControllerDeleteTest {
 
         Query<?> query = tx.graql().parser().parseQuery(queryString);
 
-        InOrder inOrder = inOrder(query, tx.admin());
+        InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        inOrder.verify(tx, times(1)).commitSubmitNoLogs();
     }
 
     @Test

@@ -281,14 +281,19 @@ export default {
       this.state.eventHub.$emit('click-submit', query);
     },
     limitQuery(query){
+      let getRegex = /^(.*;)\s*(get\b.*;)$/;
       let limitedQuery = query;
-      let getPos = query.indexOf('get');
+
       //If there is no `get` the user mistyped the query
-      if(getPos>=0){
-        let getPattern = limitedQuery.slice(getPos);
-        limitedQuery = limitedQuery.slice(0,getPos).trim();
-        if (!(limitedQuery.includes('offset')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} offset 0;`; }
-        if (!(limitedQuery.includes('limit')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
+      if(getRegex.test(query)){
+        let limitRegex = /.*;\s*(limit\b.*?;).*/;
+        let offsetRegex = /.*;\s*(offset\b.*?;).*/;
+        let deleteRegex = /^(.*;)\s*(delete\b.*;)$/;
+        let match = getRegex.exec(query);
+        limitedQuery = match[1];
+        let getPattern = match[2];
+        if (!(offsetRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} offset 0;`; }
+        if (!(limitRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
         limitedQuery = `${limitedQuery} ${getPattern}`;
       }
 

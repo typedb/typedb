@@ -58,14 +58,6 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
     @CheckReturnValue
     ImmutableSet<Unifier> unifiers();
 
-    /**
-     * multiunifier merging by simple mapping addition (no variable clashes assumed)
-     * @param u unifier to be merged with this unifier
-     * @return merged unifier
-     */
-    @CheckReturnValue
-    MultiUnifier merge(Unifier u);
-
 
     /**
      * @return multiunifier inverse - multiunifier built of inverses of all constituent unifiers
@@ -73,13 +65,6 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
     @CheckReturnValue
     MultiUnifier inverse();
 
-
-    /**
-     * @param u unifier to compared with
-     * @return true if any unifier of this multiunifier contains all mappings of u
-     */
-    @CheckReturnValue
-    boolean contains(Unifier u);
 
     /**
      *

@@ -37,7 +37,6 @@ import java.util.Set;
  */
 class RelationshipConverter implements ConceptConverter<Relationship> {
 
-    @Override
     public Pattern pattern(Relationship concept) {
         VarPattern relationPattern = Graql.var();
         Set<Pattern> idPatterns = new HashSet<>();

@@ -20,8 +20,11 @@ package ai.grakn.engine.task;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +41,8 @@ import java.util.concurrent.TimeUnit;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class BackgroundTaskRunner implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(BackgroundTaskRunner.class);
+
     private final Set<BackgroundTask> registeredTasks = new HashSet<>();
     private final ScheduledExecutorService threadPool;
 
@@ -54,7 +59,15 @@ public class BackgroundTaskRunner implements AutoCloseable {
     public void register(BackgroundTask backgroundTask){
         if(!registeredTasks.contains(backgroundTask)) {
             registeredTasks.add(backgroundTask);
-            threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
+            threadPool.scheduleAtFixedRate(() -> {
+                try {
+                    backgroundTask.run();
+                } catch (Throwable e) {
+                    LOG.error(ErrorMessage.BACKGROUND_TASK_UNHANDLED_EXCEPTION.getMessage(backgroundTask), e);
+                    throw e;
+                }
+            }, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
+
         }
     }
 

@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.API;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -225,6 +226,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @param concept The sub concept of this {@link SchemaConcept}
      * @return The {@link SchemaConcept} itself
      */
+    @API
     public T sub(T concept){
         //noinspection unchecked
         ((SchemaConceptImpl) concept).sup(this);

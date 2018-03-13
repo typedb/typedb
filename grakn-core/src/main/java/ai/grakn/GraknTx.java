@@ -25,16 +25,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.kb.admin.GraknAdmin;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -66,7 +65,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
-    EntityType putEntityType(String label);
+    default EntityType putEntityType(String label) {
+        return putEntityType(Label.of(label));
+    }
 
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
@@ -96,7 +97,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
+    default <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
+        return putAttributeType(Label.of(label), dataType);
+    }
 
     /**
      * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
@@ -128,7 +131,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    Rule putRule(String label, Pattern when, Pattern then);
+    default Rule putRule(String label, Pattern when, Pattern then) {
+        return putRule(Label.of(label), when, then);
+    }
 
     /**
      * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
@@ -152,7 +157,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationshipType putRelationshipType(String label);
+    default RelationshipType putRelationshipType(String label) {
+        return putRelationshipType(Label.of(label));
+    }
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
@@ -176,7 +183,9 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
-    Role putRole(String label);
+    default Role putRole(String label) {
+        return putRole(Label.of(label));
+    }
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -304,7 +313,6 @@ public interface GraknTx extends AutoCloseable{
     Rule getRule(String label);
 
     //------------------------------------- Utilities ----------------------------------
-    // TODO: what does this do when the graph is closed?
     /**
      * Returns access to the low-level details of the graph via GraknAdmin
      * @see GraknAdmin
@@ -320,7 +328,8 @@ public interface GraknTx extends AutoCloseable{
      * @return true if the current transaction is read only
      */
     @CheckReturnValue
-    boolean isReadOnly();
+    @API
+    GraknTxType txType();
 
     /**
      * Returns the {@link GraknSession} which was used to create this {@link GraknTx}
@@ -334,7 +343,9 @@ public interface GraknTx extends AutoCloseable{
      * @return The {@link Keyspace} of the knowledge base.
      */
     @CheckReturnValue
-    Keyspace keyspace();
+    default Keyspace keyspace() {
+        return session().keyspace();
+    }
 
     /**
      * Utility function to determine whether the graph has been closed.
@@ -354,7 +365,6 @@ public interface GraknTx extends AutoCloseable{
     @CheckReturnValue
     QueryBuilder graql();
 
-    // TODO: what does this do when the graph is closed?
     /**
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
@@ -365,15 +375,15 @@ public interface GraknTx extends AutoCloseable{
      * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      */
-    void abort();
+    default void abort(){
+        close();
+    }
 
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
-     * @throws InvalidKBException when the transaction contains graph mutations which does not conform to the Grakn
-     * knowledge model.
      */
-    void commit() throws InvalidKBException;
+    void commit();
 
 }

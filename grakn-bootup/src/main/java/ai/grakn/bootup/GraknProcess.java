@@ -19,10 +19,8 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
-
 import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
@@ -34,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.stream.Collectors;
@@ -43,14 +42,14 @@ import java.util.stream.Stream;
  *
  * @author Michele Orsi
  */
-public class GraknProcess extends AbstractProcessHandler implements ProcessHandler {
+public class GraknProcess extends AbstractProcessHandler {
 
     protected final Path homePath;
     protected final Path configPath;
     private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
-    public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
+    public static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
 
     public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
@@ -80,7 +79,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         }
         Stream<File> jars = Stream.of(values);
         File conf = new File(home + File.separator+"conf"+File.separator); // /conf
-        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator); // services/grakn lib
+        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator + "server"+File.separator); // services/grakn/server lib
         return ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)

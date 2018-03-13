@@ -55,33 +55,33 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (R1-from: $x, R1-to: $y) isa R1;},
 then {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
-rule-2 sub rule,
+rule-2
 when {
 (R1-from: $x, R1-to: $z) isa R1;
 (Q1-from: $z, Q1-to: $y) isa Q1;},
 then {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
-rule-3 sub rule,
+rule-3
 when {
 (R2-from: $x, R2-to: $y) isa R2;},
 then {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
-rule-4 sub rule,
+rule-4
 when {
 (R2-from: $x, R2-to: $z) isa R2;
 (Q2-from: $z, Q2-to: $y) isa Q2;},
 then {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
-rule-5 sub rule,
+rule-5
 when {
 (Q1-from: $x, Q1-to: $y) isa Q1;},
 then {

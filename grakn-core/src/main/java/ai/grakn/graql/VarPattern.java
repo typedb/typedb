@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.API;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
@@ -138,18 +139,32 @@ public interface VarPattern extends Pattern {
     VarPattern has(Label type, VarPattern attribute, VarPattern relationship);
 
     /**
-     * @param type a concept type id that the variable must be of this type
+     * @param type a concept type id that the variable must be of this type directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(String type);
 
     /**
-     * @param type a concept type that this variable must be an instance of
+     * @param type a concept type that this variable must be an instance of directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(VarPattern type);
+
+    /**
+     * @param type a concept type id that the variable must be of this type directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(String type);
+
+    /**
+     * @param type a concept type that this variable must be an instance of directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of
@@ -320,6 +335,7 @@ public interface VarPattern extends Pattern {
      * @param var the variable that this variable should not be equal to
      * @return this
      */
+    @API
     @CheckReturnValue
     VarPattern neq(String var);
 
@@ -328,6 +344,7 @@ public interface VarPattern extends Pattern {
      * @param varPattern the variable pattern that this variable should not be equal to
      * @return this
      */
+    @API
     @CheckReturnValue
     VarPattern neq(VarPattern varPattern);
 }

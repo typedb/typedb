@@ -18,16 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.LabelId;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
-import ai.grakn.graql.internal.analytics.NoResultException;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,46 +30,26 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
     private long k = -1L;
 
-    KCoreQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
+
+    KCoreQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Map<String, Set<String>> execute() {
-        LOGGER.info("KCore query is started");
-        long startTime = System.currentTimeMillis();
-
-        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
-
-        includeAttribute = true; //TODO: REMOVE THIS LINE
-        initSubGraph();
-        getAllSubTypes();
-
-        if (!selectedTypesHaveInstance()) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
-            return Collections.emptyMap();
-        }
-
-        ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        try {
-            result = getGraphComputer().compute(
-                    new KCoreVertexProgram(k),
-                    new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
-                    subLabelIds);
-        } catch (NoResultException e) {
-            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
-            return Collections.emptyMap();
-        }
-
-        LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
-        return result.memory().get(ClusterMemberMapReduce.class.getName());
+    public final ComputeJob<Map<String, Set<String>>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override
-    public KCoreQuery kValue(long kValue) {
+    public final KCoreQuery kValue(long kValue) {
         k = kValue;
         return this;
+    }
+
+    @Override
+    public final long kValue() {
+        return k;
     }
 
     @Override

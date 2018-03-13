@@ -23,8 +23,10 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -45,6 +47,16 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * @return a ConnectedComponentQuery with members flag set
      */
     ConnectedComponentQuery<Map<String, Set<String>>> members();
+
+    /**
+     * Get whether this query will return the members of each cluster.
+     */
+    boolean isMembersSet();
+
+    /**
+     * Get the source ID, if one is set with {@link #of(ConceptId)}.
+     */
+    Optional<ConceptId> sourceId();
 
     /**
      * Return only the cluster containing the given concept after executing the query.
@@ -72,7 +84,7 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * @return a ConnectedComponentQuery with the subLabels set
      */
     @Override
-    ConnectedComponentQuery<T> in(Collection<Label> subLabels);
+    ConnectedComponentQuery<T> in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on
@@ -86,4 +98,9 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      */
     @Override
     ConnectedComponentQuery<T> includeAttribute();
+
+    /**
+     * Get the size of the clusters returned
+     */
+    @Nullable Long clusterSize();
 }

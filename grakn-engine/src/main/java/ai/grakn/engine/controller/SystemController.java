@@ -79,7 +79,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class SystemController {
+public class SystemController implements HttpController {
 
     private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
@@ -94,7 +94,7 @@ public class SystemController {
     private final SystemKeyspace systemKeyspace;
     private final GraknConfig config;
 
-    public SystemController(Service spark, GraknConfig config, SystemKeyspace systemKeyspace,
+    public SystemController(GraknConfig config, SystemKeyspace systemKeyspace,
                             GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.systemKeyspace = systemKeyspace;
         this.config = config;
@@ -104,16 +104,6 @@ public class SystemController {
         DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
-
-        spark.get(REST.WebPath.ROOT, this::getRoot);
-
-        spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
-        spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
-        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
-        spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
-        spark.get(REST.WebPath.METRICS, this::getMetrics);
-        spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
-        spark.get(REST.WebPath.VERSION, (req, res) -> getVersion());
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;
@@ -125,6 +115,20 @@ public class SystemController {
                         durationUnit,
                         showSamples,
                         filter));
+    }
+
+    @Override
+    public void start(Service spark) {
+
+        spark.get(REST.WebPath.ROOT, this::getRoot);
+
+        spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
+        spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
+        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
+        spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
+        spark.get(REST.WebPath.METRICS, this::getMetrics);
+        spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
+        spark.get(REST.WebPath.VERSION, (req, res) -> getVersion());
     }
 
     @GET

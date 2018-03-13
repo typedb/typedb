@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
@@ -33,7 +32,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -45,6 +43,7 @@ import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.state.RuleState;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
-    private final GraknTx tx;
+    private final EmbeddedGraknTx<?> tx;
     private final ConceptId ruleId;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
@@ -74,7 +73,7 @@ public class InferenceRule {
     private int priority = Integer.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
-    public InferenceRule(Rule rule, GraknTx tx){
+    public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
@@ -82,18 +81,11 @@ public class InferenceRule {
         this.head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, GraknTx tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.ruleId = ruleId;
         this.head = head;
         this.body = body;
-    }
-
-    public InferenceRule(InferenceRule r){
-        this.tx = r.tx;
-        this.ruleId = r.getRuleId();
-        this.body = ReasonerQueries.create(r.getBody());
-        this.head = ReasonerQueries.atomic(r.getHead());
     }
 
     @Override
@@ -233,11 +225,11 @@ public class InferenceRule {
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .peek(bodyAtoms::add)
                     .collect(toSet());
-            headAtom = new ResourceAtom(
+            headAtom = ResourceAtom.create(
                     headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),
-                    resourceHead.getTypePredicate(),
+                    resourceHead.getTypeId(),
                     innerVps,
                     headAtom.getParentQuery()
             );
@@ -259,7 +251,7 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
-                }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));
+                }).forEach(t -> bodyAtoms.add(t.copy(body)));
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, tx),

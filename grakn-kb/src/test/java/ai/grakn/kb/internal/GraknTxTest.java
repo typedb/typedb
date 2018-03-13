@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
@@ -33,6 +34,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.util.ErrorMessage;
@@ -121,11 +123,11 @@ public class GraknTxTest extends TxTestBase {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
         RelationshipType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
-        assertThat(tx.admin().getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
-                tx.admin().getMetaConcept(),
-                tx.admin().getMetaRelationType(),
-                tx.admin().getMetaEntityType(),
-                tx.admin().getMetaAttributeType(),
+        assertThat(tx.getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
+                tx.getMetaConcept(),
+                tx.getMetaRelationType(),
+                tx.getMetaEntityType(),
+                tx.getMetaAttributeType(),
                 sampleEntityType,
                 sampleRelationshipType
         ));
@@ -133,7 +135,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned(){
-        assertEquals(100000L, tx.admin().shardingThreshold());
+        assertEquals(100000L, tx.shardingThreshold());
     }
 
     @Test
@@ -144,12 +146,12 @@ public class GraknTxTest extends TxTestBase {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
-        finalTypes.add(tx.admin().getMetaRole());
-        finalTypes.add(tx.admin().getMetaRule());
+        finalTypes.add(tx.getMetaRole());
+        finalTypes.add(tx.getMetaRule());
 
         tx.abort();
 
@@ -213,7 +215,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Purge the above concepts into the main cache
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
 
         //Check cache is in good order
         Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
@@ -256,7 +258,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenAttemptingToMutateReadOnlyGraph_Throw(){
-        String keyspace = "myreadonlygraph";
+        Keyspace keyspace = Keyspace.of("myreadonlygraph");
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
         String roleType2 = "My Role Type 2";
@@ -265,14 +267,14 @@ public class GraknTxTest extends TxTestBase {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
         tx.close();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
         entityT.addEntity();
         Role roleT1 = tx.putRole(roleType1);
@@ -283,7 +285,7 @@ public class GraknTxTest extends TxTestBase {
         tx.commit();
 
         //Fail some mutations again
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
         failMutation(tx, entityT::addEntity);
         failMutation(tx, () -> resourceT.putAttribute("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
@@ -291,9 +293,9 @@ public class GraknTxTest extends TxTestBase {
         failMutation(tx, () -> relationT1.relates(roleT2));
         failMutation(tx, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(GraknTx graph, Runnable mutator){
-        int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
-        int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
+    private void failMutation(EmbeddedGraknTx<?> graph, Runnable mutator){
+        int vertexCount = graph.getTinkerTraversal().V().toList().size();
+        int eddgeCount = graph.getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
         try{
@@ -305,8 +307,8 @@ public class GraknTxTest extends TxTestBase {
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(GraknTxOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()));
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
     }
 
     @Test
@@ -347,7 +349,7 @@ public class GraknTxTest extends TxTestBase {
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        tx.admin().shard(entityType.getId());
+        tx.shard(entityType.getId());
 
         Shard s2 = entityType.currentShard();
 
@@ -358,7 +360,7 @@ public class GraknTxTest extends TxTestBase {
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        tx.admin().shard(entityType.getId());
+        tx.shard(entityType.getId());
         Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
@@ -402,10 +404,10 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenShardingConcepts_EnsureCountsAreUpdated(){
         EntityType entity = tx.putEntityType("my amazing entity type");
-        assertEquals(1L, tx.admin().getShardCount(entity));
+        assertEquals(1L, tx.getShardCount(entity));
 
-        tx.admin().shard(entity.getId());
-        assertEquals(2L, tx.admin().getShardCount(entity));
+        tx.shard(entity.getId());
+        assertEquals(2L, tx.getShardCount(entity));
     }
 
     @Test

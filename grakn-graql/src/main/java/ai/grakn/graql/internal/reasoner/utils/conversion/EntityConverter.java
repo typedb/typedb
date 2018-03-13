@@ -31,7 +31,6 @@ import ai.grakn.graql.Var;
  */
 class EntityConverter implements ConceptConverter<Entity>{
 
-    @Override
     public Pattern pattern(Entity concept) {
         Var entityVar = Graql.var().asUserDefined();
         return entityVar

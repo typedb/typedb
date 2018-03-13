@@ -161,7 +161,7 @@ public class KCoreTest {
 
         Map<String, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().cluster().usingKCore().kValue(2L).execute();
+            result = graph.graql().compute().cluster().usingKCore().includeAttribute().kValue(2L).execute();
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
@@ -197,12 +197,12 @@ public class KCoreTest {
 
         Map<String, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().cluster().usingKCore().kValue(4L).execute();
+            result = graph.graql().compute().cluster().usingKCore().includeAttribute().kValue(4L).execute();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
-            result = graph.graql().compute().cluster().usingKCore().kValue(3L).execute();
+            result = graph.graql().compute().cluster().usingKCore().kValue(3L).includeAttribute().execute();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
             assertEquals(6, result.values().iterator().next().size());

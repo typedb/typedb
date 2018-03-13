@@ -47,13 +47,13 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (friend: $x, friend: $y) isa Friend;},
 then {
 (ancestor: $x, ancestor-friend: $y) isa Ancestor-friend;};
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $z) isa Parent;
 (ancestor: $z, ancestor-friend: $y) isa Ancestor-friend;},

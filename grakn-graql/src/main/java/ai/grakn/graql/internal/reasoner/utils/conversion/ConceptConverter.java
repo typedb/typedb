@@ -33,8 +33,6 @@ import ai.grakn.util.CommonUtil;
  */
 public interface ConceptConverter<T extends Concept> {
 
-    Pattern pattern(T concept);
-
     static Pattern toPattern(Concept concept) {
         if (!concept.isThing()){
             throw GraqlQueryException.conceptNotAThing(concept);

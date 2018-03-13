@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -91,7 +91,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>janus-factory</artifactId>
+            <artifactId>grakn-factory</artifactId>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->
@@ -148,7 +148,7 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
+                            <url>https://github.com/graknlabs/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>

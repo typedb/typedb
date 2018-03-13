@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -35,11 +35,6 @@
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
         </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-module-sdk</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-client</artifactId>
@@ -61,6 +56,10 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-grpc</artifactId>
         </dependency>
         <!-- Exposes metrics as a servlet -->
         <dependency>
@@ -113,6 +112,10 @@
         <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
         </dependency>
 
         <!-- Required For REST Components and Headers-->

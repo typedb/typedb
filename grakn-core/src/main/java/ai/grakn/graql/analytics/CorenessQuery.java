@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
@@ -44,6 +45,11 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
     CorenessQuery minK(long k);
 
     /**
+     * Get the min value of coreness in k-core.
+     */
+    long minK();
+
+    /**
      * @param ofTypeLabels an array of types in the subgraph to compute coreness of. By default the coreness of all
      *                     entities and attributes are computed.
      * @return a CorenessQuery with the subTypeLabels set
@@ -55,7 +61,13 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
      *                 entities and attributes are computed.
      * @return a CorenessQuery with the subTypeLabels set
      */
-    CorenessQuery of(Collection<Label> ofLabels);
+     @API
+     CorenessQuery of(Collection<Label> ofLabels);
+
+    /**
+     * Get the collection of types to execute the query on
+     */
+    Collection<? extends Label> targetLabels();
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph.
@@ -71,7 +83,7 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
      * @return a CorenessQuery with the subLabels set
      */
     @Override
-    CorenessQuery in(Collection<Label> subLabels);
+    CorenessQuery in(Collection<? extends Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on

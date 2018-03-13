@@ -41,13 +41,13 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (link-from: $x, link-to: $y) isa link;},
 then {
 (reach-from: $x, reach-to: $y) isa reachable;};
 
-rule-2 sub rule,
+rule-2
 when {
 (link-from: $x, link-to: $z) isa link;
 (reach-from: $z, reach-to: $y) isa reachable;},

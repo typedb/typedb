@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.API;
 import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
@@ -40,22 +41,26 @@ import java.util.Set;
 @JsonIgnoreProperties(value={"@id", "keyspace"}, allowGetters=true)
 public abstract class Keyspaces implements Jacksonisable{
 
+    @API
     @CheckReturnValue
     @JsonProperty
     public abstract Set<Keyspace> keyspaces();
 
+    @API
     @CheckReturnValue
     @JsonCreator
     public static Keyspaces of(@JsonProperty("keyspaces") Set<Keyspace> keyspaces){
         return new AutoValue_Keyspaces(keyspaces);
     }
 
+    @API
     @CheckReturnValue
     @JsonProperty("keyspace")
     public final Link keyspace() {
         return Link.create(REST.reformatTemplate(WebPath.KB_KEYSPACE));
     }
 
+    @API
     @CheckReturnValue
     @JsonProperty("@id")
     public String id(){

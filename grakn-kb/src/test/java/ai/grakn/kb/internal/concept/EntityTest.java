@@ -184,7 +184,7 @@ public class EntityTest extends TxTestBase {
         AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
         entityType.key(attributeType);
 
-        Entity entity = entityType.addEntity();
+        entityType.addEntity();
 
         expectedException.expect(InvalidKBException.class);
 

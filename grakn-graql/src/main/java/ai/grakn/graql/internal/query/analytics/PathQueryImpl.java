@@ -18,31 +18,31 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.nullableIdToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQuery> implements PathQuery {
 
-    private ConceptId sourceId = null;
-    private ConceptId destinationId = null;
+    private @Nullable ConceptId sourceId = null;
+    private @Nullable ConceptId destinationId = null;
 
-    PathQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    PathQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Optional<List<Concept>> execute() {
-        PathsQuery pathsQuery = new PathsQueryImpl(tx);
-        if (includeAttribute) pathsQuery = pathsQuery.includeAttribute();
-        return pathsQuery.from(sourceId).to(destinationId).in(subLabels).execute().stream().findAny();
+    public final ComputeJob<Optional<List<Concept>>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override
@@ -52,14 +52,27 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
     }
 
     @Override
+    public final ConceptId from() {
+        if (sourceId == null) throw GraqlQueryException.noPathSource();
+        return sourceId;
+    }
+
+    @Override
     public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
     }
 
     @Override
-    String graqlString() {
-        return "path from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
+    public final ConceptId to() {
+        if (destinationId == null) throw GraqlQueryException.noPathDestination();
+        return destinationId;
+    }
+
+    @Override
+    final String graqlString() {
+        return "path from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
+                + subtypeString();
     }
 
     @Override
@@ -70,14 +83,15 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>, PathQu
 
         PathQueryImpl pathQuery = (PathQueryImpl) o;
 
-        return sourceId.equals(pathQuery.sourceId) && destinationId.equals(pathQuery.destinationId);
+        if (sourceId != null ? !sourceId.equals(pathQuery.sourceId) : pathQuery.sourceId != null) return false;
+        return destinationId != null ? destinationId.equals(pathQuery.destinationId) : pathQuery.destinationId == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + destinationId.hashCode();
+        result = 31 * result + (sourceId != null ? sourceId.hashCode() : 0);
+        result = 31 * result + (destinationId != null ? destinationId.hashCode() : 0);
         return result;
     }
 }

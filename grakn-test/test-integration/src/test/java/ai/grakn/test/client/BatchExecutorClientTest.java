@@ -22,13 +22,10 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.GraknClientException;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import mjson.Json;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -119,17 +116,15 @@ class GraknClientFake implements GraknClient {
     }
 
     @Override
-    public List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException {
+    public List graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException {
         queriesExecuted.addAll(queryList);
 
         if (exceptionToThrow != null) {
             throw exceptionToThrow;
         }
 
-        return Lists.transform(queryList, query -> {
-            assert query != null;
-            return new QueryResponse(query, Json.object("response", "I ran query " + query));
-        });
+        queryList.stream().forEach(query -> {assert query != null;});
+        return queryList;
     }
 
     @Override

@@ -18,6 +18,9 @@
 
 package ai.grakn.bootup;
 
+import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.GraknConfig;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,8 +30,9 @@ import java.time.LocalDateTime;
  *
  * @author Michele Orsi
  */
-public class QueueProcess extends AbstractProcessHandler implements ProcessHandler {
+public class QueueProcess extends AbstractProcessHandler {
     private static final String QUEUE_PROCESS_NAME = "redis-server";
+    private static final String CONFIG_LOCATION = "/services/redis/redis.conf";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
     private static final String NAME = "Queue";
@@ -56,9 +60,9 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
         // queue needs to be ran with $GRAKN_HOME as the working directory
         // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
-                homePath +"/services/redis/"+queueBin+" "+ homePath +"/services/redis/redis.conf"
+                homePath +"/services/redis/"+queueBin+" "+ homePath + CONFIG_LOCATION
         },null,homePath.toFile());
 
         LocalDateTime init = LocalDateTime.now();
@@ -99,14 +103,20 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
         int pid = retrievePid(QUEUE_PID);
         if (pid <0 ) return;
 
+        String host = getHostFromConfig();
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
-                homePath + "/services/redis/" + queueBin + " shutdown"
+                homePath + "/services/redis/" + queueBin + " -h " + host + " shutdown"
         }, null, null);
 
         waitUntilStopped(QUEUE_PID,pid);
+    }
+
+    private String getHostFromConfig() {
+        Path fileLocation = Paths.get(homePath.toString(), CONFIG_LOCATION);
+        return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
 
     public void status() {
@@ -124,7 +134,7 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
 
         executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
                 homePath.resolve(Paths.get("services", "redis", queueBin))+" flushall"
         },null,null);

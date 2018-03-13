@@ -18,12 +18,18 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.GraknTx;
 import ai.grakn.graql.ComputeQuery;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Optional;
 
 abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
         extends AbstractComputeQuery<T, V> {
+    AbstractClusterQuery(Optional<GraknTx> tx) {
+        super(tx);
+    }
+
     /**
      * The centrality measures supported.
      */

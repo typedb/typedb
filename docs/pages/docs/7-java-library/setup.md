@@ -15,7 +15,7 @@ All Grakn applications require the following Maven dependency:
 
 ```xml
 <properties>
-  <grakn.version>0.12.0</grakn.version>
+  <grakn.version>1.1.0</grakn.version>
 </properties>
 
 <dependencies>
@@ -38,7 +38,7 @@ Depending on the configuration of the Grakn server, your Java application will r
 ```xml   
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>janus-factory</artifactId>
+    <artifactId>grakn-factory</artifactId>
     <version>${grakn.version}</version>
 </dependency>
 ```    

@@ -17,7 +17,6 @@
  */
 package ai.grakn;
 
-import static ai.grakn.SNB.FORUM;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import com.google.common.collect.ImmutableSet;
@@ -60,6 +59,7 @@ import static ai.grakn.SNB.EMAIL;
 import static ai.grakn.SNB.EMPLOYEE;
 import static ai.grakn.SNB.EMPLOYER;
 import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.FORUM;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
@@ -118,9 +118,12 @@ import static ai.grakn.graql.Graql.var;
  */
 public class GraknUpdateQueryHandlers {
 
+    private GraknUpdateQueryHandlers(){}
+
     /**
      * Update Query 1
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate1AddPersonHandler implements OperationHandler<LdbcUpdate1AddPerson, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcUpdate1AddPerson operation,
@@ -135,21 +138,21 @@ public class GraknUpdateQueryHandlers {
                 match.add($city.has(PLACE_ID, operation.cityId()));
 
                 for (Long theTag : operation.tagIds()) {
-                    Var $tag = var(theTag.toString());
-                    match.add($tag.isa(TAG).has(TAG_ID, theTag));
-                    insert.add(var().rel(INTERESTED, $person).rel(INTEREST, $tag).isa(HAS_INTEREST));
+                    Var tag = var(theTag.toString());
+                    match.add(tag.isa(TAG).has(TAG_ID, theTag));
+                    insert.add(var().rel(INTERESTED, $person).rel(INTEREST, tag).isa(HAS_INTEREST));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.studyAt()) {
-                    Var $org = var(Long.toString(org.organizationId()));
-                    match.add($org.isa(UNIVERSITY).has(ORGANISATION_ID, org.organizationId()));
-                    insert.add(var().rel(STUDENT, $person).rel(SCHOOL, $org).isa(STUDY_AT).has(CLASS_YEAR, org.year()));
+                    Var organisation = var(Long.toString(org.organizationId()));
+                    match.add(organisation.isa(UNIVERSITY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(STUDENT, $person).rel(SCHOOL, organisation).isa(STUDY_AT).has(CLASS_YEAR, org.year()));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.workAt()) {
-                    Var $org = var(Long.toString(org.organizationId()));
-                    match.add($org.isa(COMPANY).has(ORGANISATION_ID, org.organizationId()));
-                    insert.add(var().rel(EMPLOYEE, $person).rel(EMPLOYER, $org).isa(WORK_AT).has(WORK_FROM, org.year()));
+                    Var organisation = var(Long.toString(org.organizationId()));
+                    match.add(organisation.isa(COMPANY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(EMPLOYEE, $person).rel(EMPLOYER, organisation).isa(WORK_AT).has(WORK_FROM, org.year()));
                 }
 
                 insert.add($person.isa(PERSON)
@@ -184,6 +187,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 2
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate2AddPostLikeHandler implements OperationHandler<LdbcUpdate2AddPostLike, GraknDbConnectionState> {
 
         @Override
@@ -212,6 +216,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 3
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate3AddCommentLikeHandler implements OperationHandler<LdbcUpdate3AddCommentLike, GraknDbConnectionState> {
 
         @Override
@@ -241,6 +246,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 4
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate4AddForumHandler implements OperationHandler<LdbcUpdate4AddForum, GraknDbConnectionState> {
 
         @Override
@@ -255,10 +261,10 @@ public class GraknUpdateQueryHandlers {
 
                 match.add($mod.has(PERSON_ID, operation.moderatorPersonId()));
 
-                for (long tag : operation.tagIds()) {
-                    Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(TAG_ID, tag));
-                    insert.add(var().rel(TAGGED, $forum).rel(TOPIC, $tag).isa(HAS_TAG));
+                for (long tagId : operation.tagIds()) {
+                    Var tag = var(Long.toString(tagId));
+                    match.add(tag.has(TAG_ID, tagId));
+                    insert.add(var().rel(TAGGED, $forum).rel(TOPIC, tag).isa(HAS_TAG));
                 }
 
                 insert.add($forum.isa(FORUM)
@@ -281,6 +287,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 5
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate5AddForumMembershipHandler implements OperationHandler<LdbcUpdate5AddForumMembership, GraknDbConnectionState> {
 
         @Override
@@ -309,6 +316,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 6
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate6AddPostHandler implements OperationHandler<LdbcUpdate6AddPost, GraknDbConnectionState> {
 
         @Override
@@ -327,10 +335,10 @@ public class GraknUpdateQueryHandlers {
                         $country.has(PLACE_ID, operation.countryId())
                 );
 
-                for (long tag : operation.tagIds()) {
-                    Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(TAG_ID, tag));
-                    insert.add(var().rel(TAGGED, $post).rel(TOPIC, $tag).isa(HAS_TAG));
+                for (long tagId : operation.tagIds()) {
+                    Var tag = var(Long.toString(tagId));
+                    match.add(tag.has(TAG_ID, tagId));
+                    insert.add(var().rel(TAGGED, $post).rel(TOPIC, tag).isa(HAS_TAG));
                 }
 
                 insert.add($post.isa(POST).has(MESSAGE_ID, operation.postId())
@@ -365,6 +373,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 7
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate7AddCommentHandler implements OperationHandler<LdbcUpdate7AddComment, GraknDbConnectionState> {
 
         @Override
@@ -385,10 +394,10 @@ public class GraknUpdateQueryHandlers {
                 }
                 match.add($country.has(PLACE_ID, operation.countryId()));
 
-                for (long tag : operation.tagIds()) {
-                    Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(TAG_ID, tag));
-                    insert.add(var().rel(TAGGED, $comment).rel(TOPIC, $tag).isa(HAS_TAG));
+                for (long tagId : operation.tagIds()) {
+                    Var tag = var(Long.toString(tagId));
+                    match.add(tag.has(TAG_ID, tagId));
+                    insert.add(var().rel(TAGGED, $comment).rel(TOPIC, tag).isa(HAS_TAG));
                 }
 
                 insert.add(
@@ -417,6 +426,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 8
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate8AddFriendshipHandler implements OperationHandler<LdbcUpdate8AddFriendship, GraknDbConnectionState> {
 
         @Override
@@ -425,14 +435,14 @@ public class GraknUpdateQueryHandlers {
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-                Var $person1 = var("person1");
-                Var $person2 = var("person2");
+                Var person1 = var("person1");
+                Var person2 = var("person2");
 
                 graph.graql().match(
-                        $person1.has(PERSON_ID, operation.person1Id()),
-                        $person2.has(PERSON_ID, operation.person2Id())
+                        person1.has(PERSON_ID, operation.person1Id()),
+                        person2.has(PERSON_ID, operation.person2Id())
                 ).insert(var()
-                        .rel(FRIEND, $person1).rel(FRIEND, $person2).isa(KNOWS)
+                        .rel(FRIEND, person1).rel(FRIEND, person2).isa(KNOWS)
                         .has(CREATION_DATE, fromDate(operation.creationDate()))
                 ).execute();
 

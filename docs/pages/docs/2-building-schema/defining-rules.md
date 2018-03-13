@@ -48,7 +48,7 @@ The implication form of Horn clauses aligns more naturally with Graql semantics 
 In Graql we refer to the body of the rule as the "when" of the rule (antecedent of the implication) and the head as the "then" of the rule (consequent of the implication). Therefore, in Graql terms, we define rule objects in the following way:
 
 ```graql-test-ignore
-optional-label sub rule,
+optional-label
 when {
     ...;
     ...;
@@ -68,7 +68,7 @@ A classic reasoning example is the ancestor example. The two Graql rules `R1` an
 ```graql
 define
 
-R1 sub rule,
+R1
 when {
     (parent: $p, child: $c) isa Parent;
 },
@@ -76,7 +76,7 @@ then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
-R2 sub rule,
+R2
 when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;

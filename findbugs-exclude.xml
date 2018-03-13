@@ -18,9 +18,12 @@
 
 <FindBugsFilter>
 
-    <!-- Exclude generated ANTLR classes -->
+    <!-- Exclude generated ANTLR and protobuffer classes -->
     <Match>
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
+    </Match>
+    <Match>
+        <Class name="~ai\.grakn\.rpc\.generated\..*"/>
     </Match>
 
     <!-- Exclude mocked tasks in engine-->
@@ -40,6 +43,7 @@
             <Class name="ai.grakn.concept.Label"/>
             <Class name="ai.grakn.concept.LabelId"/>
             <Class name="ai.grakn.Keyspace"/>
+            <Class name="ai.grakn.remote.concept.RemoteConcept"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>

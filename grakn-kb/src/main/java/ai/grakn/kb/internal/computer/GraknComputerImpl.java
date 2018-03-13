@@ -20,7 +20,6 @@ package ai.grakn.kb.internal.computer;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.concept.LabelId;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -113,18 +112,6 @@ public class GraknComputerImpl implements GraknComputer {
             return (RuntimeException) cause;
         } else {
             return new RuntimeException(cause);
-        }
-    }
-
-    /**
-     * @return A graph compute supported by this grakn graph
-     */
-    @SuppressWarnings("unchecked")
-    protected Class<? extends GraphComputer> getGraphComputerClass(String graphComputerType) {
-        try {
-            return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_COMPUTER.getMessage(graphComputerType));
         }
     }
 

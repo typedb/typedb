@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.antlr.GraqlParser.QueryEOFContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryListContext;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.template.TemplateParser;
-import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -75,7 +74,7 @@ public class QueryParserImpl implements QueryParser {
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
-    public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
+    public static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
             "long", AttributeType.DataType.LONG,
             "double", AttributeType.DataType.DOUBLE,
             "string", AttributeType.DataType.STRING,
@@ -119,11 +118,6 @@ public class QueryParserImpl implements QueryParser {
     @Override
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, aggregateMethod);
-    }
-
-    @Override
-    public void registerMacro(Macro macro) {
-        templateParser.registerMacro(macro);
     }
 
     @Override
@@ -349,11 +343,11 @@ public class QueryParserImpl implements QueryParser {
             } catch (ParseCancellationException e) {
                 // If we're using the BailErrorStrategy, we will throw here
                 // This strategy is designed for parsing very large files and cannot provide useful error information
-                throw GraqlSyntaxException.parsingError("syntax error");
+                throw GraqlSyntaxException.create("syntax error");
             }
 
             if (errorListener.hasErrors()) {
-                throw GraqlSyntaxException.parsingError(errorListener.toString());
+                throw GraqlSyntaxException.create(errorListener.toString());
             }
 
             return visit(getQueryVisitor(), tree);

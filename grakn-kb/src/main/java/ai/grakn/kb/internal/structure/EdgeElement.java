@@ -19,7 +19,7 @@
 package ai.grakn.kb.internal.structure;
 
 import ai.grakn.GraknTx;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(GraknTxAbstract graknGraph, Edge e){
+    public EdgeElement(EmbeddedGraknTx graknGraph, Edge e){
         super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 

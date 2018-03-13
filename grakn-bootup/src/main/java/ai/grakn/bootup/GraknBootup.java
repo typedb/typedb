@@ -19,6 +19,7 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 
 import java.io.IOException;
@@ -55,20 +56,24 @@ public class GraknBootup {
             Path homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
             Path configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
 
-            if(!Files.exists(homeStatic.resolve("grakn"))) {
-                throw new RuntimeException("Cannot find home folder");
-            }
-            if(!Files.exists(homeStatic)) {
-                throw new RuntimeException("Cannot find config folder");
-            }
+            assertConfigurationCorrect(homeStatic, configStatic);
 
-            newDistGrakn(homeStatic, configStatic).run(args);
+            newGraknBootup(homeStatic, configStatic).run(args);
         } catch (RuntimeException ex) {
             System.out.println("Problem with bash script: cannot run Grakn");
         }
     }
 
-    private static GraknBootup newDistGrakn(Path homePathFolder, Path configPath) {
+    private static void assertConfigurationCorrect(Path homeStatic, Path configStatic) {
+        if (!homeStatic.resolve(GRAKN).toFile().exists()) {
+            throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
+        }
+        if (!configStatic.toFile().exists()) {
+            throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_CONFIG_FOLDER.getMessage());
+        }
+    }
+
+    private static GraknBootup newGraknBootup(Path homePathFolder, Path configPath) {
         return new GraknBootup(new StorageProcess(homePathFolder),
                 new QueueProcess(homePathFolder),
                 new GraknProcess(homePathFolder, configPath));
@@ -93,7 +98,7 @@ public class GraknBootup {
 
     public static void printAscii() {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
-        if(Files.exists(ascii)) {
+        if(ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
             } catch (IOException e) {

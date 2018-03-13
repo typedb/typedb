@@ -18,10 +18,8 @@
 # <http://www.gnu.org/licenses/gpl.txt>.
 
 # Grakn global variables
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-fi
+[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 
 # ================================================
 # common helper functions
@@ -36,7 +34,7 @@ update_classpath_global_var() {
 
   # Add path containing grakn.properties and logback.xml
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn/server
 }
 
 # =============================================

@@ -19,8 +19,8 @@
 package ai.grakn.kb.internal.concept;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -34,9 +34,6 @@ import java.time.LocalDateTime;
 import java.util.TimeZone;
 import java.util.regex.PatternSyntaxException;
 
-import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -129,7 +126,7 @@ public class AttributeTypeTest extends TxTestBase {
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
 
         //Future Invalid
-        Attribute<String> attribute = t2.putAttribute("a");
+        t2.putAttribute("a");
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(t2, "a", "[b]").getMessage());
@@ -140,7 +137,7 @@ public class AttributeTypeTest extends TxTestBase {
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
-        Attribute<String> attribute = t2.putAttribute("a");
+        t2.putAttribute("a");
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(t1, "a", "[b]").getMessage());

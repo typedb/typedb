@@ -18,66 +18,23 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
+import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements DegreeQuery {
 
-    DegreeQueryImpl(Optional<GraknTx> graph) {
-        this.tx = graph;
+    DegreeQueryImpl(Optional<GraknTx> tx) {
+        super(tx);
     }
 
     @Override
-    public Map<Long, Set<String>> execute() {
-        LOGGER.info("Degree query started");
-        long startTime = System.currentTimeMillis();
-
-        initSubGraph();
-        getAllSubTypes();
-
-        // Check if ofType is valid before returning emptyMap
-        if (ofLabels.isEmpty()) {
-            ofLabels.addAll(subLabels);
-        } else {
-            ofLabels = ofLabels.stream()
-                    .flatMap(typeLabel -> {
-                        Type type = tx.get().getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        return type.subs();
-                    })
-                    .map(SchemaConcept::getLabel)
-                    .collect(Collectors.toSet());
-            subLabels.addAll(ofLabels);
-        }
-
-        if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Degree query finished in " + (System.currentTimeMillis() - startTime) + " ms");
-            return Collections.emptyMap();
-        }
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
-
-        ComputerResult result = getGraphComputer().compute(
-                new DegreeVertexProgram(ofLabelIds),
-                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                subLabelIds);
-
-        LOGGER.info("Degree query finished in " + (System.currentTimeMillis() - startTime) + " ms");
-        return result.memory().get(DegreeDistributionMapReduce.class.getName());
+    public final ComputeJob<Map<Long, Set<String>>> createJob() {
+        return queryRunner().run(this);
     }
 
     @Override

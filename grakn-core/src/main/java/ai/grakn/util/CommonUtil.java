@@ -23,7 +23,6 @@ import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -195,36 +194,6 @@ public class CommonUtil {
             @Override
             public Function<ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> finisher() {
                 return ImmutableMultiset.Builder::build;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return ImmutableSet.of();
-            }
-        };
-    }
-
-    public static Collector<Object, ?, Json> toJsonArray() {
-        return new Collector<Object, Json, Json>() {
-
-            @Override
-            public Supplier<Json> supplier() {
-                return Json::array;
-            }
-
-            @Override
-            public BiConsumer<Json, Object> accumulator() {
-                return Json::add;
-            }
-
-            @Override
-            public BinaryOperator<Json> combiner() {
-                return Json::with;
-            }
-
-            @Override
-            public Function<Json, Json> finisher() {
-                return Function.identity();
             }
 
             @Override

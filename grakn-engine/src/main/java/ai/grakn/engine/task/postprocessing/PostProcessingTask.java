@@ -19,13 +19,14 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,12 +48,14 @@ public class PostProcessingTask implements BackgroundTask{
     private final EngineGraknTxFactory factory;
     private final IndexPostProcessor indexPostProcessor;
     private final ScheduledExecutorService threadPool;
+    private final int postProcessingMaxJobs;
     private final int postprocessingDelay;
 
     public PostProcessingTask(EngineGraknTxFactory factory,  IndexPostProcessor indexPostProcessor, GraknConfig config){
         this.factory = factory;
         this.indexPostProcessor = indexPostProcessor;
-        this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
+        this.postProcessingMaxJobs = config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE);
+        this.threadPool = Executors.newScheduledThreadPool(postProcessingMaxJobs);
         this.postprocessingDelay = config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY);
     }
 
@@ -60,10 +63,14 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
-            String index = indexPostProcessor.popIndex(keyspace);
-            if(index != null) {
-                threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
-            }
+            String index;
+            int limit = 0;
+            do{
+                 index = indexPostProcessor.popIndex(keyspace);
+                 final String i = index;
+                 if(index != null) threadPool.schedule(() -> processIndex(keyspace, i), postprocessingDelay, TimeUnit.SECONDS);
+                 limit++;
+            } while(index != null && limit < postProcessingMaxJobs);
         });
     }
 
@@ -80,10 +87,10 @@ public class PostProcessingTask implements BackgroundTask{
         //No need to post process if another engine has beaten you to doing it
         if(ids.isEmpty()) return;
 
-        try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
+        try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)){
             indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
-        } catch (Exception e){
+        } catch (RuntimeException e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
             LOG.error(String.format("Error during post processing index {%s} with ids {%s}", index, stringIds), e);
         }

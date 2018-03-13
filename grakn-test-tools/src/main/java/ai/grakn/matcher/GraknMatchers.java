@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Match;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -74,27 +73,6 @@ public class GraknMatchers {
             @Override
             Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(Streamable<? extends Answer> item) {
                 return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
-            }
-        };
-    }
-
-    /**
-     * Create a matcher to test against every variable of every result of a Graql query.
-     */
-    public static Matcher<Match> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
-        return new PropertyMatcher<Match, Iterable<? extends MatchableConcept>>(matcher) {
-
-            @Override
-            public String getName() {
-                return "allVariables";
-            }
-
-            @Override
-            Iterable<? extends MatchableConcept> transform(Match item) {
-                return item.stream()
-                        .flatMap(result -> result.concepts().stream())
-                        .map(MatchableConcept::of)
-                        .collect(toList());
             }
         };
     }

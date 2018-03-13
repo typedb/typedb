@@ -525,6 +525,11 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
+    }
+
+    @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse(
@@ -1060,6 +1065,13 @@ public class QueryParserTest {
         IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
+    }
+
+    @Test
+    public void whenValueEqualityToString_CreateValidQueryString() {
+        Query<?> query = match(var("x").val(eq(var("y")))).get();
+
+        assertEquals(query, Graql.parse(query.toString()));
     }
 
     private static void assertParseEquivalence(String query) {
