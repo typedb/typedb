@@ -132,7 +132,7 @@ launch_service()
 }
 
 # Parse any command line options.
-args=`getopt vfhp:f:bD:H:E: "$@"`
+args=`getopt vfhp:l:bD:H:E: "$@"`
 eval set -- "$args"
 
 classname="org.apache.cassandra.service.CassandraDaemon"

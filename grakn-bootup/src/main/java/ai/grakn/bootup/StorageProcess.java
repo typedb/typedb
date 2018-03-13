@@ -37,7 +37,6 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
-    private static final String STORAGE_DEFAULT_LOG_DIR = "./logs/";
     private static final String CASSANDRA = "cassandra";
     private static final String NAME = "Storage";
 
@@ -60,10 +59,9 @@ public class StorageProcess extends AbstractProcessHandler {
 
     private Path getStorageLogPath(){
         //make the path absolute to avoid cassandra confusion
-        String logDirString = graknConfig.properties().containsKey(GraknConfigKey.LOG_DIR)?
-                graknConfig.getProperty(GraknConfigKey.LOG_DIR) : STORAGE_DEFAULT_LOG_DIR;
-        Path logDirPath = Paths.get(logDirString);
-        return logDirPath.isAbsolute()? logDirPath : Paths.get(homePath.toString(), logDirString);
+        String logDirString = graknConfig.getProperty(GraknConfigKey.LOG_DIR);
+        Path logDirPath = Paths.get(graknConfig.getProperty(GraknConfigKey.LOG_DIR));
+        return logDirPath.isAbsolute() ? logDirPath : Paths.get(homePath.toString(), logDirString);
     }
 
     private void storageStartProcess() {
