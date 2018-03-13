@@ -35,7 +35,7 @@ import java.util.Scanner;
  */
 public class GraknBootup {
 
-    private static final String GRAKN = "grakn";
+    private static final String ENGINE = "engine";
     private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
@@ -65,7 +65,7 @@ public class GraknBootup {
     }
 
     private static void assertConfigurationCorrect(Path homeStatic, Path configStatic) {
-        if (!homeStatic.resolve(GRAKN).toFile().exists()) {
+        if (!homeStatic.resolve("grakn").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!configStatic.toFile().exists()) {
@@ -171,7 +171,7 @@ public class GraknBootup {
 
     private void serverStop(String arg) {
         switch (arg) {
-            case GRAKN:
+            case ENGINE:
                 graknProcess.stop();
                 break;
             case QUEUE:
@@ -189,7 +189,7 @@ public class GraknBootup {
 
     private void serverStart(String arg) {
         switch (arg) {
-            case GRAKN:
+            case ENGINE:
                 try {
                     graknProcess.start();
                 } catch (ProcessNotStartedException e) {
@@ -225,8 +225,8 @@ public class GraknBootup {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
-                "start [grakn|queue|storage]  Start Grakn (or optionally, only one of the component)\n" +
-                "stop [grakn|queue|storage]   Stop Grakn (or optionally, only one of the component)\n" +
+                "start ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]  Start Grakn (or optionally, only one of the component)\n" +
+                "stop ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
                 "status                         Check if Grakn is running\n" +
                 "clean                          DANGEROUS: wipe data completely\n" +
                 "\n" +

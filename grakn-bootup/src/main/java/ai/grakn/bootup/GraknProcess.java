@@ -50,6 +50,8 @@ public class GraknProcess extends AbstractProcessHandler {
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
     public static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
+    private final String COMPONENT_NAME = "Engine";
+    private final String GRAKN_NAME = "Grakn";
 
     public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
@@ -64,7 +66,7 @@ public class GraknProcess extends AbstractProcessHandler {
     public void start() {
         boolean graknIsRunning = processIsRunning(GRAKN_PID);
         if(graknIsRunning) {
-            System.out.println(graknClass().getSimpleName()+" is already running");
+            System.out.println(COMPONENT_NAME + " is already running");
         } else {
             graknStartProcess();
         }
@@ -75,7 +77,7 @@ public class GraknProcess extends AbstractProcessHandler {
         File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
         File[] values = folder.listFiles(jarFiles);
         if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run "+graknClass().getSimpleName());
+            throw new RuntimeException("No libraries found: cannot run " + COMPONENT_NAME);
         }
         Stream<File> jars = Stream.of(values);
         File conf = new File(home + File.separator+"conf"+File.separator); // /conf
@@ -88,7 +90,7 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     private void graknStartProcess() {
-        System.out.print("Starting "+graknClass().getSimpleName()+"...");
+        System.out.print("Starting " + COMPONENT_NAME + "...");
         System.out.flush();
 
         String command = commandToRun();
@@ -119,7 +121,7 @@ public class GraknProcess extends AbstractProcessHandler {
         }
 
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+graknClass().getSimpleName());
+        System.out.println("Unable to start " + COMPONENT_NAME);
         throw new ProcessNotStartedException();
     }
 
@@ -143,19 +145,19 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     public void stop() {
-        stopProgram(GRAKN_PID,graknClass().getSimpleName());
+        stopProgram(GRAKN_PID, COMPONENT_NAME);
     }
 
     public void status() {
-        processStatus(GRAKN_PID, graknClass().getSimpleName());
+        processStatus(GRAKN_PID, COMPONENT_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getName()) +"' (from ps -ef)");
+        System.out.println(COMPONENT_NAME + " pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getName()) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+graknClass().getSimpleName()+"...");
+        System.out.print("Cleaning "+GRAKN_NAME+"...");
         System.out.flush();
         try {
             Path rootPath = homePath.resolve("logs");
@@ -167,7 +169,7 @@ public class GraknProcess extends AbstractProcessHandler {
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+graknClass().getSimpleName());
+            System.out.println("Unable to clean "+GRAKN_NAME);
         }
     }
 
