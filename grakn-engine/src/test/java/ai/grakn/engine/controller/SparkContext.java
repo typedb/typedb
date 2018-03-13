@@ -55,6 +55,8 @@ public class SparkContext extends CompositeTestRule {
         if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
             config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, "localhost");
         }
+
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
     }
 
     private Service startSparkCopyOnNewPort() {
@@ -62,7 +64,9 @@ public class SparkContext extends CompositeTestRule {
 
         String hostName = config.getProperty(GraknConfigKey.SERVER_HOST_NAME);
 
-        GraknTestUtil.allocateSparkPort(config);
+        if (config.getProperty(GraknConfigKey.SERVER_PORT) == 0) {
+            GraknTestUtil.allocateSparkPort(config);
+        }
 
         configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH), 64);
         spark.init();
