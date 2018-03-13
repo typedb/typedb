@@ -49,7 +49,7 @@ public class GraknProcess extends AbstractProcessHandler {
     private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
-    public static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
+    public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
     private final String COMPONENT_NAME = "Engine";
     private final String GRAKN_NAME = "Grakn";
 
@@ -64,7 +64,7 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean graknIsRunning = processIsRunning(GRAKN_PID);
+        boolean graknIsRunning = processIsRunning(ENGINE_PID);
         if(graknIsRunning) {
             System.out.println(COMPONENT_NAME + " is already running");
         } else {
@@ -109,7 +109,7 @@ public class GraknProcess extends AbstractProcessHandler {
             String host = graknConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknConfig.getProperty(GraknConfigKey.SERVER_PORT);
 
-            if(processIsRunning(GRAKN_PID) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
+            if(processIsRunning(ENGINE_PID) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -126,7 +126,7 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     protected String commandToRun() {
-        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {
@@ -145,15 +145,15 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     public void stop() {
-        stopProgram(GRAKN_PID, COMPONENT_NAME);
+        stopProgram(ENGINE_PID, COMPONENT_NAME);
     }
 
     public void status() {
-        processStatus(GRAKN_PID, COMPONENT_NAME);
+        processStatus(ENGINE_PID, COMPONENT_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(COMPONENT_NAME + " pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getName()) +"' (from ps -ef)");
+        System.out.println(COMPONENT_NAME + " pid = '"+ getPidFromFile(ENGINE_PID).orElse("")+"' (from "+ ENGINE_PID +"), '"+ getPidFromPsOf(graknClass().getName()) +"' (from ps -ef)");
     }
 
     public void clean() {
@@ -174,6 +174,6 @@ public class GraknProcess extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return processIsRunning(GRAKN_PID);
+        return processIsRunning(ENGINE_PID);
     }
 }
