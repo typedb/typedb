@@ -22,7 +22,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
@@ -158,6 +160,16 @@ public final class ConceptMethod<T> {
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
                     .function(concept -> concept.asSchemaConcept().sup())
                     .build();
+
+    public static ConceptMethod<Void> setDirectSuperConcept(SchemaConcept schemaConcept) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetDirectSuperConcept(convert(schemaConcept)))
+                .function(concept -> {
+                    setSuper(concept.asSchemaConcept(), schemaConcept);
+                    return null;
+                })
+                .build();
+    }
 
     public static ConceptMethod<Void> removeRolePlayer(Role role, Thing player) {
         return builder(ConceptResponseType.UNIT)
@@ -317,6 +329,10 @@ public final class ConceptMethod<T> {
                 return GET_DIRECT_TYPE;
             case GETDIRECTSUPERCONCEPT:
                 return GET_DIRECT_SUPER;
+            case SETDIRECTSUPERCONCEPT:
+                GrpcConcept.Concept setDirectSuperConcept = conceptMethod.getSetDirectSuperConcept();
+                SchemaConcept schemaConcept = converter.convert(setDirectSuperConcept).asSchemaConcept();
+                return setDirectSuperConcept(schemaConcept);
             case UNSETROLEPLAYER:
                 GrpcConcept.RolePlayer removeRolePlayer = conceptMethod.getUnsetRolePlayer();
                 Role role = converter.convert(removeRolePlayer.getRole()).asRole();
@@ -420,6 +436,29 @@ public final class ConceptMethod<T> {
             Preconditions.checkNotNull(requestSetter);
             Preconditions.checkNotNull(function);
             return new ConceptMethod<>(requestSetter, function, responseType);
+        }
+    }
+
+    // TODO: This was copied from ConceptBuilder
+
+    /**
+     * Make the second argument the super of the first argument
+     *
+     * @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+     */
+    public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
+        if (superConcept.isEntityType()) {
+            subConcept.asEntityType().sup(superConcept.asEntityType());
+        } else if (superConcept.isRelationshipType()) {
+            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
+        } else if (superConcept.isRole()) {
+            subConcept.asRole().sup(superConcept.asRole());
+        } else if (superConcept.isAttributeType()) {
+            subConcept.asAttributeType().sup(superConcept.asAttributeType());
+        } else if (superConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
+        } else {
+            throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
         }
     }
 }

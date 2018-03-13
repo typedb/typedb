@@ -564,16 +564,10 @@ public class RemoteConceptsTest {
     }
 
     @Test
-    public void whenSettingSuper_ExecuteAQuery() {
-        Query<?> query = define(ME_ID, TARGET.id(A), ME.sub(TARGET));
-
+    public void whenSettingSuper_ExecuteAConceptMethod() {
         EntityType sup = RemoteConcepts.createEntityType(tx, A);
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), emptyQueryResultResponse());
-
         assertEquals(entityType, entityType.sup(sup));
-
-        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+        verify(server.requests()).onNext(GrpcUtil.runConceptMethodRequest(ID, ConceptMethod.setDirectSuperConcept(sup)));
     }
 
     @Test

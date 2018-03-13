@@ -40,7 +40,8 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
 
     public final Self sup(Self type) {
-        return define(type, ME.sub(TARGET));
+        runVoidMethod(ConceptMethod.setDirectSuperConcept(type));
+        return asSelf(this);
     }
 
     public final Self sub(Self type) {
