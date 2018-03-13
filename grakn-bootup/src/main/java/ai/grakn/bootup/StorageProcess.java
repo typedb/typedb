@@ -18,6 +18,9 @@
 
 package ai.grakn.bootup;
 
+import ai.grakn.bootup.config.ConfigProcessor;
+import ai.grakn.bootup.config.QueueConfig;
+import ai.grakn.bootup.config.StorageConfig;
 import ai.grakn.engine.GraknConfig;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +63,9 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
-        StorageConfigProcessor.updateConfigFromGraknConfig(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), graknConfig);
+        Path configPath = Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME);
+        StorageConfig storageConfig = StorageConfig.from(configPath);
+        ConfigProcessor.updateConfigFromGraknConfig(storageConfig, configPath, graknConfig);
 
         System.out.print("Starting "+NAME+"...");
         System.out.flush();

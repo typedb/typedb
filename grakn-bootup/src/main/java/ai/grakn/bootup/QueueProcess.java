@@ -19,12 +19,17 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.bootup.config.ConfigProcessor;
+import ai.grakn.bootup.config.QueueConfig;
+import ai.grakn.bootup.config.StorageConfig;
 import ai.grakn.engine.GraknConfig;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+
+import static ai.grakn.bootup.config.ConfigProcessor.getConfigStringFromFile;
 
 /**
  *
@@ -36,11 +41,15 @@ public class QueueProcess extends AbstractProcessHandler {
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
     private static final String NAME = "Queue";
+    private static final String QUEUE_CONFIG_PATH = "services/redis/";
+    private static final String QUEUE_CONFIG_NAME = "redis.conf";
 
     private final Path homePath;
+    private final GraknConfig graknConfig;
 
-    public QueueProcess(Path homePath) {
+    public QueueProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
+        this.graknConfig = GraknConfig.read(configPath.toFile());
     }
 
     public void start() {
@@ -52,6 +61,10 @@ public class QueueProcess extends AbstractProcessHandler {
         }
     }
     private void queueStartProcess() {
+        Path configPath = Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME);
+        QueueConfig queueConfig = QueueConfig.from(Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME));
+        ConfigProcessor.updateConfigFromGraknConfig(queueConfig, configPath, graknConfig);
+
         System.out.print("Starting "+NAME+"...");
         System.out.flush();
         String queueBin = selectCommand("redis-server-osx","redis-server-linux");

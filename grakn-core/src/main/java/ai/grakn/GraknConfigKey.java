@@ -98,6 +98,7 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");
     public static final GraknConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
     public static final GraknConfigKey<String> DATA_DIR = key("data-dir");
+    public static final GraknConfigKey<String> LOG_DIR = key("log.dirs");
 
     public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =
             key("test.start.embedded.components", BOOL);

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.bootup.config;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
@@ -25,10 +25,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,17 +37,20 @@ import java.util.stream.Collectors;
  *
  * @author Kasper Piskorski
  */
-public class StorageConfig {
+public class StorageConfig extends ProcessConfig {
 
-    private final ImmutableMap<String, Object> yamlParams;
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
     private static final String SAVED_CACHES_SUBDIR = "cassandra/saved_caches";
     private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
     private static final String DATA_SUBDIR = "cassandra/data";
 
-    private StorageConfig(Map<String, Object> yamlParams){
-        this.yamlParams = ImmutableMap.copyOf(yamlParams);
+    private StorageConfig(Map<String, Object> yamlParams){ super(yamlParams); }
+
+    public static StorageConfig of(String yaml) { return new StorageConfig(StorageConfig.parseStringToMap(yaml)); }
+    public static StorageConfig from(Path configPath){
+        String configString = ConfigProcessor.getConfigStringFromFile(configPath);
+        return of(configString);
     }
 
     private static Map<String, Object> parseStringToMap(String yaml){
@@ -62,55 +65,39 @@ public class StorageConfig {
         }
     }
 
-    public static StorageConfig of(String yaml) {
-        return new StorageConfig(parseStringToMap(yaml));
-    }
-
-    public String toYamlString() {
+    @Override
+    public String toConfigString() {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
         try {
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
-            mapper.writeValue(outputstream, yamlParams);
+            mapper.writeValue(outputstream, params());
             return outputstream.toString(StandardCharsets.UTF_8.name());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private StorageConfig updateDataDirs(GraknConfig config) {
+    private StorageConfig updateDirs(GraknConfig config) {
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
 
-        ImmutableMap<String, Object> dataParams = ImmutableMap.of(
+        ImmutableMap<String, Object> dirParams = ImmutableMap.of(
                 "data_file_directories", Collections.singletonList(dbDir + DATA_SUBDIR),
                 "saved_caches_directory", dbDir + SAVED_CACHES_SUBDIR,
                 "commitlog_directory", dbDir + COMMITLOG_SUBDIR
         );
-        Map<String, Object> updatedParams = Maps.newHashMap(yamlParams);
-        dataParams.keySet().stream()
-                .filter(updatedParams::containsKey)
-                .forEach(dp -> updatedParams.put(dp, dataParams.get(dp)));
-        return new StorageConfig(updatedParams);
+        return new StorageConfig(this.updateParamsFromMap(dirParams));
     }
 
-    private StorageConfig updateGenericParams(GraknConfig config) {
-        //overwrite params with params from grakn config
-        Map<String, Object> updatedParams = Maps.newHashMap(yamlParams);
-        config.properties()
-                .stringPropertyNames()
-                .stream()
-                .filter(prop -> prop.contains(CONFIG_PARAM_PREFIX))
-                .forEach(prop -> {
-                    String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
-                    if (updatedParams.containsKey(param)) {
-                        updatedParams.put(param, config.properties().getProperty(prop));
-                    }
-                });
-        return new StorageConfig(updatedParams);
+    @Override
+    public StorageConfig updateGenericParams(GraknConfig config) {
+        return new StorageConfig(this.updateParamsFromConfig(CONFIG_PARAM_PREFIX, config));
     }
 
+    @Override
     public StorageConfig updateFromConfig(GraknConfig config){
         return this
                 .updateGenericParams(config)
-                .updateDataDirs(config);
+                .updateDirs(config);
     }
+
 }
