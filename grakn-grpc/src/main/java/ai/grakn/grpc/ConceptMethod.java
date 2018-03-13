@@ -273,6 +273,8 @@ public final class ConceptMethod<T> {
                     .build();
 
     public static ConceptMethod<?> fromGrpc(GrpcConceptConverter converter, GrpcConcept.ConceptMethod conceptMethod) {
+        Role[] roles;
+
         switch (conceptMethod.getConceptMethodCase()) {
             case GETVALUE:
                 return GET_VALUE;
@@ -333,6 +335,18 @@ public final class ConceptMethod<T> {
                 return getAttributesByTypes(attributeTypes);
             case GETRELATIONSHIPS:
                 return GET_RELATIONSHIPS;
+            case GETSUBCONCEPTS:
+                return GET_SUB_CONCEPTS;
+            case GETRELATIONSHIPSBYROLES:
+                roles = convert(converter, conceptMethod.getGetRelationshipsByRoles()).toArray(Role[]::new);
+                return getRelationshipsByRoles(roles);
+            case GETROLESPLAYEDBYTHING:
+                return GET_ROLES_PLAYED_BY_THING;
+            case GETKEYS:
+            case GETKEYSBYTYPES:
+            case GETROLEPLAYERSBYROLES:
+                roles = convert(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
+                return getRolePlayersByRoles(roles);
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);
