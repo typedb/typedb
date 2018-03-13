@@ -351,6 +351,32 @@ public class RemoteConceptsTest {
     }
 
     @Test
+    public void whenCallingKeysWithNoArguments_GetTheExpectedResult() {
+        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
+        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
+        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+
+        mockPropertyResponse(ConceptMethod.GET_KEYS, Stream.of(a, b, c));
+
+        assertThat(thing.keys().collect(toSet()), containsInAnyOrder(a, b, c));
+    }
+
+    @Test
+    public void whenCallingKeysWithArguments_GetTheExpectedResult() {
+        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, ConceptId.of("foo"));
+        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, ConceptId.of("bar"));
+        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, ConceptId.of("baz"));
+
+        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
+        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
+        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+
+        mockPropertyResponse(ConceptMethod.getKeysByTypes(foo, bar, baz), Stream.of(a, b, c));
+
+        assertThat(thing.keys(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
+    }
+
+    @Test
     public void whenCallingPlays_GetTheExpectedResult() {
         Role a = RemoteConcepts.createRole(tx, A);
         Role b = RemoteConcepts.createRole(tx, B);

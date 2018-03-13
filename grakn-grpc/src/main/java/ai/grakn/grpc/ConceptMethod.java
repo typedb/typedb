@@ -210,6 +210,19 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
+    public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS =
+            builder(ConceptResponseType.CONCEPTS)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetKeys)
+                    .function(concept -> concept.asThing().keys())
+                    .build();
+
+    public static ConceptMethod<Stream<? extends Concept>> getKeysByTypes(AttributeType<?>... attributeTypes) {
+        return builder(ConceptResponseType.CONCEPTS)
+                .requestSetter(builder -> builder.setGetKeysByTypes(convert(Stream.of(attributeTypes))))
+                .function(concept -> concept.asThing().keys(attributeTypes))
+                .build();
+    }
+
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByType)
@@ -343,7 +356,11 @@ public final class ConceptMethod<T> {
             case GETROLESPLAYEDBYTHING:
                 return GET_ROLES_PLAYED_BY_THING;
             case GETKEYS:
+                return GET_KEYS;
             case GETKEYSBYTYPES:
+                GrpcConcept.Concepts getKeyTypes = conceptMethod.getGetAttributesByTypes();
+                AttributeType<?>[] keyTypes = convert(converter, getKeyTypes).toArray(AttributeType[]::new);
+                return getKeysByTypes(keyTypes);
             case GETROLEPLAYERSBYROLES:
                 roles = convert(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
                 return getRolePlayersByRoles(roles);

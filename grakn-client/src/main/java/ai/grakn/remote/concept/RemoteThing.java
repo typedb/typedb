@@ -29,14 +29,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptMethod;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -95,18 +91,15 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        // Cheat by looking up allowed keys
-        // TODO: don't cheat
-        Set<AttributeType> keys;
-        Set<AttributeType> allowedKeys = type().keys().collect(toSet());
+        ConceptMethod<Stream<? extends Concept>> method;
 
-        if (attributeTypes.length > 0) {
-            keys = Sets.intersection(allowedKeys, ImmutableSet.copyOf(attributeTypes));
+        if (attributeTypes.length == 0) {
+            method = ConceptMethod.GET_KEYS;
         } else {
-            keys = allowedKeys;
+            method = ConceptMethod.getKeysByTypes(attributeTypes);
         }
 
-        return attributes(keys.toArray(new AttributeType[keys.size()]));
+        return runMethod(method).map(Concept::asAttribute);
     }
 
     @Override
