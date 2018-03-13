@@ -6,7 +6,7 @@ GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
 REDIS_DATA_DIR=./db/redis
 
 STORAGE_PID=/tmp/grakn-storage.pid
-GRAKN_PID=/tmp/grakn.pid
+GRAKN_PID=/tmp/grakn-engine.pid
 QUEUE_PID=/tmp/grakn-queue.pid
 
 must_properly_start() {
