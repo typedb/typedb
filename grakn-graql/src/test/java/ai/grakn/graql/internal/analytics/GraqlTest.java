@@ -191,7 +191,7 @@ public class GraqlTest {
             assertTrue(memberMap.isEmpty());
 
             Query<?> parsed = graph.graql().parse("compute cluster of V123;");
-            Query<?> expected = graph.graql().compute().connectedComponent().of(ConceptId.of("V123"));
+            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().of(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }
     }

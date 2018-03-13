@@ -30,8 +30,6 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
     private long k = -1L;
 
-    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
-
     KCoreQueryImpl(Optional<GraknTx> tx) {
         super(tx);
     }

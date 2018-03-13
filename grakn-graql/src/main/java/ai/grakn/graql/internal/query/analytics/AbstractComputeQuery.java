@@ -99,7 +99,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public V includeAttribute() {
+    public final V includeAttribute() {
         this.includeAttribute = true;
         return (V) this;
     }

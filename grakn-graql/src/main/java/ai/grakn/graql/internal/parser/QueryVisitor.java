@@ -299,7 +299,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
-        ConnectedComponentQuery<?> cluster = queryBuilder.compute().connectedComponent();
+        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
         if (ctx.id() != null) {
             cluster = cluster.of(visitId(ctx.id()));
@@ -330,7 +330,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery degree = queryBuilder.compute().degree();
+        DegreeQuery degree = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
