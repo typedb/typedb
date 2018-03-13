@@ -8,22 +8,22 @@ permalink: /docs/java-library/core-api
 folder: docs
 ---
 
-The Core API is the low level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). The API provides Java object constructs for ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build a knowledge base programmatically.
+The Core API is the low level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). The API provides Java object constructs for ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build a knowledge graph programmatically.
 
 To get set up to use this API, please read through our [Setup Guide](../get-started/setup-guide) and guide to [starting Java development with GRAKN.AI](./setup).
 
 ## Core API
 
-On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge base mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge base, as well as doing simple concept lookups the `GraknTx` interface will be sufficient.
+On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient.
 
-It is also possible to interact with the knowledge base using a Core API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
+It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
 
 ## Building a Schema with the Core API
 
 In the [Basic Schema documentation](../building-schema/basic-schema) we introduced a simple schema built using Graql.
 Let's see how we can build the same schema exclusively via the Core API.
-First we need a knowledge base. For this example we will just use an
-[in-memory knowledge base](./setup#initialising-a-transaction-on-the-knowledge-base):
+First we need a knowledge graph. For this example we will just use an
+[in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java
 GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);
@@ -146,7 +146,7 @@ If you do not wish to commit the schema you can revert your changes with:
 tx.abort();
 ```
 
-{% include note.html content="When using the in-memory knowledge base, mutations to the knowledge base are performed directly." %}
+{% include note.html content="When using the in-memory knowledge graph, mutations to the knowledge graph are performed directly." %}
 
 
 ## Loading Data
@@ -236,7 +236,7 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 
 ## Rule Core API
 
-Rules can be added to the knowledge base both through the Core API as well as through Graql. We will consider an example:
+Rules can be added to the knowledge graph both through the Core API as well as through Graql. We will consider an example:
 
 ```graql
 define
