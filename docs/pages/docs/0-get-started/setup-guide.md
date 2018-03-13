@@ -48,7 +48,7 @@ Grakn Engine is configured by default to use port 4567, but this can be changed 
 
 To test that the installation is working correctly, we will load a simple schema and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip, or */usr/local/Cellar/grakn/\<version\>/libexec/examples* folder if you installed with brew.
 
-Type in the following in the terminal to load the example knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
+Type in the following in the terminal to load the example knowledge graph. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 
 ```bash
 ./graql console -f ./examples/basic-genealogy.gql

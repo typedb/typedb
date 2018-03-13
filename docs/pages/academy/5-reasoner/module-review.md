@@ -17,9 +17,9 @@ Make an example for which a logic inference engine improves the query results of
 
 
 ### Exercise 2: A new rule
-Add a rule to make the located-in relationship transitive in your knowledge base. This means, make sure that if A is located in B and B is located in C, you also have that A is located in C.
+Add a rule to make the located-in relationship transitive in your knowledge graph. This means, make sure that if A is located in B and B is located in C, you also have that A is located in C.
 
-Load the rule in the knowledge base and verify that everything has worked by querying for oil platforms located in North America.
+Load the rule in the knowledge graph and verify that everything has worked by querying for oil platforms located in North America.
 
 After that use the explanation facility on one of the results on the dashboard.
 

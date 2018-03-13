@@ -205,6 +205,7 @@ public interface AttributeType<D> extends Type {
      *
      * @return The data type to which instances of this {@link Attribute}  must conform.
      */
+    @Nullable
     @CheckReturnValue
     DataType<D> getDataType();
 

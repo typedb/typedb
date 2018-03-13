@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * Container class for storing and manipulating storage configuration.
  *
  * @author Kasper Piskorski
  */
@@ -55,8 +56,7 @@ public class StorageConfig {
         try {
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>(){};
             Map<String, Object> yamlParams = mapper.readValue(yaml, reference);
-            return yamlParams.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == null ? EMPTY_VALUE : e.getValue()));
+            return Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -86,9 +86,7 @@ public class StorageConfig {
                 "commitlog_directory", dbDir + COMMITLOG_SUBDIR
         );
         Map<String, Object> updatedParams = Maps.newHashMap(yamlParams);
-        dataParams.keySet().stream()
-                .filter(updatedParams::containsKey)
-                .forEach(dp -> updatedParams.put(dp, dataParams.get(dp)));
+        updatedParams.putAll(dataParams);
         return new StorageConfig(updatedParams);
     }
 
