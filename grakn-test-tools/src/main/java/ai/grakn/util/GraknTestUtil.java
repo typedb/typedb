@@ -18,7 +18,10 @@
 
 package ai.grakn.util;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.engine.GraknConfig;
+import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -50,9 +53,32 @@ public class GraknTestUtil {
     }
 
     /**
-     * Gets a port which a service can bind to.
+     * Allocates an unused port for Spark.
+     *
+     * <p>
+     * This should always be called <i>immediately</i> before Spark starts in order to minimise a potential race
+     * condition: in between finding an unused port and starting Spark, something else may steal the same port.
+     * </p>
+     *
+     * <p>
+     *     The correct way to solve this race condition is to specify the Spark port as 0. Then, Spark will allocate
+     *     the port itself. However, there is an issue where {@link Service#port()} will always report 0 even after
+     *     Spark has started.
+     * </p>
      */
-    public static int getEphemeralPort() {
+    public static void allocateSparkPort(GraknConfig config) {
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, getEphemeralPort());
+    }
+
+    /**
+     * Gets a port which a service can bind to.
+     *
+     * <p>
+     *     The port returned by this method will be unused at the time of calling. However, at any point afterwards
+     *     it is possible that something else will take the port.
+     * </p>
+     */
+    private static int getEphemeralPort() {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         } catch (IOException e) {
