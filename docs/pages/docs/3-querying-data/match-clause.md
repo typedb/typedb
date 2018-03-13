@@ -39,6 +39,24 @@ Match instances that have the given type. In the example, find all `person` enti
 </div> <!-- tab-content -->
 
 
+### isa!
+Match entities that are direct instances of the given type. In the example, find all `person` entities.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell1" data-toggle="tab">Graql</a></li>
+    <li><a href="#java1" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell1">
+<pre class="language-graql"><code>match $x isa! person; get;</code></pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java1">
+<pre  class="language-java"><code>qb.match(var("x").directIsa("person")).get();</code></pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+
 ### id
 Match concepts that have a system id that matches the [predicate](#predicates).  
 <ul id="profileTabs" class="nav nav-tabs">
