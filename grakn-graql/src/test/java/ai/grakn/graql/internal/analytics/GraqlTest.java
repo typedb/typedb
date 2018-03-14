@@ -33,7 +33,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
@@ -184,14 +184,14 @@ public class GraqlTest {
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
-                    graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
+                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster;").execute();
             assertTrue(sizeMap.isEmpty());
             Map<String, Set<String>> memberMap =
-                    graph.graql().<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
+                    graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
             assertTrue(memberMap.isEmpty());
 
             Query<?> parsed = graph.graql().parse("compute cluster of V123;");
-            Query<?> expected = graph.graql().compute().cluster().of(ConceptId.of("V123"));
+            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().of(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }
     }

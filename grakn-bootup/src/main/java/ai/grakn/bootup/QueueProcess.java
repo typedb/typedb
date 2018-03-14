@@ -21,15 +21,12 @@ package ai.grakn.bootup;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.bootup.config.ConfigProcessor;
 import ai.grakn.bootup.config.QueueConfig;
-import ai.grakn.bootup.config.StorageConfig;
 import ai.grakn.engine.GraknConfig;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-
-import static ai.grakn.bootup.config.ConfigProcessor.getConfigStringFromFile;
 
 /**
  *
@@ -40,9 +37,10 @@ public class QueueProcess extends AbstractProcessHandler {
     private static final String CONFIG_LOCATION = "/services/redis/redis.conf";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
-    private static final String NAME = "Queue";
+
     private static final String QUEUE_CONFIG_PATH = "services/redis/";
     private static final String QUEUE_CONFIG_NAME = "redis.conf";
+    private static final String COMPONENT_NAME = "Queue";
 
     private final Path homePath;
     private final GraknConfig graknConfig;
@@ -55,17 +53,17 @@ public class QueueProcess extends AbstractProcessHandler {
     public void start() {
         boolean queueRunning = processIsRunning(QUEUE_PID);
         if(queueRunning) {
-            System.out.println(NAME+" is already running");
+            System.out.println(COMPONENT_NAME +" is already running");
         } else {
             queueStartProcess();
         }
     }
     private void queueStartProcess() {
         Path configPath = Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME);
-        QueueConfig queueConfig = QueueConfig.from(Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME));
+        QueueConfig queueConfig = QueueConfig.from(configPath);
         ConfigProcessor.updateConfigFromGraknConfig(queueConfig, configPath, graknConfig);
 
-        System.out.print("Starting "+NAME+"...");
+        System.out.print("Starting "+ COMPONENT_NAME +"...");
         System.out.flush();
         String queueBin = selectCommand("redis-server-osx","redis-server-linux");
 
@@ -97,12 +95,12 @@ public class QueueProcess extends AbstractProcessHandler {
         }
 
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+NAME);
+        System.out.println("Unable to start "+ COMPONENT_NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        System.out.print("Stopping "+NAME+"...");
+        System.out.print("Stopping "+ COMPONENT_NAME +"...");
         System.out.flush();
         boolean queueIsRunning = processIsRunning(QUEUE_PID);
         if(!queueIsRunning) {
@@ -133,15 +131,15 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     public void status() {
-        processStatus(QUEUE_PID, NAME);
+        processStatus(QUEUE_PID, COMPONENT_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(NAME+" pid = '"+ getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(COMPONENT_NAME +" pid = '"+ getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+NAME+"...");
+        System.out.print("Cleaning "+ COMPONENT_NAME +"...");
         System.out.flush();
         start();
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");

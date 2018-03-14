@@ -22,7 +22,9 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.util.SimpleURI;
 import com.google.common.annotations.VisibleForTesting;
@@ -43,7 +45,7 @@ public class RemoteGraknSession implements GraknSession {
     private final SimpleURI uri;
     private final ManagedChannel channel;
 
-    private RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+    protected RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
         this.keyspace = keyspace;
         this.uri = uri;
         this.channel = channel;
@@ -55,7 +57,6 @@ public class RemoteGraknSession implements GraknSession {
     }
 
     public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
-        // TODO: usePlainText is insecure, because it is not encrypted
         ManagedChannel channel =
                 ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
 
@@ -66,9 +67,13 @@ public class RemoteGraknSession implements GraknSession {
         return GraknGrpc.newStub(channel);
     }
 
+    GraknBlockingStub blockingStub() {
+        return GraknGrpc.newBlockingStub(channel);
+    }
+
     @Override
     public RemoteGraknTx open(GraknTxType transactionType) {
-        return RemoteGraknTx.create(this, transactionType);
+        return RemoteGraknTx.create(this, GrpcUtil.openRequest(keyspace, transactionType));
     }
 
     @Override

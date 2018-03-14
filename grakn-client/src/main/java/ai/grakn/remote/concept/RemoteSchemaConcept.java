@@ -23,13 +23,15 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.grpc.ConceptProperty;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.grpc.ConceptMethod;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Set;
-import java.util.function.Predicate;
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 
 /**
@@ -37,35 +39,45 @@ import static ai.grakn.util.Schema.MetaSchema.THING;
  *
  * @param <Self> The exact type of this class
  */
-abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept implements SchemaConcept {
+abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
+
+    public final Self sup(Self type) {
+        return define(type, ME.sub(TARGET));
+    }
+
+    public final Self sub(Self type) {
+        return define(type, TARGET.sub(ME));
+    }
 
     @Override
     public final Label getLabel() {
-        return getProperty(ConceptProperty.LABEL);
+        return runMethod(ConceptMethod.GET_LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        return getProperty(ConceptProperty.IS_IMPLICIT);
+        return runMethod(ConceptMethod.IS_IMPLICIT);
     }
 
     @Override
     public final Self setLabel(Label label) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(ME.label(label));
     }
 
+    @Nullable
     @Override
-    public final Self sup() {
-        // TODO: We use a trick here because there's no "direct super" in Graql and we don't want to use gRPC for this.
-        // The direct super of this concept will have all of its indirect super-types, except the concept itself
-        Set<Self> expectedSups = sups().filter(concept -> !concept.equals(this)).collect(toImmutableSet());
-        Predicate<Self> hasExpectedSups = concept -> concept.sups().collect(toImmutableSet()).equals(expectedSups);
-        return expectedSups.stream().filter(hasExpectedSups).findAny().orElse(null);
+    public Self sup() {
+        Concept concept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
+        if (concept != null && notMetaThing(concept)) {
+            return asSelf(concept);
+        } else {
+            return null;
+        }
     }
 
     @Override
     public final Stream<Self> sups() {
-        return query(ME.sub(TARGET)).filter(RemoteSchemaConcept::notMetaThing).map(this::asSelf);
+        return tx().admin().sups(this).filter(RemoteSchemaConcept::notMetaThing).map(this::asSelf);
     }
 
     private static boolean notMetaThing(Concept concept) {
@@ -92,5 +104,35 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
-    abstract Self asSelf(Concept concept);
+    protected final Self define(Concept target, VarPattern... patterns) {
+        return define(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
+    }
+
+    protected final Self define(VarPattern... patterns) {
+        return define(Arrays.asList(patterns));
+    }
+
+    private Self define(Collection<? extends VarPattern> patterns) {
+        Collection<VarPattern> patternCollection =
+                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
+
+        tx().graql().define(patternCollection).execute();
+        return asSelf(this);
+    }
+
+    protected final Self undefine(Concept target, VarPattern... patterns) {
+        return undefine(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
+    }
+
+    protected final Self undefine(VarPattern... patterns) {
+        return undefine(Arrays.asList(patterns));
+    }
+
+    private Self undefine(Collection<? extends VarPattern> patterns) {
+        Collection<VarPattern> patternCollection =
+                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
+
+        tx().graql().undefine(patternCollection).execute();
+        return asSelf(this);
+    }
 }

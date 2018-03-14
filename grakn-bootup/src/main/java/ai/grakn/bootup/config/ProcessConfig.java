@@ -26,6 +26,8 @@ import java.util.Map;
 
 /**
  *
+ *  @param <V> config parameter value type
+ *
  * @author Kasper Piskorski
  */
 public abstract class ProcessConfig<V> {

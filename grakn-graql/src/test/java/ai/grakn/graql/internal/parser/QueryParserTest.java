@@ -39,7 +39,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
@@ -425,6 +425,46 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingAsInDefine_ResultIsSameAsSub() {
+        DefineQuery expected = define(
+                label("parent").sub("role"),
+                label("child").sub("role"),
+                label("parenthood").sub("relationship")
+                        .relates(var().label("parent"))
+                        .relates(var().label("child")),
+                label("fatherhood").sub("parenthood")
+                        .relates(label("father"), label("parent"))
+                        .relates(label("son"), label("child"))
+        );
+
+        DefineQuery parsed = parse("define " +
+                "parent sub role;\n" +
+                "child sub role;\n" +
+                "parenthood sub relationship, relates parent, relates child;\n" +
+                "fatherhood sub parenthood, relates father as parent, relates son as child;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
+    public void whenParsingAsInMatch_ResultIsSameAsSub() {
+        GetQuery expected = match(
+                label("fatherhood").sub("parenthood")
+                        .relates(var("x"), label("parent"))
+                        .relates(label("son"), var("y"))
+        ).get();
+
+        GetQuery parsed = parse("match " +
+                "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
         DefineQuery expected = define(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
@@ -525,6 +565,11 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
+    }
+
+    @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse(
@@ -622,26 +667,26 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterWithMembersThenSize() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").members().clusterSize(10);
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members().clusterSize(10);
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterWithSizeThenMembers() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").clusterSize(10).members();
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members();
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterWithSizeThenMembersThenSize() {
-        ClusterQuery<?> expected =
-                Graql.compute().cluster().in("movie", "person").clusterSize(10).members().clusterSize(15);
+        ConnectedComponentQuery<?> expected =
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members().clusterSize(15);
 
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
 
         assertEquals(expected, parsed);
     }
@@ -1060,6 +1105,13 @@ public class QueryParserTest {
         IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
+    }
+
+    @Test
+    public void whenValueEqualityToString_CreateValidQueryString() {
+        Query<?> query = match(var("x").val(eq(var("y")))).get();
+
+        assertEquals(query, Graql.parse(query.toString()));
     }
 
     private static void assertParseEquivalence(String query) {

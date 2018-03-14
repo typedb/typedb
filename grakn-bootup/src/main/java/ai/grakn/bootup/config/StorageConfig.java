@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
+ * Container class for storing and manipulating storage configuration.
  *
  * @author Kasper Piskorski
  */

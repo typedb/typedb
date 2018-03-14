@@ -18,9 +18,9 @@ In order to understand the dataset, let's first set up the scene.
 
 ## Dataset Background
 
-Imagine you are company that gathers information about financial products issued by oil companies. You have your knowledge graph stored with GRAKN and you have employees who browse the internet for interesting articles and add them to the knowledge base.
+Imagine you are company that gathers information about financial products issued by oil companies. You have your knowledge graph stored with GRAKN and you have employees who browse the internet for interesting articles and add them to the knowledge graph.
 
-In 2016, a referendum in Italy has been held about the renovation of concessions on oil platforms within 18 kilometers from the coast. Had the referendum succeeded, this would have potentially affected the companies owning those platforms, and, indirectly, the financial products issued by those companies. So your employees start adding articles related to the referendum into the knowledge base.
+In 2016, a referendum in Italy has been held about the renovation of concessions on oil platforms within 18 kilometers from the coast. Had the referendum succeeded, this would have potentially affected the companies owning those platforms, and, indirectly, the financial products issued by those companies. So your employees start adding articles related to the referendum into the knowledge graph.
 
 
 ## The Big Question(s)
@@ -63,7 +63,7 @@ Let’s explore how a GRAQL query looks like in general.
 
 With some exception, GRAQL queries are made of three parts:
 
-  1. A _match portion_, which reads the parts of the knowledge base you are interested into. It is indicated by the _keyword_ match followed by a list of _patterns_ separated by semicolons (highlighted in the picture below), that actually specify what part of the knowledge base to isolate. Notice that differently from what normally happens with query languages, **the order of patterns in a GRAQL query does not matter**: the system will take care of putting it in the correct order and execute the query in the most efficient way it can.
+  1. A _match portion_, which reads the parts of the knowledge graph you are interested into. It is indicated by the _keyword_ match followed by a list of _patterns_ separated by semicolons (highlighted in the picture below), that actually specify what part of the knowledge graph to isolate. Notice that differently from what normally happens with query languages, **the order of patterns in a GRAQL query does not matter**: the system will take care of putting it in the correct order and execute the query in the most efficient way it can.
 
   1. One or more optional _modifiers._ This specify things about the result, like the order in which they should be displayed, the number of results you want  etc.
 

@@ -33,6 +33,8 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
+ * Container class for storing and manipulating queue configuration.
+ * NB: Redis allows for multiple value params hence we need a map of lists.
  *
  * @author Kasper Piskorski
  */
@@ -82,11 +84,11 @@ public class QueueConfig extends ProcessConfig<List<Object>>{
     }
 
     private Path getAbsoluteLogPath(GraknConfig config){
+        //NB redis gets confused with relative log paths
         Path projectPath = GraknConfig.PROJECT_PATH;
         String logPathString = config.getProperty(GraknConfigKey.LOG_DIR) + LOG_FILE;
         Path logPath = Paths.get(logPathString);
-        Path path = logPath.isAbsolute() ? logPath : Paths.get(projectPath.toString(), logPathString);
-        return path;
+        return logPath.isAbsolute() ? logPath : Paths.get(projectPath.toString(), logPathString);
     }
 
     private QueueConfig updateDirs(GraknConfig config) {

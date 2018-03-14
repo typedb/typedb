@@ -11,7 +11,7 @@ folder: docs
 
 ## Introduction
 
-This example looks at the migration of genealogy data in CSV format to build a knowledge base in GRAKN.AI. The data is used as the basis of a [blog post](https://blog.grakn.ai/family-matters-1bb639396a24#.2e6h72y0m) that illustrates the fundamentals of the Grakn visualiser, reasoner and analytics components.
+This example looks at the migration of genealogy data in CSV format to build a knowledge graph in GRAKN.AI. The data is used as the basis of a [blog post](https://blog.grakn.ai/family-matters-1bb639396a24#.2e6h72y0m) that illustrates the fundamentals of the Grakn visualiser, reasoner and analytics components.
 
 As the blog post explains, the original data was a [document](http://www.lenzenresearch.com/titusnarrlineage.pdf) from [Lenzen Research](http://www.lenzenresearch.com/) that described the family history of Catherine Niesz Titus for three generations of her maternal lineage.
 
@@ -32,7 +32,7 @@ Let's take a look at the *raw-data* directory in the example project, which cont
 
 ### Schema
 
-The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them according to the Grakn model. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
+The schema is a way to describe the entities and their relationships, so the underlying knowledge graph can store them according to the Grakn model. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
@@ -97,7 +97,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 
 ### Data Migration
 
-Having loaded the schema, the next steps are to populate the knowledge base by migrating data into Grakn from CSV.
+Having loaded the schema, the next steps are to populate the knowledge graph by migrating data into Grakn from CSV.
 
 We will consider three CSV files that contain data to migrate into Grakn.
 
@@ -214,7 +214,7 @@ insert
 
 For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relationship, placing the entities it has matched into the `child` and `parent` roles.
 
-{% include note.html content="You must ensure that all entities exist in a knowledge base before inserting relationships." %}
+{% include note.html content="You must ensure that all entities exist in a knowledge graph before inserting relationships." %}
 
 Calling the Grakn migrator on the *births.csv* file using the above template (named `births-migrator.gql`) is performed as follows:
 
@@ -303,7 +303,7 @@ imported. The screenshot below illustrates the result from selecting to see all 
 
 ![Person query](/images/match-$x-isa-person.png)
 
-We have completed the data import, and the knowledge base can now be queried. For example, from the Graql shell:
+We have completed the data import, and the knowledge graph can now be queried. For example, from the Graql shell:
 
 ```graql
 match $x isa person, has identifier $i; aggregate count;
@@ -313,7 +313,7 @@ There should be 60 people in the dataset.
 
 ## Data Export
 
-In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge base. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a knowledge base again without the need to migrate from CSV.  
+In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge graph. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a knowledge graph again without the need to migrate from CSV.
 
 To export the data, we use `graql migrate` command again, as described in the
 [migration documentation](../migrating-data/overview#exporting-data-from-grakn):

@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.AttributeType.DataType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -40,12 +41,15 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -62,9 +66,11 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Felix Chapman
@@ -80,8 +86,8 @@ public class GrpcServerIT {
     private static GraknSession localSession;
     private static GraknSession remoteSession;
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         localSession = engine.sessionWithNewKeyspace();
 
         try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
@@ -92,8 +98,8 @@ public class GrpcServerIT {
         remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
-    @AfterClass
-    public static void tearDown() {
+    @After
+    public void tearDown() {
         remoteSession.close();
     }
 
@@ -244,13 +250,12 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAThing_TheInformationOnTheThingIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").isa("thing")).get();
+            GetQuery query = remoteTx.graql().match(var("x").has("name", "crime")).get();
             Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
 
@@ -258,12 +263,11 @@ public class GrpcServerIT {
             assertEquals(localConcept.type().getId(), remoteConcept.type().getId());
             assertEqualConcepts(localConcept, remoteConcept, Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept, Thing::keys);
-            assertEqualConcepts(localConcept, remoteConcept, Thing::plays);
+//            assertEqualConcepts(localConcept, remoteConcept, Thing::plays); // TODO: re-enable when #19630 is fixed
             assertEqualConcepts(localConcept, remoteConcept, Thing::relationships);
         }
     }
 
-    @Ignore // TODO: re-enable after implement methods
     @Test
     public void whenGettingAType_TheInformationOnTheTypeIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -342,11 +346,15 @@ public class GrpcServerIT {
              GraknTx localTx = localSession.open(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
-            AttributeType<?> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
-            AttributeType<?> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
+            AttributeType<String> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
+            AttributeType<String> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
 
             assertEquals(localConcept.getDataType(), remoteConcept.getDataType());
             assertEquals(localConcept.getRegex(), remoteConcept.getRegex());
+            assertEquals(
+                    localConcept.getAttribute("The Muppets").getId(),
+                    remoteConcept.getAttribute("The Muppets").getId()
+            );
         }
     }
 
@@ -364,7 +372,6 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore // TODO: re-enable after fixing allRolePlayers
     @Test
     public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
         try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
@@ -407,6 +414,138 @@ public class GrpcServerIT {
             assertEquals(localConcept.getValue(), remoteConcept.getValue());
             assertEquals(localConcept.owner().getId(), remoteConcept.owner().getId());
             assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
+        }
+    }
+
+    @Test
+    public void whenDeletingAConcept_TheConceptIsDeleted() {
+        Label label = Label.of("hello");
+
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            tx.putEntityType(label);
+            tx.commit();
+        }
+
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            SchemaConcept schemaConcept = tx.getSchemaConcept(label);
+            assertFalse(schemaConcept.isDeleted());
+            schemaConcept.delete();
+            assertTrue(schemaConcept.isDeleted());
+            tx.commit();
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            assertNull(tx.getSchemaConcept(label));
+        }
+    }
+
+    @Test
+    public void whenDefiningASchema_TheSchemaIsDefined() {
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            EntityType animal = tx.putEntityType("animal");
+            EntityType dog = tx.putEntityType("dog").sup(animal);
+            EntityType cat = tx.putEntityType("cat");
+            animal.sub(cat);
+
+            cat.setLabel(Label.of("feline"));
+            dog.setAbstract(true).setAbstract(false);
+            cat.setAbstract(true);
+
+            RelationshipType chases = tx.putRelationshipType("chases");
+            Role chased = tx.putRole("chased");
+            Role chaser = tx.putRole("chaser");
+            chases.relates(chased).relates(chaser);
+
+            Role pointlessRole = tx.putRole("pointless-role");
+            tx.putRelationshipType("pointless").relates(pointlessRole);
+
+            chases.relates(pointlessRole).deleteRelates(pointlessRole);
+
+            dog.plays(chaser);
+            cat.plays(chased);
+
+            AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).setRegex("(good|bad)-dog");
+            AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
+
+            animal.attribute(name);
+            animal.key(id);
+
+            dog.attribute(age).deleteAttribute(age);
+            cat.key(age).deleteKey(age);
+            cat.plays(chaser).deletePlays(chaser);
+
+            Entity dunstan = dog.addEntity();
+            Attribute<String> dunstanId = id.putAttribute("good-dog");
+            assertNotNull(dunstan.attributeRelationship(dunstanId));
+
+            Attribute<String> dunstanName = name.putAttribute("Dunstan");
+            dunstan.attribute(dunstanName).deleteAttribute(dunstanName);
+
+            chases.addRelationship().addRolePlayer(chaser, dunstan);
+
+            tx.commit();
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            EntityType animal = tx.getEntityType("animal");
+            EntityType dog = tx.getEntityType("dog");
+            EntityType cat = tx.getEntityType("feline");
+            RelationshipType chases = tx.getRelationshipType("chases");
+            Role chased = tx.getRole("chased");
+            Role chaser = tx.getRole("chaser");
+            AttributeType<String> name = tx.getAttributeType("name");
+            AttributeType<String> id = tx.getAttributeType("id");
+            Entity dunstan = Iterators.getOnlyElement(dog.instances().iterator());
+            Relationship aChase = Iterators.getOnlyElement(chases.instances().iterator());
+
+            assertEquals(animal, dog.sup());
+            assertEquals(animal, cat.sup());
+
+            assertEquals(ImmutableSet.of(chased, chaser), chases.relates().collect(toSet()));
+            assertEquals(ImmutableSet.of(chaser), dog.plays().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chased), cat.plays().filter(role -> !role.isImplicit()).collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), animal.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), animal.keys().collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), dog.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), dog.keys().collect(toSet()));
+
+            assertEquals(ImmutableSet.of(name, id), cat.attributes().collect(toSet()));
+            assertEquals(ImmutableSet.of(id), cat.keys().collect(toSet()));
+
+            assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).getValue());
+
+            ImmutableMap<Role, ImmutableSet<?>> expectedRolePlayers =
+                    ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
+
+            assertEquals(expectedRolePlayers, aChase.allRolePlayers());
+
+            assertEquals("(good|bad)-dog", id.getRegex());
+
+            assertFalse(dog.isAbstract());
+            assertTrue(cat.isAbstract());
+        }
+    }
+
+    @Test
+    public void whenDeletingAKeyspace_TheKeyspaceIsDeleted() {
+        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+            tx.putEntityType("easter");
+            tx.commit();
+        }
+
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            assertNotNull(tx.getEntityType("easter"));
+
+            tx.admin().delete();
+
+            assertTrue(tx.isClosed());
+        }
+
+        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+            assertNull(tx.getEntityType("easter"));
         }
     }
 

@@ -16,8 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/**
- *  Severside websocket implementation.
- */
+package ai.grakn.grpc;
 
-package ai.grakn.engine.session;
+import ai.grakn.concept.Concept;
+import ai.grakn.rpc.generated.GrpcConcept;
+
+/**
+ * @author Felix Chapman
+ */
+public interface GrpcConceptConverter {
+    Concept convert(GrpcConcept.Concept concept);
+}
