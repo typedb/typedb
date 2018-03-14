@@ -26,6 +26,8 @@ import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -282,9 +284,10 @@ public class EngineContext extends CompositeTestRule {
         GrpcServer grpcServer = GrpcServer.create(server);
 
         GraknTestUtil.allocateSparkPort(config);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(
-                id, spark, status, metricRegistry, config, redisWrapper, indexStorage, countStorage, lockProvider,
+                id, spark, status, metricRegistry, config, queueSanityCheck, indexStorage, countStorage, lockProvider,
                 Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory, grpcServer);
 
         graknEngineServer.start();
