@@ -34,6 +34,7 @@ import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -55,30 +56,24 @@ public final class ConceptMethod<T> {
     private final Function<Concept, T> function;
     private final ConceptResponseType<T> responseType;
 
-    public TxResponse createTxResponse(@Nullable T value) {
+    public TxResponse createTxResponse(T value) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         set(conceptResponse, value);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public TxResponse run(@Nullable Concept concept) {
+    public TxResponse run(Concept concept) {
         return createTxResponse(function.apply(concept));
     }
 
     @Nullable
     public T get(GrpcConceptConverter conceptConverter, TxResponse txResponse) {
         ConceptResponse conceptResponse = txResponse.getConceptResponse();
-        if (conceptResponse.getValueCase().equals(ConceptResponse.ValueCase.VALUE_NOT_SET)) {
-            return null;
-        } else {
-            return responseType.get(conceptConverter, conceptResponse);
-        }
+        return responseType.get(conceptConverter, conceptResponse);
     }
 
-    public void set(ConceptResponse.Builder builder, @Nullable T value) {
-        if (value != null) {
-            responseType.set(builder, value);
-        }
+    public void set(ConceptResponse.Builder builder, T value) {
+        responseType.set(builder, value);
     }
 
     public GrpcConcept.ConceptMethod toGrpc() {
@@ -92,10 +87,17 @@ public final class ConceptMethod<T> {
             .function(val -> val.asAttribute().getValue())
             .build();
 
-    public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE = builder(ConceptResponseType.DATA_TYPE)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDataType)
-            .function(val -> val.isAttribute() ? val.asAttribute().dataType() : val.asAttributeType().getDataType())
+    public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE =
+            builder(ConceptResponseType.OPTIONAL_DATA_TYPE)
+            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfType)
+            .function(val -> Optional.ofNullable(val.asAttributeType().getDataType()))
             .build();
+
+    public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE =
+            builder(ConceptResponseType.DATA_TYPE)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfAttribute)
+                    .function(val -> val.asAttribute().dataType())
+                    .build();
 
     public static final ConceptMethod<Label> GET_LABEL = builder(ConceptResponseType.LABEL)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetLabel)
@@ -131,28 +133,25 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
-    public static final ConceptMethod<Pattern> GET_WHEN = builder(ConceptResponseType.PATTERN)
+    public static final ConceptMethod<Optional<Pattern>> GET_WHEN = builder(ConceptResponseType.OPTIONAL_PATTERN)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetWhen)
-            .function(concept -> concept.asRule().getWhen())
+            .function(concept -> Optional.ofNullable(concept.asRule().getWhen()))
             .build();
 
-    public static final ConceptMethod<Pattern> GET_THEN = builder(ConceptResponseType.PATTERN)
+    public static final ConceptMethod<Optional<Pattern>> GET_THEN = builder(ConceptResponseType.OPTIONAL_PATTERN)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetThen)
-            .function(concept -> concept.asRule().getThen())
+            .function(concept -> Optional.ofNullable(concept.asRule().getThen()))
             .build();
 
-    public static final ConceptMethod<String> GET_REGEX = builder(ConceptResponseType.STRING)
+    public static final ConceptMethod<Optional<String>> GET_REGEX = builder(ConceptResponseType.OPTIONAL_REGEX)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRegex)
-            .function(concept -> concept.asAttributeType().getRegex())
+            .function(concept -> Optional.ofNullable(concept.asAttributeType().getRegex()))
             .build();
 
-    public static ConceptMethod<Void> setRegex(@Nullable String regex) {
-        GrpcConcept.Regex.Builder grpcRegex = GrpcConcept.Regex.newBuilder();
-        if (regex != null) grpcRegex.setValue(regex);
-
+    public static ConceptMethod<Void> setRegex(Optional<String> regex) {
         return builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRegex(grpcRegex.build()))
-                .functionVoid(concept -> concept.asAttributeType().setRegex(regex))
+                .requestSetter(builder -> builder.setSetRegex(GrpcUtil.convertRegex(regex)))
+                .functionVoid(concept -> concept.asAttributeType().setRegex(regex.orElse(null)))
                 .build();
     }
 
@@ -208,10 +207,10 @@ public final class ConceptMethod<T> {
                     .function(concept -> concept.asThing().type())
                     .build();
 
-    public static final ConceptMethod<Concept> GET_DIRECT_SUPER =
-            builder(ConceptResponseType.CONCEPT)
+    public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER =
+            builder(ConceptResponseType.OPTIONAL_CONCEPT)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
-                    .function(concept -> concept.asSchemaConcept().sup())
+                    .function(concept -> Optional.ofNullable(concept.asSchemaConcept().sup()))
                     .build();
 
     public static ConceptMethod<Void> setDirectSuperConcept(SchemaConcept schemaConcept) {
@@ -234,10 +233,10 @@ public final class ConceptMethod<T> {
                     .functionVoid(Concept::delete)
                     .build();
 
-    public static ConceptMethod<Concept> getAttribute(Object value) {
-        return builder(ConceptResponseType.CONCEPT)
+    public static ConceptMethod<Optional<Concept>> getAttribute(Object value) {
+        return builder(ConceptResponseType.OPTIONAL_CONCEPT)
                 .requestSetter(builder -> builder.setGetAttribute(convertValue(value)))
-                .function(concept -> concept.asAttributeType().getAttribute(value))
+                .function(concept -> Optional.ofNullable(concept.asAttributeType().getAttribute(value)))
                 .build();
     }
 
@@ -269,7 +268,7 @@ public final class ConceptMethod<T> {
     public static ConceptMethod<Concept> setAttribute(Attribute<?> attribute) {
         return builder(ConceptResponseType.CONCEPT)
                 .requestSetter(builder -> builder.setSetAttribute(convert(attribute)))
-                .functionVoid(concept -> concept.asThing().attributeRelationship(attribute))
+                .function(concept -> concept.asThing().attributeRelationship(attribute))
                 .build();
     }
 
@@ -309,7 +308,7 @@ public final class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
         return builder(ConceptResponseType.UNIT)
                 .requestSetter(builder -> builder.setUnsetRolePlayedByType(convert(role)))
-                .functionVoid(concept -> concept.asType().plays(role))
+                .functionVoid(concept -> concept.asType().deletePlays(role))
                 .build();
     }
 
@@ -415,10 +414,14 @@ public final class ConceptMethod<T> {
         switch (conceptMethod.getConceptMethodCase()) {
             case GETVALUE:
                 return GET_VALUE;
-            case GETDATATYPE:
-                return GET_DATA_TYPE;
+            case GETDATATYPEOFTYPE:
+                return GET_DATA_TYPE_OF_TYPE;
+            case GETDATATYPEOFATTRIBUTE:
+                return GET_DATA_TYPE_OF_ATTRIBUTE;
             case GETLABEL:
                 return GET_LABEL;
+            case SETLABEL:
+                return setLabel(convert(conceptMethod.getSetLabel()));
             case ISIMPLICIT:
                 return IS_IMPLICIT;
             case ISINFERRED:
@@ -435,6 +438,10 @@ public final class ConceptMethod<T> {
                 return GET_ROLE_PLAYERS;
             case GETATTRIBUTETYPES:
                 return GET_ATTRIBUTE_TYPES;
+            case SETATTRIBUTETYPE:
+                return setAttributeType(converter.convert(conceptMethod.getSetAttributeType()).asAttributeType());
+            case UNSETATTRIBUTETYPE:
+                return unsetAttributeType(converter.convert(conceptMethod.getUnsetAttributeType()).asAttributeType());
             case GETKEYTYPES:
                 return GET_KEY_TYPES;
             case GETDIRECTTYPE:
@@ -492,6 +499,37 @@ public final class ConceptMethod<T> {
             case GETROLEPLAYERSBYROLES:
                 roles = convert(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
                 return getRolePlayersByRoles(roles);
+            case SETKEYTYPE:
+                return setKeyType(converter.convert(conceptMethod.getSetKeyType()).asAttributeType());
+            case UNSETKEYTYPE:
+                return unsetKeyType(converter.convert(conceptMethod.getUnsetKeyType()).asAttributeType());
+            case SETABSTRACT:
+                return setAbstract(conceptMethod.getSetAbstract());
+            case SETROLEPLAYEDBYTYPE:
+                return setRolePlayedByType(converter.convert(conceptMethod.getSetRolePlayedByType()).asRole());
+            case UNSETROLEPLAYEDBYTYPE:
+                return unsetRolePlayedByType(converter.convert(conceptMethod.getUnsetRolePlayedByType()).asRole());
+            case ADDENTITY:
+                return ADD_ENTITY;
+            case SETRELATEDROLE:
+                return setRelatedRole(converter.convert(conceptMethod.getSetRelatedRole()).asRole());
+            case UNSETRELATEDROLE:
+                return unsetRelatedRole(converter.convert(conceptMethod.getUnsetRelatedRole()).asRole());
+            case PUTATTRIBUTE:
+                return putAttribute(convert(conceptMethod.getPutAttribute()));
+            case SETREGEX:
+                return setRegex(convert(conceptMethod.getSetRegex()));
+            case SETATTRIBUTE:
+                return setAttribute(converter.convert(conceptMethod.getSetAttribute()).asAttribute());
+            case UNSETATTRIBUTE:
+                return unsetAttribute(converter.convert(conceptMethod.getUnsetAttribute()).asAttribute());
+            case ADDRELATIONSHIP:
+                return ADD_RELATIONSHIP;
+            case SETROLEPLAYER:
+                GrpcConcept.RolePlayer setRolePlayer = conceptMethod.getSetRolePlayer();
+                role = converter.convert(setRolePlayer.getRole()).asRole();
+                player = converter.convert(setRolePlayer.getPlayer()).asThing();
+                return setRolePlayer(role, player);
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);

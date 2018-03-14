@@ -58,7 +58,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
     }
 
     @Nullable
-    final <T> T runNullableMethod(ConceptMethod<T> property) {
+    private <T> T runNullableMethod(ConceptMethod<T> property) {
         return tx().client().runConceptMethod(getId(), property);
     }
 

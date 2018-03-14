@@ -50,14 +50,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.grpc.ConceptMethod.GET_ATTRIBUTE_TYPES;
-import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE;
+import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE_OF_ATTRIBUTE;
+import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE_OF_TYPE;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_SUPER;
 import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_TYPE;
 import static ai.grakn.grpc.ConceptMethod.GET_KEY_TYPES;
@@ -187,19 +188,19 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
-        mockConceptMethod(GET_DATA_TYPE, DataType.LONG);
+        mockConceptMethod(GET_DATA_TYPE_OF_TYPE, Optional.of(DataType.LONG));
         assertEquals(DataType.LONG, ((AttributeType<?>) attributeType).getDataType());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
-        mockConceptMethod(GET_DATA_TYPE, DataType.LONG);
+        mockConceptMethod(GET_DATA_TYPE_OF_ATTRIBUTE, DataType.LONG);
         assertEquals(DataType.LONG, ((Attribute<?>) attribute).dataType());
     }
 
     @Test
     public void whenCallingGetRegex_GetTheExpectedResult() {
-        mockConceptMethod(GET_REGEX, "hello");
+        mockConceptMethod(GET_REGEX, Optional.of("hello"));
         assertEquals("hello", attributeType.getRegex());
     }
 
@@ -208,7 +209,7 @@ public class RemoteConceptsTest {
         String value = "Dunstan again";
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
-        mockConceptMethod(ConceptMethod.getAttribute(value), attribute);
+        mockConceptMethod(ConceptMethod.getAttribute(value), Optional.of(attribute));
 
         assertEquals(attribute, attributeType.getAttribute(value));
     }
@@ -216,19 +217,19 @@ public class RemoteConceptsTest {
     @Test
     public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
         String value = "Dunstan > Oliver";
-        mockConceptMethod(ConceptMethod.getAttribute(value), null);
+        mockConceptMethod(ConceptMethod.getAttribute(value), Optional.empty());
         assertNull(attributeType.getAttribute(value));
     }
 
     @Test
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        mockConceptMethod(GET_WHEN, PATTERN);
+        mockConceptMethod(GET_WHEN, Optional.of(PATTERN));
         assertEquals(PATTERN, rule.getWhen());
     }
 
     @Test
     public void whenCallingGetThen_GetTheExpectedResult() {
-        mockConceptMethod(GET_THEN, PATTERN);
+        mockConceptMethod(GET_THEN, Optional.of(PATTERN));
         assertEquals(PATTERN, rule.getThen());
     }
 
@@ -277,14 +278,13 @@ public class RemoteConceptsTest {
     @Test
     public void whenCallingSup_GetTheExpectedResult() {
         SchemaConcept sup = RemoteConcepts.createEntityType(tx, A);
-        mockConceptMethod(GET_DIRECT_SUPER, sup);
+        mockConceptMethod(GET_DIRECT_SUPER, Optional.of(sup));
         assertEquals(sup, entityType.sup());
     }
 
     @Test
     public void whenCallingSupOnMetaType_GetNull() {
-        SchemaConcept sup = RemoteConcepts.createMetaType(tx, A);
-        mockConceptMethod(GET_DIRECT_SUPER, sup);
+        mockConceptMethod(GET_DIRECT_SUPER, Optional.empty());
         assertNull(schemaConcept.sup());
     }
 
@@ -651,13 +651,13 @@ public class RemoteConceptsTest {
     public void whenSettingRegex_ExecuteAConceptMethod() {
         String regex = "[abc]";
         assertEquals(attributeType, attributeType.setRegex(regex));
-        verifyConceptMethodCalled(ConceptMethod.setRegex(regex));
+        verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.of(regex)));
     }
 
     @Test
     public void whenResettingRegex_ExecuteAQuery() {
         assertEquals(attributeType, attributeType.setRegex(null));
-        verifyConceptMethodCalled(ConceptMethod.setRegex(null));
+        verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.empty()));
     }
 
     @Test
@@ -707,7 +707,7 @@ public class RemoteConceptsTest {
         verify(server.requests()).onNext(GrpcUtil.runConceptMethodRequest(ID, conceptMethod));
     }
 
-    private <T> void mockConceptMethod(ConceptMethod<T> property, @Nullable T value) {
+    private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
         server.setResponse(GrpcUtil.runConceptMethodRequest(ID, property), property.createTxResponse(value));
     }
 }

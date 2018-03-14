@@ -26,6 +26,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.grpc.ConceptMethod;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -62,12 +63,8 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Nullable
     @Override
     public Self sup() {
-        Concept concept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
-        if (concept != null && isSelf(concept)) {
-            return asSelf(concept);
-        } else {
-            return null;
-        }
+        Optional<Concept> concept = runMethod(ConceptMethod.GET_DIRECT_SUPER);
+        return concept.filter(this::isSelf).map(this::asSelf).orElse(null);
     }
 
     @Override

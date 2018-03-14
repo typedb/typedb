@@ -41,6 +41,10 @@ import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcConcept.Concepts;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalDataType;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalPattern;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalRegex;
 import ai.grakn.rpc.generated.GrpcConcept.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept.RolePlayers;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -68,6 +72,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -78,6 +83,8 @@ import static java.util.stream.Collectors.toList;
  * @author Felix Chapman
  */
 public class GrpcUtil {
+
+    private static final GrpcConcept.Unit UNIT = GrpcConcept.Unit.getDefaultInstance();
 
     static class UnknownGraknException extends GraknException {
 
@@ -208,6 +215,11 @@ public class GrpcUtil {
                 .setId(GrpcConcept.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
                 .setBaseType(getBaseType(concept))
                 .build();
+    }
+
+    public static OptionalConcept convertOptionalConcept(Optional<Concept> concept) {
+        OptionalConcept.Builder builder = OptionalConcept.newBuilder();
+        return concept.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
     }
 
     public static Concepts convert(Stream<? extends Concept> concepts) {
@@ -358,6 +370,22 @@ public class GrpcUtil {
         }
     }
 
+    public static OptionalDataType convertOptionalDataType(Optional<AttributeType.DataType<?>> dataType) {
+        OptionalDataType.Builder builder = OptionalDataType.newBuilder();
+        return dataType.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+    }
+
+    public static Optional<AttributeType.DataType<?>> convert(OptionalDataType dataType) {
+        switch (dataType.getValueCase()) {
+            case PRESENT:
+                return Optional.of(convert(dataType.getPresent()));
+            case ABSENT:
+            case VALUE_NOT_SET:
+            default:
+                return Optional.empty();
+        }
+    }
+
     public static GrpcConcept.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
             return GrpcConcept.BaseType.EntityType;
@@ -382,12 +410,21 @@ public class GrpcUtil {
         }
     }
 
-    public static GrpcConcept.Pattern convert(Pattern pattern) {
-        return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
+    public static OptionalPattern convert(Optional<Pattern> pattern) {
+        OptionalPattern.Builder builder = OptionalPattern.newBuilder();
+        return pattern.map(Pattern::toString).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
     }
 
-    public static Pattern convert(GrpcConcept.Pattern pattern) {
-        return Graql.parser().parsePattern(pattern.getValue());
+    @Nullable
+    public static Optional<Pattern> convert(OptionalPattern pattern) {
+        switch (pattern.getValueCase()) {
+            case PRESENT:
+                return Optional.of(Graql.parser().parsePattern(pattern.getPresent()));
+            case ABSENT:
+            case VALUE_NOT_SET:
+            default:
+                return Optional.empty();
+        }
     }
 
     public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, RolePlayers allRolePlayers) {
@@ -416,5 +453,21 @@ public class GrpcUtil {
 
     public static RolePlayer convert(Role role, Thing thing) {
         return RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(thing)).build();
+    }
+
+    public static OptionalRegex convertRegex(Optional<String> regex) {
+        OptionalRegex.Builder builder = OptionalRegex.newBuilder();
+        return regex.map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+    }
+
+    public static Optional<String> convert(OptionalRegex regex) {
+        switch (regex.getValueCase()) {
+            case PRESENT:
+                return Optional.of(regex.getPresent());
+            case ABSENT:
+            case VALUE_NOT_SET:
+            default:
+                return Optional.empty();
+        }
     }
 }
