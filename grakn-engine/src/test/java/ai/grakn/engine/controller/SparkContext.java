@@ -31,10 +31,8 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
 import spark.Service;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.HttpHandler.configureSpark;
@@ -54,12 +52,11 @@ public class SparkContext extends CompositeTestRule {
     private SparkContext(BiConsumer<Service, GraknConfig> createControllers) {
         this.createControllers = createControllers;
 
-        int port = GraknTestUtil.getEphemeralPort();
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
-
         if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
             config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, "localhost");
         }
+
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
     }
 
     private Service startSparkCopyOnNewPort() {
@@ -67,8 +64,12 @@ public class SparkContext extends CompositeTestRule {
 
         String hostName = config.getProperty(GraknConfigKey.SERVER_HOST_NAME);
 
-        configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH),
-                        64);
+        if (config.getProperty(GraknConfigKey.SERVER_PORT) == 0) {
+            GraknTestUtil.allocateSparkPort(config);
+        }
+
+        configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH), 64);
+        spark.init();
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();
 
