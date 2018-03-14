@@ -18,6 +18,7 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
@@ -101,6 +102,13 @@ public final class ConceptMethod<T> {
             .function(concept -> concept.asSchemaConcept().getLabel())
             .build();
 
+    public static ConceptMethod<Void> setLabel(Label label) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetLabel(convert(label)))
+                .functionVoid(concept -> concept.asSchemaConcept().setLabel(label))
+                .build();
+    }
+
     public static final ConceptMethod<Boolean> IS_IMPLICIT = builder(ConceptResponseType.BOOL)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setIsImplicit)
             .function(concept -> concept.asSchemaConcept().isImplicit())
@@ -115,6 +123,13 @@ public final class ConceptMethod<T> {
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setIsAbstract)
             .function(concept -> concept.asType().isAbstract())
             .build();
+
+    public static ConceptMethod<Void> setAbstract(boolean isAbstract) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetAbstract(isAbstract))
+                .functionVoid(concept -> concept.asType().setAbstract(isAbstract))
+                .build();
+    }
 
     public static final ConceptMethod<Pattern> GET_WHEN = builder(ConceptResponseType.PATTERN)
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetWhen)
@@ -131,6 +146,16 @@ public final class ConceptMethod<T> {
             .function(concept -> concept.asAttributeType().getRegex())
             .build();
 
+    public static ConceptMethod<Void> setRegex(@Nullable String regex) {
+        GrpcConcept.Regex.Builder grpcRegex = GrpcConcept.Regex.newBuilder();
+        if (regex != null) grpcRegex.setValue(regex);
+
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetRegex(grpcRegex.build()))
+                .functionVoid(concept -> concept.asAttributeType().setRegex(regex))
+                .build();
+    }
+
     public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ROLE_PLAYERS =
             builder(ConceptResponseType.ROLE_PLAYERS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
@@ -143,11 +168,39 @@ public final class ConceptMethod<T> {
                     .function(concept -> concept.asType().attributes())
                     .build();
 
+    public static ConceptMethod<Void> setAttributeType(AttributeType<?> attributeType) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetAttributeType(convert(attributeType)))
+                .functionVoid(concept -> concept.asType().attribute(attributeType))
+                .build();
+    }
+
+    public static ConceptMethod<Void> unsetAttributeType(AttributeType<?> attributeType) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setUnsetAttributeType(convert(attributeType)))
+                .functionVoid(concept -> concept.asType().deleteAttribute(attributeType))
+                .build();
+    }
+
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetKeyTypes)
                     .function(concept -> concept.asType().keys())
                     .build();
+
+    public static ConceptMethod<Void> setKeyType(AttributeType<?> attributeType) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetKeyType(convert(attributeType)))
+                .functionVoid(concept -> concept.asType().key(attributeType))
+                .build();
+    }
+
+    public static ConceptMethod<Void> unsetKeyType(AttributeType<?> attributeType) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setUnsetKeyType(convert(attributeType)))
+                .functionVoid(concept -> concept.asType().deleteKey(attributeType))
+                .build();
+    }
 
     public static final ConceptMethod<Concept> GET_DIRECT_TYPE =
             builder(ConceptResponseType.CONCEPT)
@@ -164,30 +217,21 @@ public final class ConceptMethod<T> {
     public static ConceptMethod<Void> setDirectSuperConcept(SchemaConcept schemaConcept) {
         return builder(ConceptResponseType.UNIT)
                 .requestSetter(builder -> builder.setSetDirectSuperConcept(convert(schemaConcept)))
-                .function(concept -> {
-                    setSuper(concept.asSchemaConcept(), schemaConcept);
-                    return null;
-                })
+                .functionVoid(concept -> setSuper(concept.asSchemaConcept(), schemaConcept))
                 .build();
     }
 
     public static ConceptMethod<Void> removeRolePlayer(Role role, Thing player) {
         return builder(ConceptResponseType.UNIT)
                 .requestSetter(builder -> builder.setUnsetRolePlayer(convert(role, player)))
-                .function(concept -> {
-                    concept.asRelationship().removeRolePlayer(role, player);
-                    return null;
-                })
+                .functionVoid(concept -> concept.asRelationship().removeRolePlayer(role, player))
                 .build();
     }
 
     public static final ConceptMethod<Void> DELETE =
             builder(ConceptResponseType.UNIT)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setDelete)
-                    .function(concept -> {
-                        concept.delete();
-                        return null;
-                    })
+                    .functionVoid(Concept::delete)
                     .build();
 
     public static ConceptMethod<Concept> getAttribute(Object value) {
@@ -222,6 +266,20 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
+    public static ConceptMethod<Concept> setAttribute(Attribute<?> attribute) {
+        return builder(ConceptResponseType.CONCEPT)
+                .requestSetter(builder -> builder.setSetAttribute(convert(attribute)))
+                .functionVoid(concept -> concept.asThing().attributeRelationship(attribute))
+                .build();
+    }
+
+    public static ConceptMethod<Void> unsetAttribute(Attribute<?> attribute) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setUnsetAttribute(convert(attribute)))
+                .functionVoid(concept -> concept.asThing().deleteAttribute(attribute))
+                .build();
+    }
+
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetKeys)
@@ -241,6 +299,20 @@ public final class ConceptMethod<T> {
                     .function(concept -> concept.asType().plays())
                     .build();
 
+    public static ConceptMethod<Void> setRolePlayedByType(Role role) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetRolePlayedByType(convert(role)))
+                .functionVoid(concept -> concept.asType().plays(role))
+                .build();
+    }
+
+    public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setUnsetRolePlayedByType(convert(role)))
+                .functionVoid(concept -> concept.asType().plays(role))
+                .build();
+    }
+
     public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetInstances)
@@ -257,6 +329,13 @@ public final class ConceptMethod<T> {
         return builder(ConceptResponseType.CONCEPTS)
                 .requestSetter(builder -> builder.setGetRolePlayersByRoles(convert(Stream.of(roles))))
                 .function(concept -> concept.asRelationship().rolePlayers(roles))
+                .build();
+    }
+
+    public static ConceptMethod<Void> setRolePlayer(Role role, Thing thing) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetRolePlayer(convert(role, thing)))
+                .functionVoid(concept -> concept.asRelationship().addRolePlayer(role, thing))
                 .build();
     }
 
@@ -291,11 +370,44 @@ public final class ConceptMethod<T> {
                     .function(concept -> concept.asRelationshipType().relates())
                     .build();
 
+    public static ConceptMethod<Void> setRelatedRole(Role role) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setSetRelatedRole(convert(role)))
+                .functionVoid(concept -> concept.asRelationshipType().relates(role))
+                .build();
+    }
+
+    public static ConceptMethod<Void> unsetRelatedRole(Role role) {
+        return builder(ConceptResponseType.UNIT)
+                .requestSetter(builder -> builder.setUnsetRelatedRole(convert(role)))
+                .functionVoid(concept -> concept.asRelationshipType().deleteRelates(role))
+                .build();
+    }
+
     public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS =
             builder(ConceptResponseType.CONCEPTS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetOwners)
                     .function(concept -> concept.asAttribute().ownerInstances())
                     .build();
+
+    public static final ConceptMethod<Concept> ADD_ENTITY =
+            builder(ConceptResponseType.CONCEPT)
+                .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setAddEntity)
+                .function(concept -> concept.asEntityType().addEntity())
+                .build();
+
+    public static final ConceptMethod<Concept> ADD_RELATIONSHIP =
+            builder(ConceptResponseType.CONCEPT)
+                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setAddRelationship)
+                    .function(concept -> concept.asRelationshipType().addRelationship())
+                    .build();
+
+    public static ConceptMethod<Concept> putAttribute(Object value) {
+        return builder(ConceptResponseType.CONCEPT)
+                .requestSetter(builder -> builder.setPutAttribute(convertValue(value)))
+                .function(concept -> concept.asAttributeType().putAttribute(value))
+                .build();
+    }
 
     public static ConceptMethod<?> fromGrpc(GrpcConceptConverter converter, GrpcConcept.ConceptMethod conceptMethod) {
         Role[] roles;
@@ -429,6 +541,14 @@ public final class ConceptMethod<T> {
 
         public Builder<T> function(Function<Concept, T> function) {
             this.function = function;
+            return this;
+        }
+
+        public Builder<T> functionVoid(Consumer<Concept> function) {
+            this.function = concept -> {
+                function.accept(concept);
+                return null;
+            };
             return this;
         }
 

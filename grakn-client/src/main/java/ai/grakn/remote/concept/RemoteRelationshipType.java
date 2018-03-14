@@ -43,7 +43,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        return asInstance(insert(TARGET.isa(ME)));
+        return asInstance(runMethod(ConceptMethod.ADD_RELATIONSHIP));
     }
 
     @Override
@@ -53,12 +53,12 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final RelationshipType relates(Role role) {
-        return define(role, ME.relates(TARGET));
+        return runVoidMethod(ConceptMethod.setRelatedRole(role));
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        return undefine(role, ME.relates(TARGET));
+        return runVoidMethod(ConceptMethod.unsetRelatedRole(role));
     }
 
     @Override

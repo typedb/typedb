@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -40,7 +41,7 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
 
     @Override
     public final Entity addEntity() {
-        return asInstance(insert(TARGET.isa(ME)));
+        return asInstance(runMethod(ConceptMethod.ADD_ENTITY));
     }
 
     @Override

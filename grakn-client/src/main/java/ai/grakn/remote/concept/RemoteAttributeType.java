@@ -44,20 +44,12 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
     @Override
     public final AttributeType<D> setRegex(@Nullable String regex) {
-        if (regex == null) {
-            String oldRegex = getRegex();
-            if (oldRegex != null) {
-                undefine(ME.regex(oldRegex));
-            }
-        } else {
-            define(ME.regex(regex));
-        }
-        return asSelf(this);
+        return runVoidMethod(ConceptMethod.setRegex(regex));
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        return asInstance(insert(TARGET.val(value).isa(ME)));
+        return asInstance(runMethod(ConceptMethod.putAttribute(value)));
     }
 
     @Nullable
