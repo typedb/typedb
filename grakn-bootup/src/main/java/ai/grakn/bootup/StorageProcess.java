@@ -41,7 +41,7 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
     private static final String CASSANDRA = "cassandra";
-    private static final String NAME = "Storage";
+    private static final String COMPONENT_NAME = "Storage";
 
     private final Path homePath;
     private final GraknConfig graknConfig;
@@ -54,7 +54,7 @@ public class StorageProcess extends AbstractProcessHandler {
     public void start() {
         boolean storageIsRunning = processIsRunning(STORAGE_PID);
         if(storageIsRunning) {
-            System.out.println(NAME+" is already running");
+            System.out.println(COMPONENT_NAME +" is already running");
         } else {
             storageStartProcess();
         }
@@ -70,7 +70,7 @@ public class StorageProcess extends AbstractProcessHandler {
     private void storageStartProcess() {
         StorageConfigProcessor.updateConfigFromGraknConfig(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), graknConfig);
 
-        System.out.print("Starting "+NAME+"...");
+        System.out.print("Starting "+ COMPONENT_NAME +"...");
         System.out.flush();
         if(STORAGE_PID.toFile().exists()) {
             try {
@@ -109,24 +109,24 @@ public class StorageProcess extends AbstractProcessHandler {
             }
         }
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+NAME);
+        System.out.println("Unable to start "+ COMPONENT_NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        stopProgram(STORAGE_PID,NAME);
+        stopProgram(STORAGE_PID, COMPONENT_NAME);
     }
 
     public void status() {
-        processStatus(STORAGE_PID, NAME);
+        processStatus(STORAGE_PID, COMPONENT_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(NAME+" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(COMPONENT_NAME +" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+NAME+"...");
+        System.out.print("Cleaning "+ COMPONENT_NAME +"...");
         System.out.flush();
         try {
             Path dirPath = Paths.get("db", CASSANDRA);
@@ -140,7 +140,7 @@ public class StorageProcess extends AbstractProcessHandler {
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+NAME);
+            System.out.println("Unable to clean "+ COMPONENT_NAME);
         }
     }
 
