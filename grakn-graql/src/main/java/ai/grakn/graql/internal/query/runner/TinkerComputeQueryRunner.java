@@ -30,7 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.StatisticsQuery;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -98,7 +98,7 @@ public class TinkerComputeQueryRunner {
         return new TinkerComputeQueryRunner(tx);
     }
 
-    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
         return runCompute(query, tinkerComputeQuery -> {
             if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
                 LOG.info("Selected types don't have instances");

@@ -39,7 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -298,8 +298,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
-        ClusterQuery<?> cluster = queryBuilder.compute().cluster();
+    public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
+        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
         if (ctx.id() != null) {
             cluster = cluster.of(visitId(ctx.id()));
@@ -314,23 +314,23 @@ class QueryVisitor extends GraqlBaseVisitor {
         return cluster;
     }
 
-    private UnaryOperator<ClusterQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
-        return (UnaryOperator<ClusterQuery<?>>) visit(ctx);
+    private UnaryOperator<ConnectedComponentQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
+        return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
     }
 
     @Override
-    public UnaryOperator<ClusterQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
-        return ClusterQuery::members;
+    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
+        return ConnectedComponentQuery::members;
     }
 
     @Override
-    public UnaryOperator<ClusterQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
         return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
     public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery degree = queryBuilder.compute().degree();
+        DegreeQuery degree = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
@@ -542,7 +542,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitRelates(GraqlParser.RelatesContext ctx) {
-        return var -> var.relates(visitVariable(ctx.variable()));
+        VarPattern superRole = ctx.superRole != null ? visitVariable(ctx.superRole) : null;
+        return var -> var.relates(visitVariable(ctx.role), superRole);
     }
 
     @Override

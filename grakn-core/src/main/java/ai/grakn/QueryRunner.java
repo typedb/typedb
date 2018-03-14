@@ -26,7 +26,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -71,7 +71,7 @@ public interface QueryRunner {
 
     <T> T run(AggregateQuery<T> query);
 
-    <T> ComputeJob<T> run(ClusterQuery<T> query);
+    <T> ComputeJob<T> run(ConnectedComponentQuery<T> query);
 
     ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query);
 
