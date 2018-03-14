@@ -20,22 +20,23 @@ package ai.grakn.bootup.config;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
  *
  * @author Kasper Piskorski
  */
-public class QueueConfig extends ProcessConfig{
+public class QueueConfig extends ProcessConfig<List<Object>>{
 
     private static final String CONFIG_PARAM_PREFIX = "queue.internal.";
     private static final String DB_DIR_PARAM = "dir";
@@ -46,44 +47,54 @@ public class QueueConfig extends ProcessConfig{
     private static final String RECORD_SEPARATOR = "\n";
     private static final String KEY_VALUE_SEPARATOR = " ";
 
-    private QueueConfig(Map<String, Object> params) {
+    private QueueConfig(Map<String, List<Object>> params) {
         super(params);
     }
 
-    public static QueueConfig of(String config) {
-        return new QueueConfig(QueueConfig.parseStringToMap(config));
+    public static QueueConfig of(Map<String, List<Object>> params) {
+        return new QueueConfig(params);
     }
-    public static QueueConfig from(Path configPath){
-        String configString = ConfigProcessor.getConfigStringFromFile(configPath);
-        return of(configString);
-    }
+    public static QueueConfig from(Path configPath){ return of(parseFileToMap(configPath));}
 
-    private static Map<String, Object> parseStringToMap(String configString){
-        Properties props = new Properties();
+    private static Map<String, List<Object>> parseFileToMap(Path configPath){
+        Map<String, List<Object>> map = new HashMap<>();
         try {
-            InputStream inputStream = new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8));
-            props.load(inputStream);
-        } catch (IOException e) {
+            PropertiesConfiguration props = new PropertiesConfiguration(configPath.toFile());
+            props.getKeys().forEachRemaining(key -> map.put(key, props.getList(key)));
+
+        } catch (ConfigurationException e) {
             e.printStackTrace();
         }
-        return props.stringPropertyNames().stream().collect(Collectors.toMap(prop -> prop, props::getProperty));
+        return map;
+    }
+
+    @Override
+    Map.Entry<String, List<Object>> propToEntry(String param, String value) {
+        return new AbstractMap.SimpleImmutableEntry<>(param, Collections.singletonList(value));
     }
 
     @Override
     public String toConfigString() {
-        return Joiner
-                .on(RECORD_SEPARATOR)
-                .withKeyValueSeparator(KEY_VALUE_SEPARATOR)
-                .join(params());
+        return params().entrySet().stream()
+                .flatMap(e -> e.getValue().stream().map(value -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), value)))
+                .map(e -> e.getKey() + KEY_VALUE_SEPARATOR + e.getValue())
+                .collect(Collectors.joining(RECORD_SEPARATOR));
+    }
+
+    private Path getAbsoluteLogPath(GraknConfig config){
+        Path projectPath = GraknConfig.PROJECT_PATH;
+        String logPathString = config.getProperty(GraknConfigKey.LOG_DIR) + LOG_FILE;
+        Path logPath = Paths.get(logPathString);
+        Path path = logPath.isAbsolute() ? logPath : Paths.get(projectPath.toString(), logPathString);
+        return path;
     }
 
     private QueueConfig updateDirs(GraknConfig config) {
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
-        String logDir = config.getProperty(GraknConfigKey.LOG_DIR);
 
-        ImmutableMap<String, Object> dirParams = ImmutableMap.of(
-                DB_DIR_PARAM, dbDir + DATA_SUBDIR,
-                LOG_DIR_PARAM, logDir + LOG_FILE
+        ImmutableMap<String, List<Object>> dirParams = ImmutableMap.of(
+                DB_DIR_PARAM, Collections.singletonList(dbDir + DATA_SUBDIR),
+                LOG_DIR_PARAM, Collections.singletonList(getAbsoluteLogPath(config))
         );
         return new QueueConfig(this.updateParamsFromMap(dirParams));
     }
@@ -96,7 +107,7 @@ public class QueueConfig extends ProcessConfig{
     @Override
     public QueueConfig updateFromConfig(GraknConfig config) {
         return this
-                .updateGenericParams(config);
-                //.updateDirs(config);
+                .updateGenericParams(config)
+                .updateDirs(config);
     }
 }

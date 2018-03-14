@@ -21,10 +21,6 @@ package ai.grakn.bootup.config;
 import ai.grakn.engine.GraknConfig;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 
 
@@ -32,19 +28,25 @@ import java.util.Map;
  *
  * @author Kasper Piskorski
  */
-public abstract class ProcessConfig {
+public abstract class ProcessConfig<V> {
 
-    private final ImmutableMap<String, Object> params;
+    private final ImmutableMap<String, V> params;
 
-    ProcessConfig(Map<String, Object> params) {
+    ProcessConfig(Map<String, V> params) {
         this.params = ImmutableMap.copyOf(params);
     }
 
-    ImmutableMap<String, Object> params() { return params; }
+    public ImmutableMap<String, V> params() { return params; }
 
-    Map<String, Object> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, GraknConfig config) {
+    Map<String, V> updateParamsFromMap(Map<String, V> newParams){
+        Map<String, V> updatedParams = Maps.newHashMap(params());
+        updatedParams.putAll(newParams);
+        return updatedParams;
+    }
+
+    Map<String, V> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, GraknConfig config) {
         //overwrite params with params from grakn config
-        Map<String, Object> updatedParams = Maps.newHashMap(params());
+        Map<String, V> updatedParams = Maps.newHashMap(params());
         config.properties()
                 .stringPropertyNames()
                 .stream()
@@ -52,17 +54,14 @@ public abstract class ProcessConfig {
                 .forEach(prop -> {
                     String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
                     if (updatedParams.containsKey(param)) {
-                        updatedParams.put(param, config.properties().getProperty(prop));
+                        Map.Entry<String, V> entry = propToEntry(param, prop);
+                        updatedParams.put(entry.getKey(), entry.getValue());
                     }
                 });
         return updatedParams;
     }
-
-    Map<String, Object> updateParamsFromMap(Map<String, Object> newParams){
-        Map<String, Object> updatedParams = Maps.newHashMap(params());
-        updatedParams.putAll(newParams);
-        return updatedParams;
-    }
+    
+    abstract Map.Entry<String, V> propToEntry(String param, String value);
 
     public abstract String toConfigString();
 

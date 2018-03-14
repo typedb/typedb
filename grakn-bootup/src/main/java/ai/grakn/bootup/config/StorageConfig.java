@@ -25,19 +25,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  *
  * @author Kasper Piskorski
  */
-public class StorageConfig extends ProcessConfig {
+public class StorageConfig extends ProcessConfig<Object> {
 
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
@@ -58,11 +59,15 @@ public class StorageConfig extends ProcessConfig {
         try {
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>(){};
             Map<String, Object> yamlParams = mapper.readValue(yaml, reference);
-            return yamlParams.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == null ? EMPTY_VALUE : e.getValue()));
+            return Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    Map.Entry<String, Object> propToEntry(String key, String value) {
+        return new AbstractMap.SimpleImmutableEntry<>(key, value);
     }
 
     @Override
@@ -86,6 +91,23 @@ public class StorageConfig extends ProcessConfig {
                 "commitlog_directory", dbDir + COMMITLOG_SUBDIR
         );
         return new StorageConfig(this.updateParamsFromMap(dirParams));
+    }
+
+    @Override
+    Map<String, Object> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, GraknConfig config) {
+        //overwrite params with params from grakn config
+        Map<String, Object> updatedParams = Maps.newHashMap(params());
+        config.properties()
+                .stringPropertyNames()
+                .stream()
+                .filter(prop -> prop.contains(CONFIG_PARAM_PREFIX))
+                .forEach(prop -> {
+                    String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
+                    if (updatedParams.containsKey(param)) {
+                        updatedParams.put(param, config.properties().getProperty(prop));
+                    }
+                });
+        return updatedParams;
     }
 
     @Override
