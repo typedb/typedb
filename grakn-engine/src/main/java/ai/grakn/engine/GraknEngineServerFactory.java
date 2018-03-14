@@ -20,6 +20,8 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.HttpController;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -68,7 +70,6 @@ public class GraknEngineServerFactory {
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
         GrpcServer grpcServer = configureGrpcServer(config, engineGraknTxFactory);
 
-
         return createGraknEngineServer(engineID, service, status, metricRegistry, config, redisWrapper, indexStorage,
                 countStorage, lockProvider, runtime, httpCollaborators, engineGraknTxFactory, grpcServer);
     }
@@ -82,9 +83,10 @@ public class GraknEngineServerFactory {
         CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, collaborators);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(graknEngineConfig, factory, indexPostProcessor);
 
-        GraknEngineServer graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
+        GraknEngineServer graknEngineServer = new GraknEngineServer(engineID, graknEngineConfig, graknEngineStatus, factory, lockProvider, queueSanityCheck, httpHandler, taskRunner);
         Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
         runtime.addShutdownHook(thread);
 

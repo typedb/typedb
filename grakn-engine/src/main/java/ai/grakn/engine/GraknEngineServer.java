@@ -18,23 +18,21 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.util.GraknVersion;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -43,26 +41,23 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Marco Scoppetta
  */
 public class GraknEngineServer implements AutoCloseable {
-
-    private static final String REDIS_VERSION_KEY = "info:version";
-
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
-    private final GraknConfig prop;
+    private final EngineID engineId;
+    private final GraknConfig config;
+    private final GraknEngineStatus graknEngineStatus;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
-    private final GraknEngineStatus graknEngineStatus;
-    private final RedisWrapper redisWrapper;
+    private final QueueSanityCheck queueSanityCheck;
     private final HttpHandler httpHandler;
-    private final EngineID engineId;
     private final BackgroundTaskRunner backgroundTaskRunner;
 
-    public GraknEngineServer(GraknConfig prop, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId, BackgroundTaskRunner backgroundTaskRunner) {
-        this.prop = prop;
+    public GraknEngineServer(EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus, EngineGraknTxFactory factory, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, HttpHandler httpHandler, BackgroundTaskRunner backgroundTaskRunner) {
+        this.config = config;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
-        this.redisWrapper = redisWrapper;
+        this.queueSanityCheck = queueSanityCheck;
         // Lock provider
         this.lockProvider = lockProvider;
         this.factory = factory;
@@ -72,28 +67,18 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() throws IOException {
-        redisWrapper.testConnection();
+        queueSanityCheck.testConnection();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
-                prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
-                prop.getProperty(GraknConfigKey.SERVER_PORT));
+                config.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                config.getProperty(GraknConfigKey.SERVER_PORT));
         synchronized (this){
-            checkVersion();
+            queueSanityCheck.checkVersion();
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
         graknEngineStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
-    }
-
-    private void checkVersion() {
-        Jedis jedis = redisWrapper.getJedisPool().getResource();
-        String storedVersion = jedis.get(REDIS_VERSION_KEY);
-        if (storedVersion == null) {
-            jedis.set(REDIS_VERSION_KEY, GraknVersion.VERSION);
-        } else if (!storedVersion.equals(GraknVersion.VERSION)) {
-            LOG.warn(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, storedVersion));
-        }
     }
 
     @VisibleForTesting
@@ -109,7 +94,7 @@ public class GraknEngineServer implements AutoCloseable {
             } catch (InterruptedException e){
                 LOG.error(getFullStackTrace(e));
             }
-            redisWrapper.close();
+            queueSanityCheck.close();
             backgroundTaskRunner.close();
         }
     }
@@ -155,3 +140,4 @@ public class GraknEngineServer implements AutoCloseable {
         return lockProvider;
     }
 }
+
