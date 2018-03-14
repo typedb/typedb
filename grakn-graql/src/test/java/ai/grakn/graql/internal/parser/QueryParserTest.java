@@ -39,7 +39,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
@@ -667,26 +667,26 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterWithMembersThenSize() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").members().clusterSize(10);
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members().clusterSize(10);
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterWithSizeThenMembers() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").clusterSize(10).members();
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members();
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterWithSizeThenMembersThenSize() {
-        ClusterQuery<?> expected =
-                Graql.compute().cluster().in("movie", "person").clusterSize(10).members().clusterSize(15);
+        ConnectedComponentQuery<?> expected =
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members().clusterSize(15);
 
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
+        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
 
         assertEquals(expected, parsed);
     }

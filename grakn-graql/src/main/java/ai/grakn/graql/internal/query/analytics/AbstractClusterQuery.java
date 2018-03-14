@@ -18,48 +18,44 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.graql.analytics.KCoreQuery;
+import ai.grakn.graql.ComputeQuery;
 
-import java.util.Map;
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
-import java.util.Set;
 
-class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
-
-    private long k = -1L;
-
-    KCoreQueryImpl(Optional<GraknTx> tx) {
+abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
+        extends AbstractComputeQuery<T, V> {
+    AbstractClusterQuery(Optional<GraknTx> tx) {
         super(tx);
     }
 
-    @Override
-    public final ComputeJob<Map<String, Set<String>>> createJob() {
-        return queryRunner().run(this);
+    /**
+     * The centrality measures supported.
+     */
+    enum ClusterMeasure {
+
+        CONNECTED_COMPONENT("connected-component"),
+        K_CORE("k-core");
+        private final String name;
+
+        ClusterMeasure(String name) {
+            this.name = name;
+        }
+
+        @CheckReturnValue
+        public String getName() {
+            return name;
+        }
     }
 
-    @Override
-    public final KCoreQuery kValue(long kValue) {
-        k = kValue;
-        return this;
-    }
-
-    @Override
-    public final long kValue() {
-        return k;
-    }
-
-    @Override
-    ClusterMeasure getMethod() {
-        return ClusterMeasure.K_CORE;
-    }
+    abstract ClusterMeasure getMethod();
 
     @Override
     String graqlString() {
-        String string = "kcore ";
-        string += k;
-        string += subtypeString();
+        String string = "cluster";
+        string += subtypeString() + " using " + getMethod().getName();
+
         return string;
     }
 
@@ -69,15 +65,15 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        KCoreQueryImpl that = (KCoreQueryImpl) o;
+        AbstractClusterQuery that = (AbstractClusterQuery) o;
 
-        return k == that.k;
+        return getMethod() == that.getMethod();
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + Long.hashCode(k);
+        result = 31 * result + getMethod().hashCode();
         return result;
     }
 }
