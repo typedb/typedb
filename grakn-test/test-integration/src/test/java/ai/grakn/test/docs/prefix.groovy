@@ -19,21 +19,23 @@
 package ai.grakn.test.docs
 
 import ai.grakn.*
+import ai.grakn.client.BatchExecutorClient
 import ai.grakn.concept.*
-
-import java.time.*
+import ai.grakn.engine.TaskId
 import ai.grakn.graql.*
-import ai.grakn.graql.admin.*
-import ai.grakn.migration.csv.*
-import ai.grakn.client.*
-import ai.grakn.engine.*
+import ai.grakn.graql.admin.Answer
+import ai.grakn.migration.csv.CSVMigrator
 import mjson.Json
 
+import java.time.LocalDateTime
+
+import static ai.grakn.concept.AttributeType.DataType.STRING
 import static ai.grakn.graql.Graql.*
 
 // This is some dumb stuff so IntelliJ doesn't get rid of the imports
 //noinspection GroovyConstantIfStatement
 if (false) {
+    label("hello")
     Answer answer = null
     Concept concept = null
     Var var = var()
@@ -43,6 +45,11 @@ if (false) {
     BatchExecutorClient client = null
     Json json = null
     TaskId id = null
+    str = STRING
+    Label label = null
+    Order order = null
+    GraknTx tx = null
+    Attribute attribute = null
 }
 
 // Initialise graphs and fields that the code samples will use
