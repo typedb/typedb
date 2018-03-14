@@ -56,9 +56,7 @@ one will be created.
 
 In the case where `$B` does not have a defined `sub`, this will also implicit define `$B sub role`.
 
-## as
-
-`$A relates $C as $D` is equivalent to `$A relates $C; $C subs $D`. It can can only be used together with `relates`. 
+`$A relates $C as $D` is equivalent to `$A relates $C; $C sub $D`. `as` can only be used together with `relates`. 
 
 ## plays
 
