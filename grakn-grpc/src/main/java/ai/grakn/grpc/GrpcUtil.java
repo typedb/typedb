@@ -57,6 +57,8 @@ import ai.grakn.rpc.generated.GrpcGrakn.Infer;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Next;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.Stop;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
@@ -190,12 +192,42 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setGetAttributesByValue(convertValue(value)).build();
     }
 
+    public static TxRequest putEntityTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutEntityType(convert(label)).build();
+    }
+
+    public static TxRequest putRelationshipTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutRelationshipType(convert(label)).build();
+    }
+
+    public static TxRequest putAttributeTypeRequest(Label label, AttributeType.DataType<?> dataType) {
+        PutAttributeType putAttributeType =
+                PutAttributeType.newBuilder().setLabel(convert(label)).setDataType(convert(dataType)).build();
+
+        return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
+    }
+
+    public static TxRequest putRoleRequest(Label label) {
+        return TxRequest.newBuilder().setPutRole(convert(label)).build();
+    }
+
+    public static TxRequest putRuleRequest(Label label, Pattern when, Pattern then) {
+        PutRule putRule =
+                PutRule.newBuilder().setLabel(convert(label)).setWhen(convert(when)).setThen(convert(then)).build();
+
+        return TxRequest.newBuilder().setPutRule(putRule).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
     public static TxResponse iteratorResponse(IteratorId iteratorId) {
         return TxResponse.newBuilder().setIteratorId(iteratorId).build();
+    }
+
+    public static TxResponse conceptResponse(Concept concept) {
+        return TxResponse.newBuilder().setConcept(convert(concept)).build();
     }
 
     public static TxResponse optionalConceptResponse(Optional<Concept> concept) {
@@ -344,7 +376,7 @@ public class GrpcUtil {
         return builder.build();
     }
 
-    static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
+    public static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
         switch (dataType) {
             case String:
                 return AttributeType.DataType.STRING;

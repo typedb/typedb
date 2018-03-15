@@ -32,11 +32,9 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
@@ -49,7 +47,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Metadata;
@@ -60,12 +57,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
@@ -377,39 +371,81 @@ public class RemoteGraknTxTest {
     }
 
     @Test
-    public void whenPuttingEntityType_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ENTITY, GrpcConcept.BaseType.EntityType, GraknTx::putEntityType, null);
+    public void whenPuttingEntityType_EnsureCorrectRequestIsSent(){
+        ConceptId id = ConceptId.of(V123.getValue());
+        Label label = Label.of("foo");
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createEntityType(tx, id);
+            server.setResponse(GrpcUtil.putEntityTypeRequest(label), GrpcUtil.conceptResponse(concept));
+
+            assertEquals(concept, tx.putEntityType(label));
+        }
     }
 
     @Test
-    public void whenPuttingRelationType_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RELATIONSHIP, GrpcConcept.BaseType.RelationshipType, GraknTx::putRelationshipType, null);
+    public void whenPuttingRelationshipType_EnsureCorrectRequestIsSent(){
+        ConceptId id = ConceptId.of(V123.getValue());
+        Label label = Label.of("foo");
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createRelationshipType(tx, id);
+            server.setResponse(GrpcUtil.putRelationshipTypeRequest(label), GrpcUtil.conceptResponse(concept));
+
+            assertEquals(concept, tx.putRelationshipType(label));
+        }
     }
 
     @Test
-    public void whenPuttingAttributeType_EnsureCorrectQueryIsSent(){
-        AttributeType.DataType<String> string = AttributeType.DataType.STRING;
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ATTRIBUTE, GrpcConcept.BaseType.AttributeType,
-                (tx, label) -> tx.putAttributeType(label, string),
-                var -> var.datatype(string));
+    public void whenPuttingAttributeType_EnsureCorrectRequestIsSent(){
+        ConceptId id = ConceptId.of(V123.getValue());
+        Label label = Label.of("foo");
+        AttributeType.DataType<?> dataType = AttributeType.DataType.STRING;
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createAttributeType(tx, id);
+            server.setResponse(GrpcUtil.putAttributeTypeRequest(label, dataType), GrpcUtil.conceptResponse(concept));
+
+            assertEquals(concept, tx.putAttributeType(label, dataType));
+        }
     }
 
     @Test
-    public void whenPuttingRule_EnsureCorrectQueryIsSent(){
-        Pattern when = Graql.parser().parsePattern("$x isa Your-Type");
-        Pattern then = Graql.parser().parsePattern("$x isa Your-Other-Type");
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.RULE, GrpcConcept.BaseType.Rule, (tx, label) -> tx.putRule(label, when, then), var -> var.when(when).then(then));
+    public void whenPuttingRole_EnsureCorrectRequestIsSent(){
+        ConceptId id = ConceptId.of(V123.getValue());
+        Label label = Label.of("foo");
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createRole(tx, id);
+            server.setResponse(GrpcUtil.putRoleRequest(label), GrpcUtil.conceptResponse(concept));
+
+            assertEquals(concept, tx.putRole(label));
+        }
     }
 
     @Test
-    public void whenPuttingRole_EnsureCorrectQueryIsSent(){
-        assertConceptLabelInsertion("oliver", Schema.MetaSchema.ROLE, GrpcConcept.BaseType.Role, GraknTx::putRole, null);
-    }
+    public void whenPuttingRule_EnsureCorrectRequestIsSent(){
+        ConceptId id = ConceptId.of(V123.getValue());
+        Label label = Label.of("foo");
+        Pattern when = var("x").isa("person");
+        Pattern then = var("y").isa("person");
 
-    private void assertConceptLabelInsertion(String label, Schema.MetaSchema metaSchema, GrpcConcept.BaseType baseType, BiConsumer<GraknTx, Label> adder, @Nullable Function<VarPattern, VarPattern> extender){
-        VarPattern var = var("x").label(label).sub(metaSchema.getLabel().getValue());
-        if(extender != null) var = extender.apply(var);
-        verifyCorrectQuerySent(define(var), baseType, tx -> adder.accept(tx, Label.of(label)));
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createRule(tx, id);
+            server.setResponse(GrpcUtil.putRuleRequest(label, when, then), GrpcUtil.conceptResponse(concept));
+
+            assertEquals(concept, tx.putRule(label, when, then));
+        }
     }
 
     @Test
@@ -488,22 +524,6 @@ public class RemoteGraknTxTest {
 
             assertThat(tx.getAttributesByValue(value), containsInAnyOrder(attribute1, attribute2));
         }
-    }
-
-    private void verifyCorrectQuerySent(Query query, GrpcConcept.BaseType baseType, Consumer<GraknTx> txConsumer){
-        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setBaseType(baseType).setId(V123).build();
-        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
-        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
-
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
-
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-            txConsumer.accept(tx);
-        }
-
-        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
     }
 
     @Test

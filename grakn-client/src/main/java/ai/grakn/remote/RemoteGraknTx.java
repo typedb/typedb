@@ -34,11 +34,8 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
@@ -47,21 +44,13 @@ import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
-import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
-import static ai.grakn.util.Schema.MetaSchema.ROLE;
-import static ai.grakn.util.Schema.MetaSchema.RULE;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
@@ -97,39 +86,27 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, ENTITY);
+        return client().putEntityType(label).asEntityType();
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        return putSchemaConcept(label, ATTRIBUTE, var -> var.datatype(dataType));
+        return client().putAttributeType(label, dataType).asAttributeType();
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, RULE, var -> var.when(when).then(then));
+        return client().putRule(label, when, then).asRule();
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putSchemaConcept(label, RELATIONSHIP);
+        return client().putRelationshipType(label).asRelationshipType();
     }
 
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, ROLE);
-    }
-
-    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta){
-        return putSchemaConcept(label, meta, null);
-    }
-
-    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta,
-                                                   @Nullable Function<VarPattern, VarPattern> extender){
-        Var var = var("x");
-        VarPattern pattern = var.label(label).sub(var().label(meta.getLabel()));
-        if(extender != null) pattern = extender.apply(pattern);
-        return (X) queryRunner().run(Graql.define(pattern)).get(var);
+        return client().putRole(label).asRole();
     }
 
     @Nullable

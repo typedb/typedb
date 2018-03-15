@@ -20,10 +20,12 @@ package ai.grakn.remote;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -130,6 +132,31 @@ public final class GrpcClient implements AutoCloseable {
     public Stream<? extends Concept> getAttributesByValue(Object value) {
         communicator.send(GrpcUtil.getAttributesByValueRequest(value));
         return GrpcUtil.convert(conceptConverter, responseOrThrow().getConcepts());
+    }
+
+    public Concept putEntityType(Label label) {
+        communicator.send(GrpcUtil.putEntityTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRelationshipType(Label label) {
+        communicator.send(GrpcUtil.putRelationshipTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+        communicator.send(GrpcUtil.putAttributeTypeRequest(label, dataType));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRole(Label label) {
+        communicator.send(GrpcUtil.putRoleRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRule(Label label, Pattern when, Pattern then) {
+        communicator.send(GrpcUtil.putRuleRequest(label, when, then));
+        return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     @Override

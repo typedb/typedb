@@ -20,7 +20,14 @@ package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcConceptConverter;
@@ -32,6 +39,8 @@ import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
@@ -129,6 +138,21 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 break;
             case GETATTRIBUTESBYVALUE:
                 getAttributesByValue(request.getGetAttributesByValue());
+                break;
+            case PUTENTITYTYPE:
+                putEntityType(request.getPutEntityType());
+                break;
+            case PUTRELATIONSHIPTYPE:
+                putRelationshipType(request.getPutRelationshipType());
+                break;
+            case PUTATTRIBUTETYPE:
+                putAttributeType(request.getPutAttributeType());
+                break;
+            case PUTROLE:
+                putRole(request.getPutRole());
+                break;
+            case PUTRULE:
+                putRule(request.getPutRule());
                 break;
             default:
             case REQUEST_NOT_SET:
@@ -263,6 +287,38 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         TxResponse response = TxResponse.newBuilder().setConcepts(GrpcUtil.convert(attributes.stream())).build();
 
         responseObserver.onNext(response);
+    }
+
+    private void putEntityType(GrpcConcept.Label label) {
+        EntityType entityType = tx().putEntityType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(entityType));
+    }
+
+    private void putRelationshipType(GrpcConcept.Label label) {
+        RelationshipType relationshipType = tx().putRelationshipType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(relationshipType));
+    }
+
+    private void putAttributeType(PutAttributeType putAttributeType) {
+        Label label = GrpcUtil.convert(putAttributeType.getLabel());
+        AttributeType.DataType<?> dataType = GrpcUtil.convert(putAttributeType.getDataType());
+
+        AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+        responseObserver.onNext(GrpcUtil.conceptResponse(attributeType));
+    }
+
+    private void putRole(GrpcConcept.Label label) {
+        Role role = tx().putRole(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(role));
+    }
+
+    private void putRule(PutRule putRule) {
+        Label label = GrpcUtil.convert(putRule.getLabel());
+        Pattern when = GrpcUtil.convert(putRule.getWhen());
+        Pattern then = GrpcUtil.convert(putRule.getThen());
+
+        Rule rule = tx().putRule(label, when, then);
+        responseObserver.onNext(GrpcUtil.conceptResponse(rule));
     }
 
     private GraknTx tx() {
