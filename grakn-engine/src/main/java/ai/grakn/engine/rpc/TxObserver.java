@@ -235,7 +235,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
-        TxResponse response = grpcIterators.next(iteratorId);
+
+        TxResponse response =
+                grpcIterators.next(iteratorId).orElseThrow(() -> GrpcGraknService.error(Status.FAILED_PRECONDITION));
+
         responseObserver.onNext(response);
     }
 

@@ -25,10 +25,9 @@ import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
 
 /**
  * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
@@ -38,7 +37,7 @@ import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
  */
 public class GrpcIterators {
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-    private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<IteratorId, Iterator<TxResponse>>();
+    private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
 
     private GrpcIterators() {
     }
@@ -50,7 +49,7 @@ public class GrpcIterators {
     /**
      * Register a new iterator and return the ID of the iterator
      */
-    IteratorId add(Iterator<TxResponse> iterator) {
+    public IteratorId add(Iterator<TxResponse> iterator) {
         IteratorId iteratorId = IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
 
         iterators.put(iteratorId, iterator);
@@ -60,25 +59,25 @@ public class GrpcIterators {
     /**
      * Return the next response from an iterator. Will return a {@link Done} response if the iterator is exhausted.
      */
-    TxResponse next(IteratorId iteratorId) {
-        Iterator<TxResponse> iterator = nonNull(iterators.get(iteratorId));
+    Optional<TxResponse> next(IteratorId iteratorId) {
+        return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
+            TxResponse response;
 
-        TxResponse response;
+            if (iterator.hasNext()) {
+                response = iterator.next();
+            } else {
+                response = GrpcUtil.doneResponse();
+                stop(iteratorId);
+            }
 
-        if (iterator.hasNext()) {
-            response = iterator.next();
-        } else {
-            response = GrpcUtil.doneResponse();
-            stop(iteratorId);
-        }
-
-        return response;
+            return response;
+        });
     }
 
     /**
      * Stop an iterator
      */
     void stop(IteratorId iteratorId) {
-        nonNull(iterators.remove(iteratorId));
+        iterators.remove(iteratorId);
     }
 }
