@@ -241,12 +241,22 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern relates(String type) {
-        return relates(Graql.label(type));
+        return relates(type, null);
     }
 
     @Override
     public final VarPattern relates(VarPattern type) {
-        return addProperty(RelatesProperty.of(type.admin()));
+        return relates(type, null);
+    }
+
+    @Override
+    public VarPattern relates(String roleType, String superRoleType) {
+        return relates(Graql.label(roleType), superRoleType == null ? null : Graql.label(superRoleType));
+    }
+
+    @Override
+    public VarPattern relates(VarPattern roleType, VarPattern superRoleType) {
+        return addProperty(RelatesProperty.of(roleType.admin(), superRoleType == null ? null : superRoleType.admin()));
     }
 
     @Override

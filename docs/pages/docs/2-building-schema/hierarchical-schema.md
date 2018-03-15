@@ -65,7 +65,7 @@ define
     relates child;
 ```
 
-This schema represents a genealogy knowledge base which models a family tree.
+This schema represents a genealogy knowledge graph which models a family tree.
 This is a very simplistic schema with plenty of room for extension, so let's begin!
 
 ## Hierarchies of Entity Types
@@ -81,11 +81,11 @@ car sub vehicle;
 motorbikes sub vehicle;
 ```    
 
-In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our knowledge base, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
+In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our knowledge graph, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
 
 So how can we use this technique to improve our existing genealogy schema?
 
-We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the knowledge base. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives.
+We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the knowledge graph. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives.
 
 We can model this as follows:
 
@@ -192,7 +192,7 @@ This is quite useful because when we ask for all relatives we will be getting re
 
 ## Wrapping up
 
-We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
+We could go into far more detail regarding our genealogy knowledge graph but I will leave that to you.
 For the moment here is our more complex schema to get you started on making your own deeper ontologies.
 
 ```graql-test-ignore
@@ -300,4 +300,4 @@ define
 
 We will continue to explore the development of a schema in the next section on defining a [rule-driven schema](./rule-driven-schema).
 
-You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in the [examples](https://github.com/graknlabs/grakn/tree/master/grakn-dist/src/examples) part of the distribution.
+You can find the complete schema for our genealogy knowledge graph project, the dataset and rules that accompany it, on Github in the [examples](https://github.com/graknlabs/grakn/tree/master/grakn-dist/src/examples) part of the distribution.

@@ -112,28 +112,28 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.service()).tx(any());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
         }
     }
 
     @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GraknTxType.BATCH)) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.BATCH))) {
             verify(server.requests()).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests(), never()).onCompleted(); // Make sure transaction is still open here
         }
 
@@ -142,14 +142,14 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetKeyspaceOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             assertEquals(session, tx.session());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.BATCH)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.BATCH))) {
             assertEquals(GraknTxType.BATCH, tx.txType());
         }
     }
@@ -159,7 +159,7 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x").isa("person")).get();
         String queryString = query.toString();
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             tx.graql().parse(queryString).execute();
@@ -182,7 +182,7 @@ public class RemoteGraknTxTest {
 
         List<Answer> results;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             results = tx.graql().<GetQuery>parse(queryString).execute();
         }
@@ -199,7 +199,7 @@ public class RemoteGraknTxTest {
 
         server.setResponse(GrpcUtil.execQueryRequest(query), GrpcUtil.doneResponse());
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             assertNull(tx.graql().parse(queryString).execute());
         }
@@ -215,7 +215,7 @@ public class RemoteGraknTxTest {
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             assertTrue(tx.graql().<Query<Boolean>>parse(queryString).execute());
         }
@@ -235,7 +235,7 @@ public class RemoteGraknTxTest {
 
         Answer answer;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             answer = tx.graql().<DefineQuery>parse(queryString).execute();
         }
@@ -260,7 +260,7 @@ public class RemoteGraknTxTest {
         List<Answer> answers;
         int numAnswers = 10;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
         }
@@ -277,7 +277,7 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
         String queryString = "match $x isa person; get $x;";
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             QueryBuilder graql = tx.graql();
@@ -292,7 +292,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCommitting_SendACommitMessageToGrpc() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             tx.commit();
@@ -303,20 +303,20 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTxWithKeyspace_SetsKeyspaceOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             assertEquals(KEYSPACE, tx.keyspace());
         }
     }
 
     @Test
     public void whenOpeningATxFails_Throw() {
-        TxRequest openRequest = GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE);
+        TxRequest openRequest = GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE);
         throwOn(openRequest, ErrorType.GRAKN_BACKEND_EXCEPTION, "well something went wrong");
 
         exception.expect(GraknBackendException.class);
         exception.expectMessage("well something went wrong");
 
-        GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE);
+        GraknTx tx = RemoteGraknTx.create(session, openRequest);
         tx.close();
     }
 
@@ -324,7 +324,7 @@ public class RemoteGraknTxTest {
     public void whenCommittingATxFails_Throw() {
         throwOn(GrpcUtil.commitRequest(), ErrorType.INVALID_KB_EXCEPTION, "do it better next time");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
 
             exception.expect(InvalidKBException.class);
             exception.expectMessage("do it better next time");
@@ -340,7 +340,7 @@ public class RemoteGraknTxTest {
         TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
         throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
@@ -358,7 +358,7 @@ public class RemoteGraknTxTest {
         TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
         throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
@@ -434,7 +434,7 @@ public class RemoteGraknTxTest {
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             txConsumer.accept(tx);
         }
@@ -461,7 +461,7 @@ public class RemoteGraknTxTest {
     public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
         DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE).getOpen());
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE)) {
+        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             tx.admin().delete();
         }
 
@@ -469,7 +469,7 @@ public class RemoteGraknTxTest {
     }
 
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){
-        GraknTx tx = RemoteGraknTx.create(session, GraknTxType.WRITE);
+        GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE));
         assertFalse(tx.isClosed());
         action.accept(tx);
         assertTrue(tx.isClosed());

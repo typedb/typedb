@@ -122,12 +122,12 @@ somewhere.
 `GraqlDocsTest` and `JavaDocsTest` will test the Graql and Java code blocks respectively. Blocks are identified by
 whether they begin with `graql` or `java`. Each page is tested on its own by executing the code blocks sequentially.
 
-By default, the code blocks are executed against the genealogy knowledge base. If you want to use a different knowledge
+By default, the code blocks are executed against the genealogy knowledge graph. If you want to use a different knowledge
 base, then add e.g.
 ```
 KB: pokemon
 ```
-to the header of the markdown file. The valid knowledge bases can be found in `DocTestUtils`.
+to the header of the markdown file. The valid knowledge graphs can be found in `DocTestUtils`.
 
 Java code blocks are actually tested with Groovy (because it is an interpreted language). There are some differences
 between Java and Groovy syntax, so we recommend writing code that is valid in both languages.

@@ -26,9 +26,7 @@ import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -85,11 +83,5 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     protected final Attribute<D> asInstance(Concept concept) {
         return concept.asAttribute();
-    }
-
-    @Nonnull
-    @Override
-    public AttributeType<D> sup() {
-        return Objects.requireNonNull(super.sup());
     }
 }

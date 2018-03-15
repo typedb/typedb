@@ -113,5 +113,5 @@ There are no specific JSON examples in the Academy, as their migration works jus
 Whew! That was a lot to take in! You should by know have learned the basic of data migration into GRAKN. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
 
 ## What next
-You are almost there! After the module [review](./migration-review.html) you will have put all the data into your knowledge base and you will be able to proceed to one of the most exciting topics of the academy: logic inference.
+You are almost there! After the module [review](./migration-review.html) you will have put all the data into your knowledge graph and you will be able to proceed to one of the most exciting topics of the academy: logic inference.
 If you want to go deeper into the topic of data migration head to the [docs](../index.html).

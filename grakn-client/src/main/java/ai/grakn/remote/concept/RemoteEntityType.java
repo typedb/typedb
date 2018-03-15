@@ -26,9 +26,6 @@ import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
-
 /**
  * @author Felix Chapman
  */
@@ -57,11 +54,5 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
     @Override
     protected final Entity asInstance(Concept concept) {
         return concept.asEntity();
-    }
-
-    @Nonnull
-    @Override
-    public EntityType sup() {
-        return Objects.requireNonNull(super.sup());
     }
 }

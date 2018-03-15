@@ -26,7 +26,7 @@ OPTIONS
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.
  -i,--input <arg>      Input json data file or directory.
- -k,--keyspace <arg>   Grakn knowledge base. Required.
+ -k,--keyspace <arg>   Grakn knowledge graph. Required.
  -n,--no               Write to standard out.
  -r,--retry <arg>      Retry sending tasks if engine is not available
  -t,--template <arg>   Graql template to apply to the data.
@@ -41,7 +41,7 @@ OPTIONS
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define a schema for the data to derive the full benefit of a knowledge base
+* define a schema for the data to derive the full benefit of a knowledge graph
 * create templated Graql to map the data to the schema. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template.
 * invoke the Grakn migrator through the shell script or Java API.
 
@@ -135,7 +135,7 @@ Once the above types are migrated, we can move on to the pokemon JSON file:
 }
 ```
 
-This template is rather complicated. The first `match` portion is necessary to look up all of the already migrated pokemon types in the knowledge base. You can then refer to these variables in your `insert` statement while creating the relationships.   
+This template is rather complicated. The first `match` portion is necessary to look up all of the already migrated pokemon types in the knowledge graph. You can then refer to these variables in your `insert` statement while creating the relationships.
 
 ```graql-template
 match

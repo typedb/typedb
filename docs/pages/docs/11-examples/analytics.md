@@ -90,7 +90,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 
 ## Data Migration
 
-We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a knowledge base.
+We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a knowledge graph.
 
 ```bash
 ./graql console -b ./data.gql

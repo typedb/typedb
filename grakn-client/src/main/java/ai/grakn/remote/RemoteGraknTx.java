@@ -48,6 +48,7 @@ import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -82,16 +83,17 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, GraknStub stub) {
+    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        client = GrpcClient.create(this::convert, stub);
-        client.open(session.keyspace(), txType);
+        this.client = GrpcClient.create(this::convert, stub);
+        client.open(openRequest);
     }
 
-    static RemoteGraknTx create(RemoteGraknSession session, GraknTxType txType) {
+    // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
+    public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
         GraknStub stub = session.stub();
-        return new RemoteGraknTx(session, txType, stub);
+        return new RemoteGraknTx(session, GrpcUtil.convert(openRequest.getOpen().getTxType()), openRequest, stub);
     }
 
     public GrpcClient client() {
