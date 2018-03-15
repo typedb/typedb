@@ -26,7 +26,6 @@ import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
@@ -43,6 +42,7 @@ import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -231,12 +231,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
-        Concept concept = tx().getConcept(GrpcUtil.convert(conceptId));
+        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
 
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        if (concept != null) conceptResponse.setConcept(GrpcUtil.convert(concept));
-
-        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
 
         responseObserver.onNext(response);
     }

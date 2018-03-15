@@ -410,20 +410,29 @@ public class GrpcUtil {
         }
     }
 
+    public static GrpcConcept.Pattern convert(Pattern pattern) {
+        return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
+    }
+
+    public static Pattern convert(GrpcConcept.Pattern pattern ) {
+        return Graql.parser().parsePattern(pattern.getValue());
+    }
+
     public static OptionalPattern convert(Optional<Pattern> pattern) {
         OptionalPattern.Builder builder = OptionalPattern.newBuilder();
-        return pattern.map(Pattern::toString).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+        return pattern.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
     }
 
     @Nullable
     public static Optional<Pattern> convert(OptionalPattern pattern) {
         switch (pattern.getValueCase()) {
             case PRESENT:
-                return Optional.of(Graql.parser().parsePattern(pattern.getPresent()));
+                return Optional.of(convert(pattern.getPresent()));
             case ABSENT:
+                return Optional.empty();
             case VALUE_NOT_SET:
             default:
-                return Optional.empty();
+                throw CommonUtil.unreachableStatement("Unrecognised " + pattern);
         }
     }
 
