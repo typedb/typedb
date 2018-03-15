@@ -20,10 +20,10 @@ package ai.grakn.remote;
 
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
-import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -93,8 +93,8 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    private GrpcGrakn.IteratorId createIteratorId() {
-        return GrpcGrakn.IteratorId.newBuilder().setId(++iteratorIdCounter).build();
+    private IteratorId createIteratorId() {
+        return IteratorId.newBuilder().setId(++iteratorIdCounter).build();
     }
 
     public void setResponse(TxRequest request, TxResponse... responses) {
@@ -143,7 +143,7 @@ public final class GrpcServerMock extends CompositeTestRule {
         }
 
         static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
-            GrpcGrakn.IteratorId iteratorId = server.createIteratorId();
+            IteratorId iteratorId = server.createIteratorId();
 
             return streamObserver -> {
                 List<TxResponse> responsesList =

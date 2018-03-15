@@ -36,9 +36,7 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
-import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
-import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
 import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
@@ -46,6 +44,9 @@ import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.generated.GrpcIterator.Next;
+import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -230,7 +231,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
-    private void next(GrpcGrakn.Next next) {
+    private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
 
         Iterator<QueryResult> iterator = nonNull(iterators.get(iteratorId));
@@ -248,7 +249,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(response);
     }
 
-    private void stop(GrpcGrakn.Stop stop) {
+    private void stop(Stop stop) {
         nonNull(iterators.remove(stop.getIteratorId()));
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
