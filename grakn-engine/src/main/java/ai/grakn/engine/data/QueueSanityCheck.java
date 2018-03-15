@@ -16,8 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/**
- *  Severside websocket implementation.
- */
+package ai.grakn.engine.data;
 
-package ai.grakn.engine.session;
+/**
+ * The {@link QueueSanityCheck} class is responsible for performing sanity check of the Queue component
+ *
+ * @author Ganeshwara Herawan Hananda
+ */
+public interface QueueSanityCheck {
+    void testConnection();
+
+    void checkVersion();
+
+    void close();
+}

@@ -26,14 +26,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
+class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
     private long k = -1L;
 
-    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
-
     KCoreQueryImpl(Optional<GraknTx> tx) {
-        super(tx, INCLUDE_ATTRIBUTE);
+        super(tx);
     }
 
     @Override
@@ -50,6 +48,11 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
     @Override
     public final long kValue() {
         return k;
+    }
+
+    @Override
+    ClusterMeasure getMethod() {
+        return ClusterMeasure.K_CORE;
     }
 
     @Override

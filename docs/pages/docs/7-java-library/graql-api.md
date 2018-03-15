@@ -41,8 +41,8 @@ GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 QueryBuilder qb = tx.graql();
 ```
 
-The user can also choose to not provide a knowledge base with `Graql.withoutTx()`.
-This can be useful if you need to provide the knowledge base later (using `withTx`),
+The user can also choose to not provide a knowledge graph with `Graql.withoutTx()`.
+This can be useful if you need to provide the knowledge graph later (using `withTx`),
 or you only want to construct queries without executing them.
 
 The `QueryBuilder` class provides methods for building `match`es and `insert`

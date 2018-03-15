@@ -41,7 +41,7 @@ There is an example of using the Java Migration API for JSON migration on the [s
 
 There are several examples available:
 
-* A common use-case is to migrate existing SQL data to a knowledge base in Grakn. We walk through a simple example of using the migration script as part of the documentation about [SQL migration](../migrating-data/migrating-sql)
+* A common use-case is to migrate existing SQL data to a knowledge graph in Grakn. We walk through a simple example of using the migration script as part of the documentation about [SQL migration](../migrating-data/migrating-sql)
 
 * There is a an additional example of [SQL migration using the Java API](../examples/SQL-migration).
 

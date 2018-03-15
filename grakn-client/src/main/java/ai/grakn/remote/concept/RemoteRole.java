@@ -39,16 +39,6 @@ abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
     }
 
     @Override
-    public final Role sup(Role type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
-    public final Role sub(Role type) {
-        throw new UnsupportedOperationException(); // TODO: implement
-    }
-
-    @Override
     public final Stream<RelationshipType> relationshipTypes() {
         return query(TARGET.relates(ME)).map(Concept::asRelationshipType);
     }

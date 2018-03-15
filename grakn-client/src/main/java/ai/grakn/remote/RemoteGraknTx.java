@@ -34,6 +34,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -41,8 +42,13 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -72,21 +78,21 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
  */
 public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
-    private final GraknSession session;
+    private final RemoteGraknSession session;
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private RemoteGraknTx(GraknSession session, GraknTxType txType, GrpcClient client) {
+    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.client = client;
+        this.client = GrpcClient.create(this::convert, stub);
+        client.open(openRequest);
     }
 
-    static RemoteGraknTx create(RemoteGraknSession session, GraknTxType txType) {
-        GraknGrpc.GraknStub stub = session.stub();
-        GrpcClient client = GrpcClient.create(stub);
-        client.open(session.keyspace(), txType);
-        return new RemoteGraknTx(session, txType, client);
+    // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
+    public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
+        GraknStub stub = session.stub();
+        return new RemoteGraknTx(session, GrpcUtil.convert(openRequest.getOpen().getTxType()), openRequest, stub);
     }
 
     public GrpcClient client() {
@@ -236,16 +242,49 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        throw new UnsupportedOperationException(); // TODO
+        Var me = var("me");
+        Var target = var("target");
+        GetQuery query = graql().match(me.id(schemaConcept.getId()), me.sub(target)).get();
+        return query.stream().map(answer -> answer.get(target).asSchemaConcept());
     }
 
     @Override
     public void delete() {
-        throw new UnsupportedOperationException(); // TODO
+        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
+        session.blockingStub().delete(request);
+        close();
     }
 
     @Override
     public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(this, client, null);
+        return RemoteQueryRunner.create(this, client);
+    }
+
+    private Concept convert(GrpcConcept.Concept concept) {
+        ConceptId id = ConceptId.of(concept.getId().getValue());
+
+        switch (concept.getBaseType()) {
+            case Entity:
+                return RemoteConcepts.createEntity(this, id);
+            case Relationship:
+                return RemoteConcepts.createRelationship(this, id);
+            case Attribute:
+                return RemoteConcepts.createAttribute(this, id);
+            case EntityType:
+                return RemoteConcepts.createEntityType(this, id);
+            case RelationshipType:
+                return RemoteConcepts.createRelationshipType(this, id);
+            case AttributeType:
+                return RemoteConcepts.createAttributeType(this, id);
+            case Role:
+                return RemoteConcepts.createRole(this, id);
+            case Rule:
+                return RemoteConcepts.createRule(this, id);
+            case MetaType:
+                return RemoteConcepts.createMetaType(this, id);
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
     }
 }

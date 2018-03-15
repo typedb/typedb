@@ -20,8 +20,8 @@ supported constructs-->
 
 ## Introduction
 In this section we are going to further push the schema we defined in the [Hierarchical Schema](./hierarchical-schema.html) section by complementing it with suitably defined rules.
-Defining rules as a part of the knowledge base gives rise to rule-based reasoning permitting automated capture and evolution of patterns within the knowledge base.
-By using rules, common patterns in the knowledge base can be defined and associated with existing schema elements as well as their instances. This not only allows you to compress and simplify typical queries, but offers the ability to derive new, non-trivial information by combining defined patterns.
+Defining rules as a part of the knowledge graph gives rise to rule-based reasoning permitting automated capture and evolution of patterns within the knowledge graph.
+By using rules, common patterns in the knowledge graph can be defined and associated with existing schema elements as well as their instances. This not only allows you to compress and simplify typical queries, but offers the ability to derive new, non-trivial information by combining defined patterns.
 
 Graql rules assume the following general form:
 
@@ -30,7 +30,7 @@ when {rule-body} then {rule-head}
 ```
 where `rule-body` and `rule-head` are Graql patterns. Rules are defined as a part of the schema by subbing the `rule` concept.
 
-Intuitively, rules can be regarded as pattern matching constructs. By defining a rule we are telling the system that if we can find an instantiation of the body pattern (set of concepts satisfying the pattern) then the corresponding instantiation of head pattern is treated as if it existed in the knowledge base.
+Intuitively, rules can be regarded as pattern matching constructs. By defining a rule we are telling the system that if we can find an instantiation of the body pattern (set of concepts satisfying the pattern) then the corresponding instantiation of head pattern is treated as if it existed in the knowledge graph.
 
 In the following subsection we will show examples of how to augment the schema by using the rule facility.
 
@@ -108,7 +108,7 @@ $alice isa person, has firstname 'Alice', has gender 'female';
 (parent: $bob, child: $alice) isa parentship;
 ```
 
-the knowledge base will recognise the following `parentship` relationship instances:
+the knowledge graph will recognise the following `parentship` relationship instances:
 
 ```graql-test-ignore
 (parent: $bob, child: $alice) isa parentship;
@@ -162,7 +162,7 @@ then
 ```
 
 As we can see, we simply define `siblings` to be people sharing common parents and then define `cousins` as people having parents that are siblings. Consequently, provided the following information has been inserted into
-the knowledge base:
+the knowledge graph:
 
 ```graql
 insert

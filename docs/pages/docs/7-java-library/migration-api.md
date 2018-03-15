@@ -22,7 +22,7 @@ CSVMigrator migrator = new CSVMigrator(String template, File dataFile);
 
 ## Migration
 
-To migrate the provided data into a knowledge base, call the `load` function, providing the keyspace and location where Grakn Engine is running.
+To migrate the provided data into a knowledge graph, call the `load` function, providing the keyspace and location where Grakn Engine is running.
 
 ```java-test-ignore
 migrator.load(String uri, String keyspace);

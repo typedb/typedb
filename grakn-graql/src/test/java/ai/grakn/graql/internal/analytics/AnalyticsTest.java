@@ -98,7 +98,7 @@ public class AnalyticsTest {
 
         // the null role-player caused analytics to fail at some stage
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().degree().execute();
+            graph.graql().compute().centrality().usingDegree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();

@@ -20,6 +20,8 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -211,9 +213,10 @@ public class GraknEngineServerTest {
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
         Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, null)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
                 sparkHttp, httpControllers, grpcServer,
                 engineGraknTxFactory, metricRegistry,
-                redisWrapper, lockProvider, postProcessor);
+                queueSanityCheck, lockProvider, postProcessor);
     }
 }
