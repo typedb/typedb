@@ -211,7 +211,7 @@ public class GraknEngineServerTest {
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, null)).build();
+        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,

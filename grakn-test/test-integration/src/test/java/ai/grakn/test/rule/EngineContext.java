@@ -297,7 +297,6 @@ public class EngineContext extends CompositeTestRule {
 
         Server server = ServerBuilder.forPort(0).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
-
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
