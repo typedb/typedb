@@ -16,15 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.shell;
+package ai.grakn.graql.shell;
 
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Autocomplete;
+import com.google.common.collect.ImmutableSet;
 import jline.console.completer.Completer;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocompleter for Graql.
@@ -34,22 +40,24 @@ import java.util.concurrent.ExecutionException;
  */
 public class GraqlCompleter implements Completer {
 
-    private final CompletableFuture<Set<String>> types = new CompletableFuture<>();
+    private final ImmutableSet<Label> labels;
 
-    public void setTypes(Set<String> types) {
-        this.types.complete(types);
+    private GraqlCompleter(ImmutableSet<Label> labels) {
+        this.labels = labels;
+    }
+
+    public static GraqlCompleter create(GraknSession session) {
+        ImmutableSet<Label> labels;
+        try (GraknTx tx = session.open(GraknTxType.READ)) {
+            labels = tx.admin().getMetaConcept().subs().map(SchemaConcept::getLabel).collect(toImmutableSet());
+        }
+        return new GraqlCompleter(labels);
     }
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Set<String> theTypes;
-        try {
-            theTypes = types.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-
-        Autocomplete autocomplete = Autocomplete.create(theTypes, buffer, cursor);
+        Set<String> labelValues = labels.stream().map(Label::getValue).collect(toImmutableSet());
+        Autocomplete autocomplete = Autocomplete.create(labelValues, buffer, cursor);
         candidates.addAll(autocomplete.getCandidates());
         return autocomplete.getCursorPosition();
     }
