@@ -69,9 +69,9 @@ public class GraknEngineServerFactory {
 
         // redis
         RedisWrapper redisWrapper = RedisWrapper.create(config);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         // distributed locks
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
         // tx-factory

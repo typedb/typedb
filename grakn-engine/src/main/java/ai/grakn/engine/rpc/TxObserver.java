@@ -69,8 +69,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
     private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
 
-    private @Nullable
-    EmbeddedGraknTx<?> tx = null;
+    @Nullable
+    private EmbeddedGraknTx<?> tx = null;
 
     private TxObserver(StreamObserver<TxResponse> responseObserver, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
         this.responseObserver = responseObserver;
