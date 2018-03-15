@@ -26,6 +26,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -43,6 +44,7 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -71,6 +73,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -93,6 +96,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -119,6 +123,7 @@ public class GrpcServerTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
     private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
+    private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
     private GrpcServer grpcServer;
 
@@ -132,8 +137,10 @@ public class GrpcServerTest {
 
     @Before
     public void setUp() throws IOException {
+        doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
+
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(txFactory);
-        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor)).build();
+        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor, mockedPostProcessor)).build();
         grpcServer = GrpcServer.create(server);
         grpcServer.start();
 
@@ -196,7 +203,7 @@ public class GrpcServerTest {
             tx.send(commitRequest());
         }
 
-        verify(tx).commit();
+        verify(tx).commitSubmitNoLogs();
     }
 
     @Test
@@ -610,7 +617,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(EXCEPTION).when(tx).commit();
+        doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
