@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -130,7 +131,29 @@ public final class GrpcClient implements AutoCloseable {
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
         communicator.send(GrpcUtil.getAttributesByValueRequest(value));
-        return GrpcUtil.convert(conceptConverter, responseOrThrow().getConcepts());
+
+        IteratorId iteratorId = responseOrThrow().getIteratorId();
+
+        Iterable<Concept> iterable = () -> new AbstractIterator<Concept>() {
+            @Override
+            protected Concept computeNext() {
+                communicator.send(GrpcUtil.nextRequest(iteratorId));
+
+                TxResponse response = responseOrThrow();
+
+                switch (response.getResponseCase()) {
+                    case CONCEPT:
+                        return conceptConverter.convert(response.getConcept());
+                    case DONE:
+                        return endOfData();
+                    default:
+                    case RESPONSE_NOT_SET:
+                        throw CommonUtil.unreachableStatement("Unexpected " + response);
+                }
+            }
+        };
+
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     public Concept putEntityType(Label label) {

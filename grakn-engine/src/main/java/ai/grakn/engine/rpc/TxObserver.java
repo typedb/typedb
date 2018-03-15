@@ -64,6 +64,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -82,7 +83,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final GrpcOpenRequestExecutor requestExecutor;
     private final PostProcessor postProcessor;
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-    private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
+    private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
 
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
@@ -222,9 +223,14 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        Iterator<QueryResult> iterator = graql.parse(queryString).results(GrpcConverter.get()).iterator();
-        IteratorId iteratorId =
-                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        Stream<QueryResult> queryResultStream = graql.parse(queryString).results(GrpcConverter.get());
+
+        Stream<TxResponse> txResponseStream =
+                queryResultStream.map(queryResult -> TxResponse.newBuilder().setQueryResult(queryResult).build());
+
+        Iterator<TxResponse> iterator = txResponseStream.iterator();
+
+        IteratorId iteratorId = IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
 
         iterators.put(iteratorId, iterator);
 
@@ -234,13 +240,12 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
 
-        Iterator<QueryResult> iterator = nonNull(iterators.get(iteratorId));
+        Iterator<TxResponse> iterator = nonNull(iterators.get(iteratorId));
 
         TxResponse response;
 
         if (iterator.hasNext()) {
-            QueryResult queryResult = iterator.next();
-            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+            response = iterator.next();
         } else {
             response = GrpcUtil.doneResponse();
             iterators.remove(iteratorId);
@@ -287,9 +292,13 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private void getAttributesByValue(AttributeValue attributeValue) {
         Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
 
-        TxResponse response = TxResponse.newBuilder().setConcepts(GrpcUtil.convert(attributes.stream())).build();
+        Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
+        IteratorId iteratorId =
+                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
 
-        responseObserver.onNext(response);
+        iterators.put(iteratorId, iterator);
+
+        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
     private void putEntityType(GrpcConcept.Label label) {

@@ -60,7 +60,6 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.define;
@@ -517,9 +516,10 @@ public class RemoteGraknTxTest {
             Attribute<?> attribute1 = RemoteConcepts.createAttribute(tx, ConceptId.of("A"));
             Attribute<?> attribute2 = RemoteConcepts.createAttribute(tx, ConceptId.of("B"));
 
-            server.setResponse(
+            server.setResponseSequence(
                     GrpcUtil.getAttributesByValueRequest(value),
-                    GrpcUtil.conceptsResponse(Stream.of(attribute1, attribute2))
+                    GrpcUtil.conceptResponse(attribute1),
+                    GrpcUtil.conceptResponse(attribute2)
             );
 
             assertThat(tx.getAttributesByValue(value), containsInAnyOrder(attribute1, attribute2));
