@@ -49,6 +49,7 @@ import mjson.Json;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -124,6 +125,11 @@ public final class GrpcClient implements AutoCloseable {
     public Optional<Concept> getSchemaConcept(Label label) {
         communicator.send(GrpcUtil.getSchemaConceptRequest(label));
         return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+    }
+
+    public Stream<? extends Concept> getAttributesByValue(Object value) {
+        communicator.send(GrpcUtil.getAttributesByValueRequest(value));
+        return GrpcUtil.convert(conceptConverter, responseOrThrow().getConcepts());
     }
 
     @Override

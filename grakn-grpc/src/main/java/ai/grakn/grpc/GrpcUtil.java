@@ -186,6 +186,10 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setGetSchemaConcept(convert(label)).build();
     }
 
+    public static TxRequest getAttributesByValueRequest(Object value) {
+        return TxRequest.newBuilder().setGetAttributesByValue(convertValue(value)).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
@@ -196,6 +200,10 @@ public class GrpcUtil {
 
     public static TxResponse optionalConceptResponse(Optional<Concept> concept) {
         return TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(concept)).build();
+    }
+
+    public static TxResponse conceptsResponse(Stream<? extends Concept> concepts) {
+        return TxResponse.newBuilder().setConcepts(convert(concepts)).build();
     }
 
     public static DeleteRequest deleteRequest(Open open) {
@@ -291,7 +299,7 @@ public class GrpcUtil {
         return Label.of(label.getValue());
     }
 
-    static Object convert(AttributeValue value) {
+    public static Object convert(AttributeValue value) {
         switch (value.getValueCase()) {
             case STRING:
                 return value.getString();

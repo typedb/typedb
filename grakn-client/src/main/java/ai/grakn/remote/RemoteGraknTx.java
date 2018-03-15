@@ -39,7 +39,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
@@ -49,16 +48,15 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
@@ -154,10 +152,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        Var var = var("x");
-        VarPattern pattern = var.val(value);
-        Stream<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var)));
-        return answer.map(a -> (Attribute<V>) a.get(var)).collect(Collectors.toList());
+        return client().getAttributesByValue(value).map(Concept::<V>asAttribute).collect(toImmutableSet());
     }
 
     @Nullable

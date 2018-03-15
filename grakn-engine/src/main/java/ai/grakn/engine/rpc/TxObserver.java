@@ -19,6 +19,7 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
@@ -26,6 +27,7 @@ import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
@@ -40,6 +42,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -123,6 +126,9 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 break;
             case GETSCHEMACONCEPT:
                 getSchemaConcept(request.getGetSchemaConcept());
+                break;
+            case GETATTRIBUTESBYVALUE:
+                getAttributesByValue(request.getGetAttributesByValue());
                 break;
             default:
             case REQUEST_NOT_SET:
@@ -247,6 +253,14 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         TxResponse response =
                 TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getAttributesByValue(AttributeValue attributeValue) {
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
+
+        TxResponse response = TxResponse.newBuilder().setConcepts(GrpcUtil.convert(attributes.stream())).build();
 
         responseObserver.onNext(response);
     }

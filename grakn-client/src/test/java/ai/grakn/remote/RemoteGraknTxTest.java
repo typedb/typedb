@@ -21,6 +21,7 @@ package ai.grakn.remote;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -35,7 +36,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
@@ -66,6 +66,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.define;
@@ -73,8 +74,7 @@ import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -472,11 +472,22 @@ public class RemoteGraknTxTest {
     }
 
     @Test
-    public void whenGettingAttributesViaID_EnsureCorrectQueryIsSent(){
-        Var var = var("x");
+    public void whenGettingAttributesViaID_EnsureCorrectRequestIsSent(){
         String value = "Hello Oli";
-        GetQuery getQuery = match(var.val(value)).get(ImmutableSet.of(var));
-        verifyCorrectQuerySent(getQuery, GrpcConcept.BaseType.Attribute, tx -> assertThat(tx.getAttributesByValue(value), not(empty())));
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Attribute<?> attribute1 = RemoteConcepts.createAttribute(tx, ConceptId.of("A"));
+            Attribute<?> attribute2 = RemoteConcepts.createAttribute(tx, ConceptId.of("B"));
+
+            server.setResponse(
+                    GrpcUtil.getAttributesByValueRequest(value),
+                    GrpcUtil.conceptsResponse(Stream.of(attribute1, attribute2))
+            );
+
+            assertThat(tx.getAttributesByValue(value), containsInAnyOrder(attribute1, attribute2));
+        }
     }
 
     private void verifyCorrectQuerySent(Query query, GrpcConcept.BaseType baseType, Consumer<GraknTx> txConsumer){
