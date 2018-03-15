@@ -2082,3 +2082,26 @@ table > tbody > tr:nth-of-type(even) {
         float: none;
       }
   }
+
+.navigation-bar__link__dropdown__mobile {
+    max-height: 0;
+    opacity: 0;
+    border: 1px solid #c9c9cb;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.navigation-bar__link__dropdown__mobile--active {
+    margin-top: 18px;
+    max-height: 500px;
+    opacity: 1;
+    transition: max-height 0.4s ease-out;
+}
+
+.navigation-bar__link__dropdown__mobile--active > a:nth-child(1) {
+    margin-top: 14px;
+}
+
+.navigation-bar__link__dropdown__mobile--active > a {
+    margin-left: 14px;
+}
