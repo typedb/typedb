@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
@@ -39,6 +40,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -60,6 +62,7 @@ import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -74,7 +77,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -411,11 +413,30 @@ public class RemoteGraknTxTest {
     }
 
     @Test
-    public void whenGettingConceptViaID_EnsureCorrectQueryIsSent(){
-        Var var = var("x");
+    public void whenGettingConceptViaID_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123.getValue());
-        GetQuery getQuery = match(var.id(id)).get(ImmutableSet.of(var));
-        verifyCorrectQuerySent(getQuery, GrpcConcept.BaseType.Entity, tx -> assertNotNull(tx.getConcept(id)));
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createEntity(tx, id);
+            server.setResponse(GrpcUtil.getConceptRequest(id), GrpcUtil.optionalConceptResponse(Optional.of(concept)));
+
+            assertEquals(concept, tx.getConcept(id));
+        }
+    }
+
+    @Test
+    public void whenGettingNonExistentConceptViaID_ReturnNull(){
+        ConceptId id = ConceptId.of(V123.getValue());
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            server.setResponse(GrpcUtil.getConceptRequest(id), GrpcUtil.optionalConceptResponse(Optional.empty()));
+
+            assertNull(tx.getConcept(id));
+        }
     }
 
     @Test

@@ -190,6 +190,10 @@ public class GrpcUtil {
         return TxResponse.newBuilder().setIteratorId(iteratorId).build();
     }
 
+    public static TxResponse optionalConceptResponse(Optional<Concept> concept) {
+        return TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(concept)).build();
+    }
+
     public static DeleteRequest deleteRequest(Open open) {
         return DeleteRequest.newBuilder().setOpen(open).build();
     }

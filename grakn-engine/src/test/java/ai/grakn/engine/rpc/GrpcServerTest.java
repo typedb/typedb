@@ -571,10 +571,10 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptRequest(id));
 
-            GrpcConcept.Concept response = tx.receive().ok().getConceptResponse().getConcept();
+            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
-            assertEquals(id.getValue(), response.getId().getValue());
-            assertEquals(BaseType.Relationship, response.getBaseType());
+            assertEquals(id.getValue(), response.getPresent().getId().getValue());
+            assertEquals(BaseType.Relationship, response.getPresent().getBaseType());
         }
     }
 
@@ -590,9 +590,9 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptRequest(id));
 
-            GrpcConcept.ConceptResponse response = tx.receive().ok().getConceptResponse();
+            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
-            assertEquals(GrpcConcept.ConceptResponse.ValueCase.VALUE_NOT_SET, response.getValueCase());
+            assertEquals(GrpcConcept.OptionalConcept.ValueCase.ABSENT, response.getValueCase());
         }
     }
 

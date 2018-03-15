@@ -138,10 +138,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        Var var = var("x");
-        VarPattern pattern = var.id(id);
-        Optional<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var))).findAny();
-        return answer.map(answer1 -> (T) answer1.get(var)).orElse(null);
+        return (T) client().getConcept(id).orElse(null);
     }
 
     @Nullable

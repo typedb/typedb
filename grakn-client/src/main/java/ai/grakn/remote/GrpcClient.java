@@ -34,7 +34,6 @@ import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -48,6 +47,7 @@ import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -115,16 +115,9 @@ public final class GrpcClient implements AutoCloseable {
         return conceptMethod.get(conceptConverter, responseOrThrow());
     }
 
-    @Nullable
-    public Concept getConcept(ConceptId id) {
+    public Optional<Concept> getConcept(ConceptId id) {
         communicator.send(GrpcUtil.getConceptRequest(id));
-        ConceptResponse conceptResponse = responseOrThrow().getConceptResponse();
-
-        if (conceptResponse.getValueCase().equals(ConceptResponse.ValueCase.VALUE_NOT_SET)) {
-            return null;
-        } else {
-            return conceptConverter.convert(conceptResponse.getConcept());
-        }
+        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
     }
 
     @Override
