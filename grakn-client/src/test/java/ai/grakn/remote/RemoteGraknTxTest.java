@@ -440,6 +440,38 @@ public class RemoteGraknTxTest {
     }
 
     @Test
+    public void whenGettingSchemaConceptViaLabel_EnsureCorrectRequestIsSent(){
+        Label label = Label.of("foo");
+        ConceptId id = ConceptId.of(V123.getValue());
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            Concept concept = RemoteConcepts.createAttributeType(tx, id);
+            server.setResponse(
+                    GrpcUtil.getSchemaConceptRequest(label), GrpcUtil.optionalConceptResponse(Optional.of(concept))
+            );
+
+            assertEquals(concept, tx.getSchemaConcept(label));
+        }
+    }
+
+    @Test
+    public void whenGettingNonExistentSchemaConceptViaLabel_ReturnNull(){
+        Label label = Label.of("foo");
+
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GraknTxType.READ)) {
+            verify(server.requests()).onNext(any()); // The open request
+
+            server.setResponse(
+                    GrpcUtil.getSchemaConceptRequest(label), GrpcUtil.optionalConceptResponse(Optional.empty())
+            );
+
+            assertNull(tx.getSchemaConcept(label));
+        }
+    }
+
+    @Test
     public void whenGettingAttributesViaID_EnsureCorrectQueryIsSent(){
         Var var = var("x");
         String value = "Hello Oli";

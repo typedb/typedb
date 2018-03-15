@@ -182,6 +182,10 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setGetConcept(convert(id)).build();
     }
 
+    public static TxRequest getSchemaConceptRequest(Label label) {
+        return TxRequest.newBuilder().setGetSchemaConcept(convert(label)).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
@@ -283,7 +287,7 @@ public class GrpcUtil {
         return GrpcConcept.Label.newBuilder().setValue(label.getValue()).build();
     }
 
-    static Label convert(GrpcConcept.Label label) {
+    public static Label convert(GrpcConcept.Label label) {
         return Label.of(label.getValue());
     }
 

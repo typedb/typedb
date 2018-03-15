@@ -121,6 +121,9 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             case GETCONCEPT:
                 getConcept(request.getGetConcept());
                 break;
+            case GETSCHEMACONCEPT:
+                getSchemaConcept(request.getGetSchemaConcept());
+                break;
             default:
             case REQUEST_NOT_SET:
                 throw GrpcGraknService.error(Status.INVALID_ARGUMENT);
@@ -232,6 +235,15 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
         Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
+
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getSchemaConcept(GrpcConcept.Label label) {
+        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(GrpcUtil.convert(label)));
 
         TxResponse response =
                 TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();

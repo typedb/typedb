@@ -54,7 +54,6 @@ import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -144,7 +143,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return getSchemaConcept(label, null);
+        return (T) client().getSchemaConcept(label).orElse(null);
     }
 
     @Nullable
@@ -164,40 +163,31 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        return getSchemaConcept(Label.of(label), ENTITY);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        return getSchemaConcept(Label.of(label), RELATIONSHIP);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), ATTRIBUTE);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), ROLE);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), RULE);
-    }
-
-    @Nullable
-    private <X extends SchemaConcept> X getSchemaConcept(Label label, @Nullable Schema.MetaSchema meta){
-        Var var = var("x");
-        VarPattern pattern = var.label(label);
-        if(meta != null) pattern = pattern.sub(var().label(meta.getLabel()));
-        Optional<Answer> result = queryRunner().run(Graql.match(pattern).get()).findAny();
-        return result.map(answer -> (X) answer.get(var)).orElse(null);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Override
