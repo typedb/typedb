@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.shell;
 
 import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;

@@ -16,12 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.shell;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.QueryResponse;
+import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
 import rx.Observable;

@@ -18,7 +18,7 @@
 
 package ai.grakn.bootup;
 
-import ai.grakn.graql.GraqlShell;
+import ai.grakn.graql.shell.GraqlShell;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;

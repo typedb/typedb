@@ -16,9 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.shell;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.internal.printer.Printers;
 
 import java.util.Set;

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.shell;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
@@ -27,8 +27,8 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
-import ai.grakn.graql.internal.shell.GraqlCompleter;
-import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.graql.GraqlConverter;
+import ai.grakn.graql.Query;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;

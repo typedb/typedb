@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.shell;
 
 import com.google.common.base.StandardSystemProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;

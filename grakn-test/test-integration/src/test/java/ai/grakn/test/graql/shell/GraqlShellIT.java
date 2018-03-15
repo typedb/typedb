@@ -19,8 +19,8 @@
 package ai.grakn.test.graql.shell;
 
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.graql.GraqlShell;
-import ai.grakn.graql.GraqlShellOptions;
+import ai.grakn.graql.shell.GraqlShell;
+import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
