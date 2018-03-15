@@ -10,7 +10,7 @@ folder: docs
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}
 
-In this section we focus on using the Java API in a multi-threaded environment, and show how to create multiple transactions, which can affect the knowledge base concurrently.
+In this section we focus on using the Java API in a multi-threaded environment, and show how to create multiple transactions, which can affect the knowledge graph concurrently.
 
 ## Creating Concurrent Transactions
 
@@ -59,8 +59,8 @@ As you can see each thread opened its own transaction to work with. We were able
 
 ### Locking Exceptions
 
-When mutating the knowledge base concurrently and attempting to load the same data simultaneously, it is possible to encounter a `GraknLockingException`.  When this exception is thrown on `commit()` it means that two or more transactions are attempting to mutate the same thing. If this occurs it is recommended that you retry the transaction.
+When mutating the knowledge graph concurrently and attempting to load the same data simultaneously, it is possible to encounter a `GraknLockingException`.  When this exception is thrown on `commit()` it means that two or more transactions are attempting to mutate the same thing. If this occurs it is recommended that you retry the transaction.
 
 ### Validation Exceptions
 
-Validation exceptions may also occur when mutating the knowledge base concurrently. For example, two transactions may be trying to create the exact same relationship and one of them may fail. When this occurs it is recommended retrying the transaction. If the same exception occurs again then it is likely that the transaction contains a validation error that would have still occurred even in a single threaded environment.
+Validation exceptions may also occur when mutating the knowledge graph concurrently. For example, two transactions may be trying to create the exact same relationship and one of them may fail. When this occurs it is recommended retrying the transaction. If the same exception occurs again then it is likely that the transaction contains a validation error that would have still occurred even in a single threaded environment.

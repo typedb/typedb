@@ -64,7 +64,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Nullable
     @Override
-    public Self sup() {
+    public final Self sup() {
         Concept concept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
         if (concept != null && isSelf(concept)) {
             return asSelf(concept);

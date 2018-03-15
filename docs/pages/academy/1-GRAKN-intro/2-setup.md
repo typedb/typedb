@@ -43,14 +43,14 @@ To access the graph visualiser, with GRAKN running in the virtual machine, simpl
 
 ![Visualiser screenshot](/images/academy/1-welcome/Dashboard.png)
 
-This is the Graph visualiser. In this mode, you can query your GRAKN knowledge base and the results will be presented as a graph. To try it do the following:
-In the top right corner click on the `grakn` tab (this is the Keyspace selector); a drop-down menu will appear. Click on `academy` to select the Keyspace where our knowledge base has been loaded
+This is the Graph visualiser. In this mode, you can query your GRAKN knowledge graph and the results will be presented as a graph. To try it do the following:
+In the top right corner click on the `grakn` tab (this is the Keyspace selector); a drop-down menu will appear. Click on `academy` to select the Keyspace where our knowledge graph has been loaded
 In the box on the top of the page (the GRAQL editor) write `match $x isa company; get;` and return. The result of the query will be visualised in the main area of the page.
 
 #### GOOD TO KNOW: Keyspaces
-In the GRAKN terminology, a keyspace is an isolated storage layer where you can store a knowledge base. This way you can have several knowledge bases in the same running instance of GRAKN without them interacting and steping on each others’ toes.
+In the GRAKN terminology, a keyspace is an isolated storage layer where you can store a knowledge graph. This way you can have several knowledge graphs in the same running instance of GRAKN without them interacting and steping on each others’ toes.
 
-The Graph visualiser is a good tool to visualise (you guessed it) the graph structure underlying your knowledge base. It is useful to explore the graph, to find connection and to better understand the result of our reasoning engine thanks to the explanation facility (don’t worry if some of these terms sound obscure: they will become clearer during the rest of the course).
+The Graph visualiser is a good tool to visualise (you guessed it) the graph structure underlying your knowledge graph. It is useful to explore the graph, to find connection and to better understand the result of our reasoning engine thanks to the explanation facility (don’t worry if some of these terms sound obscure: they will become clearer during the rest of the course).
 
 When the results to the query are too many, though, too much information is on your screen and the Graph visualiser becomes less useful. For this reason, there is a way to automatically limit the number of results that appear on your screen when you launch a query in the graph visualiser. You can choose anything you want, but 2 is a good number to start experimenting with.
 

@@ -53,6 +53,8 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             () -> __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
     static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(
             () -> __.outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final MessageScope.Local<?> messageScopeResourceIn = MessageScope.Local.of(
+            () -> __.inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
     static final MessageScope.Local<?> messageScopeResourceOut = MessageScope.Local.of(
             () -> __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
 

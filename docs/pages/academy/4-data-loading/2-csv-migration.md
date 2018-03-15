@@ -13,14 +13,14 @@ KB: academy
 
 In the last lesson, you should have learned how to load a file containing a (potentially very long) list of GRAQL statements into GRAKN.
 
-Since it is very likely that if you are migrating a pre-existing database to GRAKN, your data will not be in stored as GRAQL files, we need a way to a way to load some more common file formats, like CSV, into our knowledge base .
+Since it is very likely that if you are migrating a pre-existing database to GRAKN, your data will not be in stored as GRAQL files, we need a way to a way to load some more common file formats, like CSV, into our knowledge graph .
 
 To do this, we some more power added to GRAQL. Meet the GRAQL templating language.
 
 ## Templates
 A template file is just a file written in GRAQL (with some added features) that acts as a filter: you "pour" your file through it and out comes GRAKN digestible data.
 
-Let’s write a template to migrate oil platforms into our knowledge base. First of all have a look at how the `platfrom.csv` file looks like (you can find the file [here](https://github.com/graknlabs/academy/blob/master/short-training/data/platforms.csv)). At its core, a CSV file is nothing more than a table: the first line contains the header, with the column names (in this case ID, DistCoast, Country and BelongsTo). The lines after the first contain the data separated by commas (or sometimes some other characters).
+Let’s write a template to migrate oil platforms into our knowledge graph. First of all have a look at how the `platfrom.csv` file looks like (you can find the file [here](https://github.com/graknlabs/academy/blob/master/short-training/data/platforms.csv)). At its core, a CSV file is nothing more than a table: the first line contains the header, with the column names (in this case ID, DistCoast, Country and BelongsTo). The lines after the first contain the data separated by commas (or sometimes some other characters).
 
 A GRAQL template file looks as simple as this:
 
@@ -87,7 +87,7 @@ Noticed the quotes around the 24 (that is, the value of `distance-from-coast`)? 
 
 If you try and use the template now, GRAKN will throw a validation error because you are trying to insert string values into "long" attributes. To solve the issues we need macros.
 
-A macro in GRAQL is a snippet of code that does some useful data manipulation to help migrate things into your knowledge base. Macros always look like `@MACRO_NAME(ARGUMENT)` where the specific macro is applied to whatever is in brackets. There are several macros that come with the language, but the most used ones are those needed to convert strings into other datatypes (and they are called, not surprisingly, @long, @double, @date and @boolean).
+A macro in GRAQL is a snippet of code that does some useful data manipulation to help migrate things into your knowledge graph. Macros always look like `@MACRO_NAME(ARGUMENT)` where the specific macro is applied to whatever is in brackets. There are several macros that come with the language, but the most used ones are those needed to convert strings into other datatypes (and they are called, not surprisingly, @long, @double, @date and @boolean).
 
 Let’s add our macro to the template:
 
@@ -108,7 +108,7 @@ To use the template you need the command
 
 Try it now in the VM using the template TODO_ADD, the input file TODO_ADD, and the keyspace you created when you loaded the schema during last lesson.
 
-After that, check that oil platforms are in your knowledge base.
+After that, check that oil platforms are in your knowledge graph.
 
   ![Oil Platforms](/images/academy/4-data-loading/oil-platforms.png)
 

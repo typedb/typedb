@@ -8,7 +8,7 @@ permalink: /docs/distributed-analytics/compute-queries
 folder: docs
 ---
 
-A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the knowledge base in parallel.
+A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the knowledge graph in parallel.
 Called within the Graql shell, the general syntax is:
 
 ```graql-skip-test

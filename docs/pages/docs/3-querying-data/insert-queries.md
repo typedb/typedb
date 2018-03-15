@@ -15,7 +15,7 @@ load the *basic-genealogy.gql* file, which can be found in the *examples* direct
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 {% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in
-the knowledge base." %}
+the knowledge graph." %}
 
 
 ## `match-insert`

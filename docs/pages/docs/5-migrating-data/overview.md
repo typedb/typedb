@@ -9,7 +9,7 @@ folder: docs
 ---
 
 ## Introduction
-This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
+This page introduces the concept of data migration into a Grakn knowledge graph. We currently support migration of CSV, JSON, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
 
 - define a schema for the data in Graql
 - create templated Graql to map the data to the schema
