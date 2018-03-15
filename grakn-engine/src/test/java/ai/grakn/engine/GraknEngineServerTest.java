@@ -188,7 +188,6 @@ public class GraknEngineServerTest {
     private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
-        GraknConfig config = GraknConfig.create();
         GraknEngineStatus status = new GraknEngineStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
