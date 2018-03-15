@@ -55,16 +55,15 @@ import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -82,8 +81,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final ExecutorService threadExecutor;
     private final GrpcOpenRequestExecutor requestExecutor;
     private final PostProcessor postProcessor;
-    private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-    private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
+    private final GrpcIterators grpcIterators = GrpcIterators.create();
 
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
@@ -230,32 +228,20 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         Iterator<TxResponse> iterator = txResponseStream.iterator();
 
-        IteratorId iteratorId = IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
-
-        iterators.put(iteratorId, iterator);
+        IteratorId iteratorId = grpcIterators.add(iterator);
 
         responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
     private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
-
-        Iterator<TxResponse> iterator = nonNull(iterators.get(iteratorId));
-
-        TxResponse response;
-
-        if (iterator.hasNext()) {
-            response = iterator.next();
-        } else {
-            response = GrpcUtil.doneResponse();
-            iterators.remove(iteratorId);
-        }
-
+        TxResponse response = grpcIterators.next(iteratorId);
         responseObserver.onNext(response);
     }
 
     private void stop(Stop stop) {
-        nonNull(iterators.remove(stop.getIteratorId()));
+        IteratorId iteratorId = stop.getIteratorId();
+        grpcIterators.stop(iteratorId);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
@@ -293,10 +279,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
 
         Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
-        IteratorId iteratorId =
-                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
-
-        iterators.put(iteratorId, iterator);
+        IteratorId iteratorId = grpcIterators.add(iterator);
 
         responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
@@ -336,13 +319,4 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private EmbeddedGraknTx<?> tx() {
         return nonNull(tx);
     }
-
-    private static <T> T nonNull(@Nullable T item) {
-        if (item == null) {
-            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
-        } else {
-            return item;
-        }
-    }
-
 }
