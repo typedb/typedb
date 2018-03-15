@@ -24,7 +24,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -162,7 +161,7 @@ public interface AttributeType<D> extends Type {
      * @return The supertype of this {@link AttributeType},
      */
     @Override
-    @Nonnull
+    @Nullable
     AttributeType<D> sup();
 
     /**

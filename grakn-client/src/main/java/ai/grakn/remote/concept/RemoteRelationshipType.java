@@ -26,8 +26,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -68,11 +66,5 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     @Override
     protected final Relationship asInstance(Concept concept) {
         return concept.asRelationship();
-    }
-
-    @Nonnull
-    @Override
-    public RelationshipType sup() {
-        return Objects.requireNonNull(super.sup());
     }
 }
