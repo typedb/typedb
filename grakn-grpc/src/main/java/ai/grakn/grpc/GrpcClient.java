@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.grpc;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -28,11 +28,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.ConceptMethod;
-import ai.grakn.grpc.GrpcConceptConverter;
-import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
-import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -58,7 +54,7 @@ import java.util.stream.StreamSupport;
  *
  * <p>
  *     This class is a light abstraction layer over gRPC - it understands how the sequence of calls should execute and
- *     how to translate gRPC objects into Java objects and back. However, any logic is kept in {@link RemoteGraknTx}.
+ *     how to translate gRPC objects into Java objects and back.
  * </p>
  *
  * @author Felix Chapman
@@ -83,7 +79,7 @@ public final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
-    public Iterator<Object> execQuery(RemoteGraknTx tx, Query<?> query) {
+    public Iterator<Object> execQuery(Query<?> query) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), query.inferring()));
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
@@ -91,9 +87,7 @@ public final class GrpcClient implements AutoCloseable {
         return new AbstractIterator<Object>() {
             @Override
             protected Object computeNext() {
-                communicator.send(GrpcUtil.nextRequest(iteratorId));
-
-                TxResponse response = responseOrThrow();
+                TxResponse response = GrpcClient.this.next(iteratorId);
 
                 switch (response.getResponseCase()) {
                     case QUERYRESULT:
@@ -113,10 +107,15 @@ public final class GrpcClient implements AutoCloseable {
         responseOrThrow();
     }
 
+    public TxResponse next(IteratorId iteratorId) {
+        communicator.send(GrpcUtil.nextRequest(iteratorId));
+        return responseOrThrow();
+    }
+
     @Nullable
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
         communicator.send(GrpcUtil.runConceptMethodRequest(id, conceptMethod));
-        return conceptMethod.get(conceptConverter, responseOrThrow());
+        return conceptMethod.get(conceptConverter, this, responseOrThrow());
     }
 
     public Optional<Concept> getConcept(ConceptId id) {

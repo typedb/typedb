@@ -56,24 +56,24 @@ public final class ConceptMethod<T> {
     private final Function<Concept, T> function;
     private final ConceptResponseType<T> responseType;
 
-    public TxResponse createTxResponse(T value) {
+    public TxResponse createTxResponse(GrpcIterators iterators, T value) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        set(conceptResponse, value);
+        set(conceptResponse, iterators, value);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public TxResponse run(Concept concept) {
-        return createTxResponse(function.apply(concept));
+    public TxResponse run(GrpcIterators iterators, Concept concept) {
+        return createTxResponse(iterators, function.apply(concept));
     }
 
     @Nullable
-    public T get(GrpcConceptConverter conceptConverter, TxResponse txResponse) {
+    public T get(GrpcConceptConverter conceptConverter, GrpcClient client, TxResponse txResponse) {
         ConceptResponse conceptResponse = txResponse.getConceptResponse();
-        return responseType.get(conceptConverter, conceptResponse);
+        return responseType.get(conceptConverter, client, conceptResponse);
     }
 
-    public void set(ConceptResponse.Builder builder, T value) {
-        responseType.set(builder, value);
+    public void set(ConceptResponse.Builder builder, GrpcIterators iterators, T value) {
+        responseType.set(builder, iterators, value);
     }
 
     public GrpcConcept.ConceptMethod toGrpc() {

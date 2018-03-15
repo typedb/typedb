@@ -26,8 +26,15 @@ import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.util.CommonUtil;
+import com.google.common.collect.AbstractIterator;
+import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
+import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +42,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Wrapper around the different types of responses to {@link ConceptMethod}s applied on {@link Concept}s.
@@ -62,8 +70,33 @@ abstract class ConceptResponseType<T> {
     );
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS = ConceptResponseType.create(
-            (converter, response) -> GrpcUtil.convert(converter, response.getConcepts()),
-            (builder, val) -> builder.setConcepts(GrpcUtil.convert(val))
+            (converter, client, response) -> {
+                IteratorId iteratorId = response.getIteratorId();
+
+                Iterable<Concept> iterable = () -> new AbstractIterator<Concept>() {
+                    @Override
+                    protected Concept computeNext() {
+                        TxResponse response = client.next(iteratorId);
+
+                        switch (response.getResponseCase()) {
+                            case CONCEPT:
+                                return converter.convert(response.getConcept());
+                            case DONE:
+                                return endOfData();
+                            default:
+                            case RESPONSE_NOT_SET:
+                                throw CommonUtil.unreachableStatement("Unexpected " + response);
+                        }
+                    }
+                };
+
+                return StreamSupport.stream(iterable.spliterator(), false);
+            },
+            (builder, iterators, val) -> {
+                Iterator<TxResponse> iterator = val.map(GrpcUtil::conceptResponse).iterator();
+                IteratorId iteratorId = iterators.add(iterator);
+                builder.setIteratorId(iteratorId);
+            }
     );
 
     public static final ConceptResponseType<Map<Role, Set<Thing>>> ROLE_PLAYERS = ConceptResponseType.create(
@@ -106,9 +139,9 @@ abstract class ConceptResponseType<T> {
     );
 
     @Nullable
-    public abstract T get(GrpcConceptConverter converter, ConceptResponse conceptResponse);
+    public abstract T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse);
 
-    public abstract void set(ConceptResponse.Builder builder, @Nullable T value);
+    public abstract void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value);
 
     public static <T> ConceptResponseType<T> create(
             Function<ConceptResponse, T> getter,
@@ -121,15 +154,25 @@ abstract class ConceptResponseType<T> {
             BiFunction<GrpcConceptConverter, ConceptResponse, T> getter,
             BiConsumer<ConceptResponse.Builder, T> setter
     ) {
+        return create(
+                (converter, client, response) -> getter.apply(converter, response),
+                (builder, iterators, val) -> setter.accept(builder, val)
+        );
+    }
+
+    public static <T> ConceptResponseType<T> create(
+            TriFunction<GrpcConceptConverter, GrpcClient, ConceptResponse, T> getter,
+            TriConsumer<ConceptResponse.Builder, GrpcIterators, T> setter
+    ) {
         return new ConceptResponseType<T>() {
             @Override
-            public T get(GrpcConceptConverter converter, ConceptResponse conceptResponse) {
-                return getter.apply(converter, conceptResponse);
+            public T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse) {
+                return getter.apply(converter, client, conceptResponse);
             }
 
             @Override
-            public void set(ConceptResponse.Builder builder, @Nullable T value) {
-                setter.accept(builder, value);
+            public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value) {
+                setter.accept(builder, iterators, value);
             }
         };
     }

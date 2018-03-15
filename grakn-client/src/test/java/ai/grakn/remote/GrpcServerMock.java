@@ -18,6 +18,7 @@
 
 package ai.grakn.remote;
 
+import ai.grakn.grpc.GrpcIterators;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
@@ -27,6 +28,7 @@ import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
@@ -38,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -66,6 +69,7 @@ import static org.mockito.Mockito.when;
 public final class GrpcServerMock extends CompositeTestRule {
 
     private int iteratorIdCounter = 0;
+    private final GrpcIterators grpcIterators = GrpcIterators.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     private final GraknImplBase service = mock(GraknImplBase.class);
 
@@ -93,8 +97,8 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    private IteratorId createIteratorId() {
-        return IteratorId.newBuilder().setId(++iteratorIdCounter).build();
+    public GrpcIterators grpcIterators() {
+        return grpcIterators;
     }
 
     public void setResponse(TxRequest request, TxResponse... responses) {
@@ -143,7 +147,7 @@ public final class GrpcServerMock extends CompositeTestRule {
         }
 
         static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
-            IteratorId iteratorId = server.createIteratorId();
+            IteratorId iteratorId = server.grpcIterators().add(Iterators.forArray(responses));
 
             return streamObserver -> {
                 List<TxResponse> responsesList =
@@ -181,7 +185,11 @@ public final class GrpcServerMock extends CompositeTestRule {
             if (serverResponses == null) {
                 throw new IllegalArgumentException("Set-up of rule not called");
             }
-            serverResponses.onNext(GrpcUtil.doneResponse());
+
+            TxRequest request = args.getArgument(0);
+
+            Optional<TxResponse> next = grpcIterators.next(request.getNext().getIteratorId());
+            serverResponses.onNext(next.orElse(GrpcUtil.doneResponse()));
             return null;
         }).when(serverRequests).onNext(any());
 

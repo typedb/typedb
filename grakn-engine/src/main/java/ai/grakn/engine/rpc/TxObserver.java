@@ -31,6 +31,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcConceptConverter;
+import ai.grakn.grpc.GrpcIterators;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -255,7 +256,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         ConceptMethod<?> conceptMethod = ConceptMethod.fromGrpc(converter, runConceptMethod.getConceptMethod());
 
-        TxResponse response = conceptMethod.run(concept);
+        TxResponse response = conceptMethod.run(grpcIterators, concept);
 
         responseObserver.onNext(response);
     }

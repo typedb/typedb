@@ -43,6 +43,7 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
+import ai.grakn.grpc.GrpcClient;
 import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
@@ -172,7 +173,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(tx, query);
+        return client.execQuery(query);
     }
 
     private void runVoid(Query<?> query) {

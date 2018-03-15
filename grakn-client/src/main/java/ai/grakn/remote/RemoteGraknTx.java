@@ -38,6 +38,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.GrpcClient;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;

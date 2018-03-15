@@ -454,7 +454,7 @@ public class RemoteConceptsTest {
                 bar, ImmutableSet.of(b, c)
         );
 
-        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(expected);
+        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), expected);
 
         server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
 
@@ -707,6 +707,9 @@ public class RemoteConceptsTest {
     }
 
     private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
-        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, property), property.createTxResponse(value));
+        server.setResponse(
+                GrpcUtil.runConceptMethodRequest(ID, property),
+                property.createTxResponse(server.grpcIterators(), value)
+        );
     }
 }

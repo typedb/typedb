@@ -16,9 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
+package ai.grakn.grpc;
 
-import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
@@ -59,7 +58,7 @@ public class GrpcIterators {
     /**
      * Return the next response from an iterator. Will return a {@link Done} response if the iterator is exhausted.
      */
-    Optional<TxResponse> next(IteratorId iteratorId) {
+    public Optional<TxResponse> next(IteratorId iteratorId) {
         return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
             TxResponse response;
 
@@ -77,7 +76,7 @@ public class GrpcIterators {
     /**
      * Stop an iterator
      */
-    void stop(IteratorId iteratorId) {
+    public void stop(IteratorId iteratorId) {
         iterators.remove(iteratorId);
     }
 }

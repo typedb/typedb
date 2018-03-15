@@ -38,6 +38,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.GrpcClient;
 import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
@@ -123,6 +124,7 @@ public class GrpcServerTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
     private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
+    private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
     private GrpcServer grpcServer;
@@ -446,7 +448,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
-            assertEquals(label, ConceptMethod.GET_LABEL.get(conceptConverter, tx.receive().ok()));
+            assertEquals(label, ConceptMethod.GET_LABEL.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -465,7 +467,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
 
-            assertTrue(ConceptMethod.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
+            assertTrue(ConceptMethod.IS_IMPLICIT.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -484,7 +486,7 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
 
-            assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
+            assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
