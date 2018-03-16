@@ -55,9 +55,10 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     public String toString() {
-        if (value().isPresent()) {
+        Optional<Object> value = value();
+        if (value.isPresent()) {
             // Omit the `=` if we're using a literal value, not a var
-            return StringUtil.valueToString(value().get());
+            return StringUtil.valueToString(value.get());
         } else {
             return super.toString();
         }
