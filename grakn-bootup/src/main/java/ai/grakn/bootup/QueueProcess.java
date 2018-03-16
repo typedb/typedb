@@ -35,6 +35,7 @@ public class QueueProcess extends AbstractProcessHandler {
     private static final String CONFIG_LOCATION = "/services/redis/redis.conf";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
+
     private static final String COMPONENT_NAME = "Queue";
 
     private final Path homePath;
