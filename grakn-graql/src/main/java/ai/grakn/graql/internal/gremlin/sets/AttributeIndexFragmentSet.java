@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -108,7 +109,11 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
         // Add a new fragment set to replace the old ones
         Var attribute = valueSet.var();
-        Object value = valueSet.predicate().equalsValue().get();
+
+        Optional<Object> maybeValue = valueSet.predicate().equalsValue();
+        assert maybeValue.isPresent() : "This is filtered to only ones with equalValues in equalValueFragments method";
+
+        Object value = maybeValue.get();
 
         AttributeIndexFragmentSet indexFragmentSet = AttributeIndexFragmentSet.of(attribute, label, value);
 
