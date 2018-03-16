@@ -79,6 +79,7 @@ public class EmbeddedCassandraContext extends ExternalResource {
                     Thread.sleep(5000);
                 } catch (InterruptedException ex) {
                     LOG.info("Thread sleep interrupted.");
+                    Thread.currentThread().interrupt();
                 }
                 LOG.info("cassandra started.");
 

@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 /**
  *
@@ -37,8 +38,7 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
-    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
-    private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
+
 
     private static final String CASSANDRA = "cassandra";
     private static final String COMPONENT_NAME = "Storage";
@@ -68,8 +68,6 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
-        StorageConfigProcessor.updateConfigFromGraknConfig(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), graknConfig);
-
         System.out.print("Starting "+ COMPONENT_NAME +"...");
         System.out.flush();
         if(STORAGE_PID.toFile().exists()) {
@@ -105,7 +103,7 @@ public class StorageProcess extends AbstractProcessHandler {
             try {
                 Thread.sleep(WAIT_INTERVAL_S *1000);
             } catch (InterruptedException e) {
-                // DO NOTHING
+                Thread.currentThread().interrupt();
             }
         }
         System.out.println("FAILED!");
@@ -128,12 +126,11 @@ public class StorageProcess extends AbstractProcessHandler {
     public void clean() {
         System.out.print("Cleaning "+ COMPONENT_NAME +"...");
         System.out.flush();
-        try {
-            Path dirPath = Paths.get("db", CASSANDRA);
-            Files.walk( dirPath )
-                    .map( Path::toFile )
-                    .sorted( Comparator.comparing( File::isDirectory ) )
-                    .forEach( File::delete );
+        Path dirPath = Paths.get("db", CASSANDRA);
+        try (Stream<Path> files = Files.walk(dirPath)) {
+            files.map(Path::toFile)
+                    .sorted(Comparator.comparing(File::isDirectory))
+                    .forEach(File::delete);
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"data")));
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"commitlog")));
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"saved_caches")));
