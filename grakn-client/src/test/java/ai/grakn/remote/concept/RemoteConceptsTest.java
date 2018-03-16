@@ -37,12 +37,12 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.grpc.RolePlayer;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
@@ -449,9 +449,10 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        Map<Role, Set<Thing>> expected = ImmutableMap.of(
-                foo, ImmutableSet.of(a),
-                bar, ImmutableSet.of(b, c)
+        Stream<RolePlayer> expected = Stream.of(
+                RolePlayer.create(foo, a),
+                RolePlayer.create(bar, b),
+                RolePlayer.create(bar, c)
         );
 
         TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), expected);
@@ -470,7 +471,11 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_ROLE_PLAYERS, ImmutableMap.of(foo, ImmutableSet.of(a, b, c)));
+        Stream<RolePlayer> expected = Stream.of(
+                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
+        );
+
+        mockConceptMethod(ConceptMethod.GET_ROLE_PLAYERS, expected);
 
         assertThat(relationship.rolePlayers().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -691,7 +696,7 @@ public class RemoteConceptsTest {
         Thing thing = RemoteConcepts.createEntity(tx, B);
         assertEquals(relationship, relationship.addRolePlayer(role, thing));
 
-        verifyConceptMethodCalled(ConceptMethod.setRolePlayer(role, thing));
+        verifyConceptMethodCalled(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Test
@@ -699,7 +704,7 @@ public class RemoteConceptsTest {
         Role role = RemoteConcepts.createRole(tx, A);
         Thing thing = RemoteConcepts.createEntity(tx, B);
         relationship.removeRolePlayer(role, thing);
-        verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(role, thing));
+        verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
     }
 
     private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {

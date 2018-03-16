@@ -21,8 +21,6 @@ package ai.grakn.grpc;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
@@ -35,9 +33,7 @@ import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -99,9 +95,36 @@ abstract class ConceptResponseType<T> {
             }
     );
 
-    public static final ConceptResponseType<Map<Role, Set<Thing>>> ROLE_PLAYERS = ConceptResponseType.create(
-            (converter, response) -> GrpcUtil.convert(converter, response.getRolePlayers()),
-            (builder, val) -> builder.setRolePlayers(GrpcUtil.convert(val))
+    public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS = ConceptResponseType.create(
+            (converter, client, response) -> {
+                IteratorId iteratorId = response.getIteratorId();
+
+                Iterable<RolePlayer> iterable = () -> new AbstractIterator<RolePlayer>() {
+                    @Override
+                    protected RolePlayer computeNext() {
+                        TxResponse response = client.next(iteratorId);
+
+                        switch (response.getResponseCase()) {
+                            case ROLEPLAYER:
+                                return converter.convert(response.getRolePlayer());
+                            case DONE:
+                                return endOfData();
+                            default:
+                            case RESPONSE_NOT_SET:
+                                throw CommonUtil.unreachableStatement("Unexpected " + response);
+                        }
+                    }
+                };
+
+                return StreamSupport.stream(iterable.spliterator(), false);
+            },
+            (builder, iterators, val) -> {
+
+                Stream<TxResponse> responses = val.map(GrpcUtil::rolePlayerResponse);
+
+                IteratorId iteratorId = iterators.add(responses.iterator());
+                builder.setIteratorId(iteratorId);
+            }
     );
 
     public static final ConceptResponseType<AttributeType.DataType<?>> DATA_TYPE = ConceptResponseType.create(

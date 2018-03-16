@@ -25,13 +25,17 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.RolePlayer;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -45,14 +49,14 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        return runMethod(ConceptMethod.GET_ROLE_PLAYERS);
+        return runMethod(ConceptMethod.GET_ROLE_PLAYERS)
+                .collect(groupingBy(RolePlayer::role, mapping(RolePlayer::player, toSet())));
     }
 
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
         if (roles.length == 0) {
-            Map<Role, Set<Thing>> allRolePlayers = runMethod(ConceptMethod.GET_ROLE_PLAYERS);
-            return allRolePlayers.values().stream().flatMap(Collection::stream);
+            return runMethod(ConceptMethod.GET_ROLE_PLAYERS).map(RolePlayer::player);
         } else {
             return runMethod(ConceptMethod.getRolePlayersByRoles(roles)).map(Concept::asThing);
         }
@@ -60,12 +64,12 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
-        return runVoidMethod(ConceptMethod.setRolePlayer(role, thing));
+        return runVoidMethod(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
-        runVoidMethod(ConceptMethod.removeRolePlayer(role, thing));
+        runVoidMethod(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Override

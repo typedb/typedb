@@ -45,7 +45,6 @@ import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
 import ai.grakn.rpc.generated.GrpcConcept.OptionalDataType;
 import ai.grakn.rpc.generated.GrpcConcept.OptionalPattern;
 import ai.grakn.rpc.generated.GrpcConcept.OptionalRegex;
-import ai.grakn.rpc.generated.GrpcConcept.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept.RolePlayers;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Commit;
@@ -234,8 +233,8 @@ public class GrpcUtil {
         return TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(concept)).build();
     }
 
-    public static TxResponse conceptsResponse(Stream<? extends Concept> concepts) {
-        return TxResponse.newBuilder().setConcepts(convert(concepts)).build();
+    public static TxResponse rolePlayerResponse(RolePlayer rolePlayer) {
+        return TxResponse.newBuilder().setRolePlayer(convert(rolePlayer)).build();
     }
 
     public static DeleteRequest deleteRequest(Open open) {
@@ -487,7 +486,7 @@ public class GrpcUtil {
     public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, RolePlayers allRolePlayers) {
         ImmutableSetMultimap.Builder<Role, Thing> map = ImmutableSetMultimap.builder();
 
-        for (RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
+        for (GrpcConcept.RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
             Role role = converter.convert(rolePlayer.getRole()).asRole();
             Thing player = converter.convert(rolePlayer.getPlayer()).asThing();
             map.put(role, player);
@@ -501,15 +500,18 @@ public class GrpcUtil {
 
         rolePlayers.forEach((role, players) -> {
             players.forEach(player -> {
-                builder.addRolePlayer(convert(role, player));
+                builder.addRolePlayer(convert(RolePlayer.create(role, player)));
             });
         });
 
         return builder.build();
     }
 
-    public static RolePlayer convert(Role role, Thing thing) {
-        return RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(thing)).build();
+    public static GrpcConcept.RolePlayer convert(RolePlayer rolePlayer) {
+        return GrpcConcept.RolePlayer.newBuilder()
+                .setRole(convert(rolePlayer.role()))
+                .setPlayer(convert(rolePlayer.player()))
+                .build();
     }
 
     public static OptionalRegex convertRegex(Optional<String> regex) {

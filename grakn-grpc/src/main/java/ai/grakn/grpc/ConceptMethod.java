@@ -24,7 +24,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -33,9 +32,7 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -155,10 +152,18 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
-    public static final ConceptMethod<Map<Role, Set<Thing>>> GET_ROLE_PLAYERS =
+    public static final ConceptMethod<Stream<? extends RolePlayer>> GET_ROLE_PLAYERS =
             builder(ConceptResponseType.ROLE_PLAYERS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
-                    .function(concept -> concept.asRelationship().allRolePlayers())
+                    .function(concept -> {
+                        Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
+                        concept.asRelationship().allRolePlayers().forEach((role, players) -> {
+                            players.forEach(player -> {
+                                rolePlayers.add(RolePlayer.create(role, player));
+                            });
+                        });
+                        return rolePlayers.build();
+                    })
                     .build();
 
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES =
@@ -220,10 +225,12 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
-    public static ConceptMethod<Void> removeRolePlayer(Role role, Thing player) {
+    public static ConceptMethod<Void> removeRolePlayer(RolePlayer rolePlayer) {
         return builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetRolePlayer(convert(role, player)))
-                .functionVoid(concept -> concept.asRelationship().removeRolePlayer(role, player))
+                .requestSetter(builder -> builder.setUnsetRolePlayer(convert(rolePlayer)))
+                .functionVoid(concept -> {
+                    concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
+                })
                 .build();
     }
 
@@ -331,10 +338,10 @@ public final class ConceptMethod<T> {
                 .build();
     }
 
-    public static ConceptMethod<Void> setRolePlayer(Role role, Thing thing) {
+    public static ConceptMethod<Void> setRolePlayer(RolePlayer rolePlayer) {
         return builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRolePlayer(convert(role, thing)))
-                .functionVoid(concept -> concept.asRelationship().addRolePlayer(role, thing))
+                .requestSetter(builder -> builder.setSetRolePlayer(convert(rolePlayer)))
+                .functionVoid(concept -> concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player()))
                 .build();
     }
 
@@ -453,10 +460,7 @@ public final class ConceptMethod<T> {
                 SchemaConcept schemaConcept = converter.convert(setDirectSuperConcept).asSchemaConcept();
                 return setDirectSuperConcept(schemaConcept);
             case UNSETROLEPLAYER:
-                GrpcConcept.RolePlayer removeRolePlayer = conceptMethod.getUnsetRolePlayer();
-                Role role = converter.convert(removeRolePlayer.getRole()).asRole();
-                Thing player = converter.convert(removeRolePlayer.getPlayer()).asThing();
-                return removeRolePlayer(role, player);
+                return removeRolePlayer(converter.convert(conceptMethod.getUnsetRolePlayer()));
             case DELETE:
                 return DELETE;
             case GETATTRIBUTE:
@@ -526,10 +530,7 @@ public final class ConceptMethod<T> {
             case ADDRELATIONSHIP:
                 return ADD_RELATIONSHIP;
             case SETROLEPLAYER:
-                GrpcConcept.RolePlayer setRolePlayer = conceptMethod.getSetRolePlayer();
-                role = converter.convert(setRolePlayer.getRole()).asRole();
-                player = converter.convert(setRolePlayer.getPlayer()).asThing();
-                return setRolePlayer(role, player);
+                return setRolePlayer(converter.convert(conceptMethod.getSetRolePlayer()));
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);

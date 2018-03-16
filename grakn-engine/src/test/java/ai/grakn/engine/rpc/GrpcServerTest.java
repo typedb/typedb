@@ -43,6 +43,7 @@ import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.grpc.RolePlayer;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
@@ -518,7 +519,8 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, ConceptMethod.removeRolePlayer(role, player)));
+            ConceptMethod<Void> conceptMethod = ConceptMethod.removeRolePlayer(RolePlayer.create(role, player));
+            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, conceptMethod));
             tx.receive().ok();
 
             verify(concept.asRelationship()).removeRolePlayer(role, player);
