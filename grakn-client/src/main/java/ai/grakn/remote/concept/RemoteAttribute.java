@@ -29,8 +29,6 @@ import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
-
 /**
  * @author Felix Chapman
  *
@@ -55,7 +53,7 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        return query(TARGET.has(ATTRIBUTE.getLabel(), ME)).map(Concept::asThing);
+        return runMethod(ConceptMethod.GET_OWNERS).map(Concept::asThing);
     }
 
     @Override

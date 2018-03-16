@@ -171,6 +171,10 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
     }
 
+    public static TxRequest getConceptRequest(ConceptId id) {
+        return TxRequest.newBuilder().setGetConcept(convert(id)).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }

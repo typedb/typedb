@@ -32,6 +32,7 @@ import ai.grakn.grpc.GrpcUtil.ErrorType;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
@@ -111,6 +112,18 @@ public final class GrpcClient implements AutoCloseable {
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
         communicator.send(GrpcUtil.runConceptMethodRequest(id, conceptMethod));
         return conceptMethod.get(conceptConverter, responseOrThrow());
+    }
+
+    @Nullable
+    public Concept getConcept(ConceptId id) {
+        communicator.send(GrpcUtil.getConceptRequest(id));
+        ConceptResponse conceptResponse = responseOrThrow().getConceptResponse();
+
+        if (conceptResponse.getValueCase().equals(ConceptResponse.ValueCase.VALUE_NOT_SET)) {
+            return null;
+        } else {
+            return conceptConverter.convert(conceptResponse.getConcept());
+        }
     }
 
     @Override

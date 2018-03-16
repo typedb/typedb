@@ -23,6 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -40,16 +41,21 @@ abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
     @Override
     public final Stream<RelationshipType> relationshipTypes() {
-        return query(TARGET.relates(ME)).map(Concept::asRelationshipType);
+        return runMethod(ConceptMethod.GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE).map(Concept::asRelationshipType);
     }
 
     @Override
     public final Stream<Type> playedByTypes() {
-        return query(TARGET.plays(ME)).map(Concept::asType);
+        return runMethod(ConceptMethod.GET_TYPES_THAT_PLAY_ROLE).map(Concept::asType);
     }
 
     @Override
     final Role asSelf(Concept concept) {
         return concept.asRole();
+    }
+
+    @Override
+    final boolean isSelf(Concept concept) {
+        return concept.isRole();
     }
 }
