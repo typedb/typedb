@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -65,67 +64,19 @@ abstract class ConceptResponseType<T> {
             (builder, val) -> builder.setOptionalConcept(GrpcUtil.convertOptionalConcept(val))
     );
 
-    public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS = ConceptResponseType.create(
-            (converter, client, response) -> {
-                IteratorId iteratorId = response.getIteratorId();
+    public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS =
+            ConceptResponseType.createStreamable(
+                    TxResponse.ResponseCase.CONCEPT,
+                    (converter, response) -> converter.convert(response.getConcept()),
+                    GrpcUtil::conceptResponse
+            );
 
-                Iterable<Concept> iterable = () -> new AbstractIterator<Concept>() {
-                    @Override
-                    protected Concept computeNext() {
-                        TxResponse response = client.next(iteratorId);
-
-                        switch (response.getResponseCase()) {
-                            case CONCEPT:
-                                return converter.convert(response.getConcept());
-                            case DONE:
-                                return endOfData();
-                            default:
-                            case RESPONSE_NOT_SET:
-                                throw CommonUtil.unreachableStatement("Unexpected " + response);
-                        }
-                    }
-                };
-
-                return StreamSupport.stream(iterable.spliterator(), false);
-            },
-            (builder, iterators, val) -> {
-                Iterator<TxResponse> iterator = val.map(GrpcUtil::conceptResponse).iterator();
-                IteratorId iteratorId = iterators.add(iterator);
-                builder.setIteratorId(iteratorId);
-            }
-    );
-
-    public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS = ConceptResponseType.create(
-            (converter, client, response) -> {
-                IteratorId iteratorId = response.getIteratorId();
-
-                Iterable<RolePlayer> iterable = () -> new AbstractIterator<RolePlayer>() {
-                    @Override
-                    protected RolePlayer computeNext() {
-                        TxResponse response = client.next(iteratorId);
-
-                        switch (response.getResponseCase()) {
-                            case ROLEPLAYER:
-                                return converter.convert(response.getRolePlayer());
-                            case DONE:
-                                return endOfData();
-                            default:
-                            case RESPONSE_NOT_SET:
-                                throw CommonUtil.unreachableStatement("Unexpected " + response);
-                        }
-                    }
-                };
-
-                return StreamSupport.stream(iterable.spliterator(), false);
-            },
-            (builder, iterators, val) -> {
-
-                Stream<TxResponse> responses = val.map(GrpcUtil::rolePlayerResponse);
-
-                IteratorId iteratorId = iterators.add(responses.iterator());
-                builder.setIteratorId(iteratorId);
-            }
-    );
+    public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS =
+            ConceptResponseType.createStreamable(
+                    TxResponse.ResponseCase.ROLEPLAYER,
+                    (converter, response) -> converter.convert(response.getRolePlayer()),
+                    GrpcUtil::rolePlayerResponse
+            );
 
     public static final ConceptResponseType<AttributeType.DataType<?>> DATA_TYPE = ConceptResponseType.create(
             response -> GrpcUtil.convert(response.getDataType()),
@@ -180,6 +131,42 @@ abstract class ConceptResponseType<T> {
         return create(
                 (converter, client, response) -> getter.apply(converter, response),
                 (builder, iterators, val) -> setter.accept(builder, val)
+        );
+    }
+
+    public static <T> ConceptResponseType<Stream<? extends T>> createStreamable(
+            TxResponse.ResponseCase responseCase,
+            BiFunction<GrpcConceptConverter, TxResponse, T> getter,
+            Function<T, TxResponse> setter
+    ) {
+        return create(
+                (converter, client, response) -> {
+                    IteratorId iteratorId = response.getIteratorId();
+
+                    Iterable<T> iterable = () -> new AbstractIterator<T>() {
+                        @Override
+                        protected T computeNext() {
+                            TxResponse response = client.next(iteratorId);
+
+                            TxResponse.ResponseCase getResponseCase = response.getResponseCase();
+
+                            if (getResponseCase == responseCase) {
+                                return getter.apply(converter, response);
+                            } else if (getResponseCase == TxResponse.ResponseCase.DONE) {
+                                return endOfData();
+                            } else {
+                                throw CommonUtil.unreachableStatement("Unexpected " + response);
+                            }
+                        }
+                    };
+
+                    return StreamSupport.stream(iterable.spliterator(), false);
+                },
+                (builder, iterators, val) -> {
+                    Stream<TxResponse> responses = val.map(setter);
+                    IteratorId iteratorId = iterators.add(responses.iterator());
+                    builder.setIteratorId(iteratorId);
+                }
         );
     }
 
