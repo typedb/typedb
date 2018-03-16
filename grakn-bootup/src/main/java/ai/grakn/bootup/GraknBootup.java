@@ -19,6 +19,7 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.config.ConfigProcessor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 
@@ -213,6 +214,7 @@ public class GraknBootup {
                 break;
             default:
                 try {
+                    ConfigProcessor.updateProcessConfigs();
                     storageProcess.start();
                     queueProcess.start();
                     engineProcess.start();

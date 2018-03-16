@@ -115,7 +115,7 @@ public class EngineProcess extends AbstractProcessHandler {
             try {
                 Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
-                // DO NOTHING
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -158,10 +158,9 @@ public class EngineProcess extends AbstractProcessHandler {
     public void clean() {
         System.out.print("Cleaning "+GRAKN_NAME+"...");
         System.out.flush();
-        try {
-            Path rootPath = homePath.resolve("logs");
-            Files.walk(rootPath)
-                    .sorted(Comparator.reverseOrder())
+        Path rootPath = homePath.resolve("logs");
+        try (Stream<Path> files = Files.walk(rootPath)) {
+            files.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
             Files.createDirectories(homePath.resolve("logs"));
