@@ -18,31 +18,17 @@
 
 package ai.grakn.graql.shell;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Query;
-import ai.grakn.remote.RemoteGrakn;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
-import ai.grakn.util.SimpleURI;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
-import org.apache.commons.cli.ParseException;
 
 import javax.annotation.Nullable;
 import java.io.IOException;

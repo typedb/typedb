@@ -25,7 +25,6 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;
