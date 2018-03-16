@@ -19,11 +19,14 @@
 package ai.grakn.test.graql.shell;
 
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.graql.shell.GraknSessionProvider;
+import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShell;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -33,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import mjson.Json;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
@@ -73,11 +77,9 @@ public class GraqlShellIT {
 
     @ClassRule
     public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
-    private static final GraknConfig CONFIG = GraknConfig.create();
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
-    private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
@@ -131,7 +133,7 @@ public class GraqlShellIT {
     @Test
     public void testVersionOption() throws Exception {
         String result = runShellWithoutErrors("", "--version");
-        assertThat(result, containsString(expectedVersion));
+        assertThat(result, containsString(GraknVersion.VERSION));
     }
 
     @Test
@@ -681,6 +683,7 @@ public class GraqlShellIT {
         PrintStream err = new PrintStream(terr);
 
         Boolean success = null;
+        GraknConfig config = GraknConfig.create();
 
         try {
             System.out.flush();
@@ -689,7 +692,9 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
 
-            success = GraqlShell.runShell(args, expectedVersion, historyFile, CONFIG);
+            GraqlShellOptions options = GraqlShellOptions.create(args);
+
+            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
