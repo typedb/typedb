@@ -19,6 +19,7 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -53,14 +54,16 @@ import javax.annotation.Nullable;
 public class GrpcGraknService extends GraknGrpc.GraknImplBase {
 
     private final GrpcOpenRequestExecutor executor;
+    private PostProcessor postProcessor;
 
-    public GrpcGraknService(GrpcOpenRequestExecutor executor) {
+    public GrpcGraknService(GrpcOpenRequestExecutor executor, PostProcessor postProcessor) {
         this.executor = executor;
+        this.postProcessor = postProcessor;
     }
 
     @Override
     public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
-        return TxObserver.create(responseObserver, executor);
+        return TxObserver.create(responseObserver, executor, postProcessor);
     }
 
     @Override
