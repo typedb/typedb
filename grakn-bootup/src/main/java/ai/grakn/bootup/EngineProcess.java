@@ -23,6 +23,7 @@ import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -35,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,7 +127,10 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     protected String commandToRun() {
-        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+        Optional<String> javaOpts = Optional.ofNullable(System.getProperty("grakn.engine.javaopts"));
+        String cmd = "java " + javaOpts.orElse("") + " -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+
+        return cmd;
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {
