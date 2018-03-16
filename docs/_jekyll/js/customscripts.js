@@ -88,13 +88,19 @@ $( document ).ready(function() {
             if( secondaryExpanded === i) {
                 secondaryExpanded = null;
                 submenu.removeClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(i).find('.fa-caret-down').addClass('fa-caret-right');
+                hamburgerParentButtons.eq(i).find('.fa-caret-right').removeClass('fa-caret-down');
             }
             else {
                 if (secondaryExpanded) {
                     hamburgerParentButtons.eq(secondaryExpanded).find('.navigation-bar__link__dropdown__mobile').removeClass('navigation-bar__link__dropdown__mobile--active');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').addClass('fa-caret-right');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').removeClass('fa-caret-down');
                 }
                 secondaryExpanded = i;
                 submenu.addClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').addClass('fa-caret-down');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').removeClass('fa-caret-right');
             }
         });
     })
