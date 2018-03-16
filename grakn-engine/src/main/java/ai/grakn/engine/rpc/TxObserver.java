@@ -18,13 +18,14 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -66,23 +67,24 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService threadExecutor;
     private final GrpcOpenRequestExecutor requestExecutor;
-
+    private final PostProcessor postProcessor;
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
     private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
 
     @Nullable
-    private GraknTx tx = null;
+    private EmbeddedGraknTx<?> tx = null;
 
-    private TxObserver(StreamObserver<TxResponse> responseObserver, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor) {
+    private TxObserver(StreamObserver<TxResponse> responseObserver, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
         this.responseObserver = responseObserver;
         this.threadExecutor = threadExecutor;
         this.requestExecutor = requestExecutor;
+        this.postProcessor = postProcessor;
     }
 
-    public static TxObserver create(StreamObserver<TxResponse> responseObserver, GrpcOpenRequestExecutor requestExecutor) {
+    public static TxObserver create(StreamObserver<TxResponse> responseObserver, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
         ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-        return new TxObserver(responseObserver, threadExecutor, requestExecutor);
+        return new TxObserver(responseObserver, threadExecutor, requestExecutor, postProcessor);
     }
 
     @Override
@@ -173,7 +175,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void commit() {
-        tx().commit();
+        tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
@@ -241,7 +243,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         responseObserver.onNext(response);
     }
 
-    private GraknTx tx() {
+    private EmbeddedGraknTx<?> tx() {
         return nonNull(tx);
     }
 
