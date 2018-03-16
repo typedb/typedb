@@ -53,7 +53,6 @@ import java.util.Map;
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;
-    private final String engineURI;
     private final SystemKeyspace systemKeyspace;
     private final Map<Keyspace, EmbeddedGraknSession> openedSessions;
 
@@ -69,7 +68,6 @@ public class EngineGraknTxFactory {
     private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
-        this.engineURI = engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
     }
 
@@ -99,7 +97,7 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI, engineConfig));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig));
         }
         return openedSessions.get(keyspace);
     }
@@ -118,5 +116,9 @@ public class EngineGraknTxFactory {
 
     public SystemKeyspace systemKeyspace(){
         return systemKeyspace;
+    }
+
+    private String engineURI() {
+        return engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
     }
 }

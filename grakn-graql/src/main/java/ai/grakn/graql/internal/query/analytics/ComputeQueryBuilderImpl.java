@@ -21,7 +21,8 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ClusterQueryBuilder;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -104,8 +105,8 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public ClusterQuery<Map<String, Long>> cluster() {
-        return new ClusterQueryImpl<>(tx);
+    public ConnectedComponentQuery<Map<String, Long>> connectedComponent() {
+        return new ConnectedComponentQueryImpl<>(tx);
     }
 
     @Override
@@ -126,5 +127,10 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public CentralityQueryBuilder centrality() {
         return new CentralityQueryBuilderImpl(tx);
+    }
+
+    @Override
+    public ClusterQueryBuilder cluster() {
+        return new ClusterQueryBuilderImpl(tx);
     }
 }

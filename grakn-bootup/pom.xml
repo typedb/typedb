@@ -31,6 +31,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-engine</artifactId>
         </dependency>

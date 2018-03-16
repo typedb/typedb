@@ -20,7 +20,8 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ClusterQueryBuilder;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -106,14 +107,20 @@ public interface ComputeQueryBuilder {
     PathsQuery paths();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a cluster query that will find the connected components
      */
+    @Deprecated
     @CheckReturnValue
-    ClusterQuery<Map<String, Long>> cluster();
+    ConnectedComponentQuery<Map<String, Long>> connectedComponent();
 
     /**
+     * This method is deprecated. Please use cluster query instead.
+     *
      * @return a k-core query that will find interlinked core areas using k-core.
      */
+    @Deprecated
     @CheckReturnValue
     KCoreQuery kCore();
 
@@ -140,4 +147,10 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     CentralityQueryBuilder centrality();
+
+    /**
+     * @return a cluster query builder for creating cluster query
+     */
+    @CheckReturnValue
+    ClusterQueryBuilder cluster();
 }

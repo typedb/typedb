@@ -24,21 +24,21 @@ Define a simple schema, which is just a specification of the components of a sys
 Add a new feature to Moogi that allows users to “like” concepts. Then produce a visualisation that displays the link between the things that a user likes. For more information about Moogi, the film discovery engine that is built on Grakn, please see [https://moogi.co/](https://moogi.co/).
 
 ### Moogi Data Cleanup
-Clean Moogi data and port it to Mindmaps. This requires dabbling a bit with Gremlin, scripting, exploring the knowledge base and ETL probably.
+Clean Moogi data and port it to Mindmaps. This requires dabbling a bit with Gremlin, scripting, exploring the knowledge graph and ETL probably.
 
-### knowledge base Database Pros and Cons
-Write a review of knowledge base Database technologies with pros and cons and example apps.
+### knowledge graph Database Pros and Cons
+Write a review of knowledge graph Database technologies with pros and cons and example apps.
 
 ### JavaScript Driver for Grakn
 Create a prototype to interface with the Grakn REST API in a simple manner.
 
-### Create a knowledge base Representation of a Website
-Write a simple tool that follows links in a website and constructs a knowledge base representation of it in Grakn. This could simply be pages and links, but could even pull out structural information such as containers and side panes inside pages. Follow on projects could be:   
- - mapping click stream data onto the knowledge base - and analysing
+### Create a knowledge graph Representation of a Website
+Write a simple tool that follows links in a website and constructs a knowledge graph representation of it in Grakn. This could simply be pages and links, but could even pull out structural information such as containers and side panes inside pages. Follow on projects could be:
+ - mapping click stream data onto the knowledge graph - and analysing
  - analysing clusters and shortest paths through the website.
 
 ### Sports Results
-For example, a knowledge base of the Rio Olympics stats dataset, Premier League results etc.
+For example, a knowledge graph of the Rio Olympics stats dataset, Premier League results etc.
 
 ### Recommendation Engine
 Shows how to leverage connections in your data to gather insights and start recommending currently unrelated but relevant facts.
@@ -57,13 +57,13 @@ Once this project has been tried and tested, it may be interesting to abstract i
 The following would be most suitable for postgraduate investigation.
 
 ### Semantic Machine Learning
-Using Machine Learning to work with the semantics of the knowledge base.
+Using Machine Learning to work with the semantics of the knowledge graph.
 
 ### Publication Topology Based Ranking   
 Semantic search engine for computer science publications. How do ranking results based on topology compare to user data? Can we use an ensemble measure to get “better” results?
 
-### Life Sciences Knowledge Base
-There is potential to use the open data from Elixir and Bioschemas.org to build a life science knowledge base.
+### Life Sciences Knowledge Graph
+There is potential to use the open data from Elixir and Bioschemas.org to build a life science knowledge graph.
 
 ### European Broadcast Union
 The European Broadcast Union are interested interested in semantics and have documented what they are pursuing [here](https://nlpdbpedia2016.files.wordpress.com/2016/09/nlpdbpedia2016_paper_1.pdf).

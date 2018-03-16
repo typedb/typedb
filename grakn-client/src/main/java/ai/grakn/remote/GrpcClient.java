@@ -39,6 +39,7 @@ import ai.grakn.grpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
@@ -78,8 +79,8 @@ public final class GrpcClient implements AutoCloseable {
         return new GrpcClient(conceptConverter, observer);
     }
 
-    public void open(Keyspace keyspace, GraknTxType txType) {
-        communicator.send(GrpcUtil.openRequest(keyspace, txType));
+    public void open(TxRequest openRequest) {
+        communicator.send(openRequest);
         responseOrThrow();
     }
 

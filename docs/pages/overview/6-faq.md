@@ -13,7 +13,7 @@ folder: overview
 
 ### What is GRAKN.AI?
 
-GRAKN.AI is a distributed [knowledge base](https://en.wikipedia.org/wiki/Knowledge_base) (Grakn) with a reasoning query language (Graql) that enables you to query for explicitly stored data and implicitly derived information.   
+GRAKN.AI is a distributed [knowledge graph](https://en.wikipedia.org/wiki/Knowledge_base) (Grakn) with a reasoning query language (Graql) that enables you to query for explicitly stored data and implicitly derived information.
 
 Grakn uses an intuitive [schema](https://blog.grakn.ai/what-is-an-ontology-c5baac4a2f6c) as a data model that allows you to define a set of types, properties, and relationship types. The schema allows you to model extremely complex datasets, and functions as a data schema constraint to guarantee data consistency, i.e. [logical integrity](https://en.wikipedia.org/wiki/Data_integrity). The schema modelling constructs include: type hierarchies, n-ary relationships, and higher-order modelling constructs. Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.   
 
@@ -22,11 +22,11 @@ Grakn is built using several graph computing and distributed computing platforms
 Graql is a [declarative](https://en.wikipedia.org/wiki/Declarative_programming), knowledge-oriented query language that uses machine reasoning to retrieve explicitly stored and implicitly derived information from Grakn. On other database systems, queries have to define the data patterns they are looking for explicitly. Graql, on the other hand, will translate a query pattern into all its logical equivalents and execute them against the database. This includes the inference of types, relationships, context, and pattern combination.   
 
 Graql allows you to derive implicit information that is hidden in your dataset, and makes finding new knowledge easy.
-In combination, Grakn and Graql are what makes GRAKN.AI, the knowledge base for working with complex data.
+In combination, Grakn and Graql are what makes GRAKN.AI, the knowledge graph for working with complex data.
 
 ### Can you explain GRAKN.AI’s “schema-first” model?
 
-In Grakn, the schema is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the [represented knowledge](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), such as the extraction of implicit information from explicit data ([inference](../docs/knowledge-model/model#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](../docs/knowledge-model/model#data-validation)). For this reason, the schema must be clearly defined before loading data into the knowledge base.
+In Grakn, the schema is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the [represented knowledge](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), such as the extraction of implicit information from explicit data ([inference](../docs/knowledge-model/model#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](../docs/knowledge-model/model#data-validation)). For this reason, the schema must be clearly defined before loading data into the knowledge graph.
 
 ### Won’t that cause extra complexity?
 
@@ -59,11 +59,11 @@ If you have new data that requires a new model, which you have not considered be
 * can be circumvented if you want to. You can still add data that doesn’t fit your schema, by creating a generic entity-relationship-resource model to ingest general information that doesn’t have any particular type. Imagine it to be “an abstract type”, but not really “abstract”. You will still get the benefit of having an intelligent and simple query language, but you won’t get the benefit of deep/advanced inference.
 * allows you to ask previously unimagined questions about the data because the schema provides a reasoning model for the query language to interpret future questions in the most flexible and expressive manner. Without the schema, you would be limited in this respect.
 
-### Is it practical to have to define a schema before I’ve worked with the data. Why can’t I just put it into a knowledge base as a set of entities and relationships?
+### Is it practical to have to define a schema before I’ve worked with the data. Why can’t I just put it into a knowledge graph as a set of entities and relationships?
 
 In the past, it hasn’t been practical with other technologies that use an ontology, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
 
-And yes, you could just use a graph database, but with GRAKN.AI, your data sits in a knowledge base, which enables automation, pattern matching, inference and discovery with very little human intervention. You can uncover hidden patterns in the data that are too complex for human cognition.
+And yes, you could just use a graph database, but with GRAKN.AI, your data sits in a knowledge graph, which enables automation, pattern matching, inference and discovery with very little human intervention. You can uncover hidden patterns in the data that are too complex for human cognition.
 
 ### How can I visualise my data?
 

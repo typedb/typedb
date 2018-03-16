@@ -280,7 +280,7 @@ public class GrpcUtil {
         return concepts.getConceptList().stream().map(conceptConverter::convert);
     }
 
-    private static GraknTxType convert(TxType txType) {
+    public static GraknTxType convert(TxType txType) {
         switch (txType) {
             case Read:
                 return GraknTxType.READ;

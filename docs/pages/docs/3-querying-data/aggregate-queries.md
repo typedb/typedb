@@ -281,4 +281,4 @@ Compute queries are computationally intensive and run in parallel on a cluster (
 compute count in person;
 ```
 
-Can be used to calculate the number of people in the knowledge base very fast, but you can't filter the results to determine the number of people with a certain name.
+Can be used to calculate the number of people in the knowledge graph very fast, but you can't filter the results to determine the number of people with a certain name.

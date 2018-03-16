@@ -9,7 +9,7 @@ folder: docs
 ---
 
 ## Introduction
-This tutorial shows you how to populate a knowledge base in Grakn with SQL data, by walking through a simple example. If you wish to follow along and have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide).
+This tutorial shows you how to populate a knowledge graph in Grakn with SQL data, by walking through a simple example. If you wish to follow along and have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide).
 
 ## Migration Shell Script for SQL
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
@@ -24,7 +24,7 @@ usage: graql migrate sql -template <arg> -driver <arg> -user <arg> -pass <arg> -
  -c,--config <arg>     Configuration file.
  -driver <arg>         JDBC driver
  -h,--help             Print usage message.
- -k,--keyspace <arg>   Grakn knowledge base. Required.
+ -k,--keyspace <arg>   Grakn knowledge graph. Required.
  -location <arg>       JDBC url (location of DB)
  -n,--no               Write to standard out.
  -pass <arg>           JDBC password
@@ -43,7 +43,7 @@ Grakn relies on the JDBC API to connect to any RDBMS that uses the SQL language.
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define a schema for the data to derive the full benefit of a knowledge base
+* define a schema for the data to derive the full benefit of a knowledge graph
 * create templated Graql to map the data to the schema by instructing the migrator on how the results of a SQL query can be mapped to your schema. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
 * invoke the Grakn migrator through the shell script or Java API.
 
@@ -123,7 +123,7 @@ pet plays pet-in-event;
 event plays event-occurred;
 ```
 
-To load the schema into Grakn, we create a single file that contains both sections shown above, named *schema.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge base. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
+To load the schema into Grakn, we create a single file that contains both sections shown above, named *schema.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge graph. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
 
 ```
 ./graql console -f ./schema.gql
@@ -194,7 +194,7 @@ $x isa <SPECIES>
   if(<DEATH> != null) do { has death <DEATH> };
 ```
 
-To apply the template above to the SQL query and populate the knowledge base with the `pet` entities, we use Grakn migration script:
+To apply the template above to the SQL query and populate the knowledge graph with the `pet` entities, we use Grakn migration script:
 
 ```
 ./graql migrate sql -q "SELECT * FROM pet;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
@@ -221,7 +221,7 @@ insert $event isa event
 
 ```
 
-To populate the knowledge base with the `event` entities, we then use the Grakn migration script:
+To populate the knowledge graph with the `event` entities, we then use the Grakn migration script:
 
 ```
 ./graql migrate sql -q "SELECT event.name AS name, event.date AS date, event.eventtype AS description FROM event;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
@@ -229,7 +229,7 @@ To populate the knowledge base with the `event` entities, we then use the Grakn 
 
 Note: The SQL query is entered into the command line in quotes, although in future releases of Grakn, we plan to allow queries to be saved in a file, which can be specified with an appropriate flag.
 
-At this point, the SQL data has been added to a knowledge base in Grakn, and can be queried. For example:
+At this point, the SQL data has been added to a knowledge graph in Grakn, and can be queried. For example:
 
 ```graql-skip-test
 match $x isa cat; # Get all cats

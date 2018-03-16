@@ -30,6 +30,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -192,6 +193,7 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException transactionClosed(@Nullable GraknTx tx, @Nullable String reason){
         if(reason == null){
+            Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
         } else {
             return create(reason);
