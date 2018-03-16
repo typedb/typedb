@@ -667,7 +667,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterWithMembersThenSize() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members().clusterSize(10);
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members(true).clusterSize(10);
         ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
 
         assertEquals(expected, parsed);
@@ -675,7 +675,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterWithSizeThenMembers() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members();
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true);
         ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
 
         assertEquals(expected, parsed);
@@ -684,7 +684,7 @@ public class QueryParserTest {
     @Test
     public void testParseComputeClusterWithSizeThenMembersThenSize() {
         ConnectedComponentQuery<?> expected =
-                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members().clusterSize(15);
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true).clusterSize(15);
 
         ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
 

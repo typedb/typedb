@@ -298,7 +298,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
+    public Object visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
         ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
         if (ctx.id() != null) {
@@ -309,23 +309,42 @@ class QueryVisitor extends GraqlBaseVisitor {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
 
-        cluster = chainOperators(ctx.clusterParam().stream().map(this::visitClusterParam)).apply(cluster);
+        cluster = chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(cluster);
 
         return cluster;
     }
 
-    private UnaryOperator<ConnectedComponentQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
+    @Override
+    public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
+        ConnectedComponentQuery<?> connectedComponentQuery = queryBuilder.compute().cluster().usingConnectedComponent();
+
+        if (ctx.inList() != null) {
+            connectedComponentQuery = connectedComponentQuery.in(visitInList(ctx.inList()));
+        }
+
+        connectedComponentQuery =
+                chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(connectedComponentQuery);
+
+        return connectedComponentQuery;
+    }
+
+    private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
         return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
     }
 
     @Override
     public UnaryOperator<ConnectedComponentQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
-        return ConnectedComponentQuery::members;
+        return query -> query.members(visitBool(ctx.bool()));
     }
 
     @Override
     public UnaryOperator<ConnectedComponentQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
         return query -> query.clusterSize(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
+        return query -> query.of(visitId(ctx.id()));
     }
 
     @Override

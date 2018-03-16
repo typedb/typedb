@@ -46,8 +46,8 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
     }
 
     @Override
-    public ConnectedComponentQuery<Map<String, Set<String>>> members() {
-        this.members = true;
+    public ConnectedComponentQuery<Map<String, Set<String>>> members(boolean isMembersSet) {
+        this.members = isMembersSet;
         return (ConnectedComponentQuery<Map<String, Set<String>>>) this;
     }
 

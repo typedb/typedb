@@ -21,7 +21,7 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths | connectedComponent | cluster | degrees ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -30,13 +30,15 @@ mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
+connectedComponent  : CLUSTER ('of' id)? ('in' inList)? ';' 'using connected-component' ('where' ccParam+)? ';';
+cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' ccParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
-clusterParam   : MEMBERS      ';' # clusterMembers
-               | SIZE INTEGER ';' # clusterSize
+ccParam        : MEMBERS       '='      bool            # clusterMembers
+               | SIZE          '='      INTEGER         # clusterSize
+               | 'id'          '='      id              # ccStartPoint
                ;
 
 ofList         : labelList ;
