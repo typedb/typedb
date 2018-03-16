@@ -34,6 +34,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
@@ -209,6 +210,16 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
+    public final VarPattern directIsa(String type) {
+        return directIsa(Graql.label(type));
+    }
+
+    @Override
+    public final VarPattern directIsa(VarPattern type) {
+        return addProperty(DirectIsaProperty.of(type.admin()));
+    }
+
+    @Override
     public final VarPattern isa(String type) {
         return isa(Graql.label(type));
     }
@@ -230,12 +241,22 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern relates(String type) {
-        return relates(Graql.label(type));
+        return relates(type, null);
     }
 
     @Override
     public final VarPattern relates(VarPattern type) {
-        return addProperty(RelatesProperty.of(type.admin()));
+        return relates(type, null);
+    }
+
+    @Override
+    public VarPattern relates(String roleType, String superRoleType) {
+        return relates(Graql.label(roleType), superRoleType == null ? null : Graql.label(superRoleType));
+    }
+
+    @Override
+    public VarPattern relates(VarPattern roleType, VarPattern superRoleType) {
+        return addProperty(RelatesProperty.of(roleType.admin(), superRoleType == null ? null : superRoleType.admin()));
     }
 
     @Override

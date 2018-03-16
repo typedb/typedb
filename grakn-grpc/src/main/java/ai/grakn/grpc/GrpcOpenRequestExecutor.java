@@ -18,8 +18,8 @@
 
 package ai.grakn.grpc;
 
-import ai.grakn.GraknTx;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
  * Interface implemented by classes that handle gRPC Open requests
@@ -29,5 +29,5 @@ import ai.grakn.rpc.generated.GraknOuterClass.Open;
 
 public interface GrpcOpenRequestExecutor {
 
-    GraknTx execute(Open open);
+    EmbeddedGraknTx<?> execute(Open open);
 }

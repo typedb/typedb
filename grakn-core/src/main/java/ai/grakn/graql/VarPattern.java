@@ -28,6 +28,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * A variable together with its properties.
@@ -89,7 +90,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type with an exact matching value
      *
-     * @param type a resource type in the schema
+     * @param type  a resource type in the schema
      * @param value a value of a resource
      * @return this
      */
@@ -99,7 +100,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
-     * @param type a resource type in the schema
+     * @param type      a resource type in the schema
      * @param predicate a atom on the value of a resource
      * @return this
      */
@@ -109,7 +110,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
-     * @param type a resource type in the schema
+     * @param type      a resource type in the schema
      * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
@@ -119,7 +120,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
-     * @param type a resource type in the schema
+     * @param type      a resource type in the schema
      * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
@@ -130,8 +131,8 @@ public interface VarPattern extends Pattern {
      * the variable must have an {@link Attribute} of the given type that matches {@code resource}.
      * The {@link Relationship} associating the two must match {@code relation}.
      *
-     * @param type a resource type in the ontology
-     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param type         a resource type in the ontology
+     * @param attribute    a variable pattern representing an {@link Attribute}
      * @param relationship a variable pattern representing a {@link Relationship}
      * @return this
      */
@@ -139,18 +140,32 @@ public interface VarPattern extends Pattern {
     VarPattern has(Label type, VarPattern attribute, VarPattern relationship);
 
     /**
-     * @param type a concept type id that the variable must be of this type
+     * @param type a concept type id that the variable must be of this type directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(String type);
 
     /**
-     * @param type a concept type that this variable must be an instance of
+     * @param type a concept type that this variable must be an instance of directly or indirectly
      * @return this
      */
     @CheckReturnValue
     VarPattern isa(VarPattern type);
+
+    /**
+     * @param type a concept type id that the variable must be of this type directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(String type);
+
+    /**
+     * @param type a concept type that this variable must be an instance of directly
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern directIsa(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of
@@ -179,6 +194,20 @@ public interface VarPattern extends Pattern {
      */
     @CheckReturnValue
     VarPattern relates(VarPattern type);
+
+    /**
+     * @param roleType a {@link Role} id that this relation type variable must have
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern relates(String roleType, @Nullable String superRoleType);
+
+    /**
+     * @param roleType a {@link Role} that this relation type variable must have
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern relates(VarPattern roleType, @Nullable VarPattern superRoleType);
 
     /**
      * @param type a {@link Role} id that this concept type variable must play
@@ -243,7 +272,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the schema
+     * @param role       a {@link Role} in the schema
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -253,7 +282,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a {@link Role}
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -263,7 +292,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the schema
+     * @param role       a {@link Role} in the schema
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
@@ -273,7 +302,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a variable pattern representing a {@link Role}
+     * @param role       a variable pattern representing a {@link Role}
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
@@ -282,6 +311,7 @@ public interface VarPattern extends Pattern {
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances
+     *
      * @return this
      */
     @CheckReturnValue
@@ -296,6 +326,7 @@ public interface VarPattern extends Pattern {
 
     /**
      * Specify the regular expression instances of this resource type must match
+     *
      * @param regex the regex to set for this resource type variable
      * @return this
      */
@@ -318,6 +349,7 @@ public interface VarPattern extends Pattern {
 
     /**
      * Specify that the variable is different to another variable
+     *
      * @param var the variable that this variable should not be equal to
      * @return this
      */
@@ -327,6 +359,7 @@ public interface VarPattern extends Pattern {
 
     /**
      * Specify that the variable is different to another variable
+     *
      * @param varPattern the variable pattern that this variable should not be equal to
      * @return this
      */

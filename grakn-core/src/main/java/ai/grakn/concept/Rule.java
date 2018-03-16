@@ -21,7 +21,6 @@ package ai.grakn.concept;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
@@ -87,8 +86,8 @@ public interface Rule extends SchemaConcept {
      *
      * @return The super of this {@link Rule}
      */
+    @Nullable
     @Override
-    @Nonnull
     Rule sup();
 
     /**

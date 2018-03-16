@@ -158,6 +158,7 @@ public class AtomicTest {
     public void testEquivalence_DifferentRelationVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String pattern = "{(role1: $x, role2: $y) isa binary;}";
+        String directPattern = "{(role1: $x, role2: $y) isa! binary;}";
         String pattern2 = "{$r (role1: $x, role2: $y) isa binary;}";
         String pattern3 = "{$z (role1: $x, role2: $y) isa binary;}";
         String pattern4 = "{(role1: $x, role2: $y);}";
@@ -167,6 +168,7 @@ public class AtomicTest {
         String pattern8 = "{(role1: $x, role2: $y) isa $type;$type label binary;}";
 
         atomicEquality(pattern, pattern, true, graph);
+        atomicEquality(pattern, directPattern, false, graph);
         atomicEquality(pattern, pattern2, false, graph);
         atomicEquality(pattern, pattern3, false, graph);
         atomicEquality(pattern, pattern4, false, graph);

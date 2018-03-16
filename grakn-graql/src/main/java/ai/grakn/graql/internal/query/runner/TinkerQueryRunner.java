@@ -34,7 +34,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -121,7 +121,7 @@ public class TinkerQueryRunner implements QueryRunner {
     }
 
     @Override
-    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
         return tinkerComputeQueryRunner.run(query);
     }
 

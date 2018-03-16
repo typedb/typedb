@@ -65,10 +65,10 @@ public class RuleUtils {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
-        return type != null ?
-                type.subs().flatMap(SchemaConcept::getRulesOfConclusion) :
-                getRules(graph);
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
+        return type == null ? getRules(graph) :
+                direct? type.getRulesOfConclusion() :
+                        type.subs().flatMap(SchemaConcept::getRulesOfConclusion);
     }
 
     /**

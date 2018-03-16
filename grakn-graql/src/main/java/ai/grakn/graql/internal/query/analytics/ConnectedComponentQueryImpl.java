@@ -21,21 +21,22 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> implements ClusterQuery<T> {
+class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedComponentQuery<T>>
+        implements ConnectedComponentQuery<T> {
 
     private boolean members = false;
     private boolean anySize = true;
     private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
-    ClusterQueryImpl(Optional<GraknTx> tx) {
+    ConnectedComponentQueryImpl(Optional<GraknTx> tx) {
         super(tx);
     }
 
@@ -45,9 +46,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public ClusterQuery<Map<String, Set<String>>> members() {
+    public ConnectedComponentQuery<Map<String, Set<String>>> members() {
         this.members = true;
-        return (ClusterQuery<Map<String, Set<String>>>) this;
+        return (ConnectedComponentQuery<Map<String, Set<String>>>) this;
     }
 
     @Override
@@ -56,7 +57,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public ClusterQuery<T> of(ConceptId conceptId) {
+    public ConnectedComponentQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
     }
@@ -67,7 +68,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public ClusterQuery<T> clusterSize(long clusterSize) {
+    public ConnectedComponentQuery<T> clusterSize(long clusterSize) {
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;
@@ -77,6 +78,11 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     @Nullable
     public final Long clusterSize() {
         return anySize ? null : clusterSize;
+    }
+
+    @Override
+    ClusterMeasure getMethod() {
+        return ClusterMeasure.CONNECTED_COMPONENT;
     }
 
     @Override
@@ -100,7 +106,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
+        ConnectedComponentQueryImpl<?> that = (ConnectedComponentQueryImpl<?>) o;
 
         return sourceId.equals(that.sourceId) && members == that.members &&
                 anySize == that.anySize && clusterSize == that.clusterSize;

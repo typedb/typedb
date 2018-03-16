@@ -19,7 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -66,8 +66,8 @@ public interface Role extends SchemaConcept {
      *
      * @return The super of this Role
      */
+    @Nullable
     @Override
-    @Nonnull
     Role sup();
 
     /**

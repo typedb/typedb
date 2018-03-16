@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
@@ -123,6 +124,12 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     @Override
     public final String toString() {
         return "compute " + graqlString();
+    }
+
+    @Nullable
+    @Override
+    public Boolean inferring() {
+        return null;
     }
 
     @Override

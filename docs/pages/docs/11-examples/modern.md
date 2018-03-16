@@ -15,8 +15,8 @@ We have a few examples on how to work with Graql using different datasets. For e
 
 The following is a simple example enough to demonstrate some of the fundamentals of Graql.
 We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema.
-We then use Graql to add the data to the knowledge base.
-The main purpose of this example, however, is to use it for practice at making sample queries on the knowledge base.
+We then use Graql to add the data to the knowledge graph.
+The main purpose of this example, however, is to use it for practice at making sample queries on the knowledge graph.
 
 ### Starting Graql
 
@@ -85,7 +85,7 @@ define person plays programmer;
 define software plays programmed;
 ```
 
-And that's it. At this point, we have defined the schema of the knowledge base.
+And that's it. At this point, we have defined the schema of the knowledge graph.
 
 ## Adding the Data
 Now we have a schema, we can move on to adding in the data, which is pretty much just a typing exercise:
@@ -115,10 +115,10 @@ match $josh has name "josh"; $ripple has name "ripple"; insert (programmer: $jos
 
 This example is designed to get you up close and personal with Graql queries. It will run through a few basic examples, then ask you a set of "Test Yourself" questions.
 
-OK, so if you've followed the above, you should now have a schema and some data in a knowledge base. How do you go about using the knowledge base to answer your queries? That's where the `match` statement comes in.
+OK, so if you've followed the above, you should now have a schema and some data in a knowledge graph. How do you go about using the knowledge graph to answer your queries? That's where the `match` statement comes in.
 
 As with any query language, you use a variable to receive the results of the get query, which you must prefix with a
-`$`. So, to make the query "List every person in the knowledge base", you would use the following in Graql:
+`$`. So, to make the query "List every person in the knowledge graph", you would use the following in Graql:
 
 ```graql
 >>> match $x isa person, has name $n; get $n;
@@ -146,7 +146,7 @@ $x id "peter" has age "35";
 ```
 
 ## Complete Example
-Here is the complete example - the code to define the schema and insert the data into a knowledge base. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
+Here is the complete example - the code to define the schema and insert the data into a knowledge graph. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
 
 ```bash
 ./graql console

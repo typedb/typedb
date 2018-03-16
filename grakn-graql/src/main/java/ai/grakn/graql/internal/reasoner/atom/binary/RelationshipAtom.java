@@ -141,13 +141,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     //NB: overriding as these require a derived property
     @Override
     public final boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && isUserDefined() == a2.isUserDefined()
-                && getVarNames().equals(a2.getVarNames())
-                && getRelationPlayers().equals(a2.getRelationPlayers());
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        RelationshipAtom that = (RelationshipAtom) obj;
+        return Objects.equals(this.getTypeId(), that.getTypeId())
+                && this.isUserDefined() == that.isUserDefined()
+                && this.isDirect() == that.isDirect()
+                && this.getVarNames().equals(that.getVarNames())
+                && this.getRelationPlayers().equals(that.getRelationPlayers());
     }
 
     @Memoized
@@ -184,6 +185,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
+                (isDirect()? "!" : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
@@ -229,7 +231,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     protected Pattern createCombinedPattern(){
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
-        return getSchemaConcept() != null? relationPattern().isa(getSchemaConcept().getLabel().getValue()) : relationPattern();
+        return getSchemaConcept() == null?
+                relationPattern() :
+                isDirect()?
+                        relationPattern().directIsa(getSchemaConcept().getLabel().getValue()):
+                        relationPattern().isa(getSchemaConcept().getLabel().getValue());
     }
 
     private VarPattern relationPattern() {
@@ -254,15 +260,16 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
-        return (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
+        RelationshipAtom that = (RelationshipAtom) obj;
+        return (this. isUserDefined() == that.isUserDefined())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId())
                 //check relation players equivalent
-                && getRolePlayers().size() == a2.getRolePlayers().size()
-                && getRelationPlayers().size() == a2.getRelationPlayers().size()
-                && getRoleLabels().equals(a2.getRoleLabels())
+                && this.getRolePlayers().size() == that.getRolePlayers().size()
+                && this.getRelationPlayers().size() == that.getRelationPlayers().size()
+                && this.getRoleLabels().equals(that.getRoleLabels())
                 //check role-type bindings
-                && getRoleTypeMap().equals(a2.getRoleTypeMap());
+                && this.getRoleTypeMap().equals(that.getRoleTypeMap());
     }
 
     private int baseHashCode(){
@@ -276,9 +283,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
+        RelationshipAtom that = (RelationshipAtom) obj;
         //check id predicate bindings
-        return getRoleConceptIdMap().equals(a2.getRoleConceptIdMap());
+        return this.getRoleConceptIdMap().equals(that.getRoleConceptIdMap());
     }
 
     @Override
@@ -291,9 +298,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
-        RelationshipAtom a2 = (RelationshipAtom) obj;
+        RelationshipAtom that = (RelationshipAtom) obj;
         // check bindings
-        return getRoleConceptIdMap().keySet().equals(a2.getRoleConceptIdMap().keySet());
+        return this.getRoleConceptIdMap().keySet().equals(that.getRoleConceptIdMap().keySet());
     }
 
     @Override
@@ -731,8 +738,12 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName.admin()));
                 });
 
-        VarPatternAdmin newPattern = relationPattern(getVarName(), inferredRelationPlayers)
-                .isa(getPredicateVariable()).admin();
+        VarPattern relationPattern = relationPattern(getVarName(), inferredRelationPlayers);
+        VarPatternAdmin newPattern =
+                (isDirect()?
+                        relationPattern.directIsa(getPredicateVariable()) :
+                        relationPattern.isa(getPredicateVariable())
+                ).admin();
         return create(newPattern, getPredicateVariable(), getTypeId(), getParentQuery());
     }
 

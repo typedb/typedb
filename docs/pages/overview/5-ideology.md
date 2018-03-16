@@ -11,9 +11,9 @@ folder: overview
 If you have any questions about it, please do reach out to us via [Slack](https://grakn.ai/slack.html), [Twitter](https://twitter.com/graknlabs) or our [discussion forums](https://discuss.grakn.ai/).*
 
 
-Technology is invented for solving difficult problems in this world. The shape or form in which it is delivered is almost irrelevant, and should not get in the way of its potential purpose. Ontology systems are an example; it is a technology that humans invented to solve difficult problems in the field of information science. At GRAKN.AI, we provide a schema language for you to model your knowledge base.
+Technology is invented for solving difficult problems in this world. The shape or form in which it is delivered is almost irrelevant, and should not get in the way of its potential purpose. Ontology systems are an example; it is a technology that humans invented to solve difficult problems in the field of information science. At GRAKN.AI, we provide a schema language for you to model your knowledge graph.
 
-However, the current schema languages and tools (RDF/OWL) have never made it practical for engineers to implement, and so they have mainly stayed in the research space for a long time. At GRAKN.AI, our core mission is to make knowledge bases easy for engineers to use for the first time. We want engineers to be able to develop their knowledge bases rapidly and update their data model frequently. This way, their data platform can continue to evolve as the business grows, and immediately reap the real benefit of a knowledge base: to enable machines to reason and infer hidden knowledge that is too complex for human cognition to uncover.
+However, the current schema languages and tools (RDF/OWL) have never made it practical for engineers to implement, and so they have mainly stayed in the research space for a long time. At GRAKN.AI, our core mission is to make knowledge graphs easy for engineers to use for the first time. We want engineers to be able to develop their knowledge graphs rapidly and update their data model frequently. This way, their data platform can continue to evolve as the business grows, and immediately reap the real benefit of a knowledge graph: to enable machines to reason and infer hidden knowledge that is too complex for human cognition to uncover.
 
 As you can imagine, we are often asked how GRAKN.AI contrasts with traditional schema languages and tools in the RDF/OWL world. We have previously touched upon [why we implemented our own knowledge representation model](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24). We believe that RDF & OWL are for semantic web (not databases) and logicians (not software engineers). And GRAKN.AI, as you may expect, is for databases and software engineers.
 
@@ -22,7 +22,7 @@ This time we thought to dive in a little deeper and discuss the practicality of 
 ## Simplicity
 
 ### Simple and intuitive syntax
-GRAKN.AI has an intuitive schema language, Graql, which is the same language used to query the knowledge base. It has a simple syntax that is not burdened with URIs or complex serialisation of OWL axioms in RDF/XML, Turtle, or N3 formats.
+GRAKN.AI has an intuitive schema language, Graql, which is the same language used to query the knowledge graph. It has a simple syntax that is not burdened with URIs or complex serialisation of OWL axioms in RDF/XML, Turtle, or N3 formats.
 
 ### A smaller set of higher level modelling constructs
 Compared to OWL, Graql has a smaller set of [schema modelling constructs](../docs/knowledge-model/model), but can express all the core use cases of complex domain modelling. Graql’s schema language contains higher level constructs that defines [N-ary] hyper-relationships and hyper-objects as basic concepts in the building blocks.    

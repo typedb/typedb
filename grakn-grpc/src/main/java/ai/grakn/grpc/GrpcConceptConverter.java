@@ -16,26 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.shell;
+package ai.grakn.grpc;
 
-import ai.grakn.graql.GraqlShell;
-import jline.console.completer.Completer;
-
-import java.util.List;
+import ai.grakn.concept.Concept;
+import ai.grakn.rpc.generated.GrpcConcept;
 
 /**
- * Completer that complete Graql shell commands
- *
  * @author Felix Chapman
  */
-public class ShellCommandCompleter implements Completer {
-
-    @Override
-    public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        GraqlShell.COMMANDS.stream()
-                .filter(command -> command.startsWith(buffer))
-                .forEach(candidates::add);
-
-        return 0;
-    }
+public interface GrpcConceptConverter {
+    Concept convert(GrpcConcept.Concept concept);
 }

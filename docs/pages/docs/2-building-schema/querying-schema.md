@@ -9,7 +9,7 @@ folder: docs
 KB: genealogy-plus
 ---
 
-The schema can be queried using the [match clause](../querying-data/match-clause) A match describes a pattern to find in the knowledge base, and the following properties only apply to schema types.
+The schema can be queried using the [match clause](../querying-data/match-clause) A match describes a pattern to find in the knowledge graph, and the following properties only apply to schema types.
 
 ### sub
 Match types that are a subclass of the given type.
@@ -61,6 +61,32 @@ match parentship relates $x; get;
 <pre class="language-java">
 <code>
 qb.match(label("parentship").relates(var("x"))).get();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+
+### as
+Match hierarchy of roles in `relates`.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
+    <li><a href="#java8" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell8">
+<pre class="language-graql">
+<code>
+match fatherhood relates $x as parent; get;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java8">
+<pre class="language-java">
+<code>
+qb.match(label("fatherhood").relates(var("x"), label("parent"))).get();
 </code>
 </pre>
 </div> <!-- tab-pane -->

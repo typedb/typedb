@@ -106,10 +106,10 @@ esac
 
 # migrate the data into Grakn
 
-graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-1-resources.gql -r ${ENGINE}
-graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-2-relations.gql -r ${ENGINE}
-graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-3-entities.gql -r ${ENGINE}
-graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-4-rules.gql -r ${ENGINE}
+graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-1-resources.gql -r ${ENGINE_GRPC}
+graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-2-relations.gql -r ${ENGINE_GRPC}
+graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-3-entities.gql -r ${ENGINE_GRPC}
+graql console -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-4-rules.gql -r ${ENGINE_GRPC}
 
 # lazily take account of OS
 unamestr=`uname`
@@ -133,7 +133,7 @@ do
         echo "Loading ${DATA_FILE} with ${TEMPLATE_FILE}"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        echo graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE} -d
-        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE} -d
+        echo graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE_REST} -d
+        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE_REST} -d
 done < ${SCRIPTPATH}/migrationsToRun.txt
 

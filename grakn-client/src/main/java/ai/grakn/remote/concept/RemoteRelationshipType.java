@@ -40,7 +40,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return asInstance(insert(TARGET.isa(ME)));
     }
 
     @Override
@@ -50,12 +50,12 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final RelationshipType relates(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return define(role, ME.relates(TARGET));
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return undefine(role, ME.relates(TARGET));
     }
 
     @Override
