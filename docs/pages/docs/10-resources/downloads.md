@@ -12,7 +12,7 @@ folder: docs
 
 ## Download Grakn Latest Version
 
-[Download Grakn 1.0](https://grakn.ai/download/)
+[Download Grakn](https://grakn.ai/download/)
 {: #download-btn }
 
 
