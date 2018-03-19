@@ -24,25 +24,25 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 
 /**
- * A fake {@link SystemKeyspace} implementation, that follows the correct contract, but operates without a real
+ * A fake {@link GraknKeyspaceStore} implementation, that follows the correct contract, but operates without a real
  * knowledge base.
  *
  * @author Felix Chapman
  */
-public class SystemKeyspaceFake implements SystemKeyspace {
+public class GraknKeyspaceStoreFake implements GraknKeyspaceStore {
 
     private Set<Keyspace> keyspaces;
 
-    private SystemKeyspaceFake(Set<Keyspace> keyspaces) {
+    private GraknKeyspaceStoreFake(Set<Keyspace> keyspaces) {
         this.keyspaces = keyspaces;
     }
 
-    public static SystemKeyspaceFake of(Keyspace... keyspaces) {
-        return new SystemKeyspaceFake(Sets.newHashSet(keyspaces));
+    public static GraknKeyspaceStoreFake of(Keyspace... keyspaces) {
+        return new GraknKeyspaceStoreFake(Sets.newHashSet(keyspaces));
     }
 
     @Override
-    public void openKeyspace(Keyspace keyspace) {
+    public boolean putKeyspace(Keyspace keyspace) {
         keyspaces.add(keyspace);
     }
 

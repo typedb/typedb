@@ -94,6 +94,7 @@ public class GraknEngineServerTest {
     Service spark = Service.ignite();
     RedisWrapper mockRedisWrapper = mock(RedisWrapper.class);
     Jedis mockJedis = mock(Jedis.class);
+    private GraknKeyspaceStore graknKeyspaceStore;
 
     @Before
     public void setUp() {
@@ -118,13 +119,13 @@ public class GraknEngineServerTest {
         try {
             try (GraknEngineServer server = createGraknEngineServer(RedisWrapper.create(config))) {
                 server.start();
-                assertNotNull(server.factory().systemKeyspace());
+                assertNotNull(graknKeyspaceStore);
 
                 // init a random keyspace
                 String keyspaceName = "thisisarandomwhalekeyspace";
-                server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
+                graknKeyspaceStore.putKeyspace(Keyspace.of(keyspaceName));
 
-                assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
+                assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
             }
         } finally {
             redisServer.stop();
@@ -198,6 +199,8 @@ public class GraknEngineServerTest {
         // tx-factory
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
 
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(engineGraknTxFactory, lockProvider);
+
         // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
@@ -216,6 +219,6 @@ public class GraknEngineServerTest {
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
                 sparkHttp, httpControllers, grpcServer,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor);
+                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }
 }

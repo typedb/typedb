@@ -44,28 +44,28 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.SystemKeyspace.SYSTEM_KB_KEYSPACE;
+import static ai.grakn.engine.GraknKeyspaceStore.SYSTEM_KB_KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SystemKeyspaceTest {
+public class GraknKeyspaceStoreTest {
 
     private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
     private static EngineGraknTxFactory graknFactory;
-    private static SystemKeyspace systemKeyspace;
+    private static GraknKeyspaceStore graknKeyspaceStore;
 
     //Needed so that Grakn.session() can return a session
     //Note: This is a rule rather than a class rule because we need to ensure that cass is started up first and then
-    // the systemKeyspace is initialised. If we make this a ClassRule that load order is broken and this test fails with
+    // the graknKeyspaceStore is initialised. If we make this a ClassRule that load order is broken and this test fails with
     // the janus profile.
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry)).host("0.0.0.0").port(4567);
+    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, graknKeyspaceStore, status, metricRegistry)).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
     @ClassRule
@@ -74,15 +74,16 @@ public class SystemKeyspaceTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(Keyspace.of(k), GraknTxType.WRITE);
     private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).open(GraknTxType.WRITE);
 
     private final Set<GraknTx> transactions = new HashSet<>();
 
     @BeforeClass
     public static void setup(){
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
-        systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config);
+        graknFactory.systemKeyspace().loadSystemSchema();
+        graknKeyspaceStore = graknFactory.systemKeyspace();
 
         Lock lock = mock(Lock.class);
         when(lockProvider.getLock(any())).thenReturn(lock);

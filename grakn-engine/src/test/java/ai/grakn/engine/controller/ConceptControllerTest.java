@@ -108,7 +108,8 @@ public class ConceptControllerTest {
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, config);
+        factory = EngineGraknTxFactory.create(mockLockProvider, config);
+        factory.systemKeyspace().loadSystemSchema();
         new ConceptController(factory, new MetricRegistry()).start(spark);
     });
     @ClassRule

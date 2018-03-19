@@ -39,6 +39,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.Server;
@@ -74,8 +75,13 @@ public class GraknEngineServerFactory {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
+
+        SystemKeyspaceSession systemKeyspaceSession = new SystemKeyspaceSessionProvider(config);
+        GraknKeyspaceStore graknKeyspaceStore = GraknKeyspaceStoreImpl.create(systemKeyspaceSession);
+
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
 
         // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
@@ -89,7 +95,7 @@ public class GraknEngineServerFactory {
         Collection<HttpController> httpControllers = Collections.emptyList();
         GrpcServer grpcServer = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
 
-        return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, grpcServer, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor);
+        return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, grpcServer, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }
 
     /**
@@ -102,13 +108,13 @@ public class GraknEngineServerFactory {
             Service sparkHttp, Collection<HttpController> httpControllers, GrpcServer grpcServer,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor) {
+            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, GraknKeyspaceStore graknKeyspaceStore) {
 
         HttpHandler httpHandler = new HttpHandler(config, sparkHttp, engineGraknTxFactory, metricRegistry, graknEngineStatus, postProcessor, grpcServer, httpControllers);
 
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config, engineGraknTxFactory, postProcessor.index());
 
-        GraknEngineServer graknEngineServer = new GraknEngineServer(engineId, config, graknEngineStatus, engineGraknTxFactory, lockProvider, queueSanityCheck, httpHandler, taskRunner);
+        GraknEngineServer graknEngineServer = new GraknEngineServer(engineId, config, graknEngineStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, graknKeyspaceStore);
 
         Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);

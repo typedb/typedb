@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.test.rule.EngineContext;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -41,8 +41,8 @@ public class ClientTest {
         assertTrue(running);
 
         // Check that we've loaded the schema
-        try(GraknTx tx = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
-            assertNotNull(tx.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
+        try(GraknTx tx = engine.factory().tx(GraknKeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+            assertNotNull(tx.getAttributeType(GraknKeyspaceStore.KEYSPACE_RESOURCE.getValue()));
         }
     }
 

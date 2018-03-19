@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,11 +51,11 @@ public class PostProcessingTaskTest {
 
     @Before
     public void setupMocks(){
-        SystemKeyspace systemKeyspace = mock(SystemKeyspace.class);
-        when(systemKeyspace.keyspaces()).thenReturn(keyspaces);
+        GraknKeyspaceStore graknKeyspaceStore = mock(GraknKeyspaceStore.class);
+        when(graknKeyspaceStore.keyspaces()).thenReturn(keyspaces);
 
         factory = mock(EngineGraknTxFactory.class);
-        when(factory.systemKeyspace()).thenReturn(systemKeyspace);
+        when(factory.systemKeyspace()).thenReturn(graknKeyspaceStore);
 
         indexPostProcessor = mock(IndexPostProcessor.class);
         postProcessor = PostProcessor.create(indexPostProcessor, mock(CountPostProcessor.class));

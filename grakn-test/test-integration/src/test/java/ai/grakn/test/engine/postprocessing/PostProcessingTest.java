@@ -85,7 +85,7 @@ public class PostProcessingTest {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(engine.server().lockProvider(), indexStorage);
 
         RedisCountStorage countStorage = RedisCountStorage.create(engine.getJedisPool(), metricRegistry);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(engine.config(), engine.server().factory(), engine.server().lockProvider(), metricRegistry, countStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(engine.config(), engine.factory(), engine.server().lockProvider(), metricRegistry, countStorage);
 
         session = engine.sessionWithNewKeyspace();
         postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);

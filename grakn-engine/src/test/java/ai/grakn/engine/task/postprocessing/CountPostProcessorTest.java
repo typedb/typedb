@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
@@ -66,14 +66,14 @@ public class CountPostProcessorTest {
         configMock = mock(GraknConfig.class);
         when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(5L);
 
-        SystemKeyspace systemKeyspaceMock = mock(SystemKeyspace.class);
-        when(systemKeyspaceMock.containsKeyspace(any())).thenReturn(true);
+        GraknKeyspaceStore graknKeyspaceStoreMock = mock(GraknKeyspaceStore.class);
+        when(graknKeyspaceStoreMock.containsKeyspace(any())).thenReturn(true);
 
         EmbeddedGraknTx txMock = mock(EmbeddedGraknTx.class);
         when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
 
         factoryMock = mock(EngineGraknTxFactory.class);
-        when(factoryMock.systemKeyspace()).thenReturn(systemKeyspaceMock);
+        when(factoryMock.systemKeyspace()).thenReturn(graknKeyspaceStoreMock);
         when(factoryMock.tx(any(Keyspace.class), any())).thenReturn(txMock);
 
         lockProviderMock = mock(LockProvider.class);
@@ -107,7 +107,7 @@ public class CountPostProcessorTest {
             verify(countStorage, Mockito.times(1)).incrementInstanceCount(keyspace, id, value);
 
             //No Sharding takes place
-            verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
+            verify(factoryMock, Mockito.times(0)).tx(any(Keyspace.class), any());
         });
     }
 

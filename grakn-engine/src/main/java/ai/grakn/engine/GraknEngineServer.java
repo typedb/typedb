@@ -19,7 +19,6 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.QueueSanityCheck;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
@@ -46,20 +45,21 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineID engineId;
     private final GraknConfig config;
     private final GraknEngineStatus graknEngineStatus;
-    private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
     private final QueueSanityCheck queueSanityCheck;
     private final HttpHandler httpHandler;
     private final BackgroundTaskRunner backgroundTaskRunner;
 
-    public GraknEngineServer(EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus, EngineGraknTxFactory factory, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, HttpHandler httpHandler, BackgroundTaskRunner backgroundTaskRunner) {
+    private final GraknKeyspaceStore graknKeyspaceStore;
+
+    public GraknEngineServer(EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, HttpHandler httpHandler, BackgroundTaskRunner backgroundTaskRunner, GraknKeyspaceStore graknKeyspaceStore) {
         this.config = config;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
         this.queueSanityCheck = queueSanityCheck;
         // Lock provider
         this.lockProvider = lockProvider;
-        this.factory = factory;
+        this.graknKeyspaceStore = graknKeyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
         this.backgroundTaskRunner = backgroundTaskRunner;
@@ -114,7 +114,7 @@ public class GraknEngineServer implements AutoCloseable {
     private void loadAndUnlock(Lock lock) {
         try {
             LOG.info("{} is checking the system schema", this.engineId);
-            factory.systemKeyspace().loadSystemSchema();
+            graknKeyspaceStore.loadSystemSchema();
         } finally {
             lock.unlock();
         }
@@ -127,10 +127,6 @@ public class GraknEngineServer implements AutoCloseable {
         LOG.info("\n==================================================");
     }
 
-    public EngineGraknTxFactory factory() {
-        return factory;
-    }
-
     public HttpHandler getHttpHandler() {
         return httpHandler;
     }
@@ -138,5 +134,7 @@ public class GraknEngineServer implements AutoCloseable {
     public LockProvider lockProvider(){
         return lockProvider;
     }
+
+    public GraknKeyspaceStore systemKeyspace() { return graknKeyspaceStore; }
 }
 
