@@ -285,7 +285,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraknTxOperationException.invalidResourceValue(o, LONG);
+                        throw GraknTxOperationException.invalidAttributeValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });
