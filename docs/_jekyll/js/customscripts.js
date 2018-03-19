@@ -67,7 +67,7 @@ $( document ).ready(function() {
     var hamburgerSecondaryMenu = $('#hamburger-menu-secondary');
     var hamburgerSecondaryMenuBack = $('#hamburger-menu-secondary-back');
     var hamburgerExpanded = false;
-    var secondaryExpanded = false;
+    var secondaryExpanded = null;
 
     hamburgerBtn.click(function() {
         hamburgerExpanded = !hamburgerExpanded;
@@ -78,30 +78,31 @@ $( document ).ready(function() {
         else {
             hamburgerBtn.removeClass("is-active");
             hamburgerMenu.removeClass("navigation-bar__hamburger--open");
-            if(secondaryExpanded) {
-                hamburgerSecondaryMenu.removeClass('navigation-bar__hamburger__secondary--open');
-                $("a").remove('.navigation-bar__link__removable');
-                secondaryExpanded = false;
-            }
         }
     })
 
-    var hamburgerParentButtons = $('.navigation-bar__hamburger__link');
-
-    hamburgerParentButtons.click(function() {
-        var links = $(this).data('links');
-        Object.keys(links).forEach(function(link) {
-            var linkAddr = links[link];
-            hamburgerSecondaryMenu.append('<a class="navigation-bar__link navigation-bar__link__removable" href="' + linkAddr + '">' + link + '</a>');
+    var hamburgerParentButtons = $('.navigation-bar__link__dropdown');
+    hamburgerParentButtons.each(function(i) {
+        $(this).click(function() {
+            var submenu = $(this).find('.navigation-bar__link__dropdown__mobile');
+            if( secondaryExpanded === i) {
+                secondaryExpanded = null;
+                submenu.removeClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(i).find('.fa-caret-down').addClass('fa-caret-right');
+                hamburgerParentButtons.eq(i).find('.fa-caret-right').removeClass('fa-caret-down');
+            }
+            else {
+                if (secondaryExpanded) {
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.navigation-bar__link__dropdown__mobile').removeClass('navigation-bar__link__dropdown__mobile--active');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').addClass('fa-caret-right');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').removeClass('fa-caret-down');
+                }
+                secondaryExpanded = i;
+                submenu.addClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').addClass('fa-caret-down');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').removeClass('fa-caret-right');
+            }
         });
-        hamburgerSecondaryMenu.addClass('navigation-bar__hamburger__secondary--open');
-        secondaryExpanded = true;
-    });
-
-    hamburgerSecondaryMenuBack.click(function() {
-        hamburgerSecondaryMenu.removeClass('navigation-bar__hamburger__secondary--open');
-        $("a").remove('.navigation-bar__link__removable');
-        secondaryExpanded = false;
     })
 
 
