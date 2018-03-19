@@ -49,7 +49,7 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 - Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
 
-This repo uses submodules, so clone using:
+**This repo uses submodules**, so clone using:
 ```
 $ git clone --recurse-submodules https://github.com/graknlabs/grakn.git
 ```
