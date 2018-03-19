@@ -25,18 +25,16 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -52,19 +50,17 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        return runMethod(ConceptMethod.GET_ALL_ROLE_PLAYERS);
+        return runMethod(ConceptMethod.GET_ROLE_PLAYERS);
     }
 
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
-        Stream<Concept> concepts;
-        if (roles.length != 0) {
-            Set<VarPattern> patterns = Stream.of(roles).map(role -> ROLE.label(role.getLabel())).collect(toSet());
-            concepts = query(ME.rel(ROLE, TARGET), or(patterns));
+        if (roles.length == 0) {
+            Map<Role, Set<Thing>> allRolePlayers = runMethod(ConceptMethod.GET_ROLE_PLAYERS);
+            return allRolePlayers.values().stream().flatMap(Collection::stream);
         } else {
-            concepts = query(ME.rel(TARGET));
+            return runMethod(ConceptMethod.getRolePlayersByRoles(roles)).map(Concept::asThing);
         }
-        return concepts.map(Concept::asThing);
     }
 
     @Override

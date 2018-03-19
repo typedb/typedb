@@ -52,7 +52,9 @@ public abstract class AbstractProcessHandler {
                     outputS.append(line).append("\n");
                 }
             }
-        } catch (InterruptedException | IOException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
             // DO NOTHING
         }
         return new OutputCommand(outputS.toString().trim(), exitValue);

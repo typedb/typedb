@@ -64,7 +64,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Role> plays() {
-        return query(ME.plays(TARGET)).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_TYPE).map(Concept::asRole);
     }
 
     @Override
@@ -79,7 +79,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Instance> instances() {
-        return query(TARGET.isa(ME)).map(this::asInstance);
+        return runMethod(ConceptMethod.GET_INSTANCES).map(this::asInstance);
     }
 
     @Override

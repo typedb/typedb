@@ -110,7 +110,8 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
         entry.priority = newPriority;
         assert oMinEntry.isPresent();
         final Entry minEntry = oMinEntry.get();
-        if (entry.oParent.isPresent() && (comparator.compare(newPriority, entry.oParent.get().priority) < 0)) {
+        Optional<Entry> oParent = entry.oParent;
+        if (oParent.isPresent() && (comparator.compare(newPriority, oParent.get().priority) < 0)) {
             cutAndMakeRoot(entry);
         }
         if (comparator.compare(newPriority, minEntry.priority) < 0) {
@@ -170,11 +171,12 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
         if (!oMinEntry.isPresent()) return Optional.empty();
         final Entry minEntry = oMinEntry.get();
         // move minEntry's children to the root list
-        if (minEntry.oFirstChild.isPresent()) {
-            for (Entry childOfMin : getCycle(minEntry.oFirstChild.get())) {
+        Optional<Entry> oFirstChild = minEntry.oFirstChild;
+        if (oFirstChild.isPresent()) {
+            for (Entry childOfMin : getCycle(oFirstChild.get())) {
                 childOfMin.oParent = Optional.empty();
             }
-            mergeLists(oMinEntry, minEntry.oFirstChild);
+            mergeLists(oMinEntry, oFirstChild);
         }
         // remove minEntry from root list
         if (size == 1) {
@@ -263,13 +265,15 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(log n)
      */
     private void cutAndMakeRoot(Entry entry) {
-        if (!entry.oParent.isPresent()) return;  // already a root
-        final Entry parent = entry.oParent.get();
+        Optional<Entry> oParent = entry.oParent;
+        if (!oParent.isPresent()) return;  // already a root
+        final Entry parent = oParent.get();
         parent.degree--;
         entry.isMarked = false;
         // update parent's `oFirstChild` pointer
-        assert parent.oFirstChild.isPresent();
-        if (parent.oFirstChild.get().equals(entry)) {
+        Optional<Entry> oFirstChild = parent.oFirstChild;
+        assert oFirstChild.isPresent();
+        if (oFirstChild.get().equals(entry)) {
             if (parent.degree == 0) {
                 parent.oFirstChild = Optional.empty();
             } else {

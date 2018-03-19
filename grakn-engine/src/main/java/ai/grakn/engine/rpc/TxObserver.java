@@ -26,6 +26,8 @@ import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
@@ -117,6 +119,9 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 break;
             case RUNCONCEPTMETHOD:
                 runConceptMethod(request.getRunConceptMethod());
+                break;
+            case GETCONCEPT:
+                getConcept(request.getGetConcept());
                 break;
             default:
             case REQUEST_NOT_SET:
@@ -223,6 +228,17 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         ConceptMethod<?> conceptMethod = ConceptMethod.fromGrpc(converter, runConceptMethod.getConceptMethod());
 
         TxResponse response = conceptMethod.run(concept);
+
+        responseObserver.onNext(response);
+    }
+
+    private void getConcept(GrpcConcept.ConceptId conceptId) {
+        Concept concept = tx().getConcept(GrpcUtil.convert(conceptId));
+
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
+        if (concept != null) conceptResponse.setConcept(GrpcUtil.convert(concept));
+
+        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
 
         responseObserver.onNext(response);
     }

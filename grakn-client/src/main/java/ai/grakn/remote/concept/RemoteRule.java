@@ -66,4 +66,9 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     final Rule asSelf(Concept concept) {
         return concept.asRule();
     }
+
+    @Override
+    final boolean isSelf(Concept concept) {
+        return concept.isRule();
+    }
 }
