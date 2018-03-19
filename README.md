@@ -49,6 +49,20 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 - Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
 
+**This repo uses submodules**, so clone using:
+```
+$ git clone --recurse-submodules https://github.com/graknlabs/grakn.git
+```
+Or if you have already cloned:
+```
+$ git submodule update --init --recursive
+```
+
+Then you can build Grakn using Maven:
+```
+$ mvn package -DskipTests
+```
+
 ## Licensing
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KBMS - get in touch with our team at enterprise@grakn.ai.
