@@ -21,7 +21,6 @@ package ai.grakn.test.graql.shell;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
-import ai.grakn.graql.shell.GraqlShell;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.util.ErrorMessage;
@@ -36,7 +35,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import mjson.Json;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
@@ -273,7 +271,8 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString(Schema.MetaSchema.THING.getLabel().getValue()), containsString("match"),
+                        containsString(Schema.MetaSchema.THING.getLabel().getValue()),
+                        containsString(Schema.MetaSchema.ROLE.getLabel().getValue()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
