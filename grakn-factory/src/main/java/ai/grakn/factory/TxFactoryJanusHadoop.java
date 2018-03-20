@@ -26,8 +26,6 @@ import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
-
 /**
  * <p>
  *     A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
@@ -46,19 +44,22 @@ import java.util.Properties;
  * @author fppt
  */
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
-    private static final String CLUSTER_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
-    private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
+    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
+    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_HOSTNAME = "janusmr.ioformat.conf.storage.hostname";
+    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_HOSTNAME = "janusgraphmr.ioformat.conf.storage.hostname";
+    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = "janusgraphmr.ioformat.conf.storage.cassandra.keyspace";
+    private static final String CASSANDRA_INPUT_KEYSPACE = "cassandra.input.keyspace";
 
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
     TxFactoryJanusHadoop(EmbeddedGraknSession session) {
         super(session);
 
-        session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
-        session().config().properties().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
-        session().config().properties().setProperty("janusgraphmr.ioformat.conf.storage.hostname", session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
-        session().config().properties().setProperty("janusmr.ioformat.conf.storage.hostname", session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
-        session().config().properties().setProperty("janusgraphmr.ioformat.conf.storage.cassandra.keyspace", session().keyspace().getValue());
+        session().config().properties().setProperty(JANUSMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE, session().keyspace().getValue());
+        session().config().properties().setProperty(CASSANDRA_INPUT_KEYSPACE, session().keyspace().getValue());
+        session().config().properties().setProperty(JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_HOSTNAME, session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
+        session().config().properties().setProperty(JANUSMR_IOFORMAT_CONF_STORAGE_HOSTNAME, session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
+        session().config().properties().setProperty(JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE, session().keyspace().getValue());
     }
 
     @Override
