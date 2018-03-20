@@ -81,9 +81,9 @@ public class GraknKeyspaceStoreTest {
 
     @BeforeClass
     public static void setup(){
-        graknFactory = EngineGraknTxFactory.create(lockProvider, config);
-        graknFactory.systemKeyspace().loadSystemSchema();
-        graknKeyspaceStore = graknFactory.systemKeyspace();
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new SystemKeyspaceSessionProvider(config));
+        graknKeyspaceStore.loadSystemSchema();
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
 
         Lock lock = mock(Lock.class);
         when(lockProvider.getLock(any())).thenReturn(lock);

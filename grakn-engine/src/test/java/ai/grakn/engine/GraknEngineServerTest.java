@@ -123,7 +123,7 @@ public class GraknEngineServerTest {
 
                 // init a random keyspace
                 String keyspaceName = "thisisarandomwhalekeyspace";
-                graknKeyspaceStore.putKeyspace(Keyspace.of(keyspaceName));
+                graknKeyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
 
                 assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
             }
@@ -196,10 +196,11 @@ public class GraknEngineServerTest {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new SystemKeyspaceSessionProvider(config));
 
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(engineGraknTxFactory, lockProvider);
+        // tx-factory
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
 
         // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);

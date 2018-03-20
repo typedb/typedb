@@ -26,6 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
@@ -46,6 +47,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -78,7 +82,8 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        graknFactory = EngineGraknTxFactory.create(lockProvider, config);
+        GraknKeyspaceStore keyspaceStore = GraknKeyspaceStoreFake.of();
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         graknFactory.systemKeyspace().loadSystemSchema();
     }
 

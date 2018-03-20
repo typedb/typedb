@@ -62,30 +62,15 @@ public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
         return new GraknKeyspaceStoreImpl(session);
     }
 
-    @Override
-    public boolean putKeyspace(Keyspace keyspace) {
-        //Check the local cache to see which keyspaces we already have open
-        if(existingKeyspaces.contains(keyspace)){
-             return false;
-        }
-
-        //If the cache does not contain the keyspace check the persisted data
-        if(containsKeyspace(keyspace)){
-            existingKeyspaces.add(keyspace);
-            return false;
-        }
-
-        return true;
-    }
-
     /**
      * Logs a new {@link Keyspace} to the {@link GraknKeyspaceStore}.
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
     @Override
-    public void persistNewKeyspace(Keyspace keyspace){
-        //Log that we have created the keyspace
+    public void addKeyspace(Keyspace keyspace){
+        if(containsKeyspace(keyspace)) return;
+
         try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
@@ -96,6 +81,8 @@ public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
                 tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
             tx.commitSubmitNoLogs();
+
+            // add to cache
             existingKeyspaces.add(keyspace);
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
@@ -104,8 +91,15 @@ public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
 
     @Override
     public boolean containsKeyspace(Keyspace keyspace){
+        //Check the local cache to see which keyspaces we already have open
+        if(existingKeyspaces.contains(keyspace)){
+            return false;
+        }
+
         try (GraknTx graph = session.tx(GraknTxType.READ)) {
-            return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
+            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null);
+            if(keyspaceExists) existingKeyspaces.add(keyspace);
+            return keyspaceExists;
         }
     }
 

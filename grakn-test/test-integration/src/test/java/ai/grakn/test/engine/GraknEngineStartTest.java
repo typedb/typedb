@@ -64,7 +64,7 @@ public class GraknEngineStartTest {
     @Test
     public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
         engines.forEach(engine ->{
-            engine.systemKeyspace().putKeyspace(Keyspace.of("grakn"));
+            engine.systemKeyspace().addKeyspace(Keyspace.of("grakn"));
         });
     }
 

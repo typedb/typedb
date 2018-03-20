@@ -20,6 +20,8 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
@@ -100,7 +102,7 @@ public class GraqlControllerTest {
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .create(mockLockProvider, GraknConfig.create());
+                .create(mockLockProvider, GraknConfig.create(), GraknKeyspaceStoreFake.of());
         factory.systemKeyspace().loadSystemSchema();
         new GraqlController(factory, mock(PostProcessor.class), printer, new MetricRegistry()).start(spark);
     });

@@ -42,11 +42,6 @@ public class GraknKeyspaceStoreFake implements GraknKeyspaceStore {
     }
 
     @Override
-    public boolean putKeyspace(Keyspace keyspace) {
-        keyspaces.add(keyspace);
-    }
-
-    @Override
     public boolean containsKeyspace(Keyspace keyspace) {
         return keyspaces.contains(keyspace);
     }
@@ -65,6 +60,9 @@ public class GraknKeyspaceStoreFake implements GraknKeyspaceStore {
     public void loadSystemSchema() {
 
     }
+
+    @Override
+    public void addKeyspace(Keyspace keyspace) { keyspaces.add(keyspace); }
 
     public void clear() {
         keyspaces.clear();

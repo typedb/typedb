@@ -26,7 +26,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknKeyspaceStore;
-import ai.grakn.engine.GraknKeyspaceStoreImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.FactoryBuilder;
@@ -76,7 +75,7 @@ public class EngineGraknTxFactory {
     }
 
     public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
-        if (graknKeyspaceStore.putKeyspace(keyspace)) {
+        if (!graknKeyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
 
@@ -107,8 +106,10 @@ public class EngineGraknTxFactory {
         Lock lock = lockProvider.getLock(getLockingKey(keyspace));
         lock.lock();
         try {
+            // Create new empty keyspace in db
             session(keyspace).open(GraknTxType.WRITE).close();
-            graknKeyspaceStore.persistNewKeyspace(keyspace);
+            // Add current keyspace to list of available Grakn keyspaces
+            graknKeyspaceStore.addKeyspace(keyspace);
         } finally {
             lock.unlock();
         }

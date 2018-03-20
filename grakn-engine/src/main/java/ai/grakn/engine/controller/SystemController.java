@@ -195,7 +195,7 @@ public class SystemController implements HttpController {
     @Path("/kb/{keyspace}")
     private String putKeyspace(Request request, Response response) throws JsonProcessingException {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        graknKeyspaceStore.putKeyspace(keyspace);
+        graknKeyspaceStore.addKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
         response.type(APPLICATION_JSON);
         return objectMapper.writeValueAsString(config);

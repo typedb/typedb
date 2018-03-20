@@ -60,12 +60,6 @@ public interface GraknKeyspaceStore {
     Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
 
     /**
-     * Notify that we just opened a keyspace with the same engineUrl & config.
-     * This process also creates a keyspace if needed.
-     */
-    boolean putKeyspace(Keyspace keyspace);
-
-    /**
      * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
      * may have been deleted in another JVM.
      *
@@ -93,5 +87,5 @@ public interface GraknKeyspaceStore {
      */
     void loadSystemSchema();
 
-    void persistNewKeyspace(Keyspace keyspace);
+    void addKeyspace(Keyspace keyspace);
 }
