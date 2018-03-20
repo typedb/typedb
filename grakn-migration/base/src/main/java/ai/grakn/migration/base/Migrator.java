@@ -149,7 +149,7 @@ public class Migrator {
         });
 
         batchExecutorClient.onError(error -> {
-            LOG.debug("Error in execution", error);
+            System.err.println("Error in execution: " + error);
             if (failFast) {
                 throw GraknBackendException
                         .migrationFailure(error.getMessage());

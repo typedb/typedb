@@ -24,6 +24,7 @@ import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,9 @@ public class GraknClientImpl implements GraknClient {
             String entity = response.getEntity(String.class);
             if (!status.getFamily().equals(Family.SUCCESSFUL)) {
                 String queries = queryList.stream().map(Object::toString).collect(Collectors.joining("\n"));
-                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity + "\nqueries: " + queries, response.getStatusInfo());
+
+                String error = Json.read(entity).at("exception").asString();
+                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + error + "\nqueries: " + queries, response.getStatusInfo());
             }
             LOG.debug("Received {}", status.getStatusCode());
             return queryList.stream().map(q -> QueryResponse.INSTANCE).collect(Collectors.toList());

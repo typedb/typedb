@@ -136,13 +136,6 @@ public class BatchExecutorClient implements Closeable {
         Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace)
                 .observe()
                 .doOnError(error -> failureMeter.mark())
-                .doOnEach(a -> {
-                    if (a.getThrowable() != null) {
-                        LOG.error("Error while executing statement", a.getThrowable());
-                    } else if (a.isOnNext()) {
-                        LOG.trace("Executed {}", a.getValue());
-                    }
-                })
                 .subscribeOn(scheduler)
                 .doOnTerminate(contextAddTimer::close);
 
