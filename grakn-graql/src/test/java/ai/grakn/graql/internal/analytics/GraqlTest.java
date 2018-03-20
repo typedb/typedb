@@ -100,7 +100,8 @@ public class GraqlTest {
     public void testDegrees() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
+            Map<Long, Set<String>> degrees =
+                    graph.graql().<DegreeQuery>parse("compute centrality; using degree;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -130,7 +131,7 @@ public class GraqlTest {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute degrees of thingy;").execute();
+            graph.graql().parse("compute centrality of thingy; using degree;").execute();
         }
     }
 
@@ -263,7 +264,7 @@ public class GraqlTest {
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
                 "compute count;",
-                "compute degrees;",
+                "compute centrality; using degree;",
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
