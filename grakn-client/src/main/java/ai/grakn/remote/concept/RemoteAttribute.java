@@ -48,7 +48,7 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE);
+        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE_OF_ATTRIBUTE);
     }
 
     @Override

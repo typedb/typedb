@@ -24,7 +24,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
@@ -34,15 +33,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-
 /**
  * @author Felix Chapman
  */
 @AutoValue
 abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
-
-    private static final Var ROLE = var("role");
 
     public static RemoteRelationship create(RemoteGraknTx tx, ConceptId id) {
         return new AutoValue_RemoteRelationship(tx, id);
@@ -65,8 +60,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
-        insert(ROLE.id(role.getId()), TARGET.id(thing.getId()), ME.rel(ROLE, TARGET));
-        return asSelf(this);
+        return runVoidMethod(ConceptMethod.setRolePlayer(role, thing));
     }
 
     @Override

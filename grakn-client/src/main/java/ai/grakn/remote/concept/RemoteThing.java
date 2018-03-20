@@ -21,18 +21,13 @@ package ai.grakn.remote.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptMethod;
 
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Graql.var;
 
 /**
  * @author Felix Chapman
@@ -71,9 +66,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        return insert(attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET)).asRelationship();
+        return runMethod(ConceptMethod.setAttribute(attribute)).asRelationship();
     }
 
     @Override
@@ -104,11 +97,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        Match match = tx().graql().match(me(), attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET));
-        match.delete(TARGET).execute();
-        return asSelf(this);
+        return runVoidMethod(ConceptMethod.unsetAttribute(attribute));
     }
 
     @Override
