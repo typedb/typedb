@@ -92,7 +92,7 @@ match $x isa person, has age $a; aggregate sum $a;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre class="language-graql">
+<pre class="language-java">
 <code>
 qb.match(
     var("x").isa("person").has("age", var("a"))

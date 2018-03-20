@@ -128,7 +128,7 @@ The above is equivalent to:
 <div role="tabpanel" class="tab-pane active" id="shell11">
 <pre class="language-graql">
 <code>
-match $x plays has-firstname-owner; get;
+match $x plays @has-firstname-owner; get;
 </code>
 </pre>
 </div>
