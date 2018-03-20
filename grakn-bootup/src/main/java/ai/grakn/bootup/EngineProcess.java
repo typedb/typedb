@@ -19,6 +19,7 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.REST;
@@ -48,7 +49,7 @@ public class EngineProcess extends AbstractProcessHandler {
     private static final String GRAKN_NAME = "Grakn";
     private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
     public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
-    public static final Optional<String> javaOpts = Optional.ofNullable(System.getProperty("engine.javaopts"));
+    public static final String javaOpts = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
 
     protected final Path homePath;
     protected final Path configPath;
@@ -127,7 +128,8 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     protected String commandToRun() {
-        String cmd = "java " + javaOpts.orElse("") + " -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+        String cmd = "java " + javaOpts + " -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath +
+                " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
 
         return cmd;
     }
