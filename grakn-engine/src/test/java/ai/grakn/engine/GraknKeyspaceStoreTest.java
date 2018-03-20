@@ -33,6 +33,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -109,20 +110,20 @@ public class GraknKeyspaceStoreTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(graknFactory.systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
     @Test
     public void whenCreatingGraphsUsingExternalFactory_EnsureKeySpacesAreAddedToSystemGraph() {
-        String [] keyspaces = {"s1", "s2", "s3"};
+        String [] keyspaces = {"s4", "s5", "s6"};
 
         buildTxs(externalFactoryGraphProvider, keyspaces);
         Set<String> spaces = getSystemKeyspaces();
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(graknFactory.systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -146,12 +147,12 @@ public class GraknKeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(graknKeyspaceStore.containsKeyspace(deletedGraph.keyspace()));
     }
 
     @Test
     public void whenClearingGraphsUsingEngineFactory_EnsureKeyspacesAreDeletedFromSystemGraph(){
-        String[] keyspaces = {"g1", "g2", "g3"};
+        String[] keyspaces = {"g4", "g5", "g6"};
 
         //Create transactions to begin with
         Set<GraknTx> txs = buildTxs(engineFactoryKBProvider, keyspaces);
@@ -169,7 +170,7 @@ public class GraknKeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(graknKeyspaceStore.containsKeyspace(deletedGraph.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

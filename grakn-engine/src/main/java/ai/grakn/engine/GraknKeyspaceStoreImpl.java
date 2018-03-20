@@ -92,7 +92,7 @@ public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
     public boolean containsKeyspace(Keyspace keyspace){
         //Check the local cache to see which keyspaces we already have open
         if(existingKeyspaces.contains(keyspace)){
-            return false;
+            return true;
         }
 
         try (GraknTx graph = session.tx(GraknTxType.READ)) {
