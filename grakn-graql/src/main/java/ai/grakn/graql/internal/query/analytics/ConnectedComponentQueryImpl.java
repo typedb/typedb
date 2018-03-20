@@ -98,7 +98,7 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
             options.add(" members = true");
         }
         if (!anySize) {
-            options.add(" size " + clusterSize);
+            options.add(" size = " + clusterSize);
         }
         if (!options.isEmpty()) {
             string[0] += " where";

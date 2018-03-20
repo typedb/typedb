@@ -728,6 +728,11 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParseComputeCoreness() {
+        assertParseEquivalence("compute centrality in movie; using k-core where min-k = 3;");
+    }
+
+    @Test
     public void testParseComputeMax() {
         assertParseEquivalence("compute max of person in movie;");
     }

@@ -40,6 +40,7 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
@@ -354,17 +355,36 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
-        DegreeQuery degree = queryBuilder.compute().centrality().usingDegree();
+        DegreeQuery degreeQuery = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {
-            degree = degree.of(visitOfList(ctx.ofList()));
+            degreeQuery = degreeQuery.of(visitOfList(ctx.ofList()));
         }
 
         if (ctx.inList() != null) {
-            degree = degree.in(visitInList(ctx.inList()));
+            degreeQuery = degreeQuery.in(visitInList(ctx.inList()));
         }
 
-        return degree;
+        return degreeQuery;
+    }
+
+    @Override
+    public Object visitCoreness(GraqlParser.CorenessContext ctx) {
+        CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
+
+        if (ctx.ofList() != null) {
+            corenessQuery = corenessQuery.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            corenessQuery = corenessQuery.in(visitInList(ctx.inList()));
+        }
+
+        if (ctx.INTEGER() != null) {
+            corenessQuery = corenessQuery.minK(getInteger(ctx.INTEGER()));
+        }
+
+        return corenessQuery;
     }
 
     @Override
