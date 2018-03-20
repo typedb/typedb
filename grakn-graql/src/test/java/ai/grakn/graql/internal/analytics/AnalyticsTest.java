@@ -131,8 +131,10 @@ public class AnalyticsTest {
 
         List<String> queryList = new ArrayList<>();
         queryList.add("compute count;");
-        queryList.add("compute cluster;");
-        queryList.add("compute degrees;");
+        queryList.add("compute cluster; using connected-component;");
+        queryList.add("compute cluster; using k-core;");
+        queryList.add("compute centrality; using degree;");
+        queryList.add("compute centrality; using k-core;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
         Set<?> result = queryList.parallelStream().map(query -> {

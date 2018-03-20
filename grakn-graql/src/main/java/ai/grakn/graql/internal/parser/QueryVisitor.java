@@ -353,7 +353,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
+    public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
         DegreeQuery degree = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {

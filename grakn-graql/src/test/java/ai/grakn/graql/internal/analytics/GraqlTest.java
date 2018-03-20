@@ -56,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertNull;
@@ -87,7 +86,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testGraqlCount() throws InvalidKBException, InterruptedException, ExecutionException {
+    public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             assertEquals(6L,
@@ -98,7 +97,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testDegrees() throws Exception {
+    public void testDegrees() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
@@ -184,13 +183,14 @@ public class GraqlTest {
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
-                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster;").execute();
+                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster; using connected-component;").execute();
             assertTrue(sizeMap.isEmpty());
-            Map<String, Set<String>> memberMap =
-                    graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
+            Map<String, Set<String>> memberMap = graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse(
+                    "compute cluster; using connected-component where members = true;").execute();
             assertTrue(memberMap.isEmpty());
 
-            Query<?> parsed = graph.graql().parse("compute cluster of V123;");
+            Query<?> parsed = graph.graql().parse(
+                    "compute cluster; using connected-component where source = V123;");
             Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().of(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }

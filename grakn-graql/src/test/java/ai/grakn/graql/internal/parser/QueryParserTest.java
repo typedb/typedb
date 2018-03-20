@@ -51,7 +51,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -723,7 +722,6 @@ public class QueryParserTest {
         assertEquals(expected, parsed);
     }
 
-    @Ignore //TODO: Fix this
     @Test
     public void testParseComputeDegree() {
         assertParseEquivalence("compute centrality in movie; using degree;");

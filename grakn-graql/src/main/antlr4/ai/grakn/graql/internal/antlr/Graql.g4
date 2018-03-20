@@ -22,7 +22,7 @@ computeQuery   : 'compute' computeMethod ;
 variables      : VARIABLE (',' VARIABLE)* ;
 
 computeMethod  : min | max | median | mean | std | sum | count | path | paths
-               | connectedComponent | kCore | degrees | coreness ;
+               | connectedComponent | kCore | degree | coreness ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -30,8 +30,8 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
 coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' 'using k-core' ('where' 'min-k' '=' INTEGER ';')?;
+degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' 'using degree' ';';
 connectedComponent    : CLUSTER            ('in' inList)? ';' 'using connected-component' ('where' ccParam+)? ';';
 kCore                 : CLUSTER            ('in' inList)? ';' 'using k-core'              ('where' kcParam+)? ';';
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
@@ -40,7 +40,7 @@ count          : COUNT                     ('in' inList)? ';' ;
 
 ccParam        : MEMBERS       '='      bool            # ccClusterMembers
                | SIZE          '='      INTEGER         # ccClusterSize
-               | 'id'          '='      id              # ccStartPoint
+               | 'source'      '='      id              # ccStartPoint
                ;
 
 kcParam        : 'k'           '='      INTEGER         # kValue
