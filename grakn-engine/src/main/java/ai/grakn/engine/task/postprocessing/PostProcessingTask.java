@@ -98,9 +98,13 @@ public class PostProcessingTask implements BackgroundTask{
      */
     public void processIndex(Keyspace keyspace, String index, UUID executionId){
         Set<ConceptId> ids = indexPostProcessor.popIds(keyspace, index);
-        LOG.info("post-processing '" + executionId + "': processing " + ids.size() + " concept ids...");
         //No need to post process if another engine has beaten you to doing it
-        if(ids.isEmpty()) return;
+        if(ids.isEmpty()) {
+            LOG.info("post-processing '" + executionId + "': there " + ids.size() + " concept ids to post-process.");
+            return;
+        }
+
+        LOG.info("post-processing '" + executionId + "': processing " + ids.size() + " concept ids...");
 
         try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)){
             indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
