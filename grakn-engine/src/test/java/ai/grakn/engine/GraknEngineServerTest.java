@@ -117,7 +117,7 @@ public class GraknEngineServerTest {
         redisServer.start();
 
         try {
-            try (GraknEngineServer server = createGraknEngineServer(RedisWrapper.create(config))) {
+            try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
                 server.start();
                 assertNotNull(graknKeyspaceStore);
 
@@ -196,7 +196,7 @@ public class GraknEngineServerTest {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new SystemKeyspaceSessionProvider(config));
+        graknKeyspaceStore = GraknKeyspaceStoreFake.of();
 
         // tx-factory
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
