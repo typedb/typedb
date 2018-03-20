@@ -81,10 +81,10 @@ public abstract class GraknConfigKey<T> {
 
 
     public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("redis.sentinel.host", CSV);
+    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);
     public static final GraknConfigKey<String> REDIS_BIND = key("bind");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("redis.sentinel.master");
-    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
+    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("queue.sentinel.master");
+    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("queue.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 

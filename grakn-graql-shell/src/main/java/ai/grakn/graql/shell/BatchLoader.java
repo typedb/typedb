@@ -45,17 +45,17 @@ final class BatchLoader {
 
     static void sendBatchRequest(SimpleURI uri, Keyspace keyspace, Path graqlPath) throws IOException {
         AtomicInteger queriesExecuted = new AtomicInteger(0);
-        FileInputStream inputStream = new FileInputStream(graqlPath.toFile());
 
-        try (BatchExecutorClient batchExecutorClient = loaderClient(uri);
-             Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)
+        try (FileInputStream inputStream = new FileInputStream(graqlPath.toFile());
+             Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8);
+             BatchExecutorClient batchExecutorClient = loaderClient(uri)
         ) {
             Graql.parser().parseList(queryReader).forEach(query -> {
                 Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
 
                 observable.subscribe(
-                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                    /* On error:   */ System.err::println
+                        /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
+                        /* On error:   */ System.err::println
                 );
             });
         }

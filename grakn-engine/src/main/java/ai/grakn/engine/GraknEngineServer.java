@@ -92,6 +92,7 @@ public class GraknEngineServer implements AutoCloseable {
                 httpHandler.stopHTTP();
             } catch (InterruptedException e){
                 LOG.error(getFullStackTrace(e));
+                Thread.currentThread().interrupt();
             }
             queueSanityCheck.close();
             backgroundTaskRunner.close();
@@ -102,23 +103,21 @@ public class GraknEngineServer implements AutoCloseable {
         try {
             Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
-                loadAndUnlock(lock);
+                try {
+                    LOG.info("{} is checking the system schema", this.engineId);
+                    graknKeyspaceStore.loadSystemSchema();
+                } finally {
+                    lock.unlock();
+                }
             } else {
                 LOG.info("{} found system schema lock already acquired by other engine", this.engineId);
             }
         } catch (InterruptedException e) {
             LOG.warn("{} was interrupted while initializing system schema", this.engineId);
+            Thread.currentThread().interrupt();
         }
     }
 
-    private void loadAndUnlock(Lock lock) {
-        try {
-            LOG.info("{} is checking the system schema", this.engineId);
-            graknKeyspaceStore.loadSystemSchema();
-        } finally {
-            lock.unlock();
-        }
-    }
 
     private void logStartMessage(String host, int port) {
         String address = "http://" + host + ":" + port;

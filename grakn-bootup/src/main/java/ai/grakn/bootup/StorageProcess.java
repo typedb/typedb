@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 /**
  *
@@ -102,7 +103,7 @@ public class StorageProcess extends AbstractProcessHandler {
             try {
                 Thread.sleep(WAIT_INTERVAL_S *1000);
             } catch (InterruptedException e) {
-                // DO NOTHING
+                Thread.currentThread().interrupt();
             }
         }
         System.out.println("FAILED!");
@@ -125,12 +126,11 @@ public class StorageProcess extends AbstractProcessHandler {
     public void clean() {
         System.out.print("Cleaning "+ COMPONENT_NAME +"...");
         System.out.flush();
-        try {
-            Path dirPath = Paths.get("db", CASSANDRA);
-            Files.walk( dirPath )
-                    .map( Path::toFile )
-                    .sorted( Comparator.comparing( File::isDirectory ) )
-                    .forEach( File::delete );
+        Path dirPath = Paths.get("db", CASSANDRA);
+        try (Stream<Path> files = Files.walk(dirPath)) {
+            files.map(Path::toFile)
+                    .sorted(Comparator.comparing(File::isDirectory))
+                    .forEach(File::delete);
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"data")));
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"commitlog")));
             Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"saved_caches")));

@@ -481,8 +481,13 @@ public class GreedyTraversalPlan {
 
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
-            Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
+
+            Optional<Node> optionalNodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
+                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent)));
+
+            assert optionalNodeWithMinCost.isPresent() : "reachableNodes is never empty, so there is always a minimum";
+
+            Node nodeWithMinCost = optionalNodeWithMinCost.get();
 
             // add edge fragment first, then node fragments
             getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
@@ -499,19 +504,27 @@ public class GreedyTraversalPlan {
                                        Map<Node, Set<Node>> edgesParentToChild,
                                        Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
 
-        if (!node.getNodeWeight().isPresent()) {
-            node.setNodeWeight(Optional.of(
-                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node)));
+        Optional<Double> nodeWeight = node.getNodeWeight();
+
+        if (!nodeWeight.isPresent()) {
+            nodeWeight = Optional.of(
+                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node));
+            node.setNodeWeight(nodeWeight);
         }
-        if (!node.getBranchWeight().isPresent()) {
-            final double[] weight = {node.getNodeWeight().get()};
+
+        Optional<Double> branchWeight = node.getBranchWeight();
+
+        if (!branchWeight.isPresent()) {
+            final double[] weight = {nodeWeight.get()};
             if (edgesParentToChild.containsKey(node)) {
                 edgesParentToChild.get(node).forEach(child ->
                         weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent));
             }
-            node.setBranchWeight(Optional.of(weight[0]));
+            branchWeight = Optional.of(weight[0]);
+            node.setBranchWeight(branchWeight);
         }
-        return node.getBranchWeight().get();
+
+        return branchWeight.get();
     }
 
     private static double nodeFragmentWeight(Node node) {
