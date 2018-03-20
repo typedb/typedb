@@ -18,12 +18,15 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 /**
  * <p>
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
+
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
     TxFactoryJanusHadoop(EmbeddedGraknSession session) {
@@ -52,6 +56,9 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
 
         session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
         session().config().properties().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
+        session().config().properties().setProperty("janusgraphmr.ioformat.conf.storage.hostname", session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
+        session().config().properties().setProperty("janusmr.ioformat.conf.storage.hostname", session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME));
+        session().config().properties().setProperty("janusgraphmr.ioformat.conf.storage.cassandra.keyspace", session().keyspace().getValue());
     }
 
     @Override
