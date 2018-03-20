@@ -57,9 +57,13 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
     @Override
     String graqlString() {
-        String string = "kcore ";
-        string += k;
-        string += subtypeString();
+        String string = super.graqlString();
+        if (k != -1) {
+            string += " where k = ";
+            string += k;
+        }
+        string += ";";
+
         return string;
     }
 

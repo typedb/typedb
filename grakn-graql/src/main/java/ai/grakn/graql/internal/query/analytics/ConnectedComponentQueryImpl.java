@@ -103,8 +103,9 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
         if (!options.isEmpty()) {
             string[0] += " where";
             options.forEach(option -> string[0] += option);
-            string[0] += ";";
         }
+        string[0] += ";";
+
         return string[0];
     }
 

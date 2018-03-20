@@ -40,6 +40,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
@@ -661,12 +662,17 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputeCluster() {
+    public void testParseComputeClusterUsingCC() {
+        assertParseEquivalence("compute cluster in movie, person; using connected-component;");
+    }
+
+    @Test
+    public void testParseComputeClusterUsingCCWithMembers() {
         assertParseEquivalence("compute cluster in movie, person; using connected-component where members = true;");
     }
 
     @Test
-    public void testParseComputeClusterWithMembersThenSize() {
+    public void testParseComputeClusterUsingCCWithMembersThenSize() {
         ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members(true).clusterSize(10);
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in movie, person; using connected-component where members = true size = 10;");
@@ -675,7 +681,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputeClusterWithSizeThenMembers() {
+    public void testParseComputeClusterUsingCCWithSizeThenMembers() {
         ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true);
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in movie, person; using connected-component where size = 10 members=true;");
@@ -684,12 +690,35 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputeClusterWithSizeThenMembersThenSize() {
+    public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
         ConnectedComponentQuery<?> expected =
                 Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true).clusterSize(15);
 
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in movie, person; using connected-component where size = 10 members = true size = 15;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseComputeClusterUsingKCore() {
+        assertParseEquivalence("compute cluster in movie, person; using k-core;");
+    }
+
+    @Test
+    public void testParseComputeClusterUsingKCoreWithK() {
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery parsed = Graql.parse(
+                "compute cluster in movie, person; using k-core where k = 10;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseComputeClusterUsingKCoreWithKTwice() {
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery parsed = Graql.parse(
+                "compute cluster in movie, person; using k-core where k = 5 k = 10;");
 
         assertEquals(expected, parsed);
     }
