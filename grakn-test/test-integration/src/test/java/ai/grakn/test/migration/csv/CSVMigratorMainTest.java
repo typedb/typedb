@@ -130,6 +130,13 @@ public class CSVMigratorMainTest {
     }
 
     @Test
+    public void csvMigratorCalled_PrintsNumberOfQueriesExecuted(){
+        run("-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
+
+        assertThat(sysOut.getLog(), containsString("Loaded 9 statements"));
+    }
+
+    @Test
     public void csvMigratorCalledWithNoTemplate_ErrorIsPrintedToSystemErr(){
         run("-input", dataFile, "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
