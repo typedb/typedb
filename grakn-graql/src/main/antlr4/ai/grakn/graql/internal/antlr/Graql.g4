@@ -21,7 +21,7 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths | connectedComponent | kCore | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths | connectedComponent | kCore | degrees ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -32,7 +32,6 @@ sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
 connectedComponent    : CLUSTER            ('in' inList)? ';' 'using connected-component' ('where' ccParam+)? ';';
 kCore                 : CLUSTER            ('in' inList)? ';' 'using k-core'              ('where' kcParam+)? ';';
-cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' ccParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;

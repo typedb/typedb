@@ -311,20 +311,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return cluster;
     }
 
-    @Override
-    public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
-        ConnectedComponentQuery<?> connectedComponentQuery = queryBuilder.compute().cluster().usingConnectedComponent();
-
-        if (ctx.inList() != null) {
-            connectedComponentQuery = connectedComponentQuery.in(visitInList(ctx.inList()));
-        }
-
-        connectedComponentQuery =
-                chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(connectedComponentQuery);
-
-        return connectedComponentQuery;
-    }
-
     private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
         return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
     }
