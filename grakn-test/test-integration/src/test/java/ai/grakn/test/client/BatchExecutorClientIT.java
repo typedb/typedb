@@ -23,7 +23,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
@@ -42,14 +41,15 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.GraknTestUtil.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static java.util.stream.Stream.generate;
@@ -81,45 +81,48 @@ public class BatchExecutorClientIT {
 
     @Test
     public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        AtomicInteger numLoaded = new AtomicInteger(0);
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
+            loader.onNext(response -> numLoaded.incrementAndGet());
+
             // Engine goes down
             engine.server().getHttpHandler().stopHTTP();
             // Most likely the first call doesn't find the server but it's retried
-            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace, true)));
+            generate(this::query).limit(1).forEach(q -> loader.add(q, keyspace));
             engine.server().getHttpHandler().startHTTP();
-            int completed = allObservable(all).toBlocking().first().size();
-            // Verify that the logger received the failed log message
-            assertEquals(1, completed);
         }
+
+        // Verify that the logger received the failed log message
+        assertEquals(1, numLoaded.get());
     }
 
     @Test
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce() {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        AtomicInteger numLoaded = new AtomicInteger(0);
+
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
+            loader.onNext(response -> numLoaded.incrementAndGet());
+
             // Load some queries
             generate(this::query).limit(1).forEach(q ->
-                    all.add(loader.add(q, keyspace, true))
+                    loader.add(q, keyspace)
             );
-            int completed = allObservable(all).toBlocking().first().size();
-            // Verify that the logger received the failed log message
-            assertEquals(1, completed);
         }
+
+        // Verify that the logger received the failed log message
+        assertEquals(1, numLoaded.get());
     }
 
     @Test
     public void whenSending100InsertQueries_100EntitiesAreLoadedIntoGraph() {
         int n = 100;
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
-            generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace, true))
+            generate(this::query).limit(100).forEach(q ->
+                    loader.add(q, keyspace)
             );
-            int completed = allObservable(all).toBlocking().first().size();
-            assertEquals(n, completed);
         }
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertEquals(n, graph.getEntityType("name_tag").instances().count());
@@ -128,18 +131,20 @@ public class BatchExecutorClientIT {
 
     @Ignore("This test interferes with other tests using the BEC (they probably use the same HystrixRequestLog)")
     @Test
-    public void whenSending100Queries_TheyAreSentInBatch() {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+    public void whenSending100Queries_TheyAreSentInBatch() throws InterruptedException {
+        Condition everythingLoaded = new ReentrantLock().newCondition();
+
         // Increasing the max delay so eveyrthing goes in a single batch
         try (BatchExecutorClient loader = loader(MAX_DELAY * 100)) {
+            loader.onNext(queryResponse -> everythingLoaded.signal());
+
             int n = 100;
             generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace, true))
+                    loader.add(q, keyspace)
             );
 
-            int completed = allObservable(all).toBlocking().first().size();
+            everythingLoaded.await();
 
-            assertEquals(n, completed);
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixCommand<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands()
@@ -158,14 +163,12 @@ public class BatchExecutorClientIT {
     @Test
     public void whenEngineRESTFailsWhileLoadingWithRetryTrue_LoaderRetriesAndWaits()
             throws Exception {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+
         int n = 20;
+
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             for (int i = 0; i < n; i++) {
-                all.add(
-                        loader
-                                .add(query(), keyspace, true)
-                                .doOnError(ex -> System.out.println("Error " + ex)));
+                loader.add(query(), keyspace);
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);
@@ -175,9 +178,8 @@ public class BatchExecutorClientIT {
                     engine.server().getHttpHandler().startHTTP();
                 }
             }
-            int completed = allObservable(all).toBlocking().first().size();
-            assertEquals(n, completed);
         }
+
         if(GraknTestUtil.usingJanus()) {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
                 assertEquals(n, graph.getEntityType("name_tag").instances().count());

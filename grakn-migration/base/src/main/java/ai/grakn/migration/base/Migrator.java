@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.GraknClientException;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
@@ -36,7 +35,6 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -122,6 +120,9 @@ public class Migrator {
                         .maxDelay(maxDelayMs)
                         .metricRegistry(metricRegistry)
                         .build()) {
+
+            subscribeToReportOutcome(failFast, loader, queriesExecuted);
+
             checkKeyspace(graknClient);
             Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
             if (maxLines > -1) {
@@ -131,9 +132,7 @@ public class Migrator {
                     .forEach(q -> {
                         LOG.trace("Adding query {}", q);
                         totalMeter.mark();
-                        // We add get a hot observable. It starts immediately
-                        Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
-                        subscribeToReportOutcome(failFast, observable, queriesExecuted);
+                        loader.add(q, keyspace);
                     });
         }
 
@@ -141,22 +140,21 @@ public class Migrator {
     }
 
     private void subscribeToReportOutcome(
-            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
+            boolean failFast, BatchExecutorClient batchExecutorClient, AtomicInteger queriesExecuted
     ) {
-        addObservable.subscribe(
-                taskResult -> {
-                    LOG.trace("Successfully executed: {}", taskResult);
-                    queriesExecuted.incrementAndGet();
-                    successMeter.mark();
-                },
-                error -> {
-                    LOG.debug("Error in execution", error);
-                    if (failFast) {
-                        throw GraknBackendException
-                                .migrationFailure(error.getMessage());
-                    }
-                }
-        );
+        batchExecutorClient.onNext(taskResult -> {
+            LOG.trace("Successfully executed: {}", taskResult);
+            queriesExecuted.incrementAndGet();
+            successMeter.mark();
+        });
+
+        batchExecutorClient.onError(error -> {
+            LOG.debug("Error in execution", error);
+            if (failFast) {
+                throw GraknBackendException
+                        .migrationFailure(error.getMessage());
+            }
+        });
     }
 
     private void checkKeyspace(GraknClient graknClient) {

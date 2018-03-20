@@ -47,17 +47,18 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -96,6 +97,12 @@ public class BatchExecutorClient implements Closeable {
     private final ExecutorService executor;
     private boolean requestLogEnabled;
 
+    @Nullable
+    private Consumer<? super QueryResponse> queryResponseHandler = null;
+
+    @Nullable
+    private Consumer<? super Exception> exceptionHandler = null;
+
     private final UUID id = UUID.randomUUID();
 
     private BatchExecutorClient(Builder builder) {
@@ -121,14 +128,7 @@ public class BatchExecutorClient implements Closeable {
     /**
      * Will block until there is space for the query to be submitted
      */
-    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
-        return add(query, keyspace, true);
-    }
-
-    /**
-     * Will block until there is space for the query to be submitted
-     */
-    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+    public void add(Query<?> query, Keyspace keyspace) {
         QueryRequest queryRequest = new QueryRequest(query);
         queryRequest.acquirePermit();
 
@@ -145,17 +145,17 @@ public class BatchExecutorClient implements Closeable {
                 })
                 .subscribeOn(scheduler)
                 .doOnTerminate(contextAddTimer::close);
-        return keepErrors ? observable : ignoreErrors(observable);
+
+        // We have to subscribe to make the query start loading
+        observable.subscribe();
     }
 
-    private Observable<QueryResponse> ignoreErrors(Observable<QueryResponse> observable) {
-        observable = observable
-                .map(Optional::of)
-                .onErrorResumeNext(error -> {
-                    LOG.error("Error while executing query but skipping: {}", error.getMessage());
-                    return Observable.just(Optional.empty());
-                }).filter(Optional::isPresent).map(Optional::get);
-        return observable;
+    public void onNext(Consumer<? super QueryResponse> queryResponseHandler) {
+        this.queryResponseHandler = queryResponseHandler;
+    }
+
+    public void onError(Consumer<? super Exception> exceptionHandler) {
+        this.exceptionHandler = exceptionHandler;
     }
 
     /**
@@ -385,17 +385,30 @@ public class BatchExecutorClient implements Closeable {
             List<Query<?>> queryList = queries.stream().map(QueryRequest::getQuery)
                     .collect(Collectors.toList());
             try {
-                return retryer.call(() -> {
+                List<QueryResponse> responses = retryer.call(() -> {
                     try (Context c = graqlExecuteTimer.time()) {
                         return graknClient.graqlExecute(queryList, keyspace);
                     }
                 });
+
+                if (queryResponseHandler != null) {
+                    responses.forEach(queryResponseHandler);
+                }
+
+                return responses;
             } catch (RetryException | ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof GraknClientException) {
+                    if (exceptionHandler != null) {
+                        exceptionHandler.accept((GraknClientException) cause);
+                    }
                     throw (GraknClientException) cause;
                 } else {
-                    throw new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
+                    RuntimeException exception = new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
+                    if (exceptionHandler != null) {
+                        exceptionHandler.accept(exception);
+                    }
+                    throw exception;
                 }
             } finally {
                 queries.forEach(QueryRequest::releasePermit);
