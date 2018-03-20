@@ -38,9 +38,9 @@ We cover this topic more in our documentation page on [statistics](./compute-sta
 
 At the moment we have a simple algorithm for determining
 
-* [centrality measure (degree)](./compute-degrees)
+* [centrality: degree, k-core (coreness)](./compute-degrees)
+* [clusters or communities: connected component, k-core](./compute-connected-components).
 * [paths between nodes (shortest path)](./compute-shortest-path)
-* [clusters or communities (connected components)](./compute-connected-components).
 
 ## The Knowledge Graph According to Analytics
 
@@ -88,7 +88,7 @@ The algorithm for computing the degree is one example.
 If we execute the following query, the number of arrows (edges) attached to each node is returned:
 
 ```graql
-compute degrees in person, marriage;
+compute centrality in person, marriage; using degree;
 ```
 
 In the example below this would be 1 for Jacob Young, 2 for Barbara Herchelroth, 1 for John Newman and 0 for the rest because we do not count the arrows indicating type, only arrows labelled with `spouse` roles.

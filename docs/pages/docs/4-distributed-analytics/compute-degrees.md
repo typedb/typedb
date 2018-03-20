@@ -12,13 +12,13 @@ sorts. The degree of an instance gives the number of other instances directly co
 a `person`, this means the number of connections, for example instances of a `marriage` relationship.
 The `person` with the highest degree, or the greatest number of marriages, is arguably the most "interesting".
 
-### Degrees
+### Degree
 
-The `degrees` algorithm computes how many arrows (edges) there are attached to instances in the graph. A map is returned
+The `degree` algorithm computes how many arrows (edges) there are attached to instances in the graph. A map is returned
 that displays an instance ID and its degree. If we call:
 
 ```graql
-compute degrees;
+compute centrality; using degree;
 ```
 
 on the graph below we expect the degrees of the people to be:
@@ -33,14 +33,14 @@ Don't forget that the relationships themselves will also have degrees.
 
 ![A simple social network.](/images/analytics_degree_full.png)
 
-### Degrees Within a Subgraph
+### Centrality Within a Subgraph
 
 Consider that in this graph, people with more marriages are more interesting.
 We can use the subgraph functionality to restrict the graph to only see people and who they are married to.
 Once the graph has been restricted we can determine the number of marriages by computing the degree:
 
 ```graql
-compute degrees in person, marriage;
+compute centrality in person, marriage; using degree;
 ```
 
 The result will now be:
