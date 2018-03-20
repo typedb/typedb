@@ -662,13 +662,14 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeCluster() {
-        assertParseEquivalence("compute cluster in movie, person; members;");
+        assertParseEquivalence("compute cluster in movie, person; using connected-component where members = true;");
     }
 
     @Test
     public void testParseComputeClusterWithMembersThenSize() {
         ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").members(true).clusterSize(10);
-        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where members = true size = 10;");
 
         assertEquals(expected, parsed);
     }
@@ -676,7 +677,8 @@ public class QueryParserTest {
     @Test
     public void testParseComputeClusterWithSizeThenMembers() {
         ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true);
-        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where size = 10 members=true;");
 
         assertEquals(expected, parsed);
     }
@@ -686,7 +688,8 @@ public class QueryParserTest {
         ConnectedComponentQuery<?> expected =
                 Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).members(true).clusterSize(15);
 
-        ConnectedComponentQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where size = 10 members = true size = 15;");
 
         assertEquals(expected, parsed);
     }
@@ -1091,8 +1094,6 @@ public class QueryParserTest {
         QueryParser parser = Graql.parser();
         parser.defineAllVars(true);
         GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
-
-        System.out.println(query);
 
         Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
 

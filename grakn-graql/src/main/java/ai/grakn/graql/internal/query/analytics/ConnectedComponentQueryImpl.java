@@ -24,6 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -87,17 +89,23 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
 
     @Override
     String graqlString() {
-        String string = "cluster" + subtypeString();
+        final String[] string = {super.graqlString()};
+        List<String> options = new ArrayList<>();
         if (sourceId.isPresent()) {
-            string += " of " + sourceId.get().getValue() + ";";
+            options.add(" source = " + sourceId.get().getValue());
         }
         if (members) {
-            string += " members;";
+            options.add(" members = true");
         }
         if (!anySize) {
-            string += " size " + clusterSize + ";";
+            options.add(" size " + clusterSize);
         }
-        return string;
+        if (!options.isEmpty()) {
+            string[0] += " where";
+            options.forEach(option -> string[0] += option);
+            string[0] += ";";
+        }
+        return string[0];
     }
 
     @Override

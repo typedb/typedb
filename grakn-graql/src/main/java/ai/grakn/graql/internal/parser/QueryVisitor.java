@@ -42,6 +42,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -301,10 +302,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     public Object visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
         ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
-        if (ctx.id() != null) {
-            cluster = cluster.of(visitId(ctx.id()));
-        }
-
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
@@ -333,18 +330,40 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
         return query -> query.members(visitBool(ctx.bool()));
     }
 
     @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterSize(GraqlParser.CcClusterSizeContext ctx) {
         return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
     public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
         return query -> query.of(visitId(ctx.id()));
+    }
+
+    @Override
+    public KCoreQuery visitKCore(GraqlParser.KCoreContext ctx) {
+        KCoreQuery kCoreQuery = queryBuilder.compute().cluster().usingKCore();
+
+        if (ctx.inList() != null) {
+            kCoreQuery = kCoreQuery.in(visitInList(ctx.inList()));
+        }
+
+        kCoreQuery = chainOperators(ctx.kcParam().stream().map(this::visitKcParam)).apply(kCoreQuery);
+
+        return kCoreQuery;
+    }
+
+    private UnaryOperator<KCoreQuery> visitKcParam(GraqlParser.KcParamContext ctx) {
+        return (UnaryOperator<KCoreQuery>) visit(ctx);
+    }
+
+    @Override
+    public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
+        return query -> query.kValue(getInteger(ctx.INTEGER()));
     }
 
     @Override
