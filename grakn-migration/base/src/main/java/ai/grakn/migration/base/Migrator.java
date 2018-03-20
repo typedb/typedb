@@ -113,7 +113,7 @@ public class Migrator {
     public void load(String template, Stream<Map<String, Object>> data) {
         GraknClient graknClient = GraknClient.of(uri);
 
-        AtomicInteger queriesExecuted = new AtomicInteger(0);
+        AtomicInteger queriesLoaded = new AtomicInteger(0);
 
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
@@ -133,20 +133,18 @@ public class Migrator {
                         totalMeter.mark();
                         // We add get a hot observable. It starts immediately
                         Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
-                        subscribeToReportOutcome(failFast, observable, queriesExecuted);
+                        subscribeToReportOutcome(failFast, observable);
+                        queriesLoaded.incrementAndGet();
                     });
         }
 
-        System.out.println("Loaded " + queriesExecuted + " statements");
+        System.out.println("Loaded " + queriesLoaded + " statements");
     }
 
-    private void subscribeToReportOutcome(
-            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
-    ) {
+    private void subscribeToReportOutcome(boolean failFast, Observable<QueryResponse> addObservable) {
         addObservable.subscribe(
                 taskResult -> {
                     LOG.trace("Successfully executed: {}", taskResult);
-                    queriesExecuted.incrementAndGet();
                     successMeter.mark();
                 },
                 error -> {
