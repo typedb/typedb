@@ -27,7 +27,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.SystemKeyspaceSession;
