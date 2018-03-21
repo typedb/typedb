@@ -26,19 +26,19 @@ import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 /**
- * Provides transactions to "graknsystem" which is Grakn system keyspace - used by GraknKeyspaceStore to keep track
+ * Provides transactions to access "graknsystem" which is Grakn system keyspace - used by GraknKeyspaceStore to keep track
  * of available keyspaces
  *
  * @author Marco Scoppetta
  */
 
-public class SystemKeyspaceSessionProvider implements SystemKeyspaceSession {
+public class GraknSystemKeyspaceSession implements SystemKeyspaceSession {
 
     //TODO: centralise this
     private final static Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
     private final EmbeddedGraknSession session;
 
-    public SystemKeyspaceSessionProvider(GraknConfig config) {
+    public GraknSystemKeyspaceSession(GraknConfig config) {
         session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, engineURI(config), config);
     }
 

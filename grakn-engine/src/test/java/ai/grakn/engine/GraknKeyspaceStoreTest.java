@@ -33,7 +33,6 @@ import com.codahale.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -82,7 +81,7 @@ public class GraknKeyspaceStoreTest {
 
     @BeforeClass
     public static void setup(){
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new SystemKeyspaceSessionProvider(config));
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
         graknKeyspaceStore.loadSystemSchema();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
 

@@ -28,7 +28,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.GraknKeyspaceStoreImpl;
-import ai.grakn.engine.SystemKeyspaceSessionProvider;
+import ai.grakn.engine.GraknSystemKeyspaceSession;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
@@ -295,7 +295,7 @@ public class EngineContext extends CompositeTestRule {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new SystemKeyspaceSessionProvider(config));
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
 
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);

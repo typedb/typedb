@@ -76,7 +76,7 @@ public class GraknEngineServerFactory {
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
 
-        SystemKeyspaceSession systemKeyspaceSession = new SystemKeyspaceSessionProvider(config);
+        SystemKeyspaceSession systemKeyspaceSession = new GraknSystemKeyspaceSession(config);
         GraknKeyspaceStore graknKeyspaceStore = GraknKeyspaceStoreImpl.create(systemKeyspaceSession);
 
         // tx-factory
