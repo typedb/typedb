@@ -18,8 +18,6 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
