@@ -33,4 +33,5 @@ public class GraknTxOperationExceptionTest {
         String message = GraknTxOperationException.invalidAttributeValue("bob", DataType.DATE).getMessage();
         assertThat(message, containsString(LocalDateTime.class.getName()));
     }
+
 }
