@@ -121,7 +121,18 @@ public class AttributeTest extends TxTestBase {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidResourceValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        longAttributeType.putAttribute(invalidThing);
+    }
+
+    // this is deliberately an incorrect type for the test
+    @SuppressWarnings("unchecked")
+    @Test
+    public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw(){
+        String invalidThing = "Invalid Thing";
+        AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
         longAttributeType.putAttribute(invalidThing);
     }
 
