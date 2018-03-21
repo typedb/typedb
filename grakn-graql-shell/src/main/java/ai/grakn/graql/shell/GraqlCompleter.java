@@ -19,16 +19,17 @@
 package ai.grakn.graql.shell;
 
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Autocomplete;
+import ai.grakn.kb.admin.GraknAdmin;
 import com.google.common.collect.ImmutableSet;
 import jline.console.completer.Completer;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
@@ -48,8 +49,12 @@ public class GraqlCompleter implements Completer {
 
     public static GraqlCompleter create(GraknSession session) {
         ImmutableSet<Label> labels;
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
-            labels = tx.admin().getMetaConcept().subs().map(SchemaConcept::getLabel).collect(toImmutableSet());
+        try (GraknAdmin tx = session.open(GraknTxType.READ).admin()) {
+
+            Stream<SchemaConcept> metaConcepts =
+                    Stream.of(tx.getMetaConcept(), tx.getMetaRole(), tx.getMetaRule()).flatMap(SchemaConcept::subs);
+
+            labels = metaConcepts.map(SchemaConcept::getLabel).collect(toImmutableSet());
         }
         return new GraqlCompleter(labels);
     }
