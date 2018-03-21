@@ -80,6 +80,9 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
     public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
+    public static final GraknConfigKey<String> STORAGE_BATCH_LOADING = key("storage.batch-loading", STRING);
+    public static final GraknConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
+    public static final GraknConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
 
     public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
     public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);
