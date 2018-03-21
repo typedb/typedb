@@ -42,10 +42,6 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
         super(session);
     }
 
-    private boolean isClosed(TinkerGraph innerGraph) {
-        return !innerGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
-    }
-
     @Override
     GraknTxTinker buildGraknTxFromTinkerGraph(TinkerGraph graph) {
         return new GraknTxTinker(session(), graph);
@@ -54,14 +50,6 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
     @Override
     TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
         return TinkerGraph.open();
-    }
-
-    @Override
-    protected TinkerGraph getTinkerPopGraph(TinkerGraph graph, boolean batchLoading){
-        if(super.graph == null || isClosed(super.graph)){
-            super.graph = buildTinkerPopGraph(batchLoading);
-        }
-        return super.graph;
     }
 
     @Override

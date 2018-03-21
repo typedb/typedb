@@ -48,8 +48,8 @@ import static javax.annotation.meta.When.NEVER;
 abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
     private final EmbeddedGraknSession session;
 
-    private final GraphWithTx batchTinkerPopGraphWithTx = new GraphWithTx(true);
-    private final GraphWithTx tinkerPopGraphWithTx = new GraphWithTx(false);
+    protected final GraphWithTx batchTinkerPopGraphWithTx = new GraphWithTx(true);
+    protected final GraphWithTx tinkerPopGraphWithTx = new GraphWithTx(false);
 
     TxFactoryAbstract(EmbeddedGraknSession session) {
         this.session = session;
@@ -120,7 +120,7 @@ abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph>
             }
         }
 
-        private G getTinkerPopGraph() {
+        protected G getTinkerPopGraph() {
             if (graph == null) {
                 graph = buildTinkerPopGraph(batchLoading);
             } else {

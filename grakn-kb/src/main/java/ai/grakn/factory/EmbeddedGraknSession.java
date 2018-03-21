@@ -79,6 +79,10 @@ public class EmbeddedGraknSession implements GraknSession {
     private final CommitLogHandler commitLogHandler;
     private ScheduledExecutorService commitLogSubmitter;
 
+    private final TxFactory<?> txFactory;
+    private final TxFactory<?> computerTxFactory;
+
+
 
     //References so we don't have to open a tx just to check the count of the transactions
     private EmbeddedGraknTx<?> tx = null;
@@ -91,7 +95,7 @@ public class EmbeddedGraknSession implements GraknSession {
      * @param config config to be used. If null is supplied, it will be created
      * @param remoteSubmissionNeeded whether to create a background task which submits commit logs periodically
      */
-    EmbeddedGraknSession(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded){
+    EmbeddedGraknSession(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded, TxFactoryBuilder txFactoryBuilder){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
@@ -118,6 +122,10 @@ public class EmbeddedGraknSession implements GraknSession {
         this.config = config;
 
         this.commitLogHandler = new CommitLogHandler(keyspace());
+
+
+        this.txFactory = txFactoryBuilder.getFactory(this, false);
+        this.computerTxFactory = txFactoryBuilder.getFactory(this, true);
     }
 
     public CommitLogHandler commitLogHandler(){
@@ -129,27 +137,19 @@ public class EmbeddedGraknSession implements GraknSession {
      * A user should not call this method directly.
      * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
      */
-    @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
-    public static EmbeddedGraknSession create(Keyspace keyspace, SimpleURI engineUri){
-        return create(keyspace, engineUri.toString());
-    }
-
-    /**
-     * This methods creates a {@link EmbeddedGraknSession} object for the remote API.
-     * A user should not call this method directly.
-     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
-     */
-    @SuppressWarnings("unused")//This must remain public because it is accessed via reflection
+    //This must remain public because it is accessed via reflection from Grakn.session()
+    // Also this method uses default TxFactoryBuilder implementation in Grakn core.
+    @SuppressWarnings("unused")
     public static EmbeddedGraknSession create(Keyspace keyspace, String engineUri){
-        return new EmbeddedGraknSession(keyspace, engineUri, null, true);
+        return new EmbeddedGraknSession(keyspace, engineUri, null, true, TxFactoryBuilderImpl.getInstance());
     }
 
     /**
-     * Creates a {@link EmbeddedGraknSession} specific for internal use (within Engine).
-     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
+     * Creates a {@link EmbeddedGraknSession} specific for internal use (within Engine),
+     * using provided Grakn configuration and disabling the remote (via REST) submission of commit log.
      */
-    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
-        return new EmbeddedGraknSession(keyspace, engineUri, config, false);
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config, TxFactoryBuilder txFactoryBuilder){
+        return new EmbeddedGraknSession(keyspace, engineUri, config, false, txFactoryBuilder);
     }
 
     GraknConfig getTxConfig(){
@@ -188,21 +188,20 @@ public class EmbeddedGraknSession implements GraknSession {
         GraknConfig config = GraknConfig.empty();
         config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
         config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilderImpl.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilderImpl.IN_MEMORY);
         return config;
     }
 
     @Override
     public EmbeddedGraknTx open(GraknTxType transactionType) {
-        final TxFactory<?> factory = configureTxFactory(REST.KBConfig.DEFAULT);
         switch (transactionType){
             case READ:
             case WRITE:
-                tx = factory.open(transactionType);
+                tx = txFactory.open(transactionType);
                 return tx;
             case BATCH:
-                txBatch = factory.open(transactionType);
+                txBatch = txFactory.open(transactionType);
                 return txBatch;
             default:
                 throw GraknTxOperationException.transactionInvalid(transactionType);
@@ -217,8 +216,7 @@ public class EmbeddedGraknSession implements GraknSession {
      */
     @CheckReturnValue
     public GraknComputer getGraphComputer() {
-        TxFactory<?> configuredFactory = configureTxFactory(REST.KBConfig.COMPUTER);
-        Graph graph = configuredFactory.getTinkerPopGraph(false);
+        Graph graph = computerTxFactory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph);
     }
 
@@ -266,18 +264,4 @@ public class EmbeddedGraknSession implements GraknSession {
         return graph.numOpenTx();
     }
 
-    /**
-     * Gets a factory capable of building {@link GraknTx}s based on the provided config type.
-     * The will either build an analytics factory or a normal {@link TxFactory}
-     *
-     * @param configType the type of factory to build, a normal {@link TxFactory} or an analytics one
-     * @return the factory
-     */
-    TxFactory<?> configureTxFactory(String configType){
-        if(REST.KBConfig.COMPUTER.equals(configType)){
-            return TxFactoryBuilder.getFactory(this, true);
-        } else {
-            return TxFactoryBuilder.getFactory(this, false);
-        }
-    }
 }
