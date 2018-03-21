@@ -48,15 +48,24 @@ public class ConfigProcessor {
         }
     }
 
-    public static void updateProcessConfigs() {
+    public static void updateStorageConfig(){
+        GraknConfig graknConfig = Configs.graknConfig();
+        String updatedStorageConfigString = Configs.storageConfig()
+                .updateFromConfig(graknConfig)
+                .toConfigString();
+        saveConfigStringToFile(updatedStorageConfigString, Configs.storageConfigPath());
+    }
+
+    public static void updateQueueConfig(){
         GraknConfig graknConfig = Configs.graknConfig();
         String updatedQueueConfigString = Configs.queueConfig()
                 .updateFromConfig(graknConfig)
                 .toConfigString();
-        String updatedStorageConfigString = Configs.storageConfig()
-                .updateFromConfig(graknConfig)
-                .toConfigString();
         saveConfigStringToFile(updatedQueueConfigString, Configs.queueConfigPath());
-        saveConfigStringToFile(updatedStorageConfigString, Configs.storageConfigPath());
+    }
+
+    public static void updateProcessConfigs() {
+        updateStorageConfig();
+        updateQueueConfig();
     }
 }
