@@ -20,7 +20,6 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 
