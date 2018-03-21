@@ -74,9 +74,6 @@ public class EngineGraknTxFactory {
         FactoryBuilder.refresh();
     }
 
-    public EmbeddedGraknTx<?> tx(String keyspace, GraknTxType type) {
-        return tx(Keyspace.of(keyspace), type);
-    }
 
     public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
         if (!graknKeyspaceStore.containsKeyspace(keyspace)) {

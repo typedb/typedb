@@ -58,8 +58,8 @@ public class CountPostProcessorTest {
     private final Map<ConceptId, Long> newInstanceCounts = new HashMap<>();
     private final Keyspace keyspace = SampleKBLoader.randomKeyspace();
 
-    @BeforeClass
-    public static void setupMocks(){
+    @Before
+    public void setupMocks(){
         countStorage = mock(RedisCountStorage.class);
         when(countStorage.getCount(any())).thenReturn(1L);
 
@@ -108,7 +108,7 @@ public class CountPostProcessorTest {
         });
 
         //No Sharding takes place
-        verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
+        verify(factoryMock, Mockito.times(0)).tx(any(Keyspace.class), any());
     }
 
     @Test
