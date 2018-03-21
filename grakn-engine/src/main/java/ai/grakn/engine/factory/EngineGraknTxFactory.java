@@ -74,6 +74,10 @@ public class EngineGraknTxFactory {
         FactoryBuilder.refresh();
     }
 
+    public EmbeddedGraknTx<?> tx(String keyspace, GraknTxType type) {
+        return tx(Keyspace.of(keyspace), type);
+    }
+
     public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
         if (!graknKeyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
@@ -115,7 +119,7 @@ public class EngineGraknTxFactory {
         }
     }
 
-    private static String getLockingKey(Keyspace keyspace){
+    private static String getLockingKey(Keyspace keyspace) {
         return "/creating-new-keyspace-lock/" + keyspace.getValue();
     }
 

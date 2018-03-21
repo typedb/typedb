@@ -105,10 +105,10 @@ public class CountPostProcessorTest {
             //Redis is updated
             verify(countStorage, Mockito.times(1)).getShardCount(keyspace, id);
             verify(countStorage, Mockito.times(1)).incrementInstanceCount(keyspace, id, value);
-
-            //No Sharding takes place
-            verify(factoryMock, Mockito.times(0)).tx(any(Keyspace.class), any());
         });
+
+        //No Sharding takes place
+        verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
     }
 
     @Test
