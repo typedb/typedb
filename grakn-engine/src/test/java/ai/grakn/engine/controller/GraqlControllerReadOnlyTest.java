@@ -83,7 +83,7 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry).start(spark);
+        new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new GraknEngineStatus(), metricRegistry).start(spark);
         new GraqlController(mockFactory, mock(PostProcessor.class), printer, metricRegistry).start(spark);
     });
 
@@ -108,7 +108,7 @@ public class GraqlControllerReadOnlyTest {
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
-        when(mockFactory.systemKeyspace()).thenReturn(mockGraknKeyspaceStore);
+        when(mockFactory.keyspaceStore()).thenReturn(mockGraknKeyspaceStore);
         when(mockFactory.config()).thenReturn(sparkContext.config());
     }
 

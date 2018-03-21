@@ -55,7 +55,7 @@ public class PostProcessingTaskTest {
         when(graknKeyspaceStore.keyspaces()).thenReturn(keyspaces);
 
         factory = mock(EngineGraknTxFactory.class);
-        when(factory.systemKeyspace()).thenReturn(graknKeyspaceStore);
+        when(factory.keyspaceStore()).thenReturn(graknKeyspaceStore);
 
         indexPostProcessor = mock(IndexPostProcessor.class);
         postProcessor = PostProcessor.create(indexPostProcessor, mock(CountPostProcessor.class));

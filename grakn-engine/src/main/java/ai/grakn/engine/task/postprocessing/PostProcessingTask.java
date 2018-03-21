@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
@@ -65,9 +65,9 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         UUID executionId = UUID.randomUUID();
         LOG.info("starting post-processing task with ID '" + executionId + "' ... ");
-        SystemKeyspace systemKeyspace = factory.systemKeyspace();
-        if (systemKeyspace != null) {
-            systemKeyspace.keyspaces().forEach(keyspace -> runPostProcessing(executionId, keyspace));
+        GraknKeyspaceStore keyspaceStore = factory.keyspaceStore();
+        if (keyspaceStore != null) {
+            keyspaceStore.keyspaces().forEach(keyspace -> runPostProcessing(executionId, keyspace));
             LOG.info("post-processing task with ID " + executionId + "finished.");
         } else {
             LOG.info("post-processing " + executionId + ": waiting for system keyspace to be ready.");

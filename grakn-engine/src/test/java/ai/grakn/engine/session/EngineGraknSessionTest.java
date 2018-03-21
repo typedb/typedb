@@ -48,9 +48,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
-import java.util.HashSet;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -84,7 +81,7 @@ public class EngineGraknSessionTest {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
         GraknKeyspaceStore keyspaceStore = GraknKeyspaceStoreFake.of();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
-        graknFactory.systemKeyspace().loadSystemSchema();
+        graknFactory.keyspaceStore().loadSystemSchema();
     }
 
     @Test

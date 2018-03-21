@@ -33,7 +33,6 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -73,7 +72,7 @@ public class CountPostProcessorTest {
         when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
 
         factoryMock = mock(EngineGraknTxFactory.class);
-        when(factoryMock.systemKeyspace()).thenReturn(graknKeyspaceStoreMock);
+        when(factoryMock.keyspaceStore()).thenReturn(graknKeyspaceStoreMock);
         when(factoryMock.tx(any(Keyspace.class), any())).thenReturn(txMock);
 
         lockProviderMock = mock(LockProvider.class);

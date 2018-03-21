@@ -124,7 +124,7 @@ public class EngineGraknTxFactory {
         return engineConfig;
     }
 
-    public GraknKeyspaceStore systemKeyspace() {
+    public GraknKeyspaceStore keyspaceStore() {
         return graknKeyspaceStore;
     }
 
