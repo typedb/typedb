@@ -70,11 +70,11 @@ public class PostProcessingTask implements BackgroundTask{
             systemKeyspace.keyspaces().forEach(keyspace -> runPostProcessing(executionId, keyspace));
             LOG.info("post-processing task with ID " + executionId + "finished.");
         } else {
-            LOG.info(executionId + ": waiting for system keyspace to be ready.");
+            LOG.info("post-processing " + executionId + ": waiting for system keyspace to be ready.");
         }
     }
 
-    public void runPostProcessing(UUID executionId, Keyspace keyspace) {
+    private void runPostProcessing(UUID executionId, Keyspace keyspace) {
         String index;
         int limit = 0;
         do {
@@ -95,8 +95,9 @@ public class PostProcessingTask implements BackgroundTask{
      *
      * @param keyspace The {@link Keyspace} requiring post processing for a specific index
      * @param index the index to be post processed
+     * @param executionId execution id of the post-processing.
      */
-    public void processIndex(Keyspace keyspace, String index, UUID executionId){
+    private void processIndex(Keyspace keyspace, String index, UUID executionId){
         Set<ConceptId> ids = indexPostProcessor.popIds(keyspace, index);
         //No need to post process if another engine has beaten you to doing it
         if(ids.isEmpty()) {
