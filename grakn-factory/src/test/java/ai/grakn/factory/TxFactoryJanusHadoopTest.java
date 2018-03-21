@@ -42,7 +42,7 @@ public class TxFactoryJanusHadoopTest {
     private TxFactoryJanusHadoop factory;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         when(session.keyspace()).thenReturn(Keyspace.of("rubbish"));
         when(session.uri()).thenReturn("rubbish");
         when(session.config()).thenReturn(TxFactoryJanusHadoopTest.TEST_CONFIG);
@@ -50,12 +50,12 @@ public class TxFactoryJanusHadoopTest {
     }
 
     @Test(expected=UnsupportedOperationException.class)
-    public void buildGraknGraphFromTinker() throws Exception {
+    public void buildGraknGraphFromTinker() {
         factory.open(GraknTxType.WRITE);
     }
 
     @Test
-    public void buildTinkerPopGraph() throws Exception {
+    public void buildTinkerPopGraph() {
         assertThat(factory.getTinkerPopGraph(false), instanceOf(HadoopGraph.class));
     }
 
