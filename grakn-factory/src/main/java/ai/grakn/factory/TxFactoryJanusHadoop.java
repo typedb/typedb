@@ -44,10 +44,17 @@ import org.slf4j.LoggerFactory;
  * @author fppt
  */
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
-    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
-    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_HOSTNAME = "janusmr.ioformat.conf.storage.hostname";
-    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_HOSTNAME = "janusgraphmr.ioformat.conf.storage.hostname";
-    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = "janusgraphmr.ioformat.conf.storage.cassandra.keyspace";
+    public static final String JANUSMR_IOFORMAT_CONF = "janusmr.ioformat.conf.";
+    public static final String JANUSGRAPHMR_IOFORMAT_CONF = "janusgraphmr.ioformat.conf.";
+    public static final String STORAGE_CASSANDRA_KEYSPACE = "storage.cassandra.keyspace";
+    public static final String STORAGE_HOSTNAME = "storage.hostname";
+
+    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = JANUSMR_IOFORMAT_CONF + STORAGE_CASSANDRA_KEYSPACE;
+    private static final String JANUSMR_IOFORMAT_CONF_STORAGE_HOSTNAME = JANUSMR_IOFORMAT_CONF + STORAGE_HOSTNAME;
+
+    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_HOSTNAME = JANUSGRAPHMR_IOFORMAT_CONF + STORAGE_HOSTNAME;
+    private static final String JANUSGRAPHMR_IOFORMAT_CONF_STORAGE_CASSANDRA_KEYSPACE = JANUSGRAPHMR_IOFORMAT_CONF + STORAGE_CASSANDRA_KEYSPACE;
+
     private static final String CASSANDRA_INPUT_KEYSPACE = "cassandra.input.keyspace";
 
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
