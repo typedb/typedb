@@ -33,7 +33,7 @@ Here, the [subgraph](./overview) functionality has been used to get more meaning
 
 If you only wanna find out which cluster contains the given entity, you can use the modifier `source`.
  
-```graql
+```graql-test-ignore
 compute cluster in person, marriage; using connected-component where source = "V123" members = true;
 ```
 Here, assuming V123 is the id of John Newman in the example above, 
