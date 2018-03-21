@@ -38,8 +38,11 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
+    private TinkerGraph tinkerGraph;
+
     TxFactoryTinker(EmbeddedGraknSession session){
         super(session);
+        tinkerGraph = TinkerGraph.open();
     }
 
     @Override
@@ -49,11 +52,15 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
-        return TinkerGraph.open();
+        return tinkerGraph;
+    }
+
+    public TinkerGraph getTinkerPopGraph(){
+        return tinkerGraph;
     }
 
     @Override
     protected TinkerGraph getGraphWithNewTransaction(TinkerGraph graph, boolean batchLoading) {
-        return graph;
+        return tinkerGraph;
     }
 }
