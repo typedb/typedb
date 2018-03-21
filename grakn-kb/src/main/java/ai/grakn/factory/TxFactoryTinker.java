@@ -47,7 +47,7 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
     }
 
     @Override
-    GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
+    GraknTxTinker buildGraknTxFromTinkerGraph(TinkerGraph graph) {
         return new GraknTxTinker(session(), graph);
     }
 
@@ -58,10 +58,10 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     protected TinkerGraph getTinkerPopGraph(TinkerGraph graph, boolean batchLoading){
-        if(super.tx == null || isClosed(super.tx)){
-            super.tx = buildTinkerPopGraph(batchLoading);
+        if(super.graph == null || isClosed(super.graph)){
+            super.graph = buildTinkerPopGraph(batchLoading);
         }
-        return super.tx;
+        return super.graph;
     }
 
     @Override

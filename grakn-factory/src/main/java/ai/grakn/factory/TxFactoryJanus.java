@@ -121,7 +121,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    GraknTxJanus buildGraknGraphFromTinker(JanusGraph graph) {
+    GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
         return new GraknTxJanus(session(), graph);
     }
 

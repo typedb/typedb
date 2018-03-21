@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class FactoryBuilderTest {
+public class TxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
@@ -60,7 +60,7 @@ public class FactoryBuilderTest {
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(session, false), instanceOf(TxFactoryTinker.class));
+        assertThat(TxFactoryBuilder.getFactory(session, false), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
@@ -69,13 +69,13 @@ public class FactoryBuilderTest {
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.uri()).thenReturn(ENGINE_URL);
         when(session.config()).thenReturn(TEST_CONFIG);
-        TxFactory mgf1 = FactoryBuilder.getFactory(session, false);
-        TxFactory mgf2 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf1 = TxFactoryBuilder.getFactory(session, false);
+        TxFactory mgf2 = TxFactoryBuilder.getFactory(session, false);
 
         //Factory 3 & 4
         when(session.keyspace()).thenReturn(Keyspace.of("key"));
-        TxFactory mgf3 = FactoryBuilder.getFactory(session, false);
-        TxFactory mgf4 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf3 = TxFactoryBuilder.getFactory(session, false);
+        TxFactory mgf4 = TxFactoryBuilder.getFactory(session, false);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
@@ -91,7 +91,7 @@ public class FactoryBuilderTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 20; i ++){
-            futures.add(pool.submit(() -> factories.add(FactoryBuilder.getFactory(session, false))));
+            futures.add(pool.submit(() -> factories.add(TxFactoryBuilder.getFactory(session, false))));
         }
 
         for (Future future : futures) {

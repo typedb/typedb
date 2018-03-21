@@ -46,9 +46,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author fppt
  */
-public class FactoryBuilder {
+public class TxFactoryBuilder {
     static final String IN_MEMORY = "in-memory";
-    private static final Logger LOG = LoggerFactory.getLogger(FactoryBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TxFactoryBuilder.class);
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     //This is used to map grakn value properties into the underlaying properties
@@ -57,7 +57,7 @@ public class FactoryBuilder {
             "production", "ai.grakn.factory.TxFactoryJanus",
             "distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
 
-    private FactoryBuilder(){
+    private TxFactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 

@@ -29,7 +29,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -45,7 +45,7 @@ import java.util.Map;
  *     This internal factory is used to produce {@link GraknTx}s.
  *
  *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
+ *     {@link TxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
  *     are actually the same graphs.
  * </p>
  *
@@ -74,7 +74,7 @@ public class EngineGraknTxFactory {
     //Should only be used for testing
     @VisibleForTesting
     public synchronized void refreshConnections(){
-        FactoryBuilder.refresh();
+        TxFactoryBuilder.refresh();
     }
 
     public EmbeddedGraknTx<?> tx(String keyspace, GraknTxType type){

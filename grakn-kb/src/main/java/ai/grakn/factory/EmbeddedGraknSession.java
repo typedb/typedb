@@ -188,8 +188,8 @@ public class EmbeddedGraknSession implements GraknSession {
         GraknConfig config = GraknConfig.empty();
         config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
         config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, FactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, FactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilder.IN_MEMORY);
         return config;
     }
 
@@ -275,9 +275,9 @@ public class EmbeddedGraknSession implements GraknSession {
      */
     TxFactory<?> configureTxFactory(String configType){
         if(REST.KBConfig.COMPUTER.equals(configType)){
-            return FactoryBuilder.getFactory(this, true);
+            return TxFactoryBuilder.getFactory(this, true);
         } else {
-            return FactoryBuilder.getFactory(this, false);
+            return TxFactoryBuilder.getFactory(this, false);
         }
     }
 }
