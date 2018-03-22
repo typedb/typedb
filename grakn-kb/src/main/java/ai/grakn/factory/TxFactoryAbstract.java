@@ -31,10 +31,6 @@ import static javax.annotation.meta.When.NEVER;
 
 /**
  * <p>
- * Defines the construction of {@link GraknTx} based on
- * <p/>
- * <p>
- * <p>
  * Defines the abstract construction of {@link GraknTx}s on top of Tinkerpop Graphs.
  * For this factory to function a vendor specific implementation of a graph extending
  * {@link EmbeddedGraknTx} must be provided. This must be provided with a matching TinkerPop {@link Graph}
