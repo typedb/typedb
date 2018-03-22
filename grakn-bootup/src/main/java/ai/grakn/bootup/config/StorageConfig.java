@@ -47,6 +47,10 @@ public class StorageConfig extends ProcessConfig<Object> {
     private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
     private static final String DATA_SUBDIR = "cassandra/data";
 
+    private static final String DATA_FILE_DIR_CONFIG_KEY = "data_file_directories";
+    private static final String SAVED_CACHES_DIR_CONFIG_KEY = "saved_caches_directory";
+    private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
+
     private StorageConfig(Map<String, Object> yamlParams){ super(yamlParams); }
 
     public static StorageConfig of(String yaml) { return new StorageConfig(StorageConfig.parseStringToMap(yaml)); }
@@ -87,9 +91,9 @@ public class StorageConfig extends ProcessConfig<Object> {
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
 
         ImmutableMap<String, Object> dirParams = ImmutableMap.of(
-                "data_file_directories", Collections.singletonList(dbDir + DATA_SUBDIR),
-                "saved_caches_directory", dbDir + SAVED_CACHES_SUBDIR,
-                "commitlog_directory", dbDir + COMMITLOG_SUBDIR
+                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
+                SAVED_CACHES_DIR_CONFIG_KEY, dbDir + SAVED_CACHES_SUBDIR,
+                COMMITLOG_DIR_CONFIG_KEY, dbDir + COMMITLOG_SUBDIR
         );
         return new StorageConfig(this.updateParamsFromMap(dirParams));
     }

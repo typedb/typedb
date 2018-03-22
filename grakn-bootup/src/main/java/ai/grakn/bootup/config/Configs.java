@@ -52,11 +52,9 @@ public class Configs {
         return Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
     }
 
-    public static Path queueConfigPath(){
-        return Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME);
-    }
+    /** paths relative to dist dir **/
 
-    public static Path storageConfigPath(){
-        return Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME);
-    }
+    public static Path queueConfigPath(){ return Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME); }
+
+    public static Path storageConfigPath(){ return Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME); }
 }
