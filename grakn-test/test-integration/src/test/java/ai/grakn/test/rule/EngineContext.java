@@ -161,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.create(randomKeyspace(), uri());
+        return EmbeddedGraknSession.create(randomKeyspace(), uri().toString());
     }
 
     @Override
