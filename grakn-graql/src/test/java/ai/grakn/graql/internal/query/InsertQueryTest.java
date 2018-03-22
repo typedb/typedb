@@ -108,7 +108,7 @@ public class InsertQueryTest {
     }
 
     @After
-    public void clear(){
+    public void clear() {
         movieKB.rollback();
     }
 
@@ -151,8 +151,8 @@ public class InsertQueryTest {
         VarPattern rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
         VarPattern x = var("x").has("title", "Godfather").isa("movie");
         VarPattern y = var("y").has("name", "comedy").isa("genre");
-        VarPattern[] vars = new VarPattern[] {rel, x, y};
-        Pattern[] patterns = new Pattern[] {rel, x, y};
+        VarPattern[] vars = new VarPattern[]{rel, x, y};
+        Pattern[] patterns = new Pattern[]{rel, x, y};
 
         assertNotExists(qb.match(patterns));
 
@@ -401,7 +401,7 @@ public class InsertQueryTest {
     public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
         InsertQuery query = qb
                 .match(w.isa("movie").has(title, x.val("The Muppets"), y))
-                .insert(y.has("provenance", z.val("Someone told me")));
+                .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
         Answer answer = Iterables.getOnlyElement(query.execute());
 
