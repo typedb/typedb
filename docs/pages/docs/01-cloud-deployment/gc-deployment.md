@@ -1,8 +1,18 @@
+---
+title: Google Cloud Deployment
+keywords: cloud, deployment, google
+tags: [getting-started, deployment, cloud]
+summary: "Deploying Grakn on Google Cloud"
+sidebar: documentation_sidebar
+permalink: /docs/cloud-deployment/gc-deployment
+folder: docs
+---
+
 # Google Cloud Launcher
 
 ## Deployment
-We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the Cloud Launcher:
-[Cloud Launcher](https://console.cloud.google.com/launcher/details/datastax-public/datastax-enterprise)
+We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the
+[Cloud Launcher](https://console.cloud.google.com/launcher/details/datastax-public/datastax-enterprise):
 
 ![](/images/gc-solution-listing.png)
 
@@ -40,10 +50,10 @@ After executing the command the output should look like this:
 
 ![](/images/gc-ssh-tunnel-terminal.png)
 
-After SSH tunnel creation, the Dashboard shall be accessible from your browser at https://localhost:8443.
+After SSH tunnel creation, the Dashboard shall be accessible from your browser at [localhost](https://localhost:8443).
 
 ## Next Steps
 
-If you want to learn more about Grakn KGMS, the Grakn Academy at https://dev.grakn.ai/academy/ is a good place to start.
+If you want to learn more about Grakn KGMS, the [Grakn Academy](https://dev.grakn.ai/academy/) is a good place to start.
 
 To learn more about running Grakn KGMS on GCP take a look at the [best practices guide](best-practices.md) and [post deployment steps](post-deployment-steps.md).

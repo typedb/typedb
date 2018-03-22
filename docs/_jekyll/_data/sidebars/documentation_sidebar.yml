@@ -34,7 +34,7 @@ entries:
         url: /docs/cloud-deployment/best-practices
       - title: Post deployment steps
         output: web
-        url: /docs/cloud-deployment/post-deployment-steps
+        url: /docs/cloud-deployment/post-deployment
   - title: Knowledge Model
     output: web
     folderitems:

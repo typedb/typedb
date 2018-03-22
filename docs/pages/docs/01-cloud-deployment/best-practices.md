@@ -1,3 +1,13 @@
+---
+title: Deployment Best Practices
+keywords: cloud, deployment, google
+tags: [getting-started, deployment, cloud]
+summary: "Best Practices for deploying Grakn on Google Cloud"
+sidebar: documentation_sidebar
+permalink: /docs/cloud-deployment/best-practices
+folder: docs
+---
+
 # GC Deployment Best Pracices
 
 In this section we shall describe the recommendations for comput and storage aspects of GC deployments
@@ -18,7 +28,7 @@ Having these bounds in mind the following machines are recommended because they 
 
 The optimal machine type appropriate for a given use case shall depend on the specific performance requirements of the use case.
 
-For more information on machine types, please visit: https://cloud.google.com/compute/docs/machine-types
+For more information on machine types, please visit the [GC Machine Type Docs](https://cloud.google.com/compute/docs/machine-types)
 
 ## Storage
 
@@ -26,4 +36,4 @@ Google Cloud offers a wide spectrum of storage options. For performance, we sugg
 
 It is also possible to use HDD persistent disks. Although these come at a reduced price, their poor performance does not justify their use and we do not recommend them.
 
-For more information on GCE disks, please visit: https://cloud.google.com/compute/docs/disks
+For more information on GCE disks, please visit the [GC Disk Docs](https://cloud.google.com/compute/docs/disks)
