@@ -52,18 +52,12 @@ import java.util.Set;
  * @author borislav, fppt
  *
  */
-public interface SystemKeyspace {
+public interface GraknKeyspaceStore {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
     Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
-
-    /**
-     * Notify that we just opened a keyspace with the same engineUrl & config.
-     * This process also creates a keyspace if needed.
-     */
-    void openKeyspace(Keyspace keyspace);
 
     /**
      * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
@@ -92,4 +86,6 @@ public interface SystemKeyspace {
      * multiple times.
      */
     void loadSystemSchema();
+
+    void addKeyspace(Keyspace keyspace);
 }

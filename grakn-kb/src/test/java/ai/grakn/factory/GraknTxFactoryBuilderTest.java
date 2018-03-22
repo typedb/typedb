@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TxFactoryBuilderImplTest {
+public class GraknTxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
@@ -60,7 +60,7 @@ public class TxFactoryBuilderImplTest {
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(TxFactoryBuilderImpl.getInstance().getFactory(session, false), instanceOf(TxFactoryTinker.class));
+        assertThat(GraknTxFactoryBuilder.getInstance().getFactory(session, false), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
@@ -69,13 +69,13 @@ public class TxFactoryBuilderImplTest {
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.uri()).thenReturn(ENGINE_URL);
         when(session.config()).thenReturn(TEST_CONFIG);
-        TxFactory mgf1 = TxFactoryBuilderImpl.getInstance().getFactory(session, false);
-        TxFactory mgf2 = TxFactoryBuilderImpl.getInstance().getFactory(session, false);
+        TxFactory mgf1 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
+        TxFactory mgf2 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
 
         //Factory 3 & 4
         when(session.keyspace()).thenReturn(Keyspace.of("key"));
-        TxFactory mgf3 = TxFactoryBuilderImpl.getInstance().getFactory(session, false);
-        TxFactory mgf4 = TxFactoryBuilderImpl.getInstance().getFactory(session, false);
+        TxFactory mgf3 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
+        TxFactory mgf4 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
@@ -91,7 +91,7 @@ public class TxFactoryBuilderImplTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 20; i ++){
-            futures.add(pool.submit(() -> factories.add(TxFactoryBuilderImpl.getInstance().getFactory(session, false))));
+            futures.add(pool.submit(() -> factories.add(GraknTxFactoryBuilder.getInstance().getFactory(session, false))));
         }
 
         for (Future future : futures) {

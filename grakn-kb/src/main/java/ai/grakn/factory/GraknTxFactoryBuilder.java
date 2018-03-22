@@ -34,18 +34,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Marco Scoppetta
  */
-public class TxFactoryBuilderImpl extends TxFactoryBuilder {
+public class GraknTxFactoryBuilder extends TxFactoryBuilder {
 
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     private static TxFactoryBuilder instance = null;
 
-    private TxFactoryBuilderImpl() {
+    private GraknTxFactoryBuilder() {
     }
 
     synchronized public static TxFactoryBuilder getInstance() {
         if (instance == null) {
-            instance = new TxFactoryBuilderImpl();
+            instance = new GraknTxFactoryBuilder();
         }
         return instance;
     }

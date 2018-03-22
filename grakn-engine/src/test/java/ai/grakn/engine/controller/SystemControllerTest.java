@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
 import com.codahale.metrics.MetricRegistry;
@@ -63,7 +63,7 @@ import static org.mockito.Mockito.mock;
 public class SystemControllerTest {
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
+    private static final GraknKeyspaceStoreFake systemKeyspace = GraknKeyspaceStoreFake.of();
 
     private static final String INDEX_CONTENTS = "<html>hello world!</html>";
 

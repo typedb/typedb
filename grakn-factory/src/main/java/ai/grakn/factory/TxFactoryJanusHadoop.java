@@ -18,12 +18,16 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * <p>
@@ -43,15 +47,39 @@ import org.slf4j.LoggerFactory;
  * @author fppt
  */
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
-    private static final String CLUSTER_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
-    private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
+
+    /**
+     * This map is used to override hidden config files.
+     * The key of the map refers to the Janus configuration to be overridden
+     * The value of the map specifies the value that will be injected
+     */
+    private static Map<String, String> overrideMap(EmbeddedGraknSession session) {
+        // Janus configurations
+        String mrPrefixConf = "janusmr.ioformat.conf.";
+        String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
+        String inputKeyspaceConf = "cassandra.input.keyspace";
+        String keyspaceConf = "storage.cassandra.keyspace";
+        String hostnameConf = "storage.hostname";
+
+        // Values
+        String keyspaceValue = session.keyspace().getValue();
+        String hostnameValue = session.config().getProperty(GraknConfigKey.STORAGE_HOSTNAME);
+
+        // build override map
+        return ImmutableMap.of(
+                mrPrefixConf + keyspaceConf, keyspaceValue,
+                mrPrefixConf + hostnameConf, hostnameValue,
+                graphMrPrefixConf + hostnameConf, hostnameValue,
+                graphMrPrefixConf + keyspaceConf, keyspaceValue,
+                inputKeyspaceConf, keyspaceValue
+        );
+    }
 
     TxFactoryJanusHadoop(EmbeddedGraknSession session) {
         super(session);
 
-        session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
-        session().config().properties().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
+        overrideMap(session()).forEach((k, v) -> session().config().properties().setProperty(k, v));
     }
 
     @Override

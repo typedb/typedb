@@ -48,7 +48,7 @@ import java.util.Map;
 
 public abstract class TxFactoryBuilder {
     static final String IN_MEMORY = "in-memory";
-    private static final Logger LOG = LoggerFactory.getLogger(TxFactoryBuilderImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknTxFactoryBuilder.class);
 
     //This is used to map grakn value properties into the underlying properties
     protected static final Map<String, String> factoryMapper = ImmutableMap.of(

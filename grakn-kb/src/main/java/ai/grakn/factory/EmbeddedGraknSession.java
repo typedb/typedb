@@ -141,7 +141,7 @@ public class EmbeddedGraknSession implements GraknSession {
     // Also this method uses default TxFactoryBuilder implementation in Grakn core.
     @SuppressWarnings("unused")
     public static EmbeddedGraknSession create(Keyspace keyspace, String engineUri){
-        return new EmbeddedGraknSession(keyspace, engineUri, null, true, TxFactoryBuilderImpl.getInstance());
+        return new EmbeddedGraknSession(keyspace, engineUri, null, true, GraknTxFactoryBuilder.getInstance());
     }
 
     /**
@@ -188,8 +188,8 @@ public class EmbeddedGraknSession implements GraknSession {
         GraknConfig config = GraknConfig.empty();
         config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
         config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilderImpl.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilderImpl.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
         return config;
     }
 

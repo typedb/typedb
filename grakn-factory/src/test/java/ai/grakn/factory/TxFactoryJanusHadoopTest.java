@@ -36,13 +36,13 @@ import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusHadoopTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
-    private static final File TEST_CONFIG_FILE = Paths.get("../../conf/main/grakn.properties").toFile();
+    private static final File TEST_CONFIG_FILE = Paths.get("../conf/main/grakn.properties").toFile();
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     private TxFactoryJanusHadoop factory;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         when(session.keyspace()).thenReturn(Keyspace.of("rubbish"));
         when(session.uri()).thenReturn("rubbish");
         when(session.config()).thenReturn(TxFactoryJanusHadoopTest.TEST_CONFIG);
@@ -50,12 +50,12 @@ public class TxFactoryJanusHadoopTest {
     }
 
     @Test(expected=UnsupportedOperationException.class)
-    public void buildGraknGraphFromTinker() throws Exception {
+    public void buildGraknGraphFromTinker() {
         factory.open(GraknTxType.WRITE);
     }
 
     @Test
-    public void buildTinkerPopGraph() throws Exception {
+    public void buildTinkerPopGraph() {
         assertThat(factory.getTinkerPopGraph(false), instanceOf(HadoopGraph.class));
     }
 
