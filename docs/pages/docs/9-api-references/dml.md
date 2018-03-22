@@ -210,8 +210,11 @@ knowledge graph and return an [answer](../querying-data/overview#answer) with va
 [variable patterns](../querying-data/overview#variable-pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-queries) will operate for every
-[answer](../querying-data/overview#answer) of the [match](#match) and return one [answer](../querying-data/overview#answer) for each
-[match](#match) [answer](../querying-data/overview#answer).
+[answer](../querying-data/overview#answer) of the [match](#match), projected over the
+[variables](../querying-data/overview#variable) present in the [insert query](#insert-queries)
+[variable patterns](../querying-data/overview#variable-pattern) and return one
+[answer](../querying-data/overview#answer) for each projected [match](#match)
+[answer](../querying-data/overview#answer).
 
 Within the [variable patterns](../querying-data/overview#variable-pattern), the following [properties](../querying-data/overview#property) are
 supported:
