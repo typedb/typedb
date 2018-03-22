@@ -18,7 +18,15 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.graql.Pattern;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
@@ -27,11 +35,13 @@ import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
@@ -42,8 +52,10 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -122,6 +134,27 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 break;
             case GETCONCEPT:
                 getConcept(request.getGetConcept());
+                break;
+            case GETSCHEMACONCEPT:
+                getSchemaConcept(request.getGetSchemaConcept());
+                break;
+            case GETATTRIBUTESBYVALUE:
+                getAttributesByValue(request.getGetAttributesByValue());
+                break;
+            case PUTENTITYTYPE:
+                putEntityType(request.getPutEntityType());
+                break;
+            case PUTRELATIONSHIPTYPE:
+                putRelationshipType(request.getPutRelationshipType());
+                break;
+            case PUTATTRIBUTETYPE:
+                putAttributeType(request.getPutAttributeType());
+                break;
+            case PUTROLE:
+                putRole(request.getPutRole());
+                break;
+            case PUTRULE:
+                putRule(request.getPutRule());
                 break;
             default:
             case REQUEST_NOT_SET:
@@ -233,14 +266,61 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
-        Concept concept = tx().getConcept(GrpcUtil.convert(conceptId));
+        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
 
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        if (concept != null) conceptResponse.setConcept(GrpcUtil.convert(concept));
-
-        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
 
         responseObserver.onNext(response);
+    }
+
+    private void getSchemaConcept(GrpcConcept.Label label) {
+        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(GrpcUtil.convert(label)));
+
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getAttributesByValue(AttributeValue attributeValue) {
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
+
+        TxResponse response = TxResponse.newBuilder().setConcepts(GrpcUtil.convert(attributes.stream())).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void putEntityType(GrpcConcept.Label label) {
+        EntityType entityType = tx().putEntityType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(entityType));
+    }
+
+    private void putRelationshipType(GrpcConcept.Label label) {
+        RelationshipType relationshipType = tx().putRelationshipType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(relationshipType));
+    }
+
+    private void putAttributeType(PutAttributeType putAttributeType) {
+        Label label = GrpcUtil.convert(putAttributeType.getLabel());
+        AttributeType.DataType<?> dataType = GrpcUtil.convert(putAttributeType.getDataType());
+
+        AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+        responseObserver.onNext(GrpcUtil.conceptResponse(attributeType));
+    }
+
+    private void putRole(GrpcConcept.Label label) {
+        Role role = tx().putRole(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(role));
+    }
+
+    private void putRule(PutRule putRule) {
+        Label label = GrpcUtil.convert(putRule.getLabel());
+        Pattern when = GrpcUtil.convert(putRule.getWhen());
+        Pattern then = GrpcUtil.convert(putRule.getThen());
+
+        Rule rule = tx().putRule(label, when, then);
+        responseObserver.onNext(GrpcUtil.conceptResponse(rule));
     }
 
     private EmbeddedGraknTx<?> tx() {

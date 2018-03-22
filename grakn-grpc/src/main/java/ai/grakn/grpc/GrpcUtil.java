@@ -57,6 +57,8 @@ import ai.grakn.rpc.generated.GrpcGrakn.Infer;
 import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Next;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.Stop;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
@@ -182,12 +184,58 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setGetConcept(convert(id)).build();
     }
 
+    public static TxRequest getSchemaConceptRequest(Label label) {
+        return TxRequest.newBuilder().setGetSchemaConcept(convert(label)).build();
+    }
+
+    public static TxRequest getAttributesByValueRequest(Object value) {
+        return TxRequest.newBuilder().setGetAttributesByValue(convertValue(value)).build();
+    }
+
+    public static TxRequest putEntityTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutEntityType(convert(label)).build();
+    }
+
+    public static TxRequest putRelationshipTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutRelationshipType(convert(label)).build();
+    }
+
+    public static TxRequest putAttributeTypeRequest(Label label, AttributeType.DataType<?> dataType) {
+        PutAttributeType putAttributeType =
+                PutAttributeType.newBuilder().setLabel(convert(label)).setDataType(convert(dataType)).build();
+
+        return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
+    }
+
+    public static TxRequest putRoleRequest(Label label) {
+        return TxRequest.newBuilder().setPutRole(convert(label)).build();
+    }
+
+    public static TxRequest putRuleRequest(Label label, Pattern when, Pattern then) {
+        PutRule putRule =
+                PutRule.newBuilder().setLabel(convert(label)).setWhen(convert(when)).setThen(convert(then)).build();
+
+        return TxRequest.newBuilder().setPutRule(putRule).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
     public static TxResponse iteratorResponse(IteratorId iteratorId) {
         return TxResponse.newBuilder().setIteratorId(iteratorId).build();
+    }
+
+    public static TxResponse conceptResponse(Concept concept) {
+        return TxResponse.newBuilder().setConcept(convert(concept)).build();
+    }
+
+    public static TxResponse optionalConceptResponse(Optional<Concept> concept) {
+        return TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(concept)).build();
+    }
+
+    public static TxResponse conceptsResponse(Stream<? extends Concept> concepts) {
+        return TxResponse.newBuilder().setConcepts(convert(concepts)).build();
     }
 
     public static DeleteRequest deleteRequest(Open open) {
@@ -279,11 +327,11 @@ public class GrpcUtil {
         return GrpcConcept.Label.newBuilder().setValue(label.getValue()).build();
     }
 
-    static Label convert(GrpcConcept.Label label) {
+    public static Label convert(GrpcConcept.Label label) {
         return Label.of(label.getValue());
     }
 
-    static Object convert(AttributeValue value) {
+    public static Object convert(AttributeValue value) {
         switch (value.getValueCase()) {
             case STRING:
                 return value.getString();
@@ -328,7 +376,7 @@ public class GrpcUtil {
         return builder.build();
     }
 
-    static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
+    public static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
         switch (dataType) {
             case String:
                 return AttributeType.DataType.STRING;
@@ -410,20 +458,29 @@ public class GrpcUtil {
         }
     }
 
+    public static GrpcConcept.Pattern convert(Pattern pattern) {
+        return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
+    }
+
+    public static Pattern convert(GrpcConcept.Pattern pattern ) {
+        return Graql.parser().parsePattern(pattern.getValue());
+    }
+
     public static OptionalPattern convert(Optional<Pattern> pattern) {
         OptionalPattern.Builder builder = OptionalPattern.newBuilder();
-        return pattern.map(Pattern::toString).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+        return pattern.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
     }
 
     @Nullable
     public static Optional<Pattern> convert(OptionalPattern pattern) {
         switch (pattern.getValueCase()) {
             case PRESENT:
-                return Optional.of(Graql.parser().parsePattern(pattern.getPresent()));
+                return Optional.of(convert(pattern.getPresent()));
             case ABSENT:
+                return Optional.empty();
             case VALUE_NOT_SET:
             default:
-                return Optional.empty();
+                throw CommonUtil.unreachableStatement("Unrecognised " + pattern);
         }
     }
 
