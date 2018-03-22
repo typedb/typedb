@@ -60,7 +60,7 @@ abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph>
     abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
-    public synchronized Tx open(GraknTxType txType) {
+    final public synchronized Tx open(GraknTxType txType) {
         if (GraknTxType.BATCH.equals(txType)) {
             tinkerPopGraphWithTx.checkTxIsOpen();
             return batchTinkerPopGraphWithTx.openTx(txType);
@@ -73,7 +73,7 @@ abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph>
 
 
     @Override
-    public synchronized G getTinkerPopGraph(boolean batchLoading) {
+    final public synchronized G getTinkerPopGraph(boolean batchLoading) {
         if (batchLoading) {
             return batchTinkerPopGraphWithTx.getTinkerPopGraph();
         } else {
@@ -85,7 +85,7 @@ abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph>
     @CheckReturnValue(when = NEVER)
     protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
-    public EmbeddedGraknSession session() {
+    final public EmbeddedGraknSession session() {
         return session;
     }
 
