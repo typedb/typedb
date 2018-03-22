@@ -21,7 +21,6 @@ package ai.grakn.graql;
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -44,7 +43,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.Charsets;
-import rx.Observable;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
@@ -305,16 +303,14 @@ public class GraqlShell {
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
         AtomicInteger queriesExecuted = new AtomicInteger(0);
 
+        batchExecutorClient.onNext(queryResponse -> queriesExecuted.incrementAndGet());
+        batchExecutorClient.onError(System.err::println);
+
         FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
 
         try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
             Graql.parser().parseList(queryReader).forEach(query -> {
-                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
-
-                observable.subscribe(
-                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                    /* On error:   */ System.err::println
-                );
+                batchExecutorClient.add(query, keyspace);
             });
         }
 
