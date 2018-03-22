@@ -28,7 +28,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryBuilderImpl;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -45,7 +45,7 @@ import java.util.concurrent.locks.Lock;
  *     This internal factory is used to produce {@link GraknTx}s.
  *
  *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- *     {@link TxFactoryBuilderImpl}. This means that graphs produced from either factory pointing to the same keyspace
+ *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
  *     are actually the same graphs.
  * </p>
  *
@@ -71,7 +71,7 @@ public class EngineGraknTxFactory {
     //Should only be used for testing
     @VisibleForTesting
     public synchronized void refreshConnections(){
-        TxFactoryBuilderImpl.refresh();
+        GraknTxFactoryBuilder.refresh();
     }
 
 
@@ -92,7 +92,7 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, TxFactoryBuilderImpl.getInstance()));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, GraknTxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
