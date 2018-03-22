@@ -37,7 +37,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.grpc.GrpcClient;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -46,8 +46,6 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
-import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -205,7 +203,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethod.GET_SUPER_CONCEPTS);
+        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethods.GET_SUPER_CONCEPTS);
         return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 

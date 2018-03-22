@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.remote.RemoteGraknTx;
 
 import javax.annotation.Nullable;
@@ -45,7 +46,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        runVoidMethod(ConceptMethod.DELETE);
+        runVoidMethod(ConceptMethods.DELETE);
     }
 
     @Override

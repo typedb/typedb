@@ -36,7 +36,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -84,20 +83,10 @@ public final class GrpcClient implements AutoCloseable {
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
-        return new AbstractIterator<Object>() {
+        return new GraknGrpcIterator<Object>(GrpcClient.this, iteratorId) {
             @Override
-            protected Object computeNext() {
-                TxResponse response = GrpcClient.this.next(iteratorId);
-
-                switch (response.getResponseCase()) {
-                    case QUERYRESULT:
-                        return convert(response.getQueryResult());
-                    case DONE:
-                        return endOfData();
-                    default:
-                    case RESPONSE_NOT_SET:
-                        throw CommonUtil.unreachableStatement("Unexpected " + response);
-                }
+            protected Object getNextFromResponse(TxResponse response) {
+                return convert(response.getQueryResult());
             }
         };
     }
@@ -133,22 +122,10 @@ public final class GrpcClient implements AutoCloseable {
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
-        Iterable<Concept> iterable = () -> new AbstractIterator<Concept>() {
+        Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(GrpcClient.this, iteratorId) {
             @Override
-            protected Concept computeNext() {
-                communicator.send(GrpcUtil.nextRequest(iteratorId));
-
-                TxResponse response = responseOrThrow();
-
-                switch (response.getResponseCase()) {
-                    case CONCEPT:
-                        return conceptConverter.convert(response.getConcept());
-                    case DONE:
-                        return endOfData();
-                    default:
-                    case RESPONSE_NOT_SET:
-                        throw CommonUtil.unreachableStatement("Unexpected " + response);
-                }
+            protected Concept getNextFromResponse(TxResponse response) {
+                return conceptConverter.convert(response.getConcept());
             }
         };
 
@@ -247,4 +224,5 @@ public final class GrpcClient implements AutoCloseable {
 
         return new QueryAnswer(map.build());
     }
+
 }

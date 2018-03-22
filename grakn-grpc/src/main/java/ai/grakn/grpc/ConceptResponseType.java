@@ -26,8 +26,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.util.CommonUtil;
-import com.google.common.collect.AbstractIterator;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
@@ -66,14 +64,12 @@ abstract class ConceptResponseType<T> {
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS =
             ConceptResponseType.createStreamable(
-                    TxResponse.ResponseCase.CONCEPT,
                     (converter, response) -> converter.convert(response.getConcept()),
                     GrpcUtil::conceptResponse
             );
 
     public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS =
             ConceptResponseType.createStreamable(
-                    TxResponse.ResponseCase.ROLEPLAYER,
                     (converter, response) -> converter.convert(response.getRolePlayer()),
                     GrpcUtil::rolePlayerResponse
             );
@@ -135,7 +131,6 @@ abstract class ConceptResponseType<T> {
     }
 
     public static <T> ConceptResponseType<Stream<? extends T>> createStreamable(
-            TxResponse.ResponseCase responseCase,
             BiFunction<GrpcConceptConverter, TxResponse, T> getter,
             Function<T, TxResponse> setter
     ) {
@@ -143,20 +138,10 @@ abstract class ConceptResponseType<T> {
                 (converter, client, response) -> {
                     IteratorId iteratorId = response.getIteratorId();
 
-                    Iterable<T> iterable = () -> new AbstractIterator<T>() {
+                    Iterable<T> iterable = () -> new GraknGrpcIterator<T>(client, iteratorId) {
                         @Override
-                        protected T computeNext() {
-                            TxResponse response = client.next(iteratorId);
-
-                            TxResponse.ResponseCase getResponseCase = response.getResponseCase();
-
-                            if (getResponseCase == responseCase) {
-                                return getter.apply(converter, response);
-                            } else if (getResponseCase == TxResponse.ResponseCase.DONE) {
-                                return endOfData();
-                            } else {
-                                throw CommonUtil.unreachableStatement("Unexpected " + response);
-                            }
+                        protected T getNextFromResponse(TxResponse response) {
+                            return getter.apply(converter, response);
                         }
                     };
 
