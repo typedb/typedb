@@ -46,6 +46,7 @@ import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -525,6 +526,33 @@ public class InsertQueryTest {
         assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
         assertEquals(relationship.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
+    }
+
+    @Test
+    public void whenInsertingWithAMatch_ProjectMatchResultsOnVariablesInTheInsert() {
+        qb.define(
+                label("maybe-friends").relates("friend").sub("relationship"),
+                label("person").plays("friend")
+        ).execute();
+
+        InsertQuery query = qb.match(
+                var().rel("actor", x).rel("production-with-cast", z),
+                var().rel("actor", y).rel("production-with-cast", z)
+        ).insert(
+                w.rel("friend", x).rel("friend", y).isa("maybe-friends")
+        );
+
+        List<Answer> answers = query.execute();
+
+        for (Answer answer : answers) {
+            assertThat(
+                    "Should contain only variables mentioned in the insert (so excludes `$z`)",
+                    answer.vars(),
+                    containsInAnyOrder(x, y, w)
+            );
+        }
+
+        assertEquals("Should contain only distinct results", answers.size(), Sets.newHashSet(answers).size());
     }
 
     @Test(expected = Exception.class)
