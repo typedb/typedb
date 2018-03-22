@@ -48,4 +48,4 @@ After SSH tunnel creation, the Dashboard shall be accessible from your browser a
 
 If you want to learn more about Grakn KGMS, the Grakn Academy at https://dev.grakn.ai/academy/ is a good place to start.
 
-To learn more about running Grakn KGMS on GCP take a look at the [best practices guide](bestpractices.md) and [post deployment steps](postdeployment.md).
+To learn more about running Grakn KGMS on GCP take a look at the [best practices guide](best-practices.md) and [post deployment steps](post-deployment-steps.md).
