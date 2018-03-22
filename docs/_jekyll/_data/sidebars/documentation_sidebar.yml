@@ -23,6 +23,18 @@ entries:
       - title: Graql Console
         output: web
         url: /docs/get-started/graql-console
+  - title: Cloud Deployment
+    output: web
+    folderitems:
+      - title: Google Cloud deployment
+        output: web
+        url: /docs/cloud-deployment/gc-deployment
+      - title: Best Practices
+        output: web
+        url: /docs/cloud-deployment/best-practices
+      - title: Post deployment steps
+        output: web
+        url: /docs/cloud-deployment/post-deployment
   - title: Knowledge Model
     output: web
     folderitems:
