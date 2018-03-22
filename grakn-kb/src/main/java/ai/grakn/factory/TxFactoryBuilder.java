@@ -64,7 +64,7 @@ public abstract class TxFactoryBuilder {
      * @param session     The {@link GraknSession} creating this factory
      * @return A new factory bound to a specific keyspace
      */
-    protected static synchronized TxFactory<?> newFactory(String factoryType, EmbeddedGraknSession session) {
+    final protected static synchronized TxFactory<?> newFactory(String factoryType, EmbeddedGraknSession session) {
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
