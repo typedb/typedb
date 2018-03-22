@@ -3,7 +3,7 @@ title: Connected Components
 tags: [analytics]
 summary: "This page introduces the connected components algorithm and explains how to use it."
 sidebar: documentation_sidebar
-permalink: /docs/distributed-analytics/compute-connected-components
+permalink: /docs/distributed-analytics/compute-cluster
 folder: docs
 ---
 

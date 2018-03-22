@@ -8,20 +8,25 @@ permalink: /docs/distributed-analytics/compute-queries
 folder: docs
 ---
 
-A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the knowledge graph in parallel.
-Called within the Graql shell, the general syntax is:
+A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) 
+to determine information about the knowledge graph in parallel.
+Called within the Graql shell or dashboard, the general syntax is:
 
 ```graql-skip-test
-compute [algorithm] (arguments) (in subgraph); (modifiers;)
+compute [goal] [subgraph]; (using [strategy] where [modifiers];)
 ```
 
-* `algorithm` can be any of the available [statistics](#available-statistics-algorithms) or [graph](#available-graph-algorithms) algorithms.
-* `arguments` are different depending on the specific algorithm.
+* `goal` can be any of the available [statistics](#available-statistics-methods) 
+or [graph](#available-graph-queries) queries.
 * `subgraph` is a comma separated list of types to be visited by the Pregel algorithm.
-* `modifiers` some algorithms can have their output modified.
 
-The specific algorithms fall into two main categories and more information is given in the sections below.
-The simplest algorithm `count` can be executed using this query:
+Additionally, for graph queries
+
+* `strategy` is actual algorithm used
+* `modifiers` are different depending on the specific query and algorithm.
+
+The specific compute queries fall into two main categories and more information is given in the sections below.
+The simplest query `count` can be executed using the following:
 
 ```graql-skip-test
 compute count;
@@ -30,7 +35,7 @@ compute count;
 ## Subgraph
 
 The subgraph syntax is provided to control the types that a chosen algorithm operates upon.
-By default, the compute algorithms include instances of every type in the calculation.
+By default, the compute methods include instances of every type in the calculation.
 Using the `in` keyword followed by a comma separated list of types will restrict the calculations to instances of those types only.
 
 For example,
@@ -40,11 +45,11 @@ compute count in person;
 ```
 
 will return just the number of instances of the concept type person.
-Subgraphs can be applied to all compute queries and therefore are different to arguments and modifiers.
+Subgraphs can be applied to all compute queries and therefore are different to `strategy` and `modifiers`.
 
-## Available Statistics Algorithms
+## Available Statistics Methods
 
-The following algorithms are available to perform simple statistics compuations, and we aim to add to these as demand dictates. Please get
+The following methods are available to perform simple statistics compuations, and we aim to add to these as demand dictates. Please get
 in touch on our [discussion](https://discuss.grakn.ai/) page to request any features that are of particular interest
 to you. A summary of the statistics algorithms is given in the table below.
 
@@ -52,9 +57,9 @@ to you. A summary of the statistics algorithms is given in the table below.
 | ----------- | --------------------------------------------- |
 | [`count`](#count)     | Count the number of instances.                        |
 | [`max`](#maximum)    | Compute the maximum value of an attribute. |
+| [`min`](#minimum)    | Compute the minimum value of an attribute. |
 | [`mean`](#mean)    | Compute the mean value of an attribute.                           |
 | [`median`](#mean)    | Compute the median value of an attribute.                           |
-| [`min`](#minimum)    | Compute the minimum value of an attribute. |
 | [`std`](#standard-deviation)    | Compute the standard deviation of an attribute. |
 | [`sum`](#sum)    | Compute the sum of an attribute. |
 
@@ -79,18 +84,18 @@ compute mean of age in person;
 ```
 
 would compute the mean value of `age` across all instances of the type `person`.
-It is also possible to provide a set of resources.
+It is also possible to provide a set of attributes.
 
 ```graql-skip-test
 compute mean of attribute-a, attribute-b in person;
 ```
 
-which would compute the mean of the union of the instances of the two resources.
+which would compute the mean of the union of the instances of the two attributes, 
+given the two attribute types have the same data type.
 
 ### Median
 
-Computes the median value of a given attribute. This algorithm requires the [subgraph](#subgraph) syntax to be used.
-For example,
+Computes the median value of a given attribute, similar to [mean](#mean).
 
 ```graql-skip-test
 compute median of age in person;
@@ -131,28 +136,7 @@ Computes the sum of a given attribute, similar to [mean](#mean).
 compute sum of age in person;
 ```
 
-{% include warning.html content="When an instance has two resources of the same type attached, or two resources specified as arguments to the algorithm, statistics will include this by assuming there were two instances each with a single attribute." %}
-
-## Available Graph Algorithms
-
-The following algorithms all compute values based on the structure of the graph.
-A summary of the graph algorithms is given in the table below.
-
-| Algorithm | Description                                   |
-| ----------- | --------------------------------------------- |
-| [`cluster`](./compute-connected-components)     | Find connected clusters of instances.                        |
-| [`degrees`](./compute-degrees)    | Find the number of related instances to each instance in the graph. |
-| [`path`](./compute-shortest-path)    | Find the shortest path between two instances.                           |
-
-<!--
-For further information see the individual sections below.
-
-### Cluster
-
-### Degrees
-
-### Path
--->
+{% include warning.html content="When an instance has two attributes of the same type attached, or two attributes specified as arguments to the algorithm, statistics will include this by assuming there were two instances each with a single attribute." %}
 
 ## When to Use `aggregate` and When to Use `compute`
 
@@ -171,3 +155,24 @@ compute count of person;
 ```
 
 Compute queries can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.
+
+## Available Graph Queries
+
+The following algorithms all compute values based on the structure of the graph.
+A summary of the graph algorithms is given in the table below.
+
+| Algorithm | Description                                   |
+| ----------- | --------------------------------------------- |
+| [`cluster`](./compute-cluster)     | Find the clusters of instances.                        |
+| [`centrality`](./compute-centrality)    | Compute the centrality of each instance in the graph. |
+| [`path`](./compute-shortest-path)    | Find the shortest path(s) between two instances.                           |
+
+<!--
+For further information see the individual sections below.
+
+### Cluster
+
+### Degrees
+
+### Path
+-->

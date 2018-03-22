@@ -3,7 +3,7 @@ title: Degrees
 tags: [analytics]
 summary: "This page introduces the computation of degrees in a graph."
 sidebar: documentation_sidebar
-permalink: /docs/distributed-analytics/compute-degrees
+permalink: /docs/distributed-analytics/compute-centrality
 folder: docs
 ---
 

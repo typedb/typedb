@@ -20,10 +20,10 @@ framework and/or [map reduce](https://en.wikipedia.org/wiki/MapReduce) when we n
 
 The functionality breaks down into two main tasks:
 
-*  computing statistics related to numeric resources
-*  interrogating the structure of the knowledge graph.
+*  Statistics Query: computing statistics related to numeric resources
+*  Graph Query: interrogating the structure of the knowledge graph.
 
-### Statistics
+### Statistics Query
 
 Currently you can compute the `min`, `max`, `mean`, `median`, `std` (standard deviation) and `sum` of resources attached to entities. This
 can also be achieved on a subgraph, which is a subset of the types in your dataset. For example, you can specify queries to find the mean age of people in a knowledge graph:
@@ -34,12 +34,12 @@ compute mean of age in person;
 
 We cover this topic more in our documentation page on [statistics](./compute-statistics).
 
-### Graph Structure
+### Graph Query
 
-At the moment we have a simple algorithm for determining
+At the moment we support queries for determining
 
-* [centrality: degree, k-core (coreness)](./compute-degrees)
-* [clusters or communities: connected component, k-core](./compute-connected-components).
+* [centrality: degree, k-core (coreness)](./compute-centrality)
+* [clusters or communities: connected component, k-core](./compute-cluster).
 * [paths between nodes (shortest path)](./compute-shortest-path)
 
 ## The Knowledge Graph According to Analytics
