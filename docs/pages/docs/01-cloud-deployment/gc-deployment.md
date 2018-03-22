@@ -42,8 +42,6 @@ After executing the command the output should look like this:
 
 After SSH tunnel creation, the Dashboard shall be accessible from your browser at https://localhost:8443.
 
-//TODO graql/grakn console access
-
 ## Next Steps
 
 If you want to learn more about Grakn KGMS, the Grakn Academy at https://dev.grakn.ai/academy/ is a good place to start.
