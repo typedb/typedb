@@ -34,17 +34,20 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
  * Container class for storing and manipulating queue configuration.
- * NB: Redis allows for multiple value params hence we need a map of lists.
+ * NB:
+ * - Redis allows for multiple value params hence we need a map of lists.
+ * - Redis data dir must already exist when starting redis
  *
  * @author Kasper Piskorski
  */
 public class QueueConfig extends ProcessConfig<List<Object>>{
 
     private static final String CONFIG_PARAM_PREFIX = "queue.internal.";
-    private static final String DB_DIR_PARAM = "dir";
-    private static final String LOG_DIR_PARAM = "logfile";
     private static final String LOG_FILE = "grakn-queue.log";
     private static final String DATA_SUBDIR = "redis/";
+
+    private static final String DB_DIR_CONFIG_KEY = "dir";
+    private static final String LOG_DIR_CONFIG_KEY = "logfile";
 
     private static final String RECORD_SEPARATOR = "\n";
     private static final String KEY_VALUE_SEPARATOR = " ";
@@ -95,8 +98,8 @@ public class QueueConfig extends ProcessConfig<List<Object>>{
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
 
         ImmutableMap<String, List<Object>> dirParams = ImmutableMap.of(
-                DB_DIR_PARAM, Collections.singletonList(dbDir + DATA_SUBDIR),
-                LOG_DIR_PARAM, Collections.singletonList(getAbsoluteLogPath(config))
+                DB_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
+                LOG_DIR_CONFIG_KEY, Collections.singletonList(getAbsoluteLogPath(config))
         );
         return new QueueConfig(this.updateParamsFromMap(dirParams));
     }

@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
 import ai.grakn.engine.controller.response.Concept;
@@ -108,7 +108,8 @@ public class ConceptControllerTest {
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, config);
+        factory = EngineGraknTxFactory.create(mockLockProvider, config, GraknKeyspaceStoreFake.of());
+        factory.keyspaceStore().loadSystemSchema();
         new ConceptController(factory, new MetricRegistry()).start(spark);
     });
     @ClassRule
