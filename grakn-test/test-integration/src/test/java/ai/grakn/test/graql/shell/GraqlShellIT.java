@@ -346,7 +346,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(GraknTestUtil.usingTinker());
 
-        String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
+        String[] result = runShellWithoutErrors("define E sub entity;\nrollback\nmatch $x label E; get;\n").split("\n");
 
         // Make sure there are no results for get query
         assertEquals(">>> match $x label E; get;", result[result.length-2]);
@@ -387,7 +387,7 @@ public class GraqlShellIT {
         assumeFalse(GraknTestUtil.usingTinker());
 
         String result = runShellWithoutErrors(
-                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity; get;\n"
+                "define entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity; get;\n"
         );
         String[] lines = result.split("\n");
 
