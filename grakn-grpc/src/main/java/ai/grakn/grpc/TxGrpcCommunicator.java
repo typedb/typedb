@@ -82,7 +82,11 @@ public class TxGrpcCommunicator implements AutoCloseable {
      * Block until a response is returned.
      */
     public Response receive() throws InterruptedException {
-        return responses.poll();
+        Response response = responses.poll();
+        if (response.type() != Response.Type.OK) {
+            close();
+        }
+        return response;
     }
 
     @Override
