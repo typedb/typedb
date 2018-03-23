@@ -93,7 +93,7 @@ public class GraqlShellOptions {
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
-        return new GraqlShellOptions(additionalOptions, cmd);
+        return new GraqlShellOptions(options, cmd);
     }
 
     public CommandLine cmd() {
