@@ -83,7 +83,7 @@ public final class GrpcClient implements AutoCloseable {
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
-        return new GraknGrpcIterator<Object>(GrpcClient.this, iteratorId) {
+        return new GraknGrpcIterator<Object>(this, iteratorId) {
             @Override
             protected Object getNextFromResponse(TxResponse response) {
                 return convert(response.getQueryResult());
@@ -122,7 +122,7 @@ public final class GrpcClient implements AutoCloseable {
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
-        Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(GrpcClient.this, iteratorId) {
+        Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(this, iteratorId) {
             @Override
             protected Concept getNextFromResponse(TxResponse response) {
                 return conceptConverter.convert(response.getConcept());

@@ -65,16 +65,14 @@ import java.util.stream.StreamSupport;
  */
 final class RemoteQueryRunner implements QueryRunner {
 
-    private final RemoteGraknTx tx;
     private final GrpcClient client;
 
-    private RemoteQueryRunner(RemoteGraknTx tx, GrpcClient client) {
-        this.tx = tx;
+    private RemoteQueryRunner(GrpcClient client) {
         this.client = client;
     }
 
-    public static RemoteQueryRunner create(RemoteGraknTx tx, GrpcClient client) {
-        return new RemoteQueryRunner(tx, client);
+    public static RemoteQueryRunner create(GrpcClient client) {
+        return new RemoteQueryRunner(client);
     }
 
     @Override
