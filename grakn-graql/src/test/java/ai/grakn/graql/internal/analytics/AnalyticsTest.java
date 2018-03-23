@@ -40,7 +40,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -137,11 +136,11 @@ public class AnalyticsTest {
         queryList.add("compute centrality; using k-core;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
-        Set<?> result = queryList.parallelStream().map(query -> {
+        List<?> result = queryList.parallelStream().map(query -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().parse(query).execute();
+                return graph.graql().parse(query).execute().toString();
             }
-        }).collect(Collectors.toSet());
+        }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());
     }
 
