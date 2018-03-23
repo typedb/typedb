@@ -22,11 +22,12 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
-import ai.grakn.test.rule.DistributionContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
@@ -74,10 +75,8 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
+    public static final EngineContext engine = EngineContext.create();
     private static InputStream trueIn;
-    private static PrintStream trueOut;
-    private static PrintStream trueErr;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
@@ -89,11 +88,6 @@ public class GraqlShellIT {
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
-        trueOut = System.out;
-        trueErr = System.err;
-
-        // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestUtil.usingJanus());
     }
 
     @Before
@@ -104,8 +98,6 @@ public class GraqlShellIT {
     @AfterClass
     public static void resetIO() {
         System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
     }
 
     @Test
@@ -395,7 +387,7 @@ public class GraqlShellIT {
         assumeFalse(GraknTestUtil.usingTinker());
 
         String result = runShellWithoutErrors(
-                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
+                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity; get;\n"
         );
         String[] lines = result.split("\n");
 
@@ -662,7 +654,7 @@ public class GraqlShellIT {
     }
 
     private ShellResponse runShell(String input, String... args) throws Exception {
-        args = specifyUniqueKeyspace(args);
+        args = addKeyspaceAndUriParams(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
@@ -674,8 +666,8 @@ public class GraqlShellIT {
 
         if (showStdOutAndErr) {
             // Intercept stdout and stderr, but make sure it is still printed using the TeeOutputStream
-            tout = new TeeOutputStream(bout, trueOut);
-            terr = new TeeOutputStream(berr, trueErr);
+            tout = new TeeOutputStream(bout, System.out);
+            terr = new TeeOutputStream(berr, System.err);
         }
 
         PrintStream out = new PrintStream(tout);
@@ -685,17 +677,12 @@ public class GraqlShellIT {
         GraknConfig config = GraknConfig.create();
 
         try {
-            System.out.flush();
-            System.err.flush();
             System.setIn(in);
-            System.setOut(out);
-            System.setErr(err);
 
             GraqlShellOptions options = GraqlShellOptions.create(args);
 
-            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile);
+            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile, out, err);
         } catch (Exception e) {
-            System.setErr(trueErr);
             e.printStackTrace();
             err.flush();
             fail(berr.toString());
@@ -712,7 +699,7 @@ public class GraqlShellIT {
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
-    private String[] specifyUniqueKeyspace(String[] args) {
+    private String[] addKeyspaceAndUriParams(String[] args) {
         List<String> argList = Lists.newArrayList(args);
 
         int keyspaceIndex = argList.indexOf("-k") + 1;
@@ -723,6 +710,14 @@ public class GraqlShellIT {
         }
 
         argList.set(keyspaceIndex, argList.get(keyspaceIndex) + keyspaceSuffix);
+
+        boolean uriSpecified = argList.contains("-r");
+        if (!uriSpecified) {
+            argList.add("-r");
+            boolean isBatchLoading = argList.contains("-b");
+            SimpleURI uri = isBatchLoading ? engine.uri() : engine.grpcUri();
+            argList.add(uri.toString());
+        }
 
         return argList.toArray(new String[argList.size()]);
     }
