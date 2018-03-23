@@ -40,7 +40,6 @@ import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
@@ -70,7 +69,7 @@ import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
 import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
 import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
 import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
-import static ai.grakn.grpc.GrpcUtil.convert;
+import static ai.grakn.grpc.GrpcUtil.convertOptionalConcept;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -235,15 +234,15 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(convert(concept)).build();
-        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(Optional.of(concept))).build();
 
         server.setResponse(GrpcUtil.getConceptRequest(ID), response);
 
         assertFalse(entity.isDeleted());
 
         TxResponse nullResponse =
-                TxResponse.newBuilder().setConceptResponse(ConceptResponse.getDefaultInstance()).build();
+                TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(Optional.empty())).build();
 
         server.setResponse(GrpcUtil.getConceptRequest(ID), nullResponse);
 

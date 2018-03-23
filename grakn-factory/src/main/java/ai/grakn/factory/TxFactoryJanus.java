@@ -78,7 +78,6 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     private static final String STORAGE_BATCH_LOADING = "storage.batch-loading";
     private static final String STORAGE_REPLICATION_FACTOR = "storage.cassandra.replication-factor";
 
-
     //These properties are loaded in by default and can optionally be overwritten
     static final Properties DEFAULT_PROPERTIES;
     static {
