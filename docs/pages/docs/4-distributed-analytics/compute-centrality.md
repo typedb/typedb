@@ -60,6 +60,8 @@ compute centrality; using k-core;
 
 Similar to degree, a map is returned.
 
+{% include note.html content="Relationship instances will NOT have coreness." %}
+
 Additionally, if we only care about the entities that have higher coreness, we can set the minimum value of k,
 using the following command:
 
@@ -69,7 +71,7 @@ compute centrality; using degree where min-k = 10;
 
 So the result map will only include entities with coreness greater than or equal to 10. 
 
-{% include note.html content="Relationship instances will NOT have coreness." %}
+{% include note.html content="k value can not be smaller than 2" %}
 
 ## Centrality within a subgraph
 
