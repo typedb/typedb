@@ -28,7 +28,8 @@ import java.util.Set;
 
 class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
-    private long k = -1L;
+    private long k = 2L;
+    private boolean kIsSet = false;
 
     KCoreQueryImpl(Optional<GraknTx> tx) {
         super(tx);
@@ -41,6 +42,7 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
     @Override
     public final KCoreQuery kValue(long kValue) {
+        kIsSet = true;
         k = kValue;
         return this;
     }
@@ -58,7 +60,7 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
     @Override
     String graqlString() {
         String string = super.graqlString();
-        if (k != -1) {
+        if (kIsSet) {
             string += " where k = ";
             string += k;
         }
@@ -75,7 +77,7 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
         KCoreQueryImpl that = (KCoreQueryImpl) o;
 
-        return k == that.k;
+        return kIsSet == that.kIsSet && k == that.k;
     }
 
     @Override
