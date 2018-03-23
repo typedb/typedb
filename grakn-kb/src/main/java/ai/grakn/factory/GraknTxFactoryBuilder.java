@@ -21,6 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -37,6 +38,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GraknTxFactoryBuilder extends TxFactoryBuilder {
 
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
+
+    //This is used to map grakn value properties into the underlying properties
+    private static final Map<String, String> factoryMapper = ImmutableMap.of(
+            "in-memory", "ai.grakn.factory.TxFactoryTinker",
+            "production", "ai.grakn.factory.TxFactoryJanus",
+            "distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
 
     private static TxFactoryBuilder instance = null;
 

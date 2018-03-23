@@ -41,19 +41,19 @@ import static javax.annotation.meta.When.NEVER;
  * @param <G>  A vendor implementation of a Tinkerpop {@link Graph}
  * @author fppt
  */
-abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
+public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
     private final EmbeddedGraknSession session;
 
     protected final GraphWithTx batchTinkerPopGraphWithTx = new GraphWithTx(true);
     protected final GraphWithTx tinkerPopGraphWithTx = new GraphWithTx(false);
 
-    TxFactoryAbstract(EmbeddedGraknSession session) {
+    protected TxFactoryAbstract(EmbeddedGraknSession session) {
         this.session = session;
     }
 
-    abstract Tx buildGraknTxFromTinkerGraph(G graph);
+    protected abstract Tx buildGraknTxFromTinkerGraph(G graph);
 
-    abstract G buildTinkerPopGraph(boolean batchLoading);
+    protected abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
     final public synchronized Tx open(GraknTxType txType) {
