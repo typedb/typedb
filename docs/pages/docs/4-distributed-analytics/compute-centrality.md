@@ -66,7 +66,7 @@ Additionally, if we only care about the entities that have higher coreness, we c
 using the following command:
 
 ```graql
-compute centrality; using degree where min-k = 10;
+compute centrality; using k-core where min-k = 10;
 ```
 
 So the result map will only include entities with coreness greater than or equal to 10. 
