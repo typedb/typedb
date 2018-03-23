@@ -109,7 +109,7 @@ so the result map would only contain these types.
 
 Another example:
 
-```graql
+```graql-test-ignore
 compute centrality of cat, dog in man, cat, dog, mans-best-friend; using k-core;
 ```
 
