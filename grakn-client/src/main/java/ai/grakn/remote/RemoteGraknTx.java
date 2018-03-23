@@ -34,14 +34,10 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;
@@ -54,17 +50,10 @@ import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
-import static ai.grakn.util.Schema.MetaSchema.ROLE;
-import static ai.grakn.util.Schema.MetaSchema.RULE;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
@@ -101,54 +90,39 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, ENTITY);
+        return client().putEntityType(label).asEntityType();
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        return putSchemaConcept(label, ATTRIBUTE, var -> var.datatype(dataType));
+        return client().putAttributeType(label, dataType).asAttributeType();
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, RULE, var -> var.when(when).then(then));
+        return client().putRule(label, when, then).asRule();
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putSchemaConcept(label, RELATIONSHIP);
+        return client().putRelationshipType(label).asRelationshipType();
     }
 
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, ROLE);
-    }
-
-    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta){
-        return putSchemaConcept(label, meta, null);
-    }
-
-    private <X extends SchemaConcept> X putSchemaConcept(Label label, Schema.MetaSchema meta,
-                                                   @Nullable Function<VarPattern, VarPattern> extender){
-        Var var = var("x");
-        VarPattern pattern = var.label(label).sub(var().label(meta.getLabel()));
-        if(extender != null) pattern = extender.apply(pattern);
-        return (X) queryRunner().run(Graql.define(pattern)).get(var);
+        return client().putRole(label).asRole();
     }
 
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        Var var = var("x");
-        VarPattern pattern = var.id(id);
-        Optional<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var))).findAny();
-        return answer.map(answer1 -> (T) answer1.get(var)).orElse(null);
+        return (T) client().getConcept(id).orElse(null);
     }
 
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return getSchemaConcept(label, null);
+        return (T) client().getSchemaConcept(label).orElse(null);
     }
 
     @Nullable
@@ -159,49 +133,37 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        Var var = var("x");
-        VarPattern pattern = var.val(value);
-        Stream<Answer> answer = queryRunner().run(Graql.match(pattern).get(ImmutableSet.of(var)));
-        return answer.map(a -> (Attribute<V>) a.get(var)).collect(Collectors.toList());
+        return client().getAttributesByValue(value).map(Concept::<V>asAttribute).collect(toImmutableSet());
     }
 
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        return getSchemaConcept(Label.of(label), ENTITY);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        return getSchemaConcept(Label.of(label), RELATIONSHIP);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), ATTRIBUTE);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), ROLE);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), RULE);
-    }
-
-    @Nullable
-    private <X extends SchemaConcept> X getSchemaConcept(Label label, @Nullable Schema.MetaSchema meta){
-        Var var = var("x");
-        VarPattern pattern = var.label(label);
-        if(meta != null) pattern = pattern.sub(var().label(meta.getLabel()));
-        Optional<Answer> result = queryRunner().run(Graql.match(pattern).get()).findAny();
-        return result.map(answer -> (X) answer.get(var)).orElse(null);
+        return getSchemaConcept(Label.of(label));
     }
 
     @Override
@@ -242,10 +204,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Var me = var("me");
-        Var target = var("target");
-        GetQuery query = graql().match(me.id(schemaConcept.getId()), me.sub(target)).get();
-        return query.stream().map(answer -> answer.get(target).asSchemaConcept());
+        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethod.GET_SUPER_CONCEPTS);
+        return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 
     @Override

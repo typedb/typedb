@@ -16,41 +16,25 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.shell;
+package ai.grakn.graql.shell;
 
-import ai.grakn.graql.Autocomplete;
 import jline.console.completer.Completer;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
- * An autocompleter for Graql.
- * Provides a default 'complete' method that will filter results to only those that pass the Graql lexer
+ * Completer that complete Graql shell commands
  *
  * @author Felix Chapman
  */
-public class GraqlCompleter implements Completer {
-
-    private final CompletableFuture<Set<String>> types = new CompletableFuture<>();
-
-    public void setTypes(Set<String> types) {
-        this.types.complete(types);
-    }
+public class ShellCommandCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Set<String> theTypes;
-        try {
-            theTypes = types.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        GraqlShell.COMMANDS.stream()
+                .filter(command -> command.startsWith(buffer))
+                .forEach(candidates::add);
 
-        Autocomplete autocomplete = Autocomplete.create(theTypes, buffer, cursor);
-        candidates.addAll(autocomplete.getCandidates());
-        return autocomplete.getCursorPosition();
+        return 0;
     }
 }

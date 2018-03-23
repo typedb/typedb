@@ -23,6 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -61,17 +63,30 @@ public class PostProcessingTask implements BackgroundTask{
 
     @Override
     public void run() {
-        Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
-        kespaces.forEach(keyspace -> {
-            String index;
-            int limit = 0;
-            do{
-                 index = indexPostProcessor.popIndex(keyspace);
-                 final String i = index;
-                 if(index != null) threadPool.schedule(() -> processIndex(keyspace, i), postprocessingDelay, TimeUnit.SECONDS);
-                 limit++;
-            } while(index != null && limit < postProcessingMaxJobs);
-        });
+        UUID executionId = UUID.randomUUID();
+        LOG.info("starting post-processing task with ID '" + executionId + "' ... ");
+        GraknKeyspaceStore keyspaceStore = factory.keyspaceStore();
+        if (keyspaceStore != null) {
+            keyspaceStore.keyspaces().forEach(keyspace -> runPostProcessing(executionId, keyspace));
+            LOG.info("post-processing task with ID " + executionId + "finished.");
+        } else {
+            LOG.info("post-processing " + executionId + ": waiting for system keyspace to be ready.");
+        }
+    }
+
+    private void runPostProcessing(UUID executionId, Keyspace keyspace) {
+        String index;
+        int limit = 0;
+        do {
+            index = indexPostProcessor.popIndex(keyspace);
+            LOG.info("post-processing '" + executionId + "': working on keyspace '" + keyspace.getValue() +
+                    "'. The index to be post-processed is '" + index + "'");
+            final String i = index;
+            if (index != null) {
+                threadPool.schedule(() -> processIndex(keyspace, i, executionId), postprocessingDelay, TimeUnit.SECONDS);
+            }
+            limit++;
+        } while (index != null && limit < postProcessingMaxJobs);
     }
 
     /**
@@ -80,24 +95,30 @@ public class PostProcessingTask implements BackgroundTask{
      *
      * @param keyspace The {@link Keyspace} requiring post processing for a specific index
      * @param index the index to be post processed
+     * @param executionId execution id of the post-processing.
      */
-    public void processIndex(Keyspace keyspace, String index){
+    private void processIndex(Keyspace keyspace, String index, UUID executionId){
         Set<ConceptId> ids = indexPostProcessor.popIds(keyspace, index);
-
         //No need to post process if another engine has beaten you to doing it
-        if(ids.isEmpty()) return;
+        if(ids.isEmpty()) {
+            LOG.info("post-processing '" + executionId + "': there " + ids.size() + " concept ids to post-process.");
+            return;
+        }
+
+        LOG.info("post-processing '" + executionId + "': processing " + ids.size() + " concept ids...");
 
         try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)){
             indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
         } catch (RuntimeException e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
-            LOG.error(String.format("Error during post processing index {%s} with ids {%s}", index, stringIds), e);
+            LOG.error(String.format("post-processing '" + executionId + "': Error during post processing index {%s} with ids {%s}", index, stringIds), e);
         }
     }
 
     @Override
     public void close(){
+        LOG.info("post-processing is shutting down.");
         threadPool.shutdown();
     }
 

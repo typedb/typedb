@@ -23,11 +23,10 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -42,22 +41,22 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        return asInstance(insert(TARGET.isa(ME)));
+        return asInstance(runMethod(ConceptMethod.ADD_RELATIONSHIP));
     }
 
     @Override
     public final Stream<Role> relates() {
-        return query(ME.relates(TARGET)).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_RELATED_ROLES).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
-        return define(role, ME.relates(TARGET));
+        return runVoidMethod(ConceptMethod.setRelatedRole(role));
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        return undefine(role, ME.relates(TARGET));
+        return runVoidMethod(ConceptMethod.unsetRelatedRole(role));
     }
 
     @Override
@@ -66,13 +65,12 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     }
 
     @Override
-    protected final Relationship asInstance(Concept concept) {
-        return concept.asRelationship();
+    final boolean isSelf(Concept concept) {
+        return concept.isRelationshipType();
     }
 
-    @Nonnull
     @Override
-    public RelationshipType sup() {
-        return Objects.requireNonNull(super.sup());
+    protected final Relationship asInstance(Concept concept) {
+        return concept.asRelationship();
     }
 }

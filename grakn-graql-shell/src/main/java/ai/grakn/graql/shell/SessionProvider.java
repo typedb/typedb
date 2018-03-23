@@ -16,26 +16,19 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.shell;
+package ai.grakn.graql.shell;
 
-import ai.grakn.graql.GraqlShell;
-import jline.console.completer.Completer;
+import ai.grakn.GraknSession;
+import jline.console.ConsoleReader;
 
-import java.util.List;
 
 /**
- * Completer that complete Graql shell commands
+ * Classes implementing this inferace will create new GraknSession from Terminal options
  *
- * @author Felix Chapman
+ * @author marcoscoppetta
  */
-public class ShellCommandCompleter implements Completer {
 
-    @Override
-    public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        GraqlShell.COMMANDS.stream()
-                .filter(command -> command.startsWith(buffer))
-                .forEach(candidates::add);
+public interface SessionProvider {
 
-        return 0;
-    }
+    GraknSession getSession(GraqlShellOptions options, ConsoleReader console);
 }

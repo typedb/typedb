@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.bootup.config;
 
 import ai.grakn.engine.GraknConfig;
 import java.io.IOException;
@@ -29,9 +29,9 @@ import java.nio.file.Path;
  *
  * @author Kasper Piskorski
  */
-public class StorageConfigProcessor {
+public class ConfigProcessor {
 
-    public static String getYamlStringFromFile(Path configPath){
+    public static String getConfigStringFromFile(Path configPath){
         try {
             byte[] bytes = Files.readAllBytes(configPath);
             return new String(bytes, StandardCharsets.UTF_8);
@@ -40,21 +40,32 @@ public class StorageConfigProcessor {
         }
     }
 
-    public static void saveYamlStringToFile(String yamlString, Path configPath){
+    public static void saveConfigStringToFile(String configString, Path configPath){
         try {
-            Files.write(configPath, yamlString.getBytes(StandardCharsets.UTF_8));
+            Files.write(configPath, configString.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void updateConfigFromGraknConfig(Path storageConfigPath, GraknConfig graknConfig) {
-        String yamlString = getYamlStringFromFile(storageConfigPath);
-
-        String updatedYamlString = StorageConfig.of(yamlString)
+    public static void updateStorageConfig(){
+        GraknConfig graknConfig = Configs.graknConfig();
+        String updatedStorageConfigString = Configs.storageConfig()
                 .updateFromConfig(graknConfig)
-                .toYamlString();
+                .toConfigString();
+        saveConfigStringToFile(updatedStorageConfigString, Configs.storageConfigPath());
+    }
 
-        saveYamlStringToFile(updatedYamlString, storageConfigPath);
+    public static void updateQueueConfig(){
+        GraknConfig graknConfig = Configs.graknConfig();
+        String updatedQueueConfigString = Configs.queueConfig()
+                .updateFromConfig(graknConfig)
+                .toConfigString();
+        saveConfigStringToFile(updatedQueueConfigString, Configs.queueConfigPath());
+    }
+
+    public static void updateProcessConfigs() {
+        updateStorageConfig();
+        updateQueueConfig();
     }
 }

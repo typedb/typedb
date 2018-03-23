@@ -26,10 +26,8 @@ import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.Optional;
 
 /**
  * @author Felix Chapman
@@ -45,39 +43,31 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
     @Override
     public final AttributeType<D> setRegex(@Nullable String regex) {
-        if (regex == null) {
-            String oldRegex = getRegex();
-            if (oldRegex != null) {
-                undefine(ME.regex(oldRegex));
-            }
-        } else {
-            define(ME.regex(regex));
-        }
-        return asSelf(this);
+        return runVoidMethod(ConceptMethod.setRegex(Optional.ofNullable(regex)));
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        return asInstance(insert(TARGET.val(value).isa(ME)));
+        return asInstance(runMethod(ConceptMethod.putAttribute(value)));
     }
 
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        Stream<Concept> concepts = query(TARGET.val(value).isa(ME));
-        return concepts.findAny().map(this::asInstance).orElse(null);
+        Optional<Concept> concept = runMethod(ConceptMethod.getAttribute(value));
+        return concept.map(Concept::<D>asAttribute).orElse(null);
     }
 
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        return (AttributeType.DataType<D>) runNullableMethod(ConceptMethod.GET_DATA_TYPE);
+        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE_OF_TYPE).orElse(null);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        return runNullableMethod(ConceptMethod.GET_REGEX);
+        return runMethod(ConceptMethod.GET_REGEX).orElse(null);
     }
 
     @Override
@@ -86,13 +76,12 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     }
 
     @Override
-    protected final Attribute<D> asInstance(Concept concept) {
-        return concept.asAttribute();
+    final boolean isSelf(Concept concept) {
+        return concept.isAttributeType();
     }
 
-    @Nonnull
     @Override
-    public AttributeType<D> sup() {
-        return Objects.requireNonNull(super.sup());
+    protected final Attribute<D> asInstance(Concept concept) {
+        return concept.asAttribute();
     }
 }

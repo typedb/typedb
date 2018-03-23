@@ -21,11 +21,16 @@ package ai.grakn.test.rule;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreImpl;
+import ai.grakn.engine.GraknSystemKeyspaceSession;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -33,8 +38,11 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.GrpcGraknService;
 import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
+import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexStorage;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
@@ -82,16 +90,24 @@ public class EngineContext extends CompositeTestRule {
     private JedisPool jedisPool;
     private Service spark;
 
-    private final TestRule redis;
+    private final InMemoryRedisContext redis;
+
+    public GraknKeyspaceStore systemKeyspace() {
+        return graknKeyspaceStore;
+    }
+
+    private GraknKeyspaceStore graknKeyspaceStore;
+
+    public EngineGraknTxFactory factory() { return engineGraknTxFactory; }
+
+    private EngineGraknTxFactory engineGraknTxFactory;
 
     private EngineContext(){
         config = createTestConfig();
-        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-        int redisPort = redisURI.getPort();
-        redis = InMemoryRedisContext.create(redisPort);
+        redis = InMemoryRedisContext.create();
     }
 
-    private EngineContext(GraknConfig config, TestRule redis){
+    private EngineContext(GraknConfig config, InMemoryRedisContext redis){
         this.config = config;
         this.redis = redis;
     }
@@ -99,7 +115,7 @@ public class EngineContext extends CompositeTestRule {
     public static EngineContext create(GraknConfig config){
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
-        TestRule redis = InMemoryRedisContext.create(redisPort);
+        InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
         return new EngineContext(config, redis);
     }
 
@@ -145,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.create(randomKeyspace(), uri());
+        return EmbeddedGraknSession.create(randomKeyspace(), uri().toString());
     }
 
     @Override
@@ -182,10 +198,11 @@ public class EngineContext extends CompositeTestRule {
         setRestAssuredUri(config);
 
         spark = Service.ignite();
+
+        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + redis.port()));
         RedisWrapper redis = RedisWrapper.create(config);
 
-        server = createGraknEngineServer(redis);
-        server.start();
+        server = startGraknEngineServer(redis);
 
         LOG.info("engine started on " + uri());
     }
@@ -201,7 +218,7 @@ public class EngineContext extends CompositeTestRule {
                 LOG.info("stopping engine...");
 
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-                clearGraphs(server);
+                clearGraphs(engineGraknTxFactory);
                 server.close();
 
                 LOG.info("engine stopped.");
@@ -215,10 +232,10 @@ public class EngineContext extends CompositeTestRule {
         }
     }
 
-    private static void clearGraphs(GraknEngineServer server) {
+    private static void clearGraphs(EngineGraknTxFactory factory) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = factory.tx(GraknKeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().getValue().toString());
@@ -226,10 +243,10 @@ public class EngineContext extends CompositeTestRule {
         }
 
         keyspaceNames.forEach(name -> {
-            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
+            GraknTx graph = factory.tx(Keyspace.of(name), GraknTxType.WRITE);
             graph.admin().delete();
         });
-        server.factory().refreshConnections();
+        factory.refreshConnections();
     }
 
     private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
@@ -256,9 +273,7 @@ public class EngineContext extends CompositeTestRule {
     public static GraknConfig createTestConfig() {
         GraknConfig config = GraknConfig.create();
 
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
-        config.setConfigProperty(GraknConfigKey.GRPC_PORT, GraknTestUtil.getEphemeralPort());
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;
     }
@@ -271,19 +286,45 @@ public class EngineContext extends CompositeTestRule {
         return jedisPool;
     }
 
-    private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
+    private GraknEngineServer startGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
         EngineID id = EngineID.me();
         GraknEngineStatus status = new GraknEngineStatus();
+
         MetricRegistry metricRegistry = new MetricRegistry();
+
+        // distributed locks
+        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
+
+        // tx-factory
+        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
+
+        // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
-        int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
+        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
+        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor)).build();
+
+        Server server = ServerBuilder.forPort(0).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
-        return GraknEngineServerFactory.createGraknEngineServer(id, spark, status, metricRegistry, config, redisWrapper,
-                indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory, grpcServer);
+        GraknTestUtil.allocateSparkPort(config);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
+
+        GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(id, config, status,
+                spark, Collections.emptyList(), grpcServer,
+                engineGraknTxFactory, metricRegistry,
+                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
+
+        graknEngineServer.start();
+
+        // Read the automatically allocated ports and write them back into the config
+        config.setConfigProperty(GraknConfigKey.GRPC_PORT, server.getPort());
+
+        return graknEngineServer;
     }
+
 }

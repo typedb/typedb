@@ -28,8 +28,6 @@ import ai.grakn.grpc.ConceptMethod;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-
 /**
  * @author Felix Chapman
  *
@@ -40,31 +38,27 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        if (isAbstract) {
-            return define(ME.isAbstract());
-        } else {
-            return undefine(ME.isAbstract());
-        }
+        return runVoidMethod(ConceptMethod.setAbstract(isAbstract));
     }
 
     @Override
     public final Self plays(Role role) throws GraknTxOperationException {
-        return define(role, ME.plays(TARGET));
+        return runVoidMethod(ConceptMethod.setRolePlayedByType(role));
     }
 
     @Override
     public final Self key(AttributeType attributeType) throws GraknTxOperationException {
-        return define(ME.key(var().label(attributeType.getLabel())));
+        return runVoidMethod(ConceptMethod.setKeyType(attributeType));
     }
 
     @Override
     public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
-        return define(ME.has(var().label(attributeType.getLabel())));
+        return runVoidMethod(ConceptMethod.setAttributeType(attributeType));
     }
 
     @Override
     public final Stream<Role> plays() {
-        return query(ME.plays(TARGET)).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_TYPE).map(Concept::asRole);
     }
 
     @Override
@@ -79,7 +73,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Instance> instances() {
-        return query(TARGET.isa(ME)).map(this::asInstance);
+        return runMethod(ConceptMethod.GET_INSTANCES).map(this::asInstance);
     }
 
     @Override
@@ -89,17 +83,17 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self deletePlays(Role role) {
-        return undefine(role, ME.plays(TARGET));
+        return runVoidMethod(ConceptMethod.unsetRolePlayedByType(role));
     }
 
     @Override
     public final Self deleteAttribute(AttributeType attributeType) {
-        return undefine(ME.has(var().label(attributeType.getLabel())));
+        return runVoidMethod(ConceptMethod.unsetAttributeType(attributeType));
     }
 
     @Override
     public final Self deleteKey(AttributeType attributeType) {
-        return undefine(ME.key(var().label(attributeType.getLabel())));
+        return runVoidMethod(ConceptMethod.unsetKeyType(attributeType));
     }
 
     protected abstract Instance asInstance(Concept concept);

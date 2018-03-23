@@ -27,7 +27,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 
+import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -44,14 +46,19 @@ abstract class ConceptResponseType<T> {
     public static final ConceptResponseType<Boolean> BOOL =
             ConceptResponseType.create(ConceptResponse::getBool, ConceptResponse.Builder::setBool);
 
-    public static final ConceptResponseType<Pattern> PATTERN = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getPattern()),
-            (builder, val) -> builder.setPattern(GrpcUtil.convert(val))
+    public static final ConceptResponseType<Optional<Pattern>> OPTIONAL_PATTERN = ConceptResponseType.create(
+            response -> GrpcUtil.convert(response.getOptionalPattern()),
+            (builder, val) -> builder.setOptionalPattern(GrpcUtil.convert(val))
     );
 
     public static final ConceptResponseType<Concept> CONCEPT = ConceptResponseType.create(
             (converter, response) -> converter.convert(response.getConcept()),
             (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
+    );
+
+    public static final ConceptResponseType<Optional<Concept>> OPTIONAL_CONCEPT = ConceptResponseType.create(
+            (converter, response) -> converter.convert(response.getOptionalConcept()),
+            (builder, val) -> builder.setOptionalConcept(GrpcUtil.convertOptionalConcept(val))
     );
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS = ConceptResponseType.create(
@@ -68,6 +75,12 @@ abstract class ConceptResponseType<T> {
             response -> GrpcUtil.convert(response.getDataType()),
             (builder, val) -> builder.setDataType(GrpcUtil.convert(val))
     );
+
+    public static final ConceptResponseType<Optional<AttributeType.DataType<?>>> OPTIONAL_DATA_TYPE =
+            ConceptResponseType.create(
+                    response -> GrpcUtil.convert(response.getOptionalDataType()),
+                    (builder, val) -> builder.setOptionalDataType(GrpcUtil.convertOptionalDataType(val))
+            );
 
     public static final ConceptResponseType<Object> ATTRIBUTE_VALUE = ConceptResponseType.create(
             response -> GrpcUtil.convert(response.getAttributeValue()),
@@ -87,9 +100,15 @@ abstract class ConceptResponseType<T> {
             (builder, val) -> builder.setUnit(GrpcConcept.Unit.getDefaultInstance())
     );
 
-    public abstract T get(GrpcConceptConverter converter , ConceptResponse conceptResponse);
+    public static final ConceptResponseType<Optional<String>> OPTIONAL_REGEX = ConceptResponseType.create(
+            response -> GrpcUtil.convert(response.getOptionalRegex()),
+            (builder, val) -> builder.setOptionalRegex(GrpcUtil.convertRegex(val))
+    );
 
-    public abstract void set(ConceptResponse.Builder builder, T value);
+    @Nullable
+    public abstract T get(GrpcConceptConverter converter, ConceptResponse conceptResponse);
+
+    public abstract void set(ConceptResponse.Builder builder, @Nullable T value);
 
     public static <T> ConceptResponseType<T> create(
             Function<ConceptResponse, T> getter,
@@ -109,7 +128,7 @@ abstract class ConceptResponseType<T> {
             }
 
             @Override
-            public void set(ConceptResponse.Builder builder, T value) {
+            public void set(ConceptResponse.Builder builder, @Nullable T value) {
                 setter.accept(builder, value);
             }
         };

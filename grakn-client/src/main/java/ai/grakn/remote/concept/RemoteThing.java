@@ -21,27 +21,13 @@ package ai.grakn.remote.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.grpc.ConceptMethod;
-import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import java.util.Set;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
@@ -58,20 +44,18 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        Stream<Concept> concepts;
-        if (roles.length != 0) {
-            Var roleVar = var("role");
-            Set<VarPattern> patterns = Stream.of(roles).map(role -> roleVar.label(role.getLabel())).collect(toSet());
-            concepts = query(TARGET.rel(roleVar, ME), or(patterns));
+        ConceptMethod<Stream<? extends Concept>> method;
+        if (roles.length == 0) {
+            method = ConceptMethod.GET_RELATIONSHIPS;
         } else {
-            concepts = query(TARGET.rel(ME));
+            method = ConceptMethod.getRelationshipsByRoles(roles);
         }
-        return concepts.map(Concept::asRelationship);
+        return runMethod(method).map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        return query(var().rel(TARGET, ME)).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
     }
 
     @Override
@@ -82,48 +66,38 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        return insert(attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET)).asRelationship();
+        return runMethod(ConceptMethod.setAttribute(attribute)).asRelationship();
     }
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        Stream<Label> attributeTypeLabels;
-        if (attributeTypes.length > 0) {
-            attributeTypeLabels = Stream.of(attributeTypes).map(SchemaConcept::getLabel);
+        ConceptMethod<Stream<? extends Concept>> method;
+
+        if (attributeTypes.length == 0) {
+            method = ConceptMethod.GET_ATTRIBUTES;
         } else {
-            attributeTypeLabels = Stream.of(Schema.MetaSchema.ATTRIBUTE.getLabel());
+            method = ConceptMethod.getAttributesByTypes(attributeTypes);
         }
 
-        Set<VarPattern> patterns = attributeTypeLabels.map(label -> ME.has(label, TARGET)).collect(toImmutableSet());
-
-        return query(or(patterns)).map(Concept::asAttribute);
+        return runMethod(method).map(Concept::asAttribute);
     }
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        // Cheat by looking up allowed keys
-        // TODO: don't cheat
-        Set<AttributeType> keys;
-        Set<AttributeType> allowedKeys = type().keys().collect(toSet());
+        ConceptMethod<Stream<? extends Concept>> method;
 
-        if (attributeTypes.length > 0) {
-            keys = Sets.intersection(allowedKeys, ImmutableSet.copyOf(attributeTypes));
+        if (attributeTypes.length == 0) {
+            method = ConceptMethod.GET_KEYS;
         } else {
-            keys = allowedKeys;
+            method = ConceptMethod.getKeysByTypes(attributeTypes);
         }
 
-        return attributes(keys.toArray(new AttributeType[keys.size()]));
+        return runMethod(method).map(Concept::asAttribute);
     }
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        Match match = tx().graql().match(me(), attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET));
-        match.delete(TARGET).execute();
-        return asSelf(this);
+        return runVoidMethod(ConceptMethod.unsetAttribute(attribute));
     }
 
     @Override

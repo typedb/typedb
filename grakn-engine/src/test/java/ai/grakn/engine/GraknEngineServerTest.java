@@ -20,6 +20,9 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.data.QueueSanityCheck;
+import ai.grakn.engine.data.RedisSanityCheck;
+import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -27,9 +30,12 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.GrpcGraknService;
 import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
+import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexStorage;
 import ai.grakn.engine.task.postprocessing.PostProcessingTask;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
@@ -55,6 +61,7 @@ import redis.clients.util.Pool;
 import spark.Service;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
@@ -87,6 +94,7 @@ public class GraknEngineServerTest {
     Service spark = Service.ignite();
     RedisWrapper mockRedisWrapper = mock(RedisWrapper.class);
     Jedis mockJedis = mock(Jedis.class);
+    private GraknKeyspaceStore graknKeyspaceStore;
 
     @Before
     public void setUp() {
@@ -109,15 +117,15 @@ public class GraknEngineServerTest {
         redisServer.start();
 
         try {
-            try (GraknEngineServer server = createGraknEngineServer(RedisWrapper.create(config))) {
+            try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
                 server.start();
-                assertNotNull(server.factory().systemKeyspace());
+                assertNotNull(graknKeyspaceStore);
 
                 // init a random keyspace
                 String keyspaceName = "thisisarandomwhalekeyspace";
-                server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
+                graknKeyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
 
-                assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
+                assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
             }
         } finally {
             redisServer.stop();
@@ -178,19 +186,40 @@ public class GraknEngineServerTest {
         verify(mockJedis, never()).set(eq(VERSION_KEY), any());
     }
 
-    private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
-        EngineID id = EngineID.me();
+    private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) {
+        // grakn engine configuration
+        EngineID engineId = EngineID.me();
         GraknEngineStatus status = new GraknEngineStatus();
+
         MetricRegistry metricRegistry = new MetricRegistry();
+
+        // distributed locks
+        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+
+        graknKeyspaceStore = GraknKeyspaceStoreFake.of();
+
+        // tx-factory
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
+
+        // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
+        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+
+        // http services: spark, http controller, and gRPC server
+        Service sparkHttp = Service.ignite();
+        Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor)).build();
+        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
-        return GraknEngineServerFactory.createGraknEngineServer(id, spark, status, metricRegistry, config, redisWrapper,
-                indexStorage, countStorage, lockProvider, Runtime.getRuntime(), Collections.emptyList(), engineGraknTxFactory, grpcServer);
+        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
+        return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
+                sparkHttp, httpControllers, grpcServer,
+                engineGraknTxFactory, metricRegistry,
+                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }
 }

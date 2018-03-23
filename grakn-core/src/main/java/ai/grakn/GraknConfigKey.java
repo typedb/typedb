@@ -79,12 +79,13 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
     public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
+    public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
 
     public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("redis.sentinel.host", CSV);
+    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);
     public static final GraknConfigKey<String> REDIS_BIND = key("bind");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("redis.sentinel.master");
-    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
+    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("queue.sentinel.master");
+    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("queue.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 
@@ -98,7 +99,6 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");
     public static final GraknConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
     public static final GraknConfigKey<String> DATA_DIR = key("data-dir");
-
     public static final GraknConfigKey<String> LOG_DIR = key("log.dirs");
 
     public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =

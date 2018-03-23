@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.template;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
 import org.junit.Test;
@@ -777,6 +778,18 @@ public class TemplateParserTest {
         String template = "insert $this has name <name[2]>;";
         String expected = "insert $this0 has name \"Alex\";";
         assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void whenParsingAMalformedTemplate_Throw() {
+        // There is an extra `)` at the end
+        String template = "for( <cars>) do { insert $x isa car has car_inventory_id <car_inventory_id>);}";
+
+        Map<String, Object> data = ImmutableMap.of("cars", ImmutableList.of(ImmutableMap.of("car_inventory_id", 1)));
+
+        exception.expect(GraqlSyntaxException.class);
+
+        Graql.parser().parseTemplate(template, data);
     }
 
     private void assertParseContains(String template, Map<String, Object> data, String... expected){

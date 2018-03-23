@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
@@ -100,7 +101,8 @@ public class GraqlControllerTest {
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
+                .create(mockLockProvider, GraknConfig.create(), GraknKeyspaceStoreFake.of());
+        factory.keyspaceStore().loadSystemSchema();
         new GraqlController(factory, mock(PostProcessor.class), printer, new MetricRegistry()).start(spark);
     });
 
@@ -128,7 +130,7 @@ public class GraqlControllerTest {
         assertEquals(expectedInstances, instances);
     }
 
-    //TODO: THis test should be improved
+    //TODO: This test should be improved
     @Test
     public void whenExecutingExplainQuery_responseIsValid() {
         String keyspace = genealogyKB.tx().keyspace().getValue();
@@ -165,7 +167,6 @@ public class GraqlControllerTest {
         String queryString = single + "\n" + single;
         Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
         resp.then().statusCode(200);
-        sampleKB.rollback();
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
         String graqlResult = printer.graqlString(query.map(Query::execute).collect(
                 Collectors.toList()));

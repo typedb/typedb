@@ -23,7 +23,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
 import ai.grakn.engine.controller.response.Root;
@@ -91,12 +91,12 @@ public class SystemController implements HttpController {
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
-    private final SystemKeyspace systemKeyspace;
+    private final GraknKeyspaceStore graknKeyspaceStore;
     private final GraknConfig config;
 
-    public SystemController(GraknConfig config, SystemKeyspace systemKeyspace,
+    public SystemController(GraknConfig config, GraknKeyspaceStore graknKeyspaceStore,
                             GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
-        this.systemKeyspace = systemKeyspace;
+        this.graknKeyspaceStore = graknKeyspaceStore;
         this.config = config;
 
         this.graknEngineStatus = graknEngineStatus;
@@ -170,7 +170,7 @@ public class SystemController implements HttpController {
     @Path(REST.WebPath.KB)
     private String getKeyspaces(Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
-        Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
+        Set<Keyspace> keyspaces = graknKeyspaceStore.keyspaces().stream().
                 map(Keyspace::of).
                 collect(Collectors.toSet());
         return objectMapper.writeValueAsString(Keyspaces.of(keyspaces));
@@ -182,7 +182,7 @@ public class SystemController implements HttpController {
         response.type(APPLICATION_JSON);
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
-        if (systemKeyspace.containsKeyspace(keyspace)) {
+        if (graknKeyspaceStore.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
             return objectMapper.writeValueAsString(Keyspace.of(keyspace));
         } else {
@@ -195,7 +195,7 @@ public class SystemController implements HttpController {
     @Path("/kb/{keyspace}")
     private String putKeyspace(Request request, Response response) throws JsonProcessingException {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        systemKeyspace.openKeyspace(keyspace);
+        graknKeyspaceStore.addKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
         response.type(APPLICATION_JSON);
         return objectMapper.writeValueAsString(config);
@@ -205,7 +205,7 @@ public class SystemController implements HttpController {
     @Path("/kb/{keyspace}")
     private boolean deleteKeyspace(Request request, Response response) {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
+        boolean deletionComplete = graknKeyspaceStore.deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);
             response.status(HttpServletResponse.SC_NO_CONTENT);

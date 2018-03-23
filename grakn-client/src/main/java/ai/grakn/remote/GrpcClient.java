@@ -18,9 +18,12 @@
 
 package ai.grakn.remote;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -46,6 +49,8 @@ import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -111,6 +116,46 @@ public final class GrpcClient implements AutoCloseable {
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
         communicator.send(GrpcUtil.runConceptMethodRequest(id, conceptMethod));
         return conceptMethod.get(conceptConverter, responseOrThrow());
+    }
+
+    public Optional<Concept> getConcept(ConceptId id) {
+        communicator.send(GrpcUtil.getConceptRequest(id));
+        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+    }
+
+    public Optional<Concept> getSchemaConcept(Label label) {
+        communicator.send(GrpcUtil.getSchemaConceptRequest(label));
+        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+    }
+
+    public Stream<? extends Concept> getAttributesByValue(Object value) {
+        communicator.send(GrpcUtil.getAttributesByValueRequest(value));
+        return GrpcUtil.convert(conceptConverter, responseOrThrow().getConcepts());
+    }
+
+    public Concept putEntityType(Label label) {
+        communicator.send(GrpcUtil.putEntityTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRelationshipType(Label label) {
+        communicator.send(GrpcUtil.putRelationshipTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+        communicator.send(GrpcUtil.putAttributeTypeRequest(label, dataType));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRole(Label label) {
+        communicator.send(GrpcUtil.putRoleRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRule(Label label, Pattern when, Pattern then) {
+        communicator.send(GrpcUtil.putRuleRequest(label, when, then));
+        return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     @Override

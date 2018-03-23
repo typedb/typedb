@@ -18,12 +18,12 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
@@ -42,7 +42,7 @@ public class GrpcOpenRequestExecutorImpl implements GrpcOpenRequestExecutor {
     }
 
     @Override
-    public GraknTx execute(Open request) {
+    public EmbeddedGraknTx<?> execute(Open request) {
         Keyspace keyspace = GrpcUtil.getKeyspace(request);
         GraknTxType txType = GrpcUtil.getTxType(request);
         return txFactory.tx(keyspace, txType);

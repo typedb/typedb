@@ -43,13 +43,13 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Nullable
     @Override
     public final Pattern getWhen() {
-        return runNullableMethod(ConceptMethod.GET_WHEN);
+        return runMethod(ConceptMethod.GET_WHEN).orElse(null);
     }
 
     @Nullable
     @Override
     public final Pattern getThen() {
-        return runNullableMethod(ConceptMethod.GET_THEN);
+        return runMethod(ConceptMethod.GET_THEN).orElse(null);
     }
 
     @Override
@@ -65,5 +65,10 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Override
     final Rule asSelf(Concept concept) {
         return concept.asRule();
+    }
+
+    @Override
+    final boolean isSelf(Concept concept) {
+        return concept.isRule();
     }
 }

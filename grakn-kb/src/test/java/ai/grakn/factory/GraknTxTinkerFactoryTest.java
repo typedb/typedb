@@ -71,22 +71,22 @@ public class GraknTxTinkerFactoryTest {
     }
 
     @Test
-    public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
-        GraknTx graph1 = tinkerGraphFactory.open(GraknTxType.WRITE);
-        TinkerGraph tinkerGraph1 = ((GraknTxTinker) graph1).getTinkerPopGraph();
-        graph1.close();
-        GraknTx graph1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
-        graph1_copy.close();
+    public void whenBuildingTxFromTheSameFactory_ReturnSingletonGraphs(){
+        GraknTx tx1 = tinkerGraphFactory.open(GraknTxType.WRITE);
+        TinkerGraph tinkerGraph1 = ((GraknTxTinker) tx1).getTinkerPopGraph();
+        tx1.close();
+        GraknTx tx1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
+        tx1_copy.close();
 
-        GraknTx graph2 = tinkerGraphFactory.open(GraknTxType.BATCH);
-        TinkerGraph tinkerGraph2 = ((GraknTxTinker) graph2).getTinkerPopGraph();
-        graph2.close();
-        GraknTx graph2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
+        GraknTx tx2 = tinkerGraphFactory.open(GraknTxType.BATCH);
+        TinkerGraph tinkerGraph2 = ((GraknTxTinker) tx2).getTinkerPopGraph();
+        tx2.close();
+        GraknTx tx2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
 
-        assertEquals(graph1, graph1_copy);
-        assertEquals(graph2, graph2_copy);
+        assertEquals(tx1, tx1_copy);
+        assertEquals(tx2, tx2_copy);
 
-        assertNotEquals(graph1, graph2);
+        assertNotEquals(tx1, tx2);
         assertEquals(tinkerGraph1, tinkerGraph2);
     }
 

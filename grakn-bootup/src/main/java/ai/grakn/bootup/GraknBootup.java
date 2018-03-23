@@ -19,6 +19,7 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.config.ConfigProcessor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 
@@ -35,13 +36,13 @@ import java.util.Scanner;
  */
 public class GraknBootup {
 
-    private static final String GRAKN = "grakn";
+    private static final String ENGINE = "engine";
     private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
     private final StorageProcess storageProcess;
     private final QueueProcess queueProcess;
-    private final GraknProcess graknProcess;
+    private final EngineProcess engineProcess;
 
     /**
      * Invocation from bash script 'grakn'
@@ -65,7 +66,7 @@ public class GraknBootup {
     }
 
     private static void assertConfigurationCorrect(Path homeStatic, Path configStatic) {
-        if (!homeStatic.resolve(GRAKN).toFile().exists()) {
+        if (!homeStatic.resolve("grakn").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!configStatic.toFile().exists()) {
@@ -77,8 +78,7 @@ public class GraknBootup {
         return new GraknBootup(
                 new StorageProcess(homePathFolder, configPath),
                 new QueueProcess(homePathFolder),
-                new GraknProcess(homePathFolder, configPath)
-        );
+                new EngineProcess(homePathFolder, configPath));
     }
 
     public void run(String[] args) {
@@ -109,10 +109,10 @@ public class GraknBootup {
         }
     }
 
-    public GraknBootup(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public GraknBootup(StorageProcess storageProcess, QueueProcess queueProcess, EngineProcess engineProcess) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
-        this.graknProcess = graknProcess;
+        this.engineProcess = engineProcess;
     }
 
     private void version() {
@@ -154,7 +154,7 @@ public class GraknBootup {
     private void clean() {
         boolean storage = storageProcess.isRunning();
         boolean queue = queueProcess.isRunning();
-        boolean grakn = graknProcess.isRunning();
+        boolean grakn = engineProcess.isRunning();
         if(storage || queue || grakn) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
@@ -168,13 +168,13 @@ public class GraknBootup {
         }
         storageProcess.clean();
         queueProcess.clean();
-        graknProcess.clean();
+        engineProcess.clean();
     }
 
     private void serverStop(String arg) {
         switch (arg) {
-            case GRAKN:
-                graknProcess.stop();
+            case ENGINE:
+                engineProcess.stop();
                 break;
             case QUEUE:
                 queueProcess.stop();
@@ -183,7 +183,7 @@ public class GraknBootup {
                 storageProcess.stop();
                 break;
             default:
-                graknProcess.stop();
+                engineProcess.stop();
                 queueProcess.stop();
                 storageProcess.stop();
         }
@@ -191,9 +191,9 @@ public class GraknBootup {
 
     private void serverStart(String arg) {
         switch (arg) {
-            case GRAKN:
+            case ENGINE:
                 try {
-                    graknProcess.start();
+                    engineProcess.start();
                 } catch (ProcessNotStartedException e) {
                     // DO NOTHING
                 }
@@ -214,9 +214,10 @@ public class GraknBootup {
                 break;
             default:
                 try {
+                    ConfigProcessor.updateProcessConfigs();
                     storageProcess.start();
                     queueProcess.start();
-                    graknProcess.start();
+                    engineProcess.start();
                 } catch (ProcessNotStartedException e) {
                     System.out.println("Please run 'grakn server status' or check the logs located under 'logs' directory.");
                 }
@@ -227,8 +228,8 @@ public class GraknBootup {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
-                "start [grakn|queue|storage]  Start Grakn (or optionally, only one of the component)\n" +
-                "stop [grakn|queue|storage]   Stop Grakn (or optionally, only one of the component)\n" +
+                "start ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]  Start Grakn (or optionally, only one of the component)\n" +
+                "stop ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
                 "status                         Check if Grakn is running\n" +
                 "clean                          DANGEROUS: wipe data completely\n" +
                 "\n" +
@@ -240,13 +241,13 @@ public class GraknBootup {
     private void serverStatus(String verboseFlag) {
         storageProcess.status();
         queueProcess.status();
-        graknProcess.status();
+        engineProcess.status();
 
         if(verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
             storageProcess.statusVerbose();
             queueProcess.statusVerbose();
-            graknProcess.statusVerbose();
+            engineProcess.statusVerbose();
         }
     }
 
