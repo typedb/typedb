@@ -80,6 +80,8 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
     public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
+    public static final GraknConfigKey<String> STORAGE_USERNAME = key("storage.username", STRING);
+    public static final GraknConfigKey<String> STORAGE_PASSWORD = key("storage.password", STRING);
 
     public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
     public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);

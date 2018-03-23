@@ -31,17 +31,17 @@ import java.util.Map;
 
 /**
  * <p>
- *     A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
+ * A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
  * </p>
- *
  * <p>
- *     This produces a graph on top of {@link HadoopGraph}.
- *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
- *     With this vendor some exceptions are in places:
- *     1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
- *     {@link HadoopGraph}.
- *     2. This factory primarily exists as a means of producing a
- *     {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
+ * <p>
+ * This produces a graph on top of {@link HadoopGraph}.
+ * The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
+ * With this vendor some exceptions are in places:
+ * 1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
+ * {@link HadoopGraph}.
+ * 2. This factory primarily exists as a means of producing a
+ * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
  * </p>
  *
  * @author fppt
@@ -61,19 +61,25 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
         String inputKeyspaceConf = "cassandra.input.keyspace";
         String keyspaceConf = "storage.cassandra.keyspace";
         String hostnameConf = "storage.hostname";
+        String usernameConf = "storage.username";
+        String passwordConf = "storage.password";
 
         // Values
         String keyspaceValue = session.keyspace().getValue();
         String hostnameValue = session.config().getProperty(GraknConfigKey.STORAGE_HOSTNAME);
+        String usernameValue = session.config().getProperty(GraknConfigKey.STORAGE_USERNAME);
+        String passwordValue = session.config().getProperty(GraknConfigKey.STORAGE_PASSWORD);
 
         // build override map
-        return ImmutableMap.of(
-                mrPrefixConf + keyspaceConf, keyspaceValue,
-                mrPrefixConf + hostnameConf, hostnameValue,
-                graphMrPrefixConf + hostnameConf, hostnameValue,
-                graphMrPrefixConf + keyspaceConf, keyspaceValue,
-                inputKeyspaceConf, keyspaceValue
-        );
+        return ImmutableMap.<String, String>builder()
+                .put(mrPrefixConf + keyspaceConf, keyspaceValue)
+                .put(mrPrefixConf + hostnameConf, hostnameValue)
+                .put(graphMrPrefixConf + hostnameConf, hostnameValue)
+                .put(graphMrPrefixConf + keyspaceConf, keyspaceValue)
+                .put(inputKeyspaceConf, keyspaceValue)
+                .put(graphMrPrefixConf + usernameConf, usernameValue)
+                .put(graphMrPrefixConf + passwordConf, passwordValue)
+                .build();
     }
 
     TxFactoryJanusHadoop(EmbeddedGraknSession session) {
@@ -93,7 +99,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
 
         //Load Defaults
         TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
-            if(!session().config().properties().containsKey(key)){
+            if (!session().config().properties().containsKey(key)) {
                 session().config().properties().put(key, value);
             }
         });
