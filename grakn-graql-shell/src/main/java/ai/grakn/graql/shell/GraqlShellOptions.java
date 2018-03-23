@@ -96,6 +96,10 @@ public class GraqlShellOptions {
         return new GraqlShellOptions(additionalOptions, cmd);
     }
 
+    public CommandLine cmd() {
+        return cmd;
+    }
+
     public void printUsage() {
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
