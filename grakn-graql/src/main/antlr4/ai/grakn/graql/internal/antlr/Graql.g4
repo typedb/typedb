@@ -30,7 +30,7 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' 'using k-core' ('where' 'min-k' '=' INTEGER ';')?;
+coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' 'using k-core' ('where' 'min-k' '=' INTEGER)? ';';
 degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' 'using degree' ';';
 connectedComponent    : CLUSTER            ('in' inList)? ';' 'using connected-component' ('where' ccParam+)? ';';
 kCore                 : CLUSTER            ('in' inList)? ';' 'using k-core'              ('where' kcParam+)? ';';
