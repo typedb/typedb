@@ -75,6 +75,9 @@ public class TxGrpcCommunicator implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(TxRequest request) {
+        if (responses.terminated.get()) {
+            throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+        }
         requests.onNext(request);
     }
 
