@@ -731,16 +731,13 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenSendingStopBeforeQuery_Throw() throws Throwable {
+    public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(stopRequest(IteratorId.getDefaultInstance()));
-
-            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
-
-            throw tx.receive().error();
+            assertEquals(GrpcUtil.doneResponse(), tx.receive().ok());
         }
     }
 

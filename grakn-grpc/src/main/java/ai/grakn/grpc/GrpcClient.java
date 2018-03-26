@@ -58,7 +58,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Felix Chapman
  */
-public final class GrpcClient implements AutoCloseable {
+public class GrpcClient implements AutoCloseable {
 
     private final GrpcConceptConverter conceptConverter;
     private final TxGrpcCommunicator communicator;
