@@ -51,7 +51,7 @@ public class GraknTxTinker extends EmbeddedGraknTx<TinkerGraph> {
     }
 
     @Override
-    public boolean isSessionClosed() {
+    public boolean isTinkerPopGraphClosed() {
         return !rootGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 

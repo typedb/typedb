@@ -23,6 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.SystemKeyspaceSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 /**
@@ -39,7 +40,7 @@ public class GraknSystemKeyspaceSession implements SystemKeyspaceSession {
     private final EmbeddedGraknSession session;
 
     public GraknSystemKeyspaceSession(GraknConfig config) {
-        session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, engineURI(config), config);
+        session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, engineURI(config), config, GraknTxFactoryBuilder.getInstance());
     }
 
     @Override

@@ -224,7 +224,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         return !txCache().isTxOpen();
     }
 
-    public abstract boolean isSessionClosed();
+    public abstract boolean isTinkerPopGraphClosed();
 
     @Override
     public GraknTxType txType() {

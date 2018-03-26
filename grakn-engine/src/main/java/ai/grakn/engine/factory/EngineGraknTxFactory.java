@@ -28,7 +28,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -42,11 +42,11 @@ import java.util.concurrent.locks.Lock;
  * </p>
  * <p>
  * <p>
- * This internal factory is used to produce {@link GraknTx}s.
- * <p>
- * It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- * {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
- * are actually the same graphs.
+ *     This internal factory is used to produce {@link GraknTx}s.
+ *
+ *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
+ *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
+ *     are actually the same graphs.
  * </p>
  *
  * @author fppt
@@ -70,8 +70,8 @@ public class EngineGraknTxFactory {
 
     //Should only be used for testing
     @VisibleForTesting
-    public synchronized void refreshConnections() {
-        FactoryBuilder.refresh();
+    public synchronized void refreshConnections(){
+        GraknTxFactoryBuilder.refresh();
     }
 
 
@@ -90,9 +90,9 @@ public class EngineGraknTxFactory {
      * @param keyspace The {@link Keyspace} of the {@link GraknSession} to retrieve
      * @return a new or existing {@link GraknSession} connecting to the provided {@link Keyspace}
      */
-    private EmbeddedGraknSession session(Keyspace keyspace) {
-        if (!openedSessions.containsKey(keyspace)) {
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig));
+    private EmbeddedGraknSession session(Keyspace keyspace){
+        if(!openedSessions.containsKey(keyspace)){
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, GraknTxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
