@@ -79,8 +79,9 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     private static final String STORAGE_BATCH_LOADING = GraknConfigKey.STORAGE_BATCH_LOADING.name();
     private static final String STORAGE_REPLICATION_FACTOR = GraknConfigKey.STORAGE_REPLICATION_FACTOR.name();
 
+
     //These properties are loaded in by default and can optionally be overwritten
-    static final Properties DEFAULT_PROPERTIES;
+    private static final Properties DEFAULT_PROPERTIES;
     static {
         String DEFAULT_CONFIG = "default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
@@ -90,6 +91,10 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
+    }
+
+    public static Properties getDefaultProperties() {
+        return DEFAULT_PROPERTIES;
     }
 
     /**
@@ -121,12 +126,12 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
+    protected GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
         return new GraknTxJanus(session(), graph);
     }
 
     @Override
-    JanusGraph buildTinkerPopGraph(boolean batchLoading) {
+    protected JanusGraph buildTinkerPopGraph(boolean batchLoading) {
         return newJanusGraph(batchLoading);
     }
 

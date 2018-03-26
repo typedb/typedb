@@ -21,12 +21,10 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknSession;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 
 
 /**
@@ -50,14 +48,7 @@ public abstract class TxFactoryBuilder {
     static final String IN_MEMORY = "in-memory";
     private static final Logger LOG = LoggerFactory.getLogger(GraknTxFactoryBuilder.class);
 
-    //This is used to map grakn value properties into the underlying properties
-    protected static final Map<String, String> factoryMapper = ImmutableMap.of(
-            "in-memory", "ai.grakn.factory.TxFactoryTinker",
-            "production", "ai.grakn.factory.TxFactoryJanus",
-            "distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
-
     public abstract TxFactory<?> getFactory(EmbeddedGraknSession session, boolean isComputerFactory);
-
 
     /**
      * @param factoryType The type of the factory to initialise. Any factory which implements {@link TxFactory}

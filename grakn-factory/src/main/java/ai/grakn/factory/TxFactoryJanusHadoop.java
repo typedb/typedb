@@ -83,16 +83,16 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
     }
 
     @Override
-    EmbeddedGraknTx<HadoopGraph> buildGraknTxFromTinkerGraph(HadoopGraph graph) {
+    protected EmbeddedGraknTx<HadoopGraph> buildGraknTxFromTinkerGraph(HadoopGraph graph) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_TX.getMessage(HadoopGraph.class.getName()));
     }
 
     @Override
-    HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
+    protected HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("Hadoop graph ignores parameter address [" + session().uri() + "]");
 
         //Load Defaults
-        TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
+        TxFactoryJanus.getDefaultProperties().forEach((key, value) -> {
             if(!session().config().properties().containsKey(key)){
                 session().config().properties().put(key, value);
             }
