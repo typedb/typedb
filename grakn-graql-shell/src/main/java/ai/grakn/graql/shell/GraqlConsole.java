@@ -74,7 +74,7 @@ public class GraqlConsole {
 
         // Print usage message if requested or if invalid arguments provided
         if (options.displayHelp()) {
-            GraqlShellOptions.printUsage(sout);
+            options.printUsage(sout);
             return true;
         }
 
