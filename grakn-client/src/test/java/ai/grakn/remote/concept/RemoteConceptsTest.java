@@ -44,6 +44,7 @@ import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
@@ -450,17 +451,23 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        Stream<RolePlayer> expected = Stream.of(
+        Stream<RolePlayer> mockedResponse = Stream.of(
                 RolePlayer.create(foo, a),
                 RolePlayer.create(bar, b),
                 RolePlayer.create(bar, c)
         );
 
-        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), expected);
+        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), mockedResponse);
 
         server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
+
+        Map<Role, Set<Thing>> expected = ImmutableMap.of(
+                foo, ImmutableSet.of(a),
+                bar, ImmutableSet.of(b, c)
+        );
+
         assertEquals(expected, allRolePlayers);
     }
 
