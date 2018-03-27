@@ -318,7 +318,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
-        return query -> query.members(visitBool(ctx.bool()));
+        return query -> visitBool(ctx.bool()) ? query.membersOn() : query.membersOff();
     }
 
     @Override

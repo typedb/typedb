@@ -44,10 +44,16 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * Return the instances in each cluster after executing the query. By default, the size of each cluster is
      * returned after executing the query.
      *
-     * @param isMembersSet whether this query will return the members of each cluster
      * @return a ConnectedComponentQuery with members flag set
      */
-    ConnectedComponentQuery<Map<String, Set<String>>> members(boolean isMembersSet);
+    ConnectedComponentQuery<Map<String, Set<String>>> membersOn();
+
+    /**
+     * Return the size of each cluster after executing the query.
+     *
+     * @return a ConnectedComponentQuery with members flag set
+     */
+    ConnectedComponentQuery<Map<String, Long>> membersOff();
 
     /**
      * Get whether this query will return the members of each cluster.
