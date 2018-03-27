@@ -32,6 +32,7 @@ import jline.console.completer.AggregateCompleter;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -105,6 +106,7 @@ public class GraqlShell implements AutoCloseable {
     private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
+    private final PrintStream serr;
 
     private final HistoryFile historyFile;
 
@@ -116,7 +118,6 @@ public class GraqlShell implements AutoCloseable {
     private final ExternalEditor editor = ExternalEditor.create();
 
 
-
     public static String loadQuery(Path filePath) throws IOException {
         List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
         return lines.stream().collect(joining("\n"));
@@ -125,11 +126,17 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Create a new Graql shell
      */
-    public GraqlShell(String historyFilename, GraknSession session, ConsoleReader console, OutputFormat outputFormat, boolean infer) throws IOException {
+    public GraqlShell(
+            String historyFilename, GraknSession session, ConsoleReader console, PrintStream serr,
+            OutputFormat outputFormat, boolean infer
+
+    ) throws IOException {
+
         this.outputFormat = outputFormat;
         this.infer = infer;
         this.console = console;
         this.session = session;
+        this.serr = serr;
         this.graqlCompleter = GraqlCompleter.create(session);
         this.historyFile = HistoryFile.create(console, historyFilename);
 
@@ -218,7 +225,7 @@ public class GraqlShell implements AutoCloseable {
                 try {
                     queryString = loadQuery(path);
                 } catch (IOException e) {
-                    System.err.println(e.toString());
+                    serr.println(e.toString());
                     errorOccurred = true;
                     continue;
                 }
@@ -291,7 +298,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             runnable.run();
         } catch (GraknException e) {
-            System.err.println(e.getMessage());
+            serr.println(e.getMessage());
             errorOccurred = true;
             reopenTx();
         }

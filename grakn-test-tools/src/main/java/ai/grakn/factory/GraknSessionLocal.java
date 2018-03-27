@@ -45,7 +45,7 @@ public class GraknSessionLocal extends EmbeddedGraknSession {
     private final static File JANUS_CONFIG_FILE = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/conf/test/janus/grakn.properties").toFile();
 
     private GraknSessionLocal(Keyspace keyspace, String engineUri, GraknConfig config) {
-        super(keyspace, engineUri, config, false);
+        super(keyspace, engineUri, config, false, GraknTxFactoryBuilder.getInstance());
     }
 
     public static GraknSessionLocal create(Keyspace keyspace) {
