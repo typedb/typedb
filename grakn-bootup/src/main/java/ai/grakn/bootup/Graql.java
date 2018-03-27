@@ -79,7 +79,7 @@ public class Graql {
                     return;
                 }
 
-                GraqlConsole.start(options, sessionProvider, HISTORY_FILENAME);
+                GraqlConsole.start(options, sessionProvider, HISTORY_FILENAME, System.out, System.err);
                 break;
             case "migrate":
                 migrate(valuesFrom(args, 1));

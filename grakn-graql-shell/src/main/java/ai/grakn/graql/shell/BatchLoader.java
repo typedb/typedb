@@ -30,6 +30,7 @@ import rx.Observable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,7 +44,10 @@ final class BatchLoader {
 
     private static final int DEFAULT_MAX_RETRY = 1;
 
-    static void sendBatchRequest(SimpleURI uri, Keyspace keyspace, Path graqlPath) throws IOException {
+    static void sendBatchRequest(
+            SimpleURI uri, Keyspace keyspace, Path graqlPath, PrintStream sout, PrintStream serr
+    ) throws IOException {
+
         AtomicInteger queriesExecuted = new AtomicInteger(0);
 
         try (FileInputStream inputStream = new FileInputStream(graqlPath.toFile());
@@ -55,12 +59,12 @@ final class BatchLoader {
 
                 observable.subscribe(
                         /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                        /* On error:   */ System.err::println
+                        /* On error:   */ serr::println
                 );
             });
         }
 
-        System.out.println("Statements executed: " + queriesExecuted.get());
+        sout.println("Statements executed: " + queriesExecuted.get());
 
     }
 
