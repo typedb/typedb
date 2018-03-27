@@ -96,10 +96,12 @@ The subgraph command can also be used when computing k-core centrality.
 
 ## Centrality of a given type
 
-Consider the subgraph example again: because relationships also have degrees, 
-the result map would also contain centrality of `marriage`.
-However, we only want to compute the centrality of `person`.
-We cannot exclude instances of `marriage` from the subgraph, otherwise every entity will have its degree = 0.
+Sometimes we only want to compute the degree of some types of entities, 
+yet we can't only include these types in the subgraph.
+Consider [the subgraph example](/images/analytics_degree_full.png) again: 
+we only want to compute the centrality of `person`, 
+but we cannot exclude instances of `marriage` from the subgraph, 
+otherwise every entity will have its degree = 0.
 In a case like this, we can use the following:
 
 ```graql
