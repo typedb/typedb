@@ -20,9 +20,10 @@ Currently, Graql supports two algorithms for computing centrality:
 ## Degree
 
 The degree of an instance gives the number of other instances directly connected to the instance. 
-For an entity, such asa `person`, this means the number of connections, 
+For an entity, such as a `person`, this means the number of connections, 
 for example instances of a `marriage` relationship.
-The `person` with the highest degree, or the greatest number of marriages, is arguably the most "interesting".
+The `person` with the highest degree, or the greatest number of marriages, is arguably the most "interesting"
+([Glynn Wolfe](https://en.wikipedia.org/wiki/Glynn_Wolfe)).
 
 In analyics, the `degree` algorithm computes how many arrows (edges) there are attached to instances in the graph. 
 A map is returned containing degree and instances with the degree (map<key=degree, value=set of instance>). If we call:
@@ -38,10 +39,11 @@ On the graph below we expect the degrees of the people to be:
 * **Mary Young**: 2 - two parents
 * **John Newman**: 1 - a marriage
 
-We do not count the edges labelled isa, because they are connected to the types and are not considered by analytics.
-Don't forget that the relationships themselves will also have degrees.
+Instances with degree = 0 won't appear in the result. Therefore, the relationship concepts
+(marriage/parentship) don't have degrees.
 
-{% include note.html content="Don't forget that the relationships themselves will also have degrees." %}
+{% include note.html content="Don't forget that a relationship can also have a degree,
+if it plays a role in another relationship." %}
 
 ![A simple social network.](/images/analytics_degree_full.png)
 

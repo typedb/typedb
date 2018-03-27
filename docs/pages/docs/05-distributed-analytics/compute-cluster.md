@@ -13,7 +13,7 @@ Currently, Graql supports two algorithms for identifying clusters in the graph.
 
 The [connected components algorithm](https://en.wikipedia.org/wiki/Connected_component_(graph_theory))
 can be used to find clusters of instances that are connected.
-The algorithm finds all instances (relationships, resources and entities) 
+The algorithm finds all instances (relationships/resources/entities) 
 that are connected via relationships in the knowledge graph and gives each cluster a unique label.
 In the knowledge graph below you can see three connected components 
 that correspond to people who are related through marriage.

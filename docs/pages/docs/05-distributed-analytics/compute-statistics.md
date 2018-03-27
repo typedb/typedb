@@ -12,18 +12,7 @@ Computing simple statistics, such as the mean and standard deviations of dataset
 isolated instances. What happens when your knowledge graph becomes so large that it is distributed across many machines? What
 if the values you are calculating correspond to many different types of things?
 
-Graql analytics can perform the necessary statistics computations.  
-
-The available methods are:
-
-*  `count`
-*  `max`
-*  `min`
-*  `mean`
-*  `median`
-*  `std (standard deviation)`
-*  `sum`
-
+Graql analytics can perform the necessary statistics computations. 
 For example, the following query executes a distributed computation to determine the mean age of all of the people in the knowledge graph.
 
 ```graql
