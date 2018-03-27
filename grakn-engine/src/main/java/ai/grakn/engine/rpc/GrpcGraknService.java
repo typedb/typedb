@@ -117,6 +117,14 @@ public class GrpcGraknService extends GraknGrpc.GraknImplBase {
         return error(status, null);
     }
 
+    static <T> T nonNull(@Nullable T item) {
+        if (item == null) {
+            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
+        } else {
+            return item;
+        }
+    }
+
     private static StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
         return new StatusRuntimeException(status, trailers);
     }

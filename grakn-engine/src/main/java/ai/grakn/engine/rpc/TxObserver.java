@@ -30,15 +30,15 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.grpc.GrpcConceptConverter;
+import ai.grakn.grpc.GrpcIterators;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
-import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
-import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
 import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
@@ -46,6 +46,9 @@ import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.generated.GrpcIterator.Next;
+import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -54,15 +57,15 @@ import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -80,8 +83,7 @@ class TxObserver implements StreamObserver<TxRequest> {
     private final ExecutorService threadExecutor;
     private final GrpcOpenRequestExecutor requestExecutor;
     private final PostProcessor postProcessor;
-    private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-    private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
+    private final GrpcIterators grpcIterators = GrpcIterators.create();
 
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
@@ -222,35 +224,30 @@ class TxObserver implements StreamObserver<TxRequest> {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        Iterator<QueryResult> iterator = graql.parse(queryString).results(GrpcConverter.get()).iterator();
-        IteratorId iteratorId =
-                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        Stream<QueryResult> queryResultStream = graql.parse(queryString).results(GrpcConverter.get());
 
-        iterators.put(iteratorId, iterator);
+        Stream<TxResponse> txResponseStream =
+                queryResultStream.map(queryResult -> TxResponse.newBuilder().setQueryResult(queryResult).build());
+
+        Iterator<TxResponse> iterator = txResponseStream.iterator();
+
+        IteratorId iteratorId = grpcIterators.add(iterator);
 
         responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
-    private void next(GrpcGrakn.Next next) {
+    private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
 
-        Iterator<QueryResult> iterator = nonNull(iterators.get(iteratorId));
-
-        TxResponse response;
-
-        if (iterator.hasNext()) {
-            QueryResult queryResult = iterator.next();
-            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
-        } else {
-            response = GrpcUtil.doneResponse();
-            iterators.remove(iteratorId);
-        }
+        TxResponse response =
+                grpcIterators.next(iteratorId).orElseThrow(() -> GrpcGraknService.error(Status.FAILED_PRECONDITION));
 
         responseObserver.onNext(response);
     }
 
-    private void stop(GrpcGrakn.Stop stop) {
-        nonNull(iterators.remove(stop.getIteratorId()));
+    private void stop(Stop stop) {
+        IteratorId iteratorId = stop.getIteratorId();
+        grpcIterators.stop(iteratorId);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
@@ -259,9 +256,9 @@ class TxObserver implements StreamObserver<TxRequest> {
 
         GrpcConceptConverter converter = grpcConcept -> tx().getConcept(GrpcUtil.convert(grpcConcept.getId()));
 
-        ConceptMethod<?> conceptMethod = ConceptMethod.fromGrpc(converter, runConceptMethod.getConceptMethod());
+        ConceptMethod<?> conceptMethod = ConceptMethods.fromGrpc(converter, runConceptMethod.getConceptMethod());
 
-        TxResponse response = conceptMethod.run(concept);
+        TxResponse response = conceptMethod.run(grpcIterators, concept);
 
         responseObserver.onNext(response);
     }
@@ -287,9 +284,10 @@ class TxObserver implements StreamObserver<TxRequest> {
     private void getAttributesByValue(AttributeValue attributeValue) {
         Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
 
-        TxResponse response = TxResponse.newBuilder().setConcepts(GrpcUtil.convert(attributes.stream())).build();
+        Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
+        IteratorId iteratorId = grpcIterators.add(iterator);
 
-        responseObserver.onNext(response);
+        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
     private void putEntityType(GrpcConcept.Label label) {
@@ -327,13 +325,4 @@ class TxObserver implements StreamObserver<TxRequest> {
     private EmbeddedGraknTx<?> tx() {
         return nonNull(tx);
     }
-
-    private static <T> T nonNull(@Nullable T item) {
-        if (item == null) {
-            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
-        } else {
-            return item;
-        }
-    }
-
 }
