@@ -32,6 +32,7 @@ import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -47,7 +48,11 @@ import static ai.grakn.graql.shell.GraqlShell.loadQuery;
 
 public class GraqlConsole {
 
-    public static boolean start(GraqlShellOptions options, SessionProvider sessionProvider, String historyFile) throws InterruptedException, IOException {
+    public static boolean start(
+            GraqlShellOptions options, SessionProvider sessionProvider, String historyFile,
+            PrintStream sout, PrintStream serr
+    ) throws InterruptedException, IOException {
+
         List<String> queries = null;
 
 
@@ -60,7 +65,7 @@ public class GraqlConsole {
             queries = ImmutableList.of(query);
 
             if (!query.contains("$") && query.trim().startsWith("match")) {
-                System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
+                serr.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
             }
         }
 
@@ -69,14 +74,14 @@ public class GraqlConsole {
 
         // Print usage message if requested or if invalid arguments provided
         if (options.displayHelp()) {
-            options.printUsage();
+            options.printUsage(sout);
             return true;
         }
 
         //  ------- Check option  ------------------------
 
         if (options.displayVersion()) {
-            System.out.println(GraknVersion.VERSION);
+            sout.println(GraknVersion.VERSION);
             return true;
         }
 
@@ -90,9 +95,9 @@ public class GraqlConsole {
             SimpleURI location = options.getUri();
             SimpleURI httpUri = location != null ? location : Grakn.DEFAULT_URI;
             try {
-                BatchLoader.sendBatchRequest(httpUri, keyspace, path);
+                BatchLoader.sendBatchRequest(httpUri, keyspace, path, sout, serr);
             } catch (Exception e) {
-                System.out.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
+                sout.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
                 return false;
             }
             return true;
@@ -104,10 +109,10 @@ public class GraqlConsole {
         OutputFormat outputFormat = options.getOutputFormat();
 
         boolean infer = options.shouldInfer();
-        ConsoleReader console = new ConsoleReader(System.in, System.out);
+        ConsoleReader console = new ConsoleReader(System.in, sout);
         GraknSession  session = sessionProvider.getSession(options, console);
 
-        try (GraqlShell shell = new GraqlShell(historyFile, session, console, outputFormat, infer)) {
+        try (GraqlShell shell = new GraqlShell(historyFile, session, console, serr, outputFormat, infer)) {
             List<Path> filePaths = options.getFiles();
             if (filePaths != null) {
                 queries = loadQueries(filePaths);
@@ -118,7 +123,7 @@ public class GraqlConsole {
             return !shell.errorOccurred();
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
-                System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+                serr.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
                 return false;
             } else {
                 throw e;

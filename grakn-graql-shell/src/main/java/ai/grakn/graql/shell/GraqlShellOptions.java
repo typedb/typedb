@@ -31,6 +31,7 @@ import org.apache.commons.cli.ParseException;
 import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -100,9 +101,9 @@ public class GraqlShellOptions {
         return cmd;
     }
 
-    public void printUsage() {
+    public void printUsage(PrintStream sout) {
         HelpFormatter helpFormatter = new HelpFormatter();
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(sout, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();

@@ -26,8 +26,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.Pattern;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.GrpcConceptConverter;
@@ -73,7 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Felix Chapman
  */
-class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
+class TxObserver implements StreamObserver<TxRequest> {
 
     private final StreamObserver<TxResponse> responseObserver;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
@@ -106,9 +106,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 GrpcGraknService.runAndConvertGraknExceptions(() -> handleRequest(request));
             });
         } catch (StatusRuntimeException e) {
-            if (!terminated.getAndSet(true)) {
-                responseObserver.onError(e);
-            }
+            close(e);
         }
     }
 
@@ -164,25 +162,28 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     @Override
     public void onError(Throwable t) {
-        close();
+        close(t);
     }
 
     @Override
     public void onCompleted() {
-        close();
+        close(null);
     }
 
-    @Override
-    public void close() {
+    public void close(@Nullable Throwable error) {
         submit(() -> {
             if (tx != null) {
                 tx.close();
             }
+        });
 
-            if (!terminated.getAndSet(true)) {
+        if (!terminated.getAndSet(true)) {
+            if (error != null) {
+                responseObserver.onError(error);
+            } else {
                 responseObserver.onCompleted();
             }
-        });
+        }
 
         threadExecutor.shutdown();
     }
