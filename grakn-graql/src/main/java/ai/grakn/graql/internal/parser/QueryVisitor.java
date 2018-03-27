@@ -300,7 +300,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
+    public ConnectedComponentQuery<?> visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
         ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
         if (ctx.inList() != null) {
@@ -369,7 +369,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitCoreness(GraqlParser.CorenessContext ctx) {
+    public CorenessQuery visitCoreness(GraqlParser.CorenessContext ctx) {
         CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
 
         if (ctx.ofList() != null) {
