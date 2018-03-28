@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.Answer;
 import javax.annotation.CheckReturnValue;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * a query used for finding data in a knowledge base that matches the given patterns.
@@ -35,7 +36,7 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface GetQuery extends Query<Stream<Answer>>, Streamable<Answer> {
 
     /**
      * @param tx the transaction to execute the query on
