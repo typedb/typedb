@@ -18,9 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 
 /**
