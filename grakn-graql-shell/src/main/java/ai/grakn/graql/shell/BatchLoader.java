@@ -21,11 +21,9 @@ package ai.grakn.graql.shell;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
-import rx.Observable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,14 +52,10 @@ final class BatchLoader {
              Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8);
              BatchExecutorClient batchExecutorClient = loaderClient(uri)
         ) {
-            Graql.parser().parseList(queryReader).forEach(query -> {
-                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
+            batchExecutorClient.onNext(queryResponse -> queriesExecuted.incrementAndGet());
+            batchExecutorClient.onError(serr::println);
 
-                observable.subscribe(
-                        /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                        /* On error:   */ serr::println
-                );
-            });
+            Graql.parser().parseList(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
         }
 
         sout.println("Statements executed: " + queriesExecuted.get());
