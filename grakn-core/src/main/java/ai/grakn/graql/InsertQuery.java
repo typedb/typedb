@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.InsertQueryAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A query for inserting data.
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface InsertQuery extends Query<Stream<Answer>>, Streamable<Answer> {
 
     /**
      * @param tx the graph to execute the query on
