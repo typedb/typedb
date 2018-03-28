@@ -89,7 +89,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
-            throw GraknTxOperationException.invalidResourceValue(value, dataType);
+            throw GraknTxOperationException.invalidAttributeValue(value, dataType);
         }
     }
 

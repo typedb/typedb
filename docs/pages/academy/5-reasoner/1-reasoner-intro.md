@@ -2,7 +2,7 @@
 title: Logic inference - The power of knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will be introduced to logic inference and the uses of GRAKN reasoning engine.
+summary: In this lesson you will be introduced to logic inference and the uses of Grakn reasoning engine.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/reasoner-intro.html
@@ -11,16 +11,16 @@ toc: false
 KB: academy
 ---
 
-If you have followed the Academy lessons up to this point, you should have loaded all the example dataset into a new knowledge graph, which is now exactly the same as the one that came preloaded with the GRAKN distribution in the VM.
+If you have followed the Academy lessons up to this point, you should have loaded all the example dataset into a new knowledge graph, which is now exactly the same as the one that came preloaded with the Grakn distribution in the VM.
 
 First of all: well done!
 
-But you are not done yet: we now need to start using this knowledge graph and add a pinch of GRAKN magic and turn what is essentially a powerful database into a true knowledge graph ready for development of cognitive systems.
+But you are not done yet: we now need to start using this knowledge graph and add a pinch of Grakn magic and turn what is essentially a powerful database into a true knowledge graph ready for development of cognitive systems.
 
 It is time for some logic inference.
 
 ## Back to the query
-Since from the beginning of [module 2](./graql-intro.html), you should have learned that the questions you have built your knowledge graph around translate into GRAQL as
+Since from the beginning of [module 2](./graql-intro.html), you should have learned that the questions you have built your knowledge graph around translate into Graql as
 
 ```graql
 match
@@ -35,7 +35,7 @@ limit 3; get $bond, $article;
 
 And if you run it into the graph visualiser you will notice that you do get the results expected (i.e. the articles about the Italian referendum and the bonds that might be affected by them), but they are not linked together.
 
-In this module, we will use GRAKN inference engine to make so that GRAKN fixes this. All without actually modifying your data.
+In this module, we will use Grakn inference engine to make so that Grakn fixes this. All without actually modifying your data.
 
 ## Introduction to logic inference
 Let us start this section with a small puzzle:
@@ -64,14 +64,14 @@ A computer would not know that, and if you asked the same question to a regular 
 
 Unless you ask explicitly for all the people that are on the island OR somewhere which is on the island (but what happens if Charlie is in the kitchen of the hut then?).
 
-Or unless you have a reasoner engine, like GRAKN has.
+Or unless you have a reasoner engine, like Grakn has.
 
 In the course of this module, you will learn how to augment your knowledge graph with reasoning rules that help you get more useful and smart answer to your questions, like the one above.
 
-That is, you will learn to make your data more intelligent and knowledgable. Which is one of the reason why say that GRAKN is the database for the knowledge engineering.
+That is, you will learn to make your data more intelligent and knowledgable. Which is one of the reason why say that Grakn is the database for the knowledge engineering.
 
 ### What have you learned?
 This was a very brief introductory lesson, but you should have at this point understood what logic inference is about.
 
 ## What next
-In the [next lesson](./inference-rules.html), we will learn how to add GRAQL inference rules to your knowledge graph; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about GRAKN Reasoner from the [docs](../index.html).
+In the [next lesson](./inference-rules.html), we will learn how to add Graql inference rules to your knowledge graph; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about Grakn Reasoner from the [docs](../index.html).

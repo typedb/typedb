@@ -86,12 +86,14 @@ schema.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell-undefine-sub">
 <pre class="language-graql"> <code>
+<!--test-ignore-->
 undefine person sub entity;
 </code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java-undefine-sub">
 <pre class="language-java"> <code>
+<!--test-ignore-->
 qb.undefine(label("person").sub("entity")).execute();
 </code>
 </pre>

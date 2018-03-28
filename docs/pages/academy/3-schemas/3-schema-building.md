@@ -2,7 +2,7 @@
 title: Building the schema
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn the basics of GRAKN data model and start turning your conceptual model into a GRAKN schema
+summary: In this lesson you will learn the basics of Grakn data model and start turning your conceptual model into a Grakn schema
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/schema-building.html
@@ -10,12 +10,12 @@ folder: overview
 toc: false
 KB: academy
 ---
-In the [last lesson](./conceptual-modeling-intro.html), we have built, using an entity-relationship modeling process, the sketch of a conceptual model for our data. In this lesson, we will see how to translate that sketch into a working GRAKN schema. As you will see, the whole thing will be quite straightforward.
+In the [last lesson](./conceptual-modeling-intro.html), we have built, using an entity-relationship modeling process, the sketch of a conceptual model for our data. In this lesson, we will see how to translate that sketch into a working Grakn schema. As you will see, the whole thing will be quite straightforward.
 
 ## Concept hierarchies
-The first thing you need to know is that every concept in a GRAKN schema is part of a hierarchy; this allows a lot more power in your model, and it is one of the thing that separates GRAKN from a [property graph](https://github.com/tinkerpop/gremlin/wiki/Defining-a-Property-Graph) or a traditional relational database (Object Relational Database Management Systems also have this feature, but it comes with a lot of added weight).
+The first thing you need to know is that every concept in a Grakn schema is part of a hierarchy; this allows a lot more power in your model, and it is one of the thing that separates Grakn from a [property graph](https://github.com/tinkerpop/gremlin/wiki/Defining-a-Property-Graph) or a traditional relational database (Object Relational Database Management Systems also have this feature, but it comes with a lot of added weight).
 
-GRAKN hierarchies are tree-like structure, this means that every concept you add to your schema must have a direct superconcept and it cannot have more than one.
+Grakn hierarchies are tree-like structure, this means that every concept you add to your schema must have a direct superconcept and it cannot have more than one.
 
 For example, we could say that `animal` is the direct superconcept of `cat`
 
@@ -25,11 +25,11 @@ As a general rule, you can think of concept as more specialised the lower you ge
 
   1. If an animal is allowed to have an attribute (for example `name`), then all its subconcepts are also allowed to have that attribute (so you do not have to specify that cats can have a name).
 
-Since every concept you add to the schema must be the direct subconcept of something, every new GRAKN knowledge graph comes equipped with what we call a _metaschema_ that includes 3 basic types (**entity**, **relationship** and **attribute**,  which are direct subconcepts of the type **thing**) and one special **role** concept, which is used to connect types. Inference **rules** will also be added to the schema, but we will talk about them later in the Academy.
+Since every concept you add to the schema must be the direct subconcept of something, every new Grakn knowledge graph comes equipped with what we call a _metaschema_ that includes 3 basic types (**entity**, **relationship** and **attribute**,  which are direct subconcepts of the type **thing**) and one special **role** concept, which is used to connect types. Inference **rules** will also be added to the schema, but we will talk about them later in the Academy.
 
   ![The metaschema](/images/academy/3-schema/meta-schema.png)
 
-## GRAQL entities and relationships
+## Graql entities and relationships
 Enough with the theory, let’s create our schema! In our last lesson, we created the following model sketch:
 
 ```
@@ -59,9 +59,13 @@ define
 "cat" sub animal;
 ```
 
-And save it as `schema.gql` or something similar (the `.gql` file extension is completely optional, but it is the default extension for GRAQL files).
+And save it as `schema.gql` or something similar (the `.gql` file extension is completely optional, but it is the default extension for Graql files).
 
+<<<<<<< HEAD
 Notice that in the example above we are defining two types (`animal` and `cat`) but we have used the keyword `define` only once. It is in fact possible, and often useful, to actually define the whole schema in one single file, with one single query; this way GRAKN will take care of adding concepts to your knowledge graph in the correct order (for example it will add "animal" before "cat" as the latter is a subconcept of the former).
+=======
+Notice that in the example above we are defining two types (`animal` and `cat`) but we have used the keyword `define` only once. It is in fact possible, and often useful, to actually define the whole schema in one single file, with one single query; this way Grakn will take care of adding concepts to your knowledge base in the correct order (for example it will add "animal" before "cat" as the latter is a subconcept of the former).
+>>>>>>> stable
 The only other thing you need to know is that when you add a concept and name it in some way, or more precisely you assign a **label** to it, like "animal" or "cat", you are allowed to use spaces, but it is in general not a good idea.
 
 Look again at your model. Start a new file in your text editor and start adding entities to your schema. It should be quite easy.
@@ -96,4 +100,4 @@ Try adding to your schema file the resources that you have listed in the concept
 
 
 ## What next?
-In this lesson you should have learned how to turn your conceptual model into a working GRAKN schema. Only one step remains: linking concepts together with roles, which will be done in the [next lesson](./schema-building-continued.html), where you will also find a draft of how your schema file should look so far.
+In this lesson you should have learned how to turn your conceptual model into a working Grakn schema. Only one step remains: linking concepts together with roles, which will be done in the [next lesson](./schema-building-continued.html), where you will also find a draft of how your schema file should look so far.

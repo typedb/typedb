@@ -11,9 +11,9 @@ toc: false
 KB: academy
 ---
 
-In the last lesson you have learned about the differences between OLTP and OLAP queries and you have been introduced to the GRAKN Analytics component. In this lesson you will get deeper into the details of the Analytics component, starting with the statistics queries.
+In the last lesson you have learned about the differences between OLTP and OLAP queries and you have been introduced to the Grakn Analytics component. In this lesson you will get deeper into the details of the Analytics component, starting with the statistics queries.
 
-All the analytics query in GRAQL begin with the keyword `compute` and, for this reason, are called "compute queries" as well. Statistics compute queries have all the following structure:
+All the analytics query in Graql begin with the keyword `compute` and, for this reason, are called "compute queries" as well. Statistics compute queries have all the following structure:
 
 
 ```graql-skip-test
@@ -25,7 +25,7 @@ The `in <TYPES>;` part of the query (`<TYPES>` just stands for a list of comma s
 An example will clear up things. Let’s us do some counting.
 
 ## Count queries
-If it’s not already running, launch the GRAKN instance in your VM and open the dashboard in the "training" keyspace. Let’s say we want to count the number of oil platforms in our knowledge graph.
+If it’s not already running, launch the Grakn instance in your VM and open the dashboard in the "training" keyspace. Let’s say we want to count the number of oil platforms in our knowledge graph.
 
 Launch this query:
 ```graql-skip-test
@@ -89,8 +89,8 @@ If you want to compute your statistics over a large distributed knowledge graph,
 In other words, the compute queries scale much better.
 
 ### What have you learned?
-In this lesson you have learned about the basic structure of compute queries, you have learned what are the statistics query you can perform with GRAKN analytics and what is the difference between compute and aggregate queries and which one to pick when.
+In this lesson you have learned about the basic structure of compute queries, you have learned what are the statistics query you can perform with Grakn analytics and what is the difference between compute and aggregate queries and which one to pick when.
 
 ## What next
-In the next lesson we will conclude our overview of the GRAKN Analytics component by looking at something that simple aggregate queries cannot do: perform [graph analytics](./graph-analytics.html). More details about the compute query syntax can be found in the [docs](../index.html). If you want to learn more about the distributed computations that compute queries perform you will have to look around for an introduction to Pregel algorithms. Warning, though: heavy maths ahead.
+In the next lesson we will conclude our overview of the Grakn Analytics component by looking at something that simple aggregate queries cannot do: perform [graph analytics](./graph-analytics.html). More details about the compute query syntax can be found in the [docs](../index.html). If you want to learn more about the distributed computations that compute queries perform you will have to look around for an introduction to Pregel algorithms. Warning, though: heavy maths ahead.
 

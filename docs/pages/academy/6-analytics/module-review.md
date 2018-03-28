@@ -48,8 +48,8 @@ match $x id REGION_ID; get;
 Find clusters of companies, bonds and `issues` relationships and verify that they are more or less evenly distributed (that is, every company issues more or less the same number of bonds).
 
 
-## Keep calm and release the GRAKN!
+## Keep calm and release the Grakn!
 
-**CONGRATULATIONS!** You have graduated from the Grakn Academy! The only thing left to do is starting developing your own projects. If you need more help or want to ask question you can delve into the [documentation](../index.html) and the [blog](https://blog.grakn.ai) to get more ideas on how to use GRAKN. Make sure as well to check our [discussion forum](https://discuss.grakn.ai) and to [join our Slack community](https://grakn.ai/slack.html), where you will find plenty of people willing to help should you have any doubts.
+**CONGRATULATIONS!** You have graduated from the Grakn Academy! The only thing left to do is starting developing your own projects. If you need more help or want to ask question you can delve into the [documentation](../index.html) and the [blog](https://blog.grakn.ai) to get more ideas on how to use Grakn. Make sure as well to check our [discussion forum](https://discuss.grakn.ai) and to [join our Slack community](https://grakn.ai/slack.html), where you will find plenty of people willing to help should you have any doubts.
 
 Be sure to mention you completed the Grakn Academy for extra kudos!

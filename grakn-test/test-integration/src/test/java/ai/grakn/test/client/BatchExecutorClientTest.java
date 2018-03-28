@@ -61,8 +61,7 @@ public class BatchExecutorClientTest {
 
         try (BatchExecutorClient client = clientBuilder.build()) {
             for (Query<?> query : queriesToExecute) {
-                // If we don't subscribe, the query won't execute
-                client.add(query, keyspace).subscribe(a -> {});
+                client.add(query, keyspace);
             }
         }
 
@@ -88,8 +87,7 @@ public class BatchExecutorClientTest {
 
         try (BatchExecutorClient client = clientBuilder.build()) {
             for (Query<?> query : queriesToExecute) {
-                // If we don't subscribe, the query won't execute
-                client.add(query, keyspace).subscribe(a -> {});
+                client.add(query, keyspace);
             }
         }
 
