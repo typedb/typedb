@@ -23,10 +23,8 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 /**
  *

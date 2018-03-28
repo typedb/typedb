@@ -22,7 +22,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import java.util.List;
-import java.util.Set;
 
 /**
  *

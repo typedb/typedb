@@ -33,7 +33,6 @@ import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -63,6 +62,12 @@ public class ExplanationTest {
 
     @ClassRule
     public static final SampleKBContext explanationKB = SampleKBContext.load("explanationTest.gql");
+
+    @ClassRule
+    public static final SampleKBContext explanationKB2 = SampleKBContext.load("explanationTest2.gql");
+
+    @ClassRule
+    public static final SampleKBContext explanationKB3 = SampleKBContext.load("explanationTest3.gql");
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -221,7 +226,7 @@ public class ExplanationTest {
         Concept a1 = getConcept(expGraph, "name", "a1");
         Concept a2 = getConcept(expGraph, "name", "a2");
         String queryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa baseRelation;" +
                 "$x id '" + a1.getId() + "';" +
                 "$y id '" + a2.getId() + "'; get;";
 
@@ -247,7 +252,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingMixedAtomicQueries(){
-        GraknTx expGraph = explanationKB.tx();
+        GraknTx expGraph = explanationKB2.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         String queryString = "match " +
@@ -258,12 +263,32 @@ public class ExplanationTest {
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
         testExplanation(answers);
-        Answer inferredAnswer = answers.stream()
-                .filter(ans -> ans.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).findFirst().isPresent())
-                .findFirst().orElse(null);
-        Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
-        assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 2);
-        assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
+        answers.stream()
+                .filter(ans -> ans.getExplanations().stream().anyMatch(AnswerExplanation::isRuleExplanation))
+                .forEach( inferredAnswer -> {
+                    Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
+                    assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 2);
+                    assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
+                });
+    }
+
+    @Test
+    public void testExplainingEquivalentPartialQueries(){
+        GraknTx expGraph = explanationKB3.tx();
+        QueryBuilder eiqb = expGraph.graql().infer(true);
+
+        String queryString = "match $x isa same-tag-column-link; get;";
+
+        GetQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
+        testExplanation(answers);
+        answers.stream()
+                .filter(ans -> ans.getExplanations().stream().anyMatch(AnswerExplanation::isRuleExplanation))
+                .forEach( inferredAnswer -> {
+                    Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
+                    assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 1);
+                    assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 3);
+                });
     }
 
     @Test
@@ -299,12 +324,12 @@ public class ExplanationTest {
 
     private void testExplanation(Answer answer){
         answerHasConsistentExplanations(answer);
-        checkeExplanationCompleteness(answer);
+        checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
     }
 
     //ensures that each branch ends up with an lookup explanation
-    private void checkeExplanationCompleteness(Answer answer){
+    private void checkExplanationCompleteness(Answer answer){
         assertFalse("Non-lookup explanation misses children",
                 answer.getExplanations().stream()
                 .filter(e -> !e.isLookupExplanation())

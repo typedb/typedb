@@ -23,9 +23,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import com.google.common.collect.Sets;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**

@@ -313,6 +313,13 @@ public class ReasonerUtils {
         return list;
     }
 
+    /**
+     *
+     * @param a union left operand
+     * @param b union right operand
+     * @param <T> list type
+     * @return new list being a union of the two operands
+     */
     public static <T> List<T> listUnion(List<T> a, List<T> b){
         List<T> union = new ArrayList<>(a);
         union.addAll(b);
