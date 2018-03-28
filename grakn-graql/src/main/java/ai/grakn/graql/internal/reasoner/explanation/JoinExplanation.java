@@ -22,7 +22,9 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.Sets;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,19 +39,19 @@ import java.util.stream.Collectors;
  */
 public class JoinExplanation extends Explanation {
 
-    public JoinExplanation(Set<Answer> answers){ super(answers);}
+    public JoinExplanation(List<Answer> answers){ super(answers);}
     public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
         super(q, q.selectAtoms().stream()
                 .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
                 .map(ReasonerQueries::atomic)
                 .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq)))
-                .collect(Collectors.toSet())
+                .collect(Collectors.toList())
         );
     }
 
     @Override
     public AnswerExplanation childOf(Answer ans) {
-        return new JoinExplanation(Sets.union(this.getAnswers(), ans.getExplanation().getAnswers()));
+        return new JoinExplanation(ReasonerUtils.listUnion(this.getAnswers(), ans.getExplanation().getAnswers()));
     }
 
     @Override

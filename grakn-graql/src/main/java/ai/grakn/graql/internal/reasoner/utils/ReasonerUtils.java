@@ -41,6 +41,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -310,5 +311,11 @@ public class ReasonerUtils {
         ArrayList<T> list = new ArrayList<>(a);
         b.forEach(list::remove);
         return list;
+    }
+
+    public static <T> List<T> listUnion(List<T> a, List<T> b){
+        List<T> union = new ArrayList<>(a);
+        union.addAll(b);
+        return union;
     }
 }

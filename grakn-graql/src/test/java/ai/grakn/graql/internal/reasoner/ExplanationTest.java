@@ -31,6 +31,7 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.GraknTestUtil;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -312,7 +313,7 @@ public class ExplanationTest {
     }
 
     private void checkAnswerConnectedness(Answer answer){
-        ImmutableSet<Answer> answers = answer.getExplanation().getAnswers();
+        ImmutableList<Answer> answers = answer.getExplanation().getAnswers();
         answers.forEach(a -> {
             assertTrue("Disconnected answer in explanation",
                     answers.stream()

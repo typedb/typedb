@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.admin;
 
+import com.google.common.base.Equivalence;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 
@@ -58,7 +60,7 @@ public interface AnswerExplanation {
      * @return answers this explanation is dependent on
      */
     @CheckReturnValue
-    ImmutableSet<Answer> getAnswers();
+    ImmutableList<Answer> getAnswers();
 
     /**
      *
