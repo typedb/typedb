@@ -224,16 +224,30 @@ class TxObserver implements StreamObserver<TxRequest> {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        Stream<QueryResult> queryResultStream = graql.parse(queryString).results(GrpcConverter.get());
+        Object result = graql.parse(queryString).execute();
 
-        Stream<TxResponse> txResponseStream =
-                queryResultStream.map(queryResult -> TxResponse.newBuilder().setQueryResult(queryResult).build());
+        GrpcConverter grpcConverter = GrpcConverter.get();
 
-        Iterator<TxResponse> iterator = txResponseStream.iterator();
+        if (result instanceof Stream) {
+            Stream<QueryResult> queryResultStream = ((Stream<?>) result).map(grpcConverter::convert);
 
-        IteratorId iteratorId = grpcIterators.add(iterator);
+            Stream<TxResponse> txResponseStream =
+                    queryResultStream.map(this::txResponse);
 
-        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+            Iterator<TxResponse> iterator = txResponseStream.iterator();
+
+            IteratorId iteratorId = grpcIterators.add(iterator);
+
+            responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+        } else if (result == null) {
+            responseObserver.onNext(GrpcUtil.doneResponse());
+        } else {
+            responseObserver.onNext(txResponse(grpcConverter.convert(result)));
+        }
+    }
+
+    private TxResponse txResponse(QueryResult queryResult) {
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
 
     private void next(Next next) {

@@ -208,7 +208,7 @@ public class RemoteGraknTxTest {
         TxResponse response =
                 TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("true")).build();
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
+        server.setResponse(GrpcUtil.execQueryRequest(query), response);
 
         try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request

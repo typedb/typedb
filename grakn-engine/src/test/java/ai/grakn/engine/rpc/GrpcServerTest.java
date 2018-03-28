@@ -32,10 +32,12 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.ConceptMethods;
@@ -154,7 +156,7 @@ public class GrpcServerTest {
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
 
-        when(query.results(any())).thenAnswer(params -> Stream.of(QueryResult.getDefaultInstance()));
+        when(query.execute()).thenAnswer(params -> Stream.of(new QueryAnswer()));
     }
 
     @After
@@ -288,7 +290,7 @@ public class GrpcServerTest {
         }
 
         ai.grakn.graql.Query<?> query = tx.graql().parse(QUERY);
-        verify(query).results(any());
+        verify(query).execute();
     }
 
     @Test
@@ -308,9 +310,7 @@ public class GrpcServerTest {
                 new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
-        // TODO: reduce wtf
-        when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
-        when(query.stream()).thenAnswer(params -> answers.stream());
+        when(query.execute()).thenAnswer(params -> answers.stream());
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
@@ -364,11 +364,8 @@ public class GrpcServerTest {
                 new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
-        // TODO: reduce wtf
-        when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
-
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
-        when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
+        when(query.execute()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
@@ -388,6 +385,44 @@ public class GrpcServerTest {
             TxResponse response = tx.receive().ok();
 
             assertEquals(doneResponse(), response);
+        }
+    }
+
+    @Test
+    public void whenExecutingAQueryRemotelyThatReturnsOneResult_ReturnOneResult() throws InterruptedException {
+        String COUNT_QUERY = "compute count;";
+        CountQuery countQuery = mock(CountQuery.class);
+        when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
+
+        when(countQuery.execute()).thenReturn(100L);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.receive();
+
+            tx.send(execQueryRequest(COUNT_QUERY, null));
+
+            TxResponse expected =
+                    TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("100")).build();
+
+            assertEquals(expected, tx.receive().ok());
+        }
+    }
+
+    @Test
+    public void whenExecutingAQueryRemotelyWithNoResult_ReturnDone() throws InterruptedException {
+        String DELETE_QUERY = "match $x isa person; delete $x";
+        DeleteQuery deleteQuery = mock(DeleteQuery.class);
+        when(tx.graql().parse(DELETE_QUERY)).thenReturn(deleteQuery);
+
+        when(deleteQuery.execute()).thenReturn(null);
+
+        try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
+            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.receive();
+
+            tx.send(execQueryRequest(DELETE_QUERY, null));
+            assertEquals(GrpcUtil.doneResponse(), tx.receive().ok());
         }
     }
 
@@ -701,7 +736,7 @@ public class GrpcServerTest {
         String message = "your query is dumb";
         GraknException error = GraqlQueryException.create(message);
 
-        when(query.results(any())).thenThrow(error);
+        when(query.execute()).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
