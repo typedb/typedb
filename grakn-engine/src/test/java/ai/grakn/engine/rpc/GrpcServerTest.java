@@ -153,6 +153,7 @@ public class GrpcServerTest {
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
+        when(qb.infer(anyBoolean())).thenReturn(qb);
 
         when(query.results(any())).thenAnswer(params -> Stream.of(QueryResult.getDefaultInstance()));
     }

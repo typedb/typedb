@@ -21,7 +21,8 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths
+               | connectedComponent | kCore | degree | coreness ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -29,14 +30,20 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
+coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
+degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
+connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
+kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
-clusterParam   : MEMBERS      ';' # clusterMembers
-               | SIZE INTEGER ';' # clusterSize
+ccParam        : MEMBERS       '='      bool            # ccClusterMembers
+               | SIZE          '='      INTEGER         # ccClusterSize
+               | 'source'      '='      id              # ccStartPoint
+               ;
+
+kcParam        : 'k'           '='      INTEGER         # kValue
                ;
 
 ofList         : labelList ;
@@ -112,7 +119,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREES | MEMBERS | SIZE
+               | DEGREE | MEMBERS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -130,9 +137,12 @@ COUNT          : 'count' ;
 PATH           : 'path' ;
 PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
-DEGREES        : 'degrees' ;
+CENTRALITY     : 'centrality' ;
+DEGREE         : 'degree' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
+USING          : 'using' ;
+WHERE          : 'where' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
