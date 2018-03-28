@@ -179,7 +179,7 @@ public class RemoteGraknTxTest {
 
         try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
-            results = tx.graql().<GetQuery>parse(queryString).execute();
+            results = tx.graql().<GetQuery>parse(queryString).toList();
         }
 
         Answer answer = Iterables.getOnlyElement(results);
@@ -337,7 +337,7 @@ public class RemoteGraknTxTest {
 
         try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.graql().match(var("x")).get().toList();
             } catch (GraqlQueryException e) {
                 // Ignore
             }
@@ -355,7 +355,7 @@ public class RemoteGraknTxTest {
 
         try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
-                tx.graql().match(var("x")).get().execute();
+                tx.graql().match(var("x")).get().toList();
             } catch (GraqlQueryException e) {
                 // Ignore
             }

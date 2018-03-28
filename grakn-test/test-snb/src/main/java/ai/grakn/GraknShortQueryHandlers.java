@@ -198,7 +198,7 @@ public class GraknShortQueryHandlers {
                         var().rel(CREATOR, $person).rel(PRODUCT, $message).isa(HAS_CREATOR),
                         var().rel($message).rel($date).isa(has(CREATION_DATE)),
                         var().rel($message).rel($messageId).isa(key(MESSAGE_ID))
-                ).orderBy($date, Order.desc).limit(operation.limit()).get().execute();
+                ).orderBy($date, Order.desc).limit(operation.limit()).get().toList();
 
                 List<Answer> allResults = new ArrayList<>();
                 messageResults.forEach(a -> {
@@ -216,7 +216,7 @@ public class GraknShortQueryHandlers {
                             var().rel($author).rel($authorId).isa(key(PERSON_ID)),
                             var().rel($author).rel($firstName).isa(has(FIRST_NAME)),
                             var().rel($author).rel($lastName).isa(has(LAST_NAME))
-                    ).get().execute();
+                    ).get().toList();
 
                     allResults.addAll(results);
                 });
@@ -256,7 +256,7 @@ public class GraknShortQueryHandlers {
                         $person.has(PERSON_ID, operation.personId()),
                         var().rel($person).rel($friend).isa(KNOWS).has(CREATION_DATE, $date),
                         $friend.has(PERSON_ID, $friendId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
-                ).get().execute();
+                ).get().toList();
 
                 List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
                         .sorted(comparing(by($date)).reversed().thenComparing(by($friendId)))
@@ -290,7 +290,7 @@ public class GraknShortQueryHandlers {
                         $message.has(MESSAGE_ID, operation.messageId()),
                         var().rel($message).rel($date).isa(has(CREATION_DATE)),
                         (var().rel($message).rel($content).isa(has(CONTENT))).or(var().rel($message).rel($content).isa(has(IMAGE_FILE)))
-                ).get().execute();
+                ).get().toList();
 
                 if (!results.isEmpty()) {
                     Answer fres = results.get(0);
@@ -331,7 +331,7 @@ public class GraknShortQueryHandlers {
                         var().rel($person).rel($firstName).isa(has(FIRST_NAME)),
                         var().rel($person).rel($lastName).isa(has(LAST_NAME)),
                         var().rel($person).rel($personId).isa(key(PERSON_ID))
-                ).get().execute();
+                ).get().toList();
 
                 if (!results.isEmpty()) {
                     Answer fres = results.get(0);
@@ -370,7 +370,7 @@ public class GraknShortQueryHandlers {
                         $forum.has(FORUM_ID, $forumId).has(TITLE, $title),
                         var().rel(MODERATED, $forum).rel(MODERATOR, $mod).isa(HAS_MODERATOR),
                         $mod.isa(PERSON).has(PERSON_ID, $modId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
-                ).get().execute();
+                ).get().toList();
 
                 if (!results.isEmpty()) {
                     Answer fres = results.get(0);
@@ -417,7 +417,7 @@ public class GraknShortQueryHandlers {
                         var().rel($author2).rel($personId).isa(key(PERSON_ID)),
                         var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
                         var().rel($author2).rel($lastName).isa(has(LAST_NAME))
-                ).get().execute();
+                ).get().toList();
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
                         .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))

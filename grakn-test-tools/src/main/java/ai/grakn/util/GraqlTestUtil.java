@@ -24,6 +24,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
+
 import org.apache.commons.collections.CollectionUtils;
 
 import static org.junit.Assert.assertFalse;
@@ -65,6 +66,6 @@ public class GraqlTestUtil {
     }
 
     public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
-        assertCollectionsEqual(q1.execute(), q2.execute());
+        assertCollectionsEqual(q1.toList(), q2.toList());
     }
 }

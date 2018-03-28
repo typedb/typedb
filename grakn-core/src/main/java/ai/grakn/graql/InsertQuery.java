@@ -46,6 +46,8 @@ public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
     @Override
     InsertQuery withTx(GraknTx tx);
 
+    List<Answer> toList();
+
     /**
      * @return admin instance for inspecting and manipulating this query
      */

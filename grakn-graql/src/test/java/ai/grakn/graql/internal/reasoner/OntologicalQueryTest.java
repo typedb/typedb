@@ -53,8 +53,8 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -64,11 +64,11 @@ public class OntologicalQueryTest {
         String relationString = "match $x isa relationship;get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
-        List<Answer> rolePlayerPairs = qb.<GetQuery>parse(rolePlayerPairString).execute();
+        List<Answer> rolePlayerPairs = qb.<GetQuery>parse(rolePlayerPairString).toList();
         //TODO doesn't include THING and RELATIONSHIP, with RELATIONSHIP it's 38, with THING as well it should be 57
         assertEquals(rolePlayerPairs.size(), 25);
 
-        List<Answer> relations = qb.<GetQuery>parse(relationString).execute();
+        List<Answer> relations = qb.<GetQuery>parse(relationString).toList();
         //one implicit, 3 x binary, 2 x ternary, 7 (3 reflexive) x reifying-relation
         assertEquals(relations.size(), 13);
     }
@@ -81,10 +81,10 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type has name; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
         assertEquals(answers.size(), 10);
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -94,10 +94,10 @@ public class OntologicalQueryTest {
 
         String queryString = "match $x isa $type; $type has description; get;";
         String specificQueryString = "match $x isa reifiable-relation;get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
 
-        assertEquals(answers.size(), qb.<GetQuery>parse(specificQueryString).execute().size() * tx.getRelationshipType("reifiable-relation").subs().count());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertEquals(answers.size(), qb.<GetQuery>parse(specificQueryString).toList().size() * tx.getRelationshipType("reifiable-relation").subs().count());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     /** SubAtom **/
@@ -108,9 +108,9 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -118,10 +118,10 @@ public class OntologicalQueryTest {
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type sub relationship; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
 
         assertEquals(answers.size(), tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class OntologicalQueryTest {
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match binary sub $x; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
 
         assertEquals(
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
@@ -149,10 +149,10 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type plays role1; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
+        List<Answer> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").toList();
         assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size());
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
     }
 
     /** RelatesAtom **/
@@ -163,10 +163,10 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type relates role1; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
 
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
-        List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).toList());
+        List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").toList();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(answers.size(), relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
     }
@@ -177,7 +177,7 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match reifying-relation relates $x; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
                 tx.getRelationshipType("reifying-relation").relates().collect(Collectors.toSet())
@@ -192,7 +192,7 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa reifiable-relation;$x isa $type; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
         assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5);
     }
@@ -204,7 +204,7 @@ public class OntologicalQueryTest {
         String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
 
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2);
     }
 
@@ -217,7 +217,7 @@ public class OntologicalQueryTest {
         long noOfEntities = tx.admin().getMetaEntityType().instances().count();
         String queryString = "match $x isa entity;get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), noOfEntities);
     }
 
@@ -227,7 +227,7 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa relationship;get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 13);
     }
 
@@ -237,7 +237,7 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa attribute;get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 2);
     }
 }

@@ -156,7 +156,7 @@ public class InsertQueryTest {
 
         assertNotExists(qb.match(patterns));
 
-        qb.insert(vars).execute();
+        qb.insert(vars).toList();
         assertExists(qb, patterns);
 
         qb.match(patterns).delete("r").execute();
@@ -165,7 +165,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertSameVarName() {
-        qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).execute();
+        qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).toList();
 
         assertExists(qb, var().isa("movie").has("title", "SW"));
         assertExists(qb, var().isa("movie").has("title", "Star Wars"));
@@ -178,11 +178,11 @@ public class InsertQueryTest {
         InsertQuery query = qb.insert(language);
 
         assertEquals(0, qb.match(language).stream().count());
-        query.execute();
+        query.toList();
         assertEquals(1, qb.match(language).stream().count());
-        query.execute();
+        query.toList();
         assertEquals(2, qb.match(language).stream().count());
-        query.execute();
+        query.toList();
         assertEquals(3, qb.match(language).stream().count());
 
         qb.match(language).delete("x").execute();
@@ -194,11 +194,11 @@ public class InsertQueryTest {
         VarPattern language1 = var().isa("language").has("name", "123");
         VarPattern language2 = var().isa("language").has("name", "456");
 
-        qb.insert(language1, language2).execute();
+        qb.insert(language1, language2).toList();
         assertExists(qb, language1);
         assertExists(qb, language2);
 
-        qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
+        qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).toList();
         assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
@@ -226,7 +226,7 @@ public class InsertQueryTest {
         VarPattern language1 = var().isa("language").has("name", "123");
         VarPattern language2 = var().isa("language").has("name", "456");
 
-        qb.insert(language1, language2).execute();
+        qb.insert(language1, language2).toList();
         assertExists(qb, language1);
         assertExists(qb, language2);
 
@@ -260,14 +260,14 @@ public class InsertQueryTest {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("predicate");
-        qb.insert(var().id(ConceptId.of("123")).val(gt(3))).execute();
+        qb.insert(var().id(ConceptId.of("123")).val(gt(3))).toList();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
-        qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).execute();
+        qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).toList();
     }
 
     @Test
@@ -280,7 +280,7 @@ public class InsertQueryTest {
                 GraqlQueryException.insertMultipleProperties(varPattern, "val", "456", "123").getMessage()
         ));
 
-        qb.insert(varPattern).execute();
+        qb.insert(varPattern).toList();
     }
 
     @Test
@@ -291,7 +291,7 @@ public class InsertQueryTest {
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
                 var("x").id(ConceptId.of("Godfather")).isa("movie"),
                 var("y").id(ConceptId.of("comedy")).isa("genre")
-        ).execute();
+        ).toList();
     }
 
     @Test
@@ -309,7 +309,7 @@ public class InsertQueryTest {
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        qb.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")).execute();
+        qb.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")).toList();
     }
 
     @Test
@@ -323,7 +323,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
-        ).execute();
+        ).toList();
 
         exception.expect(InvalidKBException.class);
         movieKB.tx().commit();
@@ -344,7 +344,7 @@ public class InsertQueryTest {
         qb.insert(
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
-        ).execute();
+        ).toList();
 
         exception.expect(InvalidKBException.class);
         movieKB.tx().commit();
@@ -359,7 +359,7 @@ public class InsertQueryTest {
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        qb.insert(var().isa("a-new-type")).execute();
+        qb.insert(var().isa("a-new-type")).toList();
 
         exception.expect(InvalidKBException.class);
         movieKB.tx().commit();
@@ -386,7 +386,7 @@ public class InsertQueryTest {
                 w.isa("movie").has(title, x.val("My Movie"), y)
         );
 
-        Answer answer = Iterables.getOnlyElement(query.execute());
+        Answer answer = Iterables.getOnlyElement(query.toList());
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -403,7 +403,7 @@ public class InsertQueryTest {
                 .match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
-        Answer answer = Iterables.getOnlyElement(query.execute());
+        Answer answer = Iterables.getOnlyElement(query.toList());
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -423,7 +423,7 @@ public class InsertQueryTest {
         qb.insert(
                 var().rel("genre-of-production", "x").rel("production-with-genre", "y").isa("has-genre"),
                 var("x").isa("genre").has("name", "drama")
-        ).execute();
+        ).toList();
     }
 
     @Test
@@ -432,33 +432,33 @@ public class InsertQueryTest {
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).toList();
     }
 
     @Test
     public void whenInsertingAResourceWithoutAValue_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("name"), containsString("val")));
-        qb.insert(var("x").isa("name")).execute();
+        qb.insert(var("x").isa("name")).toList();
     }
 
     @Test
     public void whenInsertingAnInstanceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("abc")));
-        qb.insert(label("abc").isa("movie")).execute();
+        qb.insert(label("abc").isa("movie")).toList();
     }
 
     @Test
     public void whenInsertingAResourceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
-        qb.insert(label("bobby").val("bob").isa("name")).execute();
+        qb.insert(label("bobby").val("bob").isa("name")).toList();
     }
 
     @Test
     public void testInsertDuplicatePattern() {
-        qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
+        qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).toList();
         assertEquals(2, qb.match(x.has("name", "a name")).stream().count());
     }
 
@@ -467,7 +467,7 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).toList();
         assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
@@ -476,7 +476,7 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).toList();
         assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
@@ -485,7 +485,7 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).toList();
         assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
@@ -494,7 +494,7 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).toList();
         assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
@@ -502,7 +502,7 @@ public class InsertQueryTest {
     public void testInsertInstanceWithoutType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
-        qb.insert(var().has("name", "Bob")).execute();
+        qb.insert(var().has("name", "Bob")).toList();
     }
 
     @Test
@@ -513,7 +513,7 @@ public class InsertQueryTest {
         ).insert(
                 var("c").isa("cluster").has("name", "2"),
                 var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
-        ).execute();
+        ).toList();
 
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
@@ -542,7 +542,7 @@ public class InsertQueryTest {
                 w.rel("friend", x).rel("friend", y).isa("maybe-friends")
         );
 
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
 
         for (Answer answer : answers) {
             assertThat(
@@ -557,36 +557,36 @@ public class InsertQueryTest {
 
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
-        movieKB.tx().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).insert((VarPattern) null).toList();
     }
 
     @Test(expected = Exception.class)
     public void matchInsertNullCollection() {
-        movieKB.tx().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).toList();
     }
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieKB.tx().graql().match(var()).insert(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().match(var()).insert(Collections.EMPTY_SET).toList();
     }
 
     @Test(expected = Exception.class)
     public void insertNullVar() {
-        movieKB.tx().graql().insert((VarPattern) null).execute();
+        movieKB.tx().graql().insert((VarPattern) null).toList();
     }
 
     @Test(expected = Exception.class)
     public void insertNullCollection() {
-        movieKB.tx().graql().insert((Collection<? extends VarPattern>) null).execute();
+        movieKB.tx().graql().insert((Collection<? extends VarPattern>) null).toList();
     }
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieKB.tx().graql().insert(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().insert(Collections.EMPTY_SET).toList();
     }
 
     @Test
@@ -608,7 +608,7 @@ public class InsertQueryTest {
                 GraqlQueryException.insertMultipleProperties(varPattern, "isa", person, movie).getMessage()
         ));
 
-        movieKB.tx().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").isa("movie"), var("x").isa("person")).toList();
     }
 
     @Test
@@ -621,7 +621,7 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        movieKB.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).toList();
     }
 
     @Test
@@ -629,7 +629,7 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(SubProperty.NAME).getMessage());
 
-        qb.insert(label("new-type").sub(label(ENTITY.getLabel()))).execute();
+        qb.insert(label("new-type").sub(label(ENTITY.getLabel()))).toList();
     }
 
     @Test
@@ -637,7 +637,7 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(PlaysProperty.NAME).getMessage());
 
-        qb.insert(label("movie").plays("actor")).execute();
+        qb.insert(label("movie").plays("actor")).toList();
     }
 
     private void assertInsert(VarPattern... vars) {
@@ -647,7 +647,7 @@ public class InsertQueryTest {
         }
 
         // Insert all vars
-        qb.insert(vars).execute();
+        qb.insert(vars).toList();
 
         // Make sure all vars exist
         for (VarPattern var : vars) {

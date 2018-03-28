@@ -985,7 +985,7 @@ public class AtomicTest {
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
+        Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").toList().iterator().next().get(var("x"));
         String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.getId().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.getId().getValue() + "';}";
         String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.getId().getValue() + "';}";
@@ -1144,9 +1144,9 @@ public class AtomicTest {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
-        List<Answer> parentAnswers2 = parentQuery2.getQuery().execute();
+        List<Answer> childAnswers = childQuery.getQuery().toList();
+        List<Answer> parentAnswers = parentQuery.getQuery().toList();
+        List<Answer> parentAnswers2 = parentQuery2.getQuery().toList();
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2);
@@ -1180,7 +1180,7 @@ public class AtomicTest {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().toList().iterator().next().get("r").getId().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -1192,10 +1192,10 @@ public class AtomicTest {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
 
-        Answer typeAnswer = typeQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
-        Answer resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
+        Answer typeAnswer = typeQuery.getQuery().toList().iterator().next();
+        Answer resourceAnswer = resourceQuery.getQuery().toList().iterator().next();
+        Answer resourceAnswer2 = resourceQuery2.getQuery().toList().iterator().next();
+        Answer resourceAnswer3 = resourceQuery3.getQuery().toList().iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -1351,12 +1351,12 @@ public class AtomicTest {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
+        List<Answer> childAnswers = childQuery.getQuery().toList();
         List<Answer> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<Answer> parentAnswers = parentQuery.getQuery().toList();
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom);

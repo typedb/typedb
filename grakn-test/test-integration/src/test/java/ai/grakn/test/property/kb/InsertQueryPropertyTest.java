@@ -53,7 +53,7 @@ public class InsertQueryPropertyTest {
     public void ifAPropertyCanBeInserted_AResultShouldBeReturned(@Open GraknTx tx, VarProperty property){
         VarPatternAdmin pattern = Patterns.varPattern(Graql.var("x"), Collections.singleton(property));
         try {
-            assertThat(tx.graql().insert(pattern).execute(), not(empty()));
+            assertThat(tx.graql().insert(pattern).toList(), not(empty()));
         } catch(GraqlQueryException | GraknTxOperationException e){
             // IGNORED
         }
@@ -69,6 +69,6 @@ public class InsertQueryPropertyTest {
 
         exception.expect(GraqlQueryException.class);
 
-        tx.graql().insert(pattern).execute();
+        tx.graql().insert(pattern).toList();
     }
 }

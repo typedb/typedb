@@ -44,6 +44,8 @@ public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
     @Override
     GetQuery withTx(GraknTx tx);
 
+    List<Answer> toList();
+
     /**
      * Get the {@link Match} this {@link GetQuery} contains
      */

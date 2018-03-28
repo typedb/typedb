@@ -119,7 +119,12 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final List<Answer> execute() {
+    public List<Answer> execute() {
+        return toList();
+    }
+
+    @Override
+    public final List<Answer> toList() {
         return stream().collect(Collectors.toList());
     }
 

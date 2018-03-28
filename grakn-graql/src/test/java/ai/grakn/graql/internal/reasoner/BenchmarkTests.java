@@ -260,7 +260,7 @@ public class BenchmarkTests {
         GetQuery query2 = iqb.parse(queryString2);
 
         //with substitution
-        Concept id = iqb.<GetQuery>parse("match $x has index 'a'; get;").execute().iterator().next().get("x");
+        Concept id = iqb.<GetQuery>parse("match $x has index 'a'; get;").toList().iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "'; get;";
         GetQuery query3 = iqb.parse(queryString3);
 
@@ -372,7 +372,7 @@ public class BenchmarkTests {
 
     private List<Answer> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<Answer> results = query.toList();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

@@ -136,13 +136,13 @@ public class SNBInferenceTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
 
         long startTime = System.nanoTime();
-        List<Answer> limitedAnswers = limitedQuery.execute();
+        List<Answer> limitedAnswers = limitedQuery.toList();
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).toList());
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
@@ -315,8 +315,8 @@ public class SNBInferenceTest {
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
         Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 =  iqb.materialise(false).<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).toList();
+        List<Answer> answers2 =  iqb.materialise(false).<GetQuery>parse(queryString2).toList().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
         assertCollectionsEqual(answers, answers2);
     }
 

@@ -59,7 +59,7 @@ public class ExplanationBuilderTest {
                     "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
 
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
-            ai.grakn.graql.admin.Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
+                    ai.grakn.graql.admin.Answer specificAnswer = query.toList().stream().findFirst().orElse(new QueryAnswer());
 
             Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
                     .flatMap(ans -> ans.concepts().stream())

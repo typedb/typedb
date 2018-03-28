@@ -140,7 +140,7 @@ public class GraqlController implements HttpController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
-                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).toList().stream().findFirst().orElse(new QueryAnswer());
                 return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });

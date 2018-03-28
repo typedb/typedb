@@ -345,10 +345,10 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).toList();
+        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).toList();
         assertCollectionsEqual(answers, explicitAnswers);
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).toList();
         assertCollectionsEqual(answers, answers2);
     }
 
@@ -399,9 +399,9 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa vertex; get;";
 
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).toList();
+        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).toList();
+        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).toList();
 
         assertCollectionsEqual(answers, explicitAnswers);
         assertCollectionsEqual(answers, answers2);
@@ -532,8 +532,8 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
 
-        assertEquals(iqb.materialise(false).<GetQuery>parse(queryString).execute().size(), 64);
-        assertEquals(iqb.materialise(true).<GetQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.materialise(false).<GetQuery>parse(queryString).toList().size(), 64);
+        assertEquals(iqb.materialise(true).<GetQuery>parse(queryString).toList().size(), 64);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){

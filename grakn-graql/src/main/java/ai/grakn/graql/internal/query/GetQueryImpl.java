@@ -74,8 +74,12 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
     }
 
-    @Override
     public final List<Answer> execute() {
+        return stream().collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Answer> toList() {
         return stream().collect(Collectors.toList());
     }
 

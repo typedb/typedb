@@ -42,14 +42,14 @@ public class QueryValidityTest {
     public void whenQueryingForInexistentConceptId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x id 'V123'; $y id 'V456'; ($x, $y); get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
     public void whenQueryingForInexistentEntityTypeId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x isa $type; $type id 'V123'; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
@@ -57,8 +57,8 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa $type; $type id 'V123'; get;";
         String queryString2 = "match $r ($x, $y) isa $type; $r id 'V123'; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
-        assertThat(qb.<GetQuery>parse(queryString2).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
+        assertThat(qb.<GetQuery>parse(queryString2).toList(), empty());
     }
 
     @Test
@@ -67,9 +67,9 @@ public class QueryValidityTest {
         String queryString = "match $x has name $y; $x id 'V123'; get;";
         String queryString2 = "match $x has name $y; $y id 'V123'; get;";
         String queryString3 = "match $x has name $y via $r; $r id 'V123'; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
-        assertThat(qb.<GetQuery>parse(queryString2).execute(), empty());
-        assertThat(qb.<GetQuery>parse(queryString3).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
+        assertThat(qb.<GetQuery>parse(queryString2).toList(), empty());
+        assertThat(qb.<GetQuery>parse(queryString3).toList(), empty());
     }
 
     @Test
@@ -77,14 +77,14 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x isa polok; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
     public void whenQueryingForInexistentEntityTypeLabelViaVariable_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x isa $type; $type label polok; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
@@ -92,7 +92,7 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x has binary $r; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
@@ -100,7 +100,7 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa jakas-relacja; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
@@ -108,14 +108,14 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa name; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
     public void whenQueryingForInexistentRelationTypeLabelViaVariable_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa $type; $type label jakas-relacja; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
@@ -123,7 +123,7 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match (entity: $x, entity: $y) isa relationship; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
@@ -131,27 +131,27 @@ public class QueryValidityTest {
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match (rola: $x, rola: $y) isa relationship; get;";
         expectedException.expect(GraqlQueryException.class);
-        qb.<GetQuery>parse(queryString).execute();
+        qb.<GetQuery>parse(queryString).toList();
     }
 
     @Test
     public void whenQueryingForRelationWithIllegalRoles_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match (role3: $x) isa binary; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
     public void whenQueryingForIllegalRolePlayer_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa binary; $x isa anotherNoRoleEntity; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 
     @Test
     public void whenQueryingForIllegalResource_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x has name $n; $x isa binary; get;";
-        assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+        assertThat(qb.<GetQuery>parse(queryString).toList(), empty());
     }
 }

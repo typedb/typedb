@@ -87,7 +87,7 @@ public class QueryCacheTest {
     @Test
     public void recordRetrieveAnswers(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
-        QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
+        QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().toList()));
         assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
         assertEquals(record, cache.getAnswers(recordQuery));
     }
@@ -95,7 +95,7 @@ public class QueryCacheTest {
     @Test
     public void recordUpdateRetrieveAnswers(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
-        cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
+        cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().toList()));
         cache.recordAnswer(recordQuery, singleAnswer);
         assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
         assertTrue(cache.getAnswers(retrieveQuery).contains(singleAnswer.unify(recordToRetrieveUnifier)));

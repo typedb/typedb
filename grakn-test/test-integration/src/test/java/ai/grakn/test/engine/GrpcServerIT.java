@@ -157,12 +157,12 @@ public class GrpcServerIT {
         List<Answer> answers;
 
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
-            answers = tx.graql().match(var("x").sub("thing")).get().execute();
+            answers = tx.graql().match(var("x").sub("thing")).get().toList();
         }
 
         int size;
         try (GraknTx tx = localSession.open(GraknTxType.READ)) {
-            size = tx.graql().match(var("x").sub("thing")).get().execute().size();
+            size = tx.graql().match(var("x").sub("thing")).get().toList().size();
         }
 
         assertThat(answers.toString(), answers, hasSize(size));
@@ -566,7 +566,7 @@ public class GrpcServerIT {
             exception.expect(GraqlQueryException.class);
             exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("not-a-thing")).getMessage());
 
-            query.execute();
+            query.toList();
         }
     }
 }

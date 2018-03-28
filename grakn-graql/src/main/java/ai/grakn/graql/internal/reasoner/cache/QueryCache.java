@@ -168,7 +168,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         }
 
         //TODO should it create a cache entry?
-        List<Answer> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        List<Answer> answers = ReasonerQueries.create(query, ans).getQuery().toList();
         return answers.isEmpty()? new QueryAnswer() : answers.iterator().next();
     }
 
