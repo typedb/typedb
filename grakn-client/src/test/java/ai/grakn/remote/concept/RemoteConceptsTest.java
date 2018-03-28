@@ -36,7 +36,9 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.grpc.RolePlayer;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
@@ -55,20 +57,20 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.grpc.ConceptMethod.GET_ATTRIBUTE_TYPES;
-import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE_OF_ATTRIBUTE;
-import static ai.grakn.grpc.ConceptMethod.GET_DATA_TYPE_OF_TYPE;
-import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_SUPER;
-import static ai.grakn.grpc.ConceptMethod.GET_DIRECT_TYPE;
-import static ai.grakn.grpc.ConceptMethod.GET_KEY_TYPES;
-import static ai.grakn.grpc.ConceptMethod.GET_REGEX;
-import static ai.grakn.grpc.ConceptMethod.GET_ROLE_PLAYERS;
-import static ai.grakn.grpc.ConceptMethod.GET_THEN;
-import static ai.grakn.grpc.ConceptMethod.GET_VALUE;
-import static ai.grakn.grpc.ConceptMethod.GET_WHEN;
-import static ai.grakn.grpc.ConceptMethod.IS_ABSTRACT;
-import static ai.grakn.grpc.ConceptMethod.IS_IMPLICIT;
-import static ai.grakn.grpc.ConceptMethod.IS_INFERRED;
+import static ai.grakn.grpc.ConceptMethods.GET_ATTRIBUTE_TYPES;
+import static ai.grakn.grpc.ConceptMethods.GET_DATA_TYPE_OF_ATTRIBUTE;
+import static ai.grakn.grpc.ConceptMethods.GET_DATA_TYPE_OF_TYPE;
+import static ai.grakn.grpc.ConceptMethods.GET_DIRECT_SUPER;
+import static ai.grakn.grpc.ConceptMethods.GET_DIRECT_TYPE;
+import static ai.grakn.grpc.ConceptMethods.GET_KEY_TYPES;
+import static ai.grakn.grpc.ConceptMethods.GET_REGEX;
+import static ai.grakn.grpc.ConceptMethods.GET_ROLE_PLAYERS;
+import static ai.grakn.grpc.ConceptMethods.GET_THEN;
+import static ai.grakn.grpc.ConceptMethods.GET_VALUE;
+import static ai.grakn.grpc.ConceptMethods.GET_WHEN;
+import static ai.grakn.grpc.ConceptMethods.IS_ABSTRACT;
+import static ai.grakn.grpc.ConceptMethods.IS_IMPLICIT;
+import static ai.grakn.grpc.ConceptMethods.IS_INFERRED;
 import static ai.grakn.grpc.GrpcUtil.convertOptionalConcept;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -148,7 +150,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
-        mockConceptMethod(ConceptMethod.GET_LABEL, LABEL);
+        mockConceptMethod(ConceptMethods.GET_LABEL, LABEL);
         assertEquals(LABEL, schemaConcept.getLabel());
     }
 
@@ -208,7 +210,7 @@ public class RemoteConceptsTest {
         String value = "Dunstan again";
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
 
-        mockConceptMethod(ConceptMethod.getAttribute(value), Optional.of(attribute));
+        mockConceptMethod(ConceptMethods.getAttribute(value), Optional.of(attribute));
 
         assertEquals(attribute, attributeType.getAttribute(value));
     }
@@ -216,7 +218,7 @@ public class RemoteConceptsTest {
     @Test
     public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
         String value = "Dunstan > Oliver";
-        mockConceptMethod(ConceptMethod.getAttribute(value), Optional.empty());
+        mockConceptMethod(ConceptMethods.getAttribute(value), Optional.empty());
         assertNull(attributeType.getAttribute(value));
     }
 
@@ -256,7 +258,7 @@ public class RemoteConceptsTest {
         Type mySupersSuper = RemoteConcepts.createEntityType(tx, B);
         Type metaType = RemoteConcepts.createMetaType(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_SUPER_CONCEPTS, Stream.of(me, mySuper, mySupersSuper, metaType));
+        mockConceptMethod(ConceptMethods.GET_SUPER_CONCEPTS, Stream.of(me, mySuper, mySupersSuper, metaType));
 
         Set<Type> sups = entityType.sups().collect(toSet());
         assertThat(sups, containsInAnyOrder(me, mySuper, mySupersSuper));
@@ -269,7 +271,7 @@ public class RemoteConceptsTest {
         Type mySub = RemoteConcepts.createRelationshipType(tx, A);
         Type mySubsSub = RemoteConcepts.createRelationshipType(tx, B);
 
-        mockConceptMethod(ConceptMethod.GET_SUB_CONCEPTS, Stream.of(me, mySub, mySubsSub));
+        mockConceptMethod(ConceptMethods.GET_SUB_CONCEPTS, Stream.of(me, mySub, mySubsSub));
 
         assertThat(relationshipType.subs().collect(toSet()), containsInAnyOrder(me, mySub, mySubsSub));
     }
@@ -302,7 +304,7 @@ public class RemoteConceptsTest {
         Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
         Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_ATTRIBUTES, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_ATTRIBUTES, Stream.of(a, b, c));
 
         assertThat(thing.attributes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -317,7 +319,7 @@ public class RemoteConceptsTest {
         Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
         Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.getAttributesByTypes(foo, bar, baz), Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.getAttributesByTypes(foo, bar, baz), Stream.of(a, b, c));
 
         assertThat(thing.attributes(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -328,7 +330,7 @@ public class RemoteConceptsTest {
         Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
         Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_KEYS, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_KEYS, Stream.of(a, b, c));
 
         assertThat(thing.keys().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -343,7 +345,7 @@ public class RemoteConceptsTest {
         Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
         Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.getKeysByTypes(foo, bar, baz), Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.getKeysByTypes(foo, bar, baz), Stream.of(a, b, c));
 
         assertThat(thing.keys(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -354,7 +356,7 @@ public class RemoteConceptsTest {
         Role b = RemoteConcepts.createRole(tx, B);
         Role c = RemoteConcepts.createRole(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_ROLES_PLAYED_BY_TYPE, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_ROLES_PLAYED_BY_TYPE, Stream.of(a, b, c));
 
         assertThat(type.plays().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -365,7 +367,7 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createRelationship(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_INSTANCES, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_INSTANCES, Stream.of(a, b, c));
 
         assertThat(relationshipType.instances().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -376,7 +378,7 @@ public class RemoteConceptsTest {
         Role b = RemoteConcepts.createRole(tx, B);
         Role c = RemoteConcepts.createRole(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_ROLES_PLAYED_BY_THING, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_ROLES_PLAYED_BY_THING, Stream.of(a, b, c));
 
         assertThat(thing.plays().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -387,7 +389,7 @@ public class RemoteConceptsTest {
         Relationship b = RemoteConcepts.createRelationship(tx, B);
         Relationship c = RemoteConcepts.createRelationship(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_RELATIONSHIPS, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_RELATIONSHIPS, Stream.of(a, b, c));
 
         assertThat(thing.relationships().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -402,7 +404,7 @@ public class RemoteConceptsTest {
         Relationship b = RemoteConcepts.createRelationship(tx, B);
         Relationship c = RemoteConcepts.createRelationship(tx, C);
 
-        mockConceptMethod(ConceptMethod.getRelationshipsByRoles(foo, bar, baz), Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.getRelationshipsByRoles(foo, bar, baz), Stream.of(a, b, c));
 
         assertThat(thing.relationships(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -413,7 +415,7 @@ public class RemoteConceptsTest {
         RelationshipType b = RemoteConcepts.createRelationshipType(tx, B);
         RelationshipType c = RemoteConcepts.createRelationshipType(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE, Stream.of(a, b, c));
 
         assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -424,7 +426,7 @@ public class RemoteConceptsTest {
         Type b = RemoteConcepts.createRelationshipType(tx, B);
         Type c = RemoteConcepts.createAttributeType(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_TYPES_THAT_PLAY_ROLE, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_TYPES_THAT_PLAY_ROLE, Stream.of(a, b, c));
 
         assertThat(role.playedByTypes().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -435,7 +437,7 @@ public class RemoteConceptsTest {
         Role b = RemoteConcepts.createRole(tx, B);
         Role c = RemoteConcepts.createRole(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_RELATED_ROLES, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_RELATED_ROLES, Stream.of(a, b, c));
 
         assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -449,16 +451,23 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
+        Stream<RolePlayer> mockedResponse = Stream.of(
+                RolePlayer.create(foo, a),
+                RolePlayer.create(bar, b),
+                RolePlayer.create(bar, c)
+        );
+
+        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), mockedResponse);
+
+        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
+
+        Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
+
         Map<Role, Set<Thing>> expected = ImmutableMap.of(
                 foo, ImmutableSet.of(a),
                 bar, ImmutableSet.of(b, c)
         );
 
-        TxResponse response = GET_ROLE_PLAYERS.createTxResponse(expected);
-
-        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
-
-        Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
         assertEquals(expected, allRolePlayers);
     }
 
@@ -470,7 +479,11 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.GET_ROLE_PLAYERS, ImmutableMap.of(foo, ImmutableSet.of(a, b, c)));
+        Stream<RolePlayer> expected = Stream.of(
+                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
+        );
+
+        mockConceptMethod(ConceptMethods.GET_ROLE_PLAYERS, expected);
 
         assertThat(relationship.rolePlayers().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -485,7 +498,7 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        mockConceptMethod(ConceptMethod.getRolePlayersByRoles(foo, bar, baz), Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.getRolePlayersByRoles(foo, bar, baz), Stream.of(a, b, c));
 
         assertThat(relationship.rolePlayers(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -496,7 +509,7 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, A);
         Thing c = RemoteConcepts.createAttribute(tx, A);
 
-        mockConceptMethod(ConceptMethod.GET_OWNERS, Stream.of(a, b, c));
+        mockConceptMethod(ConceptMethods.GET_OWNERS, Stream.of(a, b, c));
 
         assertThat(attribute.ownerInstances().collect(toSet()), containsInAnyOrder(a, b, c));
     }
@@ -532,102 +545,102 @@ public class RemoteConceptsTest {
     @Test
     public void whenCallingDelete_ExecuteAConceptMethod() {
         concept.delete();
-        verifyConceptMethodCalled(ConceptMethod.DELETE);
+        verifyConceptMethodCalled(ConceptMethods.DELETE);
     }
 
     @Test
     public void whenSettingSuper_ExecuteAConceptMethod() {
         EntityType sup = RemoteConcepts.createEntityType(tx, A);
         assertEquals(entityType, entityType.sup(sup));
-        verifyConceptMethodCalled(ConceptMethod.setDirectSuperConcept(sup));
+        verifyConceptMethodCalled(ConceptMethods.setDirectSuperConcept(sup));
     }
 
     @Test
     public void whenSettingSub_ExecuteAConceptMethod() {
         EntityType sup = RemoteConcepts.createEntityType(tx, A);
         assertEquals(sup, sup.sub(entityType));
-        verifyConceptMethodCalled(ConceptMethod.setDirectSuperConcept(sup));
+        verifyConceptMethodCalled(ConceptMethods.setDirectSuperConcept(sup));
     }
 
     @Test
     public void whenSettingLabel_ExecuteAConceptMethod() {
         Label label = Label.of("Dunstan");
         assertEquals(schemaConcept, schemaConcept.setLabel(label));
-        verifyConceptMethodCalled(ConceptMethod.setLabel(label));
+        verifyConceptMethodCalled(ConceptMethods.setLabel(label));
     }
 
     @Test
     public void whenSettingRelates_ExecuteAConceptMethod() {
         Role role = RemoteConcepts.createRole(tx, A);
         assertEquals(relationshipType, relationshipType.relates(role));
-        verifyConceptMethodCalled(ConceptMethod.setRelatedRole(role));
+        verifyConceptMethodCalled(ConceptMethods.setRelatedRole(role));
     }
 
     @Test
     public void whenSettingPlays_ExecuteAConceptMethod() {
         Role role = RemoteConcepts.createRole(tx, A);
         assertEquals(attributeType, attributeType.plays(role));
-        verifyConceptMethodCalled(ConceptMethod.setRolePlayedByType(role));
+        verifyConceptMethodCalled(ConceptMethods.setRolePlayedByType(role));
     }
 
     @Test
     public void whenSettingAbstractOn_ExecuteAConceptMethod() {
         assertEquals(attributeType, attributeType.setAbstract(true));
-        verifyConceptMethodCalled(ConceptMethod.setAbstract(true));
+        verifyConceptMethodCalled(ConceptMethods.setAbstract(true));
     }
 
     @Test
     public void whenSettingAbstractOff_ExecuteAConceptMethod() {
         assertEquals(attributeType, attributeType.setAbstract(false));
-        verifyConceptMethodCalled(ConceptMethod.setAbstract(false));
+        verifyConceptMethodCalled(ConceptMethods.setAbstract(false));
     }
 
     @Test
     public void whenSettingAttributeType_ExecuteAConceptMethod() {
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         assertEquals(type, type.attribute(attributeType));
-        verifyConceptMethodCalled(ConceptMethod.setAttributeType(attributeType));
+        verifyConceptMethodCalled(ConceptMethods.setAttributeType(attributeType));
     }
 
     @Test
     public void whenSettingKeyType_ExecuteAConceptMethod() {
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         assertEquals(type, type.key(attributeType));
-        verifyConceptMethodCalled(ConceptMethod.setKeyType(attributeType));
+        verifyConceptMethodCalled(ConceptMethods.setKeyType(attributeType));
     }
 
     @Test
     public void whenDeletingAttributeType_ExecuteAConceptMethod() {
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         assertEquals(type, type.deleteAttribute(attributeType));
-        verifyConceptMethodCalled(ConceptMethod.unsetAttributeType(attributeType));
+        verifyConceptMethodCalled(ConceptMethods.unsetAttributeType(attributeType));
     }
 
     @Test
     public void whenDeletingKeyType_ExecuteAConceptMethod() {
         AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
         assertEquals(type, type.deleteKey(attributeType));
-        verifyConceptMethodCalled(ConceptMethod.unsetKeyType(attributeType));
+        verifyConceptMethodCalled(ConceptMethods.unsetKeyType(attributeType));
     }
 
     @Test
     public void whenDeletingPlays_ExecuteAConceptMethod() {
         Role role = RemoteConcepts.createRole(tx, A);
         assertEquals(type, type.deletePlays(role));
-        verifyConceptMethodCalled(ConceptMethod.unsetRolePlayedByType(role));
+        verifyConceptMethodCalled(ConceptMethods.unsetRolePlayedByType(role));
     }
 
     @Test
     public void whenCallingAddEntity_ExecuteAConceptMethod() {
         Entity entity = RemoteConcepts.createEntity(tx, A);
-        mockConceptMethod(ConceptMethod.ADD_ENTITY, entity);
+        mockConceptMethod(ConceptMethods.ADD_ENTITY, entity);
         assertEquals(entity, entityType.addEntity());
     }
 
     @Test
     public void whenCallingAddRelationship_ExecuteAConceptMethod() {
         Relationship relationship = RemoteConcepts.createRelationship(tx, A);
-        mockConceptMethod(ConceptMethod.ADD_RELATIONSHIP, relationship);
+        mockConceptMethod(ConceptMethods.ADD_RELATIONSHIP, relationship);
         assertEquals(relationship, relationshipType.addRelationship());
     }
 
@@ -635,7 +648,7 @@ public class RemoteConceptsTest {
     public void whenCallingPutAttribute_ExecuteAConceptMethod() {
         String value = "Dunstan";
         Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
-        mockConceptMethod(ConceptMethod.putAttribute(value), attribute);
+        mockConceptMethod(ConceptMethods.putAttribute(value), attribute);
         assertEquals(attribute, attributeType.putAttribute(value));
     }
 
@@ -643,38 +656,38 @@ public class RemoteConceptsTest {
     public void whenCallingDeleteRelates_ExecuteAConceptMethod() {
         Role role = RemoteConcepts.createRole(tx, A);
         assertEquals(relationshipType, relationshipType.deleteRelates(role));
-        verifyConceptMethodCalled(ConceptMethod.unsetRelatedRole(role));
+        verifyConceptMethodCalled(ConceptMethods.unsetRelatedRole(role));
     }
 
     @Test
     public void whenSettingRegex_ExecuteAConceptMethod() {
         String regex = "[abc]";
         assertEquals(attributeType, attributeType.setRegex(regex));
-        verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.of(regex)));
+        verifyConceptMethodCalled(ConceptMethods.setRegex(Optional.of(regex)));
     }
 
     @Test
     public void whenResettingRegex_ExecuteAQuery() {
         assertEquals(attributeType, attributeType.setRegex(null));
-        verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.empty()));
+        verifyConceptMethodCalled(ConceptMethods.setRegex(Optional.empty()));
     }
 
     @Test
     public void whenCallingAddAttributeOnThing_ExecuteAConceptMethod() {
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         Relationship relationship = RemoteConcepts.createRelationship(tx, C);
-        mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
+        mockConceptMethod(ConceptMethods.setAttribute(attribute), relationship);
 
         assertEquals(thing, thing.attribute(attribute));
 
-        verifyConceptMethodCalled(ConceptMethod.setAttribute(attribute));
+        verifyConceptMethodCalled(ConceptMethods.setAttribute(attribute));
     }
 
     @Test
     public void whenCallingAddAttributeRelationshipOnThing_ExecuteAConceptMethod() {
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         Relationship relationship = RemoteConcepts.createRelationship(tx, C);
-        mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
+        mockConceptMethod(ConceptMethods.setAttribute(attribute), relationship);
         assertEquals(relationship, thing.attributeRelationship(attribute));
     }
 
@@ -682,7 +695,7 @@ public class RemoteConceptsTest {
     public void whenCallingDeleteAttribute_ExecuteAConceptMethod() {
         Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
         assertEquals(thing, thing.deleteAttribute(attribute));
-        verifyConceptMethodCalled(ConceptMethod.unsetAttribute(attribute));
+        verifyConceptMethodCalled(ConceptMethods.unsetAttribute(attribute));
     }
 
     @Test
@@ -691,7 +704,7 @@ public class RemoteConceptsTest {
         Thing thing = RemoteConcepts.createEntity(tx, B);
         assertEquals(relationship, relationship.addRolePlayer(role, thing));
 
-        verifyConceptMethodCalled(ConceptMethod.setRolePlayer(role, thing));
+        verifyConceptMethodCalled(ConceptMethods.setRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Test
@@ -699,7 +712,7 @@ public class RemoteConceptsTest {
         Role role = RemoteConcepts.createRole(tx, A);
         Thing thing = RemoteConcepts.createEntity(tx, B);
         relationship.removeRolePlayer(role, thing);
-        verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(role, thing));
+        verifyConceptMethodCalled(ConceptMethods.removeRolePlayer(RolePlayer.create(role, thing)));
     }
 
     private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
@@ -707,6 +720,9 @@ public class RemoteConceptsTest {
     }
 
     private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
-        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, property), property.createTxResponse(value));
+        server.setResponse(
+                GrpcUtil.runConceptMethodRequest(ID, property),
+                property.createTxResponse(server.grpcIterators(), value)
+        );
     }
 }

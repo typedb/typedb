@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
@@ -73,13 +74,14 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
     private static final String STORAGE_BACKEND = "storage.backend";
-    private static final String STORAGE_HOSTNAME = "storage.hostname";
-    private static final String STORAGE_KEYSPACE = "storage.cassandra.keyspace";
-    private static final String STORAGE_BATCH_LOADING = "storage.batch-loading";
-    private static final String STORAGE_REPLICATION_FACTOR = "storage.cassandra.replication-factor";
+    private static final String STORAGE_HOSTNAME = GraknConfigKey.STORAGE_HOSTNAME.name();
+    private static final String STORAGE_KEYSPACE = GraknConfigKey.STORAGE_KEYSPACE.name();
+    private static final String STORAGE_BATCH_LOADING = GraknConfigKey.STORAGE_BATCH_LOADING.name();
+    private static final String STORAGE_REPLICATION_FACTOR = GraknConfigKey.STORAGE_REPLICATION_FACTOR.name();
+
 
     //These properties are loaded in by default and can optionally be overwritten
-    static final Properties DEFAULT_PROPERTIES;
+    private static final Properties DEFAULT_PROPERTIES;
     static {
         String DEFAULT_CONFIG = "default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
@@ -89,6 +91,10 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
+    }
+
+    public static Properties getDefaultProperties() {
+        return DEFAULT_PROPERTIES;
     }
 
     /**
@@ -120,12 +126,12 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
+    protected GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
         return new GraknTxJanus(session(), graph);
     }
 
     @Override
-    JanusGraph buildTinkerPopGraph(boolean batchLoading) {
+    protected JanusGraph buildTinkerPopGraph(boolean batchLoading) {
         return newJanusGraph(batchLoading);
     }
 
