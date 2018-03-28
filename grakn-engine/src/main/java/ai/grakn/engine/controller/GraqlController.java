@@ -285,7 +285,12 @@ public class GraqlController implements HttpController {
     }
 
     private Object executeAndMonitor(Query<?> query) {
-        return query.execute();
+        Object result = query.execute();
+        if (result instanceof Stream) {
+            return ((Stream<?>) result).collect(Collectors.toList());
+        } else {
+            return result;
+        }
     }
 
 }
