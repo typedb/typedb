@@ -50,9 +50,25 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+/**
+ * Tests for the Graql examples in the documentation.
+ *
+ * <p>
+ *     Will automatically find and execute all code examples marked {@code graql} in the documentation. If you don't
+ *     want an example to run in the tests, annotate it with something other than {@code graql}, such as
+ *     {@code graql-skip-test}.
+ * </p>
+ *
+ * <p>
+ *     Each example is run using a pre-loaded graph. Go to {@link DocTestUtil#loaders} for more information.
+ * </p>
+ */
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
 
+    /**
+     * Regex for matching Graql examples in markdown documentation. This is designed to match code blocks and HTML.
+     */
     private static final Pattern TAG_GRAQL =
             Pattern.compile(
                     "(id=\"shell[0-9]+\">\\s*<pre>|```graql\\s*\\n)" +
@@ -81,7 +97,7 @@ public class GraqlDocsTest {
     public static EngineContext engine = EngineContext.create();
 
     @Parameterized.Parameters(name = "{1}")
-    public static Collection files() {
+    public static Collection<Object[]> files() {
         return allMarkdownFiles().stream()
                 .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
                 .collect(toList());
