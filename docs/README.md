@@ -7,10 +7,10 @@
 * Install `bundler` and `rake` (one time only task)
 * Pull down documentation repo
 * Make changes to markdown
-* `rake serve` in terminal and browse to [http://127.0.0.1:4005](http://127.0.0.1:4005)
+* `node ./deploy-server.js` in terminal and browse to [http://127.0.0.1:3003](http://127.0.0.1:3003) (use `rake serve` if `node` is not installed on your machine)
 * If you need to make some extra changes to the markdown after you have the server running, just change the files and save them. `rake` will pick up the changes and rebuild the docs so you don't need to do anything.
-* When you're happy, push to the docs repo
-* Go to the graknlabs website repo when you're ready to deploy...
+* When you're happy, push to the docs repo to `stable` branch
+* Once the changes have been merged to stable, go to `/docs` and run `./deploy.sh` script (you can run this script from whatever brunch on your machine)
 
 ## Dependencies
 
@@ -45,24 +45,8 @@ You need to install the following dependencies to be able to build HTML pages in
 
 3. NPM Modules; These are used to run the deployment server tests.
     ```
-    $ npm i
+    $ yarn install
     ```
-
-## Environment variables
-
-There is an environment variable that needs to be set depending on the build you wish to commence: `urlprefix`. If you only wish to preview the generated documentation itself; as server from this repository rather than integrated into the GRAKN.AI website you do not need to do anything.
-
-##### `urlprefix`
-
-For local builds (local web server with documentation only), do not set this variable, or make sure it has been cleared with:
-```
-$ export urlprefix=""
-```
-
-For integrating to GRAKN.AI website, or elsewhere set as needed. For example; `www.grakn.ai/docs/`
-```
-$ export urlprefix=/docs
-```
 
 ## Building
 
@@ -104,9 +88,11 @@ You can now view the documentation by navigating your web browser to `http://127
 After you are done making changes, run the deployment server with ```node ./deploy-server.js``` to test how everything is going to look on releasing.
 You can access the site on `http://127.0.0.1:3003/`
 
-Run ```source ./deploy.sh``` from your __stable__ branch after the above testing step. The Script Deploys the application to our heroku server. Make sure you have the correct git credentials.
+If everything works, create a new PR against grakn [stable branch](https://github.com/graknlabs/grakn/tree/stable).
+Once the PR has been merged run the `deploy.sh` script inside `/docs`.
+The script deploys the application to our heroku server. Make sure you have the correct git credentials.
 
-If deploying from some other branch make sure to edit `deploy.sh` file to branch off accordingly.
+> If deploying from some other branch make sure to edit `deploy.sh` file to branch off accordingly.
 
 ## Tests
 

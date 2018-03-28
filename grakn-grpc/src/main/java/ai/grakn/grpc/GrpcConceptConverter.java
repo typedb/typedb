@@ -41,4 +41,8 @@ public interface GrpcConceptConverter {
                 throw new IllegalArgumentException("Unrecognised " + concept);
         }
     }
+
+    default RolePlayer convert(GrpcConcept.RolePlayer rolePlayer) {
+        return RolePlayer.create(convert(rolePlayer.getRole()).asRole(), convert(rolePlayer.getPlayer()).asThing());
+    }
 }

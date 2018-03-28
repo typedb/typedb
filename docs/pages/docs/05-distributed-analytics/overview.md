@@ -20,10 +20,10 @@ framework and/or [map reduce](https://en.wikipedia.org/wiki/MapReduce) when we n
 
 The functionality breaks down into two main tasks:
 
-*  computing statistics related to numeric resources
-*  interrogating the structure of the knowledge graph.
+*  Statistics Query: computing statistics related to numeric resources
+*  Graph Query: interrogating the structure of the knowledge graph.
 
-### Statistics
+### Statistics Query
 
 Currently you can compute the `min`, `max`, `mean`, `median`, `std` (standard deviation) and `sum` of resources attached to entities. This
 can also be achieved on a subgraph, which is a subset of the types in your dataset. For example, you can specify queries to find the mean age of people in a knowledge graph:
@@ -34,13 +34,13 @@ compute mean of age in person;
 
 We cover this topic more in our documentation page on [statistics](./compute-statistics).
 
-### Graph Structure
+### Graph Query
 
-At the moment we have a simple algorithm for determining
+At the moment we support queries for determining
 
-* [centrality measure (degree)](./compute-degrees)
+* [centrality: degree, k-core (coreness)](./compute-centrality)
+* [clusters or communities: connected component, k-core](./compute-cluster).
 * [paths between nodes (shortest path)](./compute-shortest-path)
-* [clusters or communities (connected components)](./compute-connected-components).
 
 ## The Knowledge Graph According to Analytics
 
@@ -88,7 +88,7 @@ The algorithm for computing the degree is one example.
 If we execute the following query, the number of arrows (edges) attached to each node is returned:
 
 ```graql
-compute degrees in person, marriage;
+compute centrality in person, marriage; using degree;
 ```
 
 In the example below this would be 1 for Jacob Young, 2 for Barbara Herchelroth, 1 for John Newman and 0 for the rest because we do not count the arrows indicating type, only arrows labelled with `spouse` roles.

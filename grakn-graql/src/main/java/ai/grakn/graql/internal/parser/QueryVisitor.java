@@ -40,8 +40,10 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -298,49 +300,91 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
+    public ConnectedComponentQuery<?> visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
         ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
-
-        if (ctx.id() != null) {
-            cluster = cluster.of(visitId(ctx.id()));
-        }
 
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
 
-        cluster = chainOperators(ctx.clusterParam().stream().map(this::visitClusterParam)).apply(cluster);
+        cluster = chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(cluster);
 
         return cluster;
     }
 
-    private UnaryOperator<ConnectedComponentQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
+    private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
         return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
     }
 
     @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
-        return ConnectedComponentQuery::members;
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
+        return query -> visitBool(ctx.bool()) ? query.membersOn() : query.membersOff();
     }
 
     @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterSize(GraqlParser.CcClusterSizeContext ctx) {
         return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery degree = queryBuilder.compute().centrality().usingDegree();
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
+        return query -> query.of(visitId(ctx.id()));
+    }
+
+    @Override
+    public KCoreQuery visitKCore(GraqlParser.KCoreContext ctx) {
+        KCoreQuery kCoreQuery = queryBuilder.compute().cluster().usingKCore();
+
+        if (ctx.inList() != null) {
+            kCoreQuery = kCoreQuery.in(visitInList(ctx.inList()));
+        }
+
+        kCoreQuery = chainOperators(ctx.kcParam().stream().map(this::visitKcParam)).apply(kCoreQuery);
+
+        return kCoreQuery;
+    }
+
+    private UnaryOperator<KCoreQuery> visitKcParam(GraqlParser.KcParamContext ctx) {
+        return (UnaryOperator<KCoreQuery>) visit(ctx);
+    }
+
+    @Override
+    public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
+        return query -> query.kValue(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
+        DegreeQuery degreeQuery = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {
-            degree = degree.of(visitOfList(ctx.ofList()));
+            degreeQuery = degreeQuery.of(visitOfList(ctx.ofList()));
         }
 
         if (ctx.inList() != null) {
-            degree = degree.in(visitInList(ctx.inList()));
+            degreeQuery = degreeQuery.in(visitInList(ctx.inList()));
         }
 
-        return degree;
+        return degreeQuery;
+    }
+
+    @Override
+    public CorenessQuery visitCoreness(GraqlParser.CorenessContext ctx) {
+        CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
+
+        if (ctx.ofList() != null) {
+            corenessQuery = corenessQuery.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            corenessQuery = corenessQuery.in(visitInList(ctx.inList()));
+        }
+
+        if (ctx.INTEGER() != null) {
+            corenessQuery = corenessQuery.minK(getInteger(ctx.INTEGER()));
+        }
+
+        return corenessQuery;
     }
 
     @Override

@@ -22,7 +22,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -43,31 +43,31 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
     @Override
     public final AttributeType<D> setRegex(@Nullable String regex) {
-        return runVoidMethod(ConceptMethod.setRegex(Optional.ofNullable(regex)));
+        return runVoidMethod(ConceptMethods.setRegex(Optional.ofNullable(regex)));
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        return asInstance(runMethod(ConceptMethod.putAttribute(value)));
+        return asInstance(runMethod(ConceptMethods.putAttribute(value)));
     }
 
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        Optional<Concept> concept = runMethod(ConceptMethod.getAttribute(value));
+        Optional<Concept> concept = runMethod(ConceptMethods.getAttribute(value));
         return concept.map(Concept::<D>asAttribute).orElse(null);
     }
 
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE_OF_TYPE).orElse(null);
+        return (AttributeType.DataType<D>) runMethod(ConceptMethods.GET_DATA_TYPE_OF_TYPE).orElse(null);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        return runMethod(ConceptMethod.GET_REGEX).orElse(null);
+        return runMethod(ConceptMethods.GET_REGEX).orElse(null);
     }
 
     @Override
