@@ -25,27 +25,27 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.SystemKeyspaceImpl;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 /**
  * <p>
- *     Engine's internal {@link GraknTx} Factory
+ * Engine's internal {@link GraknTx} Factory
  * </p>
- *
+ * <p>
  * <p>
  *     This internal factory is used to produce {@link GraknTx}s.
  *
  *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
+ *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
  *     are actually the same graphs.
  * </p>
  *
@@ -53,38 +53,33 @@ import java.util.Map;
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;
-    private final SystemKeyspace systemKeyspace;
+    private final GraknKeyspaceStore graknKeyspaceStore;
     private final Map<Keyspace, EmbeddedGraknSession> openedSessions;
+    private final LockProvider lockProvider;
 
-    @VisibleForTesting //Only used for testing
-    public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, GraknConfig engineConfig) {
-        return new EngineGraknTxFactory(engineConfig, lockProvider, true);
+    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, GraknKeyspaceStore keyspaceStore) {
+        return new EngineGraknTxFactory(engineConfig, lockProvider, keyspaceStore);
     }
 
-    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig) {
-        return new EngineGraknTxFactory(engineConfig, lockProvider, false);
-    }
-
-    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
+    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, GraknKeyspaceStore keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
-        this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
+        this.lockProvider = lockProvider;
+        this.graknKeyspaceStore = keyspaceStore;
     }
 
     //Should only be used for testing
     @VisibleForTesting
     public synchronized void refreshConnections(){
-        FactoryBuilder.refresh();
+        GraknTxFactoryBuilder.refresh();
     }
 
-    public EmbeddedGraknTx<?> tx(String keyspace, GraknTxType type){
-        return tx(Keyspace.of(keyspace), type);
-    }
 
-    public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type){
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_KEYSPACE)) {
-            systemKeyspace.openKeyspace(keyspace);
+    public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
+        if (!graknKeyspaceStore.containsKeyspace(keyspace)) {
+            initialiseNewKeyspace(keyspace);
         }
+
         return session(keyspace).open(type);
     }
 
@@ -97,25 +92,40 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, GraknTxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
 
     /**
      * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
+     *
      * @param keyspace the new {@link Keyspace} we want to create
      */
-    public void initialiseNewKeyspace(Keyspace keyspace) {
-        session(keyspace).open(GraknTxType.WRITE).close();
+    private void initialiseNewKeyspace(Keyspace keyspace) {
+        //If the keyspace does not exist lock and create it
+        Lock lock = lockProvider.getLock(getLockingKey(keyspace));
+        lock.lock();
+        try {
+            // Create new empty keyspace in db
+            session(keyspace).open(GraknTxType.WRITE).close();
+            // Add current keyspace to list of available Grakn keyspaces
+            graknKeyspaceStore.addKeyspace(keyspace);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static String getLockingKey(Keyspace keyspace) {
+        return "/creating-new-keyspace-lock/" + keyspace.getValue();
     }
 
     public GraknConfig config() {
         return engineConfig;
     }
 
-    public SystemKeyspace systemKeyspace(){
-        return systemKeyspace;
+    public GraknKeyspaceStore keyspaceStore() {
+        return graknKeyspaceStore;
     }
 
     private String engineURI() {

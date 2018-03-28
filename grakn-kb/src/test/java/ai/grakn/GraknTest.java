@@ -24,8 +24,8 @@ import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,15 +88,15 @@ public class GraknTest {
     @Test
     public void whenGettingSessionForSameKeyspaceFromMultipleThreads_EnsureSingleSessionIsReturned() throws ExecutionException, InterruptedException {
         Keyspace keyspace = Keyspace.of("myspecialkeyspace");
-        Set<Future> futures = new HashSet<>();
-        Set<GraknSession> sessions = new HashSet<>();
+        Set<Future<?>> futures = ConcurrentHashMap.newKeySet();
+        Set<GraknSession> sessions = ConcurrentHashMap.newKeySet();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 50; i ++){
             futures.add(pool.submit(() -> sessions.add(Grakn.session(Grakn.IN_MEMORY, keyspace))));
         }
 
-        for (Future future : futures) {
+        for (Future<?> future : futures) {
             future.get();
         }
 

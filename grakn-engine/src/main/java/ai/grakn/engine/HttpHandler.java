@@ -92,7 +92,7 @@ public class HttpHandler {
         // Start all the DEFAULT controllers
         new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
-        new SystemController(prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry).start(spark);
+        new SystemController(prop, factory.keyspaceStore(), graknEngineStatus, metricRegistry).start(spark);
         new CommitLogController(postProcessor).start(spark);
 
         additionalCollaborators.forEach(httpController -> httpController.start(spark));

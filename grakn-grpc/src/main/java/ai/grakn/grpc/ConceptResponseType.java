@@ -21,18 +21,21 @@ package ai.grakn.grpc;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
+import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
-import java.util.Map;
-import java.util.Set;
+import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Wrapper around the different types of responses to {@link ConceptMethod}s applied on {@link Concept}s.
@@ -44,9 +47,9 @@ abstract class ConceptResponseType<T> {
     public static final ConceptResponseType<Boolean> BOOL =
             ConceptResponseType.create(ConceptResponse::getBool, ConceptResponse.Builder::setBool);
 
-    public static final ConceptResponseType<Pattern> PATTERN = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getPattern()),
-            (builder, val) -> builder.setPattern(GrpcUtil.convert(val))
+    public static final ConceptResponseType<Optional<Pattern>> OPTIONAL_PATTERN = ConceptResponseType.create(
+            response -> GrpcUtil.convert(response.getOptionalPattern()),
+            (builder, val) -> builder.setOptionalPattern(GrpcUtil.convert(val))
     );
 
     public static final ConceptResponseType<Concept> CONCEPT = ConceptResponseType.create(
@@ -54,20 +57,33 @@ abstract class ConceptResponseType<T> {
             (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
     );
 
-    public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS = ConceptResponseType.create(
-            (converter, response) -> GrpcUtil.convert(converter, response.getConcepts()),
-            (builder, val) -> builder.setConcepts(GrpcUtil.convert(val))
+    public static final ConceptResponseType<Optional<Concept>> OPTIONAL_CONCEPT = ConceptResponseType.create(
+            (converter, response) -> converter.convert(response.getOptionalConcept()),
+            (builder, val) -> builder.setOptionalConcept(GrpcUtil.convertOptionalConcept(val))
     );
 
-    public static final ConceptResponseType<Map<Role, Set<Thing>>> ROLE_PLAYERS = ConceptResponseType.create(
-            (converter, response) -> GrpcUtil.convert(converter, response.getRolePlayers()),
-            (builder, val) -> builder.setRolePlayers(GrpcUtil.convert(val))
-    );
+    public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS =
+            ConceptResponseType.createStreamable(
+                    (converter, response) -> converter.convert(response.getConcept()),
+                    GrpcUtil::conceptResponse
+            );
+
+    public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS =
+            ConceptResponseType.createStreamable(
+                    (converter, response) -> converter.convert(response.getRolePlayer()),
+                    GrpcUtil::rolePlayerResponse
+            );
 
     public static final ConceptResponseType<AttributeType.DataType<?>> DATA_TYPE = ConceptResponseType.create(
             response -> GrpcUtil.convert(response.getDataType()),
             (builder, val) -> builder.setDataType(GrpcUtil.convert(val))
     );
+
+    public static final ConceptResponseType<Optional<AttributeType.DataType<?>>> OPTIONAL_DATA_TYPE =
+            ConceptResponseType.create(
+                    response -> GrpcUtil.convert(response.getOptionalDataType()),
+                    (builder, val) -> builder.setOptionalDataType(GrpcUtil.convertOptionalDataType(val))
+            );
 
     public static final ConceptResponseType<Object> ATTRIBUTE_VALUE = ConceptResponseType.create(
             response -> GrpcUtil.convert(response.getAttributeValue()),
@@ -87,9 +103,15 @@ abstract class ConceptResponseType<T> {
             (builder, val) -> builder.setUnit(GrpcConcept.Unit.getDefaultInstance())
     );
 
-    public abstract T get(GrpcConceptConverter converter , ConceptResponse conceptResponse);
+    public static final ConceptResponseType<Optional<String>> OPTIONAL_REGEX = ConceptResponseType.create(
+            response -> GrpcUtil.convert(response.getOptionalRegex()),
+            (builder, val) -> builder.setOptionalRegex(GrpcUtil.convertRegex(val))
+    );
 
-    public abstract void set(ConceptResponse.Builder builder, T value);
+    @Nullable
+    public abstract T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse);
+
+    public abstract void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value);
 
     public static <T> ConceptResponseType<T> create(
             Function<ConceptResponse, T> getter,
@@ -102,15 +124,50 @@ abstract class ConceptResponseType<T> {
             BiFunction<GrpcConceptConverter, ConceptResponse, T> getter,
             BiConsumer<ConceptResponse.Builder, T> setter
     ) {
+        return create(
+                (converter, client, response) -> getter.apply(converter, response),
+                (builder, iterators, val) -> setter.accept(builder, val)
+        );
+    }
+
+    public static <T> ConceptResponseType<Stream<? extends T>> createStreamable(
+            BiFunction<GrpcConceptConverter, TxResponse, T> getter,
+            Function<T, TxResponse> setter
+    ) {
+        return create(
+                (converter, client, response) -> {
+                    IteratorId iteratorId = response.getIteratorId();
+
+                    Iterable<T> iterable = () -> new GraknGrpcIterator<T>(client, iteratorId) {
+                        @Override
+                        protected T getNextFromResponse(TxResponse response) {
+                            return getter.apply(converter, response);
+                        }
+                    };
+
+                    return StreamSupport.stream(iterable.spliterator(), false);
+                },
+                (builder, iterators, val) -> {
+                    Stream<TxResponse> responses = val.map(setter);
+                    IteratorId iteratorId = iterators.add(responses.iterator());
+                    builder.setIteratorId(iteratorId);
+                }
+        );
+    }
+
+    public static <T> ConceptResponseType<T> create(
+            TriFunction<GrpcConceptConverter, GrpcClient, ConceptResponse, T> getter,
+            TriConsumer<ConceptResponse.Builder, GrpcIterators, T> setter
+    ) {
         return new ConceptResponseType<T>() {
             @Override
-            public T get(GrpcConceptConverter converter, ConceptResponse conceptResponse) {
-                return getter.apply(converter, conceptResponse);
+            public T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse) {
+                return getter.apply(converter, client, conceptResponse);
             }
 
             @Override
-            public void set(ConceptResponse.Builder builder, T value) {
-                setter.accept(builder, value);
+            public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value) {
+                setter.accept(builder, iterators, value);
             }
         };
     }

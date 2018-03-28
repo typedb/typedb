@@ -58,13 +58,13 @@ public class BackgroundTaskRunner implements AutoCloseable {
      */
     public void register(BackgroundTask backgroundTask){
         if(!registeredTasks.contains(backgroundTask)) {
+            LOG.info("Registering a new background task.");
             registeredTasks.add(backgroundTask);
             threadPool.scheduleAtFixedRate(() -> {
                 try {
                     backgroundTask.run();
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     LOG.error(ErrorMessage.BACKGROUND_TASK_UNHANDLED_EXCEPTION.getMessage(backgroundTask), e);
-                    throw e;
                 }
             }, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
 

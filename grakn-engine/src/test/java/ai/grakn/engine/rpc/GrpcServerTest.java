@@ -38,10 +38,13 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
+import ai.grakn.grpc.GrpcClient;
 import ai.grakn.grpc.GrpcConceptConverter;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.grpc.RolePlayer;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
@@ -51,12 +54,12 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.BaseType;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxType;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -73,7 +76,6 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -123,6 +125,7 @@ public class GrpcServerTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
     private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
+    private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
     private GrpcServer grpcServer;
@@ -444,9 +447,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
 
-            assertEquals(label, ConceptMethod.GET_LABEL.get(conceptConverter, tx.receive().ok()));
+            assertEquals(label, ConceptMethods.GET_LABEL.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -463,9 +466,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethods.IS_IMPLICIT));
 
-            assertTrue(ConceptMethod.IS_IMPLICIT.get(conceptConverter, tx.receive().ok()));
+            assertTrue(ConceptMethods.IS_IMPLICIT.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -482,9 +485,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethods.IS_INFERRED));
 
-            assertFalse(ConceptMethod.IS_INFERRED.get(conceptConverter, tx.receive().ok()));
+            assertFalse(ConceptMethods.IS_INFERRED.get(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -516,7 +519,8 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, ConceptMethod.removeRolePlayer(role, player)));
+            ConceptMethod<Void> conceptMethod = ConceptMethods.removeRolePlayer(RolePlayer.create(role, player));
+            tx.send(GrpcUtil.runConceptMethodRequest(conceptId, conceptMethod));
             tx.receive().ok();
 
             verify(concept.asRelationship()).removeRolePlayer(role, player);
@@ -533,7 +537,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -554,7 +558,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(GrpcUtil.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -578,10 +582,10 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptRequest(id));
 
-            GrpcConcept.Concept response = tx.receive().ok().getConceptResponse().getConcept();
+            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
-            assertEquals(id.getValue(), response.getId().getValue());
-            assertEquals(BaseType.Relationship, response.getBaseType());
+            assertEquals(id.getValue(), response.getPresent().getId().getValue());
+            assertEquals(BaseType.Relationship, response.getPresent().getBaseType());
         }
     }
 
@@ -597,9 +601,9 @@ public class GrpcServerTest {
 
             tx.send(GrpcUtil.getConceptRequest(id));
 
-            GrpcConcept.ConceptResponse response = tx.receive().ok().getConceptResponse();
+            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
-            assertEquals(GrpcConcept.ConceptResponse.ValueCase.VALUE_NOT_SET, response.getValueCase());
+            assertEquals(GrpcConcept.OptionalConcept.ValueCase.ABSENT, response.getValueCase());
         }
     }
 
@@ -727,16 +731,13 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenSendingStopBeforeQuery_Throw() throws Throwable {
+    public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(stopRequest(IteratorId.getDefaultInstance()));
-
-            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
-
-            throw tx.receive().error();
+            assertEquals(GrpcUtil.doneResponse(), tx.receive().ok());
         }
     }
 

@@ -41,7 +41,10 @@ import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcConcept.Concepts;
-import ai.grakn.rpc.generated.GrpcConcept.RolePlayer;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalDataType;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalPattern;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalRegex;
 import ai.grakn.rpc.generated.GrpcConcept.RolePlayers;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Commit;
@@ -50,14 +53,16 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.Infer;
-import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
-import ai.grakn.rpc.generated.GrpcGrakn.Next;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
-import ai.grakn.rpc.generated.GrpcGrakn.Stop;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxType;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.generated.GrpcIterator.Next;
+import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimaps;
@@ -68,6 +73,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -78,6 +84,8 @@ import static java.util.stream.Collectors.toList;
  * @author Felix Chapman
  */
 public class GrpcUtil {
+
+    private static final GrpcConcept.Unit UNIT = GrpcConcept.Unit.getDefaultInstance();
 
     static class UnknownGraknException extends GraknException {
 
@@ -175,12 +183,58 @@ public class GrpcUtil {
         return TxRequest.newBuilder().setGetConcept(convert(id)).build();
     }
 
+    public static TxRequest getSchemaConceptRequest(Label label) {
+        return TxRequest.newBuilder().setGetSchemaConcept(convert(label)).build();
+    }
+
+    public static TxRequest getAttributesByValueRequest(Object value) {
+        return TxRequest.newBuilder().setGetAttributesByValue(convertValue(value)).build();
+    }
+
+    public static TxRequest putEntityTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutEntityType(convert(label)).build();
+    }
+
+    public static TxRequest putRelationshipTypeRequest(Label label) {
+        return TxRequest.newBuilder().setPutRelationshipType(convert(label)).build();
+    }
+
+    public static TxRequest putAttributeTypeRequest(Label label, AttributeType.DataType<?> dataType) {
+        PutAttributeType putAttributeType =
+                PutAttributeType.newBuilder().setLabel(convert(label)).setDataType(convert(dataType)).build();
+
+        return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
+    }
+
+    public static TxRequest putRoleRequest(Label label) {
+        return TxRequest.newBuilder().setPutRole(convert(label)).build();
+    }
+
+    public static TxRequest putRuleRequest(Label label, Pattern when, Pattern then) {
+        PutRule putRule =
+                PutRule.newBuilder().setLabel(convert(label)).setWhen(convert(when)).setThen(convert(then)).build();
+
+        return TxRequest.newBuilder().setPutRule(putRule).build();
+    }
+
     public static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
     public static TxResponse iteratorResponse(IteratorId iteratorId) {
         return TxResponse.newBuilder().setIteratorId(iteratorId).build();
+    }
+
+    public static TxResponse conceptResponse(Concept concept) {
+        return TxResponse.newBuilder().setConcept(convert(concept)).build();
+    }
+
+    public static TxResponse optionalConceptResponse(Optional<Concept> concept) {
+        return TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(concept)).build();
+    }
+
+    public static TxResponse rolePlayerResponse(RolePlayer rolePlayer) {
+        return TxResponse.newBuilder().setRolePlayer(convert(rolePlayer)).build();
     }
 
     public static DeleteRequest deleteRequest(Open open) {
@@ -208,6 +262,11 @@ public class GrpcUtil {
                 .setId(GrpcConcept.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
                 .setBaseType(getBaseType(concept))
                 .build();
+    }
+
+    public static OptionalConcept convertOptionalConcept(Optional<Concept> concept) {
+        OptionalConcept.Builder builder = OptionalConcept.newBuilder();
+        return concept.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
     }
 
     public static Concepts convert(Stream<? extends Concept> concepts) {
@@ -267,11 +326,11 @@ public class GrpcUtil {
         return GrpcConcept.Label.newBuilder().setValue(label.getValue()).build();
     }
 
-    static Label convert(GrpcConcept.Label label) {
+    public static Label convert(GrpcConcept.Label label) {
         return Label.of(label.getValue());
     }
 
-    static Object convert(AttributeValue value) {
+    public static Object convert(AttributeValue value) {
         switch (value.getValueCase()) {
             case STRING:
                 return value.getString();
@@ -316,7 +375,7 @@ public class GrpcUtil {
         return builder.build();
     }
 
-    static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
+    public static AttributeType.DataType<?> convert(GrpcConcept.DataType dataType) {
         switch (dataType) {
             case String:
                 return AttributeType.DataType.STRING;
@@ -358,6 +417,22 @@ public class GrpcUtil {
         }
     }
 
+    public static OptionalDataType convertOptionalDataType(Optional<AttributeType.DataType<?>> dataType) {
+        OptionalDataType.Builder builder = OptionalDataType.newBuilder();
+        return dataType.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+    }
+
+    public static Optional<AttributeType.DataType<?>> convert(OptionalDataType dataType) {
+        switch (dataType.getValueCase()) {
+            case PRESENT:
+                return Optional.of(convert(dataType.getPresent()));
+            case ABSENT:
+            case VALUE_NOT_SET:
+            default:
+                return Optional.empty();
+        }
+    }
+
     public static GrpcConcept.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
             return GrpcConcept.BaseType.EntityType;
@@ -386,14 +461,32 @@ public class GrpcUtil {
         return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
     }
 
-    public static Pattern convert(GrpcConcept.Pattern pattern) {
+    public static Pattern convert(GrpcConcept.Pattern pattern ) {
         return Graql.parser().parsePattern(pattern.getValue());
+    }
+
+    public static OptionalPattern convert(Optional<Pattern> pattern) {
+        OptionalPattern.Builder builder = OptionalPattern.newBuilder();
+        return pattern.map(GrpcUtil::convert).map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+    }
+
+    @Nullable
+    public static Optional<Pattern> convert(OptionalPattern pattern) {
+        switch (pattern.getValueCase()) {
+            case PRESENT:
+                return Optional.of(convert(pattern.getPresent()));
+            case ABSENT:
+                return Optional.empty();
+            case VALUE_NOT_SET:
+            default:
+                throw CommonUtil.unreachableStatement("Unrecognised " + pattern);
+        }
     }
 
     public static Map<Role, Set<Thing>> convert(GrpcConceptConverter converter, RolePlayers allRolePlayers) {
         ImmutableSetMultimap.Builder<Role, Thing> map = ImmutableSetMultimap.builder();
 
-        for (RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
+        for (GrpcConcept.RolePlayer rolePlayer : allRolePlayers.getRolePlayerList()) {
             Role role = converter.convert(rolePlayer.getRole()).asRole();
             Thing player = converter.convert(rolePlayer.getPlayer()).asThing();
             map.put(role, player);
@@ -407,14 +500,33 @@ public class GrpcUtil {
 
         rolePlayers.forEach((role, players) -> {
             players.forEach(player -> {
-                builder.addRolePlayer(convert(role, player));
+                builder.addRolePlayer(convert(RolePlayer.create(role, player)));
             });
         });
 
         return builder.build();
     }
 
-    public static RolePlayer convert(Role role, Thing thing) {
-        return RolePlayer.newBuilder().setRole(convert(role)).setPlayer(convert(thing)).build();
+    public static GrpcConcept.RolePlayer convert(RolePlayer rolePlayer) {
+        return GrpcConcept.RolePlayer.newBuilder()
+                .setRole(convert(rolePlayer.role()))
+                .setPlayer(convert(rolePlayer.player()))
+                .build();
+    }
+
+    public static OptionalRegex convertRegex(Optional<String> regex) {
+        OptionalRegex.Builder builder = OptionalRegex.newBuilder();
+        return regex.map(builder::setPresent).orElseGet(() -> builder.setAbsent(UNIT)).build();
+    }
+
+    public static Optional<String> convert(OptionalRegex regex) {
+        switch (regex.getValueCase()) {
+            case PRESENT:
+                return Optional.of(regex.getPresent());
+            case ABSENT:
+            case VALUE_NOT_SET:
+            default:
+                return Optional.empty();
+        }
     }
 }

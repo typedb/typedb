@@ -21,18 +21,14 @@ package ai.grakn.remote.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Graql.var;
 
 /**
  * @author Felix Chapman
@@ -44,23 +40,23 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final MyType type() {
-        return asMyType(runMethod(ConceptMethod.GET_DIRECT_TYPE));
+        return asMyType(runMethod(ConceptMethods.GET_DIRECT_TYPE));
     }
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
         ConceptMethod<Stream<? extends Concept>> method;
         if (roles.length == 0) {
-            method = ConceptMethod.GET_RELATIONSHIPS;
+            method = ConceptMethods.GET_RELATIONSHIPS;
         } else {
-            method = ConceptMethod.getRelationshipsByRoles(roles);
+            method = ConceptMethods.getRelationshipsByRoles(roles);
         }
         return runMethod(method).map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
+        return runMethod(ConceptMethods.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
     }
 
     @Override
@@ -71,9 +67,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        return insert(attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET)).asRelationship();
+        return runMethod(ConceptMethods.setAttribute(attribute)).asRelationship();
     }
 
     @Override
@@ -81,9 +75,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         ConceptMethod<Stream<? extends Concept>> method;
 
         if (attributeTypes.length == 0) {
-            method = ConceptMethod.GET_ATTRIBUTES;
+            method = ConceptMethods.GET_ATTRIBUTES;
         } else {
-            method = ConceptMethod.getAttributesByTypes(attributeTypes);
+            method = ConceptMethods.getAttributesByTypes(attributeTypes);
         }
 
         return runMethod(method).map(Concept::asAttribute);
@@ -94,9 +88,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         ConceptMethod<Stream<? extends Concept>> method;
 
         if (attributeTypes.length == 0) {
-            method = ConceptMethod.GET_KEYS;
+            method = ConceptMethods.GET_KEYS;
         } else {
-            method = ConceptMethod.getKeysByTypes(attributeTypes);
+            method = ConceptMethods.getKeysByTypes(attributeTypes);
         }
 
         return runMethod(method).map(Concept::asAttribute);
@@ -104,16 +98,12 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        Label label = attribute.type().getLabel();
-        Var attributeVar = var("attribute");
-        Match match = tx().graql().match(me(), attributeVar.id(attribute.getId()), ME.has(label, attributeVar, TARGET));
-        match.delete(TARGET).execute();
-        return asSelf(this);
+        return runVoidMethod(ConceptMethods.unsetAttribute(attribute));
     }
 
     @Override
     public final boolean isInferred() {
-        return runMethod(ConceptMethod.IS_INFERRED);
+        return runMethod(ConceptMethods.IS_INFERRED);
     }
 
     abstract MyType asMyType(Concept concept);

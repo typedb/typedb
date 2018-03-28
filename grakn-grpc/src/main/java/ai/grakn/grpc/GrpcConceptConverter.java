@@ -20,10 +20,29 @@ package ai.grakn.grpc;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
+
+import java.util.Optional;
 
 /**
  * @author Felix Chapman
  */
 public interface GrpcConceptConverter {
     Concept convert(GrpcConcept.Concept concept);
+
+    default Optional<Concept> convert(OptionalConcept concept) {
+        switch (concept.getValueCase()) {
+            case PRESENT:
+                return Optional.of(convert(concept.getPresent()));
+            case ABSENT:
+                return Optional.empty();
+            default:
+            case VALUE_NOT_SET:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
+    }
+
+    default RolePlayer convert(GrpcConcept.RolePlayer rolePlayer) {
+        return RolePlayer.create(convert(rolePlayer.getRole()).asRole(), convert(rolePlayer.getPlayer()).asThing());
+    }
 }

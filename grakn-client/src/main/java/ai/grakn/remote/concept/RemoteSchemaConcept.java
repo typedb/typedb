@@ -23,13 +23,10 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.grpc.ConceptMethod;
-import com.google.common.collect.ImmutableList;
+import ai.grakn.grpc.ConceptMethods;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -40,37 +37,34 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
 
     public final Self sup(Self type) {
-        return define(type, ME.sub(TARGET));
+        return runVoidMethod(ConceptMethods.setDirectSuperConcept(type));
     }
 
     public final Self sub(Self type) {
-        return define(type, TARGET.sub(ME));
+        tx().client().runConceptMethod(type.getId(), ConceptMethods.setDirectSuperConcept(this));
+        return asSelf(this);
     }
 
     @Override
     public final Label getLabel() {
-        return runMethod(ConceptMethod.GET_LABEL);
+        return runMethod(ConceptMethods.GET_LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        return runMethod(ConceptMethod.IS_IMPLICIT);
+        return runMethod(ConceptMethods.IS_IMPLICIT);
     }
 
     @Override
     public final Self setLabel(Label label) {
-        return define(ME.label(label));
+        return runVoidMethod(ConceptMethods.setLabel(label));
     }
 
     @Nullable
     @Override
     public final Self sup() {
-        Concept concept = runNullableMethod(ConceptMethod.GET_DIRECT_SUPER);
-        if (concept != null && isSelf(concept)) {
-            return asSelf(concept);
-        } else {
-            return null;
-        }
+        Optional<Concept> concept = runMethod(ConceptMethods.GET_DIRECT_SUPER);
+        return concept.filter(this::isSelf).map(this::asSelf).orElse(null);
     }
 
     @Override
@@ -80,7 +74,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> subs() {
-        return runMethod(ConceptMethod.GET_SUB_CONCEPTS).map(this::asSelf);
+        return runMethod(ConceptMethods.GET_SUB_CONCEPTS).map(this::asSelf);
     }
 
     @Override
@@ -96,38 +90,6 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Override
     public final Stream<Rule> getRulesOfConclusion() {
         throw new UnsupportedOperationException(); // TODO: remove from API
-    }
-
-    protected final Self define(Concept target, VarPattern... patterns) {
-        return define(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
-    }
-
-    protected final Self define(VarPattern... patterns) {
-        return define(Arrays.asList(patterns));
-    }
-
-    private Self define(Collection<? extends VarPattern> patterns) {
-        Collection<VarPattern> patternCollection =
-                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
-
-        tx().graql().define(patternCollection).execute();
-        return asSelf(this);
-    }
-
-    protected final Self undefine(Concept target, VarPattern... patterns) {
-        return undefine(ImmutableList.<VarPattern>builder().add(TARGET.id(target.getId())).add(patterns).build());
-    }
-
-    protected final Self undefine(VarPattern... patterns) {
-        return undefine(Arrays.asList(patterns));
-    }
-
-    private Self undefine(Collection<? extends VarPattern> patterns) {
-        Collection<VarPattern> patternCollection =
-                ImmutableList.<VarPattern>builder().add(me()).addAll(patterns).build();
-
-        tx().graql().undefine(patternCollection).execute();
-        return asSelf(this);
     }
 
     abstract boolean isSelf(Concept concept);

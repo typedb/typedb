@@ -27,9 +27,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -37,68 +37,40 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 /**
- * Default implementation of {@link SystemKeyspace} that uses a {@link EngineGraknTxFactory} to access a knowledge
+ * Default implementation of {@link GraknKeyspaceStore} that uses a {@link EngineGraknTxFactory} to access a knowledge
  * base and store keyspace information.
  *
  * @author Felix Chapman
  */
-public class SystemKeyspaceImpl implements SystemKeyspace {
+public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
 
-    private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknKeyspaceStore.class);
     private final Set<Keyspace> existingKeyspaces;
-    private final EngineGraknTxFactory factory;
-    private final LockProvider lockProvider;
+    private final SystemKeyspaceSession session;
 
-    private SystemKeyspaceImpl(EngineGraknTxFactory factory, LockProvider lockProvider, boolean loadSystemSchema){
-        this.factory = factory;
+    private GraknKeyspaceStoreImpl(SystemKeyspaceSession session){
+        this.session = session;
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
-        this.lockProvider = lockProvider;
-        if (loadSystemSchema) {
-            loadSystemSchema();
-        }
     }
 
-    public static SystemKeyspace create(EngineGraknTxFactory factory, LockProvider lockProvider, boolean loadSystemSchema) {
-        return new SystemKeyspaceImpl(factory, lockProvider, loadSystemSchema);
-    }
-
-    @Override
-    public void openKeyspace(Keyspace keyspace) {
-        //Check the local cache to see which keyspaces we already have open
-        if(existingKeyspaces.contains(keyspace)){
-             return;
-        }
-
-        //If the cache does not contain the keyspace check the persisted data
-        if(containsKeyspace(keyspace)){
-            existingKeyspaces.add(keyspace);
-            return;
-        }
-
-        //If the keyspace does not exist lock and create it
-        Lock lock = lockProvider.getLock(getLockingKey(keyspace));
-        lock.lock();
-        try{
-            factory.initialiseNewKeyspace(keyspace);
-            logNewKeyspace(keyspace);
-        } finally {
-            lock.unlock();
-        }
+    public static GraknKeyspaceStore create(SystemKeyspaceSession session) {
+        return new GraknKeyspaceStoreImpl(session);
     }
 
     /**
-     * Logs a new {@link Keyspace} to the {@link SystemKeyspace}.
+     * Logs a new {@link Keyspace} to the {@link GraknKeyspaceStore}.
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
-    private void logNewKeyspace(Keyspace keyspace){
-        //Log that we have created the keyspace
-        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+    @Override
+    public void addKeyspace(Keyspace keyspace){
+        if(containsKeyspace(keyspace)) return;
+
+        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -108,19 +80,25 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
                 tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
             tx.commitSubmitNoLogs();
+
+            // add to cache
+            existingKeyspaces.add(keyspace);
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
     }
 
-    private static String getLockingKey(Keyspace keyspace){
-        return "/creating-new-keyspace-lock/" + keyspace.getValue();
-    }
-
     @Override
     public boolean containsKeyspace(Keyspace keyspace){
-        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
-            return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
+        //Check the local cache to see which keyspaces we already have open
+        if(existingKeyspaces.contains(keyspace)){
+            return true;
+        }
+
+        try (GraknTx graph = session.tx(GraknTxType.READ)) {
+            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null);
+            if(keyspaceExists) existingKeyspaces.add(keyspace);
+            return keyspaceExists;
         }
     }
 
@@ -130,7 +108,7 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
            return false;
         }
 
-        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.getAttribute(keyspace.getValue());
 
@@ -149,7 +127,7 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
 
     @Override
     public Set<Keyspace> keyspaces() {
-        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (GraknTx graph = session.tx(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
@@ -163,7 +141,7 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
     @Override
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (EmbeddedGraknTx<?> tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }

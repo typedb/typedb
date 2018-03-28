@@ -21,14 +21,16 @@ package ai.grakn.test.rule;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreImpl;
+import ai.grakn.engine.GraknSystemKeyspaceSession;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
-import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -61,7 +63,6 @@ import redis.clients.jedis.JedisPoolConfig;
 import spark.Service;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -90,6 +91,16 @@ public class EngineContext extends CompositeTestRule {
     private Service spark;
 
     private final InMemoryRedisContext redis;
+
+    public GraknKeyspaceStore systemKeyspace() {
+        return graknKeyspaceStore;
+    }
+
+    private GraknKeyspaceStore graknKeyspaceStore;
+
+    public EngineGraknTxFactory factory() { return engineGraknTxFactory; }
+
+    private EngineGraknTxFactory engineGraknTxFactory;
 
     private EngineContext(){
         config = createTestConfig();
@@ -150,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.create(randomKeyspace(), uri());
+        return EmbeddedGraknSession.create(randomKeyspace(), uri().toString());
     }
 
     @Override
@@ -207,7 +218,7 @@ public class EngineContext extends CompositeTestRule {
                 LOG.info("stopping engine...");
 
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-                clearGraphs(server);
+                clearGraphs(engineGraknTxFactory);
                 server.close();
 
                 LOG.info("engine stopped.");
@@ -221,10 +232,10 @@ public class EngineContext extends CompositeTestRule {
         }
     }
 
-    private static void clearGraphs(GraknEngineServer server) {
+    private static void clearGraphs(EngineGraknTxFactory factory) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = factory.tx(GraknKeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().getValue().toString());
@@ -232,10 +243,10 @@ public class EngineContext extends CompositeTestRule {
         }
 
         keyspaceNames.forEach(name -> {
-            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
+            GraknTx graph = factory.tx(Keyspace.of(name), GraknTxType.WRITE);
             graph.admin().delete();
         });
-        server.factory().refreshConnections();
+        factory.refreshConnections();
     }
 
     private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
@@ -284,8 +295,11 @@ public class EngineContext extends CompositeTestRule {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
+        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
+
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
 
         // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
@@ -303,7 +317,7 @@ public class EngineContext extends CompositeTestRule {
         GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(id, config, status,
                 spark, Collections.emptyList(), grpcServer,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor);
+                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
 
         graknEngineServer.start();
 
