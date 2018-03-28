@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.API;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;

@@ -46,7 +46,14 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      *
      * @return a ConnectedComponentQuery with members flag set
      */
-    ConnectedComponentQuery<Map<String, Set<String>>> members();
+    ConnectedComponentQuery<Map<String, Set<String>>> membersOn();
+
+    /**
+     * Return the size of each cluster after executing the query.
+     *
+     * @return a ConnectedComponentQuery with members flag set
+     */
+    ConnectedComponentQuery<Map<String, Long>> membersOff();
 
     /**
      * Get whether this query will return the members of each cluster.
@@ -102,5 +109,6 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
     /**
      * Get the size of the clusters returned
      */
-    @Nullable Long clusterSize();
+    @Nullable
+    Long clusterSize();
 }
