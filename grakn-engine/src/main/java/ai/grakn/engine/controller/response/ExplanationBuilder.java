@@ -47,12 +47,13 @@ public class ExplanationBuilder {
             ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
 
             if (expl.isLookupExplanation()){
-                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.rewriteWithRelationVariable());
+                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.isResource()? atom : atom.rewriteWithRelationVariable());
                 inferredAnswer = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().stream()
                         .findFirst().orElse(new QueryAnswer());
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
-                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(headAtom.rewriteWithRelationVariable());
+                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(headAtom.isResource()? headAtom : headAtom.rewriteWithRelationVariable());
+
                 inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                         .map(Unifier::inverse)
                         .flatMap(unifier -> rewrittenQuery.materialise(answer.unify(unifier)))

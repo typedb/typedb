@@ -1,0 +1,79 @@
+define
+
+object sub role;
+subject sub role;
+location sub role;
+place sub role;
+operated sub role;
+operator sub role;
+owned sub role;
+owner sub role;
+
+geo-location sub entity
+    plays location
+    plays subject;
+
+asset sub entity
+    plays place
+    plays owned
+    plays operated;
+
+company sub entity
+    plays operator
+    plays owner
+    plays subject;
+
+factor sub entity
+    has value
+    plays object;
+
+carried-relation sub relationship
+    relates object
+    relates subject;
+
+coordinates sub relationship
+    relates location
+    relates place;
+
+operates sub relationship
+    relates operated
+    relates operator;
+
+owns sub relationship
+    relates owned
+    relates owner;
+
+value sub attribute, datatype string;
+
+carryRelation sub rule
+when {
+  $geo isa geo-location;
+  $asset isa asset;
+  $company isa company;
+  (object: $obj, subject: $geo) isa carried-relation;
+  (location: $geo, place: $asset) isa coordinates;
+  (operated: $asset, operator: $company) isa operates;
+}
+then {
+  (object: $obj, subject: $company) isa carried-relation;
+};
+
+assetOperator sub rule
+when {
+  $a isa company;
+  $b isa asset;
+  (owner: $a, owned: $b) isa owns;
+}
+then {
+  (operator: $a, operated: $b) isa operates;
+};
+
+insert
+
+$fac isa factor, has value 'high';
+$geo isa geo-location;
+$asset isa asset;
+$company isa company;
+(object: $fac, subject: $geo) isa carried-relation;
+(location: $geo, place: $asset) isa coordinates;
+(owned: $asset, owner: $company) isa owns;

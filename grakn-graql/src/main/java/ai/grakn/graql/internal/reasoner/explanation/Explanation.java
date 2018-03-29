@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.reasoner.explanation;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import com.google.common.collect.ImmutableSet;
-import java.util.HashSet;
-import java.util.Set;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -37,19 +37,19 @@ import java.util.Set;
 public class Explanation implements AnswerExplanation {
 
     private final ReasonerQuery query;
-    private final ImmutableSet<Answer> answers;
+    private final ImmutableList<Answer> answers;
 
     public Explanation(){
         this.query = null;
-        this.answers = ImmutableSet.of();}
-    Explanation(ReasonerQuery q, Set<Answer> ans){
+        this.answers = ImmutableList.of();}
+    Explanation(ReasonerQuery q, List<Answer> ans){
         this.query = q;
-        this.answers = ImmutableSet.copyOf(ans);
+        this.answers = ImmutableList.copyOf(ans);
     }
     Explanation(ReasonerQuery q){
-        this(q, new HashSet<>());
+        this(q, new ArrayList<>());
     }
-    Explanation(Set<Answer> ans){
+    Explanation(List<Answer> ans){
         this(null, ans);
     }
 
@@ -64,7 +64,7 @@ public class Explanation implements AnswerExplanation {
     }
 
     @Override
-    public ImmutableSet<Answer> getAnswers(){ return answers;}
+    public ImmutableList<Answer> getAnswers(){ return answers;}
 
     @Override
     public boolean isLookupExplanation(){ return false;}
