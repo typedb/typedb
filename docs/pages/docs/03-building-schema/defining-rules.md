@@ -63,6 +63,10 @@ Each dotted line corresponds to a single Graql variable pattern. The rule label 
 
 In Graql, the "when" of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the "then" should be atomic - contain a single pattern. If your use case requires a rule with a disjunction in the "when" part, please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
 
+### Defining rules
+Rules are treated as inherent members of the schema. As a result they require the `define` keyword for their creation. A rule is then defined by specifying its label followed
+by `when` and `then` blocks. The label is necessary if we want to refer to the rule later.
+
 A classic reasoning example is the ancestor example. The two Graql rules `R1` and `R2` stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relationship and the second generation hop is captured by an ancestor relationship.
 
 ```graql
@@ -86,7 +90,6 @@ then {
 };
 ```
 
-Please note that rules are treated as inherent members of the schema, hence the use of the `define` keyword. As a result they are typically defined together with the schema.
 
 Defining the above rules in terms of predicates and assuming left-to-right directionality of the roles, we can summarise them in the implication form as:
 
@@ -94,6 +97,32 @@ Defining the above rules in terms of predicates and assuming left-to-right direc
 R1: parent(X, Y) → ancestor(X, Y)  
 R2: parent(X, Z) ∧ ancestor(Z, Y) → ancestor(X, Y)
 ```
+
+### Retrieving defined rules
+
+To retrieve rules, we refer to them by their label in a `match` statement:
+
+```
+match $x label R1; get;
+match $x label R2; get;
+```
+
+or as a joint statement:
+
+```
+match {$x label R1;} or {$x label R2;}; get;
+```
+
+### Deleting rules
+
+To delete rules we refer to them by their label and use the `undefine` keyword. For the case of the rules defined above, to delete them we write:
+
+```
+undefine R1 sub rule;
+undefine R2 sub rule;
+```
+
+To persist the result, executing a `commit;` statement is also required.
 
 ## Allowed Graql Constructs in Rules
 The tables below summarise Graql constructs that are allowed to appear in a when-then (body-head) blocks of a rule.
