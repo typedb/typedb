@@ -79,8 +79,6 @@ public class REST {
         public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
         public static final String ROLE_SUBS = "/kb/:keyspace/role/:label/subs";
 
-        public static final String REMOTE_SHELL_URI = "/shell/remote";
-
         /**
          * URIs to System Controller endpoints
          */
@@ -147,31 +145,5 @@ public class REST {
             public static final String APPLICATION_ALL ="*/*";
         }
 
-    }
-
-    /**
-     * Class listing various strings used in the JSON messages sent using websockets for the remote Graql shell.
-     */
-    public static class RemoteShell {
-        public static final String ACTION = "action";
-        public static final String ACTION_INIT = "init";
-        public static final String ACTION_QUERY = "query";
-        public static final String ACTION_END = "end";
-        public static final String ACTION_ERROR = "error";
-        public static final String ACTION_COMMIT = "commit";
-        public static final String ACTION_ROLLBACK = "rollback";
-        public static final String ACTION_CLEAN = "clean";
-        public static final String ACTION_PING = "ping";
-        public static final String ACTION_TYPES = "types";
-        public static final String ACTION_DISPLAY = "display";
-
-        public static final String KEYSPACE = "keyspace";
-        public static final String OUTPUT_FORMAT = "outputFormat";
-        public static final String INFER = "infer";
-        public static final String QUERY = "query";
-        public static final String QUERY_RESULT = "result";
-        public static final String ERROR = "error";
-        public static final String TYPES = "types";
-        public static final String DISPLAY = "display";
     }
 }

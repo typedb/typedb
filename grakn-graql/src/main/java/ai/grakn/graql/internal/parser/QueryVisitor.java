@@ -39,9 +39,11 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -52,6 +54,7 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -129,8 +132,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         // decide which ordering method to use
         Var var = getVariable(ctx.VARIABLE());
-        if (ctx.ORDER() != null) {
-            return match.orderBy(var, getOrder(ctx.ORDER()));
+        if (ctx.order() != null) {
+            return match.orderBy(var, visitOrder(ctx.order()));
         } else {
             return match.orderBy(var);
         }
@@ -297,49 +300,91 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
-        ClusterQuery<?> cluster = queryBuilder.compute().cluster();
-
-        if (ctx.id() != null) {
-            cluster = cluster.of(visitId(ctx.id()));
-        }
+    public ConnectedComponentQuery<?> visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
+        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
 
-        cluster = chainOperators(ctx.clusterParam().stream().map(this::visitClusterParam)).apply(cluster);
+        cluster = chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(cluster);
 
         return cluster;
     }
 
-    private UnaryOperator<ClusterQuery<?>> visitClusterParam(GraqlParser.ClusterParamContext ctx) {
-        return (UnaryOperator<ClusterQuery<?>>) visit(ctx);
+    private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
+        return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
     }
 
     @Override
-    public UnaryOperator<ClusterQuery<?>> visitClusterMembers(GraqlParser.ClusterMembersContext ctx) {
-        return ClusterQuery::members;
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
+        return query -> visitBool(ctx.bool()) ? query.membersOn() : query.membersOff();
     }
 
     @Override
-    public UnaryOperator<ClusterQuery<?>> visitClusterSize(GraqlParser.ClusterSizeContext ctx) {
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterSize(GraqlParser.CcClusterSizeContext ctx) {
         return query -> query.clusterSize(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery degree = queryBuilder.compute().degree();
+    public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
+        return query -> query.of(visitId(ctx.id()));
+    }
+
+    @Override
+    public KCoreQuery visitKCore(GraqlParser.KCoreContext ctx) {
+        KCoreQuery kCoreQuery = queryBuilder.compute().cluster().usingKCore();
+
+        if (ctx.inList() != null) {
+            kCoreQuery = kCoreQuery.in(visitInList(ctx.inList()));
+        }
+
+        kCoreQuery = chainOperators(ctx.kcParam().stream().map(this::visitKcParam)).apply(kCoreQuery);
+
+        return kCoreQuery;
+    }
+
+    private UnaryOperator<KCoreQuery> visitKcParam(GraqlParser.KcParamContext ctx) {
+        return (UnaryOperator<KCoreQuery>) visit(ctx);
+    }
+
+    @Override
+    public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
+        return query -> query.kValue(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
+        DegreeQuery degreeQuery = queryBuilder.compute().centrality().usingDegree();
 
         if (ctx.ofList() != null) {
-            degree = degree.of(visitOfList(ctx.ofList()));
+            degreeQuery = degreeQuery.of(visitOfList(ctx.ofList()));
         }
 
         if (ctx.inList() != null) {
-            degree = degree.in(visitInList(ctx.inList()));
+            degreeQuery = degreeQuery.in(visitInList(ctx.inList()));
         }
 
-        return degree;
+        return degreeQuery;
+    }
+
+    @Override
+    public CorenessQuery visitCoreness(GraqlParser.CorenessContext ctx) {
+        CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
+
+        if (ctx.ofList() != null) {
+            corenessQuery = corenessQuery.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            corenessQuery = corenessQuery.in(visitInList(ctx.inList()));
+        }
+
+        if (ctx.INTEGER() != null) {
+            corenessQuery = corenessQuery.minK(getInteger(ctx.INTEGER()));
+        }
+
+        return corenessQuery;
     }
 
     @Override
@@ -497,7 +542,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
-        return var -> var.datatype(getDatatype(ctx.DATATYPE()));
+        return var -> var.datatype(visitDatatype(ctx.datatype()));
     }
 
     @Override
@@ -530,13 +575,19 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<VarPattern> visitDirectIsa(GraqlParser.DirectIsaContext ctx) {
+        return var -> var.directIsa(visitVariable(ctx.variable()));
+    }
+
+    @Override
     public UnaryOperator<VarPattern> visitSub(GraqlParser.SubContext ctx) {
         return var -> var.sub(visitVariable(ctx.variable()));
     }
 
     @Override
     public UnaryOperator<VarPattern> visitRelates(GraqlParser.RelatesContext ctx) {
-        return var -> var.relates(visitVariable(ctx.variable()));
+        VarPattern superRole = ctx.superRole != null ? visitVariable(ctx.superRole) : null;
+        return var -> var.relates(visitVariable(ctx.role), superRole);
     }
 
     @Override
@@ -547,7 +598,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Label visitLabel(GraqlParser.LabelContext ctx) {
         GraqlParser.IdentifierContext label = ctx.identifier();
-        if(label == null){
+        if (label == null) {
             return Label.of(ctx.IMPLICIT_IDENTIFIER().getText());
         }
         return Label.of(visitIdentifier(label));
@@ -626,6 +677,16 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Order visitOrder(GraqlParser.OrderContext ctx) {
+        if (ctx.ASC() != null) {
+            return Order.asc;
+        } else {
+            assert ctx.DESC() != null;
+            return Order.desc;
+        }
+    }
+
+    @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
@@ -647,7 +708,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Boolean visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
-        return Boolean.valueOf(ctx.BOOLEAN().getText());
+        return visitBool(ctx.bool());
     }
 
     @Override
@@ -658,6 +719,28 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
         return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+
+    @Override
+    public Boolean visitBool(GraqlParser.BoolContext ctx) {
+        return ctx.TRUE() != null;
+    }
+
+    @Override
+    public AttributeType.DataType<?> visitDatatype(GraqlParser.DatatypeContext datatype) {
+        if (datatype.BOOLEAN_TYPE() != null) {
+            return AttributeType.DataType.BOOLEAN;
+        } else if (datatype.DATE_TYPE() != null) {
+            return AttributeType.DataType.DATE;
+        } else if (datatype.DOUBLE_TYPE() != null) {
+            return AttributeType.DataType.DOUBLE;
+        } else if (datatype.LONG_TYPE() != null) {
+            return AttributeType.DataType.LONG;
+        } else if (datatype.STRING_TYPE() != null) {
+            return AttributeType.DataType.STRING;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + datatype);
+        }
     }
 
     private Match visitMatchPart(GraqlParser.MatchPartContext ctx) {
@@ -731,14 +814,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return Long.parseLong(integer.getText());
     }
 
-    private Order getOrder(TerminalNode order) {
-        if (order.getText().equals("asc")) {
-            return Order.asc;
-        } else {
-            return Order.desc;
-        }
-    }
-
     private <T> ValuePredicate applyPredicate(
             Function<T, ValuePredicate> valPred, Function<VarPattern, ValuePredicate> varPred, Object obj
     ) {
@@ -747,10 +822,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else {
             return valPred.apply((T) obj);
         }
-    }
-
-    private AttributeType.DataType getDatatype(TerminalNode datatype) {
-        return QueryParserImpl.DATA_TYPES.get(datatype.getText());
     }
 
     private Var var() {

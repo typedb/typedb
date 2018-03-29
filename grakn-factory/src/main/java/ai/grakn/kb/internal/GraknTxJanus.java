@@ -63,7 +63,7 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
     }
 
     @Override
-    public boolean isSessionClosed() {
+    public boolean isTinkerPopGraphClosed() {
         return getTinkerPopGraph().isClosed();
     }
 

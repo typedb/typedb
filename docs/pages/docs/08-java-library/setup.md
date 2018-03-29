@@ -15,7 +15,7 @@ All Grakn applications require the following Maven dependency:
 
 ```xml
 <properties>
-  <grakn.version>0.12.0</grakn.version>
+  <grakn.version>1.1.0</grakn.version>
 </properties>
 
 <dependencies>
@@ -27,7 +27,7 @@ All Grakn applications require the following Maven dependency:
 </dependencies>
 ```
 
-This dependency will give you access to the Core API as well as an in-memory knowledge base, which serves as a toy knowledge base, should you wish to use the stack without having to have an instance of the Grakn server running.
+This dependency will give you access to the Core API as well as an in-memory knowledge graph, which serves as a toy knowledge graph, should you wish to use the stack without having to have an instance of the Grakn server running.
 
 ## Server Dependent Setup
 
@@ -70,37 +70,37 @@ Here are some links to guides for adding external jars using different IDEs:
 - [Netbeans](http://oopbook.com/java-classpath-2/classpath-in-netbeans/)
 
 
-## Initialising a Transaction on The knowledge base
+## Initialising a Transaction on The knowledge graph
 
-You can initialise an in memory knowledge base without having the Grakn server running with:  
+You can initialise an in memory knowledge graph without having the Grakn server running with:
 
 <!-- These are ignored in tests because they connect to non-existent servers -->
 ```java
 GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
 ```    
 
-If you are running the Grakn server locally then you can initialise a knowledge base with:
+If you are running the Grakn server locally then you can initialise a knowledge graph with:
 
 ```java-test-ignore
 tx = Grakn.session(Grakn.DEFAULT_URI, "keyspace").open(GraknTxType.WRITE);
 ```
 
-If you are running the Grakn server remotely you must initialise the knowledge base by providing the IP address of your server:
+If you are running the Grakn server remotely you must initialise the knowledge graph by providing the IP address of your server:
 
 ```java-test-ignore
 tx = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
 ```
 
-The string "keyspace" uniquely identifies the knowledge base and allows you to create different knowledge bases.  
+The string "keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
 
-Please note that knowledge base keyspaces are **not** case sensitive so the following two knowledge bases are actually the same:
+Please note that knowledge graph keyspaces are **not** case sensitive so the following two knowledge graphs are actually the same:
 
 ```java-test-ignore
     GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
     GraknTx tx2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
 ```
 
-All knowledge bases are also singletons specific to their keyspaces so be aware that in the following case:
+All knowledge graphs are also singletons specific to their keyspaces so be aware that in the following case:
 
 ```java-test-ignore
    tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
@@ -108,16 +108,16 @@ All knowledge bases are also singletons specific to their keyspaces so be aware 
    tx3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
 ```
 
-any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge base.
+any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge graph.
 
-## Controlling The Behaviour of Knowledge Base Transactions
+## Controlling The Behaviour of Knowledge Graph Transactions
 
-When initialising a transaction on a knowledge base it is possible to define the type of transaction with `GraknTxType`.      
+When initialising a transaction on a knowledge graph it is possible to define the type of transaction with `GraknTxType`.
 We currently support three types of transactions:
 
-* `GraknTxType.WRITE` - A transaction that allows mutations to be performed on the knowledge base
-* `GraknTxType.READ` - Prohibits any mutations to be performed to the knowledge base
-* `GraknTxType.BATCH` - Allows faster mutations to be performed to the knowledge base at the cost of switching off some internal consistency checks. This option should only be used if you are certain that you are loading a clean dataset.
+* `GraknTxType.WRITE` - A transaction that allows mutations to be performed on the knowledge graph
+* `GraknTxType.READ` - Prohibits any mutations to be performed to the knowledge graph
+* `GraknTxType.BATCH` - Allows faster mutations to be performed to the knowledge graph at the cost of switching off some internal consistency checks. This option should only be used if you are certain that you are loading a clean dataset.
 
 ## Where Next?
 

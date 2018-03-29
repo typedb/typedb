@@ -204,11 +204,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
         return message;
     }
 
-    @Override
-    public int compareTo(Concept o) {
-        return this.getId().compareTo(o.getId());
-    }
-
     //----------------------------------- Sharding Functionality
     public void createShard(){
         VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);

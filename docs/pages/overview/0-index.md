@@ -1,7 +1,7 @@
 ---
 title: Introduction to GRAKN.AI
 keywords: intro
-summary: GRAKN.AI is the database for AI. It is a hyper-relational database for knowledge-oriented systems. Grakn enables machines to manage complex data that serves as a knowledge base for cognitive/AI systems.
+summary: GRAKN.AI is the database for AI. It is a knowledge graph for knowledge-oriented systems. Grakn enables machines to manage complex data that serves as a knowledge graph for cognitive/AI systems.
 tags: [overview]
 sidebar: overview_sidebar
 permalink: /overview/index.html
@@ -25,7 +25,7 @@ GRAKN.AI is the database solution for working with complex data that intelligent
 
 ## Grakn
 
-Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
+Grakn is a knowledge graph, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
 
 > Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained in it.
 

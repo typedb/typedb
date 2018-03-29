@@ -27,6 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.util.Schema;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -36,7 +37,7 @@ import java.util.stream.Stream;
  *
  * @author Filipe Teixeira
  */
-public interface GraknAdmin {
+public interface GraknAdmin extends GraknTx{
 
 
     //------------------------------------- Meta Types ----------------------------------
@@ -46,7 +47,9 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    Type getMetaConcept();
+    default Type getMetaConcept(){
+        return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+    }
 
     /**
      * Get the root of all {@link RelationshipType}.
@@ -54,7 +57,9 @@ public interface GraknAdmin {
      * @return The meta relation type -> relation-type.
      */
     @CheckReturnValue
-    RelationshipType getMetaRelationType();
+    default RelationshipType getMetaRelationType(){
+        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
+    }
 
     /**
      * Get the root of all the {@link Role}.
@@ -62,7 +67,9 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    Role getMetaRole();
+    default Role getMetaRole(){
+        return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
+    }
 
     /**
      * Get the root of all the {@link AttributeType}.
@@ -70,7 +77,9 @@ public interface GraknAdmin {
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    AttributeType getMetaAttributeType();
+    default AttributeType getMetaAttributeType(){
+        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
+    }
 
     /**
      * Get the root of all the Entity Types.
@@ -78,7 +87,9 @@ public interface GraknAdmin {
      * @return The meta entity type -> entity-type.
      */
     @CheckReturnValue
-    EntityType getMetaEntityType();
+    default EntityType getMetaEntityType(){
+        return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
+    }
 
     /**
      * Get the root of all {@link Rule}s;
@@ -86,7 +97,9 @@ public interface GraknAdmin {
      * @return The meta {@link Rule}
      */
     @CheckReturnValue
-    Rule getMetaRule();
+    default Rule getMetaRule(){
+        return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
+    }
 
     //------------------------------------- Admin Specific Operations ----------------------------------
 

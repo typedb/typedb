@@ -42,7 +42,7 @@ How would you find the standard deviation of risk of all bonds?
 
 
 #### Asking things
-Answer me quick: do we have a company named "AwesomePuppies" in our knowledge base?
+Answer me quick: do we have a company named "AwesomePuppies" in our knowledge graph?
 
 Let’s ask the dashboard. Literally. Run this query in the _Dashboard Console_:
 
@@ -51,7 +51,7 @@ match $x isa company has name "AwesomePuppies";
 aggregate ask;
 ```
 
-To find whether something is in the knowledge base, you just need to use the `ask` aggregate. If the `get` query returns no result, then the corresponding `ask` aggregate will return `False`. Otherwise it will return `True`. Nothing fancy, but very useful. Especially if you are building an app on top of Grakn.
+To find whether something is in the knowledge graph, you just need to use the `ask` aggregate. If the `get` query returns no result, then the corresponding `ask` aggregate will return `False`. Otherwise it will return `True`. Nothing fancy, but very useful. Especially if you are building an app on top of Grakn.
 
 
 ## Compute queries
@@ -63,7 +63,7 @@ To use Analytics, you run `compute` queries, that have a slightly different synt
 compute min of risk in bond;
 ```
 
-Apart from the basic statistics which can be performed with aggregate queries as well, you will be able to use Analytics to run powerful graph analytics on your whole knowledge base. The topic deserves definitely more attention that this brief example, so we will dedicate a whole module to it later in the series.
+Apart from the basic statistics which can be performed with aggregate queries as well, you will be able to use Analytics to run powerful graph analytics on your whole knowledge graph. The topic deserves definitely more attention that this brief example, so we will dedicate a whole module to it later in the series.
 
 
 ### What have you learned?

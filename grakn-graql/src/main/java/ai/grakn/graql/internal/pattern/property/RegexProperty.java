@@ -61,7 +61,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public String getProperty() {
-        return StringUtil.valueToString(regex());
+        return "/" + StringUtil.escapeString(regex()) + "/";
     }
 
     @Override
@@ -92,6 +92,6 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new RegexAtom(var.var(), this, parent);
+        return RegexAtom.create(var.var(), this, parent);
     }
 }

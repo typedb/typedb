@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -28,7 +29,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.PlaysAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.PlaysAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -116,8 +117,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
         VarPatternAdmin typeVar = this.role();
         Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-
-        VarPatternAdmin resVar = varName.plays(typeVariable).admin();
-        return new PlaysAtom(resVar, typeVariable, predicate, parent);
+        ConceptId predicateId = predicate == null? null : predicate.getPredicate();
+        return PlaysAtom.create(varName, typeVariable, predicateId, parent);
     }
 }

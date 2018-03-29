@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -28,7 +29,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.runner.ConceptBuilder;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -125,8 +126,7 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
         VarPatternAdmin typeVar = this.superType();
         Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-
-        VarPatternAdmin resVar = varName.sub(typeVariable).admin();
-        return new SubAtom(resVar, typeVariable, predicate, parent);
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        return SubAtom.create(varName, typeVariable, predicateId, parent);
     }
 }

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.explanation;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import java.util.Set;
+import java.util.List;
 
 /**
  *
@@ -35,7 +35,7 @@ import java.util.Set;
 public class LookupExplanation extends Explanation {
 
     public LookupExplanation(ReasonerQuery q){ super(q);}
-    private LookupExplanation(ReasonerQuery q, Set<Answer> answers){
+    private LookupExplanation(ReasonerQuery q, List<Answer> answers){
         super(q, answers);
     }
 

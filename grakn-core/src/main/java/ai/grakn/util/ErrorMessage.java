@@ -73,6 +73,7 @@ public enum ErrorMessage {
     UNKNOWN_CONCEPT("Uknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
+    BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -208,7 +209,11 @@ public enum ErrorMessage {
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
-    MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
+    MAX_ITERATION_REACHED("Max iteration of [%s] reached."),
+
+    //--------------------------------------------- Shell Errors ---------------------------------------------------
+    COULD_NOT_CONNECT("Could not connect to Grakn. Have you run 'grakn server start'?"),
+    NO_VARIABLE_IN_QUERY("There was no variable specified in the query. Perhaps you forgot to escape `\\` a `$`?");
 
     private final String message;
 

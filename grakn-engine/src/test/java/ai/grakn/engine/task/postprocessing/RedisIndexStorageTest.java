@@ -20,6 +20,8 @@ package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisStorage;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.After;

@@ -107,12 +107,12 @@ entries:
       - title: Shortest Path
         output: web
         url: /docs/distributed-analytics/compute-shortest-path
-      - title: Degrees
+      - title: Centrality
         output: web
-        url: /docs/distributed-analytics/compute-degrees
-      - title: Connected Components
+        url: /docs/distributed-analytics/compute-centrality
+      - title: Cluster
         output: web
-        url: /docs/distributed-analytics/compute-connected-components
+        url: /docs/distributed-analytics/compute-cluster
   - title: Migrating Data
     output: web
     folderitems:

@@ -23,9 +23,11 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -56,7 +58,7 @@ public class EngineGraknSessionTest {
     private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
+    private static final GraknKeyspaceStoreFake systemKeyspace = GraknKeyspaceStoreFake.of();
 
     private static EngineGraknTxFactory graknFactory;
 
@@ -77,7 +79,9 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
+        GraknKeyspaceStore keyspaceStore = GraknKeyspaceStoreFake.of();
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+        graknFactory.keyspaceStore().loadSystemSchema();
     }
 
     @Test
@@ -86,7 +90,7 @@ public class EngineGraknSessionTest {
 
         GraknTx graph1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
         graph1.close();
-        GraknTx graph2 = graknFactory.tx(keyspace, GraknTxType.WRITE);
+        GraknTx graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
         assertEquals(graph1, graph2);
         graph2.close();
@@ -95,9 +99,9 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        EmbeddedGraknTx<?> graph1 = graknFactory.tx(keyspace, GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
         graph1.close();
-        EmbeddedGraknTx<?> graph2 = graknFactory.tx(keyspace, GraknTxType.BATCH);
+        EmbeddedGraknTx<?> graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
 
         assertFalse(graph1.isBatchTx());
         assertTrue(graph2.isBatchTx());

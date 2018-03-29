@@ -18,21 +18,17 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -58,21 +54,30 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
-    private final IdPredicate typePredicate;
-    private final Var predicateVariable;
-    private Type type = null;
 
-    Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, par);
-        this.predicateVariable = predicateVar;
-        this.typePredicate = p;
+    public abstract Var getPredicateVariable();
+    @Nullable @Override public abstract ConceptId getTypeId();
+
+    private SchemaConcept type = null;
+    private IdPredicate typePredicate = null;
+
+    @Nullable
+    public IdPredicate getTypePredicate(){
+        if (typePredicate == null && getTypeId() != null) {
+            typePredicate = IdPredicate.create(getPredicateVariable().id(getTypeId()), getParentQuery());
+        }
+        return typePredicate;
     }
 
-    Binary(Binary a) {
-        super(a);
-        this.predicateVariable = a.predicateVariable;
-        this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
-        this.type = a.type;
+    @Nullable
+    @Override
+    public SchemaConcept getSchemaConcept(){
+        if (type == null && getTypeId() != null) {
+            SchemaConcept concept = tx().getConcept(getTypeId());
+            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+            type = concept;
+        }
+        return type;
     }
 
     @Override
@@ -80,33 +85,19 @@ public abstract class Binary extends Atom {
         if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
 
-    public Var getPredicateVariable() { return predicateVariable;}
-
-    @Nullable
-    public IdPredicate getTypePredicate() { return typePredicate;}
-
-    @Nullable
-    @Override
-    public SchemaConcept getSchemaConcept(){
-        if (type == null && getTypePredicate() != null) {
-            Concept concept = getParentQuery().tx().getConcept(getTypeId());
-            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
-            type = concept.asType();
-        }
-        return type;
+    public boolean isDirect(){
+        return getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent();
     }
 
     @Override
-    public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
-
-    @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return  (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
-                && hasEquivalentPredicatesWith(a2);
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Binary that = (Binary) obj;
+        return  (this.isUserDefined() == that.isUserDefined())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId())
+                && this.hasEquivalentPredicatesWith(that);
     }
 
     @Override
@@ -118,12 +109,13 @@ public abstract class Binary extends Atom {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return  (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
-                && predicateBindingsAreEquivalent(a2);
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Binary that = (Binary) obj;
+        return  (this.isUserDefined() == that.isUserDefined())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId())
+                && this.predicateBindingsAreEquivalent(that);
     }
 
     @Override
@@ -155,28 +147,22 @@ public abstract class Binary extends Atom {
 
     @Override
     protected Pattern createCombinedPattern(){
-        Set<PatternAdmin> vars = Sets.newHashSet(super.getPattern().admin());
+        Set<PatternAdmin> vars = Sets.newHashSet(getPattern().admin());
         if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
-    }
-
-    @Override
-    public void setParentQuery(ReasonerQuery q) {
-        super.setParentQuery(q);
-        if (typePredicate != null) typePredicate.setParentQuery(q);
     }
 
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (getPredicateVariable().isUserDefinedName()) vars.add(predicateVariable);
+        if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
         return vars;
     }
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return typePredicate != null? Stream.of(typePredicate) : Stream.empty();
+        return getTypePredicate() != null? Stream.of(getTypePredicate()) : Stream.empty();
     }
 
     @Override

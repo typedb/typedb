@@ -8,7 +8,7 @@ query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQu
 matchPart      : MATCH patterns                             # matchBase
                | matchPart 'limit' INTEGER              ';' # matchLimit
                | matchPart 'offset' INTEGER             ';' # matchOffset
-               | matchPart 'order' 'by' VARIABLE ORDER? ';' # matchOrderBy
+               | matchPart 'order' 'by' VARIABLE order? ';' # matchOrderBy
                ;
 
 getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
@@ -21,7 +21,8 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths
+               | connectedComponent | kCore | degree | coreness ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -29,14 +30,20 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
+coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
+degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
+connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
+kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
-clusterParam   : MEMBERS      ';' # clusterMembers
-               | SIZE INTEGER ';' # clusterSize
+ccParam        : MEMBERS       '='      bool            # ccClusterMembers
+               | SIZE          '='      INTEGER         # ccClusterSize
+               | 'source'      '='      id              # ccStartPoint
+               ;
+
+kcParam        : 'k'           '='      INTEGER         # kValue
                ;
 
 ofList         : labelList ;
@@ -61,20 +68,21 @@ varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                     # isa
+               | 'isa!' variable                    # directIsa
                | 'sub' variable                     # sub
-               | 'relates' variable                 # relates
+               | 'relates' role=variable ('as' superRole=variable)? # relates
                | 'plays' variable                   # plays
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
                | 'is-abstract'                      # isAbstract
-               | 'datatype' DATATYPE                # propDatatype
+               | 'datatype' datatype                # propDatatype
                | 'regex' REGEX                      # propRegex
                | '!=' variable                      # propNeq
                ;
@@ -100,7 +108,7 @@ valueOrVar     : VARIABLE # valueVariable
 value          : STRING   # valueString
                | INTEGER  # valueInteger
                | REAL     # valueReal
-               | BOOLEAN  # valueBoolean
+               | bool     # valueBoolean
                | DATE     # valueDate
                | DATETIME # valueDateTime
                ;
@@ -111,8 +119,12 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREES | MEMBERS | SIZE
+               | DEGREE | MEMBERS | SIZE | WHERE
                ;
+
+datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
+order          : ASC | DESC ;
+bool           : TRUE | FALSE ;
 
 // keywords
 MIN            : 'min' ;
@@ -125,17 +137,29 @@ COUNT          : 'count' ;
 PATH           : 'path' ;
 PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
-DEGREES        : 'degrees' ;
+CENTRALITY     : 'centrality' ;
+DEGREE         : 'degree' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
+USING          : 'using' ;
+WHERE          : 'where' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+ASC            : 'asc' ;
+DESC           : 'desc' ;
+LONG_TYPE      : 'long' ;
+DOUBLE_TYPE    : 'double' ;
+STRING_TYPE    : 'string' ;
+BOOLEAN_TYPE   : 'boolean' ;
+DATE_TYPE      : 'date' ;
+TRUE           : 'true' ;
+FALSE          : 'false' ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
-ORDER          : 'asc' | 'desc' ;
-BOOLEAN        : 'true' | 'false' ;
+// In StringConverter.java we inspect the lexer to find out which values are keywords.
+// If literals are used in an alternation (e.g. `'true' | 'false'`) in the grammar, then they don't register as keywords.
+// Therefore, we never use an alternation of literals and instead given them proper rule names (e.g. `TRUE | FALSE`).
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
 ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';

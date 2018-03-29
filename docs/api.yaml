@@ -18,7 +18,7 @@ paths:
             $ref: '#/definitions/Root'
   /kb:
     get:
-      summary: Get Knowledge Bases
+      summary: Get Knowledge Graphs
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -30,7 +30,7 @@ paths:
     parameters:
       - $ref: '#/parameters/keyspace'
     get:
-      summary: Get Knowledge Base
+      summary: Get Knowledge Graph
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -41,7 +41,7 @@ paths:
         404:
           description: ''
     put:
-      summary: Put Knowledge Base
+      summary: Put Knowledge Graph
       description: >-
         If the keyspace exists, nothing happens. The configuration is returned. This response is the same as the
         response from `/kb/configuration`.
@@ -53,7 +53,7 @@ paths:
           schema:
             $ref: '#/definitions/Configuration'
     delete:
-      summary: Delete Knowledge Base
+      summary: Delete Knowledge Graph
       description: >-
         If the keyspace doesn't exist, nothing happens.
       tags: [Keyspaces]

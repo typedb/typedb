@@ -37,12 +37,22 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.grpc.ConceptMethods;
+import ai.grakn.grpc.GrpcClient;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
@@ -54,101 +64,105 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-class RemoteGraknTx implements GraknTx, GraknAdmin {
+public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
-    private final GraknSession session;
+    private final RemoteGraknSession session;
     private final GraknTxType txType;
     private final GrpcClient client;
 
-    private RemoteGraknTx(GraknSession session, GraknTxType txType, GrpcClient client) {
+    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.client = client;
+        this.client = GrpcClient.create(this::convert, stub);
+        client.open(openRequest);
     }
 
-    static RemoteGraknTx create(RemoteGraknSession session, GraknTxType txType) {
-        GraknGrpc.GraknStub stub = session.stub();
-        GrpcClient client = GrpcClient.create(stub);
-        client.open(session.keyspace(), txType);
-        return new RemoteGraknTx(session, txType, client);
+    // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
+    public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
+        GraknStub stub = session.stub();
+        return new RemoteGraknTx(session, GrpcUtil.convert(openRequest.getOpen().getTxType()), openRequest, stub);
+    }
+
+    public GrpcClient client() {
+        return client;
     }
 
     @Override
     public EntityType putEntityType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().putEntityType(label).asEntityType();
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().putAttributeType(label, dataType).asAttributeType();
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().putRule(label, when, then).asRule();
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().putRelationshipType(label).asRelationshipType();
     }
 
     @Override
     public Role putRole(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().putRole(label).asRole();
     }
 
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        throw new UnsupportedOperationException(); // TODO
+        return (T) client().getConcept(id).orElse(null);
     }
 
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return (T) client().getSchemaConcept(label).orElse(null);
     }
 
     @Nullable
     @Override
     public <T extends Type> T getType(Label label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(label);
     }
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        throw new UnsupportedOperationException(); // TODO
+        return client().getAttributesByValue(value).map(Concept::<V>asAttribute).collect(toImmutableSet());
     }
 
     @Nullable
     @Override
     public EntityType getEntityType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public RelationshipType getRelationshipType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Role getRole(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label));
     }
 
     @Nullable
     @Override
     public Rule getRule(String label) {
-        throw new UnsupportedOperationException(); // TODO
+        return getSchemaConcept(Label.of(label));
     }
 
     @Override
@@ -168,7 +182,7 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public boolean isClosed() {
-        throw new UnsupportedOperationException(); // TODO
+        return client.isClosed();
     }
 
     @Override
@@ -182,57 +196,54 @@ class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public void abort() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
     public void commit() throws InvalidKBException {
         client.commit();
-    }
-
-    @Override
-    public Type getMetaConcept() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public RelationshipType getMetaRelationType() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public Role getMetaRole() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public AttributeType getMetaAttributeType() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public EntityType getMetaEntityType() {
-        throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public Rule getMetaRule() {
-        throw new UnsupportedOperationException(); // TODO
+        close();
     }
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        throw new UnsupportedOperationException(); // TODO
+        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethods.GET_SUPER_CONCEPTS);
+        return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 
     @Override
     public void delete() {
-        throw new UnsupportedOperationException(); // TODO
+        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
+        session.blockingStub().delete(request);
+        close();
     }
 
     @Override
     public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(client, null);
+        return RemoteQueryRunner.create(client);
+    }
+
+    private Concept convert(GrpcConcept.Concept concept) {
+        ConceptId id = ConceptId.of(concept.getId().getValue());
+
+        switch (concept.getBaseType()) {
+            case Entity:
+                return RemoteConcepts.createEntity(this, id);
+            case Relationship:
+                return RemoteConcepts.createRelationship(this, id);
+            case Attribute:
+                return RemoteConcepts.createAttribute(this, id);
+            case EntityType:
+                return RemoteConcepts.createEntityType(this, id);
+            case RelationshipType:
+                return RemoteConcepts.createRelationshipType(this, id);
+            case AttributeType:
+                return RemoteConcepts.createAttributeType(this, id);
+            case Role:
+                return RemoteConcepts.createRole(this, id);
+            case Rule:
+                return RemoteConcepts.createRule(this, id);
+            case MetaType:
+                return RemoteConcepts.createMetaType(this, id);
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
     }
 }

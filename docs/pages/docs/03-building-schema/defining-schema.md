@@ -187,6 +187,34 @@ qb.define(
 </div> <!-- tab-content -->
 
 
+### as
+Equivalent to `sub`, but only used in `relates` for defining the hierarchy of roles.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell9" data-toggle="tab">Graql</a></li>
+    <li><a href="#java9" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell9">
+<pre class="language-graql"> <code>
+define fatherhood sub parentship, relates father as parent, relates son as child;
+</code>
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java9">
+<pre class="language-java"> <code>
+qb.define(
+  label("fatherhood").sub("parentship")
+    .relates(label("father"), label("parent"))
+    .relates(label("son"), label("child"))
+).execute();
+</code>
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+
 ### plays
 Allow the concept type to play the given role.
 

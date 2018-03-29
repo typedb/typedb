@@ -11,16 +11,16 @@ toc: false
 KB: academy
 ---
 
-If you have followed the Academy lessons up to this point, you should have loaded all the example dataset into a new knowledge base, which is now exactly the same as the one that came preloaded with the Grakn distribution in the VM.
+If you have followed the Academy lessons up to this point, you should have loaded all the example dataset into a new knowledge graph, which is now exactly the same as the one that came preloaded with the Grakn distribution in the VM.
 
 First of all: well done!
 
-But you are not done yet: we now need to start using this knowledge base and add a pinch of Grakn magic and turn what is essentially a powerful database into a true knowledge base ready for development of cognitive systems.
+But you are not done yet: we now need to start using this knowledge graph and add a pinch of Grakn magic and turn what is essentially a powerful database into a true knowledge graph ready for development of cognitive systems.
 
 It is time for some logic inference.
 
 ## Back to the query
-Since from the beginning of [module 2](./graql-intro.html), you should have learned that the questions you have built your knowledge base around translate into Graql as
+Since from the beginning of [module 2](./graql-intro.html), you should have learned that the questions you have built your knowledge graph around translate into Graql as
 
 ```graql
 match
@@ -66,7 +66,7 @@ Unless you ask explicitly for all the people that are on the island OR somewhere
 
 Or unless you have a reasoner engine, like Grakn has.
 
-In the course of this module, you will learn how to augment your knowledge base with reasoning rules that help you get more useful and smart answer to your questions, like the one above.
+In the course of this module, you will learn how to augment your knowledge graph with reasoning rules that help you get more useful and smart answer to your questions, like the one above.
 
 That is, you will learn to make your data more intelligent and knowledgable. Which is one of the reason why say that Grakn is the database for the knowledge engineering.
 
@@ -74,4 +74,4 @@ That is, you will learn to make your data more intelligent and knowledgable. Whi
 This was a very brief introductory lesson, but you should have at this point understood what logic inference is about.
 
 ## What next
-In the [next lesson](./inference-rules.html), we will learn how to add Graql inference rules to your knowledge base; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about Grakn Reasoner from the [docs](../index.html).
+In the [next lesson](./inference-rules.html), we will learn how to add Graql inference rules to your knowledge graph; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about Grakn Reasoner from the [docs](../index.html).

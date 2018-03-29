@@ -21,7 +21,7 @@ In this example, we will explore how to use Grakn to make inferences and find in
 
 ## Schema and Data
 
-On GRAKN.AI, the first step when working with a dataset is to define its schema in Graql. The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
+On GRAKN.AI, the first step when working with a dataset is to define its schema in Graql. The schema is a way to describe the entities and their relationships, so the underlying knowledge graph can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
@@ -32,7 +32,7 @@ The schema contains a `person` entity, and a number of possible family relations
 
 ## Loading the Example
 
-The *basic-genealogy.gql* file contains the schema, data and rules needed for this example. To load it into a knowledge base, make sure the engine is running and choose a clean keyspace in which to work (in the example below we use the default keyspace, so we are cleaning it before we get started):
+The *basic-genealogy.gql* file contains the schema, data and rules needed for this example. To load it into a knowledge graph, make sure the engine is running and choose a clean keyspace in which to work (in the example below we use the default keyspace, so we are cleaning it before we get started):
 
 ```bash
 ./grakn server clean
@@ -40,7 +40,7 @@ The *basic-genealogy.gql* file contains the schema, data and rules needed for th
 ./graql console -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
 ```
 
-When the terminal prompt returns, the data will have been loaded into the default keyspace, and you can start to look it using the [Grakn visualiser](../visualisation-dashboard/visualiser), by navigating to [http://localhost:4567](http://localhost:4567) in your browser. Submit a query, such as `match $x isa person` to check that all is well with your knowledge base.
+When the terminal prompt returns, the data will have been loaded into the default keyspace, and you can start to look it using the [Grakn visualiser](../visualisation-dashboard/visualiser), by navigating to [http://localhost:4567](http://localhost:4567) in your browser. Submit a query, such as `match $x isa person` to check that all is well with your knowledge graph.
 
 ## Inferring Family Relations
 

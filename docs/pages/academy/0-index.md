@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Welcome to the Grakn Academy. In this series of tutorials, you will learn all the basics of Grakn - the hyper-relational database for knowledge engineering.
+Welcome to the Grakn Academy. In this series of tutorials, you will learn all the basics of Grakn - the knowledge graph for knowledge engineering.
 
 The Academy is structured into modules that covers a broad topic. Each module is divided into several lessons, that you are supposed to follow in order.
 

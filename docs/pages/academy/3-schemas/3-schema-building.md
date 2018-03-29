@@ -25,7 +25,7 @@ As a general rule, you can think of concept as more specialised the lower you ge
 
   1. If an animal is allowed to have an attribute (for example `name`), then all its subconcepts are also allowed to have that attribute (so you do not have to specify that cats can have a name).
 
-Since every concept you add to the schema must be the direct subconcept of something, every new Grakn knowledge base comes equipped with what we call a _metaschema_ that includes 3 basic types (**entity**, **relationship** and **attribute**,  which are direct subconcepts of the type **thing**) and one special **role** concept, which is used to connect types. Inference **rules** will also be added to the schema, but we will talk about them later in the Academy.
+Since every concept you add to the schema must be the direct subconcept of something, every new Grakn knowledge graph comes equipped with what we call a _metaschema_ that includes 3 basic types (**entity**, **relationship** and **attribute**,  which are direct subconcepts of the type **thing**) and one special **role** concept, which is used to connect types. Inference **rules** will also be added to the schema, but we will talk about them later in the Academy.
 
   ![The metaschema](/images/academy/3-schema/meta-schema.png)
 
@@ -61,7 +61,11 @@ define
 
 And save it as `schema.gql` or something similar (the `.gql` file extension is completely optional, but it is the default extension for Graql files).
 
+<<<<<<< HEAD
+Notice that in the example above we are defining two types (`animal` and `cat`) but we have used the keyword `define` only once. It is in fact possible, and often useful, to actually define the whole schema in one single file, with one single query; this way GRAKN will take care of adding concepts to your knowledge graph in the correct order (for example it will add "animal" before "cat" as the latter is a subconcept of the former).
+=======
 Notice that in the example above we are defining two types (`animal` and `cat`) but we have used the keyword `define` only once. It is in fact possible, and often useful, to actually define the whole schema in one single file, with one single query; this way Grakn will take care of adding concepts to your knowledge base in the correct order (for example it will add "animal" before "cat" as the latter is a subconcept of the former).
+>>>>>>> stable
 The only other thing you need to know is that when you add a concept and name it in some way, or more precisely you assign a **label** to it, like "animal" or "cat", you are allowed to use spaces, but it is in general not a good idea.
 
 Look again at your model. Start a new file in your text editor and start adding entities to your schema. It should be quite easy.

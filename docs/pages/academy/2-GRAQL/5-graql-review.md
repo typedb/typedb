@@ -35,15 +35,15 @@ Run in the dashboard a query that retrieves all bonds issued by a company that o
 Don’t worry too much if the results don’t make too much sense: they have been generated randomly, so you are likely to see weird stuff like offshore platforms in landlocked countries and similar stuff.
 
 ### Exercise 3: Insert queries
-Add to the knowledge base a new bond named "MyAwesomeBond" issued by at least 3 companies.
+Add to the knowledge graph a new bond named "MyAwesomeBond" issued by at least 3 companies.
 
 Check in the graph visualiser that the bond has been correctly added and double click on it to show which companies it is connected to.
 
 ### Exercise 4: Delete queries
-Delete from the knowledge base the bond you have inserted in Exercise 3.
+Delete from the knowledge graph the bond you have inserted in Exercise 3.
 
 ### Exercise 5: Ask
-Write a query that tells you whether a country named "Burundi" is in the knowledge base.
+Write a query that tells you whether a country named "Burundi" is in the knowledge graph.
 
 ### Exercise 6: Statistics
 Write a query to find the maximum risk value of a bond.

@@ -30,7 +30,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -43,9 +43,9 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
+import ai.grakn.grpc.GrpcClient;
 import com.google.common.collect.Iterators;
 
-import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -66,15 +66,13 @@ import java.util.stream.StreamSupport;
 final class RemoteQueryRunner implements QueryRunner {
 
     private final GrpcClient client;
-    private final @Nullable Boolean infer;
 
-    private RemoteQueryRunner(GrpcClient client, @Nullable Boolean infer) {
+    private RemoteQueryRunner(GrpcClient client) {
         this.client = client;
-        this.infer = infer;
     }
 
-    public static RemoteQueryRunner create(GrpcClient client, @Nullable Boolean infer) {
-        return new RemoteQueryRunner(client, infer);
+    public static RemoteQueryRunner create(GrpcClient client) {
+        return new RemoteQueryRunner(client);
     }
 
     @Override
@@ -108,7 +106,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     @Override
-    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
         return runComputeUnchecked(query);
     }
 
@@ -173,7 +171,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(query, infer);
+        return client.execQuery(query);
     }
 
     private void runVoid(Query<?> query) {

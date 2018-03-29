@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Graql, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge base.
+Graql, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge graph.
 
 
 ## Basic get queries
@@ -20,7 +20,7 @@ Let us start with a very simple example: what do you think the following query w
 
  `match $x isa company; get;`
 
-If you answered "return all companies in the knowledge base" then congratulations! You are correct! Give yourself a pat on the back and let’s go onto something very slightly more complex. What do you think the following query does?
+If you answered "return all companies in the knowledge graph" then congratulations! You are correct! Give yourself a pat on the back and let’s go onto something very slightly more complex. What do you think the following query does?
 
 `match $x isa company has name "ENI"; get;`
 
@@ -133,4 +133,4 @@ In this lesson you have learned all the basics of match queries, which is probab
 
 
 ## What next?
-The [next step](./insert-delete-queries.html) is to learn how to insert data into your knowledge base. If you want to know more about the Graql syntax and the possible modifiers you can look at the [docs](../index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](./schema-elements.html) of the Academy, although it is not recommended.
+The [next step](./insert-delete-queries.html) is to learn how to insert data into your knowledge graph. If you want to know more about the Graql syntax and the possible modifiers you can look at the [docs](../index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](./schema-elements.html) of the Academy, although it is not recommended.
