@@ -226,7 +226,7 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenOpeningTwoTransactions_TransactionsAreOpenedInDifferentThreads() {
+    public void whenOpeningTwoTransactions_TransactionsAreOpenedInDifferentThreads() throws InterruptedException {
         List<Thread> threads = new ArrayList<>();
 
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenAnswer(invocation -> {
@@ -240,6 +240,9 @@ public class GrpcServerTest {
         ) {
             tx1.send(openRequest(MYKS, GraknTxType.WRITE));
             tx2.send(openRequest(MYKS, GraknTxType.WRITE));
+
+            tx1.receive();
+            tx2.receive();
         }
 
         assertNotEquals(threads.get(0), threads.get(1));
