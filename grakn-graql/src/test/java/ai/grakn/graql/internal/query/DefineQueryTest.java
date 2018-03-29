@@ -461,6 +461,23 @@ public class DefineQueryTest {
     }
 
     @Test
+    public void whenDefiningARelationship_SubRoleCasUseAs() {
+        qb.define(label("parentship").sub(label(RELATIONSHIP.getLabel()))
+                .relates("parent")
+                .relates("child")).execute();
+        qb.define(label("fatherhood").sub(label(RELATIONSHIP.getLabel()))
+                .relates("father", "parent")
+                .relates("son", "child")).execute();
+
+        RelationshipType marriage = movies.tx().getRelationshipType("fatherhood");
+        Role father = movies.tx().getRole("father");
+        Role son = movies.tx().getRole("son");
+        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(father, son));
+        assertEquals(movies.tx().getRole("parent"), father.sup());
+        assertEquals(movies.tx().getRole("child"), son.sup());
+    }
+
+    @Test
     public void whenDefiningARule_SubRuleDeclarationsCanBeSkipped() {
         Pattern when = qb.parser().parsePattern("$x isa entity");
         Pattern then = qb.parser().parsePattern("$x isa entity");
