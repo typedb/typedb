@@ -100,7 +100,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
     @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
-        return Stream.of(role());
+        return superRole() == null ? Stream.of(role()) : Stream.of(superRole(), role());
     }
 
     @Override
