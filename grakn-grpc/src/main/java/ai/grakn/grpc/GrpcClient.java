@@ -43,6 +43,7 @@ import io.grpc.StatusRuntimeException;
 import mjson.Json;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -81,14 +82,25 @@ public class GrpcClient implements AutoCloseable {
     public Iterator<Object> execQuery(Query<?> query) {
         communicator.send(GrpcUtil.execQueryRequest(query.toString(), query.inferring()));
 
-        IteratorId iteratorId = responseOrThrow().getIteratorId();
+        TxResponse txResponse = responseOrThrow();
 
-        return new GraknGrpcIterator<Object>(this, iteratorId) {
-            @Override
-            protected Object getNextFromResponse(TxResponse response) {
-                return convert(response.getQueryResult());
-            }
-        };
+        switch (txResponse.getResponseCase()) {
+            case QUERYRESULT:
+                return Collections.singleton(convert(txResponse.getQueryResult())).iterator();
+            case DONE:
+                return Collections.emptyIterator();
+            case ITERATORID:
+                IteratorId iteratorId = txResponse.getIteratorId();
+
+                return new GraknGrpcIterator<Object>(this, iteratorId) {
+                    @Override
+                    protected Object getNextFromResponse(TxResponse response) {
+                        return convert(response.getQueryResult());
+                    }
+                };
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
+        }
     }
 
     public void commit() {
