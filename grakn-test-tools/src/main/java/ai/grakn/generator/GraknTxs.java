@@ -61,6 +61,16 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Generator to create random {@link GraknTx}s.
  *
+ * <p>
+ *     Normally you want the {@link GraknTx} you generate to be open, not already closed. To get an open
+ *     {@link GraknTx}, annotate the parameter in your test with {@link Open}.
+ * </p>
+ *
+ * <p>
+ *     Additionally, if your property test needs a concept from the {@link GraknTx}, use the annotation
+ *     {@link ai.grakn.generator.FromTxGenerator.FromTx}.
+ * </p>
+ *
  * @author Felix Chapman
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!

@@ -79,6 +79,11 @@ class MatchInfer extends MatchModifier {
     }
 
     @Override
+    public final Boolean inferring() {
+        return true;
+    }
+
+    @Override
     protected String modifierString() {
         return "";
     }

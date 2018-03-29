@@ -70,6 +70,12 @@ public class ReasoningTests {
     public static final SampleKBContext testSet2 = SampleKBContext.load("testSet2.gql");
 
     @ClassRule
+    public static final SampleKBContext testSet2b = SampleKBContext.load("testSet2b.gql");
+
+    @ClassRule
+    public static final SampleKBContext testSet2c = SampleKBContext.load("testSet2c.gql");
+
+    @ClassRule
     public static final SampleKBContext testSet3 = SampleKBContext.load("testSet3.gql");
 
     @ClassRule
@@ -198,9 +204,37 @@ public class ReasoningTests {
     @Test //Expected result: The query should return a unique match.
     public void generatingMultipleIsaEdges() {
         QueryBuilder qb = testSet2.tx().graql().infer(true);
-        String queryString = "match $x isa entity2; get;";
+        String queryString = "match $x isa derivedEntity; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
+    }
+
+    @Test //Expected result: Differentiated behaviour based on directedness of the isa.
+    public void generatingIsaEdgesDirectly() {
+        QueryBuilder qb = testSet2b.tx().graql().infer(true);
+        String queryString = "match $x isa derivedEntity; get;";
+        String queryString2 = "match $x isa! derivedEntity; get;";
+        String queryString3 = "match $x isa directDerivedEntity; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers.size(), 2);
+        assertEquals(answers2.size(), 2);
+        assertEquals(answers3.size(), 1);
+    }
+
+    @Test //Expected result: Differentiated behaviour based on directedness of the isa.
+    public void generatingIsaEdgesForRelationsDirectly() {
+        QueryBuilder qb = testSet2c.tx().graql().infer(true);
+        String queryString = "match ($x, $y) isa derivedRelation; get;";
+        String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
+        String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers.size(), 2);
+        assertEquals(answers2.size(), 2);
+        assertEquals(answers3.size(), 1);
     }
 
     @Test //Expected result: The query should return 3 results: one for meta type, one for db, one for inferred type.

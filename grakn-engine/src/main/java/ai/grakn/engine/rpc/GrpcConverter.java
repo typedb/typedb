@@ -22,8 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
+import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 
 import java.util.Collection;
 import java.util.Map;
@@ -46,8 +48,8 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
 
     @Override
     public QueryResult complete(Object builder) {
-        if (builder instanceof GraknOuterClass.Answer) {
-            return QueryResult.newBuilder().setAnswer((GraknOuterClass.Answer) builder).build();
+        if (builder instanceof GrpcGrakn.Answer) {
+            return QueryResult.newBuilder().setAnswer((GrpcGrakn.Answer) builder).build();
         } else {
             // If not an answer, convert to JSON
             return QueryResult.newBuilder().setOtherResult(Printers.json().convert(builder)).build();
@@ -80,10 +82,10 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     @Override
-    public GraknOuterClass.Answer build(Answer answer) {
-        GraknOuterClass.Answer.Builder answerRps = GraknOuterClass.Answer.newBuilder();
+    public GrpcGrakn.Answer build(Answer answer) {
+        GrpcGrakn.Answer.Builder answerRps = GrpcGrakn.Answer.newBuilder();
         answer.forEach((var, concept) -> {
-            GraknOuterClass.Concept conceptRps = makeConcept(concept);
+            GrpcConcept.Concept conceptRps = GrpcUtil.convert(concept);
             answerRps.putAnswer(var.getValue(), conceptRps);
         });
         return answerRps.build();
@@ -92,9 +94,5 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     @Override
     public Object buildDefault(Object object) {
         return object;
-    }
-
-    private GraknOuterClass.Concept makeConcept(Concept concept) {
-        return GraknOuterClass.Concept.newBuilder().setId(concept.getId().getValue()).build();
     }
 }

@@ -20,12 +20,12 @@ All the analytics query in Graql begin with the keyword `compute` and, for this 
 compute <STATISTIC> in <TYPES>;
 ```
 
-The `in <TYPES>;` part of the query (`<TYPES>` just stands for a list of comma separated types) is optional and is a list of types representing the part of the knowledge base on which you want to execute the query.
+The `in <TYPES>;` part of the query (`<TYPES>` just stands for a list of comma separated types) is optional and is a list of types representing the part of the knowledge graph on which you want to execute the query.
 
 An example will clear up things. Let’s us do some counting.
 
 ## Count queries
-If it’s not already running, launch the Grakn instance in your VM and open the dashboard in the "training" keyspace. Let’s say we want to count the number of oil platforms in our knowledge base.
+If it’s not already running, launch the Grakn instance in your VM and open the dashboard in the "training" keyspace. Let’s say we want to count the number of oil platforms in our knowledge graph.
 
 Launch this query:
 ```graql-skip-test
@@ -38,7 +38,7 @@ After a while you will see the result in your dashboard:
 
 As you can see, it’s far from difficult.
 
-Try it yourself now: write and launch a compute query to count how many companies AND bonds are in the knowledge base.
+Try it yourself now: write and launch a compute query to count how many companies AND bonds are in the knowledge graph.
 
 ## Statistics query
 If you want to find out something a bit more complicated than the number of instances of a few types, you need proper statistics. The query, in this case looks like this:
@@ -46,7 +46,7 @@ If you want to find out something a bit more complicated than the number of inst
 ```graql-skip-test
 compute <STATISTIC> of <ATTRIBUTE> in <TYPES>;
 ```
-Statistics like mean, standard deviation, median etc. can only be computed on numerical attributes, so that is what the `of <ATTRIBUTE>` part of the query is for. If the attribute is shared by several types, then you might want to restrict to the computation to only some of those with the `in <TYPES>` part. Imagine you have a knowledge base of people, cats and dogs, for example, and both types have an "age" attribute. If you wanted to compute the median age of the dogs in the knowledge base, you would do:
+Statistics like mean, standard deviation, median etc. can only be computed on numerical attributes, so that is what the `of <ATTRIBUTE>` part of the query is for. If the attribute is shared by several types, then you might want to restrict to the computation to only some of those with the `in <TYPES>` part. Imagine you have a knowledge graph of people, cats and dogs, for example, and both types have an "age" attribute. If you wanted to compute the median age of the dogs in the knowledge graph, you would do:
 
 ```graql-skip-test
 compute median of age in dog;
@@ -75,7 +75,7 @@ All the statistics queries behave in the same way. The possible statistics are:
 |Standard deviation  | _std_ |
 |Sum     | _sum_ |
 
-Can you write and execute a query to find the standard deviation of the risk of bonds in your knowledge base?
+Can you write and execute a query to find the standard deviation of the risk of bonds in your knowledge graph?
 
 ## Compute queries vs aggregates
 If you have paid close attention to the lessons of the academy and maybe have looked a bit into the documentation, you will have noticed that for each of the statistics compute query there exists an analogous aggregate query.
@@ -84,7 +84,7 @@ It is true that both versions of the query actually will give you the same resul
 
 Aggregate queries actually perform an OLTP query and then do their computation on the results of the query. In general if you are expecting the number of results to be relatively small, they are much much more efficient.
 
-If you want to compute your statistics over a large distributed knowledge base, on the other hand, aggregate queries quickly become unusable (imagine, for example, that you want to count the number of people in a knowledge base that contain several million of them: executing the query and, most importantly, returning the results would be a very inefficient way of doing that). In those cases, you will use the compute queries, that use much more advanced algorithms (it is the reason you have to wait a while when you launch one of those queries: the algorithm has to go through several setup steps) and can act on the whole knowledge base at the same time.
+If you want to compute your statistics over a large distributed knowledge graph, on the other hand, aggregate queries quickly become unusable (imagine, for example, that you want to count the number of people in a knowledge graph that contain several million of them: executing the query and, most importantly, returning the results would be a very inefficient way of doing that). In those cases, you will use the compute queries, that use much more advanced algorithms (it is the reason you have to wait a while when you launch one of those queries: the algorithm has to go through several setup steps) and can act on the whole knowledge graph at the same time.
 
 In other words, the compute queries scale much better.
 

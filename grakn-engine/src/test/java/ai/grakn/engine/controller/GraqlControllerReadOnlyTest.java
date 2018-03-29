@@ -20,8 +20,8 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.SystemKeyspaceImpl;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Printer;
@@ -72,7 +72,7 @@ public class GraqlControllerReadOnlyTest {
     private static EmbeddedGraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
-    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspaceImpl.class);
+    private static GraknKeyspaceStore mockGraknKeyspaceStore = mock(GraknKeyspaceStoreImpl.class);
     private static final Printer printer = mock(Printer.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
@@ -83,7 +83,7 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry).start(spark);
+        new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new GraknEngineStatus(), metricRegistry).start(spark);
         new GraqlController(mockFactory, mock(PostProcessor.class), printer, metricRegistry).start(spark);
     });
 
@@ -108,7 +108,7 @@ public class GraqlControllerReadOnlyTest {
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
-        when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
+        when(mockFactory.keyspaceStore()).thenReturn(mockGraknKeyspaceStore);
         when(mockFactory.config()).thenReturn(sparkContext.config());
     }
 

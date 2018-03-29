@@ -18,13 +18,7 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
 
@@ -39,15 +33,16 @@ public class GrpcServer implements AutoCloseable {
         this.server = server;
     }
 
+
+    public static GrpcServer create(Server server) {
+        return new GrpcServer(server);
+    }
+
     /**
      * @throws IOException if unable to bind
      */
-    public static GrpcServer create(int port, EngineGraknTxFactory txFactory) throws IOException {
-        Server server = ServerBuilder.forPort(port)
-                .addService(new GraknImpl(txFactory))
-                .build()
-                .start();
-        return new GrpcServer(server);
+    public void start() throws IOException {
+        server.start();
     }
 
     @Override
@@ -56,18 +51,5 @@ public class GrpcServer implements AutoCloseable {
         server.awaitTermination();
     }
 
-    private static class GraknImpl extends GraknGrpc.GraknImplBase {
-
-        private final EngineGraknTxFactory txFactory;
-
-        private GraknImpl(EngineGraknTxFactory txFactory) {
-            this.txFactory = txFactory;
-        }
-
-        @Override
-        public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
-            return TxObserver.create(txFactory, responseObserver);
-        }
-    }
 }
 

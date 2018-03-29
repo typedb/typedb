@@ -21,7 +21,21 @@ package ai.grakn.generator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 
 /**
- * Generator for recursive types. Designed to stop after a certain depth.
+ * Generator for recursive value types. Designed to stop after a certain depth.
+ *
+ * <p>
+ *     A simple example of a recursive value type is an arithmetic expression. You could define it like this:
+ * </p>
+ *
+ * <p>
+ *     "An expression is either a number, an expression plus an expression, or an expression times an expression."
+ * </p>
+ *
+ * <p>
+ *     This lets you define expressions like: {@code (1 + 5) * 3}. Notice an expression may contain other expressions.
+ *     When generating such an expression, the result could be enormous, or never terminate. This abstract class makes
+ *     sure that the generated object only recurses up to a certain depth.
+ * </p>
  *
  * @author Felix Chapman
  */
@@ -53,7 +67,13 @@ public abstract class RecursiveGenerator<T> extends AbstractGenerator<T> {
         return result;
     }
 
+    /**
+     * Generate a "base case" value. This method should <i>not</i> generate any recursive type.
+     */
     protected abstract T generateBase();
 
+    /**
+     * Generate a "recursive" value. This method is permitted to recursively generate more values of the same type.
+     */
     protected abstract T generateRecurse();
 }

@@ -12,9 +12,9 @@ folder: docs
 
 Graql uses machine reasoning to perform inference over data and relationship types as well as to provide context disambiguation and dynamically-created relationships. This allows you to discover hidden and implicit associations between data instances through short and concise statements.
 
-The rule-based reasoning allows automated capture and evolution of patterns within the knowledge base. Graql reasoning is performed at query time and is guaranteed to be complete. Thanks to the reasoning facility, common patterns in the knowledge base can be defined and associated with existing schema elements. The association happens by means of rules. This not only allows you to compress and simplify typical queries, but offers the ability to derive new non-trivial information by combining defined patterns.
+The rule-based reasoning allows automated capture and evolution of patterns within the knowledge graph. Graql reasoning is performed at query time and is guaranteed to be complete. Thanks to the reasoning facility, common patterns in the knowledge graph can be defined and associated with existing schema elements. The association happens by means of rules. This not only allows you to compress and simplify typical queries, but offers the ability to derive new non-trivial information by combining defined patterns.
 
-Once a given query is executed, Graql will not only query the knowledge base for exact matches but will also inspect the defined rules to check whether additional information can be found (inferred) by combining the patterns defined in the rules. The completeness property of Graql reasoning guarantees that, for a given content of the knowledge base and the defined rule set, the query result shall contain all possible answers derived by combining database lookups and rule applications.
+Once a given query is executed, Graql will not only query the knowledge graph for exact matches but will also inspect the defined rules to check whether additional information can be found (inferred) by combining the patterns defined in the rules. The completeness property of Graql reasoning guarantees that, for a given content of the knowledge graph and the defined rule set, the query result shall contain all possible answers derived by combining database lookups and rule applications.
 
 In this section we shall briefly describe the logics behind the rules as well as how can we define pattern associations by suitably defined rules. You may also want to review our [example of how to work with Graql rules](../examples/graql-reasoning).
 
@@ -59,7 +59,7 @@ then {
 };
 ```
 
-Each dotted line corresponds to a single Graql variable pattern. The rule label is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the knowledge base.
+Each dotted line corresponds to a single Graql variable pattern. The rule label is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the knowledge graph.
 
 In Graql, the "when" of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the "then" should be atomic - contain a single pattern. If your use case requires a rule with a disjunction in the "when" part, please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
 

@@ -39,7 +39,7 @@ An image showing the same schema as before, containing 'person', 'company', 'nam
 
 To ensure data is correctly structured (i.e. consistent) with respect to the schema, all data instances are validated against the schema constraints. All the explicitly represented schema constraints, together with the inherited ones, form complete schema templates for particular concept types, which guide the validation.
 
-We will consider the structural validation rules that are enforced in a Grakn knowledge base. The following consistency checks are executed upon `commit` depending on what is being committed:
+We will consider the structural validation rules that are enforced in a Grakn knowledge graph. The following consistency checks are executed upon `commit` depending on what is being committed:
 
 #### Plays Role Validation
 

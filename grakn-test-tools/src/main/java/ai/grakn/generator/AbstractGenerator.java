@@ -30,6 +30,11 @@ import java.util.Set;
 
 /**
  * Abstract class for generating test objects that handles some boilerplate.
+ *
+ * <p>
+ *     New generators should extend this class and implement {@link #generate()}.
+ * </p>
+ *
  * @param <T> the type to generate
  *
  * @author Felix Chapman

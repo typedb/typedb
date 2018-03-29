@@ -23,6 +23,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
@@ -110,6 +111,116 @@ public class AtomicTest {
         assertTrue(atom.isType());
         assertTrue(relation.isRelation());
         assertTrue(res.isResource());
+    }
+
+    /**
+     * ##################################
+     *
+     *       Equality Tests
+     *
+     * ##################################
+     */
+
+    @Test
+    public void testEquality_DifferentIsaVariants(){
+        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "isa", "baseRoleEntity", "subRoleEntity");
+    }
+
+    @Test
+    public void testEquality_DifferentSubVariants(){
+        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "sub", "baseRoleEntity", "role1");
+    }
+
+    @Test
+    public void testEquality_DifferentPlaysVariants(){
+        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "plays", "role1", "role2");
+    }
+
+    @Test
+    public void testEquality_DifferentRelatesVariants(){
+        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "relates", "role1", "role2");
+    }
+
+    @Test
+    public void testEquality_DifferentHasVariants(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        String patternString = "{$x has resource;}";
+        String patternString2 = "{$y has resource;}";
+        String patternString3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
+
+        atomicEquality(patternString, patternString, true, graph);
+        atomicEquality(patternString, patternString2, false, graph);
+        atomicEquality(patternString, patternString3, false, graph);
+        atomicEquality(patternString2, patternString3, false, graph);
+    }
+
+    @Test
+    public void testEquivalence_DifferentRelationVariants(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        String pattern = "{(role1: $x, role2: $y) isa binary;}";
+        String directPattern = "{(role1: $x, role2: $y) isa! binary;}";
+        String pattern2 = "{$r (role1: $x, role2: $y) isa binary;}";
+        String pattern3 = "{$z (role1: $x, role2: $y) isa binary;}";
+        String pattern4 = "{(role1: $x, role2: $y);}";
+        String pattern5 = "{(role1: $z, role2: $v) isa binary;}";
+        String pattern6 = "{(role: $x, role2: $y) isa binary;}";
+        String pattern7 = "{(role1: $x, role2: $y) isa $type;}";
+        String pattern8 = "{(role1: $x, role2: $y) isa $type;$type label binary;}";
+
+        atomicEquality(pattern, pattern, true, graph);
+        atomicEquality(pattern, directPattern, false, graph);
+        atomicEquality(pattern, pattern2, false, graph);
+        atomicEquality(pattern, pattern3, false, graph);
+        atomicEquality(pattern, pattern4, false, graph);
+        atomicEquality(pattern, pattern5, false, graph);
+        atomicEquality(pattern, pattern6, false, graph);
+        atomicEquality(pattern, pattern7, false, graph);
+        atomicEquality(pattern, pattern8, false, graph);
+    }
+
+    private void testEquality_DifferentTypeVariants(EmbeddedGraknTx<?> graph, String keyword, String label, String label2){
+        String variantAString = "{$x " + keyword + " " + label + ";}";
+        String variantAString2 = "{$y " + keyword + " " + label + ";}";
+        String variantAString3 = "{$y " + keyword + " " + label2 + ";}";
+        atomicEquality(variantAString, variantAString, true, graph);
+        atomicEquality(variantAString, variantAString2, false, graph);
+        atomicEquality(variantAString2, variantAString3, false, graph);
+
+        String variantBString = "{$x " + keyword + " $type;$type label " + label +";}";
+        String variantBString2 = "{$x " + keyword + " $type;$type label " + label2 +";}";
+        String variantBString3 = "{$x " + keyword + " $var;$var label " + label +";}";
+        String variantBString4 = "{$y " + keyword + " $type;$type label " + label +";}";
+        atomicEquality(variantBString, variantBString, true, graph);
+        atomicEquality(variantBString, variantBString2, false, graph);
+        atomicEquality(variantBString, variantBString3, true, graph);
+        atomicEquality(variantBString, variantBString4, false, graph);
+
+        String variantCString = "{$x " + keyword + " $y;}";
+        String variantCString2 = "{$x " + keyword + " $z;}";
+        atomicEquality(variantCString, variantCString, true, graph);
+        atomicEquality(variantCString, variantCString2, true, graph);
+
+        atomicEquality(variantAString, variantBString, true, graph);
+        atomicEquality(variantAString, variantCString, false, graph);
+        atomicEquality(variantBString, variantCString, false, graph);
+    }
+
+    private void atomicEquality(String patternA, String patternB, boolean expectation, EmbeddedGraknTx<?> graph){
+        Atom atomA = ReasonerQueries.atomic(conjunction(patternA, graph), graph).getAtom();
+        Atom atomB = ReasonerQueries.atomic(conjunction(patternB, graph), graph).getAtom();
+        atomicEquality(atomA, atomA, true);
+        atomicEquality(atomB, atomB, true);
+        atomicEquality(atomA, atomB, expectation);
+        atomicEquality(atomB, atomA, expectation);
+    }
+
+    private void atomicEquality(Atomic a, Atomic b, boolean expectation){
+        assertEquals("Atomic: " + a.toString() + " =? " + b.toString(), a.equals(b), expectation);
+
+        //check hash additionally if need to be equal
+        if (expectation) {
+            assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);
+        }
     }
 
     /**

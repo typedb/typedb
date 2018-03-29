@@ -18,14 +18,22 @@
 
 package ai.grakn.bootup;
 
-import ai.grakn.graql.GraqlShell;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.graql.shell.GraknSessionProvider;
+import ai.grakn.graql.shell.GraqlConsole;
+import ai.grakn.graql.shell.GraqlShellOptions;
+import ai.grakn.graql.shell.GraqlShellOptionsFactory;
+import ai.grakn.graql.shell.SessionProvider;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.StandardSystemProperty;
+import org.apache.commons.cli.ParseException;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -34,22 +42,44 @@ import java.util.Arrays;
  */
 public class Graql {
 
+    private final GraqlShellOptionsFactory graqlShellOptionsFactory;
+    private SessionProvider sessionProvider;
+    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
+
+
+    public Graql(SessionProvider sessionProvider, GraqlShellOptionsFactory graqlShellOptionsFactory) {
+        this.sessionProvider = sessionProvider;
+        this.graqlShellOptionsFactory = graqlShellOptionsFactory;
+    }
+
     /**
      *
      * Invocation from bash script 'graql'
      *
      * @param args
      */
-    public static void main(String[] args) {
-        new Graql().run(args);
+    public static void main(String[] args) throws IOException, InterruptedException {
+        GraknSessionProvider sessionProvider = new GraknSessionProvider(GraknConfig.create());
+        GraqlShellOptionsFactory graqlShellOptionsFactory = GraqlShellOptions::create;
+
+        new Graql(sessionProvider, graqlShellOptionsFactory).run(args);
     }
 
-    public void run(String[] args) {
+    public void run(String[] args) throws IOException, InterruptedException {
         String context = args.length > 0 ? args[0] : "";
 
         switch (context) {
             case "console":
-                GraqlShell.main(valuesFrom(args, 1));
+                GraqlShellOptions options;
+
+                try {
+                    options = graqlShellOptionsFactory.createGraqlShellOptions(valuesFrom(args, 1));
+                } catch (ParseException e) {
+                    System.err.println(e.getMessage());
+                    return;
+                }
+
+                GraqlConsole.start(options, sessionProvider, HISTORY_FILENAME, System.out, System.err);
                 break;
             case "migrate":
                 migrate(valuesFrom(args, 1));

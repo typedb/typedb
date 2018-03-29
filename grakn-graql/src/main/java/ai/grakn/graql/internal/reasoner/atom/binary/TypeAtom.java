@@ -17,19 +17,11 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
-import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -52,27 +44,6 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary{
 
-    protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
-        super(pattern, predicateVar, p, par);}
-    protected TypeAtom(TypeAtom a) { super(a);}
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarName().equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
-
     @Override
     public boolean isType(){ return true;}
 
@@ -80,7 +51,7 @@ public abstract class TypeAtom extends Binary{
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         return this.getSchemaConcept() == null ||
                 //ensure not ontological atom query
-                getPattern().admin().hasProperty(IsaProperty.class)
+                (this instanceof IsaAtomBase)
                 && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
     }
 
@@ -95,15 +66,6 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean requiresMaterialisation() {
         return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
-    }
-
-    @Nullable
-    @Override
-    public SchemaConcept getSchemaConcept() {
-        if (getTypePredicate() == null) return null;
-        SchemaConcept schemaConcept = tx().getConcept(getTypePredicate().getPredicate());
-        if (schemaConcept == null) throw GraqlQueryException.idNotFound(getTypePredicate().getPredicate());
-        return schemaConcept;
     }
 
     /**

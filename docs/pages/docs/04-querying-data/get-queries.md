@@ -8,7 +8,7 @@ permalink: /docs/querying-data/get-queries
 folder: docs
 ---
 
-A get query will search the knowledge base for anything that matches the given [match](./match-clause) part, returning a
+A get query will search the knowledge graph for anything that matches the given [match](./match-clause) part, returning a
 result for each match found. To follow along, or experiment further, with the examples given below, please load the
 *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).

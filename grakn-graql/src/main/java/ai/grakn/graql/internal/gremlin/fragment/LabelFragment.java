@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
@@ -40,10 +39,17 @@ import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-@AutoValue
-abstract class LabelFragment extends Fragment {
+/**
+ * A fragment representing traversing a label.
+ *
+ * @author Felix Chapman
+ */
 
-    abstract ImmutableSet<Label> labels();
+@AutoValue
+public abstract class LabelFragment extends Fragment {
+
+    // TODO: labels() should return ONE label instead of a set
+    public abstract ImmutableSet<Label> labels();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

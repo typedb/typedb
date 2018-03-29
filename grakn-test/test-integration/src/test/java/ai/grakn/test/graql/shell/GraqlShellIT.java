@@ -18,11 +18,16 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.graql.GraqlShell;
-import ai.grakn.graql.internal.shell.ErrorMessage;
-import ai.grakn.test.rule.DistributionContext;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.graql.shell.GraknSessionProvider;
+import ai.grakn.graql.shell.GraqlConsole;
+import ai.grakn.graql.shell.GraqlShellOptions;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
@@ -70,11 +75,8 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
+    public static final EngineContext engine = EngineContext.create();
     private static InputStream trueIn;
-    private static PrintStream trueOut;
-    private static PrintStream trueErr;
-    private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
@@ -86,11 +88,6 @@ public class GraqlShellIT {
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
-        trueOut = System.out;
-        trueErr = System.err;
-
-        // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestUtil.usingJanus());
     }
 
     @Before
@@ -101,8 +98,6 @@ public class GraqlShellIT {
     @AfterClass
     public static void resetIO() {
         System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
     }
 
     @Test
@@ -128,7 +123,7 @@ public class GraqlShellIT {
     @Test
     public void testVersionOption() throws Exception {
         String result = runShellWithoutErrors("", "--version");
-        assertThat(result, containsString(expectedVersion));
+        assertThat(result, containsString(GraknVersion.VERSION));
     }
 
     @Test
@@ -268,7 +263,8 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString(Schema.MetaSchema.THING.getLabel().getValue()), containsString("match"),
+                        containsString(Schema.MetaSchema.THING.getLabel().getValue()),
+                        containsString(Schema.MetaSchema.ROLE.getLabel().getValue()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
@@ -350,7 +346,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(GraknTestUtil.usingTinker());
 
-        String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
+        String[] result = runShellWithoutErrors("define E sub entity;\nrollback\nmatch $x label E; get;\n").split("\n");
 
         // Make sure there are no results for get query
         assertEquals(">>> match $x label E; get;", result[result.length-2]);
@@ -391,7 +387,7 @@ public class GraqlShellIT {
         assumeFalse(GraknTestUtil.usingTinker());
 
         String result = runShellWithoutErrors(
-                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
+                "define entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity; get;\n"
         );
         String[] lines = result.split("\n");
 
@@ -410,8 +406,7 @@ public class GraqlShellIT {
     @Test
     @Ignore
     /* TODO: Fix this test
-     * Sometimes we see this: "Websocket closed, code: 1005, reason: null".
-     * Other times, JLine crashes when receiving certain input.
+     * Sometimes, JLine crashes when receiving certain input.
      */
     public void fuzzTest() throws Exception {
         int repeats = 100;
@@ -605,13 +600,13 @@ public class GraqlShellIT {
     @Test
     public void whenErrorDoesNotOccurs_Return0() throws Exception {
         ShellResponse response = runShell("match $x sub entity; get;\n");
-        assertEquals(0, response.exitCode());
+        assertTrue(response.success());
     }
 
     @Test
     public void whenErrorOccurs_Return1() throws Exception {
         ShellResponse response = runShell("match fofobjiojasd\n");
-        assertEquals(1, response.exitCode());
+        assertFalse(response.success());
     }
 
     private static String randomString(int length) {
@@ -659,7 +654,7 @@ public class GraqlShellIT {
     }
 
     private ShellResponse runShell(String input, String... args) throws Exception {
-        args = specifyUniqueKeyspace(args);
+        args = addKeyspaceAndUriParams(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
@@ -671,25 +666,23 @@ public class GraqlShellIT {
 
         if (showStdOutAndErr) {
             // Intercept stdout and stderr, but make sure it is still printed using the TeeOutputStream
-            tout = new TeeOutputStream(bout, trueOut);
-            terr = new TeeOutputStream(berr, trueErr);
+            tout = new TeeOutputStream(bout, System.out);
+            terr = new TeeOutputStream(berr, System.err);
         }
 
         PrintStream out = new PrintStream(tout);
         PrintStream err = new PrintStream(terr);
 
-        Integer exitCode = null;
+        Boolean success = null;
+        GraknConfig config = GraknConfig.create();
 
         try {
-            System.out.flush();
-            System.err.flush();
             System.setIn(in);
-            System.setOut(out);
-            System.setErr(err);
 
-            exitCode = GraqlShell.runShell(args, expectedVersion, historyFile);
+            GraqlShellOptions options = GraqlShellOptions.create(args);
+
+            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile, out, err);
         } catch (Exception e) {
-            System.setErr(trueErr);
             e.printStackTrace();
             err.flush();
             fail(berr.toString());
@@ -700,23 +693,31 @@ public class GraqlShellIT {
         out.flush();
         err.flush();
 
-        assertNotNull(exitCode);
+        assertNotNull(success);
 
-        return ShellResponse.of(bout.toString(), berr.toString(), exitCode);
+        return ShellResponse.of(bout.toString(), berr.toString(), success);
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
-    private String[] specifyUniqueKeyspace(String[] args) {
+    private String[] addKeyspaceAndUriParams(String[] args) {
         List<String> argList = Lists.newArrayList(args);
 
         int keyspaceIndex = argList.indexOf("-k") + 1;
         if (keyspaceIndex == 0) {
             argList.add("-k");
-            argList.add(GraqlShell.DEFAULT_KEYSPACE);
+            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE.getValue());
             keyspaceIndex = argList.size() - 1;
         }
 
         argList.set(keyspaceIndex, argList.get(keyspaceIndex) + keyspaceSuffix);
+
+        boolean uriSpecified = argList.contains("-r");
+        if (!uriSpecified) {
+            argList.add("-r");
+            boolean isBatchLoading = argList.contains("-b");
+            SimpleURI uri = isBatchLoading ? engine.uri() : engine.grpcUri();
+            argList.add(uri.toString());
+        }
 
         return argList.toArray(new String[argList.size()]);
     }
@@ -725,10 +726,10 @@ public class GraqlShellIT {
     static abstract class ShellResponse {
         abstract String out();
         abstract String err();
-        abstract int exitCode();
+        abstract boolean success();
 
-        static ShellResponse of(String out, String err, int exitCode) {
-            return new AutoValue_GraqlShellIT_ShellResponse(out, err, exitCode);
+        static ShellResponse of(String out, String err, boolean success) {
+            return new AutoValue_GraqlShellIT_ShellResponse(out, err, success);
         }
     }
 }

@@ -40,7 +40,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -98,7 +97,7 @@ public class AnalyticsTest {
 
         // the null role-player caused analytics to fail at some stage
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().degree().execute();
+            graph.graql().compute().centrality().usingDegree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -131,15 +130,17 @@ public class AnalyticsTest {
 
         List<String> queryList = new ArrayList<>();
         queryList.add("compute count;");
-        queryList.add("compute cluster;");
-        queryList.add("compute degrees;");
+        queryList.add("compute cluster; using connected-component;");
+        queryList.add("compute cluster; using k-core;");
+        queryList.add("compute centrality; using degree;");
+        queryList.add("compute centrality; using k-core;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
-        Set<?> result = queryList.parallelStream().map(query -> {
+        List<?> result = queryList.parallelStream().map(query -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().parse(query).execute();
+                return graph.graql().parse(query).execute().toString();
             }
-        }).collect(Collectors.toSet());
+        }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());
     }
 

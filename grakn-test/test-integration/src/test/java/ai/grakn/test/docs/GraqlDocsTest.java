@@ -54,6 +54,19 @@ import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Tests for the Graql examples in the documentation.
+ *
+ * <p>
+ *     Will automatically find and execute all code examples marked {@code graql} in the documentation. If you don't
+ *     want an example to run in the tests, annotate it with something other than {@code graql}, such as
+ *     {@code graql-skip-test}.
+ * </p>
+ *
+ * <p>
+ *     Each example is run using a pre-loaded graph. Go to {@link DocTestUtil#loaders} for more information.
+ * </p>
+ */
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
 
@@ -76,7 +89,7 @@ public class GraqlDocsTest {
     public static EngineContext engine = EngineContext.create();
 
     @Parameterized.Parameters(name = "{1}")
-    public static Collection files() {
+    public static Collection<Object[]> files() {
         return allMarkdownFiles().stream()
                 .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
                 .collect(toList());

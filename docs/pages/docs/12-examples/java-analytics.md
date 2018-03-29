@@ -87,7 +87,7 @@ private static void loadBasicGenealogy() {
 
 ## Connect to Grakn Engine
 
-The next thing to do is connect to the running engine instance and check that the knowledge base contains the data that we expect. This can be achieved with the following code:
+The next thing to do is connect to the running engine instance and check that the knowledge graph contains the data that we expect. This can be achieved with the following code:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -137,7 +137,7 @@ private static Map<String, Set<String>> computeClusters() {
     }
 ```
 
-Here we have used the `in` syntax to specify that we want to compute the clusters while only considering instances of the types `marriage` and `person`. The knowledge base that we are effectively working on can be seen in the image below. We can see three clusters, but there are more in the basic genealogy example. The code above will have found all of the clusters and returned a `Map` from the unique cluster label to a set containing the ids of the instances in the cluster.
+Here we have used the `in` syntax to specify that we want to compute the clusters while only considering instances of the types `marriage` and `person`. The knowledge graph that we are effectively working on can be seen in the image below. We can see three clusters, but there are more in the basic genealogy example. The code above will have found all of the clusters and returned a `Map` from the unique cluster label to a set containing the ids of the instances in the cluster.
 
 If we had not used the members syntax we would only know the size of the clusters not the members.
 
@@ -146,7 +146,7 @@ If we had not used the members syntax we would only know the size of the cluster
 
 ## Persist the Cluster Information
 
-Now that we have information about the clusters, it would be useful to add it to the knowledge base so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The schema can be mutated as follows:
+Now that we have information about the clusters, it would be useful to add it to the knowledge graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The schema can be mutated as follows:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -229,7 +229,7 @@ If you explore the results you can now see the entities that are members of a gi
 
 ## Compute the degrees
 
-When using the visualiser it is probably quite useful to be able to see the size of the cluster before clicking on it. In order to add this information to the knowledge base we will use another analytics function degree. The code to compute the degree is:
+When using the visualiser it is probably quite useful to be able to see the size of the cluster before clicking on it. In order to add this information to the knowledge graph we will use another analytics function degree. The code to compute the degree is:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -252,12 +252,12 @@ private static Map<Long, Set<String>> degreeOfClusters() {
 }
 ```
 
-The `in` syntax has again been used here to restrict the algorithm to the knowledge base shown below. Further, the `of` syntax has been used to compute the degree for the cluster alone. What is returned from this calculation is a `Map` from the degree which is a `long` to the ids of the instances that have that degree.
+The `in` syntax has again been used here to restrict the algorithm to the knowledge graph shown below. Further, the `of` syntax has been used to compute the degree for the cluster alone. What is returned from this calculation is a `Map` from the degree which is a `long` to the ids of the instances that have that degree.
 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the knowledge base. This time we will attach an attribute called `degree` to the cluster entity. The schema mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the knowledge graph. This time we will attach an attribute called `degree` to the cluster entity. The schema mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
@@ -299,7 +299,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
     }
 ```
 
-We used a single transaction for this because it is a small knowledge base.
+We used a single transaction for this because it is a small knowledge graph.
 
 We can now query for all the clusters in the visualiser, see their size and click on them to find the members.
 

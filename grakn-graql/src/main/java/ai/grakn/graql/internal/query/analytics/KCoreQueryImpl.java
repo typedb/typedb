@@ -26,14 +26,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
+class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
-    private long k = -1L;
-
-    private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
+    private static long DEFAULT_K = 2L;
+    private Optional<Long> k = Optional.empty();
 
     KCoreQueryImpl(Optional<GraknTx> tx) {
-        super(tx, INCLUDE_ATTRIBUTE);
+        super(tx);
     }
 
     @Override
@@ -43,20 +42,29 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
 
     @Override
     public final KCoreQuery kValue(long kValue) {
-        k = kValue;
+        k = Optional.of(kValue);
         return this;
     }
 
     @Override
     public final long kValue() {
-        return k;
+        return k.orElse(DEFAULT_K);
+    }
+
+    @Override
+    ClusterMeasure getMethod() {
+        return ClusterMeasure.K_CORE;
     }
 
     @Override
     String graqlString() {
-        String string = "kcore ";
-        string += k;
-        string += subtypeString();
+        String string = super.graqlString();
+        if (k.isPresent()) {
+            string += " where k = ";
+            string += k.get();
+        }
+        string += ";";
+
         return string;
     }
 
@@ -68,13 +76,13 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCor
 
         KCoreQueryImpl that = (KCoreQueryImpl) o;
 
-        return k == that.k;
+        return k.equals(that.k);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + Long.hashCode(k);
+        result = 31 * result + k.hashCode();
         return result;
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
@@ -71,9 +72,16 @@ import static java.util.Arrays.stream;
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
+    private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
+    private static final String STORAGE_BACKEND = "storage.backend";
+    private static final String STORAGE_HOSTNAME = GraknConfigKey.STORAGE_HOSTNAME.name();
+    private static final String STORAGE_KEYSPACE = GraknConfigKey.STORAGE_KEYSPACE.name();
+    private static final String STORAGE_BATCH_LOADING = GraknConfigKey.STORAGE_BATCH_LOADING.name();
+    private static final String STORAGE_REPLICATION_FACTOR = GraknConfigKey.STORAGE_REPLICATION_FACTOR.name();
+
 
     //These properties are loaded in by default and can optionally be overwritten
-    static final Properties DEFAULT_PROPERTIES;
+    private static final Properties DEFAULT_PROPERTIES;
     static {
         String DEFAULT_CONFIG = "default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
@@ -85,14 +93,19 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         }
     }
 
+    public static Properties getDefaultProperties() {
+        return DEFAULT_PROPERTIES;
+    }
+
     /**
      * This map is used to override hidden config files.
      * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
      * The value of the map specifies the key to inject into.
      */
     private static final Map<String, String> overrideMap = ImmutableMap.of(
-            "storage.backend", "janusmr.ioformat.conf.storage.backend",
-            "storage.hostname", "janusmr.ioformat.conf.storage.hostname"
+            STORAGE_BACKEND, JANUS_PREFIX + STORAGE_BACKEND,
+            STORAGE_HOSTNAME, JANUS_PREFIX + STORAGE_HOSTNAME,
+            STORAGE_REPLICATION_FACTOR, JANUS_PREFIX + STORAGE_REPLICATION_FACTOR
     );
 
     //This maps the storage backend to the needed value
@@ -113,12 +126,12 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    GraknTxJanus buildGraknGraphFromTinker(JanusGraph graph) {
+    protected GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
         return new GraknTxJanus(session(), graph);
     }
 
     @Override
-    JanusGraph buildTinkerPopGraph(boolean batchLoading) {
+    protected JanusGraph buildTinkerPopGraph(boolean batchLoading) {
         return newJanusGraph(batchLoading);
     }
 
@@ -141,11 +154,9 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
     private JanusGraph configureGraph(boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
-                set("storage.hostname", session().uri()).
-                set("storage.cassandra.keyspace", session().keyspace().getValue()).
-                set("storage.batch-loading", batchLoading);
-
-        String storageBackend = "storage.backend";
+                set(STORAGE_HOSTNAME, session().uri()).
+                set(STORAGE_KEYSPACE, session().keyspace().getValue()).
+                set(STORAGE_BATCH_LOADING, batchLoading);
 
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
@@ -154,7 +165,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         session().config().properties().forEach((key, value) -> {
 
             //Overwrite storage
-            if(key.equals(storageBackend)){
+            if(key.equals(STORAGE_BACKEND)){
                 value = storageBackendMapper.get(value);
             }
 

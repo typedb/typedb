@@ -15,7 +15,7 @@ As usual, the last lesson of the module is just a bunch of exercises to check wh
 Let us start with an open form question: can you describe the entity-relationship modeling process, i.e. the steps we have followed to build our conceptual model?
 
 ### Exercise 1: Extending the schema
-Open the schema file you have built in this module. Imagine that you wanted to add to your knowledge base people owning companies, how would you modify your schema? Obviously in the real world rarely a company, and especially an oil company is owned by a person, but for the sake of this example let’s pretend it is possible. Don’t forget that you do not need to add relationships and roles that are already there, make sure that a person can have a name.
+Open the schema file you have built in this module. Imagine that you wanted to add to your knowledge graph people owning companies, how would you modify your schema? Obviously in the real world rarely a company, and especially an oil company is owned by a person, but for the sake of this example let’s pretend it is possible. Don’t forget that you do not need to add relationships and roles that are already there, make sure that a person can have a name.
 
 How can you extend your schema so that companies can be located in countries?
 
@@ -35,4 +35,4 @@ Try and remove some (or all) of the types you have defined in Exercise 1. Verify
 
 
 ## What you have learned so far and where to go next
-In this module you have learned how to model and write, and modify a Grakn schema. Give yourself a pat on the back, because you are now well equipped to design a Grakn knowledge base. [Next step](./loading-files.html) is to add some meat, i.e. learn to load the file you have composed and add data to the knowledge base. If you want to know about Grakn data model or Grakn schemas, as always, head to the [docs](../index.html).
+In this module you have learned how to model and write, and modify a Grakn schema. Give yourself a pat on the back, because you are now well equipped to design a Grakn knowledge graph. [Next step](./loading-files.html) is to add some meat, i.e. learn to load the file you have composed and add data to the knowledge graph. If you want to know about Grakn data model or Grakn schemas, as always, head to the [docs](../index.html).

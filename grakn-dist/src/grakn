@@ -18,10 +18,8 @@
 # <http://www.gnu.org/licenses/gpl.txt>.
 
 # Grakn global variables
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-fi
+[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 
 # ================================================
 # common helper functions
@@ -51,6 +49,6 @@ update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.bootup.GraknBootup $@
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.bootup.GraknBootup $@
 
 popd > /dev/null

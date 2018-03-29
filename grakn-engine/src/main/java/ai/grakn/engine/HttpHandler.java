@@ -26,13 +26,11 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.rpc.GrpcServer;
-import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -41,10 +39,9 @@ import org.slf4j.LoggerFactory;
 import spark.Response;
 import spark.Service;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-
-import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
 /**
  * @author Michele Orsi
@@ -79,26 +76,23 @@ public class HttpHandler {
     }
 
 
-    public void startHTTP() {
+    public void startHTTP() throws IOException {
         configureSpark(spark, prop);
 
         startCollaborators();
 
+        grpcServer.start();
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
 
     protected void startCollaborators() {
-        // Start the websocket for Graql
-        RemoteSession graqlWebSocket = RemoteSession.create();
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
-
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
         new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
-        new SystemController(prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry).start(spark);
+        new SystemController(prop, factory.keyspaceStore(), graknEngineStatus, metricRegistry).start(spark);
         new CommitLogController(postProcessor).start(spark);
 
         additionalCollaborators.forEach(httpController -> httpController.start(spark));
@@ -127,7 +121,6 @@ public class HttpHandler {
         spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
-        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         //Register exception handlers
         spark.exception(GraknServerException.class, (e, req, res) -> {

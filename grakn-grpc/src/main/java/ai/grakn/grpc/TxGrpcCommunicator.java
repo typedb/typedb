@@ -18,9 +18,10 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -74,6 +75,9 @@ public class TxGrpcCommunicator implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(TxRequest request) {
+        if (responses.terminated.get()) {
+            throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+        }
         requests.onNext(request);
     }
 
@@ -81,13 +85,29 @@ public class TxGrpcCommunicator implements AutoCloseable {
      * Block until a response is returned.
      */
     public Response receive() throws InterruptedException {
-        return responses.poll();
+        Response response = responses.poll();
+        if (response.type() != Response.Type.OK) {
+            close();
+        }
+        return response;
     }
 
     @Override
     public void close() {
-        requests.onCompleted();
+        try{
+            requests.onCompleted();
+        } catch (IllegalStateException e) {
+            //IGNORED
+            //This is needed to handle the fact that:
+            //1. Commits can lead to transaction closures and
+            //2. Error can lead to connection closures but the transaction may stay open
+            //When this occurs a "half-closed" state is thrown which we can safely ignore
+        }
         responses.close();
+    }
+
+    public boolean isClosed(){
+        return responses.terminated.get();
     }
 
     /**
@@ -119,6 +139,20 @@ public class TxGrpcCommunicator implements AutoCloseable {
         }
 
         Response poll() throws InterruptedException {
+            // First check for a response without blocking
+            Response response = queue.poll();
+
+            if (response != null) {
+                return response;
+            }
+
+            // Only after checking for existing messages, we check if the connection was already terminated, so we don't
+            // block for a response forever
+            if (terminated.get()) {
+                throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+            }
+
+            // Block for a response (because we are confident there are no responses and the connection has not closed)
             return queue.take();
         }
 

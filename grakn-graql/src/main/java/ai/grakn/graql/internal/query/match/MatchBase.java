@@ -167,6 +167,11 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
+    public final Boolean inferring() {
+        return false;
+    }
+
+    @Override
     public String toString() {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }

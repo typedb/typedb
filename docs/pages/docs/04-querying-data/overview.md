@@ -8,9 +8,9 @@ permalink: /docs/querying-data/overview
 folder: docs
 ---
 
-Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data.
+Graql enables users to write queries against a Grakn knowledge graph leveraging the inherent semantics of the data.
 Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative
-and therefore it handles the optimisation of the knowledge base queries needed to retrieve information.
+and therefore it handles the optimisation of the knowledge graph queries needed to retrieve information.
 
 You can execute Graql in the [Graql Console](../get-started/graql-console) or using [Java
 Graql](../java-library/graql-api).
@@ -18,7 +18,7 @@ Graql](../java-library/graql-api).
 
 # Query
 
-[Queries](#query) are requests made to the knowledge base. They may modify the schema, such as
+[Queries](#query) are requests made to the knowledge graph. They may modify the schema, such as
 [define](../building-schema/defining-schema), or the data, such as [insert](./insert-queries) or be read-only, such as
 [get](./get-queries).
 
@@ -81,13 +81,13 @@ An attribute's [value](#value) is constrained by the datatype of its type:
 ## Query types
 
 There are seven types of queries, which are begun with the following keywords:
-- [get](./get-queries) - for getting concepts from the knowledge base
-- [aggregate](./aggregate-queries) - for transforming data in the knowledge base
+- [get](./get-queries) - for getting concepts from the knowledge graph
+- [aggregate](./aggregate-queries) - for transforming data in the knowledge graph
 - [define](../building-schema/defining-schema) - for defining schema concepts
 - [undefine](../building-schema/defining-schema) - for removing schema concepts
 - [insert](./insert-queries) - for inserting data
 - [delete](./delete-queries) - for deleting data
-- [compute](../distributed-analytics/compute-queries) - for computing useful information about your knowledge base
+- [compute](../distributed-analytics/compute-queries) - for computing useful information about your knowledge graph
 
 ## Reserved keywords
 

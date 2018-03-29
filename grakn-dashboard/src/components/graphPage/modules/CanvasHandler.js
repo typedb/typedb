@@ -123,20 +123,26 @@ function onGraphResponse(resp: string) {
     return;
   }
 
-  // Add nodes and edges to canvas
+  // Remove implicit nodes
   const filteredNodes = filterNodes(parsedResponse.nodes);
-  filteredNodes.forEach(node => visualiser.addNode(node));
+  // Add filtered nodes to canvas
+  filteredNodes.forEach((node) => { visualiser.addNode(node); });
+  // Add edges to canvas
+  parsedResponse.edges.forEach((edge) => { visualiser.addEdge(edge); });
 
   // Lazy load attributes once nodes are in the graph
   lazyLoadAttributes(filteredNodes);
 
-  // Load relationship types' roles
+  // Load relationship types' roles - this will work only if loading schema concepts i.e. relationship types
   linkRelationshipTypesToRoles(filteredNodes);
 
-  // Never visualise relationships without roleplayers
-  filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
-    .forEach((rel) => { loadRelationshipRolePlayers(rel); });
-
+  // If we have 0 edges to display (e.g. when user clicks on Types -> Relationships -> one type of relationship type)
+  // force to load relationships role players.
+  // This to avoid floating points representing relationships without any roleplayer attached to any of them
+  if (parsedResponse.edges.length === 0) {
+    filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
+      .forEach((rel) => { loadRelationshipRolePlayers(rel); });
+  }
   visualiser.fitGraphToWindow();
 }
 

@@ -12,7 +12,7 @@ folder: docs
 
 `match` [`<pattern> ...`](#pattern) [`(<modifier> ...)`](#modifier)
 
-A [match](#match) will find all [answers](../querying-data/overview#answer) in the knowledge base that _satisfy_ all of the given
+A [match](#match) will find all [answers](../querying-data/overview#answer) in the knowledge graph that _satisfy_ all of the given
 [patterns](#pattern). Any optional [modifiers](#modifier) are applied to the [answers](../querying-data/overview#answer) to the
 [match](#match).
 
@@ -46,6 +46,10 @@ Within the [patterns](#pattern), the following [properties](../querying-data/ove
 ### isa
 
 `$x isa $A` is _satisfied_ if `$x` is indirectly an _instance_ of the _type_ `$A`.
+
+### isa!
+
+`$x isa! $A` is _satisfied_ if `$x` is directly an _instance_ of the _type_ `$A`.
 
 ### relationship
 
@@ -202,12 +206,15 @@ The [get query](#get-queries) will project each [answer](../querying-data/overvi
 [`(<match>)`](#match) `insert` [`<variable pattern> ...`](../querying-data/overview#variable-pattern)
 
 The [insert query](#insert-queries) will insert the given [variable patterns](../querying-data/overview#variable-pattern) into the
-knowledge base and return an [answer](../querying-data/overview#answer) with variables bound to concepts mentioned in the
+knowledge graph and return an [answer](../querying-data/overview#answer) with variables bound to concepts mentioned in the
 [variable patterns](../querying-data/overview#variable-pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-queries) will operate for every
-[answer](../querying-data/overview#answer) of the [match](#match) and return one [answer](../querying-data/overview#answer) for each
-[match](#match) [answer](../querying-data/overview#answer).
+[answer](../querying-data/overview#answer) of the [match](#match), projected over the
+[variables](../querying-data/overview#variable) present in the [insert query](#insert-queries)
+[variable patterns](../querying-data/overview#variable-pattern) and return one
+[answer](../querying-data/overview#answer) for each projected [match](#match)
+[answer](../querying-data/overview#answer).
 
 Within the [variable patterns](../querying-data/overview#variable-pattern), the following [properties](../querying-data/overview#property) are
 supported:
@@ -215,6 +222,10 @@ supported:
 ## isa
 
 `$x isa $A` creates a new direct instance of the _type_ `$A` and binds it to `$x`.
+
+## isa!
+
+`$x isa! $A` creates a new direct instance of the _type_ `$A` and binds it to `$x`.
 
 ## relationship
 

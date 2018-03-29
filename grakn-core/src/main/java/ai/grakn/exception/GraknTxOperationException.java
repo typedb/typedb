@@ -30,9 +30,11 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.CLOSE_FAILURE;
@@ -190,8 +192,9 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraknTxOperationException transactionClosed(GraknTx tx, String reason){
+    public static GraknTxOperationException transactionClosed(@Nullable GraknTx tx, @Nullable String reason){
         if(reason == null){
+            Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
         } else {
             return create(reason);

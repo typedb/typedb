@@ -423,7 +423,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testPathSymmetric(){
-        final int N = 3;
+        final int N = 2;
         SampleKBContext kb = PathTreeSymmetricKB.context(N, 3);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
