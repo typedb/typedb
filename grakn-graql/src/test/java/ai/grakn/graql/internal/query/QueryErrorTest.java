@@ -92,14 +92,14 @@ public class QueryErrorTest {
     public void whenMatchingWildcardHas_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
-        qb.match(label("thing").has(var("x"))).get().execute();
+        qb.match(label("thing").has(var("x"))).get().toList();
     }
 
     @Test
     public void whenMatchingHasWithNonExistentType_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
-        qb.match(var("x").has("heffalump", "foo")).get().execute();
+        qb.match(var("x").has("heffalump", "foo")).get().toList();
     }
 
     @Test
@@ -176,7 +176,7 @@ public class QueryErrorTest {
                 containsString("person"),
                 containsString("name")
         ));
-        emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
+        emptyQb.insert(var().isa("person").has("name", "Bob")).toList();
     }
 
     @Test
@@ -234,6 +234,6 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        qb.match(var("x").id(movie.getId())).insert(var("x").isa(label(person.getLabel()))).execute();
+        qb.match(var("x").id(movie.getId())).insert(var("x").isa(label(person.getLabel()))).toList();
     }
 }

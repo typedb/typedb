@@ -111,7 +111,7 @@ public class DirectIsaTest {
     @Test
     public void whenInsertDirectIsa_InsertsADirectInstanceOfAType() {
         QueryBuilder queryBuilder = tx.graql();
-        queryBuilder.insert(x.directIsa(thingy)).execute();
+        queryBuilder.insert(x.directIsa(thingy)).toList();
         assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
         assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
     }

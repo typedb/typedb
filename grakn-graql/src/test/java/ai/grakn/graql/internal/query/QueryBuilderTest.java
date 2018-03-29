@@ -77,14 +77,14 @@ public class QueryBuilderTest {
     public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(movieKB.tx(), var().has("title", "a-movie"));
         InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withTx(movieKB.tx());
-        query.execute();
+        query.toList();
         assertExists(movieKB.tx(), var().has("title", "a-movie"));
     }
 
     @Test
     public void whenBuildingDeleteQueryWithGraphLast_ItExecutes() {
         // Insert some data to delete
-        movieKB.tx().graql().insert(var().has("title", "123").isa("movie")).execute();
+        movieKB.tx().graql().insert(var().has("title", "123").isa("movie")).toList();
 
         assertExists(movieKB.tx(), var().has("title", "123"));
 
@@ -109,7 +109,7 @@ public class QueryBuilderTest {
         InsertQuery query =
                 match(x.label("movie")).
                 insert(var().has("title", "a-movie").isa("movie")).withTx(movieKB.tx());
-        query.execute();
+        query.toList();
         assertExists(movieKB.tx(), var().has("title", "a-movie"));
     }
 
@@ -127,7 +127,7 @@ public class QueryBuilderTest {
         InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
-        query.execute();
+        query.toList();
     }
 
     @Test

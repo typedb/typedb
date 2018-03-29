@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.joining;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
+public abstract class GetQueryImpl extends AbstractQuery<Stream<Answer>, Answer> implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
@@ -74,8 +74,12 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
     }
 
+    public final Stream<Answer> execute() {
+        return stream();
+    }
+
     @Override
-    public final List<Answer> execute() {
+    public List<Answer> toList() {
         return stream().collect(Collectors.toList());
     }
 

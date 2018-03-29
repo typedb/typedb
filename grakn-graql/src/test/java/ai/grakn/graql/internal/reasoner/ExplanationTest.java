@@ -92,7 +92,7 @@ public class ExplanationTest {
         Answer answer3 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
         Answer answer4 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         testExplanation(answers);
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -134,7 +134,7 @@ public class ExplanationTest {
         Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), uw, var("y"), poland));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         testExplanation(answers);
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -165,7 +165,7 @@ public class ExplanationTest {
                 "$y id '" + europe.getId() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();
@@ -186,7 +186,7 @@ public class ExplanationTest {
                 "get $y;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 1);
         testExplanation(answers);
     }
@@ -199,7 +199,7 @@ public class ExplanationTest {
                 "$y id '" + uw.getId() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 0);
     }
 
@@ -208,7 +208,7 @@ public class ExplanationTest {
         String queryString = "match $x isa city, has name $n; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         answers.forEach(ans -> assertEquals(ans.getExplanation().isEmpty(), true));
     }
 
@@ -225,7 +225,7 @@ public class ExplanationTest {
                 "$y id '" + a2.getId() + "'; get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 0);
     }
 
@@ -240,7 +240,7 @@ public class ExplanationTest {
                 "$w has name $wName; get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         testExplanation(answers);
     }
 
@@ -255,7 +255,7 @@ public class ExplanationTest {
                 "get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         testExplanation(answers);
         Answer inferredAnswer = answers.stream()
                 .filter(ans -> ans.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).findFirst().isPresent())
@@ -275,7 +275,7 @@ public class ExplanationTest {
                 "limit " + limit + ";"+
                 "get;";
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
 
         assertEquals(answers.size(), limit);
         answers.forEach(answer -> {
@@ -286,7 +286,7 @@ public class ExplanationTest {
                     "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
-            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).toList());
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
         });

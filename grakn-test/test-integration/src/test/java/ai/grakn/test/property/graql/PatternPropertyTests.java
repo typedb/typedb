@@ -77,7 +77,7 @@ public class PatternPropertyTests {
     @Property
     public void ifAPropertyUniquelyIdentifiesAConcept_0or1ResultsAreReturned(@Open GraknTx tx, VarProperty property){
         if(VarPropertyInternal.from(property).uniquelyIdentifiesConcept()){
-            List<Answer> results = tx.graql().match(Patterns.varPattern(Graql.var("x"), Collections.singleton(property))).get().execute();
+            List<Answer> results = tx.graql().match(Patterns.varPattern(Graql.var("x"), Collections.singleton(property))).get().toList();
             assertThat(results, hasSize(lessThanOrEqualTo(1)));
         }
     }

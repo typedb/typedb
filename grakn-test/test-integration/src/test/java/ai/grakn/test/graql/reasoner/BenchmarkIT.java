@@ -104,7 +104,7 @@ public class BenchmarkIT {
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()) {
             GraknTx tx = session.open(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
-            ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
+            ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().toList().stream()
                     .map(ans -> ans.get(entityVar).getId())
                     .toArray(ConceptId[]::new);
 
@@ -218,7 +218,7 @@ public class BenchmarkIT {
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
             try(GraknTx tx = session.open(GraknTxType.READ)) {
                 Var entityVar = var().asUserDefined();
-                ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
+                ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().toList().stream()
                         .map(ans -> ans.get(entityVar).getId())
                         .toArray(ConceptId[]::new);
 
@@ -349,8 +349,8 @@ public class BenchmarkIT {
         loadRuleChainData(N);
 
         try(GraknTx tx = session.open(GraknTxType.READ)) {
-            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").getId();
-            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").getId();
+            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").toList()).get("x").getId();
+            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").toList()).get("x").getId();
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -378,7 +378,7 @@ public class BenchmarkIT {
 
     private List<Answer> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<Answer> results = query.toList();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

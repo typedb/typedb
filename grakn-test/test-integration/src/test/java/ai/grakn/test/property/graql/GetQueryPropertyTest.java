@@ -141,7 +141,7 @@ public class GetQueryPropertyTest {
     public void anyPropertyCanBeExecutedOnAMatchQuery(@Open GraknTx tx, VarProperty property){
         VarPatternAdmin pattern = Patterns.varPattern(Graql.var(), Collections.singleton(property));
         try {
-            tx.graql().match(pattern).get().execute();
+            tx.graql().match(pattern).get().toList();
         } catch(GraqlQueryException e){
             //Ignore
         }
@@ -164,7 +164,7 @@ public class GetQueryPropertyTest {
             return ;
         }
 
-        assertFalse(tx.graql().match(pattern).get().execute().isEmpty());
+        assertFalse(tx.graql().match(pattern).get().toList().isEmpty());
     }
 
     private Set<Answer> matchSet(GraknTx tx, Pattern pattern) {

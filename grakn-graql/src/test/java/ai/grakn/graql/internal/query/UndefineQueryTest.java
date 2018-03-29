@@ -322,7 +322,7 @@ public class UndefineQueryTest {
 
     @Test
     public void whenUndefiningAnInstanceProperty_Throw() {
-        Concept movie = qb.insert(x.isa("movie")).execute().get(0).get(x);
+        Concept movie = qb.insert(x.isa("movie")).toList().get(0).get(x);
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());

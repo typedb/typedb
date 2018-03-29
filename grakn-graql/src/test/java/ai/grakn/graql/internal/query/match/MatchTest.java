@@ -1039,7 +1039,7 @@ public class MatchTest {
     public void whenSelectingVarNotInQuery_Throw() {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(x));
-        movieKB.tx().graql().match(var()).get(ImmutableSet.of(x)).execute();
+        movieKB.tx().graql().match(var()).get(ImmutableSet.of(x)).toList();
     }
 
     @Test

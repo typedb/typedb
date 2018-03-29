@@ -192,7 +192,7 @@ public class DefineQueryTest {
                 label("new-type").plays(roleTypeLabel)
         ).execute();
 
-        qb.insert(var("x").isa("new-type")).execute();
+        qb.insert(var("x").isa("new-type")).toList();
 
         Match typeQuery = qb.match(var("n").label("new-type"));
 

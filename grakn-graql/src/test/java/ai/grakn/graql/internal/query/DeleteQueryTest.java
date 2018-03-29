@@ -86,7 +86,7 @@ public class DeleteQueryTest {
     @Test
     public void testDeleteMultiple() {
         qb.define(label("fake-type").sub(ENTITY)).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        qb.insert(x.isa("fake-type"), y.isa("fake-type")).toList();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 
@@ -194,7 +194,7 @@ public class DeleteQueryTest {
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
         qb.define(label("fake-type").sub(ENTITY)).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        qb.insert(x.isa("fake-type"), y.isa("fake-type")).toList();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 
@@ -206,7 +206,7 @@ public class DeleteQueryTest {
     @Test
     public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
         qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
-        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+        qb.insert(x.isa("fake-type"), y.isa("fake-type")).toList();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 

@@ -326,7 +326,7 @@ public class TypeInferenceQueryTest {
     private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph) {
         QueryBuilder qb = graph.graql();
         List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
-        List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
+        List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().toList();
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }

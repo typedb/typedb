@@ -142,9 +142,9 @@ public class AtomicQueryTest {
     public void testWhenMaterialisingResources_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         EmbeddedGraknTx<?> graph = materialisationTestSet.tx();
         QueryBuilder qb = graph.graql().infer(false);
-        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute()).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
-        Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute()).get("x");
+        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").toList()).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").toList()).get("x");
+        Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").toList()).get("x");
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r val 'inferred';$x id " + firstEntity.getId().getValue() + ";}", graph), graph);
         String reuseResourcePatternString =
@@ -164,21 +164,21 @@ public class AtomicQueryTest {
                         "$x has resource $r via $rel;" +
                         "$x id " + secondEntity.getId().getValue() + ";" +
                         "$r id " + resource.getId().getValue() + ";" +
-                        "get;").execute()).get("rel").asRelationship().isInferred(), true);
+                        "get;").toList()).get("rel").asRelationship().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
                         "$x id " + firstEntity.getId().getValue() + ";" +
                         "$r id " + resource.getId().getValue() + ";" +
-                        "get;").execute()).get("rel").asRelationship().isInferred(), false);
+                        "get;").toList()).get("rel").asRelationship().isInferred(), false);
     }
 
     @Test
     public void testWhenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         EmbeddedGraknTx<?> graph = materialisationTestSet.tx();
         QueryBuilder qb = graph.graql().infer(false);
-        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute()).get("x");
-        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
+        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").toList()).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").toList()).get("x");
 
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
@@ -1242,12 +1242,12 @@ public class AtomicQueryTest {
     private void queryUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality, boolean ignoreTypes){
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
+        List<Answer> childAnswers = childQuery.getQuery().toList();
         List<Answer> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<Answer> parentAnswers = parentQuery.getQuery().toList();
 
         if (checkInverse) {
             Unifier inverse = parentQuery.getMultiUnifier(childQuery).getUnifier();

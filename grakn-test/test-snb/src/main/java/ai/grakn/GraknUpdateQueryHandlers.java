@@ -175,7 +175,7 @@ public class GraknUpdateQueryHandlers {
 
                 insert.add(var().rel(LOCATED, $person).rel(REGION, $city).isa(IS_LOCATED_IN));
 
-                graph.graql().match(match.build()).insert(insert.build()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).toList();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -198,12 +198,12 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $person.has(PERSON_ID, operation.personId()),
-                        $message.has(MESSAGE_ID, operation.postId())
-                ).insert(var()
-                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
-                        .has(CREATION_DATE, fromDate(operation.creationDate()))
-                ).execute();
+                                $person.has(PERSON_ID, operation.personId()),
+                                $message.has(MESSAGE_ID, operation.postId())
+                        ).insert(var()
+                                .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                                .has(CREATION_DATE, fromDate(operation.creationDate()))
+                        ).toList();
 
                 graph.commit();
 
@@ -227,12 +227,12 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $person.has(PERSON_ID, operation.personId()),
-                        $message.has(MESSAGE_ID, operation.commentId())
-                ).insert(var()
-                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
-                        .has(CREATION_DATE, fromDate(operation.creationDate()))
-                ).execute();
+                                $person.has(PERSON_ID, operation.personId()),
+                                $message.has(MESSAGE_ID, operation.commentId())
+                        ).insert(var()
+                                .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                                .has(CREATION_DATE, fromDate(operation.creationDate()))
+                        ).toList();
 
                 graph.commit();
 
@@ -275,7 +275,7 @@ public class GraknUpdateQueryHandlers {
 
                 insert.add(var().rel(MODERATOR, $mod).rel(MODERATED, $forum).isa(HAS_MODERATOR));
 
-                graph.graql().match(match.build()).insert(insert.build()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).toList();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -298,12 +298,12 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $forum.has(FORUM_ID, operation.forumId()),
-                        $person.has(PERSON_ID, operation.personId())
-                ).insert(var()
-                        .rel(MEMBER, $person).rel(GROUP, $forum).isa(HAS_MEMBER)
-                        .has(JOIN_DATE, fromDate(operation.joinDate()))
-                ).execute();
+                                $forum.has(FORUM_ID, operation.forumId()),
+                                $person.has(PERSON_ID, operation.personId())
+                        ).insert(var()
+                                .rel(MEMBER, $person).rel(GROUP, $forum).isa(HAS_MEMBER)
+                                .has(JOIN_DATE, fromDate(operation.joinDate()))
+                        ).toList();
 
                 graph.commit();
 
@@ -361,7 +361,7 @@ public class GraknUpdateQueryHandlers {
                         var().rel(CONTAINED, $post).rel(CONTAINER, $forum).isa(CONTAINER_OF)
                 );
 
-                graph.graql().match(match.build()).insert(insert.build()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).toList();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -413,7 +413,7 @@ public class GraknUpdateQueryHandlers {
                         var().rel(REPLY, $comment).rel(ORIGINAL, $original).isa(REPLY_OF)
                 );
 
-                graph.graql().match(match.build()).insert(insert.build()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).toList();
 
                 graph.commit();
 
@@ -439,12 +439,12 @@ public class GraknUpdateQueryHandlers {
                 Var person2 = var("person2");
 
                 graph.graql().match(
-                        person1.has(PERSON_ID, operation.person1Id()),
-                        person2.has(PERSON_ID, operation.person2Id())
-                ).insert(var()
-                        .rel(FRIEND, person1).rel(FRIEND, person2).isa(KNOWS)
-                        .has(CREATION_DATE, fromDate(operation.creationDate()))
-                ).execute();
+                                person1.has(PERSON_ID, operation.person1Id()),
+                                person2.has(PERSON_ID, operation.person2Id())
+                        ).insert(var()
+                                .rel(FRIEND, person1).rel(FRIEND, person2).isa(KNOWS)
+                                .has(CREATION_DATE, fromDate(operation.creationDate()))
+                        ).toList();
 
                 graph.commit();
 

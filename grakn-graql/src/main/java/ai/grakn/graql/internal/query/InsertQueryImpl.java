@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * A query that will insert a collection of variables into a graph
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl extends AbstractQuery<Stream<Answer>, Answer> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -119,7 +119,12 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final List<Answer> execute() {
+    public Stream<Answer> execute() {
+        return toList().stream();
+    }
+
+    @Override
+    public final List<Answer> toList() {
         return stream().collect(Collectors.toList());
     }
 

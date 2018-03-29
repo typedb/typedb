@@ -66,7 +66,7 @@ public class GenealogyTest {
     public void matchAllRelationsWithDocumentPlayingARole(){
         String queryString = "match $x isa document; ($x, $y); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertTrue(answers.isEmpty());
     }
 
@@ -74,7 +74,7 @@ public class GenealogyTest {
     public void matchAllRelationsWithDocumentPlayingARole_redundantEntityBound(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertThat(answers, empty());
     }
 
@@ -87,7 +87,7 @@ public class GenealogyTest {
         String queryString = "match $x id '" + concept.getId() + "' has gender $g; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 1);
     }
 
@@ -95,49 +95,49 @@ public class GenealogyTest {
     public void testSpecificGender() {
         String queryString = "match $x isa person has gender 'female'; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 32);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testGender() {
         String queryString = "match $x isa person has gender $gender; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
-        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa person; get;").execute().size());
+        List<Answer> answers = query.toList();
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
+        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa person; get;").toList().size());
     }
 
     @Test
     public void testName() {
         String queryString = "match $x isa person, has firstname $n; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 60);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testMiddleName() {
         String queryString = "match $x has identifier $i has middlename $mn; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 60);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testSurName() {
         String queryString = "match $x isa person has surname $srn; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 60);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testParentship() {
         String queryString = "match (child: $c, parent: $p) isa parentship; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 76);
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertEquals(answer.size(), 2));
@@ -148,12 +148,12 @@ public class GenealogyTest {
         String queryString = "match (child: $x, $y) isa parentship;get $x;";
         String queryString2 = "match (child: $x) isa parentship; get;";
         String queryString3 = "match ($x, son: $y) isa parentship; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = iqb.<GetQuery>parse(queryString3).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
+        List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).toList();
+        List<Answer> answers3 = iqb.<GetQuery>parse(queryString3).toList();
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertCollectionsEqual(answers, answers2);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
         assertThat(answers3, empty());
     }
 
@@ -165,7 +165,7 @@ public class GenealogyTest {
                 "(husband: $w, wife: $b);" +
                 "$a != $b;" +
                 "get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 1);
     }
@@ -177,7 +177,7 @@ public class GenealogyTest {
                     "($y, $z) isa marriage;" +
                     "$x != $z;" +
                      "get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 4);
     }
@@ -185,7 +185,7 @@ public class GenealogyTest {
     @Test
     public void marriedToThemselves(){
         String queryString = "match (spouse: $x, spouse: $x) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
         assertThat(answers, empty());
     }
 
@@ -200,9 +200,9 @@ public class GenealogyTest {
         String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage; get;";
         iqb.parse(qs).execute();
 
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 66);
-        List<Answer> answers2 = query2.execute();
+        List<Answer> answers2 = query2.toList();
         assertCollectionsEqual(answers, answers2);
         assertEquals(answers2.size(), 66);
     }
@@ -211,8 +211,8 @@ public class GenealogyTest {
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel (spouse: $x, spouse: $y) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString).toList();
         assertEquals(132, answers.size());
         assertTrue(!hasDuplicates(answers));
         assertCollectionsEqual(answers, answers2);
@@ -223,8 +223,8 @@ public class GenealogyTest {
     @Test
     public void testMarriage() {
         String queryString = "match (spouse: $x, spouse: $y) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 44);
         assertTrue(!hasDuplicates(answers));
         assertCollectionsEqual(answers, answers2);
@@ -233,8 +233,8 @@ public class GenealogyTest {
     @Test
     public void testMarriage_specialisedRoles() {
         String queryString = "match (wife: $x, husband: $y) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString).toList();
         assertEquals(answers.size(), 22);
         assertTrue(!hasDuplicates(answers));
         assertCollectionsEqual(answers, answers2);
@@ -243,11 +243,11 @@ public class GenealogyTest {
     @Test
     public void testWife(){
         String queryString = "match $r (wife: $x) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answerList = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> requeriedAnswers = iqb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).toList();
+        List<Answer> answerList = qb.<GetQuery>parse(queryString).toList();
+        List<Answer> requeriedAnswers = iqb.<GetQuery>parse(queryString).toList();
         assertCollectionsEqual(answers, requeriedAnswers);
-        List<Answer> answerList2 = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answerList2 = qb.<GetQuery>parse(queryString).toList();
         assertCollectionsEqual(answerList, answerList2);
     }
 
@@ -257,9 +257,9 @@ public class GenealogyTest {
         String queryString2 = "match (wife: $x) isa marriage; get;";
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
-        List<Answer> answers2 = query2.execute();
-        assertCollectionsEqual(answers2, qb.<GetQuery>parse(queryString2).execute());
-        List<Answer> answers = query.execute();
+        List<Answer> answers2 = query2.toList();
+        assertCollectionsEqual(answers2, qb.<GetQuery>parse(queryString2).toList());
+        List<Answer> answers = query.toList();
         assertTrue(!answers.isEmpty());
         assertCollectionsEqual(answers, answers2);
     }
@@ -275,10 +275,10 @@ public class GenealogyTest {
         String queryString = "match (sibling:$x, sibling:$y) isa siblings; get;";
         GetQuery query = iqb.materialise(true).parse(queryString);
 
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -286,10 +286,10 @@ public class GenealogyTest {
         String queryString = "match ($x, $y) isa cousins; get;";
         GetQuery query = iqb.parse(queryString);
 
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -303,10 +303,10 @@ public class GenealogyTest {
         GetQuery query3 = iqb.parse(queryString3);
         GetQuery query4 = iqb.parse(queryString4);
 
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        List<Answer> answers3 = query3.execute();
-        List<Answer> answers4 = query4.execute();
+        List<Answer> answers = query.toList();
+        List<Answer> answers2 = query2.toList();
+        List<Answer> answers3 = query3.toList();
+        List<Answer> answers4 = query4.toList();
 
         assertEquals(answers.size(), 22);
         assertEquals(answers2.size(), 92);
@@ -320,12 +320,12 @@ public class GenealogyTest {
         String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g val 'female'; get $x, $g;";
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
+        List<Answer> answers = query.toList();
+        List<Answer> answers2 = query2.toList();
         assertEquals(answers.size(), 8);
         assertCollectionsEqual(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -334,30 +334,30 @@ public class GenealogyTest {
         String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g val'male'; get $x, $g;";
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
+        List<Answer> answers = query.toList();
+        List<Answer> answers2 = query2.toList();
         assertEquals(answers.size(), 9);
         assertCollectionsEqual(answers, answers2);
         assertTrue(checkResource(answers, "g", "male"));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testSonInLaw() {
         String queryString = "match (son-in-law: $x);$x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 11);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testDaughterInLaw() {
         String queryString = "match (daughter-in-law: $x); $x has identifier $id; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 14);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     /*
@@ -371,9 +371,9 @@ public class GenealogyTest {
     public void testSon() {
         String queryString = "match (son: $x);$x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 18);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
         assertTrue(checkResource(answers, "g", "male"));
     }
 
@@ -381,9 +381,9 @@ public class GenealogyTest {
     public void testDaughter() {
         String queryString = "match (daughter: $x);$x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 20);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
         assertTrue(checkResource(answers, "g", "female"));
     }
 
@@ -391,44 +391,44 @@ public class GenealogyTest {
     public void testChild() {
         String queryString = "match (child: $x); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 38);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testFather() {
         String queryString = "match (father: $x); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 10);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testMother() {
         String queryString = "match (mother: $x); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 9);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testParent() {
         String queryString = "match (parent: $x); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 19);
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female'; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 =  genealogyKB.tx().graql().infer(true).materialise(true).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = query.toList();
+        List<Answer> answers2 = genealogyKB.tx().graql().infer(true).materialise(true).<GetQuery>parse(queryString).toList();
         assertThat(answers, empty());
         assertThat(answers2, empty());
     }
@@ -437,20 +437,20 @@ public class GenealogyTest {
     public void testGrandMother() {
         String queryString = "match (grandmother: $x) isa grandparentship; $x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 4);
         assertTrue(checkResource(answers, "g", "female"));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
     public void testGrandDaughter(){
         String queryString = "match (granddaughter: $x); $x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     @Test
@@ -458,10 +458,10 @@ public class GenealogyTest {
         String queryString = "match "+
                 "(grandchild: $x); (granddaughter: $x);$x has gender $g; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<Answer> answers = query.toList();
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
-        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).execute());
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(queryString).toList());
     }
 
     private boolean checkResource(List<Answer> answers, String var, String value){
