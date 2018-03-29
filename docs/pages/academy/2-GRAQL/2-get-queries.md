@@ -2,7 +2,7 @@
 title: Get Queries
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn about the get queries, the fundamental queries used to explore GRAKN Knowledge bases
+summary: In this lesson you will learn about the get queries, the fundamental queries used to explore Grakn Knowledge bases
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/get-queries.html
@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-GRAQL, the language used to query and manipulate data in a GRAKN knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge graph.
+Graql, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge graph.
 
 
 ## Basic get queries
@@ -26,7 +26,7 @@ If you answered "return all companies in the knowledge graph" then congratulatio
 
 If you answered "return a company named ‘ENI’", you were almost right: the correct answer is "return all the companies named ‘ENI’". If there happens to be only one, all the better, but it is good to keep in mind the subtle distinction.
 
-One thing that is maybe useful to keep in mind is that the query above is exactly the same (and in fact under the hood GRAQL is doing) as the query
+One thing that is maybe useful to keep in mind is that the query above is exactly the same (and in fact under the hood Graql is doing) as the query
 
 
 ```graql
@@ -36,7 +36,7 @@ $x has name "ENI";
 get $x;
 ```
 
-Since, as you have learned in the [last lesson](/academy/graql-intro.html) the order of patterns in a GRAQL query does not matter, the query above is no different from
+Since, as you have learned in the [last lesson](/academy/graql-intro.html) the order of patterns in a Graql query does not matter, the query above is no different from
 
 ```graql
 match
@@ -45,11 +45,11 @@ $x isa company;
 get;
 ```
 
-Go ahead and try these queries in your running distribution of GRAKN (need a refresher? [Here’s the link](/academy/setup.html) to the lesson in which you learned how to do that).
+Go ahead and try these queries in your running distribution of Grakn (need a refresher? [Here’s the link](/academy/setup.html) to the lesson in which you learned how to do that).
 
 
 ### Exercise: a query with an attribute
-You should by now be able to write very basic GRAQL queries with or without resources. Try to think of how to query for a country named "UK".
+You should by now be able to write very basic Graql queries with or without resources. Try to think of how to query for a country named "UK".
 
 
 ## Querying for relationships
@@ -73,11 +73,11 @@ Let’s break the query into small pieces
 
 `$x isa country has name "USA";`, as you should know by know, retrieves all the countries with a name "USA" and store them (actually there happens to be only one) in a variable accessed with the name `$x`.
 
-The bit `($x, $y)` tells GRAQL to create a new variable `$y` and store into it anything that is attached to `$x` via a relationship (that is what the parenthesis are for).
+The bit `($x, $y)` tells Graql to create a new variable `$y` and store into it anything that is attached to `$x` via a relationship (that is what the parenthesis are for).
 
 Finally the `isa located-in` just say that the relation that links `$x` and `$y` must be of type "located-in". The `get` part just says to return all the variables created.
 
-Notice that we have specified nowhere who should be located into whom, and, as I said before, in GRAQL the order does not matter. In fact you will obtain the same results if you run the following query:
+Notice that we have specified nowhere who should be located into whom, and, as I said before, in Graql the order does not matter. In fact you will obtain the same results if you run the following query:
 
 ```graql
 match
@@ -89,7 +89,7 @@ Go ahead, try it.
 
 
 ## Introduction to Roles
-So what if you want to actually specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In GRAQL every component of a relation plays a role in it, which specifies what the is the function of that role player in that specific relation. The syntax for it looks like this:
+So what if you want to actually specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In Graql every component of a relation plays a role in it, which specifies what the is the function of that role player in that specific relation. The syntax for it looks like this:
 
 ```graql
 match
@@ -112,7 +112,7 @@ Try the same query without specifying the roles. Does the result change? Why do 
 ## Modifiers
 After a get query you can use a number of optional modifiers that will change the results returned by the query. The most common one that you will need are `limit` and `select`.
 
-The `limit` modifier, followed by an integer, restricts the number of results that are returned by GRAQL and you have already met it as it is automatically added to every query run in the graph visualiser to avoid too much confusion on the screen.
+The `limit` modifier, followed by an integer, restricts the number of results that are returned by Graql and you have already met it as it is automatically added to every query run in the graph visualiser to avoid too much confusion on the screen.
 
 
 ## The _get_ action
@@ -133,4 +133,4 @@ In this lesson you have learned all the basics of match queries, which is probab
 
 
 ## What next?
-The [next step](./insert-delete-queries.html) is to learn how to insert data into your knowledge graph. If you want to know more about the GRAQL syntax and the possible modifiers you can look at the [docs](../index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](./schema-elements.html) of the Academy, although it is not recommended.
+The [next step](./insert-delete-queries.html) is to learn how to insert data into your knowledge graph. If you want to know more about the Graql syntax and the possible modifiers you can look at the [docs](../index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](./schema-elements.html) of the Academy, although it is not recommended.

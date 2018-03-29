@@ -35,6 +35,9 @@ entries:
       - title: Post deployment steps
         output: web
         url: /docs/cloud-deployment/post-deployment
+      - title: Terms of service
+        output: web
+        url: /docs/cloud-deployment/terms-of-service
   - title: Knowledge Model
     output: web
     folderitems:
@@ -237,6 +240,6 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index
-  - title: GRAKN Academy
+  - title: Grakn Academy
     output: web
     url: /academy/index

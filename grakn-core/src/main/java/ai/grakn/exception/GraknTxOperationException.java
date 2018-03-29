@@ -132,10 +132,11 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when creating a resource whose value {@code object} does not match it's resource's  {@code dataType}.
+     * Thrown when creating a {@link Attribute} whose value {@link Object} does not match it's {@link AttributeType}'s
+     * {@link ai.grakn.concept.AttributeType.DataType}
      */
-    public static GraknTxOperationException invalidResourceValue(Object object, AttributeType.DataType dataType){
-        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getVertexProperty().getDataType().getName()));
+    public static GraknTxOperationException invalidAttributeValue(Object object, AttributeType.DataType dataType){
+        return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
     }
 
     /**

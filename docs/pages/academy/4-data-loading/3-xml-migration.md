@@ -2,7 +2,7 @@
 title: Migrating structured data - XML and JSON files
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will deepen your knowledge of GRAQL templating and learn about loading non-tabular data files, like XML and JSON files.
+summary: In this lesson you will deepen your knowledge of Graql templating and learn about loading non-tabular data files, like XML and JSON files.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/xml-migration.html
@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into GRAKN more structured data files, like XML or JSON files.
+Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into Grakn more structured data files, like XML or JSON files.
 
 We will cover here only some basic constructs that can be used to migrate XML files to avoid this course becoming a full course on XML, which is a very rich topic on its own, but if you are interested in studying more, [the internet is your friend](https://www.w3schools.com/xml/xml_whatis.asp).
 
@@ -45,7 +45,7 @@ Content
 </ROOT>
 ```
 
-To navigate the tree structure in GRAQL, we use the standard dot notation. This means that, for example, if we want to refer to the content of one of the elements "Level 2" in the file above, we would use `<LEVEL1.LEVEL2>` in our template file (exactly like we used the column names in the CSV templates.
+To navigate the tree structure in Graql, we use the standard dot notation. This means that, for example, if we want to refer to the content of one of the elements "Level 2" in the file above, we would use `<LEVEL1.LEVEL2>` in our template file (exactly like we used the column names in the CSV templates.
 
 ## Loops
 You probably have noticed from the example above that an XML element can contain several elements of the same type. What can we do if we want to access the content of all of them?
@@ -62,18 +62,18 @@ for (<NESTED> do {
 ...
 ```
 
-The template bit above (WARNING: that is not a complete and valid template) will loop each element `<NESTED>`, then fetch the content of the tag `<LEVEL3>` within and put it into the GRAQL statement within curly braces.
+The template bit above (WARNING: that is not a complete and valid template) will loop each element `<NESTED>`, then fetch the content of the tag `<LEVEL3>` within and put it into the Graql statement within curly braces.
 
 It might sound complicated, but it honestly just requires a bit of practice and familiarity with the XML format.
 
 ## Loading XML files
-Loading a GRAQL template against an XML file is a very similar process to the one you learned in the last lesson, but it requires a couple of extra arguments:
+Loading a Graql template against an XML file is a very similar process to the one you learned in the last lesson, but it requires a couple of extra arguments:
 
 While dealing with XML files you often find that the actually interesting stuff only starts after two or three levels of nesting. In the fake example above, for instance, we are only interested in the content of "LEVEL1" elements.
 
-We will then call our migration command with the option `-e` that tells GRAKN what to consider the *base element* of the file. In a way, you can think of it like splitting the XML file into many separate files, each containing one single "LEVEL1" element.
+We will then call our migration command with the option `-e` that tells Grakn what to consider the *base element* of the file. In a way, you can think of it like splitting the XML file into many separate files, each containing one single "LEVEL1" element.
 
-XML files usually come with a schema, which is stored in a XSD file. The schema describes formally the structure of the XML file and it is used by GRAKN to migrate the XML file (for example in a schema for the XML mock above you would find the information that each "LEVEL1" element can contain more that one "NESTED" element.
+XML files usually come with a schema, which is stored in a XSD file. The schema describes formally the structure of the XML file and it is used by Grakn to migrate the XML file (for example in a schema for the XML mock above you would find the information that each "LEVEL1" element can contain more that one "NESTED" element.
 
 To refer to the schema while calling the migration command, use the `-s` option.
 
@@ -110,7 +110,7 @@ There are no specific JSON examples in the Academy, as their migration works jus
   * There is no _base element_ for the JSON migration
 
 ### What have you learned?
-Whew! That was a lot to take in! You should by know have learned the basic of data migration into GRAKN. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
+Whew! That was a lot to take in! You should by know have learned the basic of data migration into Grakn. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
 
 ## What next
 You are almost there! After the module [review](./migration-review.html) you will have put all the data into your knowledge graph and you will be able to proceed to one of the most exciting topics of the academy: logic inference.

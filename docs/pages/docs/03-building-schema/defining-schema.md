@@ -86,12 +86,14 @@ schema.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell-undefine-sub">
 <pre class="language-graql"> <code>
+<!--test-ignore-->
 undefine person sub entity;
 </code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java-undefine-sub">
 <pre class="language-java"> <code>
+<!--test-ignore-->
 qb.undefine(label("person").sub("entity")).execute();
 </code>
 </pre>
@@ -196,14 +198,14 @@ Equivalent to `sub`, but only used in `relates` for defining the hierarchy of ro
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
 <pre class="language-graql"> <code>
-define fatherhood sub parenthood, relates father as parent, relates son as child;
+define fatherhood sub parentship, relates father as parent, relates son as child;
 </code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre class="language-java"> <code>
 qb.define(
-  label("fatherhood").sub("parenthood")
+  label("fatherhood").sub("parentship")
     .relates(label("father"), label("parent"))
     .relates(label("son"), label("child"))
 ).execute();

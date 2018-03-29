@@ -45,7 +45,24 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
+    private static final String OPEN_TAG = "\\s*<[^>]*>";
+    private static final String OPEN_TAGS = OPEN_TAG + "*";
+    private static final String QUERY = "\\s*(?<query>.*?)\\s*";
+
     public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/docs/pages/");
+
+    /**
+     * Regex for matching Graql examples in markdown documentation. This is designed to match code blocks and HTML.
+     */
+    static Pattern markdownOrHtml(String languageName) {
+        String className = "language-" + languageName;
+        String openClassTag = "class\\s*=\\s*\"" + className + "\".*?>";
+
+        String html = openClassTag + OPEN_TAGS;
+        String markdown = "```" + languageName + "\\s*\\n";
+
+        return Pattern.compile("(" + html + "|" + markdown + ")" + QUERY + "(</|```)", Pattern.DOTALL);
+    }
 
     private static final Pattern KEYSPACE_HEADER =
             Pattern.compile("---.*KB:\\s*(.*?)\\n.*---", Pattern.DOTALL + Pattern.CASE_INSENSITIVE);

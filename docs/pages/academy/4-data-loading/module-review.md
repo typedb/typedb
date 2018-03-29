@@ -10,7 +10,7 @@ toc: false
 KB: academy
 ---
 
-Another module of the Academy has gone, so it is time to review what you have learned about loading data into GRAKN and migrating CSV and XML files. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.
+Another module of the Academy has gone, so it is time to review what you have learned about loading data into Grakn and migrating CSV and XML files. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.
 
 ### Exercise 1: Loading files
 Load the file `articles.gql` to your knowledge dataset and check that the two articles about the Italian Referendum have been loaded.
@@ -31,12 +31,12 @@ Check that the migration has executed successfully using the graph visualiser.
 ### Exercise 3: Loading XML
 Migrate the file `bonds.xml` using the schema `bonds.xsd` and the template file `bond-template.gql` into the knowledge graph.
 
-Verify that bonds have been migrated into the knowledge graph using the GRAQL shell.
+Verify that bonds have been migrated into the knowledge graph using the Graql shell.
 
 ## Test your knowledge graph!
-Congratulations! You should have built your first GRAKN knowledge graph at this point!
+Congratulations! You should have built your first Grakn knowledge graph at this point!
 
-Retrieve the big GRAQL query from [module 2](./graql-intro.html) and test it on your knowledge graph. Did you get the same answer as you did within the "Academy" keypsace? Celebrate!
+Retrieve the big Graql query from [module 2](./graql-intro.html) and test it on your knowledge graph. Did you get the same answer as you did within the "Academy" keypsace? Celebrate!
 
 ## What next?
 Now that you have data into your knowledge graph, we have barely started the engine. It’s time to push the gas pedal a bit. It is time to look at [inference rules](./reasoner-intro.html).

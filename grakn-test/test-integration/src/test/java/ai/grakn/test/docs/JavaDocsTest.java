@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 import static ai.grakn.test.docs.DocTestUtil.PAGES;
 import static ai.grakn.test.docs.DocTestUtil.allMarkdownFiles;
 import static ai.grakn.test.docs.DocTestUtil.codeBlockFail;
+import static ai.grakn.test.docs.DocTestUtil.markdownOrHtml;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -68,11 +69,7 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class JavaDocsTest {
 
-    private static final Pattern TAG_JAVA =
-            Pattern.compile(
-                    "(id=\"java[0-9]+\">\\s*<pre>|```java)" +
-                    "\\s*(.*?)\\s*" +
-                    "(</pre>|```)", Pattern.DOTALL);
+    private static final Pattern TAG_JAVA = markdownOrHtml("java");
 
     private static String groovyPrefix;
 

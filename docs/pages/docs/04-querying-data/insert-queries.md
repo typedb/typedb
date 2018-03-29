@@ -163,7 +163,7 @@ You can also specify a variable to represent the relationship connecting the thi
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
 <pre class="language-graql"> <code>
-insert isa person has identifier "Fuchsia Groan" as $r;
+insert isa person has identifier "Fuchsia Groan" via $r;
 </code>
 </pre>
 </div>
