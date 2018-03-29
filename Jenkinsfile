@@ -336,6 +336,9 @@ try {
         String message = "Build Failure"
 
         if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
+            // This doesn't appear to work right now. It looks like this is because it attempts to email
+            // the address associated with the user's github account (usually their personal email address - not their
+            // work one). By default, Jenkins will not send emails to unregistered users.
             emailext (
                     subject: statusHeader(message),
                     body: statusNotification(message, 'html'),
