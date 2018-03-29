@@ -69,8 +69,8 @@ function relationshipEdges(relationObj, instancesMap) {
 
 export default {
   /**
-    * Given a JSON object/array in HAL format returns a set of graph nodes and edges
-    * @param {Object|Object[]} data HAL object/array
+    * Given a JSON object/array from Engine returns a set of graph nodes and edges
+    * @param {Object|Object[]} data Engine JSON object/array
     * @returns {Object} Object containing two arrays containing graph nodes and edges
     * @public
     */
@@ -94,6 +94,8 @@ export default {
 
     // ( Helper map {nodeURI: nodeId} )
     const instancesMap = populateInstancesMap(dataArray);
+
+    // Compute edges
     const edges = dataArray
       .filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP)
       .map(x => relationshipEdges(x, instancesMap))

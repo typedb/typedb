@@ -38,6 +38,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -56,6 +57,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -128,6 +130,12 @@ public class GraqlControllerTest {
                 collect(Collectors.toSet());
 
         assertEquals(expectedInstances, instances);
+    }
+
+    @Test
+    public void whenAcceptTypeIsText_EnsureEveryResultIsOnANewLine() {
+        String response  = sendQuery("match $x isa movie; limit 7; get;", APPLICATION_TEXT).body().asString();
+        assertEquals(6, StringUtils.countMatches(response, "\n"));
     }
 
     //TODO: This test should be improved

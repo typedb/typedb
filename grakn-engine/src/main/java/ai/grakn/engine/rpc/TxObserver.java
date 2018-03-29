@@ -28,7 +28,9 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Streamable;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.grpc.GrpcConceptConverter;
@@ -224,16 +226,34 @@ class TxObserver implements StreamObserver<TxRequest> {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        Stream<QueryResult> queryResultStream = graql.parse(queryString).results(GrpcConverter.get());
+        Query<?> query = graql.parse(queryString);
 
-        Stream<TxResponse> txResponseStream =
-                queryResultStream.map(queryResult -> TxResponse.newBuilder().setQueryResult(queryResult).build());
+        GrpcConverter grpcConverter = GrpcConverter.get();
 
-        Iterator<TxResponse> iterator = txResponseStream.iterator();
+        if (query instanceof Streamable) {
+            Stream<QueryResult> queryResultStream = ((Streamable<?>) query).stream().map(grpcConverter::convert);
 
-        IteratorId iteratorId = grpcIterators.add(iterator);
+            Stream<TxResponse> txResponseStream =
+                    queryResultStream.map(this::txResponse);
 
-        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+            Iterator<TxResponse> iterator = txResponseStream.iterator();
+
+            IteratorId iteratorId = grpcIterators.add(iterator);
+
+            responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+        } else {
+            Object result = query.execute();
+
+            if (result == null) {
+                responseObserver.onNext(GrpcUtil.doneResponse());
+            } else {
+                responseObserver.onNext(txResponse(grpcConverter.convert(result)));
+            }
+        }
+    }
+
+    private TxResponse txResponse(QueryResult queryResult) {
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
     }
 
     private void next(Next next) {
