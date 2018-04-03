@@ -255,7 +255,9 @@ public class GraqlController implements HttpController {
      * @param parser
      */
     private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
-        Printer printer = this.printer;
+
+        // By default use Jackson printer
+        Printer<?> printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
 
@@ -274,7 +276,14 @@ public class GraqlController implements HttpController {
             if (skipSerialisation) {
                 formatted = "";
             } else {
-                formatted = printer.graqlString(executeAndMonitor(query));
+                // If acceptType is 'application/text' add new line after every result
+                if (APPLICATION_TEXT.equals(acceptType)) {
+                    formatted = query.results(printer).collect(Collectors.joining("\n"));
+                } else {
+                    // If acceptType is 'application/json' map results to JSON representation
+                    formatted = printer.graqlString(executeAndMonitor(query));
+                }
+
             }
             commitQuery = !query.isReadOnly();
         }

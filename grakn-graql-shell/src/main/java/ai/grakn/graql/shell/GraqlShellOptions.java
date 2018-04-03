@@ -24,12 +24,14 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -58,13 +60,15 @@ public class GraqlShellOptions {
     private static final String HELP = "h";
     private static final String VERSION = "v";
 
-    private CommandLine cmd;
+    private final Options options;
+    private final CommandLine cmd;
 
-    private GraqlShellOptions(CommandLine cmd) {
+    private GraqlShellOptions(Options options, CommandLine cmd) {
+        this.options = options;
         this.cmd = cmd;
     }
 
-    private static Options options() {
+    private static Options defaultOptions() {
         Options options = new Options();
         options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
         options.addOption(EXECUTE, "execute", true, "query to execute");
@@ -79,19 +83,32 @@ public class GraqlShellOptions {
     }
 
     public static GraqlShellOptions create(String[] args) throws ParseException {
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options(), args);
-        return new GraqlShellOptions(cmd);
+        return create(args, new Options());
     }
 
-    public static void printUsage() {
+    public static GraqlShellOptions create(String[] args, Options additionalOptions) throws ParseException {
+        Options options = defaultOptions();
+        for (Option option : additionalOptions.getOptions()) {
+            options.addOption(option);
+        }
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+        return new GraqlShellOptions(options, cmd);
+    }
+
+    public CommandLine cmd() {
+        return cmd;
+    }
+
+    public void printUsage(PrintStream sout) {
         HelpFormatter helpFormatter = new HelpFormatter();
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(sout, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "graql console", null, options(), leftPadding, descPadding, null);
+        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, null);
         printWriter.flush();
     }
 

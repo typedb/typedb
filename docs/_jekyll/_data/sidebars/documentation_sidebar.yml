@@ -23,6 +23,21 @@ entries:
       - title: Graql Console
         output: web
         url: /docs/get-started/graql-console
+  - title: Cloud Deployment
+    output: web
+    folderitems:
+      - title: Google Cloud deployment
+        output: web
+        url: /docs/cloud-deployment/gc-deployment
+      - title: Best Practices
+        output: web
+        url: /docs/cloud-deployment/best-practices
+      - title: Post deployment steps
+        output: web
+        url: /docs/cloud-deployment/post-deployment
+      - title: Terms of service
+        output: web
+        url: /docs/cloud-deployment/terms-of-service
   - title: Knowledge Model
     output: web
     folderitems:
@@ -92,12 +107,12 @@ entries:
       - title: Shortest Path
         output: web
         url: /docs/distributed-analytics/compute-shortest-path
-      - title: Degrees
+      - title: Centrality
         output: web
-        url: /docs/distributed-analytics/compute-degrees
-      - title: Connected Components
+        url: /docs/distributed-analytics/compute-centrality
+      - title: Cluster
         output: web
-        url: /docs/distributed-analytics/compute-connected-components
+        url: /docs/distributed-analytics/compute-cluster
   - title: Migrating Data
     output: web
     folderitems:
@@ -225,6 +240,6 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index
-  - title: GRAKN Academy
+  - title: Grakn Academy
     output: web
     url: /academy/index

@@ -94,6 +94,7 @@ public class GraknEngineServerTest {
     Service spark = Service.ignite();
     RedisWrapper mockRedisWrapper = mock(RedisWrapper.class);
     Jedis mockJedis = mock(Jedis.class);
+    private GraknKeyspaceStore graknKeyspaceStore;
 
     @Before
     public void setUp() {
@@ -116,15 +117,15 @@ public class GraknEngineServerTest {
         redisServer.start();
 
         try {
-            try (GraknEngineServer server = createGraknEngineServer(RedisWrapper.create(config))) {
+            try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
                 server.start();
-                assertNotNull(server.factory().systemKeyspace());
+                assertNotNull(graknKeyspaceStore);
 
                 // init a random keyspace
                 String keyspaceName = "thisisarandomwhalekeyspace";
-                server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
+                graknKeyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
 
-                assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
+                assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
             }
         } finally {
             redisServer.stop();
@@ -195,8 +196,11 @@ public class GraknEngineServerTest {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
+        graknKeyspaceStore = GraknKeyspaceStoreFake.of();
+
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config);
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+
 
         // post-processing
         IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
@@ -216,6 +220,6 @@ public class GraknEngineServerTest {
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
                 sparkHttp, httpControllers, grpcServer,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor);
+                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }
 }

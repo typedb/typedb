@@ -37,11 +37,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -189,11 +189,11 @@ public class QueryAnswer implements Answer {
         );
     }
 
-    public AnswerExplanation mergeExplanation(Answer toMerge) {
-        Set<Answer> partialAnswers = new HashSet<>();
-        if (this.getExplanation().isJoinExplanation()) this.getExplanation().getAnswers().forEach(partialAnswers::add);
+    private AnswerExplanation mergeExplanation(Answer toMerge) {
+        List<Answer> partialAnswers = new ArrayList<>();
+        if (this.getExplanation().isJoinExplanation()) partialAnswers.addAll(this.getExplanation().getAnswers());
         else partialAnswers.add(this);
-        if (toMerge.getExplanation().isJoinExplanation()) toMerge.getExplanation().getAnswers().forEach(partialAnswers::add);
+        if (toMerge.getExplanation().isJoinExplanation()) partialAnswers.addAll(toMerge.getExplanation().getAnswers());
         else partialAnswers.add(toMerge);
         return new JoinExplanation(partialAnswers);
     }

@@ -1,0 +1,240 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.grpc;
+
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.grpc.TxGrpcCommunicator.Response;
+import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableMap;
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import mjson.Json;
+
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+/**
+ * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
+ *
+ * <p>
+ *     This class is a light abstraction layer over gRPC - it understands how the sequence of calls should execute and
+ *     how to translate gRPC objects into Java objects and back.
+ * </p>
+ *
+ * @author Felix Chapman
+ */
+public class GrpcClient implements AutoCloseable {
+
+    private final GrpcConceptConverter conceptConverter;
+    private final TxGrpcCommunicator communicator;
+
+    private GrpcClient(GrpcConceptConverter conceptConverter, TxGrpcCommunicator communicator) {
+        this.conceptConverter = conceptConverter;
+        this.communicator = communicator;
+    }
+
+    public static GrpcClient create(GrpcConceptConverter conceptConverter, GraknGrpc.GraknStub stub) {
+        TxGrpcCommunicator observer = TxGrpcCommunicator.create(stub);
+        return new GrpcClient(conceptConverter, observer);
+    }
+
+    public void open(TxRequest openRequest) {
+        communicator.send(openRequest);
+        responseOrThrow();
+    }
+
+    public Iterator<Object> execQuery(Query<?> query) {
+        communicator.send(GrpcUtil.execQueryRequest(query.toString(), query.inferring()));
+
+        TxResponse txResponse = responseOrThrow();
+
+        switch (txResponse.getResponseCase()) {
+            case QUERYRESULT:
+                return Collections.singleton(convert(txResponse.getQueryResult())).iterator();
+            case DONE:
+                return Collections.emptyIterator();
+            case ITERATORID:
+                IteratorId iteratorId = txResponse.getIteratorId();
+
+                return new GraknGrpcIterator<Object>(this, iteratorId) {
+                    @Override
+                    protected Object getNextFromResponse(TxResponse response) {
+                        return convert(response.getQueryResult());
+                    }
+                };
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
+        }
+    }
+
+    public void commit() {
+        communicator.send(GrpcUtil.commitRequest());
+        responseOrThrow();
+    }
+
+    public TxResponse next(IteratorId iteratorId) {
+        communicator.send(GrpcUtil.nextRequest(iteratorId));
+        return responseOrThrow();
+    }
+
+    @Nullable
+    public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
+        communicator.send(GrpcUtil.runConceptMethodRequest(id, conceptMethod));
+        return conceptMethod.get(conceptConverter, this, responseOrThrow());
+    }
+
+    public Optional<Concept> getConcept(ConceptId id) {
+        communicator.send(GrpcUtil.getConceptRequest(id));
+        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+    }
+
+    public Optional<Concept> getSchemaConcept(Label label) {
+        communicator.send(GrpcUtil.getSchemaConceptRequest(label));
+        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+    }
+
+    public Stream<? extends Concept> getAttributesByValue(Object value) {
+        communicator.send(GrpcUtil.getAttributesByValueRequest(value));
+
+        IteratorId iteratorId = responseOrThrow().getIteratorId();
+
+        Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(this, iteratorId) {
+            @Override
+            protected Concept getNextFromResponse(TxResponse response) {
+                return conceptConverter.convert(response.getConcept());
+            }
+        };
+
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    public Concept putEntityType(Label label) {
+        communicator.send(GrpcUtil.putEntityTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRelationshipType(Label label) {
+        communicator.send(GrpcUtil.putRelationshipTypeRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+        communicator.send(GrpcUtil.putAttributeTypeRequest(label, dataType));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRole(Label label) {
+        communicator.send(GrpcUtil.putRoleRequest(label));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    public Concept putRule(Label label, Pattern when, Pattern then) {
+        communicator.send(GrpcUtil.putRuleRequest(label, when, then));
+        return conceptConverter.convert(responseOrThrow().getConcept());
+    }
+
+    @Override
+    public void close() {
+        communicator.close();
+    }
+
+    public boolean isClosed(){
+        return communicator.isClosed();
+    }
+
+    private TxResponse responseOrThrow() {
+        Response response;
+
+        try {
+            response = communicator.receive();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // This is called from classes like RemoteGraknTx, that impl methods which do not throw InterruptedException
+            // Therefore, we have to wrap it in a RuntimeException.
+            throw new RuntimeException(e);
+        }
+
+        switch (response.type()) {
+            case OK:
+                return response.ok();
+            case ERROR:
+                throw convertStatusRuntimeException(response.error());
+            case COMPLETED:
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
+    }
+
+    private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
+        Status status = error.getStatus();
+        Metadata trailers = error.getTrailers();
+
+        ErrorType errorType = trailers.get(ErrorType.KEY);
+
+        if (errorType != null) {
+            String message = status.getDescription();
+            return errorType.toException(message);
+        } else {
+            return error;
+        }
+    }
+
+    private Object convert(GrpcGrakn.QueryResult queryResult) {
+        switch (queryResult.getQueryResultCase()) {
+            case ANSWER:
+                return convert(queryResult.getAnswer());
+            case OTHERRESULT:
+                return Json.read(queryResult.getOtherResult()).getValue();
+            default:
+            case QUERYRESULT_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + queryResult);
+        }
+    }
+
+    private Answer convert(GrpcGrakn.Answer answer) {
+        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
+
+        answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
+            map.put(Graql.var(grpcVar), conceptConverter.convert(grpcConcept));
+        });
+
+        return new QueryAnswer(map.build());
+    }
+
+}

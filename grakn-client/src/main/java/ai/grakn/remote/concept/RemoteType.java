@@ -24,7 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 
 import java.util.stream.Stream;
 
@@ -38,62 +38,62 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setAbstract(isAbstract));
+        return runVoidMethod(ConceptMethods.setAbstract(isAbstract));
     }
 
     @Override
     public final Self plays(Role role) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setRolePlayedByType(role));
+        return runVoidMethod(ConceptMethods.setRolePlayedByType(role));
     }
 
     @Override
     public final Self key(AttributeType attributeType) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setKeyType(attributeType));
+        return runVoidMethod(ConceptMethods.setKeyType(attributeType));
     }
 
     @Override
     public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setAttributeType(attributeType));
+        return runVoidMethod(ConceptMethods.setAttributeType(attributeType));
     }
 
     @Override
     public final Stream<Role> plays() {
-        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_TYPE).map(Concept::asRole);
+        return runMethod(ConceptMethods.GET_ROLES_PLAYED_BY_TYPE).map(Concept::asRole);
     }
 
     @Override
     public final Stream<AttributeType> attributes() {
-        return runMethod(ConceptMethod.GET_ATTRIBUTE_TYPES).map(Concept::asAttributeType);
+        return runMethod(ConceptMethods.GET_ATTRIBUTE_TYPES).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        return runMethod(ConceptMethod.GET_KEY_TYPES).map(Concept::asAttributeType);
+        return runMethod(ConceptMethods.GET_KEY_TYPES).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<Instance> instances() {
-        return runMethod(ConceptMethod.GET_INSTANCES).map(this::asInstance);
+        return runMethod(ConceptMethods.GET_INSTANCES).map(this::asInstance);
     }
 
     @Override
     public final Boolean isAbstract() {
-        return runMethod(ConceptMethod.IS_ABSTRACT);
+        return runMethod(ConceptMethods.IS_ABSTRACT);
     }
 
     @Override
     public final Self deletePlays(Role role) {
-        return runVoidMethod(ConceptMethod.unsetRolePlayedByType(role));
+        return runVoidMethod(ConceptMethods.unsetRolePlayedByType(role));
     }
 
     @Override
     public final Self deleteAttribute(AttributeType attributeType) {
-        return runVoidMethod(ConceptMethod.unsetAttributeType(attributeType));
+        return runVoidMethod(ConceptMethods.unsetAttributeType(attributeType));
     }
 
     @Override
     public final Self deleteKey(AttributeType attributeType) {
-        return runVoidMethod(ConceptMethod.unsetKeyType(attributeType));
+        return runVoidMethod(ConceptMethods.unsetKeyType(attributeType));
     }
 
     protected abstract Instance asInstance(Concept concept);

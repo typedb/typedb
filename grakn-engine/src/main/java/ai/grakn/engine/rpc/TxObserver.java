@@ -18,39 +18,56 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Streamable;
 import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
 import ai.grakn.grpc.GrpcConceptConverter;
+import ai.grakn.grpc.GrpcIterators;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
-import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
-import ai.grakn.rpc.generated.GrpcGrakn.IteratorId;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.generated.GrpcIterator.Next;
+import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -61,15 +78,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Felix Chapman
  */
-class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
+class TxObserver implements StreamObserver<TxRequest> {
 
     private final StreamObserver<TxResponse> responseObserver;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService threadExecutor;
     private final GrpcOpenRequestExecutor requestExecutor;
     private final PostProcessor postProcessor;
-    private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-    private final Map<IteratorId, Iterator<QueryResult>> iterators = new ConcurrentHashMap<>();
+    private final GrpcIterators grpcIterators = GrpcIterators.create();
 
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
@@ -94,9 +110,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 GrpcGraknService.runAndConvertGraknExceptions(() -> handleRequest(request));
             });
         } catch (StatusRuntimeException e) {
-            if (!terminated.getAndSet(true)) {
-                responseObserver.onError(e);
-            }
+            close(e);
         }
     }
 
@@ -123,6 +137,27 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             case GETCONCEPT:
                 getConcept(request.getGetConcept());
                 break;
+            case GETSCHEMACONCEPT:
+                getSchemaConcept(request.getGetSchemaConcept());
+                break;
+            case GETATTRIBUTESBYVALUE:
+                getAttributesByValue(request.getGetAttributesByValue());
+                break;
+            case PUTENTITYTYPE:
+                putEntityType(request.getPutEntityType());
+                break;
+            case PUTRELATIONSHIPTYPE:
+                putRelationshipType(request.getPutRelationshipType());
+                break;
+            case PUTATTRIBUTETYPE:
+                putAttributeType(request.getPutAttributeType());
+                break;
+            case PUTROLE:
+                putRole(request.getPutRole());
+                break;
+            case PUTRULE:
+                putRule(request.getPutRule());
+                break;
             default:
             case REQUEST_NOT_SET:
                 throw GrpcGraknService.error(Status.INVALID_ARGUMENT);
@@ -131,25 +166,28 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     @Override
     public void onError(Throwable t) {
-        close();
+        close(t);
     }
 
     @Override
     public void onCompleted() {
-        close();
+        close(null);
     }
 
-    @Override
-    public void close() {
+    public void close(@Nullable Throwable error) {
         submit(() -> {
             if (tx != null) {
                 tx.close();
             }
+        });
 
-            if (!terminated.getAndSet(true)) {
+        if (!terminated.getAndSet(true)) {
+            if (error != null) {
+                responseObserver.onError(error);
+            } else {
                 responseObserver.onCompleted();
             }
-        });
+        }
 
         threadExecutor.shutdown();
     }
@@ -188,35 +226,48 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        Iterator<QueryResult> iterator = graql.parse(queryString).results(GrpcConverter.get()).iterator();
-        IteratorId iteratorId =
-                IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        Query<?> query = graql.parse(queryString);
 
-        iterators.put(iteratorId, iterator);
+        GrpcConverter grpcConverter = GrpcConverter.get();
 
-        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+        if (query instanceof Streamable) {
+            Stream<QueryResult> queryResultStream = ((Streamable<?>) query).stream().map(grpcConverter::convert);
+
+            Stream<TxResponse> txResponseStream =
+                    queryResultStream.map(this::txResponse);
+
+            Iterator<TxResponse> iterator = txResponseStream.iterator();
+
+            IteratorId iteratorId = grpcIterators.add(iterator);
+
+            responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+        } else {
+            Object result = query.execute();
+
+            if (result == null) {
+                responseObserver.onNext(GrpcUtil.doneResponse());
+            } else {
+                responseObserver.onNext(txResponse(grpcConverter.convert(result)));
+            }
+        }
     }
 
-    private void next(GrpcGrakn.Next next) {
+    private TxResponse txResponse(QueryResult queryResult) {
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
+    }
+
+    private void next(Next next) {
         IteratorId iteratorId = next.getIteratorId();
 
-        Iterator<QueryResult> iterator = nonNull(iterators.get(iteratorId));
-
-        TxResponse response;
-
-        if (iterator.hasNext()) {
-            QueryResult queryResult = iterator.next();
-            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
-        } else {
-            response = GrpcUtil.doneResponse();
-            iterators.remove(iteratorId);
-        }
+        TxResponse response =
+                grpcIterators.next(iteratorId).orElseThrow(() -> GrpcGraknService.error(Status.FAILED_PRECONDITION));
 
         responseObserver.onNext(response);
     }
 
-    private void stop(GrpcGrakn.Stop stop) {
-        nonNull(iterators.remove(stop.getIteratorId()));
+    private void stop(Stop stop) {
+        IteratorId iteratorId = stop.getIteratorId();
+        grpcIterators.stop(iteratorId);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
@@ -225,34 +276,73 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         GrpcConceptConverter converter = grpcConcept -> tx().getConcept(GrpcUtil.convert(grpcConcept.getId()));
 
-        ConceptMethod<?> conceptMethod = ConceptMethod.fromGrpc(converter, runConceptMethod.getConceptMethod());
+        ConceptMethod<?> conceptMethod = ConceptMethods.fromGrpc(converter, runConceptMethod.getConceptMethod());
 
-        TxResponse response = conceptMethod.run(concept);
+        TxResponse response = conceptMethod.run(grpcIterators, concept);
 
         responseObserver.onNext(response);
     }
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
-        Concept concept = tx().getConcept(GrpcUtil.convert(conceptId));
+        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
 
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        if (concept != null) conceptResponse.setConcept(GrpcUtil.convert(concept));
-
-        TxResponse response = TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
 
         responseObserver.onNext(response);
+    }
+
+    private void getSchemaConcept(GrpcConcept.Label label) {
+        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(GrpcUtil.convert(label)));
+
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getAttributesByValue(AttributeValue attributeValue) {
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
+
+        Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
+        IteratorId iteratorId = grpcIterators.add(iterator);
+
+        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+    }
+
+    private void putEntityType(GrpcConcept.Label label) {
+        EntityType entityType = tx().putEntityType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(entityType));
+    }
+
+    private void putRelationshipType(GrpcConcept.Label label) {
+        RelationshipType relationshipType = tx().putRelationshipType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(relationshipType));
+    }
+
+    private void putAttributeType(PutAttributeType putAttributeType) {
+        Label label = GrpcUtil.convert(putAttributeType.getLabel());
+        AttributeType.DataType<?> dataType = GrpcUtil.convert(putAttributeType.getDataType());
+
+        AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+        responseObserver.onNext(GrpcUtil.conceptResponse(attributeType));
+    }
+
+    private void putRole(GrpcConcept.Label label) {
+        Role role = tx().putRole(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(role));
+    }
+
+    private void putRule(PutRule putRule) {
+        Label label = GrpcUtil.convert(putRule.getLabel());
+        Pattern when = GrpcUtil.convert(putRule.getWhen());
+        Pattern then = GrpcUtil.convert(putRule.getThen());
+
+        Rule rule = tx().putRule(label, when, then);
+        responseObserver.onNext(GrpcUtil.conceptResponse(rule));
     }
 
     private EmbeddedGraknTx<?> tx() {
         return nonNull(tx);
     }
-
-    private static <T> T nonNull(@Nullable T item) {
-        if (item == null) {
-            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
-        } else {
-            return item;
-        }
-    }
-
 }

@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
@@ -37,6 +38,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -55,6 +57,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -100,7 +103,8 @@ public class GraqlControllerTest {
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
+                .create(mockLockProvider, GraknConfig.create(), GraknKeyspaceStoreFake.of());
+        factory.keyspaceStore().loadSystemSchema();
         new GraqlController(factory, mock(PostProcessor.class), printer, new MetricRegistry()).start(spark);
     });
 
@@ -128,7 +132,13 @@ public class GraqlControllerTest {
         assertEquals(expectedInstances, instances);
     }
 
-    //TODO: THis test should be improved
+    @Test
+    public void whenAcceptTypeIsText_EnsureEveryResultIsOnANewLine() {
+        String response  = sendQuery("match $x isa movie; limit 7; get;", APPLICATION_TEXT).body().asString();
+        assertEquals(6, StringUtils.countMatches(response, "\n"));
+    }
+
+    //TODO: This test should be improved
     @Test
     public void whenExecutingExplainQuery_responseIsValid() {
         String keyspace = genealogyKB.tx().keyspace().getValue();
@@ -165,7 +175,6 @@ public class GraqlControllerTest {
         String queryString = single + "\n" + single;
         Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
         resp.then().statusCode(200);
-        sampleKB.rollback();
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
         String graqlResult = printer.graqlString(query.map(Query::execute).collect(
                 Collectors.toList()));

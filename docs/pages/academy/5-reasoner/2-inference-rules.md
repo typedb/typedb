@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-As anticipated in the [last lesson](./reasoner-intro.html), in this module you are going to learn how to use GRAKN Reasoner to make your data more intelligent.
+As anticipated in the [last lesson](./reasoner-intro.html), in this module you are going to learn how to use Grakn Reasoner to make your data more intelligent.
 
 Among others, the two most common uses for Reasoner are:
 Knowledge discovery: as in the deserted island example you have read about in the last lesson, we can use logic inference to extract more knowledge out of our data without modifying it.
@@ -19,7 +19,7 @@ Query shortening: sometimes you use the same long query over and over again. It 
 In this and the following lesson, we will build an example that will demonstrate both these points.
 
 ## Structure of inference rules
-A rule in GRAKN is, roughly speaking, an insert query that does not actually insert data, but will modify the results of the get queries.
+A rule in Grakn is, roughly speaking, an insert query that does not actually insert data, but will modify the results of the get queries.
 
 Since rules add to the knowledge model of your knowledge graph, they are actually part of the schema, and, as such, are added using the keyword `define`, like all the schema components.
 
@@ -44,7 +44,7 @@ The first block of the rule, the WHEN part or block, is just a list of patterns 
 
 There are quite deep theoretical reasons for these limitations but they are out of the scope of the academy, we will briefly come back on the topic in the next lesson.
 
-If you define a rule, each time you run a query, GRAKN
+If you define a rule, each time you run a query, Grakn
 
   * checks whether you are accessing part of the Knowledge base described by the _WHEN_ block of the rule,
   * and it responds as if the _THEN_ block were satisfied as well
@@ -84,7 +84,7 @@ Using the information above, try and build a rule that does just that without st
 Save your result in a file called, for example. `rules.gql` and store it for future reference. You will find the solution to this exercise in the next lesson.
 
 ### What have you learned?
-You now should be able to GRAKN inference rules and know how a rule is structured. You are almost done building the example knowledge graph!
+You now should be able to Grakn inference rules and know how a rule is structured. You are almost done building the example knowledge graph!
 
 ## What next?
 In the [next lesson](./advanced-rules.html) you will discover how to improve the rule you just wrote and make it more useful for future uses and will learn more about how Reasoner works. If you want to know more about atomic patterns and what you can actually use in a then block, head over to the [docs](../index.html).

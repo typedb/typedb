@@ -50,7 +50,7 @@ public class KBWriter {
      * @return Graql insert query with schema of given graph
      */
     public String dumpSchema(){
-        return join(types().map(SchemaConceptMapper::map));
+        return join(schemaConcepts().map(SchemaConceptMapper::map));
     }
 
     /**
@@ -58,11 +58,10 @@ public class KBWriter {
      * @return Graql insert query with data in given graph
      */
     public String dumpData(){
-        return join(types()
+        return join(schemaConcepts()
                 .filter(Concept::isType)
                 .map(Concept::asType)
                 .flatMap(Type::instances)
-                .map(Concept::asThing)
                 .map(InstanceMapper::map));
     }
 
@@ -79,10 +78,10 @@ public class KBWriter {
     }
 
     /**
-     * Get all the types in a graph.
-     * @return a stream of all types with non-reserved IDs
+     * Get all the {@link SchemaConcept}s in a graph.
+     * @return a stream of all {@link SchemaConcept}s with non-reserved IDs
      */
-    private Stream<? extends SchemaConcept> types(){
+    private Stream<? extends SchemaConcept> schemaConcepts(){
         Stream<? extends Type> types = tx.admin().getMetaConcept().subs();
         Stream<Role> roles = tx.admin().getMetaRole().subs();
         Stream<Rule> rules = tx.admin().getMetaRule().subs();
