@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -39,17 +39,24 @@ import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-@AutoValue
-abstract class LabelFragment extends Fragment {
+/**
+ * A fragment representing traversing a label.
+ *
+ * @author Felix Chapman
+ */
 
-    abstract ImmutableSet<Label> labels();
+@AutoValue
+public abstract class LabelFragment extends Fragment {
+
+    // TODO: labels() should return ONE label instead of a set
+    public abstract ImmutableSet<Label> labels();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx, Collection<Var> vars) {
 
         Set<Integer> labelIds =
-                labels().stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+                labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
 
         if (labelIds.size() == 1) {
             int labelId = Iterables.getOnlyElement(labelIds);
@@ -75,12 +82,12 @@ abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public Optional<Long> getShardCount(GraknTx tx) {
+    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
         return Optional.of(labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .flatMap(SchemaConcept::subs)
-                .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
+                .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
                 .sum());
     }
 }

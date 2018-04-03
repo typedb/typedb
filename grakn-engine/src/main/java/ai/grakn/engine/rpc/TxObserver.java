@@ -18,30 +18,56 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknException;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Streamable;
+import ai.grakn.grpc.ConceptMethod;
+import ai.grakn.grpc.ConceptMethods;
+import ai.grakn.grpc.GrpcConceptConverter;
+import ai.grakn.grpc.GrpcIterators;
+import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import ai.grakn.grpc.GrpcUtil;
-import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
+import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
+import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
+import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
+import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
+import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
+import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.generated.GrpcIterator.Next;
+import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -52,87 +78,123 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Felix Chapman
  */
-class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
+class TxObserver implements StreamObserver<TxRequest> {
 
     private final StreamObserver<TxResponse> responseObserver;
-    private final EngineGraknTxFactory txFactory;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
-    private final ExecutorService executor;
+    private final ExecutorService threadExecutor;
+    private final GrpcOpenRequestExecutor requestExecutor;
+    private final PostProcessor postProcessor;
+    private final GrpcIterators grpcIterators = GrpcIterators.create();
 
-    private @Nullable GraknTx tx = null;
-    private @Nullable Iterator<QueryResult> queryResults = null;
+    @Nullable
+    private EmbeddedGraknTx<?> tx = null;
 
-    private TxObserver(
-            EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver, ExecutorService executor) {
+    private TxObserver(StreamObserver<TxResponse> responseObserver, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
         this.responseObserver = responseObserver;
-        this.txFactory = txFactory;
-        this.executor = executor;
+        this.threadExecutor = threadExecutor;
+        this.requestExecutor = requestExecutor;
+        this.postProcessor = postProcessor;
     }
 
-    public static TxObserver create(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
+    public static TxObserver create(StreamObserver<TxResponse> responseObserver, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
-        ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
-        return new TxObserver(txFactory, responseObserver, executor);
+        ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
+        return new TxObserver(responseObserver, threadExecutor, requestExecutor, postProcessor);
     }
 
     @Override
     public void onNext(TxRequest request) {
-        submit(() -> {
-            try {
-                switch (request.getRequestCase()) {
-                    case OPEN:
-                        open(request.getOpen());
-                        break;
-                    case COMMIT:
-                        commit();
-                        break;
-                    case EXECQUERY:
-                        execQuery(request.getExecQuery());
-                        break;
-                    case NEXT:
-                        next();
-                        break;
-                    case STOP:
-                        stop();
-                        break;
-                    default:
-                    case REQUEST_NOT_SET:
-                        throw error(Status.INVALID_ARGUMENT);
-                }
-            } catch (GraknException e) {
-                throw error(Status.UNKNOWN.withDescription(e.getMessage()));
-            }
-        });
+        try {
+            submit(() -> {
+                GrpcGraknService.runAndConvertGraknExceptions(() -> handleRequest(request));
+            });
+        } catch (StatusRuntimeException e) {
+            close(e);
+        }
+    }
+
+    private void handleRequest(TxRequest request) {
+        switch (request.getRequestCase()) {
+            case OPEN:
+                open(request.getOpen());
+                break;
+            case COMMIT:
+                commit();
+                break;
+            case EXECQUERY:
+                execQuery(request.getExecQuery());
+                break;
+            case NEXT:
+                next(request.getNext());
+                break;
+            case STOP:
+                stop(request.getStop());
+                break;
+            case RUNCONCEPTMETHOD:
+                runConceptMethod(request.getRunConceptMethod());
+                break;
+            case GETCONCEPT:
+                getConcept(request.getGetConcept());
+                break;
+            case GETSCHEMACONCEPT:
+                getSchemaConcept(request.getGetSchemaConcept());
+                break;
+            case GETATTRIBUTESBYVALUE:
+                getAttributesByValue(request.getGetAttributesByValue());
+                break;
+            case PUTENTITYTYPE:
+                putEntityType(request.getPutEntityType());
+                break;
+            case PUTRELATIONSHIPTYPE:
+                putRelationshipType(request.getPutRelationshipType());
+                break;
+            case PUTATTRIBUTETYPE:
+                putAttributeType(request.getPutAttributeType());
+                break;
+            case PUTROLE:
+                putRole(request.getPutRole());
+                break;
+            case PUTRULE:
+                putRule(request.getPutRule());
+                break;
+            default:
+            case REQUEST_NOT_SET:
+                throw GrpcGraknService.error(Status.INVALID_ARGUMENT);
+        }
     }
 
     @Override
     public void onError(Throwable t) {
-        close();
+        close(t);
     }
 
     @Override
     public void onCompleted() {
-        close();
+        close(null);
     }
 
-    @Override
-    public void close() {
+    public void close(@Nullable Throwable error) {
         submit(() -> {
             if (tx != null) {
                 tx.close();
             }
-
-            if (!terminated.getAndSet(true)) {
-                responseObserver.onCompleted();
-            }
         });
 
-        executor.shutdown();
+        if (!terminated.getAndSet(true)) {
+            if (error != null) {
+                responseObserver.onError(error);
+            } else {
+                responseObserver.onCompleted();
+            }
+        }
+
+        threadExecutor.shutdown();
     }
 
     private void submit(Runnable runnable) {
         try {
-            executor.submit(runnable).get();
+            threadExecutor.submit(runnable).get();
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
@@ -144,84 +206,143 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private void open(Open request) {
         if (tx != null) {
-            throw error(Status.FAILED_PRECONDITION);
+            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
         }
-
-        Keyspace keyspace = GrpcUtil.getKeyspace(request);
-        GraknTxType txType = GrpcUtil.getTxType(request);
-        tx = txFactory.tx(keyspace, txType);
-
+        tx = requestExecutor.execute(request);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void commit() {
-        if (tx == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
-        tx.commit();
-
+        tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
         responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
     private void execQuery(ExecQuery request) {
-        if (tx == null || queryResults != null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
-
         String queryString = request.getQuery().getValue();
 
-        QueryBuilder graql = tx.graql();
+        QueryBuilder graql = tx().graql();
 
         if (request.hasInfer()) {
             graql = graql.infer(request.getInfer().getValue());
         }
 
-        queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
+        Query<?> query = graql.parse(queryString);
 
-        sendNextResult();
-    }
+        GrpcConverter grpcConverter = GrpcConverter.get();
 
-    private void next() {
-        if (queryResults == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
+        if (query instanceof Streamable) {
+            Stream<QueryResult> queryResultStream = ((Streamable<?>) query).stream().map(grpcConverter::convert);
 
-        sendNextResult();
-    }
+            Stream<TxResponse> txResponseStream =
+                    queryResultStream.map(this::txResponse);
 
-    private void stop() {
-        if (queryResults == null) {
-            throw error(Status.FAILED_PRECONDITION);
-        }
+            Iterator<TxResponse> iterator = txResponseStream.iterator();
 
-        queryResults = null;
+            IteratorId iteratorId = grpcIterators.add(iterator);
 
-        responseObserver.onNext(GrpcUtil.doneResponse());
-    }
-
-    private void sendNextResult() {
-        assert queryResults != null : "Method is only called when queryResults is non-null";
-
-        TxResponse response;
-
-        if (queryResults.hasNext()) {
-            QueryResult queryResult = queryResults.next();
-            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+            responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
         } else {
-            response = GrpcUtil.doneResponse();
-            queryResults = null;
+            Object result = query.execute();
+
+            if (result == null) {
+                responseObserver.onNext(GrpcUtil.doneResponse());
+            } else {
+                responseObserver.onNext(txResponse(grpcConverter.convert(result)));
+            }
         }
+    }
+
+    private TxResponse txResponse(QueryResult queryResult) {
+        return TxResponse.newBuilder().setQueryResult(queryResult).build();
+    }
+
+    private void next(Next next) {
+        IteratorId iteratorId = next.getIteratorId();
+
+        TxResponse response =
+                grpcIterators.next(iteratorId).orElseThrow(() -> GrpcGraknService.error(Status.FAILED_PRECONDITION));
 
         responseObserver.onNext(response);
     }
 
-    private StatusRuntimeException error(Status status) {
-        StatusRuntimeException exception = new StatusRuntimeException(status);
-        if (!terminated.getAndSet(true)) {
-            responseObserver.onError(exception);
-        }
-        return exception;
+    private void stop(Stop stop) {
+        IteratorId iteratorId = stop.getIteratorId();
+        grpcIterators.stop(iteratorId);
+        responseObserver.onNext(GrpcUtil.doneResponse());
     }
 
+    private void runConceptMethod(RunConceptMethod runConceptMethod) {
+        Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(runConceptMethod)));
+
+        GrpcConceptConverter converter = grpcConcept -> tx().getConcept(GrpcUtil.convert(grpcConcept.getId()));
+
+        ConceptMethod<?> conceptMethod = ConceptMethods.fromGrpc(converter, runConceptMethod.getConceptMethod());
+
+        TxResponse response = conceptMethod.run(grpcIterators, concept);
+
+        responseObserver.onNext(response);
+    }
+
+    private void getConcept(GrpcConcept.ConceptId conceptId) {
+        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
+
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getSchemaConcept(GrpcConcept.Label label) {
+        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(GrpcUtil.convert(label)));
+
+        TxResponse response =
+                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+
+        responseObserver.onNext(response);
+    }
+
+    private void getAttributesByValue(AttributeValue attributeValue) {
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
+
+        Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
+        IteratorId iteratorId = grpcIterators.add(iterator);
+
+        responseObserver.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+    }
+
+    private void putEntityType(GrpcConcept.Label label) {
+        EntityType entityType = tx().putEntityType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(entityType));
+    }
+
+    private void putRelationshipType(GrpcConcept.Label label) {
+        RelationshipType relationshipType = tx().putRelationshipType(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(relationshipType));
+    }
+
+    private void putAttributeType(PutAttributeType putAttributeType) {
+        Label label = GrpcUtil.convert(putAttributeType.getLabel());
+        AttributeType.DataType<?> dataType = GrpcUtil.convert(putAttributeType.getDataType());
+
+        AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+        responseObserver.onNext(GrpcUtil.conceptResponse(attributeType));
+    }
+
+    private void putRole(GrpcConcept.Label label) {
+        Role role = tx().putRole(GrpcUtil.convert(label));
+        responseObserver.onNext(GrpcUtil.conceptResponse(role));
+    }
+
+    private void putRule(PutRule putRule) {
+        Label label = GrpcUtil.convert(putRule.getLabel());
+        Pattern when = GrpcUtil.convert(putRule.getWhen());
+        Pattern then = GrpcUtil.convert(putRule.getThen());
+
+        Rule rule = tx().putRule(label, when, then);
+        responseObserver.onNext(GrpcUtil.conceptResponse(rule));
+    }
+
+    private EmbeddedGraknTx<?> tx() {
+        return nonNull(tx);
+    }
 }

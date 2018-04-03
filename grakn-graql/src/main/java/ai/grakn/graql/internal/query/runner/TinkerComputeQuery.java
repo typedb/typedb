@@ -35,6 +35,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.graql.internal.analytics.Utility;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -62,17 +63,19 @@ import java.util.stream.Stream;
  */
 class TinkerComputeQuery<Q extends ComputeQuery<?>> {
 
-    private final GraknTx tx;
+    private final EmbeddedGraknTx<?> tx;
     private final Q query;
     private final GraknComputer computer;
 
-    TinkerComputeQuery(GraknTx tx, Q query, GraknComputer computer) {
+    TinkerComputeQuery(EmbeddedGraknTx<?> tx, Q query, GraknComputer computer) {
         this.tx = tx;
         this.query = query;
         this.computer = computer;
     }
 
-    static <Q extends ComputeQuery<?>> TinkerComputeQuery<Q> create(GraknTx tx, Q query, GraknComputer computer) {
+    static <Q extends ComputeQuery<?>> TinkerComputeQuery<Q> create(
+            EmbeddedGraknTx<?> tx, Q query, GraknComputer computer
+    ) {
         return new TinkerComputeQuery<>(tx, query, computer);
     }
 
@@ -123,7 +126,7 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
                 .filter(RelationshipType::isImplicit)
                 .flatMap(RelationshipType::relates)
                 .flatMap(Role::playedByTypes)
-                .map(type -> tx.admin().convertToId(type.getLabel()))
+                .map(type -> tx.convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }

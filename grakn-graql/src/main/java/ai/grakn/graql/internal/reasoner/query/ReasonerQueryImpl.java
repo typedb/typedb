@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
@@ -42,8 +41,9 @@ import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtomBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -59,6 +59,7 @@ import ai.grakn.graql.internal.reasoner.state.CumulativeState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -99,44 +100,45 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknTx tx;
+    private final EmbeddedGraknTx<?> tx;
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+    ReasonerQueryImpl(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
+    ReasonerQueryImpl(List<Atom> atoms, EmbeddedGraknTx<?> tx){
         this.tx = tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
                         .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
-                        .map(at -> AtomicFactory.create(at, this)).iterator())
+                        .map(at -> at.copy(this)).iterator())
                 .build();
     }
 
     ReasonerQueryImpl(Atom atom) {
-        this(Collections.singletonList(atom), atom.getParentQuery().tx());
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeisRuleResolvableddedGraknTx
+        this(Collections.singletonList(atom), (EmbeddedGraknTx<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.tx = q.tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
-                .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .addAll(q.getAtoms().stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 
@@ -177,7 +179,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
         Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
             ConceptId conceptId = transform.get(p.getVarName());
-            if (conceptId != null) return new IdPredicate(p.getVarName(), conceptId, p.getParentQuery());
+            if (conceptId != null) return IdPredicate.create(p.getVarName(), conceptId, p.getParentQuery());
             return p;
         }).collect(Collectors.toSet());
         getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
@@ -220,7 +222,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknTx tx() {
+    public EmbeddedGraknTx<?> tx() {
         return tx;
     }
 
@@ -311,7 +313,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private Stream<IsaAtom> inferEntityTypes(Answer sub) {
-        Set<Var> typedVars = getAtoms(IsaAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        Set<Var> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
                 getAtoms(IdPredicate.class),
                 sub.toPredicates(this).stream().map(IdPredicate.class::cast)
@@ -320,10 +322,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isEntity())
-                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
+                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
-    private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){
+    private Map<Var, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
         HashMap<Var, Type> map = new HashMap<>();
         isas
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
@@ -354,7 +356,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
         return ImmutableMap.copyOf(getVarTypeMap(
                 Stream.concat(
-                        getAtoms(IsaAtom.class),
+                        getAtoms(IsaAtomBase.class),
                         inferEntityTypes(sub)
                 )
                 )
@@ -428,8 +430,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public Answer getSubstitution(){
         if (substitution == null) {
             Set<Var> varNames = getVarNames();
-            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
-                    .map(IsaAtom::getTypePredicate)
+            Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
+                    .map(IsaAtomBase::getTypePredicate)
                     .filter(Objects::nonNull)
                     .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());

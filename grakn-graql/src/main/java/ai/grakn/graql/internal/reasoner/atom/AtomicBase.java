@@ -18,15 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -44,28 +42,7 @@ import java.util.Set;
  */
 public abstract class AtomicBase implements Atomic {
 
-    private final Var varName;
-    private final VarPattern atomPattern;
-    private Pattern combinedPattern = null;
-    private ReasonerQuery parent;
-
-    protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
-        this.atomPattern = pattern;
-        this.varName = pattern.admin().var();
-        this.parent = par;
-    }
-
-    protected AtomicBase(AtomicBase a) {
-        this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.admin().var();
-        this.parent = a.getParentQuery();
-    }
-
-    @Override
-    public abstract Atomic copy();
-
-    @Override
-    public void checkValid(){}
+    @Override public void checkValid(){}
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
@@ -73,35 +50,24 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public String toString(){ return atomPattern.toString(); }
+    public String toString(){ return getPattern().toString(); }
 
-    public boolean containsVar(Var name){ return getVarNames().contains(name);}
+    boolean containsVar(Var name){ return getVarNames().contains(name);}
 
-    public boolean isUserDefined(){ return varName.isUserDefinedName();}
-    
-    @Override
-    public Var getVarName(){ return varName;}
+    public boolean isUserDefined(){ return getVarName().isUserDefinedName();}
 
     @Override
     public Set<Var> getVarNames(){
+        Var varName = getVarName();
         return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
-    @Override
-    public VarPattern getPattern(){ return atomPattern;}
-
-    protected Pattern createCombinedPattern(){ return atomPattern;}
+    protected Pattern createCombinedPattern(){ return getPattern();}
 
     @Override
     public Pattern getCombinedPattern(){
-        if (combinedPattern == null) combinedPattern = createCombinedPattern();
-        return combinedPattern;
+        return createCombinedPattern();
     }
-
-    public ReasonerQuery getParentQuery(){ return parent;}
-
-    @Override
-    public void setParentQuery(ReasonerQuery q){ parent = q;}
 
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
@@ -111,6 +77,9 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected GraknTx tx(){ return getParentQuery().tx();}
+    protected EmbeddedGraknTx<?> tx(){
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
+        return (EmbeddedGraknTx<?>) getParentQuery().tx();
+    }
 }
 

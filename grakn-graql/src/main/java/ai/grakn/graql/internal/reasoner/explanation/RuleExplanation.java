@@ -22,9 +22,9 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Sets;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 /**
  *
@@ -43,7 +43,7 @@ public class RuleExplanation extends Explanation {
         super(q);
         this.rule = rl;
     }
-    private RuleExplanation(ReasonerQuery q, Set<Answer> answers, InferenceRule rl){
+    private RuleExplanation(ReasonerQuery q, List<Answer> answers, InferenceRule rl){
         super(q, answers);
         this.rule = rl;
     }
@@ -56,7 +56,11 @@ public class RuleExplanation extends Explanation {
     @Override
     public AnswerExplanation childOf(Answer ans) {
         AnswerExplanation explanation = ans.getExplanation();
-        return new RuleExplanation(getQuery(), Sets.union(this.getAnswers(), explanation.isLookupExplanation()? Collections.singleton(ans) : explanation.getAnswers()) , getRule());
+        return new RuleExplanation(getQuery(),
+                ReasonerUtils.listUnion(this.getAnswers(), explanation.isLookupExplanation()?
+                        Collections.singletonList(ans) :
+                        explanation.getAnswers()),
+                getRule());
     }
 
     @Override

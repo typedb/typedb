@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -33,8 +34,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.binary.HasAtom;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -177,15 +177,15 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.var().asUserDefined();
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        IdPredicate predicate = new IdPredicate(predicateVar, schemaConcept, parent);
+        ConceptId predicateId = schemaConcept != null? schemaConcept.getId() : null;
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
-        return new HasAtom(resVar, predicateVar, predicate, parent);
+        return HasAtom.create(resVar, predicateVar, predicateId, parent);
     }
 }

@@ -23,18 +23,21 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.GraknKeyspaceStoreFake;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -55,7 +58,7 @@ public class EngineGraknSessionTest {
     private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
+    private static final GraknKeyspaceStoreFake systemKeyspace = GraknKeyspaceStoreFake.of();
 
     private static EngineGraknTxFactory graknFactory;
 
@@ -76,7 +79,9 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
+        GraknKeyspaceStore keyspaceStore = GraknKeyspaceStoreFake.of();
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+        graknFactory.keyspaceStore().loadSystemSchema();
     }
 
     @Test
@@ -85,7 +90,7 @@ public class EngineGraknSessionTest {
 
         GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
         tx1.close();
-        GraknTx tx2 = graknFactory.tx(keyspace, GraknTxType.WRITE);
+        GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
         assertEquals(tx1, tx2);
         tx2.close();
@@ -94,12 +99,13 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknTx tx1 = graknFactory.tx(keyspace, GraknTxType.WRITE);
-        tx1.close();
-        GraknTx tx2 = graknFactory.tx(keyspace, GraknTxType.BATCH);
 
-        assertFalse(tx1.admin().isBatchTx());
-        assertTrue(tx2.admin().isBatchTx());
+        EmbeddedGraknTx<?> tx1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
+        tx1.close();
+        EmbeddedGraknTx<?> tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
+
+        assertFalse(tx1.isBatchTx());
+        assertTrue(tx2.isBatchTx());
 
         tx1.close();
         tx2.close();

@@ -18,13 +18,14 @@
 
 package ai.grakn;
 
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,16 +66,17 @@ public class GraknTest {
 
     @Test
     public void testComputer(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
+        GraknComputer computer = ((EmbeddedGraknSession) Grakn.session(Grakn.IN_MEMORY, "bob")).getGraphComputer();
+        assertThat(computer, instanceOf(GraknComputer.class));
     }
 
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        GraknTxAbstract batchGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());
@@ -86,15 +88,15 @@ public class GraknTest {
     @Test
     public void whenGettingSessionForSameKeyspaceFromMultipleThreads_EnsureSingleSessionIsReturned() throws ExecutionException, InterruptedException {
         Keyspace keyspace = Keyspace.of("myspecialkeyspace");
-        Set<Future> futures = new HashSet<>();
-        Set<GraknSession> sessions = new HashSet<>();
+        Set<Future<?>> futures = ConcurrentHashMap.newKeySet();
+        Set<GraknSession> sessions = ConcurrentHashMap.newKeySet();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 50; i ++){
             futures.add(pool.submit(() -> sessions.add(Grakn.session(Grakn.IN_MEMORY, keyspace))));
         }
 
-        for (Future future : futures) {
+        for (Future<?> future : futures) {
             future.get();
         }
 

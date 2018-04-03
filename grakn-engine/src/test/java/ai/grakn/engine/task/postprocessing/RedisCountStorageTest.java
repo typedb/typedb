@@ -20,6 +20,7 @@ package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -67,7 +68,7 @@ public class RedisCountStorageTest {
 
         for(int i =0; i < counts.length; i ++) {
             int finalI = i;
-            futures.add(pool.submit(() -> redis.adjustCount(
+            futures.add(pool.submit(() -> redis.incrementCount(
                     RedisCountStorage.getKeyNumInstances(keyspace, conceptId), counts[finalI])));
         }
         for (Future future : futures) {
@@ -87,11 +88,11 @@ public class RedisCountStorageTest {
         assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach)));
         assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach), 1);
+        redis.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach), 1);
         assertEquals(1, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, roach)));
         assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, roach)));
 
-        redis.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace2, ciri), 1);
+        redis.incrementCount(RedisCountStorage.getKeyNumInstances(keyspace2, ciri), 1);
         assertEquals(0, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace1, ciri)));
         assertEquals(1, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace2, ciri)));
     }

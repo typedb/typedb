@@ -48,14 +48,14 @@ define
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (parent: $x, child: $z) isa Parent;
 (ancestor: $z, descendant: $y) isa Ancestor;},
 then {
 (ancestor: $x, descendant: $y) isa Ancestor;};
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $y) isa Parent;},
 then {

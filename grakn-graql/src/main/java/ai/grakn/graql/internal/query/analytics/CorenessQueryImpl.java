@@ -57,7 +57,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
     @Override
     String graqlString() {
-        return super.graqlString() + " where k = " + k + ";";
+        return super.graqlString() + " where min-k = " + k + ";";
     }
 
     @Override

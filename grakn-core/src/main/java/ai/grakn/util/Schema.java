@@ -31,10 +31,10 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
@@ -88,9 +88,6 @@ public final class Schema {
         RELATIONSHIP("relationship", 5),
         RULE("rule", 6);
 
-        public static final ImmutableSet<MetaSchema> METATYPES =
-                ImmutableSet.of(THING, ENTITY, ATTRIBUTE, RELATIONSHIP);
-
         private final Label label;
         private final LabelId id;
 
@@ -111,10 +108,16 @@ public final class Schema {
 
         @CheckReturnValue
         public static boolean isMetaLabel(Label label) {
+            return valueOf(label) != null;
+        }
+
+        @Nullable
+        @CheckReturnValue
+        public static MetaSchema valueOf(Label label){
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getLabel().equals(label)) return true;
+                if (metaSchema.getLabel().equals(label)) return metaSchema;
             }
-            return false;
+            return null;
         }
     }
 

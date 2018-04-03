@@ -23,14 +23,14 @@ name sub attribute, datatype string;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 $x isa Human;},
 then {
 (SG-role: $x, SG-role: $x) isa SameGen;
 };
 
-rule-2 sub rule,
+rule-2
 when {
 (parent: $x, child: $u) isa Parent;
 (parent: $y, child: $v) isa Parent;

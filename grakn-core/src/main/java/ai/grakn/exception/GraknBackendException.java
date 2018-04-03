@@ -47,8 +47,12 @@ public class GraknBackendException extends GraknException {
         super(error, e);
     }
 
-    protected GraknBackendException(String error){
+    GraknBackendException(String error){
         super(error);
+    }
+
+    public static GraknBackendException create(String error) {
+        return new GraknBackendException(error);
     }
 
     /**
@@ -63,7 +67,7 @@ public class GraknBackendException extends GraknException {
      * Thrown when engine cannot be reached.
      */
     public static GraknBackendException cannotReach(URI uri){
-        return new GraknBackendException(COULD_NOT_REACH_ENGINE.getMessage(uri));
+        return create(COULD_NOT_REACH_ENGINE.getMessage(uri));
     }
 
     public static GraknBackendException serverStartupException(String message, Exception e){
@@ -74,21 +78,21 @@ public class GraknBackendException extends GraknException {
      * Thrown when trying to convert a {@link Concept} into a response object and failing to do so.
      */
     public static GraknBackendException convertingUnknownConcept(Concept concept){
-        return new GraknBackendException(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
+        return create(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
     }
 
     public static GraknBackendException initializationException(Keyspace keyspace) {
-        return new GraknBackendException(INITIALIZATION_EXCEPTION.getMessage(keyspace));
+        return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
     public static GraknBackendException noSuchKeyspace(Keyspace keyspace) {
-        return new GraknBackendException("No such keyspace " + keyspace);
+        return create("No such keyspace " + keyspace);
     }
 
     /**
      * Thrown when there is a migration failure due to a backend failure
      */
     public static GraknBackendException migrationFailure(String exception){
-        return new GraknBackendException("Error on backend has stopped migration: " + exception);
+        return create("Error on backend has stopped migration: " + exception);
     }
 }

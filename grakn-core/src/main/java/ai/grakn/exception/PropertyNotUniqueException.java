@@ -47,12 +47,16 @@ public class PropertyNotUniqueException extends GraknTxOperationException {
         super(error);
     }
 
+    public static PropertyNotUniqueException create(String error) {
+        return new PropertyNotUniqueException(error);
+    }
+
     /**
      * Thrown when trying to set the property of concept {@code mutatingConcept} to a {@code value} which is already
      * taken by concept {@code conceptWithValue}
      */
     public static PropertyNotUniqueException cannotChangeProperty(Element mutatingConcept, Vertex conceptWithValue, Enum property, Object value){
-        return new PropertyNotUniqueException(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
+        return create(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
     }
 
     /**
@@ -60,6 +64,6 @@ public class PropertyNotUniqueException extends GraknTxOperationException {
      * For example this happens when using an already taken {@link Label}
      */
     public static PropertyNotUniqueException cannotCreateProperty(Concept concept, Schema.VertexProperty property, Object value){
-        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, concept));
+        return create(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, concept));
     }
 }

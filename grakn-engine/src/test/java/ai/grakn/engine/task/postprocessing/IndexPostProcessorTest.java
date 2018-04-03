@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.task.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,12 +82,10 @@ public class IndexPostProcessorTest {
         //Setup mocks
         Keyspace keyspace = Keyspace.of("whatakeyspace");
 
-        GraknAdmin admin = mock(GraknAdmin.class);
-        when(admin.duplicateResourcesExist(any(), any())).thenReturn(true);
+        EmbeddedGraknTx<?> tx = mock(EmbeddedGraknTx.class);
+        when(tx.duplicateResourcesExist(any(), any())).thenReturn(true);
 
-        GraknTx tx = mock(GraknTx.class);
         when(tx.keyspace()).thenReturn(keyspace);
-        when(tx.admin()).thenReturn(admin);
 
         String index = "index1";
         Set<ConceptId> ids = Stream.of("a", "b", "c").map(ConceptId::of).collect(Collectors.toSet());
@@ -96,6 +94,6 @@ public class IndexPostProcessorTest {
         indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
 
         //Check method calls
-        verify(admin, Mockito.times(1)).fixDuplicateResources(index, ids);
+        verify(tx, Mockito.times(1)).fixDuplicateResources(index, ids);
     }
 }

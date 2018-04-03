@@ -37,6 +37,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrec
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 
 public class CSVMigratorMainTest {
@@ -70,6 +71,12 @@ public class CSVMigratorMainTest {
     @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
         run("-u", engine.uri().toString(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+    }
+
+    @Test
+    public void whenAFailureOccursDuringLoading_PrintError(){
+        run("-u", engine.uri().toString(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+        assertThat(sysErr.getLog(), anyOf(containsString("bob"), containsString("fridge"), containsString("potato")));
     }
 
     @Test
@@ -127,6 +134,13 @@ public class CSVMigratorMainTest {
         run();
 
         assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
+    }
+
+    @Test
+    public void csvMigratorCalled_PrintsNumberOfQueriesExecuted(){
+        run("-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
+
+        assertThat(sysOut.getLog(), containsString("Loaded 9 statements"));
     }
 
     @Test

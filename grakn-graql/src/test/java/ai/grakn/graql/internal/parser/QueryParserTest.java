@@ -39,7 +39,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
@@ -50,7 +51,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -425,6 +425,46 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingAsInDefine_ResultIsSameAsSub() {
+        DefineQuery expected = define(
+                label("parent").sub("role"),
+                label("child").sub("role"),
+                label("parenthood").sub("relationship")
+                        .relates(var().label("parent"))
+                        .relates(var().label("child")),
+                label("fatherhood").sub("parenthood")
+                        .relates(label("father"), label("parent"))
+                        .relates(label("son"), label("child"))
+        );
+
+        DefineQuery parsed = parse("define " +
+                "parent sub role;\n" +
+                "child sub role;\n" +
+                "parenthood sub relationship, relates parent, relates child;\n" +
+                "fatherhood sub parenthood, relates father as parent, relates son as child;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
+    public void whenParsingAsInMatch_ResultIsSameAsSub() {
+        GetQuery expected = match(
+                label("fatherhood").sub("parenthood")
+                        .relates(var("x"), label("parent"))
+                        .relates(label("son"), var("y"))
+        ).get();
+
+        GetQuery parsed = parse("match " +
+                "fatherhood sub parenthood, relates $x as parent, relates son as $y; get;"
+        );
+
+        assertEquals(expected, parsed);
+        assertEquals(expected, parse(expected.toString()));
+    }
+
+    @Test
     public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
         DefineQuery expected = define(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
@@ -525,6 +565,11 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenQueryToStringWithKeyword_EscapeKeywordWithQuotes() {
+        assertEquals("match $x isa \"date\"; get $x;", match(var("x").isa("date")).get().toString());
+    }
+
+    @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse(
@@ -616,40 +661,75 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputeCluster() {
-        assertParseEquivalence("compute cluster in movie, person; members;");
+    public void testParseComputeClusterUsingCC() {
+        assertParseEquivalence("compute cluster in movie, person; using connected-component;");
     }
 
     @Test
-    public void testParseComputeClusterWithMembersThenSize() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").members().clusterSize(10);
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; members; size 10;");
+    public void testParseComputeClusterUsingCCWithMembers() {
+        assertParseEquivalence("compute cluster in movie, person; using connected-component where members = true;");
+    }
+
+    @Test
+    public void testParseComputeClusterUsingCCWithMembersThenSize() {
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").membersOn().clusterSize(10);
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where members = true size = 10;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testParseComputeClusterWithSizeThenMembers() {
-        ClusterQuery<?> expected = Graql.compute().cluster().in("movie", "person").clusterSize(10).members();
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members;");
+    public void testParseComputeClusterUsingCCWithSizeThenMembers() {
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn();
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where size = 10 members=true;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testParseComputeClusterWithSizeThenMembersThenSize() {
-        ClusterQuery<?> expected =
-                Graql.compute().cluster().in("movie", "person").clusterSize(10).members().clusterSize(15);
+    public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
+        ConnectedComponentQuery<?> expected =
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn().clusterSize(15);
 
-        ClusterQuery<?> parsed = Graql.parse("compute cluster in movie, person; size 10; members; size 15;");
+        ConnectedComponentQuery<?> parsed = Graql.parse(
+                "compute cluster in movie, person; using connected-component where size = 10 members = true size = 15;");
 
         assertEquals(expected, parsed);
     }
 
-    @Ignore //TODO: Fix this
+    @Test
+    public void testParseComputeClusterUsingKCore() {
+        assertParseEquivalence("compute cluster in movie, person; using k-core;");
+    }
+
+    @Test
+    public void testParseComputeClusterUsingKCoreWithK() {
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery parsed = Graql.parse(
+                "compute cluster in movie, person; using k-core where k = 10;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseComputeClusterUsingKCoreWithKTwice() {
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery parsed = Graql.parse(
+                "compute cluster in movie, person; using k-core where k = 5 k = 10;");
+
+        assertEquals(expected, parsed);
+    }
+
     @Test
     public void testParseComputeDegree() {
         assertParseEquivalence("compute centrality in movie; using degree;");
+    }
+
+    @Test
+    public void testParseComputeCoreness() {
+        assertParseEquivalence("compute centrality in movie; using k-core where min-k = 3;");
     }
 
     @Test
@@ -1047,8 +1127,6 @@ public class QueryParserTest {
         parser.defineAllVars(true);
         GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
 
-        System.out.println(query);
-
         Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
 
         Set<PatternAdmin> patterns = conjunction.getPatterns();
@@ -1060,6 +1138,13 @@ public class QueryParserTest {
         IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
         assertFalse(property.type().var().isUserDefinedName());
+    }
+
+    @Test
+    public void whenValueEqualityToString_CreateValidQueryString() {
+        Query<?> query = match(var("x").val(eq(var("y")))).get();
+
+        assertEquals(query, Graql.parse(query.toString()));
     }
 
     private static void assertParseEquivalence(String query) {

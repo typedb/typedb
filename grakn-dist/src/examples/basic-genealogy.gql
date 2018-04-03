@@ -438,13 +438,13 @@ then
 inLaws3 sub rule
 when
 {(husband: $x, wife: $y) isa marriage;
-(father: $il, child: $y) isa parentship;}
+(father: $il, child: $x) isa parentship;}
 then
 {(father-in-law: $il, daughter-in-law: $y) isa in-laws;};
 
 inLaws4 sub rule
 when
 {(husband: $x, wife: $y) isa marriage;
-(mother: $il, child: $y) isa parentship;}
+(mother: $il, child: $x) isa parentship;}
 then
 {(mother-in-law: $il, daughter-in-law: $y) isa in-laws;};

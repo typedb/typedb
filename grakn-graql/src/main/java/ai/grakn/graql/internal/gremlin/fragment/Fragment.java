@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
@@ -27,6 +26,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -161,10 +161,10 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param graph     the graph to execute the traversal on
+     * @param tx     the graph to execute the traversal on
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx,
             Collection<Var> vars, @Nullable Var currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
@@ -183,7 +183,7 @@ public abstract class Fragment {
 
         vars.add(start());
 
-        traversal = applyTraversalInner(traversal, graph, vars);
+        traversal = applyTraversalInner(traversal, tx, vars);
 
         Var end = end();
         if (end != null) {
@@ -207,11 +207,11 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param graph     the graph to execute the traversal on
+     * @param tx     the {@link EmbeddedGraknTx} to execute the traversal on
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx, Collection<Var> vars);
 
 
     /**
@@ -252,7 +252,7 @@ public abstract class Fragment {
         return this;
     }
 
-    public Optional<Long> getShardCount(GraknTx tx) {
+    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
         return Optional.empty();
     }
 

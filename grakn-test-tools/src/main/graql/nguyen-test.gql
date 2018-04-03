@@ -36,13 +36,13 @@ index sub attribute, datatype string;
 ##################RULES#############################
 ####################################################
 
-rule-1 sub rule,
+rule-1
 when {
 (R-rA: $x, R-rB: $y) isa R;},
 then {
 (N-rA: $x, N-rB: $y) isa N;};
 
-rule-2 sub rule,
+rule-2
 when {
 (P-rA: $x, P-rB: $z) isa P;
 (N-rA: $z, N-rB: $w) isa N;
@@ -50,7 +50,7 @@ when {
 then {
 (N-rA: $x, N-rB: $y) isa N;};
 
-rule-3 sub rule,
+rule-3
 when {
 (N-rA: $x, N-rB: $y) isa N;
 $x has index 'c';},

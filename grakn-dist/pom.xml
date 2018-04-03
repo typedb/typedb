@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -91,7 +91,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>janus-factory</artifactId>
+            <artifactId>grakn-factory</artifactId>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->

@@ -41,6 +41,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,8 +77,8 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
-                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np.label(), parent)) :
-                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np.id(), parent)))
+                        v.getProperties(LabelProperty.class).map(np -> IdPredicate.create(typeVariable, np.label(), parent)) :
+                        v.getProperties(IdProperty.class).map(np -> IdPredicate.create(typeVariable, np.id(), parent)))
                 .findFirst().orElse(null);
     }
 
@@ -98,7 +99,7 @@ public class ReasonerUtils {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
-            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp.label(), parent);
+            if (nameProp != null) predicate = IdPredicate.create(typeVariable, nameProp.label(), parent);
         }
         return predicate;
     }
@@ -117,14 +118,14 @@ public class ReasonerUtils {
         if(valueVar.var().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.var().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.var(), vp.predicate(), parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(v.var(), vp.predicate(), parent)))
                     .forEach(predicates::add);
         }
         //add value atom
         else {
             valueVar.getProperties(ValueProperty.class)
                     .forEach(vp -> predicates
-                            .add(new ValuePredicate(createValueVar(valueVariable, vp.predicate()), parent)));
+                            .add(ValuePredicate.create(createValueVar(valueVariable, vp.predicate()), parent)));
         }
         return predicates;
     }
@@ -310,5 +311,18 @@ public class ReasonerUtils {
         ArrayList<T> list = new ArrayList<>(a);
         b.forEach(list::remove);
         return list;
+    }
+
+    /**
+     *
+     * @param a union left operand
+     * @param b union right operand
+     * @param <T> list type
+     * @return new list being a union of the two operands
+     */
+    public static <T> List<T> listUnion(List<T> a, List<T> b){
+        List<T> union = new ArrayList<>(a);
+        union.addAll(b);
+        return union;
     }
 }

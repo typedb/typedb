@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -149,7 +149,7 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
-    @Nonnull
+    @Nullable
     EntityType sup();
 
     /**
@@ -158,7 +158,7 @@ public interface EntityType extends Type{
      * @return All the super classes of this EntityType
      */
     @Override
-    Stream<EntityType> sups();
+    Stream<? extends EntityType> sups();
 
     /**
      * Returns a collection of subtypes of this EntityType.
@@ -166,7 +166,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Stream<EntityType> subs();
+    Stream<? extends EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.

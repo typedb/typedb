@@ -18,10 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -34,13 +31,16 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
-import org.junit.BeforeClass;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -71,8 +71,6 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class GraqlTraversalTest {
 
@@ -89,32 +87,18 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x, true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static GraknTx tx;
+    private static EmbeddedGraknTx<?> tx;
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
-    @BeforeClass
-    public static void setUp() {
-        tx = mock(GraknTx.class);
+    @ClassRule
+    public static final SampleKBContext context = SampleKBContext.load(graph -> {
+        Role wife = graph.putRole("wife");
+        graph.putRelationshipType("marriage").relates(wife);
+    });
 
-        // We have to mock out the `subTypes` call because the role-player edge optimisation checks it
-
-        Label wifeLabel = Label.of("wife");
-        Role wife = mock(Role.class);
-        when(wife.isRole()).thenReturn(true);
-        when(wife.asRole()).thenReturn(wife);
-        when(wife.subs()).thenAnswer(inv -> Stream.of(wife));
-        when(wife.getLabel()).thenReturn(wifeLabel);
-
-        when(tx.getSchemaConcept(wifeLabel)).thenReturn(wife);
-
-        Label marriageLabel = Label.of("marriage");
-        RelationshipType marriage = mock(RelationshipType.class);
-        when(marriage.isRelationshipType()).thenReturn(true);
-        when(marriage.asRelationshipType()).thenReturn(marriage);
-        when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
-        when(marriage.getLabel()).thenReturn(marriageLabel);
-
-        when(tx.getSchemaConcept(marriageLabel)).thenReturn(marriage);
+    @Before
+    public void setUp() {
+        tx = context.tx();
     }
 
     @Test

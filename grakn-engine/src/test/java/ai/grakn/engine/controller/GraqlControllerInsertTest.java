@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -30,6 +29,7 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -68,7 +68,7 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerInsertTest {
 
-    private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+    private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
@@ -111,15 +111,15 @@ public class GraqlControllerInsertTest {
 
         Query<?> query = tx.graql().parser().parseQuery(queryString);
 
-        InOrder inOrder = inOrder(query, tx.admin());
+        InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        inOrder.verify(tx, times(1)).commitSubmitNoLogs();
     }
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseStatusIs400() {
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
         String query = "insert $x isa ;";
@@ -130,7 +130,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError() {
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
+        GraqlSyntaxException syntaxError = GraqlSyntaxException.create("syntax error");
         when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
 
         String query = "insert $x isa ;";
@@ -203,11 +203,11 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled() {
         String query = "define thingy sub entity;";
 
-        verify(tx.admin(), times(0)).commitSubmitNoLogs();
+        verify(tx, times(0)).commitSubmitNoLogs();
 
         sendRequest(query);
 
-        verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        verify(tx, times(1)).commitSubmitNoLogs();
     }
 
     @Test
@@ -215,7 +215,7 @@ public class GraqlControllerInsertTest {
         String query = "insert $x isa person has name 'Alice';";
 
         CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
+        when(tx.commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 

@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -137,7 +137,7 @@ public interface RelationshipType extends Type {
      * @return The direct supertype of this {@link RelationshipType}
      */
     @Override
-    @Nonnull
+    @Nullable
     RelationshipType sup();
 
     /**

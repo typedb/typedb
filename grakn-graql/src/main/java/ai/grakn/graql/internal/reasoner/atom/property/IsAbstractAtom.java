@@ -19,9 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
+import com.google.auto.value.AutoValue;
 
 /**
  *
@@ -32,25 +35,22 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  * @author Kasper Piskorski
  *
  */
-public class IsAbstractAtom extends AtomicBase {
+@AutoValue
+public abstract class IsAbstractAtom extends AtomicBase {
 
-    public IsAbstractAtom(Var varName, ReasonerQuery parent){
-        super(varName.isAbstract().admin(), parent);
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    public static IsAbstractAtom create(Var varName, ReasonerQuery parent) {
+        return new AutoValue_IsAbstractAtom(varName, varName.isAbstract().admin(), parent);
     }
 
-    private IsAbstractAtom(IsAbstractAtom a){ super(a);}
+    private static IsAbstractAtom create(IsAbstractAtom a, ReasonerQuery parent) {
+        return new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern(), parent);
+    }
 
     @Override
-    public boolean equals(Object obj){
-        return !(obj == null || this.getClass() != obj.getClass());
-    }
-
-    @Override
-    public int hashCode(){
-        int hashCode = alphaEquivalenceHashCode();
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        return hashCode;
-    }
+    public Atomic copy(ReasonerQuery parent) { return create(this, parent); }
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
@@ -69,8 +69,5 @@ public class IsAbstractAtom extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
-
-    @Override
-    public Atomic copy() { return new IsAbstractAtom(this); }
 
 }

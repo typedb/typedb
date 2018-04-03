@@ -369,7 +369,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             int index = this.visitInt_(ctx.int_());
 
             if (index >= list.size() || index < 0) {
-                throw GraqlSyntaxException.parsingError("Index [" + index + "] out of bounds for list " + list);
+                throw GraqlSyntaxException.create("Index [" + index + "] out of bounds for list " + list);
             }
 
             return list.get(index);

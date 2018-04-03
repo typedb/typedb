@@ -2,7 +2,7 @@
 title: Building the schema (Continued)
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will complete your first GRAKN schema, adding roles to what you have built in the last lesson.
+summary: In this lesson you will complete your first Grakn schema, adding roles to what you have built in the last lesson.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/schema-building-continued.html
@@ -110,13 +110,13 @@ define
 "distance-from-coast" sub attribute datatype long;
 ```
 
-Congratulations! You have built your first working GRAKN schema! Of course, this is just a starting point and when you start putting data into your knowledge base you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into GRAKN as is (you will learn how in the next module of the Academy). There is one more topic you need to learn about before going on to the module review. Let's have a look at how we can modify a Grakn schema.
+Congratulations! You have built your first working Grakn schema! Of course, this is just a starting point and when you start putting data into your knowledge graph you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into Grakn as is (you will learn how in the next module of the Academy). There is one more topic you need to learn about before going on to the module review. Let's have a look at how we can modify a Grakn schema.
 
 
 ## Changing the schema
 One of the best features of Grakn schemas is the fact that they are flexible. At any point in time you can add types, attribute to types roles and so on.
 
-But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand articles in your knowledge base and suddently you delete the type `article`. What would happen to all those articles? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
+But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand articles in your knowledge graph and suddently you delete the type `article`. What would happen to all those articles? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
 
 Once you have done that, you are free to modify your schema as you see fit. In order to undo something that is defined in your schema, you need to use the keyword `undefine`. Do you want to remove the type `article`?
 
@@ -134,4 +134,4 @@ And so on and so forth. Notice that in the first example, you do not simply `und
 
 
 ## What next?
-First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about GRAKN schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
+First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about Grakn schemas; after that it will be time to load data and our knowledge graph will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the Graql basics.

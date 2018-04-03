@@ -18,10 +18,9 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,15 +30,14 @@ import java.util.Set;
 public class PostProcessingTestUtils {
 
     @SuppressWarnings("unchecked")
-    static <T> Set<Vertex> createDuplicateResource(GraknTx graknTx, AttributeType<T> attributeType, Attribute<T> attribute) {
-        GraknTxAbstract<?> graph = (GraknTxAbstract<?>) graknTx;
-        Vertex originalResource = graph.getTinkerTraversal().V()
+    static <T> Set<Vertex> createDuplicateResource(EmbeddedGraknTx<?> graknTx, AttributeType<T> attributeType, Attribute<T> attribute) {
+        Vertex originalResource = graknTx.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
-        Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V().
+        Vertex vertexResourceTypeShard = graknTx.getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
+        Vertex resourceVertex = graknTx.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), originalResource.value(Schema.VertexProperty.VALUE_STRING.name()));
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id());
@@ -47,7 +45,7 @@ public class PostProcessingTestUtils {
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
         // This is done to push the concept into the cache
         //noinspection ResultOfMethodCallIgnored
-        graknTx.admin().buildConcept(resourceVertex);
+        graknTx.buildConcept(resourceVertex);
         return Sets.newHashSet(originalResource, resourceVertex);
     }
 }

@@ -18,10 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -34,9 +31,11 @@ import ai.grakn.engine.task.BackgroundTask;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.RedisIndexStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
@@ -62,7 +61,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
     private PostProcessor postProcessor;
-    private GraknSession session;
+    private EmbeddedGraknSession session;
 
     private static GraknConfig config;
     static {
@@ -86,7 +85,7 @@ public class PostProcessingTest {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(engine.server().lockProvider(), indexStorage);
 
         RedisCountStorage countStorage = RedisCountStorage.create(engine.getJedisPool(), metricRegistry);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(engine.config(), engine.server().factory(), engine.server().lockProvider(), metricRegistry, countStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(engine.config(), engine.factory(), engine.server().lockProvider(), metricRegistry, countStorage);
 
         session = engine.sessionWithNewKeyspace();
         postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
@@ -103,11 +102,11 @@ public class PostProcessingTest {
         String sample = "Sample";
 
         //Create GraknTx With Duplicate Resources
-        GraknTx tx = session.open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> tx = session.open(GraknTxType.WRITE);
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.putAttribute(value);
-        tx.admin().commitSubmitNoLogs();
+        tx.commitSubmitNoLogs();
         tx = session.open(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());
@@ -191,10 +190,10 @@ public class PostProcessingTest {
         EntityType et2;
 
         //Create Simple GraknTx
-        try (GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
-            graknTx.admin().commitSubmitNoLogs();
+            graknTx.commitSubmitNoLogs();
         }
 
         checkShardCount(keyspace, et1, 1);
@@ -216,8 +215,8 @@ public class PostProcessingTest {
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
-            int shards = graknTx.admin().getTinkerTraversal().V().
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
+            int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 

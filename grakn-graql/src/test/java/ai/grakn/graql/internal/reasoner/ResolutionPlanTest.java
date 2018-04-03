@@ -30,14 +30,16 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -53,7 +55,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -72,7 +74,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void prioritiseMostSubbedRelations() {
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -92,7 +94,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void prioritiseSpecificResourcesOverRelations(){
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -112,7 +114,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void prioritiseSpecificResourcesOverNonSpecific(){
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -134,7 +136,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -158,7 +160,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
                 "(role1:$y, role2: $z) isa anotherRelation;" +
@@ -183,7 +185,7 @@ public class ResolutionPlanTest {
 
     @Test
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
-        GraknTx testTx = testContext.tx();
+        EmbeddedGraknTx<?> testTx = testContext.tx();
         Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x").findAny().orElse(null);
         String basePatternString =
                 "(role1:$x, role2: $y) isa relation;" +

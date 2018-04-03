@@ -19,20 +19,20 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -57,22 +57,22 @@ public class CountPostProcessorTest {
     private final Map<ConceptId, Long> newInstanceCounts = new HashMap<>();
     private final Keyspace keyspace = SampleKBLoader.randomKeyspace();
 
-    @BeforeClass
-    public static void setupMocks(){
+    @Before
+    public void setupMocks(){
         countStorage = mock(RedisCountStorage.class);
         when(countStorage.getCount(any())).thenReturn(1L);
 
         configMock = mock(GraknConfig.class);
         when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(5L);
 
-        SystemKeyspace systemKeyspaceMock = mock(SystemKeyspace.class);
-        when(systemKeyspaceMock.containsKeyspace(any())).thenReturn(true);
+        GraknKeyspaceStore graknKeyspaceStoreMock = mock(GraknKeyspaceStore.class);
+        when(graknKeyspaceStoreMock.containsKeyspace(any())).thenReturn(true);
 
-        GraknTx txMock = mock(GraknTx.class);
+        EmbeddedGraknTx txMock = mock(EmbeddedGraknTx.class);
         when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
 
         factoryMock = mock(EngineGraknTxFactory.class);
-        when(factoryMock.systemKeyspace()).thenReturn(systemKeyspaceMock);
+        when(factoryMock.keyspaceStore()).thenReturn(graknKeyspaceStoreMock);
         when(factoryMock.tx(any(Keyspace.class), any())).thenReturn(txMock);
 
         lockProviderMock = mock(LockProvider.class);
@@ -102,12 +102,12 @@ public class CountPostProcessorTest {
         //Check the calls
         newInstanceCounts.forEach((id, value) -> {
             //Redis is updated
-            verify(countStorage, Mockito.times(1)).getCount(RedisCountStorage.getKeyNumShards(keyspace, id));
-            verify(countStorage, Mockito.times(1)).adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), value);
-
-            //No Sharding takes place
-            verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
+            verify(countStorage, Mockito.times(1)).getShardCount(keyspace, id);
+            verify(countStorage, Mockito.times(1)).incrementInstanceCount(keyspace, id, value);
         });
+
+        //No Sharding takes place
+        verify(factoryMock, Mockito.times(0)).tx(any(Keyspace.class), any());
     }
 
     @Test
@@ -115,8 +115,8 @@ public class CountPostProcessorTest {
         //Configure mock to return value which breaches threshold
         ConceptId id = ConceptId.of("e");
         newInstanceCounts.put(id, 6L);
-        when(countStorage.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 6L)).thenReturn(6L);
-        when(countStorage.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 0L)).thenReturn(6L);
+        when(countStorage.incrementInstanceCount(keyspace, id, 6L)).thenReturn(6L);
+        when(countStorage.incrementInstanceCount(keyspace, id, 0L)).thenReturn(6L);
 
         //Create fake commit log
         CommitLog commitLog = CommitLog.create(keyspace, newInstanceCounts, Collections.emptyMap());
@@ -126,6 +126,6 @@ public class CountPostProcessorTest {
 
         //Check Sharding Takes Place
         verify(factoryMock, Mockito.times(1)).tx(keyspace, GraknTxType.WRITE);
-        verify(countStorage, Mockito.times(1)).adjustCount(RedisCountStorage.getKeyNumShards(keyspace, id), 1);
+        verify(countStorage, Mockito.times(1)).incrementShardCount(keyspace, id, 1);
     }
 }

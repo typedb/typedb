@@ -38,6 +38,7 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -182,7 +183,7 @@ public class GraqlController implements HttpController {
         LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
-            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+            try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
 
@@ -253,8 +254,10 @@ public class GraqlController implements HttpController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
-        Printer printer = this.printer;
+    private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+
+        // By default use Jackson printer
+        Printer<?> printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
 
@@ -273,12 +276,19 @@ public class GraqlController implements HttpController {
             if (skipSerialisation) {
                 formatted = "";
             } else {
-                formatted = printer.graqlString(executeAndMonitor(query));
+                // If acceptType is 'application/text' add new line after every result
+                if (APPLICATION_TEXT.equals(acceptType)) {
+                    formatted = query.results(printer).collect(Collectors.joining("\n"));
+                } else {
+                    // If acceptType is 'application/json' map results to JSON representation
+                    formatted = printer.graqlString(executeAndMonitor(query));
+                }
+
             }
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.admin().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

@@ -38,8 +38,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.EngineContext;
-import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import org.junit.Before;
@@ -94,7 +94,7 @@ public class BenchmarkIT {
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
             for(int i = 0 ; i < N ;i++){
                 InsertQuery entityInsert = Graql.insert(var().asUserDefined().isa(entityLabel));
-                loader.add(entityInsert, keyspace).subscribe();
+                loader.add(entityInsert, keyspace);
             }
         }
     }
@@ -128,7 +128,7 @@ public class BenchmarkIT {
                         .isa(Graql.label(relationType.getLabel()))
                         .and(fromRolePlayer.asUserDefined().id(instances[from]))
                         .and(toRolePlayer.asUserDefined().id(instances[to]));
-                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe();
+                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
             }
             tx.close();
         }
@@ -186,7 +186,6 @@ public class BenchmarkIT {
                 Var toVar = Graql.var().asUserDefined();
                 VarPattern rulePattern = Graql
                         .label("rule" + i)
-                        .sub("rule")
                         .when(
                                 Graql.and(
                                         Graql.var()
@@ -231,7 +230,7 @@ public class BenchmarkIT {
                                 .has(attributeLabel, "first")
                                 .id(instances[0])
                                 .admin().varPatterns()
-                ), keyspace).subscribe();
+                ), keyspace);
 
                 for(int i = 1; i < instances.length; i++){
                     Var fromRolePlayer = Graql.var();
@@ -243,12 +242,12 @@ public class BenchmarkIT {
                             .isa(Graql.label(baseRelation.getLabel()))
                             .and(fromRolePlayer.asUserDefined().id(instances[i - 1]))
                             .and(toRolePlayer.asUserDefined().id(instances[i]));
-                    loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe();
+                    loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
 
                     Pattern resourceInsert = Graql.var().asUserDefined()
                             .has(attributeLabel, String.valueOf(i))
                             .id(instances[i]);
-                    loader.add(Graql.insert(resourceInsert.admin().varPatterns()), keyspace).subscribe();
+                    loader.add(Graql.insert(resourceInsert.admin().varPatterns()), keyspace);
                 }
             }
         }

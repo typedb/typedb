@@ -28,11 +28,12 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -46,7 +47,9 @@ import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,6 +59,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -63,18 +67,18 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Felix Chapman
  */
-@SuppressWarnings("unused") // accessed via reflection in GraknTxAbstract
+@SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
 public class TinkerQueryRunner implements QueryRunner {
 
     private final GraknTx tx;
     private final TinkerComputeQueryRunner tinkerComputeQueryRunner;
 
-    private TinkerQueryRunner(GraknTx tx) {
+    private TinkerQueryRunner(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
         this.tinkerComputeQueryRunner = TinkerComputeQueryRunner.create(tx);
     }
 
-    public static TinkerQueryRunner create(GraknTx tx) {
+    public static TinkerQueryRunner create(EmbeddedGraknTx<?> tx) {
         return new TinkerQueryRunner(tx);
     }
 
@@ -89,11 +93,18 @@ public class TinkerQueryRunner implements QueryRunner {
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
-        return query.admin().match().map(
-                match -> match.stream().map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer))
-        ).orElseGet(
-                () -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx))
-        );
+        return query.admin().match()
+                .map(match -> runMatchInsert(match, varPatterns))
+                .orElseGet(() -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx)));
+    }
+
+    private Stream<Answer> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
+        Set<Var> varsInMatch = match.admin().getSelectedNames();
+        Set<Var> varsInInsert = varPatterns.stream().map(VarPatternAdmin::var).collect(toImmutableSet());
+        Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
+
+        Stream<Answer> answers = match.get(projectedVars).stream();
+        return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer));
     }
 
     @Override
@@ -126,7 +137,7 @@ public class TinkerQueryRunner implements QueryRunner {
     }
 
     @Override
-    public <T> ComputeJob<T> run(ClusterQuery<T> query) {
+    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
         return tinkerComputeQueryRunner.run(query);
     }
 

@@ -150,7 +150,7 @@ public class RedisWrapper {
             if (useSentinel) {
                 jedisPool = new JedisSentinelPool(masterName, uriSet, poolConfig, TIMEOUT);
             } else {
-                String uri = uriSet.stream().findFirst().get();
+                String uri = uriSet.iterator().next();
                 SimpleURI simpleURI = SimpleURI.withDefaultPort(uri, DEFAULT_PORT);
                 jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort(),
                         TIMEOUT);

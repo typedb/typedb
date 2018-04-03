@@ -24,7 +24,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -162,7 +161,7 @@ public interface AttributeType<D> extends Type {
      * @return The supertype of this {@link AttributeType},
      */
     @Override
-    @Nonnull
+    @Nullable
     AttributeType<D> sup();
 
     /**
@@ -205,6 +204,7 @@ public interface AttributeType<D> extends Type {
      *
      * @return The data type to which instances of this {@link Attribute}  must conform.
      */
+    @Nullable
     @CheckReturnValue
     DataType<D> getDataType();
 
@@ -285,7 +285,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraknTxOperationException.invalidResourceValue(o, LONG);
+                        throw GraknTxOperationException.invalidAttributeValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

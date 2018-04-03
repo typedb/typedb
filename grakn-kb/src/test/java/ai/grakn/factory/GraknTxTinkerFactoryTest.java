@@ -18,13 +18,12 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
@@ -47,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class GraknTxTinkerFactoryTest {
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
-    private final static GraknSession session = mock(GraknSession.class);
+    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private TxFactory tinkerGraphFactory;
 
 
@@ -68,26 +67,26 @@ public class GraknTxTinkerFactoryTest {
     public void whenBuildingGraphUsingTinkerFactory_ReturnGraknTinkerGraph() throws Exception {
         GraknTx graph = tinkerGraphFactory.open(GraknTxType.WRITE);
         assertThat(graph, instanceOf(GraknTxTinker.class));
-        assertThat(graph, instanceOf(GraknTxAbstract.class));
+        assertThat(graph, instanceOf(EmbeddedGraknTx.class));
     }
 
     @Test
-    public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
-        GraknTx graph1 = tinkerGraphFactory.open(GraknTxType.WRITE);
-        TinkerGraph tinkerGraph1 = ((GraknTxTinker) graph1).getTinkerPopGraph();
-        graph1.close();
-        GraknTx graph1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
-        graph1_copy.close();
+    public void whenBuildingTxFromTheSameFactory_ReturnSingletonGraphs(){
+        GraknTx tx1 = tinkerGraphFactory.open(GraknTxType.WRITE);
+        TinkerGraph tinkerGraph1 = ((GraknTxTinker) tx1).getTinkerPopGraph();
+        tx1.close();
+        GraknTx tx1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
+        tx1_copy.close();
 
-        GraknTx graph2 = tinkerGraphFactory.open(GraknTxType.BATCH);
-        TinkerGraph tinkerGraph2 = ((GraknTxTinker) graph2).getTinkerPopGraph();
-        graph2.close();
-        GraknTx graph2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
+        GraknTx tx2 = tinkerGraphFactory.open(GraknTxType.BATCH);
+        TinkerGraph tinkerGraph2 = ((GraknTxTinker) tx2).getTinkerPopGraph();
+        tx2.close();
+        GraknTx tx2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
 
-        assertEquals(graph1, graph1_copy);
-        assertEquals(graph2, graph2_copy);
+        assertEquals(tx1, tx1_copy);
+        assertEquals(tx2, tx2_copy);
 
-        assertNotEquals(graph1, graph2);
+        assertNotEquals(tx1, tx2);
         assertEquals(tinkerGraph1, tinkerGraph2);
     }
 

@@ -62,7 +62,7 @@ public class GraknQueryHandlersTest extends TestCase {
         super.setUp();
 
         // connect to the graph
-        graknSession =  Grakn.session(GraknSession.DEFAULT_URI, "snb");
+        graknSession =  Grakn.session(Grakn.DEFAULT_URI, "snb");
 
         // mock the graph connection
         mockConnectionState = mock(GraknDbConnectionState.class);

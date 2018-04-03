@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
@@ -68,8 +68,6 @@
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
-        <websocket.version>1.1</websocket.version>
-        <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
         <redis-mock.version>0.1.5</redis-mock.version>
@@ -209,12 +207,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -229,7 +227,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -239,8 +237,8 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>janus-factory</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <artifactId>grakn-factory</artifactId>
+                <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -263,13 +261,8 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-module-sdk</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
                 <artifactId>grakn-client</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -280,7 +273,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -291,42 +284,42 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-grpc</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -551,10 +544,6 @@
                     <exclusion>
                         <groupId>com.boundary</groupId>
                         <artifactId>high-scale-lib</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.codahale.metrics</groupId>
-                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>ch.qos.logback</groupId>
@@ -796,11 +785,6 @@
                 <version>${commons-cli.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty.websocket</groupId>
-                <artifactId>websocket-client</artifactId>
-                <version>${jetty.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-protobuf</artifactId>
                 <version>${grpc.version}</version>
@@ -813,6 +797,11 @@
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
@@ -871,7 +860,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -939,7 +928,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-bootup</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.3.0-SNAPSHOT</version>
             </dependency>
 
         </dependencies>
@@ -1196,7 +1185,7 @@
                         <!-- Skip generated classes, we only care about code we write -->
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
                         <exclude>**/ai/grakn/rpc/generated/*.java</exclude>
-                        <exclude>**/AutoValue_**.java</exclude>
+                        <exclude>**/**AutoValue_**.java</exclude>
 
                         <!-- Following controllers contain duplicate annotations for documentation -->
                         <exclude>**/ai/grakn/engine/controller/GraqlController.java</exclude>

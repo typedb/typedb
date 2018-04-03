@@ -45,11 +45,38 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
+    private static final String OPEN_TAG = "\\s*<[^>]*>";
+    private static final String OPEN_TAGS = OPEN_TAG + "*";
+    private static final String QUERY = "\\s*(?<query>.*?)\\s*";
+
     public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/docs/pages/");
+
+    /**
+     * Regex for matching Graql examples in markdown documentation. This is designed to match code blocks and HTML.
+     */
+    static Pattern markdownOrHtml(String languageName) {
+        String className = "language-" + languageName;
+        String openClassTag = "class\\s*=\\s*\"" + className + "\".*?>";
+
+        String html = openClassTag + OPEN_TAGS;
+        String markdown = "```" + languageName + "\\s*\\n";
+
+        return Pattern.compile("(" + html + "|" + markdown + ")" + QUERY + "(</|```)", Pattern.DOTALL);
+    }
 
     private static final Pattern KEYSPACE_HEADER =
             Pattern.compile("---.*KB:\\s*(.*?)\\n.*---", Pattern.DOTALL + Pattern.CASE_INSENSITIVE);
 
+    /**
+     *  Each example is run using a pre-loaded graph. By default, this is the {@link GenealogyKB}. If you want to change
+     *  it for a certain page, add a new key {@code KB} to the front matter of the page, e.g.
+     *  <pre>
+     *  ---
+     *  ...
+     *  KB: academy
+     *  ---
+     *  </pre>
+     */
     private static final Map<String, Consumer<GraknTx>> loaders = ImmutableMap.<String, Consumer<GraknTx>>builder()
 
             .put("default", GenealogyKB.get())
@@ -152,6 +179,11 @@ public class DocTestUtil {
     }
 
     static void codeBlockFail(String fileAndLine, String codeBlock, String error) {
+        // IntelliJ recognises this syntax and changes it into a clickable link in the test results.
+        // This means you can click to go straight to the failing documentation page!
+        // e.g.
+        //     Failure in .(queries.md:170)
+        //                  ^ this will be clickable
         fail("Failure in .(" + fileAndLine + ")\n\n" + indent(error) + "\n\nin:\n\n" + indent(codeBlock));
     }
 

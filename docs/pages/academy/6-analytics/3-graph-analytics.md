@@ -2,7 +2,7 @@
 title: Graph analytics - The GRAph of KNowledge
 keywords: getting started
 last_updated: October 2017
-summary: In this lesson you will learn about the graph analytics capabilities of GRAKN, together with the appropriate syntax
+summary: In this lesson you will learn about the graph analytics capabilities of Grakn, together with the appropriate syntax
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graph-analytics.html
@@ -11,9 +11,9 @@ toc: false
 KB: academy
 ---
 
-At this point in the academy it should be somewhat clear that GRAKN is not a graph database. So why a lesson about graph analytics?
+At this point in the academy it should be somewhat clear that Grakn is not a graph database. So why a lesson about graph analytics?
 
-Well the answer is that an entity-relationship conceptual model (thus a GRAKN knowledge base) can actually be represented in the form of a graph.
+Well the answer is that an entity-relationship conceptual model (thus a Grakn knowledge graph) can actually be represented in the form of a graph.
 
 And if you have a graph, then it is often useful to be able to do perform graph analytics.
 
@@ -21,10 +21,10 @@ And if you have a graph, then it is often useful to be able to do perform graph 
 ## A few words before going on
 As you will see, it is quite straightforward to perform graph analytics with Grakn. There are two caveats though:
 
-  1. GRAKN is not a graph database, so to forse a knowledge based with a underlying hypergraph structure into a graph in order to perform graph analytics requires some getting used to.
+  1. Grakn is not a graph database, so to forse a knowledge based with a underlying hypergraph structure into a graph in order to perform graph analytics requires some getting used to.
   2. Actually using the results of graph analytics queries requires some programming expertise (except for the shortest path). So this is probably the most advanced topic covered so far in the Academy.
 
-To cast GRAKN hyper-relational knowledge bases as a graph, imagine that each concept (i.e. an entity, a relationship or an attribute) is a node in your graph and two nodes are connected via an edge if there is a relationship in which both concept play a role. This is easier to visualise in some cases and requires a bit more imagination in some other, but it is quite natural.
+Imagine that each concept (i.e. an entity, a relationship or an attribute) is a node in your graph and two nodes are connected via an edge if there is a relationship in which both concept play a role. This is easier to visualise in some cases and requires a bit more imagination in some other, but it is quite natural.
 
 One last thing to keep in mind is that each Graph Analytics query type is different, so the results will look different for each query type. We will look at them one by one in the following sections.
 
@@ -40,13 +40,13 @@ The basic syntax for the shortest path query is
 compute path from CONCEPT_ID1 to CONCEPT_ID2 in TYPES;
 ```
 
-In the query, `CONCEPT_ID1` and `CONCEPT_ID2` refer to, as you might guess, concept ids. These are identifiers that are assigned internally by the GRAKN system. When you query for a concept in the Dashboard or Graql Console, concept IDs will be returned in the response (they look like `V123456`). If you are querying through the Graph visualiser, click on any once concept node and you will see on the top right the id of the node.
+In the query, `CONCEPT_ID1` and `CONCEPT_ID2` refer to, as you might guess, concept ids. These are identifiers that are assigned internally by the Grakn system. When you query for a concept in the Dashboard or Graql Console, concept IDs will be returned in the response (they look like `V123456`). If you are querying through the Graph visualiser, click on any once concept node and you will see on the top right the id of the node.
 
   ![Finding IDs in the visualiser](/images/academy/6-analytics/finding-id.png)
 
 As for the other analytics queries, the `in TYPES` part of the query is optional, if you do not specify it, Analytics will assume that all types are allowed, so the result will be the actual shortest path (or better: one of the paths of smallest length).
 
-Let's make an example: let us find the shortest path that links the company "ENI" to the country "UK" in our dataset. With the GRAKN server running in your VM, run the following query in the dashboard
+Let's make an example: let us find the shortest path that links the company "ENI" to the country "UK" in our dataset. With the Grakn server running in your VM, run the following query in the dashboard
 
 ```graql-skip-test
 match $x isa company has name "ENI";
@@ -59,7 +59,7 @@ Click on an empty point of the background of the graph visualiser to make sure t
 
   ![Selecting multiple nodes](/images/academy/6-analytics/multi-selection.png)
 
-After this, you can right click one of the nodes and you will be able to select "Shortest path" among the options. If you click on it, the `compute path` query will be shown in the GRAQL editor ready for you to be launched or modified.
+After this, you can right click one of the nodes and you will be able to select "Shortest path" among the options. If you click on it, the `compute path` query will be shown in the Graql editor ready for you to be launched or modified.
 
   ![Shortest path GUI](/images/academy/6-analytics/path-gui.png)
 
@@ -67,7 +67,7 @@ Runnning a path query in the Graph visualiser actually lets you see the path bet
 
   ![Shortest path in the Visualiser](/images/academy/6-analytics/path-visualiser.png)
 
-The result of the same query on the Dashboard console are a bit less interesting, but shows you how the result of the query looks like if you are interacting programmatically with the GRAKN server.
+The result of the same query on the Dashboard console are a bit less interesting, but shows you how the result of the query looks like if you are interacting programmatically with the Grakn server.
 
   ![Shortest path in the Console](/images/academy/6-analytics/path-console.png)
 
@@ -79,7 +79,7 @@ In a graph, the _degree_ of a node is the number of edges connected to that node
 
 Although it might seems a bit confusing at first, an example will make it clearer. As you should know by now, there is a relationship type in the academy dataset called `owns`, that links companies to the oil platforms they know. If you know the degree of a company with respect to the `owns` relationship, you effectively now how many oil platforms that company owns.
 
-This is how the query looks like in GRAQL:
+This is how the query looks like in Graql:
 
 ```graql-skip-test
 compute degrees of company in company, owns;
@@ -127,8 +127,8 @@ If you want to know the actual clusters, just append `members;` to the query abo
 
 ### What have you learned?
 
-In this lesson, you have learned about the graph analytics capabilities of GRAKN; you have learned what how to compute shortest paths, cluster and degrees in a GRAKN knowledge base and what these terms mean.
+In this lesson, you have learned about the graph analytics capabilities of Grakn; you have learned what how to compute shortest paths, cluster and degrees in a Grakn knowledge graph and what these terms mean.
 
 ## What next
 
-You are almost done! You have learned about all the basics of GRAKN! The last thing left is doing the last [module review](./analytics-review.html)!
+You are almost done! You have learned about all the basics of Grakn! The last thing left is doing the last [module review](./analytics-review.html)!

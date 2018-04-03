@@ -18,8 +18,8 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -37,10 +37,10 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *
  * @author fppt
  */
-public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
+public class GraknTxTinker extends EmbeddedGraknTx<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTxTinker(GraknSession session, TinkerGraph tinkerGraph){
+    public GraknTxTinker(EmbeddedGraknSession session, TinkerGraph tinkerGraph){
         super(session, tinkerGraph);
         rootGraph = tinkerGraph;
     }
@@ -51,7 +51,7 @@ public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
     }
 
     @Override
-    public boolean isSessionClosed() {
+    public boolean isTinkerPopGraphClosed() {
         return !rootGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 

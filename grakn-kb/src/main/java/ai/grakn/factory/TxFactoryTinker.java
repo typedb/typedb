@@ -18,10 +18,8 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 
@@ -39,34 +37,27 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TxFactoryTinker(GraknSession session){
+    private TinkerGraph tinkerGraph;
+
+    TxFactoryTinker(EmbeddedGraknSession session){
         super(session);
-    }
-
-    private boolean isClosed(TinkerGraph innerGraph) {
-        return !innerGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
+        tinkerGraph = TinkerGraph.open();
     }
 
     @Override
-    GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
-        return new GraknTxTinker(session(), graph);
-    }
+    protected GraknTxTinker buildGraknTxFromTinkerGraph(TinkerGraph graph) { return new GraknTxTinker(session(), graph); }
 
     @Override
-    TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
-        return TinkerGraph.open();
+    protected TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
+        return tinkerGraph;
     }
 
-    @Override
-    protected TinkerGraph getTinkerPopGraph(TinkerGraph graph, boolean batchLoading){
-        if(super.tx == null || isClosed(super.tx)){
-            super.tx = buildTinkerPopGraph(batchLoading);
-        }
-        return super.tx;
+    public TinkerGraph getTinkerPopGraph(){
+        return tinkerGraph;
     }
 
     @Override
     protected TinkerGraph getGraphWithNewTransaction(TinkerGraph graph, boolean batchLoading) {
-        return graph;
+        return tinkerGraph;
     }
 }

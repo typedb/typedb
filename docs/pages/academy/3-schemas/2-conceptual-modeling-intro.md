@@ -35,7 +35,7 @@ If you have written your concepts in a list, it should look something like the f
 ## Identifying types (entities, relationships and attributes)
 Once you have your basic list of concepts, it is time to start and assign their basic types. It is not a hard and fast rule, but it is usually a good idea to begin with finding the entities. Those tend to be the common nouns in your list.
 
-Before going on, try and find the main entities in the list above. Remember: the entities are usually the main actors in your knowledge base, the things about you want to know and ask questions.
+Before going on, try and find the main entities in the list above. Remember: the entities are usually the main actors in your knowledge graph, the things about you want to know and ask questions.
 
 Done? Let’s review them. There are a few obvious ones:
 
@@ -92,4 +92,4 @@ Subject (of articles)
 
 
 ## What next?
-We are now ready to turn our conceptual model into a valid GRAKN schema in the [next lesson](./schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about GRAKN object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](../index.html)
+We are now ready to turn our conceptual model into a valid Grakn schema in the [next lesson](./schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about Grakn object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](../index.html)

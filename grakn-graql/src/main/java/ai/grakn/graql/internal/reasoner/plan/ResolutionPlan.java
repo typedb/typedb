@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.plan;
 
-import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
@@ -27,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 public final class ResolutionPlan {
 
     final private ImmutableList<Atom> plan;
-    final private GraknTx tx;
+    final private EmbeddedGraknTx<?> tx;
 
     public ResolutionPlan(ReasonerQueryImpl query){
         this.tx =  query.tx();

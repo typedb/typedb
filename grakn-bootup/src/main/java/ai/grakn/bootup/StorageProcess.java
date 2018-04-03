@@ -18,6 +18,8 @@
 
 package ai.grakn.bootup;
 
+import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.GraknConfig;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 /**
  *
@@ -35,27 +38,39 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
-    private static final String NAME = "Storage";
+
+
+    private static final String CASSANDRA = "cassandra";
+    private static final String COMPONENT_NAME = "Storage";
 
     private final Path homePath;
+    private final GraknConfig graknConfig;
 
-    public StorageProcess(Path homePath) {
+    public StorageProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
+        this.graknConfig = GraknConfig.read(configPath.toFile());
     }
 
     public void start() {
         boolean storageIsRunning = processIsRunning(STORAGE_PID);
         if(storageIsRunning) {
-            System.out.println(NAME+" is already running");
+            System.out.println(COMPONENT_NAME +" is already running");
         } else {
             storageStartProcess();
         }
     }
 
+    private Path getStorageLogPath(){
+        //make the path absolute to avoid cassandra confusion
+        String logDirString = graknConfig.getProperty(GraknConfigKey.LOG_DIR);
+        Path logDirPath = Paths.get(graknConfig.getProperty(GraknConfigKey.LOG_DIR));
+        return logDirPath.isAbsolute() ? logDirPath : Paths.get(homePath.toString(), logDirString);
+    }
+
     private void storageStartProcess() {
-        System.out.print("Starting "+NAME+"...");
+        System.out.print("Starting "+ COMPONENT_NAME +"...");
         System.out.flush();
-        if(Files.exists(STORAGE_PID)) {
+        if(STORAGE_PID.toFile().exists()) {
             try {
                 Files.delete(STORAGE_PID);
             } catch (IOException e) {
@@ -63,9 +78,11 @@ public class StorageProcess extends AbstractProcessHandler {
             }
         }
         OutputCommand outputCommand = executeAndWait(new String[]{
-                "/bin/sh",
+                SH,
                 "-c",
-                homePath.resolve(Paths.get("services","cassandra","cassandra")) + " -p " + STORAGE_PID
+                homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA))
+                        + " -p " + STORAGE_PID
+                        + " -l " + getStorageLogPath()
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);
@@ -75,7 +92,7 @@ public class StorageProcess extends AbstractProcessHandler {
             System.out.flush();
 
             OutputCommand storageStatus = executeAndWait(new String[]{
-                    "/bin/sh",
+                    SH,
                     "-c",
                     homePath + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);
@@ -86,42 +103,41 @@ public class StorageProcess extends AbstractProcessHandler {
             try {
                 Thread.sleep(WAIT_INTERVAL_S *1000);
             } catch (InterruptedException e) {
-                // DO NOTHING
+                Thread.currentThread().interrupt();
             }
         }
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+NAME);
+        System.out.println("Unable to start "+ COMPONENT_NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        stopProgram(STORAGE_PID,NAME);
+        stopProgram(STORAGE_PID, COMPONENT_NAME);
     }
 
     public void status() {
-        processStatus(STORAGE_PID, NAME);
+        processStatus(STORAGE_PID, COMPONENT_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(NAME+" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(COMPONENT_NAME +" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+NAME+"...");
+        System.out.print("Cleaning "+ COMPONENT_NAME +"...");
         System.out.flush();
-        try {
-            Path dirPath = Paths.get("db","cassandra");
-            Files.walk( dirPath )
-                    .map( Path::toFile )
-                    .sorted( Comparator.comparing( File::isDirectory ) )
-                    .forEach( File::delete );
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","data")));
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","commitlog")));
-            Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","saved_caches")));
+        Path dirPath = Paths.get("db", CASSANDRA);
+        try (Stream<Path> files = Files.walk(dirPath)) {
+            files.map(Path::toFile)
+                    .sorted(Comparator.comparing(File::isDirectory))
+                    .forEach(File::delete);
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"data")));
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"commitlog")));
+            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"saved_caches")));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+NAME);
+            System.out.println("Unable to clean "+ COMPONENT_NAME);
         }
     }
 

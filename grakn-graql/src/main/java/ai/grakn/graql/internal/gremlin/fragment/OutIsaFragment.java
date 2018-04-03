@@ -18,12 +18,12 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -53,7 +53,7 @@ public abstract class OutIsaFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),

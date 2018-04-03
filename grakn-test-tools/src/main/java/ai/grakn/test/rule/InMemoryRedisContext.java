@@ -94,4 +94,10 @@ public class InMemoryRedisContext extends ExternalResource {
     private void checkInitialised() {
         Preconditions.checkState(server != null, "InMemoryRedisContext not initialised");
     }
+
+    public int port() {
+        checkInitialised();
+        assert server != null;
+        return server.getBindPort();
+    }
 }
