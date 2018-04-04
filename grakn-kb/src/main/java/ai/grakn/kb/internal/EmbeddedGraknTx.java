@@ -682,16 +682,29 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
+    /**
+     * Close the transaction without committing
+     */
     @Override
     public void close() {
         close(false, false);
     }
 
+    /**
+     * Commits and close the transaction
+     * @throws InvalidKBException
+     */
     @Override
     public void commit() throws InvalidKBException {
         close(true, true);
     }
 
+    /**
+     * Close the transaction
+     * @param commitRequired indicates whether to commit the transaction
+     * @param trackLogs
+     * @return the {@link CommitLog}, if
+     */
     private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
         Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
@@ -724,10 +737,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Commits to the graph without submitting any commit logs.
-         * @return the commit log that would have been submitted if it is needed.
-         * @throws InvalidKBException when the graph does not conform to the object concept
-         */
+     * Commits to the graph without submitting any commit logs.
+     * @return the commit log that would have been submitted if it is needed.
+     * @throws InvalidKBException when the graph does not conform to the object concept
+     */
     public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
