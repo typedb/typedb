@@ -85,42 +85,43 @@ public class EngineGraknSessionTest {
     }
 
     @Test
-    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
+    public void whenOpeningTransactionsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureTransactionsAreTheSame(){
         String keyspace = "mykeyspace";
 
-        GraknTx graph1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
-        graph1.close();
-        GraknTx graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
+        GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
+        tx1.close();
+        GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
-        assertEquals(graph1, graph2);
-        graph2.close();
+        assertEquals(tx1, tx2);
+        tx2.close();
     }
 
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        EmbeddedGraknTx<?> graph1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
-        graph1.close();
-        EmbeddedGraknTx<?> graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
 
-        assertFalse(graph1.isBatchTx());
-        assertTrue(graph2.isBatchTx());
+        EmbeddedGraknTx<?> tx1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
+        tx1.close();
+        EmbeddedGraknTx<?> tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
 
-        graph1.close();
-        graph2.close();
+        assertFalse(tx1.isBatchTx());
+        assertTrue(tx2.isBatchTx());
+
+        tx1.close();
+        tx2.close();
     }
 
     @Test
-    public void closeGraphWhenOnlyOneTransactionIsOpen(){
+    public void whenInsertingAfterSessionHasBeenClosed_shouldThrowTxException(){
         assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
-        GraknSession factory = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
-        GraknTx graph = factory.open(GraknTxType.WRITE);
-        factory.close();
+        GraknSession session = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
+        GraknTx tx = session.open(GraknTxType.WRITE);
+        session.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.keyspace()));
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(tx.keyspace()));
 
-        graph.putEntityType("A thingy");
+        tx.putEntityType("A thingy");
     }
 }
