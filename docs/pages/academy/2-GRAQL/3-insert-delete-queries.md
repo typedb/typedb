@@ -75,22 +75,14 @@ and double click on one of the two copies of the company that appears. This is t
 ## Deleting things
 How do we delete things that we don’t want in the knowledge graph? With a delete query of course.
 
-A delete query has the same form as a get query that uses `delete` as the action keyword. There is no difference in syntax. Try this, for example:
-
-```graql
-match $x isa company has name "Grakn"; delete;
-```
-
-Did it work? No? Of course not.
-The reason for this is that both our companies "Grakn" are in a relation with the "UK".
-And if we delete the companies we will get two `located-in` relationships with only the "UK" participating in it.
-And this is not allowed. So we have to delete the relationships first.
-
-Retrieving relations is something that we haven’t seen so far, but it’s nothing complicated. Basically, if you want to assign a relation to a variable, just put a variable name before the parenthesis. It’s quite easy (notice how we use the variables in the delete action as we used them in the get action):
+A delete query has the same form as a get query that uses `delete` as the action keyword. The major difference is that you have to explicitly tell Graql which elements to delete - in this case that would be `$x`. Try this, for example:
 
 ```graql
 match $r ($x) isa located-in; $x isa company has name "Grakn"; delete $r;
 ```
+This would delete the relationship between the companies named "Grakn" and the country named "UK".
+
+Retrieving relations is something that we haven’t seen so far, but it’s nothing complicated. Basically, if you want to assign a relation to a variable, just put a variable name before the parenthesis. It’s quite easy (notice how we use the variables in the delete action as we used them in the get action):
 
 If you run the query above and commit, the relation will be gone and Grakn won’t be in the UK anymore. You can check it in the graph visualiser.
 
@@ -106,7 +98,7 @@ As a parting thought: if you omit the variables in the delete or get actions, it
 
 
 ### What have you learned?
-In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge graph. We also have learned how to match relations. By now you should have a solid foundation of Graql and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
+In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge graph. We also have learned how to match relations. By now you should have a solid foundation of Graql and you could already go on and start building your first ontology. But there are a few types of queries that I want to introduce to you first.
 
 
 ## What next?
