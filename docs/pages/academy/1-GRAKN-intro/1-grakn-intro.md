@@ -28,7 +28,7 @@ In simple and cheesy terms, Grakn is a database on steroids that makes it easy t
 
 More precisely, it is what we call a [Knowledge Graph System](https://en.wikipedia.org/wiki/Knowledge-based_systems): a piece of software that allows to model complex problems, made of several components:
 
-  * __Data layer.__ A data storage component that allows to store and efficiently access your data. A database. In order to be able to store highly interconnected data at a scale, Grakn uses a graph database, but that is just because it happens to be the best tool for th job. As you will see, Grakn is a much more than a graph database. And much more than a relational database for all that matters. That is why we call Grakn a _knowledge graph_.
+  * __Data layer.__ A data storage component that allows to store and efficiently access your data. A database. In order to be able to store highly interconnected data at a scale, Grakn uses a graph database, but that is just because it happens to be the best tool for the job. As you will see, Grakn is a much more than a graph database. And much more than a relational database for all that matters. That is why we call Grakn a _knowledge graph_.
 
   * __Data model.__ A knowledge representation object model (our Schema model) that allows to describe your knowledge of the domain and store it together with the data. In simpler words, this helps giving structure to your data.
 

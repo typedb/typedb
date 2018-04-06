@@ -77,7 +77,7 @@ This is how this structure looks like in our example query:
 
 ### What have you learned?
 
-By now, you should be familiar the background of the demo dataset we will be working with and the question we will be trying to answer. You should have had a first feel at how a Graql query looks like, and you should know how a Graql query is structured.
+By now, you should be familiar with the background of the demo dataset we will be working with and the question we will be trying to answer. You should have had a first feel at how a Graql query looks like, and you should know how a Graql query is structured.
 
 
 ## What next?
