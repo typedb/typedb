@@ -1,7 +1,7 @@
 ---
 title: Conceptual modeling
 keywords: setup, getting started
-last_updated: September 2017
+last_updated: April 2018
 summary: In this lesson you will learn how to build a conceptual Entity-Relationships model
 tags: [getting-started, graql]
 sidebar: academy_sidebar
@@ -11,12 +11,12 @@ toc: false
 KB: academy
 ---
 
-Just to restate something we have seen a few lessons ago,  when we have to deal with data modeling it is always a good idea to start with a question. In our context (if you want to review our problem context you will find it [here](./graql-intro.html)) the question we want to model our knowledge around is:
+Just to reiterate on something we have seen a few lessons ago, when we have to deal with data modeling it is always a good idea to start with a question. In our context (if you want to review our problem context you will find it [here](./graql-intro.html)) the question we want to model our knowledge around is:
 
 > What are the bonds issued by companies that own oil platforms located in Italy less than 18 kilometers from the coast? Those bonds should be connected to articles related to the Italian referendum.
 
 ## Finding the concepts
-The first step into our conceptual modelisation process is finding the concepts in our questions. That means, simply, finding the words that are somewhat related to our knowledge domain. Have a look at the question above and try and find all the words or group of words that are describing something specific relative to the question we are asking.
+The first step into our conceptual modelling process is finding the concepts in our questions. That means, simply, finding the words that are somewhat related to our knowledge domain. Have a look at the question above and try and find all the words or group of words that are describing something specific relative to the question we are asking.
 
 If you have written your concepts in a list, it should look something like the following:
 

@@ -1,8 +1,8 @@
 ---
 title: Get Queries
 keywords: setup, getting started
-last_updated: September 2017
-summary: In this lesson you will learn about the get queries, the fundamental queries used to explore Grakn Knowledge bases
+last_updated: April 2018
+summary: In this lesson you will learn about get queries, the fundamental query type used to explore Grakn Knowledge bases
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/get-queries.html

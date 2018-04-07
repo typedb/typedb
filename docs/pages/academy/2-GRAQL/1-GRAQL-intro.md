@@ -1,7 +1,7 @@
 ---
 title: Graql - the language of knowledge
 keywords: setup, getting started
-last_updated: September 2017
+last_updated: April 2018
 summary: In this lesson you will learn about the dataset you will be dealing with in the Academy and will get a first taste of the Graql language
 tags: [getting-started, graql]
 sidebar: academy_sidebar
