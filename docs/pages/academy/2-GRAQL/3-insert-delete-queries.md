@@ -1,7 +1,7 @@
 ---
 title: Insert and Delete Queries
 keywords: setup, getting started
-last_updated: September 2017
+last_updated: April 2018
 summary: In this lesson you will learn the Graql syntax to insert and delete things from your knowledge graph
 tags: [getting-started, graql]
 sidebar: academy_sidebar

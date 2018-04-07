@@ -1,8 +1,8 @@
 ---
 title: Introduction to Grakn
 keywords: getting started
-last_updated: September 2017
-summary: This is a brief introduction to what a knowledge graph system is, what is Grakn and the broad topics that will be covered into the Grakn Academy.
+last_updated: April 2018
+summary: This is a brief introduction to what a knowledge graph system is, how Grakn fits into the picture and the broad topics that will be covered in later parts of the Grakn Academy.
 tags: [getting-started]
 sidebar: academy_sidebar
 permalink: ./academy/grakn-intro.html
