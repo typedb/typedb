@@ -34,7 +34,7 @@ By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$
 
 For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
 
-In order to benefit from maximum performance, housing the data should in a fast SSD drive is ideal.
+In order to get maximum performance, the data should ideally be housed in a fast SSD.
 
 ### Grakn Cluster
 
