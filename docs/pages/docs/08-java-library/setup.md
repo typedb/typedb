@@ -15,14 +15,14 @@ All Grakn applications require the following Maven dependency:
 
 ```xml
 <properties>
-  <grakn.version>1.1.0</grakn.version>
+  <grakn.version>1.2.0</grakn.version>
 </properties>
 
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn-kb</artifactId>
-    <version>${grakn.version}</version>
+    <artifactId>grakn-client</artifactId>
+    <version>1.2.0</version>
   </dependency>
 </dependencies>
 ```
@@ -33,17 +33,6 @@ This dependency will give you access to the Core API as well as an in-memory kno
 
 If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
 Please see the [Setup Guide](../get-started/setup-guide) on more details on how to set up a Grakn server.
-
-Depending on the configuration of the Grakn server, your Java application will require the following dependency:
-```xml   
-<dependency>
-    <groupId>ai.grakn</groupId>
-    <artifactId>grakn-factory</artifactId>
-    <version>${grakn.version}</version>
-</dependency>
-```    
-
-The JAR files you will need to develop with Grakn can be found inside the `lib` directory of the distribution zip file. All the JARs are provided with no dependencies, so using these requires you to use Maven to acquire dependencies.
 
 Alternatively, you may include a reference to the snapshot repository, which contains the third-party dependencies. Add the following to your `pom.xml`:
 
