@@ -40,7 +40,7 @@ Grakn's clustering functionality is part of [Grakn KGMS](https://grakn.ai/grakn-
 ## Upgrading Grakn
 
 #### Default directory
-For the default storage and logs directory, `$GRAKN_HOME/db/`, you need to:
+For the default storage and logs directory, ie., `$GRAKN_HOME/db/` and `$GRAKN_HOME/logs/`, you need to:
 
 - Stop the current Grakn if it is running (`grakn server stop`)
 - Extract the latest Grakn package into a new directory
