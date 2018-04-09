@@ -45,3 +45,9 @@ toc: false
     <p>If there's anything you want to improve, you can leave us a comment using the link at the bottom of each page, or even contribute to them directly via <a target="_blank" href="https://github.com/graknlabs/grakn/tree/master/docs">Github</a>.</p>
   </div>
 </div>
+
+<br />
+
+There may be some outdated Grakn terminology used, but here is Haikal giving an introduction to Grakn.
+
+<iframe style="width: 100%; height: 400px" src="https://www.youtube.com/embed/OeFrudRlXAM?list=PLDaQNzoeb9L7UZDPq7z1Gd2Rc0m_oeSDQ" frameborder="0" allowfullscreen></iframe>
