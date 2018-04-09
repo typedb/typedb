@@ -25,15 +25,15 @@ A match describes a pattern to find in the knowledge graph. The results of the m
 Match instances that have the given type. In the example, find all `person` entities.
 
 <ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell1" data-toggle="tab">Graql</a></li>
-    <li><a href="#java1" data-toggle="tab">Java</a></li>
+    <li class="active"><a href="#shell0" data-toggle="tab">Graql</a></li>
+    <li><a href="#java0" data-toggle="tab">Java</a></li>
 </ul>
 
 <div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell1">
+<div role="tabpanel" class="tab-pane active" id="shell0">
 <pre class="language-graql"><code>match $x isa person; get;</code></pre>
 </div>
-<div role="tabpanel" class="tab-pane" id="java1">
+<div role="tabpanel" class="tab-pane" id="java0">
 <pre  class="language-java"><code>qb.match(var("x").isa("person")).get();</code></pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -52,7 +52,7 @@ Match entities that are direct instances of the given type. In the example, find
 <pre class="language-graql"><code>match $x isa! person; get;</code></pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre  class="language-java"><code>qb.match(var("x").directIsa("person")).get();</code></pre>
+<pre  class="language-java"><code>qb.match(var("x").isaExplicit("person")).get();</code></pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
@@ -68,7 +68,6 @@ Match concepts that have a system id that matches the [predicate](#predicates).
 <div role="tabpanel" class="tab-pane active" id="shell2">
 <pre class="language-graql">
 <code>
-# Insert one of the system id values that were displayed from the previous query. For example:
 match $x id "1216728"; get;
 </code>
 </pre>
