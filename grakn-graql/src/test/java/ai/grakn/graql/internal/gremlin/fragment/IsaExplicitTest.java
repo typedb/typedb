@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class DirectIsaTest {
+public class IsaExplicitTest {
 
     private static final Var x = var("x");
     private static final Var y = var("y");
@@ -101,17 +101,17 @@ public class DirectIsaTest {
         QueryBuilder queryBuilder = tx.graql();
         InsertQuery insertQuery;
 
-        insertQuery = queryBuilder.insert(x.directIsa(thingy));
+        insertQuery = queryBuilder.insert(x.isaExplicit(thingy));
         assertEquals("insert $x isa! thingy;", insertQuery.toString());
 
         insertQuery = queryBuilder.parse("insert $x isa! thingy;");
-        assertEquals(queryBuilder.insert(x.directIsa(thingy)), insertQuery);
+        assertEquals(queryBuilder.insert(x.isaExplicit(thingy)), insertQuery);
     }
 
     @Test
-    public void whenInsertDirectIsa_InsertsADirectInstanceOfAType() {
+    public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         QueryBuilder queryBuilder = tx.graql();
-        queryBuilder.insert(x.directIsa(thingy)).execute();
+        queryBuilder.insert(x.isaExplicit(thingy)).execute();
         assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
         assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
     }
@@ -122,27 +122,27 @@ public class DirectIsaTest {
         Match matchQuery;
         GetQuery getQuery;
 
-        matchQuery = queryBuilder.match(x.directIsa(thingy1));
+        matchQuery = queryBuilder.match(x.isaExplicit(thingy1));
         assertEquals("match $x isa! thingy1;", matchQuery.toString());
 
-        matchQuery = queryBuilder.match(x.directIsa(y));
+        matchQuery = queryBuilder.match(x.isaExplicit(y));
         assertEquals("match $x isa! $y;", matchQuery.toString());
 
         getQuery = queryBuilder.parse("match $x isa! thingy1; get;");
-        assertEquals(queryBuilder.match(x.directIsa(thingy1)), getQuery.match());
+        assertEquals(queryBuilder.match(x.isaExplicit(thingy1)), getQuery.match());
 
         getQuery = queryBuilder.parse("match $x isa! $y; get;");
-        assertEquals(queryBuilder.match(x.directIsa(y)), getQuery.match());
+        assertEquals(queryBuilder.match(x.isaExplicit(y)), getQuery.match());
     }
 
     @Test
-    public void testMatchIsaAndDirectIsaReturnDifferentPlans() {
+    public void testMatchIsaAndIsaExplicitReturnDifferentPlans() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
         // test type without subtypes
 
-        pattern = x.directIsa(thingy1);
+        pattern = x.isaExplicit(thingy1);
         plan = getPlan(pattern);
         assertEquals(2, plan.size());
         assertThat(plan, contains(
@@ -151,8 +151,8 @@ public class DirectIsaTest {
         ));
 
         pattern = and(
-                x.directIsa(thingy1),
-                y.directIsa(thingy1),
+                x.isaExplicit(thingy1),
+                y.isaExplicit(thingy1),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 
@@ -172,7 +172,7 @@ public class DirectIsaTest {
 
         // test type with subtypes
 
-        pattern = x.directIsa(thingy);
+        pattern = x.isaExplicit(thingy);
         plan = getPlan(pattern);
         assertEquals(2, plan.size());
         assertThat(plan, contains(
@@ -191,8 +191,8 @@ public class DirectIsaTest {
         ));
 
         pattern = and(
-                x.directIsa(thingy),
-                y.directIsa(thingy),
+                x.isaExplicit(thingy),
+                y.isaExplicit(thingy),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 
@@ -210,11 +210,11 @@ public class DirectIsaTest {
                 instanceOf(OutIsaFragment.class) // check the role player's type
         ));
 
-        // combine isa and direct isa
+        // combine isa and explicit isa
 
         pattern = and(
                 x.isa(thingy),
-                y.directIsa(thingy),
+                y.isaExplicit(thingy),
                 var().rel(x).rel(y).isa(related));
         plan = getPlan(pattern);
 

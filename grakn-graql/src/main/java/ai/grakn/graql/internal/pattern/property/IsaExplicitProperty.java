@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 
 /**
- * Represents the {@code direct-isa} property on a {@link Thing}.
+ * Represents the {@code isa-explicit} property on a {@link Thing}.
  * <p>
  * This property can be queried and inserted.
  * </p>
@@ -47,12 +47,12 @@ import java.util.Collection;
  * @author Jason Liu
  */
 @AutoValue
-public abstract class DirectIsaProperty extends AbstractIsaProperty {
+public abstract class IsaExplicitProperty extends AbstractIsaProperty {
 
     public static final String NAME = "isa!";
 
-    public static DirectIsaProperty of(VarPatternAdmin directType) {
-        return new AutoValue_DirectIsaProperty(directType);
+    public static IsaExplicitProperty of(VarPatternAdmin directType) {
+        return new AutoValue_IsaExplicitProperty(directType);
     }
 
     @Override
@@ -69,6 +69,6 @@ public abstract class DirectIsaProperty extends AbstractIsaProperty {
 
     @Override
     protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
-        return varName.directIsa(typeVariable);
+        return varName.isaExplicit(typeVariable);
     }
 }

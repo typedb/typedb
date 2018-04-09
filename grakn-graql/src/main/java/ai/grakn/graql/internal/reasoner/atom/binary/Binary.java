@@ -26,7 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
+import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -86,7 +86,7 @@ public abstract class Binary extends Atom {
     }
 
     public boolean isDirect(){
-        return getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent();
+        return getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
     }
 
     @Override
