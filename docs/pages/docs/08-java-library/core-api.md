@@ -25,7 +25,7 @@ Let's see how we can build the same schema exclusively via the Core API.
 First we need a knowledge graph. For this example we will just use an
 [in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
-```java
+```java-test-ignore
 GraknTx tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 ```
 
@@ -159,7 +159,7 @@ insert $x isa person has firstname "John";
 
 Now the equivalent Core API:    
 
-```java
+```java-test-ignore
 tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute
