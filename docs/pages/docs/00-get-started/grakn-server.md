@@ -30,8 +30,8 @@ Start Grakn with:
 grakn server start
 ```
 
-By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$GRAKN_HOME/logs/`. It can be changed by updating `data-dir` and `log.dirs` in `conf/grakn.properties`, respectively.
-In production settings, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
+By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$GRAKN_HOME/logs/`. It can be changed by updating the `data-dir` and `log.dirs` properties within `conf/grakn.properties`, respectively.
+For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
 
 ### Grakn Cluster
 
@@ -48,7 +48,7 @@ For the default storage and logs directory, `$GRAKN_HOME/db/`, you need to:
 - Copy `conf/grakn.properties` from the current Grakn into the new Grakn
 - Start the new Grakn (`grakn server start`)
 
-In production settings, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
+For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
 
 #### External directory
 If you have changed the location of  in the `grakn.properties`, you need to:
