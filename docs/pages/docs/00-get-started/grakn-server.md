@@ -31,7 +31,10 @@ grakn server start
 ```
 
 By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$GRAKN_HOME/logs/`. It can be changed by updating the `data-dir` and `log.dirs` properties within `conf/grakn.properties`, respectively.
+
 For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
+
+In order to benefit from maximum performance, housing the data should in a fast SSD drive is ideal.
 
 ### Grakn Cluster
 
