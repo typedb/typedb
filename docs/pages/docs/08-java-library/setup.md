@@ -59,30 +59,21 @@ Here are some links to guides for adding external jars using different IDEs:
 - [Netbeans](http://oopbook.com/java-classpath-2/classpath-in-netbeans/)
 
 
-## Initialising a Transaction on The knowledge graph
+## Connecting to Grakn
 
-You can initialise an in memory knowledge graph without having the Grakn server running with:
-
-<!-- These are ignored in tests because they connect to non-existent servers -->
-```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
-```    
-
-If you are running the Grakn server locally then you can initialise a knowledge graph with:
+First, make sure that Grakn is running. Otherwise, boot it up with `grakn server start`. Now, connect to Grakn with:
 
 ```java-test-ignore
-tx = Grakn.session(Grakn.DEFAULT_URI, "keyspace").open(GraknTxType.WRITE);
+GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+try (GraknTx tx = session.open(GraknTxType.READ)) {
+  // ...
+}
+
 ```
 
-If you are running the Grakn server remotely you must initialise the knowledge graph by providing the IP address of your server:
+A "Keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
 
-```java-test-ignore
-tx = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-```
-
-The string "keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
-
-Please note that knowledge graph keyspaces are **not** case sensitive so the following two knowledge graphs are actually the same:
+Please note that keyspaces are **not** case sensitive, so the following two keyspaces are actually the same:
 
 ```java-test-ignore
     GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
