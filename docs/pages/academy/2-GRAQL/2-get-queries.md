@@ -89,7 +89,7 @@ Go ahead, try it.
 
 
 ## Introduction to Roles
-So what if you want to specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In Graql every component of a relation plays a role in it, which specifies the function of that role player in that specific relation. The syntax for it looks like this:
+So what if you want to specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In Graql every component of a relation plays a role in it, which specifies the function of that role-player in that specific relation. The syntax for it looks like this:
 
 ```graql
 match
