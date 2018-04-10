@@ -19,8 +19,8 @@ The following would result in an exception because the first transaction `tx1` w
 
 <!-- Ignored because this is designed to crash! -->
 ```java-test-ignore
-tx1 = Grakn.session(uri, "MyKnowledgeBase").open(GraknTxType.WRITE);
-tx2 = Grakn.session(uri, "MyKnowledgeBase").open(GraknTxType.WRITE);
+tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 ```
 
 If you require multiple transactions open at the same time then you must do this on different threads. This is best illustrated with an example. Let's say that you wish to create 100 entities of a specific type concurrently.  The following will achieve that:

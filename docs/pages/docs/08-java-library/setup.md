@@ -15,14 +15,14 @@ All Grakn applications require the following Maven dependency:
 
 ```xml
 <properties>
-  <grakn.version>1.1.0</grakn.version>
+  <grakn.version>1.2.0</grakn.version>
 </properties>
 
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn-kb</artifactId>
-    <version>${grakn.version}</version>
+    <artifactId>grakn-client</artifactId>
+    <version>1.2.0</version>
   </dependency>
 </dependencies>
 ```
@@ -33,17 +33,6 @@ This dependency will give you access to the Core API as well as an in-memory kno
 
 If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
 Please see the [Setup Guide](../get-started/setup-guide) on more details on how to set up a Grakn server.
-
-Depending on the configuration of the Grakn server, your Java application will require the following dependency:
-```xml   
-<dependency>
-    <groupId>ai.grakn</groupId>
-    <artifactId>grakn-factory</artifactId>
-    <version>${grakn.version}</version>
-</dependency>
-```    
-
-The JAR files you will need to develop with Grakn can be found inside the `lib` directory of the distribution zip file. All the JARs are provided with no dependencies, so using these requires you to use Maven to acquire dependencies.
 
 Alternatively, you may include a reference to the snapshot repository, which contains the third-party dependencies. Add the following to your `pom.xml`:
 
@@ -70,30 +59,21 @@ Here are some links to guides for adding external jars using different IDEs:
 - [Netbeans](http://oopbook.com/java-classpath-2/classpath-in-netbeans/)
 
 
-## Initialising a Transaction on The knowledge graph
+## Connecting to Grakn
 
-You can initialise an in memory knowledge graph without having the Grakn server running with:
-
-<!-- These are ignored in tests because they connect to non-existent servers -->
-```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
-```    
-
-If you are running the Grakn server locally then you can initialise a knowledge graph with:
+First, make sure that Grakn is running. Otherwise, boot it up with `grakn server start`. Now, connect to Grakn with:
 
 ```java-test-ignore
-tx = Grakn.session(Grakn.DEFAULT_URI, "keyspace").open(GraknTxType.WRITE);
+GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+try (GraknTx tx = session.open(GraknTxType.READ)) {
+  // ...
+}
+
 ```
 
-If you are running the Grakn server remotely you must initialise the knowledge graph by providing the IP address of your server:
+A "Keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
 
-```java-test-ignore
-tx = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-```
-
-The string "keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
-
-Please note that knowledge graph keyspaces are **not** case sensitive so the following two knowledge graphs are actually the same:
+Please note that keyspaces are **not** case sensitive, so the following two keyspaces are actually the same:
 
 ```java-test-ignore
     GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
