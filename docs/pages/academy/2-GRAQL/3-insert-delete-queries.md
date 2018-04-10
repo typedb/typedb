@@ -29,7 +29,7 @@ As you might have noticed, the syntax for insert queries is the same as the synt
 insert $x isa company; $x has name "Grakn";
 ```
 
-Try this query and you will see that it will work as well.
+Try this query and you will see that it will work as well (notice that you cannot split the query with a new line in the Graql shell).
 
 Let’s check if we can query the company we just created.
 ```graql
