@@ -17,9 +17,6 @@ The Academy is structured into modules that cover broad Grakn topics. Each modul
 
 The Academy lessons are sprinkled with exercises, that you are highly advised to do, as they will help to solidify your understanding of the topics covered.
 
-Almost no previous knowledge is required, but a familiarity with your computer. Nonetheless, be advised that Grakn is a database, that is a technical piece of software, so if you are a very non-technical person you might have some troubles. Don't feel discuraged though, getting out of your comfort zone is really worth it.
-
-
 The module topics are divided as follows:
 
 ## [Introduction to Grakn](./grakn-intro.html)
