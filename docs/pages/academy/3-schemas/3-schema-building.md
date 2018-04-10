@@ -84,7 +84,7 @@ define
 "located-in" sub relationship;
 ```
 
-If your definition statement looks like the given example, good job! Otherwise: don't panick! Just revisit your work in progress and try to understand what the differences would mean for your schema and why you'd most likely want to avoid that.
+If your definition statement looks like the given example, good job! Otherwise: don't panic! Just revisit your work in progress and try to understand what the differences would mean for your schema and why you'd most likely want to avoid that.
 
 
 ## Attributes
