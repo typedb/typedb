@@ -84,7 +84,7 @@ It is true that both versions of the query will return the same results and comp
 
 Aggregate queries perform an OLTP query and then do their computation on the result of the query. In general if you are expecting the number of results to be relatively small, they are much much more efficient.
 
-If you want to compute your statistics over a large distributed knowledge graph aggregate queries quickly become unusable (imagine for example, that you want to count the number of people in a knowledge graph that contains several million of them: executing the query and most importantly returning the results would be a very inefficient way to do that). In those cases, you would rather use compute queries, that use much more advanced algorithms (it is the reason you have to wait a while when you launch one of those queries: the algorithm has to go through several setup steps) and can act on the whole knowledge graph at the same time.
+If you want to compute your statistics over a large distributed knowledge graph, on the other hand, aggregate queries quickly become unusable (imagine, for example, that you want to count the number of people in a knowledge graph that contain several million of them: executing the query and, most importantly, returning the results would be a very inefficient way of doing that). In those cases, you will use the compute queries, that use much more advanced algorithms (it is the reason you have to wait a while when you launch one of those queries: the algorithm has to go through several setup steps) and can act on the whole knowledge graph at the same time.
 
 In other words, the compute queries scale much better.
 
