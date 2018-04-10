@@ -13,7 +13,7 @@ KB: academy
 What you have learned in this module is not a lot in terms of notions but has great importance. Together with the type system and data model, the Reasoner is one of the most defining characteristic of Grakn that makes it different from other databases. What you have learned in this module really brings your Grakn game to a different level.
 
 ### Exercise 1: Logic inference
-Thik about an example for which a logic inference engine improves the query results of your database.
+Think about an example for which a logic inference engine improves the query results of your database.
 
 
 ### Exercise 2: A new rule
