@@ -52,7 +52,7 @@ public enum ErrorMessage {
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
-    HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
+    HAS_INVALID("The type [%s] is not allowed to have a attribute of type [%s]"),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     TX_CLOSED("The Transaction for keyspace [%s] is closed"),
@@ -60,7 +60,7 @@ public enum ErrorMessage {
     TX_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
     TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
-    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
+    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a attribute"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
@@ -123,9 +123,9 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
 
-    VALIDATION_RULE_INVALID_RESOURCE_TYPE("Attempting to define a rule containing a resource pattern with type [%s] which is not a resource type\n"),
+    VALIDATION_RULE_INVALID_RESOURCE_TYPE("Attempting to define a rule containing a attribute pattern with type [%s] which is not a attribute type\n"),
 
-    VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE("Attempting to define a rule containing a resource pattern of type [%s] with type [%s] that cannot have this resource\n"),
+    VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE("Attempting to define a rule containing a attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
 
     VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
@@ -157,7 +157,7 @@ public enum ErrorMessage {
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
-    INVALID_VALUE("unsupported resource value type %s"),
+    INVALID_VALUE("unsupported attribute value type %s"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
