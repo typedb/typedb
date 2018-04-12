@@ -158,14 +158,14 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern directIsa(String type);
+    VarPattern isaExplicit(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of directly
      * @return this
      */
     @CheckReturnValue
-    VarPattern directIsa(VarPattern type);
+    VarPattern isaExplicit(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of

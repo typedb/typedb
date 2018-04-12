@@ -264,8 +264,8 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             }
         }
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-        relVar = isaProp instanceof DirectIsaProperty?
-                relVar.directIsa(typeVariable.asUserDefined()) :
+        relVar = isaProp instanceof IsaExplicitProperty ?
+                relVar.isaExplicit(typeVariable.asUserDefined()) :
                 relVar.isa(typeVariable.asUserDefined());
         return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }

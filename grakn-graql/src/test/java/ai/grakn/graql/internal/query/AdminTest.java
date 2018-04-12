@@ -112,7 +112,7 @@ public class AdminTest {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals(Optional.of("match $x isa movie;"), query.admin().match().map(Object::toString));
 
-        query = qb.match(var("x").directIsa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
+        query = qb.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals(Optional.of("match $x isa! movie;"), query.admin().match().map(Object::toString));
     }
 
@@ -128,7 +128,7 @@ public class AdminTest {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.admin().match().toString());
 
-        query = qb.match(var("x").directIsa("movie")).delete("x");
+        query = qb.match(var("x").isaExplicit("movie")).delete("x");
         assertEquals("match $x isa! movie;", query.admin().match().toString());
     }
 

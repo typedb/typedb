@@ -234,7 +234,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 relationPattern() :
                 isDirect()?
-                        relationPattern().directIsa(getSchemaConcept().getLabel().getValue()):
+                        relationPattern().isaExplicit(getSchemaConcept().getLabel().getValue()):
                         relationPattern().isa(getSchemaConcept().getLabel().getValue());
     }
 
@@ -741,7 +741,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         VarPattern relationPattern = relationPattern(getVarName(), inferredRelationPlayers);
         VarPatternAdmin newPattern =
                 (isDirect()?
-                        relationPattern.directIsa(getPredicateVariable()) :
+                        relationPattern.isaExplicit(getPredicateVariable()) :
                         relationPattern.isa(getPredicateVariable())
                 ).admin();
         return create(newPattern, getPredicateVariable(), getTypeId(), getParentQuery());

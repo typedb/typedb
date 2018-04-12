@@ -68,7 +68,7 @@ varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                     # isa
-               | 'isa!' variable                    # directIsa
+               | 'isa!' variable                    # isaExplicit
                | 'sub' variable                     # sub
                | 'relates' role=variable ('as' superRole=variable)? # relates
                | 'plays' variable                   # plays

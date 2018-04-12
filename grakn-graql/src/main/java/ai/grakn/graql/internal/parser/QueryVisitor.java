@@ -575,8 +575,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitDirectIsa(GraqlParser.DirectIsaContext ctx) {
-        return var -> var.directIsa(visitVariable(ctx.variable()));
+    public UnaryOperator<VarPattern> visitIsaExplicit(GraqlParser.IsaExplicitContext ctx) {
+        return var -> var.isaExplicit(visitVariable(ctx.variable()));
     }
 
     @Override

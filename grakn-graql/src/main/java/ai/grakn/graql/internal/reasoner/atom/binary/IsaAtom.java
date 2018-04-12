@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
+import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -126,8 +126,8 @@ public abstract class IsaAtom extends IsaAtomBase {
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
                 getVarName().isa(getPredicateVariable()) :
-                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent()?
-                        getVarName().directIsa(getSchemaConcept().getLabel().getValue()) :
+                getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent()?
+                        getVarName().isaExplicit(getSchemaConcept().getLabel().getValue()) :
                         getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
     }
 

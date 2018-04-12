@@ -34,7 +34,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
+import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
@@ -210,13 +210,13 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern directIsa(String type) {
-        return directIsa(Graql.label(type));
+    public final VarPattern isaExplicit(String type) {
+        return isaExplicit(Graql.label(type));
     }
 
     @Override
-    public final VarPattern directIsa(VarPattern type) {
-        return addProperty(DirectIsaProperty.of(type.admin()));
+    public final VarPattern isaExplicit(VarPattern type) {
+        return addProperty(IsaExplicitProperty.of(type.admin()));
     }
 
     @Override
