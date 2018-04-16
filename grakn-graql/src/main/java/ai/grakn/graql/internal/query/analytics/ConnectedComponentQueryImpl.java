@@ -95,7 +95,7 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
 
     @Override
     String graqlString() {
-        String string = super.graqlString();
+        StringBuffer sb = new StringBuffer(super.graqlString());
         List<String> options = new ArrayList<>();
         if (sourceId.isPresent()) {
             options.add(" source = " + sourceId.get().getValue());
@@ -107,15 +107,15 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
             options.add(" size = " + clusterSize);
         }
         if (!options.isEmpty()) {
-            string += " where" + options.get(0);
+            sb.append(" where" + options.get(0));
 
             for(int i=1; i<options.size(); i++) {
-                string += "," + options.get(i);
+                sb.append("," + options.get(i));
             }
         }
-        string += ";";
+        sb.append(";");
 
-        return string;
+        return sb.toString();
     }
 
     @Override
