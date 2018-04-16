@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 echo "Checking out temporary branch from stable"
 git remote add grakn-docs-origin git@github.com:graknlabs/grakn.git
 git fetch grakn-docs-origin
