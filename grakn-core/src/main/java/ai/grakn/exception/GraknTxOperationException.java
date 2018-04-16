@@ -113,7 +113,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#attribute(AttributeType)}
      */
     public static GraknTxOperationException duplicateHas(Type type, AttributeType attributeType){
-        return create(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), attributeType.getLabel()));
+        return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.getLabel(), attributeType.getLabel()));
     }
 
     /**

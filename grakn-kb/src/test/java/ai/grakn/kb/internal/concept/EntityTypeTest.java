@@ -37,7 +37,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
+import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
@@ -401,7 +401,7 @@ public class EntityTypeTest extends TxTestBase {
         entityType.attribute(attributeType);
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
         entityType.key(attributeType);
     }
@@ -414,7 +414,7 @@ public class EntityTypeTest extends TxTestBase {
         entityType.key(attributeType);
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
         entityType.attribute(attributeType);
     }
