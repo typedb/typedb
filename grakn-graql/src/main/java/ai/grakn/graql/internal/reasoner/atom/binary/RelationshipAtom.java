@@ -628,22 +628,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Var> getSpecificRolePlayers() {
-        return getRoleVarMap().entries().stream()
-                .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
-                .map(Map.Entry::getValue)
-                .collect(toSet());
-    }
-
-    @Override
-    public Set<TypeAtom> getSpecificTypeConstraints() {
-        Set<Var> mappedVars = getSpecificRolePlayers();
-        return getTypeConstraints()
-                .filter(t -> mappedVars.contains(t.getVarName()))
-                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
-                .collect(toSet());
-    }
-
     @Override
     public Stream<Predicate> getInnerPredicates(){
         return Stream.concat(

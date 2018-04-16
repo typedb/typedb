@@ -481,7 +481,7 @@ public class ReasonerTest {
         String queryString2 = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;$rel label recommendation; get;";
         QueryBuilder qb = snbKB.tx().graql();
         GetQuery query = qb.infer(true).parse(queryString);
-        GetQuery query2 = qb.infer(true).materialise(true).parse(queryString);
+        GetQuery query2 = qb.infer(true).parse(queryString);
         GetQuery query3 = qb.infer(false).parse(queryString2);
 
         assertQueriesEqual(query, query2);

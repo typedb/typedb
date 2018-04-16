@@ -60,7 +60,6 @@ public class QueryBuilderImpl implements QueryBuilder {
     private final Optional<GraknTx> tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
     private boolean infer = true;
-    private boolean materialise = false;
 
     public QueryBuilderImpl() {
         this.tx = Optional.empty();
@@ -74,12 +73,6 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public QueryBuilder infer(boolean infer) {
         this.infer = infer;
-        return this;
-    }
-
-    @Override
-    public QueryBuilder materialise(boolean materialise) {
-        this.materialise = materialise;
         return this;
     }
 
@@ -100,7 +93,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
-        Match match = infer ? base.infer(materialise).admin() : base;
+        Match match = infer ? base.infer().admin() : base;
         return tx.map(match::withTx).orElse(match);
     }
 

@@ -174,19 +174,6 @@ public class InferenceRule {
     public ReasonerAtomicQuery getHead(){ return head;}
 
     /**
-     * @param sub substitution to be added to the rule
-     * @return inference rule with added substitution
-     */
-    public InferenceRule withSubstitution(Answer sub){
-        return new InferenceRule(
-                getHead().withSubstitution(sub),
-                getBody().withSubstitution(sub),
-                ruleId,
-                tx
-        );
-    }
-
-    /**
      * @return reasoner query formed of combining head and body queries
      */
     private ReasonerQueryImpl getCombinedQuery(){

@@ -94,8 +94,4 @@ public abstract class NeqPredicate extends Predicate<Var> {
     private Var getReferenceVarName(){
         return getPredicate();
     }
-
-    public static boolean notEqualsOperator(Answer answer, NeqPredicate atom) {
-        return !answer.get(atom.getVarName()).equals(answer.get(atom.getReferenceVarName()));
-    }
 }

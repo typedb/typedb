@@ -18,8 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -27,10 +25,8 @@ import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -79,12 +75,6 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @return previous value if any or null
      */
     CacheEntry<Q, T> putEntry(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
-
-    /**
-     * Copies all of the mappings from the specified map to this cache
-     * @param map with mappings to be copied
-     */
-    void putAll(Map<Q, CacheEntry<Q, T>> map){ cache.putAll(map);}
 
     /**
      * Perform cache union
@@ -150,41 +140,6 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     public abstract Stream<Answer> getAnswerStream(Q query);
 
     public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
-
-    /**
-     * return an inverse answer map which is more suitable for operations involving concept comparison (joins, filtering, etc.)
-     * NB: consumes the underlying stream for the specified query
-     * @param query for answer are to be retrieved
-     * @param vars variable names of interest
-     * @return inverse answer map for specified query
-     */
-    public Map<Pair<Var, Concept>, Set<Answer>> getInverseAnswerMap(Q query, Set<Var> vars){
-        Map<Pair<Var, Concept>, Set<Answer>> inverseAnswerMap = new HashMap<>();
-        Set<Answer> answers = getAnswerStream(query).collect(Collectors.toSet());
-        answers.forEach(answer -> answer.entrySet().stream()
-                .filter(e -> vars.contains(e.getKey()))
-                .forEach(entry -> {
-                    Pair<Var, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
-                    Set<Answer> match = inverseAnswerMap.get(key);
-                    if (match != null){
-                        match.add(answer);
-                    } else {
-                        Set<Answer> ans = new HashSet<>();
-                        ans.add(answer);
-                        inverseAnswerMap.put(key, ans);
-                    }
-                }));
-        return inverseAnswerMap;
-    }
-
-    /**
-     * returns an inverse answer map with all query variables
-     * @param query for answer are to be retrieved
-     * @return inverse answer map for specified query
-     */
-    public Map<Pair<Var, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
-        return getInverseAnswerMap(query, query.getVarNames());
-    }
 
     /**
      * cache subtraction of specified queries

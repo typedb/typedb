@@ -327,14 +327,6 @@ public abstract class ResourceAtom extends Binary{
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 
-    @Override
-    public Set<TypeAtom> getSpecificTypeConstraints() {
-        return getTypeConstraints()
-                .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
-                .collect(Collectors.toSet());
-    }
-
     private void attachAttribute(Concept owner, Attribute attribute){
         if (owner.isEntity()){
             EntityImpl.from(owner.asEntity()).attributeInferred(attribute);

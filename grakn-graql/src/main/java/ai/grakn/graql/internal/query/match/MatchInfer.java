@@ -39,11 +39,8 @@ import static ai.grakn.util.CommonUtil.optionalOr;
  */
 class MatchInfer extends MatchModifier {
 
-    private final boolean materialise;
-
-    MatchInfer(AbstractMatch inner, boolean materialise) {
+    MatchInfer(AbstractMatch inner) {
         super(inner);
-        this.materialise = materialise;
     }
 
     @Override
@@ -59,16 +56,17 @@ class MatchInfer extends MatchModifier {
 
         validatePattern(tx);
 
+
         try {
             Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<VarPatternAdmin> conj = conjIt.next();
             ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx);
             conjQuery.checkValid();
-            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve(materialise) : tx.graql().infer(false).match(conj).stream();
+            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
                 conjQuery = ReasonerQueries.create(conj, tx);
-                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve(materialise) : tx.graql().infer(false).match(conj).stream();
+                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }
             return answerStream.map(result -> result.project(getSelectedNames()));

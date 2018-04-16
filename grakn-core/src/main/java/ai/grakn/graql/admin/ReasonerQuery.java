@@ -105,11 +105,10 @@ public interface ReasonerQuery{
 
     /**
      * resolves the query
-     * @param materialise materialisation flag
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve(boolean materialise);
+    Stream<Answer> resolve();
 
     /**
      * Returns a var-type map local to this query. Map is cached.
