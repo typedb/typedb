@@ -91,7 +91,6 @@ public class GraqlControllerReadOnlyTest {
     public void setupMock() {
         mockQueryBuilder = mock(QueryBuilder.class);
 
-        when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
 
         when(printer.graqlString(any())).thenReturn(Json.object().toString());
@@ -117,7 +116,7 @@ public class GraqlControllerReadOnlyTest {
         String query = "match $x isa movie;";
         sendRequest(query);
 
-        verify(mockTx.graql().materialise(anyBoolean()).infer(anyBoolean()).parser())
+        verify(mockTx.graql().infer(anyBoolean()).parser())
                 .parseQuery(argThat(argument -> argument.equals(query)));
     }
 
