@@ -1,3 +1,23 @@
+---
+-- #%L
+-- test-integration
+-- %%
+-- Copyright (C) 2016 - 2018 Grakn Labs Ltd
+-- %%
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU Affero General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+-- 
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+-- 
+-- You should have received a copy of the GNU Affero General Public License
+-- along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-- #L%
+---
 INSERT INTO pet VALUES ('Puffball','Diane','hamster','f','1999-03-30',NULL);
 INSERT INTO pet VALUES ('Fluffy', 'Harold', 'cat', 'f', '1993-02-04', NULL);
 INSERT INTO pet VALUES ('Claws', 'Gwen', 'cat', 'm', '1994-03-17', NULL);
