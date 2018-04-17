@@ -66,6 +66,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
+    public void buildString(StringBuilder builder) {
+        builder.append(getProperty());
+    }
+
+    @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
     }

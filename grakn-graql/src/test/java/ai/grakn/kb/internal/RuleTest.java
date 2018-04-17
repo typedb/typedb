@@ -196,7 +196,7 @@ public class RuleTest {
     public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithAmbiguousPredicates_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parser().parsePattern("{$x has res1 $r; $r val =10; $r val =20;}"),
+                graknTx.graql().parser().parsePattern("{$x has res1 $r; $r == 10; $r == 20;}"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES
         );
     }
@@ -294,7 +294,7 @@ public class RuleTest {
         );
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("($x, $y); $x isa res1;"),
-                graknTx.graql().parser().parsePattern("$x val '100'"),
+                graknTx.graql().parser().parsePattern("$x == '100'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
@@ -304,7 +304,7 @@ public class RuleTest {
         );
         validateIllegalRule(
                 graknTx.graql().parser().parsePattern("($x, $y); $x isa res1;"),
-                graknTx.graql().parser().parsePattern("$x val '100'"),
+                graknTx.graql().parser().parsePattern("$x == '100'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(

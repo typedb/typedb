@@ -606,7 +606,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseBoolean() {
-        assertEquals("insert has flag true;", parse("insert has flag true;").toString());
+        assertEquals("insert has flag == true;", parse("insert has flag true;").toString());
     }
 
     @Test

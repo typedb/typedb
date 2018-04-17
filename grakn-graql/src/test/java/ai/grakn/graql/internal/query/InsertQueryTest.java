@@ -273,11 +273,11 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingAResourceWithMultipleValues_Throw() {
         VarPattern varPattern = var().val("123").val("456").isa("title");
-
+        
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties(varPattern, "val", "123", "456").getMessage(),
-                GraqlQueryException.insertMultipleProperties(varPattern, "val", "456", "123").getMessage()
+                GraqlQueryException.insertMultipleProperties(varPattern, "", "123", "456").getMessage(),
+                GraqlQueryException.insertMultipleProperties(varPattern, "", "456", "123").getMessage()
         ));
 
         qb.insert(varPattern).execute();
@@ -438,7 +438,7 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingAResourceWithoutAValue_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("name"), containsString("val")));
+        exception.expectMessage(allOf(containsString("name")));
         qb.insert(var("x").isa("name")).execute();
     }
 
