@@ -39,9 +39,9 @@ As you might have noticed, the syntax for insert queries is the same as the synt
 insert $x isa company; $x has name "Grakn";
 ```
 
-Try this query (notice that you cannot split the query with a new line in the Graql shell) as well and you will see that it will work as well.
+Try this query and you will see that it will work as well (notice that you cannot split the query with a new line in the Graql shell).
 
-Let’s open the dashboard and see what has changed: try running in the opening visualiser (**DO NOT CLOSE THE GRAQL SHELL!**)
+Let’s check if we can query the company we just created.
 ```graql
 match $x isa company has name "Grakn"; get;
 ```
@@ -62,7 +62,7 @@ you mean "Create a new company entity and assign to it the name ‘Grakn’". We
 
 
 ## Adding relationships
-So we have added Grakn to our knowledge graph. Actually we have added two copies of it, but we will take care of it later. Our "Grakn" companies, though are quite alone in the graph, so we do not know much about them. How can we add into the knowledge graph, for example the information that Grakn is in the UK? The company is there, the country is there, we know that the relation type is call `located-in` because we have used it before, but how can we connect the two?
+So we have added Grakn to our knowledge graph. Actually we have added two copies of it, but we will take care of it later. Our "Grakn" companies are quite alone in the graph. We do not know much about them. How can we tell the knowledge graph, that Grakn is located in the UK? The company is there, the country is there, we know that the relation type is called `located-in` because we have used it before, but how can establish the connection?
 
 Well that is what the `match` part of the query is for: to apply our insert action to something that is already in the knowledge graph. It looks like this:
 
@@ -75,9 +75,9 @@ insert
 (location: $c, located: $g) isa located-in;
 ```
 
-Before trying this query into the Graql shell (and committing) are you able to guess what will happen?
+Before executing this query: are you able to guess what will happen?
 
-Let us split into smaller steps: the first part is a normal match, like the ones you have encountered with get queries; the second part of the query is a normal `insert` action that gets executed _once for each result of the first part_. This means that in our case, since the first part will return two results, two relations will be inserted, once for each instance of "Grakn". So both Grakns will be located in the UK.
+Let us break the query into smaller pieces: the first part is a normal match, like the ones you have encountered with get queries; the second part of the query is a normal `insert` action that gets executed _once for each result of the first part_. This means that in our case, since the first part will return two results, two relations will be inserted, once for each instance of "Grakn". So both Grakns will be located in the UK.
 
 Try it now.
 
@@ -85,14 +85,14 @@ If you want to see the newly created relations, run
 ```graql
 match $x isa company has name "Grakn"; get;
 ```
-into the dashboard and double click on one of the two copies of the company that appears. This is telling the visualiser to fetch all the relations connected to Grakn, so we will see that Grakn is in the UK.
+and double click on one of the two copies of the company that appears. This is telling the visualiser to fetch all the relations connected to Grakn, so we will see that Grakn is in the UK.
 
   ![Grakn in the UK](/images/academy/2-graql/grakn-uk.png)
 
 ## Deleting things
-How do we delete things that we don’t want in the knowledge graph? But with a delete query of course…
+How do we delete things that we don’t want in the knowledge graph? With a delete query of course.
 
-A delete query is nothing more than a get query that uses `delete` as the action keyword there is no difference in syntax. Try this, for example:
+A delete query has the same form as a get query that uses `delete` as the action keyword. There is no difference in syntax. Try this, for example:
 
 ```graql
 match $x isa company has name "Grakn"; delete;
@@ -123,7 +123,7 @@ As a parting thought: if you omit the variables in the delete or get actions, it
 
 
 ### What have you learned?
-In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge graph. We also have learned how to match relations. By now you should have a solid foundation of Graql and you could already go on and start building your first ontology. But there are a few type of queries that I want to introduce to you.
+In this tutorial we have learned the basics of inserting and deleting data from a Grakn knowledge graph. We also have learned how to match relations. By now you should have a solid foundation of Graql and you could already go on and start building your first ontology. But there are a few types of queries that I want to introduce to you first.
 
 
 ## What next?
