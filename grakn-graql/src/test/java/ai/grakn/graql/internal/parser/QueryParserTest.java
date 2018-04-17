@@ -131,7 +131,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match\n" +
-                        "$brando val \"Marl B\" isa person;\n" +
+                        "$brando == \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
                         "get $char, $prod;"
         );
@@ -156,8 +156,8 @@ public class QueryParserTest {
         GetQuery parsed = parse(
                 "match\n" +
                         "$x isa movie, has title $t;\n" +
-                        "$t val == \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
-                        "$t val !=='Apocalypse Now'; get;\n"
+                        "$t == \"Apocalypse Now\" or {$t < 'Juno'; $t > 'Godfather';} or $t 'Spy';" +
+                        "$t !=='Apocalypse Now'; get;\n"
         );
 
         assertEquals(expected, parsed);
@@ -175,7 +175,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match $x isa movie, has title $t;" +
-                        "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val !== 'Heat';} or $t val == 'The Muppets'; get;"
+                        "{$t <= 'Juno'; $t >= 'Godfather'; $t !== 'Heat';} or $t == 'The Muppets'; get;"
         );
 
         assertEquals(expected, parsed);
@@ -191,7 +191,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match ($x, $y); $y isa person, has name $n;" +
-                        "$n val contains 'ar' or $n val /^M.*$/; get;"
+                        "$n contains 'ar' or $n /^M.*$/; get;"
         );
 
         assertEquals(expected, parsed);
@@ -201,7 +201,7 @@ public class QueryParserTest {
     public void whenParsingContainsPredicateWithAVariable_ResultMatchesJavaGraql() {
         GetQuery expected = match(var("x").val(contains(var("y")))).get();
 
-        GetQuery parsed = parse("match $x val contains $y; get;");
+        GetQuery parsed = parse("match $x contains $y; get;");
 
         assertEquals(expected, parsed);
     }
@@ -210,7 +210,7 @@ public class QueryParserTest {
     public void testValueEqualsVariableQuery() {
         GetQuery expected = match(var("s1").val(var("s2"))).get();
 
-        GetQuery parsed = parse("match $s1 val == $s2; get;");
+        GetQuery parsed = parse("match $s1 == $s2; get;");
 
         assertEquals(expected, parsed);
     }
@@ -340,7 +340,7 @@ public class QueryParserTest {
                 "match" +
                         "($p: $x, $y);" +
                         "$x isa $z;" +
-                        "$y val 'crime';" +
+                        "$y == 'crime';" +
                         "$z sub production;" +
                         "has-genre relates $p; get;"
         );
@@ -359,7 +359,7 @@ public class QueryParserTest {
         ).get();
 
         GetQuery parsed = parse(
-                "match $x isa movie; { $y isa genre val 'drama'; ($x, $y); } or $x val 'The Muppets'; get;"
+                "match $x isa movie; { $y isa genre == 'drama'; ($x, $y); } or $x == 'The Muppets'; get;"
         );
 
         assertEquals(expected, parsed);
@@ -1098,27 +1098,27 @@ public class QueryParserTest {
 
     @Test
     public void regexPredicateParsesCharacterClassesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x val /\\d/; get;"));
+        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x /\\d/; get;"));
     }
 
     @Test
     public void regexPredicateParsesQuotesCorrectly() {
-        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x val /\"/; get;"));
+        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x /\"/; get;"));
     }
 
     @Test
     public void regexPredicateParsesBackslashesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x val /\\\\/; get;"));
+        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x /\\\\/; get;"));
     }
 
     @Test
     public void regexPredicateParsesNewlineCorrectly() {
-        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x val /\\n/; get;"));
+        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x /\\n/; get;"));
     }
 
     @Test
     public void regexPredicateParsesForwardSlashesCorrectly() {
-        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x val /\\//; get;"));
+        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x /\\//; get;"));
     }
 
     @Test

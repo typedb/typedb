@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
-    public static final String NAME = "val";
+    public static final String NAME = "";
 
     public static ValueProperty of(ValuePredicate predicate) {
         return new AutoValue_ValueProperty(predicate);
