@@ -32,15 +32,15 @@ std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
 degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
-connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
-kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
+connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam (',' ccParam)*)? ';';
+kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam (',' kcParam)*)? ';';
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
 ccParam        : MEMBERS       '='      bool            # ccClusterMembers
                | SIZE          '='      INTEGER         # ccClusterSize
-               | 'source'      '='      id              # ccStartPoint
+               | SOURCE        '='      id              # ccStartPoint
                ;
 
 kcParam        : 'k'           '='      INTEGER         # kValue
@@ -140,6 +140,7 @@ CLUSTER        : 'cluster' ;
 CENTRALITY     : 'centrality' ;
 DEGREE         : 'degree' ;
 MEMBERS        : 'members' ;
+SOURCE         : 'source';
 SIZE           : 'size' ;
 USING          : 'using' ;
 WHERE          : 'where' ;

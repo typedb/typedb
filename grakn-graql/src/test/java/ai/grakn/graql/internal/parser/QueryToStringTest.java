@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
@@ -161,12 +162,15 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testClusterToString() {
+    public void testClusterUsingCCToString() {
         ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person");
         assertEquivalent(query, "compute cluster in movie, person; using connected-component;");
+    }
 
-        query = qb.compute().cluster().usingKCore().in("movie", "person");
-        assertEquivalent(query, "compute cluster in movie, person; using k-core;");
+    @Test
+    public void testClusterUsingCCWithMultiParametersToString() {
+        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie","person").clusterSize(3).membersOn().of(ConceptId.of("V1234"));
+        assertEquivalent(query, "compute cluster in movie, person; using connected-component where source = V1234, members = true, size = 3;");
     }
 
     @Test
@@ -176,7 +180,13 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testKCoreToString() {
+    public void testClusterUsingKCoreToString() {
+        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person");
+        assertEquivalent(query, "compute cluster in movie, person; using k-core;");
+    }
+
+    @Test
+    public void testClusterUsingKCoreWithKValueToString() {
         ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").kValue(10);
         assertEquivalent(query, "compute cluster in movie, person; using k-core where k = 10;");
     }
