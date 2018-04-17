@@ -67,7 +67,10 @@ public class PostProcessingTask implements BackgroundTask{
         LOG.info("starting post-processing task with ID '" + executionId + "' ... ");
         GraknKeyspaceStore keyspaceStore = factory.keyspaceStore();
         if (keyspaceStore != null) {
-            keyspaceStore.keyspaces().forEach(keyspace -> runPostProcessing(executionId, keyspace));
+            Set<Keyspace> keyspaces = keyspaceStore.keyspaces();
+            LOG.info("post-processing '" + executionId + "': attempting to process the following keyspaces: [" +
+                    keyspaces.stream().map(Keyspace::getValue).collect(Collectors.joining(", ")) + "]");
+            keyspaces.forEach(keyspace -> runPostProcessing(executionId, keyspace));
             LOG.info("post-processing task with ID " + executionId + "finished.");
         } else {
             LOG.info("post-processing " + executionId + ": waiting for system keyspace to be ready.");
