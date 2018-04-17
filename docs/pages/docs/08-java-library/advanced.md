@@ -27,7 +27,7 @@ If you require multiple transactions open at the same time then you must do this
 
 <!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
 ```java-test-ignore
-GraknSession session = Grakn.session(uri, "MyGraph");
+GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
 Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 

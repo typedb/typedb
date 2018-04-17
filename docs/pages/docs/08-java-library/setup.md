@@ -76,16 +76,16 @@ A "Keyspace" uniquely identifies the knowledge graph and allows you to create di
 Please note that keyspaces are **not** case sensitive, so the following two keyspaces are actually the same:
 
 ```java-test-ignore
-    GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-    GraknTx tx2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
+    GraknTx tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+    GraknTx tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 ```
 
 All knowledge graphs are also singletons specific to their keyspaces so be aware that in the following case:
 
 ```java-test-ignore
-   tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-   tx2 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-   tx3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
+   tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+   tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+   tx3 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 ```
 
 any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge graph.
