@@ -10,7 +10,7 @@
 ^\W*Grakn is distributed in the hope that it will be useful,$
 ^\W*but WITHOUT ANY WARRANTY; without even the implied warranty of$
 ^\W*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the$
-^\W*GNU General Public License for more details.$
+^\W*GNU Affero General Public License for more details.$
 ^\W*$
-^\W*You should have received a copy of the GNU General Public License$
-^\W*along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.$
+^\W*You should have received a copy of the GNU Affero General Public License$
+^\W*along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.$
