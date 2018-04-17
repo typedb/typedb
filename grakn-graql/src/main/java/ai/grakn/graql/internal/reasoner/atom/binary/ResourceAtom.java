@@ -291,7 +291,7 @@ public abstract class ResourceAtom extends Binary{
         if (type == null) return errors;
 
         if (!type.isAttributeType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(type.getLabel()));
             return errors;
         }
 
@@ -299,7 +299,7 @@ public abstract class ResourceAtom extends Binary{
 
         if (ownerType != null
                 && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
-            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
     }

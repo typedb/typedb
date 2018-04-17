@@ -371,17 +371,17 @@ public class RuleTest {
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x isa relation1"),
                 graknTx.graql().parser().parsePattern("$x has res1 'value'"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("{$x isa relation1, has res1 'value';}"),
                 graknTx.graql().parser().parsePattern("$x isa relation2"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x isa relation2"),
                 graknTx.graql().parser().parsePattern("{$x isa relation1, has res1 'value';"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
     }
 
@@ -404,12 +404,12 @@ public class RuleTest {
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x has relation1 'value'"),
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x has relation1 'value'"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("relation1")
         );
     }
 
