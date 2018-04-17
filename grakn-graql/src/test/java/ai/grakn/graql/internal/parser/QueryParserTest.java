@@ -156,8 +156,8 @@ public class QueryParserTest {
         GetQuery parsed = parse(
                 "match\n" +
                         "$x isa movie, has title $t;\n" +
-                        "$t val = \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
-                        "$t val !='Apocalypse Now'; get;\n"
+                        "$t val == \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
+                        "$t val !=='Apocalypse Now'; get;\n"
         );
 
         assertEquals(expected, parsed);
@@ -175,7 +175,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match $x isa movie, has title $t;" +
-                        "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val != 'Heat';} or $t val = 'The Muppets'; get;"
+                        "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val !== 'Heat';} or $t val == 'The Muppets'; get;"
         );
 
         assertEquals(expected, parsed);
@@ -210,7 +210,7 @@ public class QueryParserTest {
     public void testValueEqualsVariableQuery() {
         GetQuery expected = match(var("s1").val(var("s2"))).get();
 
-        GetQuery parsed = parse("match $s1 val = $s2; get;");
+        GetQuery parsed = parse("match $s1 val == $s2; get;");
 
         assertEquals(expected, parsed);
     }

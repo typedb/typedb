@@ -35,7 +35,7 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     protected String getSymbol() {
-        return "=";
+        return "==";
     }
 
     @Override

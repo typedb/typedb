@@ -92,9 +92,9 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value                     # predicateEq
-               | '=' VARIABLE                   # predicateVariable
-               | '!=' valueOrVar                # predicateNeq
+predicate      : '=='? value                     # predicateEq
+               | '==' VARIABLE                   # predicateVariable
+               | '!==' valueOrVar                # predicateNeq
                | '>' valueOrVar                 # predicateGt
                | '>=' valueOrVar                # predicateGte
                | '<' valueOrVar                 # predicateLt
