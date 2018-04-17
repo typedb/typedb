@@ -61,106 +61,109 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 public class ReasoningTests {
 
     @ClassRule
-    public static final SampleKBContext testSet1 = SampleKBContext.load("testSet1.gql");
+    public static final SampleKBContext reflexiveRelation = SampleKBContext.load("reflexiveRelationTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet1b = SampleKBContext.load("testSet1b.gql");
+    public static final SampleKBContext reflexiveSymmetricRelation = SampleKBContext.load("reflexiveSymmetricRelationTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet2 = SampleKBContext.load("testSet2.gql");
+    public static final SampleKBContext typeDerivation = SampleKBContext.load("typeDerivationTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet2b = SampleKBContext.load("testSet2b.gql");
+    public static final SampleKBContext typeDerivationWithDirect = SampleKBContext.load("typeDerivationWithDirectTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet2c = SampleKBContext.load("testSet2c.gql");
+    public static final SampleKBContext typeDerivationRelationsWithDirect = SampleKBContext.load("typeDerivationRelationsWithDirectTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet3 = SampleKBContext.load("testSet3.gql");
+    public static final SampleKBContext typeDerivationFromAttribute = SampleKBContext.load("typeDerivationFromAttribute.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet4 = SampleKBContext.load("testSet4.gql");
+    public static final SampleKBContext typeDerivationFromRelations = SampleKBContext.load("typeDerivationFromRelationsTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet5 = SampleKBContext.load("testSet5.gql");
+    public static final SampleKBContext freshEntityDerivation = SampleKBContext.load("freshEntityDerivationTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet6 = SampleKBContext.load("testSet6.gql");
+    public static final SampleKBContext freshEntityDerivationFromRelations = SampleKBContext.load("freshEntityDerivationFromRelationsTest.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet7 = SampleKBContext.load("testSet7.gql");
+    public static final SampleKBContext freshRelationDerivation = SampleKBContext.load("freshRelationDerivation.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet8 = SampleKBContext.load("testSet8.gql");
+    public static final SampleKBContext test7 = SampleKBContext.load("testSet7.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet9 = SampleKBContext.load("testSet9.gql");
+    public static final SampleKBContext test8 = SampleKBContext.load("testSet8.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet10 = SampleKBContext.load("testSet10.gql");
+    public static final SampleKBContext test9 = SampleKBContext.load("testSet9.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet11 = SampleKBContext.load("testSet11.gql");
+    public static final SampleKBContext test10 = SampleKBContext.load("testSet10.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet12 = SampleKBContext.load("testSet12.gql");
+    public static final SampleKBContext test11 = SampleKBContext.load("testSet11.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet13 = SampleKBContext.load("testSet13.gql");
+    public static final SampleKBContext test12 = SampleKBContext.load("testSet12.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet14 = SampleKBContext.load("testSet14.gql");
+    public static final SampleKBContext test13 = SampleKBContext.load("testSet13.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet15 = SampleKBContext.load("testSet15.gql");
+    public static final SampleKBContext test14 = SampleKBContext.load("testSet14.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet16 = SampleKBContext.load("testSet16.gql");
+    public static final SampleKBContext test15 = SampleKBContext.load("testSet15.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet17 = SampleKBContext.load("testSet17.gql");
+    public static final SampleKBContext test16 = SampleKBContext.load("testSet16.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet19 = SampleKBContext.load("testSet19.gql");
+    public static final SampleKBContext test17 = SampleKBContext.load("testSet17.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet19recursive = SampleKBContext.load("testSet19-recursive.gql");
+    public static final SampleKBContext test19 = SampleKBContext.load("testSet19.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet20 = SampleKBContext.load("testSet20.gql");
+    public static final SampleKBContext test19recursive = SampleKBContext.load("testSet19-recursive.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet21 = SampleKBContext.load("testSet21.gql");
+    public static final SampleKBContext test20 = SampleKBContext.load("testSet20.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet22 = SampleKBContext.load("testSet22.gql");
+    public static final SampleKBContext test21 = SampleKBContext.load("testSet21.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet23 = SampleKBContext.load("testSet23.gql");
+    public static final SampleKBContext test22 = SampleKBContext.load("testSet22.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet24 = SampleKBContext.load("testSet24.gql");
+    public static final SampleKBContext test23 = SampleKBContext.load("testSet23.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet25 = SampleKBContext.load("testSet25.gql");
+    public static final SampleKBContext test24 = SampleKBContext.load("testSet24.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet26 = SampleKBContext.load("testSet26.gql");
+    public static final SampleKBContext test25 = SampleKBContext.load("testSet25.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet27 = SampleKBContext.load("testSet27.gql");
+    public static final SampleKBContext test26 = SampleKBContext.load("testSet26.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet28 = SampleKBContext.load("testSet28.gql");
+    public static final SampleKBContext test27 = SampleKBContext.load("testSet27.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet28b = SampleKBContext.load("testSet28b.gql");
+    public static final SampleKBContext test28 = SampleKBContext.load("testSet28.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet29 = SampleKBContext.load("testSet29.gql");
+    public static final SampleKBContext test28b = SampleKBContext.load("testSet28b.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet30 = SampleKBContext.load("testSet30.gql");
+    public static final SampleKBContext test29 = SampleKBContext.load("testSet29.gql");
+
+    @ClassRule
+    public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
 
     @Before
     public void onStartup() throws Exception {
@@ -172,8 +175,8 @@ public class ReasoningTests {
     //as specified in the respective comments below.
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
-    public void unificationWithVarDuplicates() {
-        QueryBuilder qb = testSet1.tx().graql().infer(true);
+    public void unificationOfReflexiveRelations() {
+        QueryBuilder qb = reflexiveRelation.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$x) isa relation1; get;";
         String queryString2 = "match (role1:$x, role2:$y) isa relation1; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -187,8 +190,8 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
-    public void unificationWithVarDuplicates_SymmetricRelation() {
-        QueryBuilder qb = testSet1b.tx().graql().infer(true);
+    public void unificationOfReflexiveSymmetricRelations() {
+        QueryBuilder qb = reflexiveSymmetricRelation.tx().graql().infer(true);
         String queryString = "match (symmetricRole: $x, symmetricRole: $x) isa relation1; get;";
         String queryString2 = "match (symmetricRole: $x, symmetricRole: $y) isa relation1; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -203,7 +206,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should return a unique match.
     public void generatingMultipleIsaEdges() {
-        QueryBuilder qb = testSet2.tx().graql().infer(true);
+        QueryBuilder qb = typeDerivation.tx().graql().infer(true);
         String queryString = "match $x isa derivedEntity; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -211,7 +214,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesDirectly() {
-        QueryBuilder qb = testSet2b.tx().graql().infer(true);
+        QueryBuilder qb = typeDerivationWithDirect.tx().graql().infer(true);
         String queryString = "match $x isa derivedEntity; get;";
         String queryString2 = "match $x isa! derivedEntity; get;";
         String queryString3 = "match $x isa directDerivedEntity; get;";
@@ -225,7 +228,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Differentiated behaviour based on directedness of the isa.
     public void generatingIsaEdgesForRelationsDirectly() {
-        QueryBuilder qb = testSet2c.tx().graql().infer(true);
+        QueryBuilder qb = typeDerivationRelationsWithDirect.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa derivedRelation; get;";
         String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
         String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
@@ -239,7 +242,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should return 3 results: one for meta type, one for db, one for inferred type.
     public void queryingForGenericType_ruleDefinesNewType() {
-        QueryBuilder qb = testSet2.tx().graql().infer(true);
+        QueryBuilder qb = typeDerivation.tx().graql().infer(true);
         String queryString = "match $x isa $type; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 4);
@@ -247,13 +250,25 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: The queries should return the same two matches.
-    public void generatingIsaEdge() {
-        QueryBuilder qb = testSet4.tx().graql().infer(true);
-        String queryString = "match $x isa entity1; get;";
-        String queryString2 = "match $x isa entity2; get;";
+    public void generatingIsaEdgeFromRelations() {
+        QueryBuilder qb = typeDerivationFromRelations.tx().graql().infer(true);
+        String queryString = "match $x isa baseEntity; get;";
+        String queryString2 = "match $x isa derivedEntity; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), 2);
+        assertTrue(answers.containsAll(answers2));
+        assertTrue(answers2.containsAll(answers));
+    }
+
+    @Test //Expected result: The queries should return the same two matches.
+    public void generatingIsaEdgeFromAttribute() {
+        QueryBuilder qb = typeDerivationFromAttribute.tx().graql().infer(true);
+        String queryString = "match $x isa baseEntity; get;";
+        String queryString2 = "match $x isa derivedEntity; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers.size(), 1);
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
     }
@@ -262,9 +277,9 @@ public class ReasoningTests {
     @Ignore
     @Test //Expected result: The queries should return different matches, unique per query.
     public void generatingFreshEntity() {
-        QueryBuilder qb = testSet3.tx().graql().infer(true);
-        String queryString = "match $x isa entity1; get;";
-        String queryString2 = "match $x isa entity2; get;";
+        QueryBuilder qb = freshEntityDerivation.tx().graql().infer(true);
+        String queryString = "match $x isa baseEntity; get;";
+        String queryString2 = "match $x isa derivedEntity; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), answers2.size());
@@ -276,10 +291,10 @@ public class ReasoningTests {
     @Ignore
     @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
-        QueryBuilder qb = testSet5.tx().graql().infer(false);
-        QueryBuilder iqb = testSet5.tx().graql().infer(true);
-        String queryString = "match $x isa entity2; get;";
-        String explicitQuery = "match $x isa entity1; get;";
+        QueryBuilder qb = freshEntityDerivationFromRelations.tx().graql().infer(false);
+        QueryBuilder iqb = freshEntityDerivationFromRelations.tx().graql().infer(true);
+        String queryString = "match $x isa derivedEntity; get;";
+        String explicitQuery = "match $x isa baseEntity; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(explicitQuery).execute();
 
@@ -291,16 +306,16 @@ public class ReasoningTests {
     @Ignore
     @Test //Expected result: The query should return three different instances of relation1 with unique ids.
     public void generatingFreshRelation() {
-        QueryBuilder qb = testSet6.tx().graql().infer(true);
-        String queryString = "match $x isa relation1; get;";
+        QueryBuilder qb = freshRelationDerivation.tx().graql().infer(true);
+        String queryString = "match $x isa baseRelation; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 3);
     }
 
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
-        QueryBuilder iqb = testSet7.tx().graql().infer(true);
-        QueryBuilder qb = testSet7.tx().graql().infer(false);
+        QueryBuilder iqb = test7.tx().graql().infer(true);
+        QueryBuilder qb = test7.tx().graql().infer(false);
         String queryString = "match $x isa relation1; limit 10; get;";
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 10);
@@ -309,7 +324,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved() {
-        QueryBuilder qb = testSet8.tx().graql().infer(true);
+        QueryBuilder qb = test8.tx().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertThat(answers.stream().collect(toSet()), empty());
@@ -317,7 +332,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRepeatingRoleTypes() {
-        QueryBuilder qb = testSet9.tx().graql().infer(true);
+        QueryBuilder qb = test9.tx().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertThat(answers.stream().collect(toSet()), empty());
@@ -325,7 +340,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should return a single match
     public void roleUnificationWithLessRelationPlayersInQueryThanHead() {
-        QueryBuilder qb = testSet9.tx().graql().infer(true);
+        QueryBuilder qb = test9.tx().graql().infer(true);
         String queryString = "match (role1:$x) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -337,7 +352,7 @@ public class ReasoningTests {
      */
     @Test //Expected result: The query should return a unique match
     public void transRelationWithEntityGuardsAtBothEnds() {
-        QueryBuilder qb = testSet10.tx().graql().infer(true);
+        QueryBuilder qb = test10.tx().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -345,14 +360,14 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
-        QueryBuilder qb = testSet11.tx().graql().infer(true);
+        QueryBuilder qb = test11.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3; get;";
         assertEquals(qb.<GetQuery>parse(queryString).execute().size(), 1);
     }
 
     @Test //Expected result: The query should return two unique matches
     public void circularRuleDependencies() {
-        QueryBuilder qb = testSet12.tx().graql().infer(true);
+        QueryBuilder qb = test12.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
@@ -360,7 +375,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
-        QueryBuilder qb = testSet13.tx().graql().infer(true);
+        QueryBuilder qb = test13.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -368,7 +383,7 @@ public class ReasoningTests {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_usingExistingResourceToDefineResource() {
-        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1, has resource $y; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -381,7 +396,7 @@ public class ReasoningTests {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_queryingForGenericRelation() {
-        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1;($x, $y); get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -394,7 +409,7 @@ public class ReasoningTests {
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_usingExistingResourceToDefineSubResource() {
-        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        QueryBuilder qb = test14.tx().graql().infer(true);
         String queryString = "match $x isa entity1, has subResource $y;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -413,7 +428,7 @@ public class ReasoningTests {
 
     @Test
     public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
-        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        QueryBuilder qb = test14.tx().graql().infer(true);
 
         VarPattern has = var("x").has(Label.of("resource"), var("y"), var("r"));
         List<Answer> answers = qb.match(has).get().execute();
@@ -423,8 +438,8 @@ public class ReasoningTests {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        QueryBuilder withInference = testSet14.tx().graql().infer(true);
-        QueryBuilder withoutInference = testSet14.tx().graql().infer(false);
+        QueryBuilder withInference = test14.tx().graql().infer(true);
+        QueryBuilder withoutInference = test14.tx().graql().infer(false);
 
         VarPattern owner = label(HAS_OWNER.getLabel("resource"));
         VarPattern value = label(HAS_VALUE.getLabel("resource"));
@@ -445,7 +460,7 @@ public class ReasoningTests {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_attachingExistingResourceToARelation() {
-        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1, has resource $y; $z isa relation; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -471,7 +486,7 @@ public class ReasoningTests {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_definingResourceThroughOtherResourceWithConditionalValue() {
-        QueryBuilder qb = testSet15.tx().graql().infer(true);
+        QueryBuilder qb = test15.tx().graql().infer(true);
         String queryString = "match $x has boolean-resource $r; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
@@ -479,7 +494,7 @@ public class ReasoningTests {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void inferringSpecificResourceValue() {
-        QueryBuilder qb = testSet16.tx().graql().infer(true);
+        QueryBuilder qb = test16.tx().graql().infer(true);
         String queryString = "match $x has resource 'value'; get;";
         String queryString2 = "match $x has resource $r; get;";
         GetQuery query = qb.parse(queryString);
@@ -495,7 +510,7 @@ public class ReasoningTests {
 
     @Test
     public void resourcesAsRolePlayers() {
-        QueryBuilder qb = testSet17.tx().graql().infer(true);
+        QueryBuilder qb = test17.tx().graql().infer(true);
 
         String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
@@ -528,7 +543,7 @@ public class ReasoningTests {
 
     @Test
     public void resourcesAsRolePlayers_vpPropagationTest() {
-        QueryBuilder qb = testSet17.tx().graql().infer(true);
+        QueryBuilder qb = test17.tx().graql().infer(true);
 
         String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
         String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
@@ -561,7 +576,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
-        QueryBuilder qb = testSet19.tx().graql().infer(true);
+        QueryBuilder qb = test19.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa entity1;" +
@@ -575,7 +590,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_querySpecialisesType(){
-        QueryBuilder qb = testSet19.tx().graql().infer(true);
+        QueryBuilder qb = test19.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa subEntity1;" +
@@ -590,7 +605,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_queryOverwritesTypes(){
-        QueryBuilder qb = testSet19.tx().graql().infer(true);
+        QueryBuilder qb = test19.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa subEntity1;" +
                 "$y isa entity1;" +
@@ -605,7 +620,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule(){
-        QueryBuilder qb = testSet19recursive.tx().graql().infer(true);
+        QueryBuilder qb = test19recursive.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa entity1;" +
@@ -619,7 +634,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_querySpecialisesType_recursiveRule(){
-        QueryBuilder qb = testSet19recursive.tx().graql().infer(true);
+        QueryBuilder qb = test19recursive.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa subEntity1;" +
@@ -634,7 +649,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected_queryOverwritesTypes_recursiveRule(){
-        QueryBuilder qb = testSet19recursive.tx().graql().infer(true);
+        QueryBuilder qb = test19recursive.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa subEntity1;" +
                 "$y isa entity1;" +
@@ -649,7 +664,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverRelationHierarchy(){
-        QueryBuilder qb = testSet20.tx().graql().infer(true);
+        QueryBuilder qb = test20.tx().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
         String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -661,7 +676,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
-        QueryBuilder qb = testSet21.tx().graql().infer(true);
+        QueryBuilder qb = test21.tx().graql().infer(true);
         String queryString = "match $x isa entity1; get;";
         String queryString2 = "match $x isa sub-entity1; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -673,7 +688,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
     public void reasoningWithRepeatingRoles(){
-        QueryBuilder qb = testSet22.tx().graql().infer(true);
+        QueryBuilder qb = test22.tx().graql().infer(true);
         String queryString = "match (friend:$x1, friend:$x2) isa knows-trans; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 16);
@@ -681,7 +696,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The same set of results is always returned
     public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults(){
-        QueryBuilder qb = testSet23.tx().graql().infer(true);
+        QueryBuilder qb = test23.tx().graql().infer(true);
         String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60; get;";
         List<Answer> oldAnswers = qb.<GetQuery>parse(queryString).execute();
         for(int i = 0; i < 5 ; i++) {
@@ -694,8 +709,8 @@ public class ReasoningTests {
 
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes() {
-        QueryBuilder qb = testSet24.tx().graql().infer(true);
-        QueryBuilder qbm = testSet24.tx().graql().infer(true);
+        QueryBuilder qb = test24.tx().graql().infer(true);
+        QueryBuilder qbm = test24.tx().graql().infer(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation1; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qbm.<GetQuery>parse(queryString).execute();
@@ -707,7 +722,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes_WithNeqProperty() {
-        QueryBuilder qb = testSet24.tx().graql().infer(true);
+        QueryBuilder qb = test24.tx().graql().infer(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 6);
@@ -715,7 +730,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
     public void reasoningWithResourceValueComparison() {
-        QueryBuilder qb = testSet25.tx().graql().infer(true);
+        QueryBuilder qb = test25.tx().graql().infer(true);
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 10);
@@ -724,7 +739,7 @@ public class ReasoningTests {
     //tests if partial substitutions are propagated correctly - atom disjointness may lead to variable loss (bug #15476)
     @Test //Expected result: 2 relations obtained by correctly finding reified relations
     public void reasoningWithReifiedRelations() {
-        QueryBuilder qb = testSet26.tx().graql().infer(true);
+        QueryBuilder qb = test26.tx().graql().infer(true);
         String queryString = "match (role1: $x1, role2: $x2) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
@@ -744,7 +759,7 @@ public class ReasoningTests {
 
     @Test //Expected result: 2 relations obtained by correctly finding reified relations
     public void reasoningWithNeqProperty() {
-        QueryBuilder qb = testSet27.tx().graql().infer(true);
+        QueryBuilder qb = test27.tx().graql().infer(true);
         String queryString = "match (related-state: $s) isa holds; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
@@ -755,7 +770,7 @@ public class ReasoningTests {
 
     @Test //Expected result: number of answers equal to specified limit (no duplicates produced)
     public void duplicatesNotProducedWhenResolvingNonResolvableConjunctionsWithoutType(){
-        QueryBuilder qb = testSet28.tx().graql().infer(true);
+        QueryBuilder qb = test28.tx().graql().infer(true);
         String queryString = "match " +
                 "(role1: $x, role2: $y);" +
                 "(role1: $y, role2: $z);" +
@@ -767,7 +782,7 @@ public class ReasoningTests {
 
     @Test //Expected result: no answers (if types were incorrectly inferred the query would yield answers)
     public void relationTypesAreCorrectlyInferredInConjunction_TypeArePresent(){
-        QueryBuilder qb = testSet28.tx().graql().infer(true);
+        QueryBuilder qb = test28.tx().graql().infer(true);
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
                 "(role1: $y, role2: $z) isa relation1;" +
@@ -778,7 +793,7 @@ public class ReasoningTests {
 
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent(){
-        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        QueryBuilder qb = test28b.tx().graql().infer(true);
         String queryString = "match " +
                 "$a isa entity1;" +
                 "($a, $b); $b isa entity3;" +
@@ -792,7 +807,7 @@ public class ReasoningTests {
 
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_DisconnectedQuery(){
-        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        QueryBuilder qb = test28b.tx().graql().infer(true);
 
         String pattern = "{$a isa entity1;($a, $b); $b isa entity3;};";
         String pattern2 = "{($c, $d);};";
@@ -823,7 +838,7 @@ public class ReasoningTests {
          */
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
-        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        QueryBuilder qb = test28b.tx().graql().infer(true);
         String entryPattern = "{" +
                 "$a isa entity1;" +
                 "($a, $b);" +
@@ -852,7 +867,7 @@ public class ReasoningTests {
 
     @Test //tests a query containing a neq predicate bound to a recursive relation
     public void recursiveRelationWithNeqPredicate(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "$x != $y;";
@@ -888,7 +903,7 @@ public class ReasoningTests {
      */
     @Test
     public void recursiveRelationsWithSharedNeqPredicate_relationsAreEquivalent(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "(role1: $x, role2: $z) isa binary-base;" +
@@ -930,7 +945,7 @@ public class ReasoningTests {
      */
     @Test
     public void multipleRecursiveRelationsWithSharedNeqPredicate_neqPredicatePreventsLoops(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "(role1: $y, role2: $z) isa binary-base;" +
@@ -976,7 +991,7 @@ public class ReasoningTests {
      */
     @Test
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_symmetricPattern(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y1) isa binary-base;" +
                 "(role1: $x, role2: $z1) isa binary-base;" +
@@ -1017,7 +1032,7 @@ public class ReasoningTests {
      */
     @Test
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "$x != $z1;" +
@@ -1046,7 +1061,7 @@ public class ReasoningTests {
 
     @Test //tests whether shared resources are recognised correctly
     public void inferrableRelationWithRolePlayersSharingResource(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "$x has name $n;" +
@@ -1086,7 +1101,7 @@ public class ReasoningTests {
 
     @Test
     public void ternaryRelationsRequiryingDifferentMultiunifiers(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
 
         String queryString = "match " +
                 "(role1: $a, role2: $b, role3: $c) isa ternary-base;" +
@@ -1121,7 +1136,7 @@ public class ReasoningTests {
 
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
-        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        QueryBuilder qb = test29.tx().graql().infer(true);
 
         //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
         String queryString = "match " +
@@ -1236,7 +1251,7 @@ public class ReasoningTests {
     }
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
-        GraknTx graph = testSet29.tx();
+        GraknTx graph = test29.tx();
         QueryBuilder qb = graph.graql().infer(true);
         final int arity = (int) graph.getRelationshipType(label).relates().count();
 
@@ -1309,7 +1324,7 @@ public class ReasoningTests {
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
     public void mutuallyRecursiveRelationAndResource_queryForAttributedType(){
-        QueryBuilder qb = testSet30.tx().graql().infer(true);
+        QueryBuilder qb = test30.tx().graql().infer(true);
 
         String queryString = "match $p isa pair, has name 'ff'; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
