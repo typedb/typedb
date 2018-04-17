@@ -180,7 +180,7 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testClisterUsingKCoreToString() {
+    public void testClusterUsingKCoreToString() {
         ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person");
         assertEquivalent(query, "compute cluster in movie, person; using k-core;");
     }

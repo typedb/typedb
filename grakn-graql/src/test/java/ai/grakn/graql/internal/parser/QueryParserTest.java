@@ -724,12 +724,17 @@ public class QueryParserTest {
 
     @Test(expected = GraqlSyntaxException.class)
     public void testParseComputeClusterUsingCCWithoutCommas() {
-        parse("compute cluster in movie, person; using connected-component where size = 10 members = true");
+        parse("compute cluster in movie, person; using connected-component where size = 10 members = true;");
     }
 
     @Test(expected = GraqlSyntaxException.class)
     public void testParseComputeClusterUsingKCoreWithoutCommas() {
         parse("compute cluster in movie, person; using k-core where k = 0 k = 1");
+    }
+
+    @Test(expected = GraqlSyntaxException.class)
+    public void testParseComputeClusterUsingKCoreWithUnnecessaryComma() {
+        parse("compute cluster in movie, person; using k-core where k = 0,");
     }
 
     @Test

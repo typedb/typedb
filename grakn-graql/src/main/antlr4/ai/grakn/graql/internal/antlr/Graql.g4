@@ -40,7 +40,7 @@ count          : COUNT                     ('in' inList)? ';' ;
 
 ccParam        : MEMBERS       '='      bool            # ccClusterMembers
                | SIZE          '='      INTEGER         # ccClusterSize
-               | SOURCE      '='      id              # ccStartPoint
+               | SOURCE        '='      id              # ccStartPoint
                ;
 
 kcParam        : 'k'           '='      INTEGER         # kValue
