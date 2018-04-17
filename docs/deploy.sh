@@ -1,5 +1,14 @@
 #!/bin/bash
+
 set -e
+
+function error {
+    echo "The script failed with an error. Please remember to remove the temporary remote and branch which was created:"
+    echo "git remote remove grakn-docs-origin"
+    echo "git branch -D docs-deploy-temp"
+}
+
+trap error ERR
 
 echo "Checking out temporary branch from stable"
 git remote add grakn-docs-origin git@github.com:graknlabs/grakn.git
