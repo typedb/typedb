@@ -17,26 +17,85 @@ defineQuery    : DEFINE varPatterns ;
 undefineQuery  : UNDEFINE varPatterns ;
 deleteQuery    : matchPart 'delete' variables? ';' ;
 aggregateQuery : matchPart 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' computeMethod ;
+computeQuery   : 'compute' computeMethod ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths
-               | connectedComponent | kCore | degree | coreness ;
+computeMethod   : computeCount                                                                          // Compute count
+                | computeMin | computeMax | computeMedian | computeMean | computeStd | computeSum       // Compute statistics
+                | computePath | computePaths                                                            // Compute paths
+                | computeCentrality                                                                     // Compute centrality
+                | computeCluster                                                                        // Compute cluster
+                ;
 
-min            : MIN      'of' ofList      ('in' inList)? ';' ;
-max            : MAX      'of' ofList      ('in' inList)? ';' ;
-median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
-mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
-std            : STD      'of' ofList      ('in' inList)? ';' ;
-sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
-degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
-connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
-kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
-path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
-paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
-count          : COUNT                     ('in' inList)? ';' ;
+//min            : MIN      'of' ofList      (',' 'in' inList)? ;
+//max            : MAX      'of' ofList      (',' 'in' inList)? ;
+//median         : MEDIAN   'of' ofList      (',' 'in' inList)? ;
+//mean           : MEAN     'of' ofList      (',' 'in' inList)? ;
+//std            : STD      'of' ofList      (',' 'in' inList)? ;
+//sum            : SUM      'of' ofList      (',' 'in' inList)? ;
+//coreness         : CENTRALITY ('of' ofList)? (',' 'in' inList)? ',' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ;
+//degree           : CENTRALITY ('of' ofList)? (',' 'in' inList)? ',' USING DEGREE;
+//connectedComponent    : CLUSTER                ('in' inList)? ',' USING 'connected-component' (',' WHERE ccParam+)? ;
+//kCore                 : CLUSTER                ('in' inList)? ',' USING 'k-core'              (',' WHERE kcParam+)? ;
+//path           : PATH  'from'id ',' 'to'id (',' 'in' inList)? ;
+//paths          : PATHS 'from'id ',' 'to'id (',' 'in' inList)? ;
+//count          : COUNT                         ('in' inList)? ;
+
+
+// Compute count query syntax
+
+computeCount                    : COUNT     computeCountConditions? ;
+computeCountConditions          : computeCountCondition ;
+computeCountCondition           : 'in' inList ;
+
+// Compute statistics query syntax
+
+computeMin                      : MIN       computeStatisticsConditions ;
+computeMax                      : MAX       computeStatisticsConditions ;
+computeMedian                   : MEDIAN    computeStatisticsConditions ;
+computeMean                     : MEAN      computeStatisticsConditions ;
+computeStd                      : STD       computeStatisticsConditions ;
+computeSum                      : SUM       computeStatisticsConditions ;
+computeStatisticsConditions     : computeStatisticsCondition (',' computeStatisticsCondition)? ;
+computeStatisticsCondition      : 'of'      ofList
+                                | 'in'      inList ;
+
+// Compute path query syntax
+
+computePath                     : PATH      computePathConditions ;
+computePaths                    : PATHS     computePathConditions ;
+computePathConditions           : computePathCondition (',' computePathCondition)*;
+computePathCondition            : 'from'    id
+                                | 'to'      id
+                                | 'in'      inList ;
+
+// Compute centrality query syntax
+
+computeCentrality               : CENTRALITY computeCentralityConditions;
+computeCentralityConditions     : computeCentralityCondition (',' computeCentralityCondition )* ;
+computeCentralityCondition      : 'of'      ofList
+                                | 'in'      inList
+                                | USING     computeCentralityAlgorithm
+                                | WHERE     computeCentralityArgs ;
+computeCentralityAlgorithm      : 'k-core'
+                                | DEGREE ;
+computeCentralityArgs      : 'min-k' '=' INTEGER ;
+
+// Compute cluster query syntax
+
+computeCluster                  : CLUSTER   computeClusterConditions ;
+computeClusterConditions        : computeClusterCondition (',' computeClusterCondition)* ;
+computeClusterCondition         : 'in'      inList
+                                | USING     computeClusterAlgorithm
+                                | WHERE     computeClusterArgs ;
+computeClusterAlgorithm         : 'connected-component'
+                                | 'k-core' ;
+computeClusterArgs              : computeClusterArg
+                                | computeClusterArgArray ;
+computeClusterArgArray          : '[' computeClusterArg (',' computeClusterArg)* ']' ;
+computeClusterArg               : ccParam
+                                | kcParam ;
 
 ccParam        : MEMBERS       '='      bool            # ccClusterMembers
                | SIZE          '='      INTEGER         # ccClusterSize
@@ -46,9 +105,9 @@ ccParam        : MEMBERS       '='      bool            # ccClusterMembers
 kcParam        : 'k'           '='      INTEGER         # kValue
                ;
 
-ofList         : labelList ;
-inList         : labelList ;
-labelList      : label (',' label)* ;
+ofList         : labelList | label ;
+inList         : labelList | label ;
+labelList      : '[' label (',' label)* ']' ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
