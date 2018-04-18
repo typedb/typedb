@@ -125,7 +125,7 @@ public class QueryToStringTest {
 
     @Test
     public void testEscapeStrings() {
-        assertEquals("insert $x == \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
+        assertEquals("insert $x \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
     }
 
     @Test
@@ -204,22 +204,22 @@ public class QueryToStringTest {
     @Test
     public void testMatchInsertToString() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var("x").has("title", "hello"));
-        assertEquals("match $x isa movie;\ninsert $x has title == \"hello\";", query.toString());
+        assertEquals("match $x isa movie;\ninsert $x has title \"hello\";", query.toString());
     }
 
     @Test
     public void testZeroToString() {
-        assertEquals("match $x == 0.0;", qb.match(var("x").val(0.0)).toString());
+        assertEquals("match $x 0.0;", qb.match(var("x").val(0.0)).toString());
     }
 
     @Test
     public void testExponentsToString() {
-        assertEquals("match $x == 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
+        assertEquals("match $x 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
     }
 
     @Test
     public void testDecimalToString() {
-        assertEquals("match $x == 0.0001;", qb.match(var("x").val(0.0001)).toString());
+        assertEquals("match $x 0.0001;", qb.match(var("x").val(0.0001)).toString());
     }
 
     @Test

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;
@@ -44,6 +45,17 @@ class EqPredicate extends ComparatorPredicate {
     @Override
     public boolean isSpecific() {
         return !getInnerVar().isPresent();
+    }
+
+    @Override
+    public String toString() {
+        Optional<Object> value = value();
+        if (value.isPresent()) {
+            // Omit the `=` if we're using a literal value, not a var
+            return StringUtil.valueToString(value.get());
+        } else {
+            return super.toString();
+        }
     }
 
     @Override
