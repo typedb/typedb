@@ -11,22 +11,44 @@ matchPart      : MATCH patterns                             # matchBase
                | matchPart 'order' 'by' VARIABLE order? ';' # matchOrderBy
                ;
 
-getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+getQuery       : matchPart 'get' variables? ';' ;
 insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
 undefineQuery  : UNDEFINE varPatterns ;
 deleteQuery    : matchPart 'delete' variables? ';' ;
 aggregateQuery : matchPart 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' computeMethod ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod   : computeCount                                                                          // Compute count
-                | computeMin | computeMax | computeMedian | computeMean | computeStd | computeSum       // Compute statistics
-                | computePath | computePaths                                                            // Compute paths
-                | computeCentrality                                                                     // Compute centrality
-                | computeCluster                                                                        // Compute cluster
-                ;
+// Compute query syntax
+
+computeQuery                    : 'compute' computeMethod computeConditions? ';';
+computeMethod                   : COUNT | MIN | MAX | MEDIAN | MEAN | STD | SUM
+                                | PATH | PATHS
+                                | CENTRALITY
+                                | CLUSTER ;
+computeConditions               : computeCondition (',' computeCondition)* ;
+computeCondition                : 'of'      inList
+                                | 'in'      ofList
+                                | 'from'    id
+                                | 'to'      id
+                                | USING     computeAlgorithm
+                                | WHERE     computeArgs ;
+computeAlgorithm                : DEGREE | 'k-core' | 'connected-component' ;
+computeArgs                     : computeArgsArray | computeArg ;
+computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
+computeArg                      : 'min-k'       '='     INTEGER         # minKValue
+                                | 'k'           '='     INTEGER         # kValue
+                                | 'source'      '='     id              # ccStartPoint
+                                | MEMBERS       '='     bool            # ccClusterMembers
+                                | SIZE          '='     INTEGER         # ccClusterSize ;
+
+//computeMethod   : computeCount                                                                          // Compute count
+//                | computeMin | computeMax | computeMedian | computeMean | computeStd | computeSum       // Compute statistics
+//                | computePath | computePaths                                                            // Compute paths
+//                | computeCentrality                                                                     // Compute centrality
+//                | computeCluster                                                                        // Compute cluster
+//                ;
 
 //min            : MIN      'of' ofList      (',' 'in' inList)? ;
 //max            : MAX      'of' ofList      (',' 'in' inList)? ;
@@ -43,67 +65,13 @@ computeMethod   : computeCount                                                  
 //count          : COUNT                         ('in' inList)? ;
 
 
-// Compute count query syntax
-
-computeCount                    : COUNT     computeCountConditions? ;
-computeCountConditions          : computeCountCondition ;
-computeCountCondition           : 'in' inList ;
-
-// Compute statistics query syntax
-
-computeMin                      : MIN       computeStatisticsConditions ;
-computeMax                      : MAX       computeStatisticsConditions ;
-computeMedian                   : MEDIAN    computeStatisticsConditions ;
-computeMean                     : MEAN      computeStatisticsConditions ;
-computeStd                      : STD       computeStatisticsConditions ;
-computeSum                      : SUM       computeStatisticsConditions ;
-computeStatisticsConditions     : computeStatisticsCondition (',' computeStatisticsCondition)? ;
-computeStatisticsCondition      : 'of'      ofList
-                                | 'in'      inList ;
-
-// Compute path query syntax
-
-computePath                     : PATH      computePathConditions ;
-computePaths                    : PATHS     computePathConditions ;
-computePathConditions           : computePathCondition (',' computePathCondition)*;
-computePathCondition            : 'from'    id
-                                | 'to'      id
-                                | 'in'      inList ;
-
-// Compute centrality query syntax
-
-computeCentrality               : CENTRALITY computeCentralityConditions;
-computeCentralityConditions     : computeCentralityCondition (',' computeCentralityCondition )* ;
-computeCentralityCondition      : 'of'      ofList
-                                | 'in'      inList
-                                | USING     computeCentralityAlgorithm
-                                | WHERE     computeCentralityArgs ;
-computeCentralityAlgorithm      : 'k-core'
-                                | DEGREE ;
-computeCentralityArgs      : 'min-k' '=' INTEGER ;
-
-// Compute cluster query syntax
-
-computeCluster                  : CLUSTER   computeClusterConditions ;
-computeClusterConditions        : computeClusterCondition (',' computeClusterCondition)* ;
-computeClusterCondition         : 'in'      inList
-                                | USING     computeClusterAlgorithm
-                                | WHERE     computeClusterArgs ;
-computeClusterAlgorithm         : 'connected-component'
-                                | 'k-core' ;
-computeClusterArgs              : computeClusterArg
-                                | computeClusterArgArray ;
-computeClusterArgArray          : '[' computeClusterArg (',' computeClusterArg)* ']' ;
-computeClusterArg               : ccParam
-                                | kcParam ;
-
-ccParam        : MEMBERS       '='      bool            # ccClusterMembers
-               | SIZE          '='      INTEGER         # ccClusterSize
-               | 'source'      '='      id              # ccStartPoint
-               ;
-
-kcParam        : 'k'           '='      INTEGER         # kValue
-               ;
+//ccParam        : MEMBERS       '='      bool            # ccClusterMembers
+//               | SIZE          '='      INTEGER         # ccClusterSize
+//               | 'source'      '='      id              # ccStartPoint
+//               ;
+//
+//kcParam        : 'k'           '='      INTEGER         # kValue
+//               ;
 
 ofList         : labelList | label ;
 inList         : labelList | label ;

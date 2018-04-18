@@ -146,15 +146,15 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
-        Set<Var> vars = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-
         Match match = visitMatchPart(ctx.matchPart());
 
-        if (vars.isEmpty()) {
-            return match.get();
-        } else {
-            return match.get(vars);
+        if (ctx.variables() != null) {
+            Set<Var> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
+
+            if (!vars.isEmpty()) return match.get(vars);
         }
+
+        return match.get();
     }
 
     @Override
