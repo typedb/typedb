@@ -430,7 +430,7 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             assertShellMatches(
-                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
+                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert isa X val '" + value + "';",
                     anything(),
                     anything(),
                     "match $x isa X; get;",
@@ -451,7 +451,7 @@ public class GraqlShellIT {
 
             // Query has a syntax error
             ShellResponse response = runShell(
-                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
+                    "define X sub attribute datatype string; insert isa X value '" + value + "' ;\n"
             );
 
             assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));
