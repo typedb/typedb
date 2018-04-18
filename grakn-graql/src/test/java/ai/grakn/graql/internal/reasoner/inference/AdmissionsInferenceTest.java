@@ -48,8 +48,7 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional'; get;";
         String explicitQuery = "match $x isa applicant, has name 'Bob'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -60,8 +59,7 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied'; get;";
         String explicitQuery = "match $x isa applicant, has name 'Alice'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -72,8 +70,7 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional'; get;";
         String explicitQuery = "match $x isa applicant, has name 'Denis'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -84,8 +81,7 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript'; get;";
         String explicitQuery = "match $x isa applicant, has name 'Frank'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -96,8 +92,7 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'; get;";
         String explicitQuery = "match $x isa applicant, has name $name;{$name val 'Charlie';} or {$name val 'Eva';};get $x;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -106,7 +101,6 @@ public class AdmissionsInferenceTest {
         QueryBuilder iqb = admissionsKB.tx().graql().infer(true);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name; get;";
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(queryString));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(queryString));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(queryString));
     }
 }

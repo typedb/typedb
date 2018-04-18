@@ -201,7 +201,7 @@ public class BenchmarkTests {
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 
         SampleKBContext kb = TransitivityChainKB.context(N);
-        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
+        QueryBuilder iqb = kb.tx().graql().infer(true);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
@@ -249,7 +249,7 @@ public class BenchmarkTests {
         //results @N = 30 216225    ?       ?      ?     30 s
         //results @N = 35 396900   ?        ?      ?     76 s
         SampleKBContext kb = TransitivityMatrixKB.context(N, N);
-        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
+        QueryBuilder iqb = kb.tx().graql().infer(true);
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
@@ -304,7 +304,7 @@ public class BenchmarkTests {
         //results @N = 100 9604  loading takes ages
         SampleKBContext kb = DiagonalKB.context(N, N);
 
-        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
+        QueryBuilder iqb = kb.tx().graql().infer(true);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 

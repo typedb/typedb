@@ -125,10 +125,10 @@ in-laws sub relationship
 child-in-law sub role;
 son-in-law sub child-in-law;
 daughter-in-law sub child-in-law;
+
 parent-in-law sub role;
 mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;
-
 
 insert
 

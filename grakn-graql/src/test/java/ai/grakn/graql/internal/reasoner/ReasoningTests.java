@@ -723,14 +723,9 @@ public class ReasoningTests {
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes_WithNeqProperty() {
         QueryBuilder qb = test24.tx().graql().infer(true);
-        QueryBuilder qbm = test24.tx().graql().infer(true).materialise(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation2; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 6);
-        List<Answer> answers2 = qbm.<GetQuery>parse(queryString).execute();
-        assertEquals(answers2.size(), 6);
-        assertTrue(answers.containsAll(answers2));
-        assertTrue(answers2.containsAll(answers));
     }
 
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body

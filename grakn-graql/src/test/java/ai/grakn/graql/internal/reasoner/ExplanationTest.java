@@ -80,7 +80,7 @@ public class ExplanationTest {
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestUtil.usingTinker());
         GraknTx tx = geoKB.tx();
-        iqb = tx.graql().infer(true).materialise(false);
+        iqb = tx.graql().infer(true);
         polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
         uw = getConcept(tx, "name", "University-of-Warsaw");
         warsaw = getConcept(tx, "name", "Warsaw");

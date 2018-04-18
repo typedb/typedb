@@ -273,11 +273,6 @@ public abstract class Atom extends AtomicBase {
                 );
     }
 
-    /**
-     * @return set of type atoms that describe specific role players or resource owner
-     */
-    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
-
     @Override
     public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
 

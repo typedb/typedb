@@ -176,8 +176,8 @@ public class MatchBase extends AbstractMatch {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
-    public final Match infer(boolean materialise) {
-        return new MatchInfer(this, materialise);
+    public final Match infer() {
+        return new MatchInfer(this);
     }
 
     @Override

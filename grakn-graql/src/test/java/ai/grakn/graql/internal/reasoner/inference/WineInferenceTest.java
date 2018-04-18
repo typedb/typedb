@@ -40,19 +40,18 @@ public class WineInferenceTest {
 
     @Test
     public void testRecommendation() {
-        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW; get;";
+        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $wineName; get;";
         QueryBuilder qb = wineGraph.tx().graql().infer(false);
         QueryBuilder iqb = wineGraph.tx().graql().infer(true);
 
-        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
-                            "{$nameP val 'Bob';$nameW val 'White Champagne';} or" +
-                        "{$nameP val 'Alice';$nameW val 'Cabernet Sauvignion';} or" +
-                        "{$nameP val 'Charlie';$nameW val 'Pinot Grigio Rose';} or" +
-                        "{$nameP val 'Denis';$nameW val 'Busuioaca Romaneasca';} or" +
-                        "{$nameP val 'Eva';$nameW val 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; get $x, $y, $nameW;";
+        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $wineName;" +
+                            "{$nameP val 'Bob';$wineName val 'White Champagne';} or" +
+                        "{$nameP val 'Alice';$wineName val 'Cabernet Sauvignion';} or" +
+                        "{$nameP val 'Charlie';$wineName val 'Pinot Grigio Rose';} or" +
+                        "{$nameP val 'Denis';$wineName val 'Busuioaca Romaneasca';} or" +
+                        "{$nameP val 'Eva';$wineName val 'Tamaioasa Romaneasca';} or" +
+                        "{$nameP val 'Frank';$wineName val 'Riojo Blanco CVNE 2003';}; get $x, $y, $wineName;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 }
