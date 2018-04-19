@@ -68,15 +68,15 @@ The Grakn console can be accessed similarly to graql console by typing `grakn co
 
 ![](/images/gc-grakn-console.png)
 
-Grakn console allows to perform the following actions:
+Provided you log in as user with`admin` privileges, Grakn console allows to perform the following actions:
 
 * create a new user:
 
 `CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
 
-* update existing user's password and/or role:
+* update existing user's password
 
-`UPDATE username WITH PASSWORD newpassword WITH ROLE newrole`
+`UPDATE username WITH PASSWORD newpassword`
 
 * retrieve all the users present:
 
