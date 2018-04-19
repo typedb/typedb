@@ -175,7 +175,7 @@ public enum ErrorMessage {
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
 
-    INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
+    INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
@@ -204,6 +204,8 @@ public enum ErrorMessage {
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
+    INVALID_COMPUTE_METHOD("Invalid compute method."),
+    INVALID_COMPUTE_COUNT_CONDITION("Invalid `compute count` condition. Only `in <subgraph>` can be given, such as: `compute count in [person, movie]`"),
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),

@@ -28,12 +28,17 @@ computeMethod                   : COUNT | MIN | MAX | MEDIAN | MEAN | STD | SUM
                                 | CENTRALITY
                                 | CLUSTER ;
 computeConditions               : computeCondition (',' computeCondition)* ;
-computeCondition                : 'of'      inList
-                                | 'in'      ofList
-                                | 'from'    id
-                                | 'to'      id
+computeCondition                : 'from'    computeFromID
+                                | 'to'      computeToID
+                                | 'of'      computeOfLabels
+                                | 'in'      computeInLabels
                                 | USING     computeAlgorithm
                                 | WHERE     computeArgs ;
+
+computeFromID                   : id ;
+computeToID                     : id ;
+computeOfLabels                 : labels ;
+computeInLabels                 : labels ;
 computeAlgorithm                : DEGREE | 'k-core' | 'connected-component' ;
 computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
@@ -43,26 +48,22 @@ computeArg                      : 'min-k'       '='     INTEGER         # minKVa
                                 | MEMBERS       '='     bool            # ccClusterMembers
                                 | SIZE          '='     INTEGER         # ccClusterSize ;
 
-//computeMethod   : computeCount                                                                          // Compute count
-//                | computeMin | computeMax | computeMedian | computeMean | computeStd | computeSum       // Compute statistics
-//                | computePath | computePaths                                                            // Compute paths
-//                | computeCentrality                                                                     // Compute centrality
-//                | computeCluster                                                                        // Compute cluster
-//                ;
+//computeMethod  : min | max | median | mean | std | sum | count | path | paths
+//               | connectedComponent | kCore | degree | coreness ;
 
-//min            : MIN      'of' ofList      (',' 'in' inList)? ;
-//max            : MAX      'of' ofList      (',' 'in' inList)? ;
-//median         : MEDIAN   'of' ofList      (',' 'in' inList)? ;
-//mean           : MEAN     'of' ofList      (',' 'in' inList)? ;
-//std            : STD      'of' ofList      (',' 'in' inList)? ;
-//sum            : SUM      'of' ofList      (',' 'in' inList)? ;
-//coreness         : CENTRALITY ('of' ofList)? (',' 'in' inList)? ',' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ;
-//degree           : CENTRALITY ('of' ofList)? (',' 'in' inList)? ',' USING DEGREE;
-//connectedComponent    : CLUSTER                ('in' inList)? ',' USING 'connected-component' (',' WHERE ccParam+)? ;
-//kCore                 : CLUSTER                ('in' inList)? ',' USING 'k-core'              (',' WHERE kcParam+)? ;
-//path           : PATH  'from'id ',' 'to'id (',' 'in' inList)? ;
-//paths          : PATHS 'from'id ',' 'to'id (',' 'in' inList)? ;
-//count          : COUNT                         ('in' inList)? ;
+//min            : MIN      'of' ofList      ('in' inList)? ';' ;
+//max            : MAX      'of' ofList      ('in' inList)? ';' ;
+//median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
+//mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
+//std            : STD      'of' ofList      ('in' inList)? ';' ;
+//sum            : SUM      'of' ofList      ('in' inList)? ';' ;
+//coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
+//degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
+//connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
+//kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
+//path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
+//paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
+//count          : COUNT                     ('in' inList)? ';' ;
 
 
 //ccParam        : MEMBERS       '='      bool            # ccClusterMembers
@@ -73,9 +74,9 @@ computeArg                      : 'min-k'       '='     INTEGER         # minKVa
 //kcParam        : 'k'           '='      INTEGER         # kValue
 //               ;
 
-ofList         : labelList | label ;
-inList         : labelList | label ;
-labelList      : '[' label (',' label)* ']' ;
+//ofList         : labelList ;
+//inList         : labelList ;
+//labelList      : label (',' label)* ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -140,6 +141,8 @@ value          : STRING   # valueString
                | DATETIME # valueDateTime
                ;
 
+labels         : labelsArray | label ;
+labelsArray    : '[' label (',' label)* ']' ;
 label          : identifier | IMPLICIT_IDENTIFIER;
 id             : identifier ;
 

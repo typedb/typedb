@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.macro.Macro;
+import ai.grakn.util.Syntax;
 import ai.grakn.util.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
@@ -338,5 +339,13 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException unexpectedResult(Var var) {
         return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
+    }
+
+    public static GraqlQueryException invalidComputeMethod() {
+        return create(ErrorMessage.INVALID_COMPUTE_METHOD.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCountCondition() {
+        return create(ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION.getMessage());
     }
 }
