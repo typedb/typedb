@@ -22,23 +22,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.Order;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.*;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -62,6 +46,7 @@ import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.math3.stat.descriptive.rank.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -624,31 +609,36 @@ class QueryVisitor extends GraqlBaseVisitor {
     // Building Graql Compute (Analytics) Queries                                                                     //
     //================================================================================================================//
 
+    /**
+     * Visits the compute query parsed syntax tree and builds the appropriate compute query
+     * @param ctx
+     * @return A subtype of ComputeQuery object
+     */
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         String method = ctx.computeMethod().getText();
 
-        switch(method) {
+        switch (method) {
             case Syntax.Compute.COUNT:
                 return buildComputeCountQuery(ctx.computeConditions());
 
             case Syntax.Compute.MIN:
-                return buildComputeMinQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MIN);
 
             case Syntax.Compute.MAX:
-                return buildComputeMaxQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MAX);
 
             case Syntax.Compute.MEDIAN:
-                return buildComputeMedianQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEDIAN);
 
             case Syntax.Compute.MEAN:
-                return buildComputeMeanQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEAN);
 
             case Syntax.Compute.STD:
-                return buildComputeStdQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.STD);
 
             case Syntax.Compute.SUM:
-                return buildComputeSumQuery(ctx.computeConditions());
+                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.SUM);
 
             case Syntax.Compute.PATH:
                 return buildComputePathQuery(ctx.computeConditions());
@@ -667,110 +657,187 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
     }
 
-    // Building Graql Compute Statistics Queries
-    public CountQuery   buildComputeCountQuery  (GraqlParser.ComputeConditionsContext ctx) {
-        CountQuery count = queryBuilder.compute().count();
+    /**
+     * Builds a graql compute count query
+     *
+     * @param ctx
+     * @return CountQuery object
+     */
+    private CountQuery buildComputeCountQuery(GraqlParser.ComputeConditionsContext ctx) {
+        CountQuery computeCount = queryBuilder.compute().count();
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()){
-            if(condition.getRuleIndex() == GraqlParser.RULE_computeInLabels){
-                count = count.in(visitComputeInLabels(condition.computeInLabels()));
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computeCount = computeCount.in(visitComputeInLabels(condition.computeInLabels()));
             } else {
                 throw GraqlQueryException.invalidComputeCountCondition();
             }
         }
 
-        return count;
+        return computeCount;
     }
 
-    public MinQuery     buildComputeMinQuery    (GraqlParser.ComputeConditionsContext ctx) {
-        MinQuery min = queryBuilder.compute().min().of(visitComputeOfLabels(ctx.ofList()));
+    /**
+     * Builds a graql compute statistics queries: min, max, median, mean, std, sum
+     *
+     * @param ctx
+     * @param methodIndex
+     * @return A subtype of StatisticsQuery object
+     */
+    private StatisticsQuery<?> buildComputeStatisticsQuery(GraqlParser.ComputeConditionsContext ctx, int methodIndex) {
+        StatisticsQuery<?> computeStatistics = constructComputeStatisticsQuery(methodIndex);
 
-        if (ctx.inList() != null) {
-            min = min.in(visitComputeInLabels(ctx.inList()));
+        boolean computeOfConditionExists = false;
+        boolean invalidComputeConditionExists = false;
+
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            if (condition.getRuleIndex() == GraqlParser.RULE_computeOfLabels) {
+                computeOfConditionExists = true;
+                computeStatistics = computeStatistics.of(visitComputeOfLabels(condition.computeOfLabels()));
+            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computeStatistics = computeStatistics.in(visitComputeInLabels(condition.computeInLabels()));
+            } else {
+                invalidComputeConditionExists = true;
+                break; // sorry for the BREAK in a for loop, but I think it would be appropriate (and efficient) here
+            }
         }
 
-        return min;
-    }
-
-    public MaxQuery     buildComputeMaxQuery    (GraqlParser.ComputeConditionsContext ctx) {
-        MaxQuery max = queryBuilder.compute().max().of(visitComputeOfLabels(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            max = max.in(visitComputeInLabels(ctx.inList()));
+        if (!computeOfConditionExists || invalidComputeConditionExists) {
+            throwComputeStatisticsException(methodIndex, computeOfConditionExists, invalidComputeConditionExists);
         }
 
-        return max;
+        return computeStatistics;
     }
 
-    public MedianQuery  buildComputeMedianQuery (GraqlParser.ComputeConditionsContext ctx) {
-        MedianQuery median = queryBuilder.compute().median().of(visitComputeOfLabels(ctx.ofList()));
+    /**
+     * Helper method to construct specific subtype of StatisticsQuery depending on a given compute statistics method
+     * index.
+     *
+     * @param methodIndex
+     * @return A subtype of StatisticsQuery object
+     */
+    private StatisticsQuery<?> constructComputeStatisticsQuery(int methodIndex) {
+        switch (methodIndex) {
+            case GraqlParser.MIN:
+                return queryBuilder.compute().min();
+            case GraqlParser.MAX:
+                return queryBuilder.compute().max();
+            case GraqlParser.MEDIAN:
+                return queryBuilder.compute().median();
+            case GraqlParser.MEAN:
+                return queryBuilder.compute().mean();
+            case GraqlParser.STD:
+                return queryBuilder.compute().std();
+            case GraqlParser.SUM:
+                return queryBuilder.compute().sum();
+            default:
+                throw GraqlQueryException.invalidComputeMethod();
+        }
+    }
 
-        if (ctx.inList() != null) {
-            median = median.in(visitComputeInLabels(ctx.inList()));
+    /**
+     * Helper method to throw a specific GraqlQueryException depending on a given compute statistics method index and
+     * compute condition characteristics.
+     *
+     * @param methodIndex
+     * @param computeOfConditionExists
+     * @param invalidComputeConditionExists
+     */
+    private void throwComputeStatisticsException
+    (int methodIndex, boolean computeOfConditionExists, boolean invalidComputeConditionExists) {
+        switch (methodIndex) {
+            case GraqlParser.MIN:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeMinMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeMinCondition();
+            case GraqlParser.MAX:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeMaxMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeMaxCondition();
+            case GraqlParser.MEDIAN:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeMedianMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeMedianCondition();
+            case GraqlParser.MEAN:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeMeanMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeMeanCondition();
+            case GraqlParser.STD:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeStdMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeStdCondition();
+            case GraqlParser.SUM:
+                if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeSumMissingCondition();
+                if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeSumCondition();
+            default:
+        }
+    }
+
+    /**
+     * Builds graql compute path query
+     * @param ctx
+     * @return PathQuery object
+     */
+    private PathQuery buildComputePathQuery(GraqlParser.ComputeConditionsContext ctx) {
+        PathQuery computePath = queryBuilder.compute().path();
+
+        boolean computeFromIDExists = false;
+        boolean computeToIDExists = false;
+
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
+                computePath = computePath.from(visitId(condition.computeFromID().id()));
+                computeFromIDExists = true;
+            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
+                computePath = computePath.from(visitId(condition.computeToID().id()));
+                computeToIDExists = true;
+            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computePath = computePath.in(visitComputeInLabels(condition.computeInLabels()));
+            } else {
+                throw GraqlQueryException.invalidComputePathCondition();
+            }
         }
 
-        return median;
-    }
-
-    public MeanQuery    buildComputeMeanQuery   (GraqlParser.ComputeConditionsContext ctx) {
-        MeanQuery mean = queryBuilder.compute().mean();
-
-        if (ctx.ofList() != null) {
-            mean = mean.of(visitComputeOfLabels(ctx.ofList()));
+        if(!computeFromIDExists || !computeToIDExists) {
+            throw GraqlQueryException.invalidComputePathMissingCondition();
         }
 
-        if (ctx.inList() != null) {
-            mean = mean.in(visitComputeInLabels(ctx.inList()));
+        return computePath;
+    }
+
+    /**
+     * Builds a graql compute path query
+     * @param ctx
+     * @return PathQuery object
+     */
+    // TODO this function should be merged with the singular PathQuery builder once there is an abstraction over the two
+    private PathsQuery buildComputePathsQuery(GraqlParser.ComputeConditionsContext ctx) {
+        PathsQuery computePaths = queryBuilder.compute().paths();
+
+        boolean computeFromIDExists = false;
+        boolean computeToIDExists = false;
+
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
+                computePaths = computePaths.from(visitId(condition.computeFromID().id()));
+                computeFromIDExists = true;
+            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
+                computePaths = computePaths.from(visitId(condition.computeToID().id()));
+                computeToIDExists = true;
+            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computePaths = computePaths.in(visitComputeInLabels(condition.computeInLabels()));
+            } else {
+                throw GraqlQueryException.invalidComputePathsCondition();
+            }
         }
 
-        return mean;
-    }
-
-    public StdQuery     buildComputeStdQuery    (GraqlParser.ComputeConditionsContext ctx) {
-        StdQuery std = queryBuilder.compute().std().of(visitComputeOfLabels(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            std = std.in(visitComputeInLabels(ctx.inList()));
+        if(!computeFromIDExists || !computeToIDExists) {
+            throw GraqlQueryException.invalidComputePathsMissingCondition();
         }
 
-        return std;
+        return computePaths;
     }
 
-    public SumQuery     buildComputeSumQuery    (GraqlParser.ComputeConditionsContext ctx) {
-        SumQuery sum = queryBuilder.compute().sum().of(visitComputeOfLabels(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            sum = sum.in(visitComputeInLabels(ctx.inList()));
-        }
-
-        return sum;
-    }
-
-    public PathQuery    buildComputePathQuery   (GraqlParser.ComputeConditionsContext ctx) {
-        PathQuery path = queryBuilder.compute().path().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
-
-        if (ctx.inList() != null) {
-            path = path.in(visitComputeInLabels(ctx.inList()));
-        }
-
-        return path;
-    }
-
-    public PathsQuery   buildComputePathsQuery  (GraqlParser.ComputeConditionsContext ctx) {
-        PathsQuery paths = queryBuilder.compute().paths().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
-
-        if (ctx.inList() != null) {
-            paths = paths.in(visitComputeInLabels(ctx.inList()));
-        }
-
-        return paths;
-    }
-
-    public ComputeQuery<?> buildComputeCentralityQuery (GraqlParser.ComputeConditionsContext ctx) {
+    private ComputeQuery<?> buildComputeCentralityQuery(GraqlParser.ComputeConditionsContext ctx) {
 
     }
 
-    public ComputeQuery<?> buildComputeClusterQuery (GraqlParser.ComputeConditionsContext ctx) {
+    private ComputeQuery<?> buildComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
 
     }
 

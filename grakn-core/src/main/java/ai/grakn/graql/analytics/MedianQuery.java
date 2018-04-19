@@ -36,12 +36,14 @@ public interface MedianQuery extends StatisticsQuery<Optional<Number>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a MedianQuery with the subTypeLabels set
      */
+    @Override
     MedianQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a MedianQuery with the subTypeLabels set
      */
+    @Override
     MedianQuery of(Collection<Label> resourceLabels);
 
     /**

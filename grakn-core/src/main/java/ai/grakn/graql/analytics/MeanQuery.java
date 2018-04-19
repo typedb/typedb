@@ -36,12 +36,14 @@ public interface MeanQuery extends StatisticsQuery<Optional<Double>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a MeanQuery with the subTypeLabels set
      */
+    @Override
     MeanQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a MeanQuery with the subTypeLabels set
      */
+    @Override
     MeanQuery of(Collection<Label> resourceLabels);
 
     /**

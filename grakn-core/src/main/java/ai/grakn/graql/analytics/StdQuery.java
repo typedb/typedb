@@ -36,12 +36,14 @@ public interface StdQuery extends StatisticsQuery<Optional<Double>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a StdQuery with the subTypeLabels set
      */
+    @Override
     StdQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a StdQuery with the subTypeLabels set
      */
+    @Override
     StdQuery of(Collection<Label> resourceLabels);
 
     /**

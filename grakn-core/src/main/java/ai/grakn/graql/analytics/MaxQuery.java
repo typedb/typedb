@@ -36,12 +36,14 @@ public interface MaxQuery extends StatisticsQuery<Optional<Number>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a MaxQuery with the subTypeLabels set
      */
+    @Override
     MaxQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a MaxQuery with the subTypeLabels set
      */
+    @Override
     MaxQuery of(Collection<Label> resourceLabels);
 
     /**

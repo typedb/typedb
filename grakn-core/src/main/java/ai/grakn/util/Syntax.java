@@ -46,6 +46,5 @@ public class Syntax {
         public static final String PATHS        = "paths";
         public static final String CENTRALITY   = "centrality";
         public static final String CLUSTER      = "cluster";
-        public static final String[] METHODS    = {COUNT, MIN, MAX, MEDIAN, MEAN, STD, SUM, PATH, PATHS, CENTRALITY, CLUSTER};
     }
 }

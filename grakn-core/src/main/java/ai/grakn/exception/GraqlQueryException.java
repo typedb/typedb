@@ -38,14 +38,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 
-import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
-import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
-import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
-import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
-import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static ai.grakn.util.ErrorMessage.*;
 
 /**
  * <p>
@@ -293,7 +286,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
     }
 
-    public static GraqlQueryException illegalAtomConversion(Atomic atom){
+    public static GraqlQueryException illegalAtomConversion(Atomic atom) {
         return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
     }
 
@@ -342,10 +335,74 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException invalidComputeMethod() {
-        return create(ErrorMessage.INVALID_COMPUTE_METHOD.getMessage());
+        return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage());
     }
 
     public static GraqlQueryException invalidComputeCountCondition() {
-        return create(ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION.getMessage());
+        return new GraqlQueryException(INVALID_COMPUTE_COUNT_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMinCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MIN_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMinMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MIN_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMaxCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MAX_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMaxMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MAX_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMedianCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MEDIAN_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMedianMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MEDIAN_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMeanCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MEAN_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeMeanMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_MEAN_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeStdCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_STD_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeStdMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_STD_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeSumCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_SUM_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeSumMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_SUM_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputePathCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_PATH_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputePathMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_PATH_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputePathsCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_PATHS_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputePathsMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_PATHS_MISSING_CONDITION.getMessage());
     }
 }

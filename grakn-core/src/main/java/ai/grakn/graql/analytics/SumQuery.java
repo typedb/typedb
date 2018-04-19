@@ -36,12 +36,14 @@ public interface SumQuery extends StatisticsQuery<Optional<Number>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
+    @Override
     SumQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
+    @Override
     SumQuery of(Collection<Label> resourceLabels);
 
     /**

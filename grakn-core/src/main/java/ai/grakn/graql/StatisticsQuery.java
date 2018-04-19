@@ -45,6 +45,20 @@ public interface StatisticsQuery<T> extends ComputeQuery<T> {
     StatisticsQuery<T> of(Collection<Label> resourceLabels);
 
     /**
+     * @param subTypelabels an array of types to include in the subgraph
+     * @return a StatisticsQuery with the subTypelabels set
+     */
+    @Override
+    StatisticsQuery<T> in(String... subTypelabels);
+
+    /**
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a StatisticsQuery with the subTypelabels set
+     */
+    @Override
+    StatisticsQuery<T> in(Collection<? extends Label> subLabels);
+
+    /**
      * Get the collection of types of attributes to execute the query on
      */
     Collection<? extends Label> attributeLabels();

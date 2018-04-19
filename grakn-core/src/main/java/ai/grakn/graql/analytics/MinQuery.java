@@ -36,12 +36,14 @@ public interface MinQuery extends StatisticsQuery<Optional<Number>> {
      * @param resourceTypeLabels an array of types of resources to execute the query on
      * @return a MinQuery with the subTypeLabels set
      */
+    @Override
     MinQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceLabels a collection of types of resources to execute the query on
      * @return a MinQuery with the subTypeLabels set
      */
+    @Override
     MinQuery of(Collection<Label> resourceLabels);
 
     /**
