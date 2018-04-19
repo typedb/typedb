@@ -100,7 +100,7 @@ parentship sub relationship
 There are a number of things we can say about schema shown above:
 
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying.
-* the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are expressed as strings, long, double, date or boolean.
+* the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are expressed as strings, long, or date. Grakn also supports double and boolean.
 * there are two relationships that a `person` can participate in: `marriage` and `parentship`
 * the person can play different roles in those relationships, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
 * the `marriage` relationship has an attribute, which is a URL to a wedding picture, if one exists.
