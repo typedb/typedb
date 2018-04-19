@@ -110,6 +110,7 @@
         <hystrix-core.version>1.5.12</hystrix-core.version>
         <failsafe.version>1.0.4</failsafe.version>
         <reactivex.version>1.3.2</reactivex.version>
+        <zip4j.version>1.3.2</zip4j.version>
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
@@ -810,7 +811,7 @@
             <dependency>
                 <groupId>net.lingala.zip4j</groupId>
                 <artifactId>zip4j</artifactId>
-                <version>1.3.2</version>
+                <version>${zip4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-collections</groupId>
