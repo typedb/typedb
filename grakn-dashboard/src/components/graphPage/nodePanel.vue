@@ -151,6 +151,10 @@ export default {
     },
     nodeProperties() {
       if (this.node === undefined) return {};
+      if(this.node.baseType === 'INFERRED_RELATIONSHIP') return {
+        type: this.node.type,
+        baseType: this.node.baseType,
+      }
       return {
         id: this.node.id,
         type: this.node.type,
