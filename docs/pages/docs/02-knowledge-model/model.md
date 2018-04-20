@@ -149,7 +149,7 @@ define
   plays employer;
 
   name sub attribute, datatype string;
-  "date" sub attribute, datatype string;
+  "date" sub attribute, datatype date;
 
   employment sub relationship,
     relates employee, relates employer,
