@@ -80,7 +80,7 @@ surname sub name datatype string;
 middlename sub name datatype string;
 picture sub attribute datatype string;
 age sub attribute datatype long;
-"date" sub attribute datatype string;
+"date" sub attribute datatype date;
 birth-date sub "date" datatype date;
 death-date sub "date" datatype date;
 gender sub attribute datatype string;
