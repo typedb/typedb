@@ -50,7 +50,7 @@ You can find out much more about the Grakn schema in our documentation about the
 
 For the purposes of this guide, the schema describes items of data and defines how they relate to one another. You need to have a basic understanding of the schema to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
 
-```graql
+```graql-test-ignore
 define
 
 # Entities
