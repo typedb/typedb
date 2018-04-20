@@ -48,9 +48,9 @@ define
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype string;
-  birth-date sub "date" datatype string;
-  death-date sub "date" datatype string;
+  "date" sub attribute datatype date;
+  birth-date sub "date" datatype date;
+  death-date sub "date" datatype date;
   gender sub attribute datatype string;
 
 # Roles and Relations
@@ -120,10 +120,10 @@ birth sub event
 death sub event
   has death-date;
 
-# Resources
+# Attributes
   degree sub attribute datatype string;
   confidence sub attribute datatype string;
-  "date" sub attribute datatype string;
+  "date" sub attribute datatype date;
   identifier sub attribute datatype string;
   notes sub attribute datatype string;
   conclusion sub attribute datatype string;
@@ -285,7 +285,7 @@ define
   daughter sub child;
 
 ## Resources
-  "date" sub attribute datatype string;
+  "date" sub attribute datatype date;
   notes sub attribute datatype string;
   happening sub attribute datatype string;
   degree sub attribute datatype string;

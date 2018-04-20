@@ -65,9 +65,9 @@ name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
 surname = tx.putAttributeType("surname", AttributeType.DataType.STRING).sup(name);
 middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING).sup(name);
-date = tx.putAttributeType("date", AttributeType.DataType.STRING);
-birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING).sup(date);
-deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING).sup(date);
+date = tx.putAttributeType("date", AttributeType.DataType.DATE);
+birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE).sup(date);
+deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE).sup(date);
 gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
