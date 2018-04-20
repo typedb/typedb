@@ -376,6 +376,14 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Set<Label> visitLabels(GraqlParser.LabelsContext ctx) {
+        Set<Label> labels = ctx.labelsArray().label().stream().map(this::visitLabel).collect(toSet());
+        labels.add(visitLabel(ctx.label()));
+
+        return labels;
+    }
+
+    @Override
     public ConceptId visitId(GraqlParser.IdContext ctx) {
         return ConceptId.of(visitIdentifier(ctx.identifier()));
     }
@@ -610,7 +618,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     //================================================================================================================//
 
     /**
-     * Visits the compute query parsed syntax tree and builds the appropriate compute query
+     * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
+     *
      * @param ctx
      * @return A subtype of ComputeQuery object
      */
@@ -657,6 +666,8 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
     }
 
+
+
     /**
      * Builds a graql compute count query
      *
@@ -667,9 +678,14 @@ class QueryVisitor extends GraqlBaseVisitor {
         CountQuery computeCount = queryBuilder.compute().count();
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+
+            // The 'compute count' query may take in 'in <types>' condition
             if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computeCount = computeCount.in(visitComputeInLabels(condition.computeInLabels()));
-            } else {
+                computeCount = computeCount.in(visitLabels(condition.computeInLabels().labels()));
+            }
+
+            // The 'compute count query does not take in any other condition
+            else {
                 throw GraqlQueryException.invalidComputeCountCondition();
             }
         }
@@ -691,14 +707,24 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean invalidComputeConditionExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+
+            // The 'compute <statistics>' query requires a 'of <types>' condition
             if (condition.getRuleIndex() == GraqlParser.RULE_computeOfLabels) {
                 computeOfConditionExists = true;
-                computeStatistics = computeStatistics.of(visitComputeOfLabels(condition.computeOfLabels()));
-            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computeStatistics = computeStatistics.in(visitComputeInLabels(condition.computeInLabels()));
-            } else {
+                computeStatistics = computeStatistics.of(visitLabels(condition.computeOfLabels().labels()));
+            }
+
+            // The 'compute <statistics>' query may take in 'in <types>' condition
+            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computeStatistics = computeStatistics.in(visitLabels(condition.computeInLabels().labels()));
+            }
+
+            // The 'compute <statistics>' query does not take in any other condition
+            // And if any other condition is found, mark as invalid and just BREAK out of the loop
+            // (sorry for the BREAK in a for loop, but I think it would be appropriate and efficient here)
+            else {
                 invalidComputeConditionExists = true;
-                break; // sorry for the BREAK in a for loop, but I think it would be appropriate (and efficient) here
+                break;
             }
         }
 
@@ -765,11 +791,13 @@ class QueryVisitor extends GraqlBaseVisitor {
                 if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeSumMissingCondition();
                 if (invalidComputeConditionExists) throw GraqlQueryException.invalidComputeSumCondition();
             default:
+                break;
         }
     }
 
     /**
      * Builds graql compute path query
+     *
      * @param ctx
      * @return PathQuery object
      */
@@ -780,20 +808,31 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+
+            // The 'compute path' query requires a 'from <id>' condition
             if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
                 computePath = computePath.from(visitId(condition.computeFromID().id()));
                 computeFromIDExists = true;
-            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
+            }
+
+            // The 'compute path' query requires a 'to <id>' condition
+            else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
                 computePath = computePath.from(visitId(condition.computeToID().id()));
                 computeToIDExists = true;
-            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computePath = computePath.in(visitComputeInLabels(condition.computeInLabels()));
-            } else {
+            }
+
+            // The 'compute path' query may take in 'in <types>' condition
+            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computePath = computePath.in(visitLabels(condition.computeInLabels().labels()));
+            }
+
+            // The 'compute path' query does not take in any other condition
+            else {
                 throw GraqlQueryException.invalidComputePathCondition();
             }
         }
 
-        if(!computeFromIDExists || !computeToIDExists) {
+        if (!computeFromIDExists || !computeToIDExists) {
             throw GraqlQueryException.invalidComputePathMissingCondition();
         }
 
@@ -802,10 +841,11 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     /**
      * Builds a graql compute path query
+     *
      * @param ctx
      * @return PathQuery object
      */
-    // TODO this function should be merged with the singular PathQuery builder once there is an abstraction over the two
+    // TODO this function should be merged with the [singular] buildComputePathQuery() once they have an abstraction
     private PathsQuery buildComputePathsQuery(GraqlParser.ComputeConditionsContext ctx) {
         PathsQuery computePaths = queryBuilder.compute().paths();
 
@@ -813,28 +853,44 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+
+            // The 'compute paths' query requires a 'from <id>' condition
             if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
                 computePaths = computePaths.from(visitId(condition.computeFromID().id()));
                 computeFromIDExists = true;
-            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
+            }
+
+            // The 'compute paths' query requires a 'to <id>' condition
+            else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
                 computePaths = computePaths.from(visitId(condition.computeToID().id()));
                 computeToIDExists = true;
-            } else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computePaths = computePaths.in(visitComputeInLabels(condition.computeInLabels()));
-            } else {
+            }
+
+            // The 'compute paths' query may take in 'in <types>' condition
+            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
+                computePaths = computePaths.in(visitLabels(condition.computeInLabels().labels()));
+            }
+
+            // The 'compute paths' query does not take in any other condition
+            else {
                 throw GraqlQueryException.invalidComputePathsCondition();
             }
         }
 
-        if(!computeFromIDExists || !computeToIDExists) {
+        if (!computeFromIDExists || !computeToIDExists) {
             throw GraqlQueryException.invalidComputePathsMissingCondition();
         }
 
         return computePaths;
     }
 
+    /**
+     * Builds graql 'compute centrality' query
+     * @param ctx
+     * @return A subtype of ComputeQuery object: CorenessQuery or DegreeQuery object
+     */
     private ComputeQuery<?> buildComputeCentralityQuery(GraqlParser.ComputeConditionsContext ctx) {
-
+        
     }
 
     private ComputeQuery<?> buildComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
@@ -928,26 +984,5 @@ class QueryVisitor extends GraqlBaseVisitor {
         return corenessQuery;
     }
 
-    @Override
-    public ComputeQuery<?> visitComputeMethod(GraqlParser.ComputeMethodContext ctx) {
-        return (ComputeQuery<?>) super.visitComputeMethod(ctx);
-    }
 
-    @Override
-    public Set<Label> visitComputeInLabels(GraqlParser.ComputeInLabelsContext ctx) {
-        return visitLabels(ctx.labels());
-    }
-
-    @Override
-    public Set<Label> visitComputeOfLabels(GraqlParser.ComputeOfLabelsContext ctx) {
-        return visitLabels(ctx.labels());
-    }
-
-    @Override
-    public Set<Label> visitLabels(GraqlParser.LabelsContext ctx) {
-        Set<Label> labels = ctx.labelsArray().label().stream().map(this::visitLabel).collect(toSet());
-        labels.add(visitLabel(ctx.label()));
-
-        return labels;
-    }
 }

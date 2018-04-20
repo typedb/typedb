@@ -20,7 +20,21 @@ aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-// Compute query syntax
+// GRAQL COMPUTE QUERY SYNTAX GRAMMAR
+// Author: Haikal Pribadi
+//
+// A compute query is composed of 3 things:
+// the 'compute' keyword, followed by a compute method, and a set of conditions (that may be optional)
+//
+// A compute method could only be:
+// count                                    (to count the number of concepts in the graph)
+// min, max, median, mean, std and sum      (to calculate statistics functions)
+// path, paths                              (to compute the the shortest path / possible paths between concepts)
+// centrality                               (to compute how densely connected concepts are in the graph)
+// cluster                                  (to detect communities in the graph)
+//
+// The compute conditions can be a set of zero or more individual condition separated by a comma
+// A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
 
 computeQuery                    : 'compute' computeMethod computeConditions? ';';
 computeMethod                   : COUNT | MIN | MAX | MEDIAN | MEAN | STD | SUM
@@ -34,6 +48,17 @@ computeCondition                : 'from'    computeFromID
                                 | 'in'      computeInLabels
                                 | USING     computeAlgorithm
                                 | WHERE     computeArgs ;
+
+// GRAQL COMPUTE CONDITIONS GRAMMAR
+// Author: Haikal Pribadi
+//
+// The following are definitions of FromID, ToID, OfLabels, InLabels, Algorithm or Args
+// computeFromID and computeToID takes in a concept ID
+// computeOfLabels and computeInLabels takes in labels, such as types in the schema
+// computeAlgorithm are the different algorithm names that determines how the compute method is performed
+// computeArgs can either be a single argument or an array of arguments
+// computeArgsArray is an arry of arguments
+// computeArg is a single argument
 
 computeFromID                   : id ;
 computeToID                     : id ;
