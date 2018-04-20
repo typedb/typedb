@@ -29,7 +29,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="panel-body">
             <div class="side-column"></div>
             <div class="properties-list">
-                <ul class="dd-list">
+                <ul class="dd-list">                    
                     <li class="dd-item"  @click="configureNode(prop)" v-for="prop in allNodeAttributes" v-bind:class="{'li-active':currentTypeProperties.includes(prop)}">
                         <div class="dd-handle noselect">{{prop}}</div>
                     </li>
@@ -38,6 +38,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="side-column"><colour-picker :node="node"></colour-picker></div>
         </div>
         <div class="panel-footer">
+            <button class="btn reset" @click="configureNode()">Reset</button>
             <button class="btn" @click="showNodeLabelPanel=false;">Done</button>
         </div>
     </div>
@@ -87,7 +88,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 .panel-footer{
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .panel-body{
@@ -125,6 +126,11 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   font-size: 110%;
 }
 
+.reset{
+  background-color:crimson;
+  color: white;
+}
+
 </style>
 
 <script>
@@ -133,7 +139,6 @@ import GraphPageState from '../../../js/state/graphPageState';
 import NodeSettings from '../../../js/NodeSettings';
 
 import ColourPicker from './colourPicker.vue';
-
 
 export default {
   name: 'NodeLabelPanel',
@@ -160,7 +165,17 @@ export default {
   },
   methods: {
     configureNode(p) {
-      if (NodeSettings.getLabelProperties(this.nodeType).includes(p)) {
+      if (p == null){   
+        const nodeProps = NodeSettings.getLabelProperties(this.nodeType);
+
+        // Reset all node attributes
+        for(var i in nodeProps){
+          NodeSettings.removeTypeLabel(this.nodeType, nodeProps[i]);;
+        }   
+        // Reset color
+        visualiser.setColourOnNodeType(this.node.baseType, this.node.type);
+      }
+      else if (NodeSettings.getLabelProperties(this.nodeType).includes(p)) {
         NodeSettings.removeTypeLabel(this.nodeType, p);
       } else {
         NodeSettings.addTypeLabel(this.nodeType, p);
