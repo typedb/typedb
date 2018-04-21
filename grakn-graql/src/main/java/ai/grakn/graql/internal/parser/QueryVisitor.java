@@ -22,35 +22,46 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.*;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.Order;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.util.Syntax;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
+import ai.grakn.util.Syntax;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.commons.math3.stat.descriptive.rank.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -625,47 +636,43 @@ class QueryVisitor extends GraqlBaseVisitor {
      */
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
-        String method = ctx.computeMethod().getText();
 
-        switch (method) {
-            case Syntax.Compute.COUNT:
-                return buildComputeCountQuery(ctx.computeConditions());
+        if (ctx.computeMethod().COUNT() != null) {
+            return buildComputeCountQuery(ctx.computeConditions());
 
-            case Syntax.Compute.MIN:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MIN);
+        } else if (ctx.computeMethod().MIN() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MIN);
 
-            case Syntax.Compute.MAX:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MAX);
+        } else if (ctx.computeMethod().MAX() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MAX);
 
-            case Syntax.Compute.MEDIAN:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEDIAN);
+        } else if (ctx.computeMethod().MEDIAN() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEDIAN);
 
-            case Syntax.Compute.MEAN:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEAN);
+        } else if (ctx.computeMethod().MEAN() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.MEAN);
 
-            case Syntax.Compute.STD:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.STD);
+        } else if (ctx.computeMethod().STD() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.STD);
 
-            case Syntax.Compute.SUM:
-                return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.SUM);
+        } else if (ctx.computeMethod().SUM() != null) {
+            return buildComputeStatisticsQuery(ctx.computeConditions(), GraqlParser.SUM);
 
-            case Syntax.Compute.PATH:
-                return buildComputePathQuery(ctx.computeConditions());
+        } else if (ctx.computeMethod().PATH() != null) {
+            return buildComputePathQuery(ctx.computeConditions());
 
-            case Syntax.Compute.PATHS:
-                return buildComputePathsQuery(ctx.computeConditions());
+        } else if (ctx.computeMethod().PATHS() != null) {
+            return buildComputePathsQuery(ctx.computeConditions());
 
-            case Syntax.Compute.CENTRALITY:
-                return buildComputeCentralityQuery(ctx.computeConditions());
+        } else if (ctx.computeMethod().CENTRALITY() != null) {
+            return buildComputeCentralityQuery(ctx.computeConditions());
 
-            case Syntax.Compute.CLUSTER:
-                return buildComputeClusterQuery(ctx.computeConditions());
+        } else if (ctx.computeMethod().CLUSTER() != null) {
+            return buildComputeClusterQuery(ctx.computeConditions());
 
-            default:
-                throw GraqlQueryException.invalidComputeMethod();
         }
+        throw GraqlQueryException.invalidComputeMethod();
     }
-
 
 
     /**
@@ -678,15 +685,14 @@ class QueryVisitor extends GraqlBaseVisitor {
         CountQuery computeCount = queryBuilder.compute().count();
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-
-            // The 'compute count' query may take in 'in <types>' condition
-            if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computeCount = computeCount.in(visitLabels(condition.computeInLabels().labels()));
-            }
-
-            // The 'compute count query does not take in any other condition
-            else {
-                throw GraqlQueryException.invalidComputeCountCondition();
+            switch (condition.getRuleIndex()) {
+                // The 'compute count' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computeCount = computeCount.in(visitLabels(condition.computeInLabels().labels()));
+                    break;
+                // The 'compute count query does not accept any other condition
+                default:
+                    throw GraqlQueryException.invalidComputeCountCondition();
             }
         }
 
@@ -707,24 +713,20 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean invalidComputeConditionExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-
-            // The 'compute <statistics>' query requires a 'of <types>' condition
-            if (condition.getRuleIndex() == GraqlParser.RULE_computeOfLabels) {
-                computeOfConditionExists = true;
-                computeStatistics = computeStatistics.of(visitLabels(condition.computeOfLabels().labels()));
-            }
-
-            // The 'compute <statistics>' query may take in 'in <types>' condition
-            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computeStatistics = computeStatistics.in(visitLabels(condition.computeInLabels().labels()));
-            }
-
-            // The 'compute <statistics>' query does not take in any other condition
-            // And if any other condition is found, mark as invalid and just BREAK out of the loop
-            // (sorry for the BREAK in a for loop, but I think it would be appropriate and efficient here)
-            else {
-                invalidComputeConditionExists = true;
-                break;
+            switch (condition.getRuleIndex()) {
+                // The 'compute <statistics>' query requires a 'of <types>' condition
+                case GraqlParser.RULE_computeOfLabels:
+                    computeStatistics = computeStatistics.of(visitLabels(condition.computeOfLabels().labels()));
+                    computeOfConditionExists = true;
+                    break;
+                // The 'compute <statistics>' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computeStatistics = computeStatistics.in(visitLabels(condition.computeInLabels().labels()));
+                    break;
+                // The 'compute <statistics>' query does not accept any other condition
+                default:
+                    invalidComputeConditionExists = true;
+                    break;
             }
         }
 
@@ -808,27 +810,24 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-
-            // The 'compute path' query requires a 'from <id>' condition
-            if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
-                computePath = computePath.from(visitId(condition.computeFromID().id()));
-                computeFromIDExists = true;
-            }
-
-            // The 'compute path' query requires a 'to <id>' condition
-            else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
-                computePath = computePath.from(visitId(condition.computeToID().id()));
-                computeToIDExists = true;
-            }
-
-            // The 'compute path' query may take in 'in <types>' condition
-            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computePath = computePath.in(visitLabels(condition.computeInLabels().labels()));
-            }
-
-            // The 'compute path' query does not take in any other condition
-            else {
-                throw GraqlQueryException.invalidComputePathCondition();
+            switch (condition.getRuleIndex()) {
+                // The 'compute path' query requires a 'from <id>' condition
+                case GraqlParser.RULE_computeFromID:
+                    computePath = computePath.from(visitId(condition.computeFromID().id()));
+                    computeFromIDExists = true;
+                    break;
+                // The 'compute path' query requires a 'to <id>' condition
+                case GraqlParser.RULE_computeToID:
+                    computePath = computePath.from(visitId(condition.computeToID().id()));
+                    computeToIDExists = true;
+                    break;
+                // The 'compute path' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computePath = computePath.in(visitLabels(condition.computeInLabels().labels()));
+                    break;
+                // The 'compute path' query does not accept any other condition
+                default:
+                    throw GraqlQueryException.invalidComputePathCondition();
             }
         }
 
@@ -853,27 +852,24 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-
-            // The 'compute paths' query requires a 'from <id>' condition
-            if (condition.getRuleIndex() == GraqlParser.RULE_computeFromID) {
-                computePaths = computePaths.from(visitId(condition.computeFromID().id()));
-                computeFromIDExists = true;
-            }
-
-            // The 'compute paths' query requires a 'to <id>' condition
-            else if (condition.getRuleIndex() == GraqlParser.RULE_computeToID) {
-                computePaths = computePaths.from(visitId(condition.computeToID().id()));
-                computeToIDExists = true;
-            }
-
-            // The 'compute paths' query may take in 'in <types>' condition
-            else if (condition.getRuleIndex() == GraqlParser.RULE_computeInLabels) {
-                computePaths = computePaths.in(visitLabels(condition.computeInLabels().labels()));
-            }
-
-            // The 'compute paths' query does not take in any other condition
-            else {
-                throw GraqlQueryException.invalidComputePathsCondition();
+            switch (condition.getRuleIndex()) {
+                // The 'compute paths' query requires a 'from <id>' condition
+                case GraqlParser.RULE_computeFromID:
+                    computePaths = computePaths.from(visitId(condition.computeFromID().id()));
+                    computeFromIDExists = true;
+                    break;
+                // The 'compute paths' query requires a 'to <id>' condition
+                case GraqlParser.RULE_computeToID:
+                    computePaths = computePaths.from(visitId(condition.computeToID().id()));
+                    computeToIDExists = true;
+                    break;
+                // The 'compute paths' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computePaths = computePaths.in(visitLabels(condition.computeInLabels().labels()));
+                    break;
+                // The 'compute paths' query does not accept any other condition
+                default:
+                    throw GraqlQueryException.invalidComputePathsCondition();
             }
         }
 
@@ -886,12 +882,129 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     /**
      * Builds graql 'compute centrality' query
+     *
      * @param ctx
      * @return A subtype of ComputeQuery object: CorenessQuery or DegreeQuery object
      */
     private ComputeQuery<?> buildComputeCentralityQuery(GraqlParser.ComputeConditionsContext ctx) {
-        
+        GraqlParser.LabelsContext computeOfTypes = null;
+        GraqlParser.LabelsContext computeInTypes = null;
+        GraqlParser.ComputeAlgorithmContext computeAlgorithm = null;
+        GraqlParser.ComputeArgsContext computeArgs = null;
+
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            switch (condition.getRuleIndex()) {
+                // The 'compute centrality' query requires 'using <algorithm>' condition
+                case GraqlParser.RULE_computeAlgorithm:
+                    computeAlgorithm = condition.computeAlgorithm();
+                    break;
+                // The 'compute centrality' query may be given 'of <types>' condition
+                case GraqlParser.RULE_computeOfLabels:
+                    computeOfTypes = condition.computeOfLabels().labels();
+                    break;
+                // The 'compute centrality' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computeInTypes = condition.computeInLabels().labels();
+                    break;
+                // The 'compute centrality' query may be given 'where <args>' condition
+                case GraqlParser.RULE_computeArgs:
+                    computeArgs = condition.computeArgs();
+                    break;
+                // The 'compute centrality' query does not accept any other condition
+                default:
+                    throw GraqlQueryException.invalidComputeCentralityCondition();
+            }
+        }
+
+        // The 'compute centrality' query requires 'using <algorithm>' condition
+        if (computeAlgorithm == null) {
+            throw GraqlQueryException.invalidComputeCentralityMissingCondition();
+
+        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.DEGREE) {
+            return buildComputeCentralityUsingDegreeQuery(computeOfTypes, computeInTypes, computeArgs);
+
+        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.K_CORE) {
+            return buildComputeCentralityUsingKCoreQuery(computeOfTypes, computeInTypes, computeArgs);
+
+        }
+
+        throw GraqlQueryException.invalidComputeCentralityAlgorithm();
     }
+
+    /**
+     * Builds graql 'compute centrality using degree' query
+     *
+     * @param computeOfTypes
+     * @param computeInTypes
+     * @param computeArgs
+     * @return A DegreeQuery object
+     */
+    private DegreeQuery buildComputeCentralityUsingDegreeQuery
+    (GraqlParser.LabelsContext computeOfTypes, GraqlParser.LabelsContext computeInTypes,
+     GraqlParser.ComputeArgsContext computeArgs) {
+
+        // The 'compute centrality using degree' query does not accept 'where <arguments>' condition
+        if (computeArgs != null) throw GraqlQueryException.invalidComputeCentralityUsingDegreeCondition();
+
+        DegreeQuery computeCentrality = queryBuilder.compute().centrality().usingDegree();
+
+        // The 'compute centrality using degree' query can be given 'of <types>' or 'in <types>' condition
+        if (computeOfTypes != null) computeCentrality.of(visitLabels(computeOfTypes));
+        if (computeInTypes != null) computeCentrality.in(visitLabels(computeInTypes));
+
+        return computeCentrality;
+    }
+
+    /**
+     * Builds graql 'compute centrality using k-core' query
+     *
+     * @param computeOfTypes
+     * @param computeInTypes
+     * @param computeArgs
+     * @return A CorenessQuery object
+     */
+    private CorenessQuery buildComputeCentralityUsingKCoreQuery
+    (GraqlParser.LabelsContext computeOfTypes, GraqlParser.LabelsContext computeInTypes,
+     GraqlParser.ComputeArgsContext computeArgs) {
+
+        CorenessQuery computeCentrality = queryBuilder.compute().centrality().usingKCore();
+
+        // The 'compute centrality using k-core' query can be given 'of <types>' or 'in <types>' condition
+        if (computeOfTypes != null) computeCentrality.of(visitLabels(computeOfTypes));
+        if (computeInTypes != null) computeCentrality.in(visitLabels(computeInTypes));
+
+        // The 'compute centrality using k-core' query only looks for 'min-k = <value>' argument in 'where <arguments>'
+        if (computeArgs != null) return buildComputeCentralityUsingKCoreQueryWithMinK(computeCentrality, computeArgs);
+
+        return computeCentrality;
+    }
+
+    /**
+     * Builds graql 'compute centrality using k-core, where min-k = <value>' query
+     * @param computeCentralityUsingKCore
+     * @param computeArgs
+     * @return A CorenessQuery object
+     */
+    private CorenessQuery buildComputeCentralityUsingKCoreQueryWithMinK
+            (CorenessQuery computeCentralityUsingKCore, GraqlParser.ComputeArgsContext computeArgs) {
+
+        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
+
+        if(computeArgs.computeArg() != null) argsList.add(computeArgs.computeArg());
+        else if (computeArgs.computeArgsArray() != null) argsList.addAll(computeArgs.computeArgsArray().computeArg());
+
+        // If a single argument is provided, it can only be the 'min-k = <value' argument
+        for (GraqlParser.ComputeArgContext arg : argsList) {
+            if (arg instanceof GraqlParser.ComputeArgMinKContext) {
+                computeCentralityUsingKCore =  computeCentralityUsingKCore.minK(getInteger(((GraqlParser.ComputeArgMinKContext) arg).INTEGER()));
+            } else {
+                throw GraqlQueryException.invalidComputeCentralityUsingKCoreArgs();
+            }
+        }
+
+        return computeCentralityUsingKCore;
+    }
+
 
     private ComputeQuery<?> buildComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
 
@@ -949,40 +1062,4 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
         return query -> query.kValue(getInteger(ctx.INTEGER()));
     }
-
-    @Override
-    public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
-        DegreeQuery degreeQuery = queryBuilder.compute().centrality().usingDegree();
-
-        if (ctx.ofList() != null) {
-            degreeQuery = degreeQuery.of(visitComputeOfLabels(ctx.ofList()));
-        }
-
-        if (ctx.inList() != null) {
-            degreeQuery = degreeQuery.in(visitComputeInLabels(ctx.inList()));
-        }
-
-        return degreeQuery;
-    }
-
-    @Override
-    public CorenessQuery visitCoreness(GraqlParser.CorenessContext ctx) {
-        CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
-
-        if (ctx.ofList() != null) {
-            corenessQuery = corenessQuery.of(visitComputeOfLabels(ctx.ofList()));
-        }
-
-        if (ctx.inList() != null) {
-            corenessQuery = corenessQuery.in(visitComputeInLabels(ctx.inList()));
-        }
-
-        if (ctx.INTEGER() != null) {
-            corenessQuery = corenessQuery.minK(getInteger(ctx.INTEGER()));
-        }
-
-        return corenessQuery;
-    }
-
-
 }

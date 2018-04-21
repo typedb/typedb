@@ -46,5 +46,14 @@ public class Syntax {
         public static final String PATHS        = "paths";
         public static final String CENTRALITY   = "centrality";
         public static final String CLUSTER      = "cluster";
+
+        /**
+         * Graql Compute algorithm options
+         */
+        public static class Algorithm {
+            public static final String DEGREE               = "degree";
+            public static final String K_CORE               = "k-core";
+            public static final String CONNECTED_COMPONENT  = "connected-component";
+        }
     }
 }

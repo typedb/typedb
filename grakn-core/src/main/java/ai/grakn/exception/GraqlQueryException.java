@@ -31,14 +31,43 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.macro.Macro;
-import ai.grakn.util.Syntax;
 import ai.grakn.util.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 
-import static ai.grakn.util.ErrorMessage.*;
+import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
+import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
+import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_ALGORITHM;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEAN_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEAN_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEDIAN_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEDIAN_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATHS_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATHS_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_STD_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_STD_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_SUM_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_SUM_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
+import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
+import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 /**
  * <p>
@@ -404,5 +433,25 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidComputePathsMissingCondition() {
         return new GraqlQueryException(INVALID_COMPUTE_PATHS_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCentralityCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCentralityMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCentralityAlgorithm() {
+        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_ALGORITHM.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCentralityUsingDegreeCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCentralityUsingKCoreArgs() {
+        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS.getMessage());
     }
 }

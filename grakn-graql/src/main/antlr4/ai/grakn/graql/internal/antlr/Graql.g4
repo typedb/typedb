@@ -67,11 +67,11 @@ computeInLabels                 : labels ;
 computeAlgorithm                : DEGREE | 'k-core' | 'connected-component' ;
 computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
-computeArg                      : 'min-k'       '='     INTEGER         # minKValue
-                                | 'k'           '='     INTEGER         # kValue
-                                | 'source'      '='     id              # ccStartPoint
-                                | MEMBERS       '='     bool            # ccClusterMembers
-                                | SIZE          '='     INTEGER         # ccClusterSize ;
+computeArg                      : 'min-k'       '='     INTEGER         # computeArgMinK
+                                | 'k'           '='     INTEGER         # computeArgK
+                                | 'source'      '='     id              # computeArgStart
+                                | MEMBERS       '='     bool            # computeArgMembers
+                                | SIZE          '='     INTEGER         # computeArgSize ;
 
 //computeMethod  : min | max | median | mean | std | sum | count | path | paths
 //               | connectedComponent | kCore | degree | coreness ;
@@ -94,7 +94,7 @@ computeArg                      : 'min-k'       '='     INTEGER         # minKVa
 //ccParam        : MEMBERS       '='      bool            # ccClusterMembers
 //               | SIZE          '='      INTEGER         # ccClusterSize
 //               | 'source'      '='      id              # ccStartPoint
-//               ;
+//
 //
 //kcParam        : 'k'           '='      INTEGER         # kValue
 //               ;
