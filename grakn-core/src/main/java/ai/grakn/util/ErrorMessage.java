@@ -204,8 +204,8 @@ public enum ErrorMessage {
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
-    INVALID_COMPUTE_METHOD("Invalid compute method." +
-            "The available compute methods are: count, min, max, median, mean, std, sum, path, paths, centrality, and cluster." +
+    INVALID_COMPUTE_METHOD("Invalid compute method. " +
+            "The available compute methods are: count, min, max, median, mean, std, sum, path, paths, centrality, and cluster. " +
             "A valid compute method contains 'compute <method> <conditions>', such as: 'compute min of age, in person;"),
 
     // Graql compute count errors ------------------
@@ -277,8 +277,8 @@ public enum ErrorMessage {
     INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION("Missing 'compute centrality' condition. " +
             "'using <algorithm>' is required, such as: 'compute centrality using k-core;'."),
 
-    INVALID_COMPUTE_CENTRALITY_ALGORITHM("Invalid 'compute centrality' algorithm." +
-            "The available algorithms are: k-core and degree." +
+    INVALID_COMPUTE_CENTRALITY_ALGORITHM("Invalid 'compute centrality' algorithm. " +
+            "The available algorithms are: k-core and degree. " +
             "A valid compute centrality query contains 'compute centrality using <algorithm>, <conditions>;', " +
             "such as: 'compute centrality of person, in [person, marriage], using degree;'."),
 
@@ -287,7 +287,7 @@ public enum ErrorMessage {
             "such as: 'compute centrality of person, in [person, marriage], using degree;'. "),
 
     INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS("Invalid 'compute centrality using k-core' argument(s). " +
-            "Only 'min-k = <value>' is accepted," +
+            "Only 'min-k = <value>' is accepted, " +
             "such as: 'compute centrality of person, in [person, marriage], using k-core, where min-k = 2;'."),
 
     // Graql compute cluster errors -----------------
@@ -299,8 +299,8 @@ public enum ErrorMessage {
     INVALID_COMPUTE_CLUSTER_MISSING_CONDITION("Missing 'compute cluster' condition. " +
             "'using <algorithm>' is required, such as: 'compute cluster using connected-component;'."),
 
-    INVALID_COMPUTE_CLUSTER_ALGORITHM("Invalid 'compute cluster' algorithm." +
-            "The available algorithms are: k-core and connected-component." +
+    INVALID_COMPUTE_CLUSTER_ALGORITHM("Invalid 'compute cluster' algorithm. " +
+            "The available algorithms are: k-core and connected-component. " +
             "A valid compute cluster query contains 'compute cluster using <algorithm>, <conditions>;', " +
             "such as: 'compute centrality in [person, marriage], using connected-component;'."),
 

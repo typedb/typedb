@@ -57,7 +57,6 @@ import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -388,11 +387,16 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<Label> visitLabels(GraqlParser.LabelsContext ctx) {
-        Set<Label> labels = ctx.labelsArray().label().stream().map(this::visitLabel).collect(toSet());
-        labels.add(visitLabel(ctx.label()));
+    public Set<Label> visitLabels(GraqlParser.LabelsContext labels) {
+        List<GraqlParser.LabelContext> labelsList = new ArrayList<>();
 
-        return labels;
+        if (labels.label() != null) {
+            labelsList.add(labels.label());
+        } else if (labels.labelsArray() != null) {
+            labelsList.addAll(labels.labelsArray().label());
+        }
+
+        return labelsList.stream().map(this::visitLabel).collect(toSet());
     }
 
     @Override
@@ -675,6 +679,25 @@ class QueryVisitor extends GraqlBaseVisitor {
         throw GraqlQueryException.invalidComputeMethod();
     }
 
+    /**
+     * Visits the computeArgs tree in the compute query 'where <computeArgs>' condition and get the list of arguments
+     *
+     * @param computeArgs
+     * @return
+     */
+    @Override
+    public List<GraqlParser.ComputeArgContext> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
+
+        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
+
+        if (computeArgs.computeArg() != null) {
+            argsList.add(computeArgs.computeArg());
+        } else if (computeArgs.computeArgsArray() != null) {
+            argsList.addAll(computeArgs.computeArgsArray().computeArg());
+        }
+
+        return argsList;
+    }
 
     /**
      * Builds a graql compute count query
@@ -686,15 +709,17 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         CountQuery computeCount = queryBuilder.compute().count();
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
-                // The 'compute count' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computeCount = computeCount.in(visitLabels(condition.computeInLabels().labels()));
-                    break;
-                // The 'compute count query does not accept any other condition
-                default:
-                    throw GraqlQueryException.invalidComputeCountCondition();
+        if(ctx != null) {
+            for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute count' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computeCount = computeCount.in(visitLabels(condition.computeInLabels().labels()));
+                        break;
+                    // The 'compute count query does not accept any other condition
+                    default:
+                        throw GraqlQueryException.invalidComputeCountCondition();
+                }
             }
         }
 
@@ -716,7 +741,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean invalidComputeConditionExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
                 // The 'compute <statistics>' query requires a 'of <types>' condition
                 case GraqlParser.RULE_computeOfLabels:
                     computeStatistics = computeStatistics.of(visitLabels(condition.computeOfLabels().labels()));
@@ -815,7 +840,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
                 // The 'compute path' query requires a 'from <id>' condition
                 case GraqlParser.RULE_computeFromID:
                     computePath = computePath.from(visitId(condition.computeFromID().id()));
@@ -858,7 +883,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         boolean computeToIDExists = false;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
                 // The 'compute paths' query requires a 'from <id>' condition
                 case GraqlParser.RULE_computeFromID:
                     computePaths = computePaths.from(visitId(condition.computeFromID().id()));
@@ -900,7 +925,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         GraqlParser.ComputeArgsContext computeArgs = null;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
                 // The 'compute centrality' query requires 'using <algorithm>' condition
                 case GraqlParser.RULE_computeAlgorithm:
                     computeAlgorithm = condition.computeAlgorithm();
@@ -927,10 +952,10 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (computeAlgorithm == null) {
             throw GraqlQueryException.invalidComputeCentralityMissingCondition();
 
-        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.DEGREE) {
+        } else if (computeAlgorithm.getText().equals(Syntax.Compute.Algorithm.DEGREE)) {
             return buildComputeCentralityUsingDegreeQuery(computeOfTypes, computeInTypes, computeArgs);
 
-        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.K_CORE) {
+        } else if (computeAlgorithm.getText().equals(Syntax.Compute.Algorithm.K_CORE)) {
             return buildComputeCentralityUsingKCoreQuery(computeOfTypes, computeInTypes, computeArgs);
 
         }
@@ -1010,7 +1035,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return computeCentralityUsingKCore;
     }
 
-
     private ComputeQuery<?> buildComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
 
         GraqlParser.LabelsContext computeInTypes = null;
@@ -1018,7 +1042,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         GraqlParser.ComputeArgsContext computeArgs = null;
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (condition.getRuleIndex()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
                 // The 'compute cluster' query requires 'using <algorithm>' condition
                 case GraqlParser.RULE_computeAlgorithm:
                     computeAlgorithm = condition.computeAlgorithm();
@@ -1041,10 +1065,10 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (computeAlgorithm == null) {
             throw GraqlQueryException.invalidComputeClusterMissingCondition();
 
-        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.CONNECTED_COMPONENT) {
+        } else if (computeAlgorithm.getText().equals(Syntax.Compute.Algorithm.CONNECTED_COMPONENT)) {
             return buildComputeClusterUsingConnectedComponentQuery(computeInTypes, computeArgs);
 
-        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.K_CORE) {
+        } else if (computeAlgorithm.getText().equals(Syntax.Compute.Algorithm.K_CORE)) {
             return buildComputeClusterUsingKCoreQuery(computeInTypes, computeArgs);
 
         }
@@ -1064,19 +1088,21 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         // The 'compute cluster using connected-component' query can be given 'where <args>' condition:
         // The 'start = <id>', 'members = <bool>', 'size = <int>' arguments are accepted
-        for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
-            if (arg instanceof GraqlParser.ComputeArgStartContext) {
-                computeCluster.of(visitId(((GraqlParser.ComputeArgStartContext) arg).id()));
-            } else if (arg instanceof GraqlParser.ComputeArgMembersContext) {
-                if (visitBool(((GraqlParser.ComputeArgMembersContext) arg).bool())) {
-                    computeCluster.membersOn();
+        if (computeArgs != null) {
+            for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
+                if (arg instanceof GraqlParser.ComputeArgStartContext) {
+                    computeCluster.of(visitId(((GraqlParser.ComputeArgStartContext) arg).id()));
+                } else if (arg instanceof GraqlParser.ComputeArgMembersContext) {
+                    if (visitBool(((GraqlParser.ComputeArgMembersContext) arg).bool())) {
+                        computeCluster.membersOn();
+                    } else {
+                        computeCluster.membersOff();
+                    }
+                } else if (arg instanceof GraqlParser.ComputeArgSizeContext) {
+                    computeCluster.clusterSize(getInteger(((GraqlParser.ComputeArgSizeContext) arg).INTEGER()));
                 } else {
-                    computeCluster.membersOff();
+                    throw GraqlQueryException.invalidComputeClusterUsingConnectedComponentArgument();
                 }
-            } else if (arg instanceof GraqlParser.ComputeArgSizeContext) {
-                computeCluster.clusterSize(getInteger(((GraqlParser.ComputeArgSizeContext) arg).INTEGER()));
-            } else {
-                throw GraqlQueryException.invalidComputeClusterUsingConnectedComponentArgument();
             }
         }
 
@@ -1098,35 +1124,17 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         // The 'compute cluster using connected-component' query can be given 'where <args>' condition:
         // The 'start = <id>', 'members = <bool>', 'size = <int>' arguments are accepted
-        for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
-            if (arg instanceof GraqlParser.ComputeArgKContext) {
-                computeCluster.kValue(getInteger(((GraqlParser.ComputeArgKContext) arg).INTEGER()));
+        if (computeArgs != null) {
+            for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
+                if (arg instanceof GraqlParser.ComputeArgKContext) {
+                    computeCluster.kValue(getInteger(((GraqlParser.ComputeArgKContext) arg).INTEGER()));
 
-            } else {
-                throw GraqlQueryException.invalidComputeClusterUsingKCoreArgument();
+                } else {
+                    throw GraqlQueryException.invalidComputeClusterUsingKCoreArgument();
+                }
             }
         }
 
         return computeCluster;
-    }
-
-    /**
-     * Visits the computeArgs tree in the compute query 'where <computeArgs>' condition and get the list of arguments
-     *
-     * @param computeArgs
-     * @return
-     */
-    @Override
-    public List<GraqlParser.ComputeArgContext> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
-
-        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
-
-        if (computeArgs.computeArg() != null) {
-            argsList.add(computeArgs.computeArg());
-        } else if (computeArgs.computeArgsArray() != null) {
-            argsList.addAll(computeArgs.computeArgsArray().computeArg());
-        }
-
-        return argsList;
     }
 }

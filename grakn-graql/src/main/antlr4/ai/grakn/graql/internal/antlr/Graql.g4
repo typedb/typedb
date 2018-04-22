@@ -20,7 +20,7 @@ aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-// GRAQL COMPUTE QUERY SYNTAX GRAMMAR
+// GRAQL COMPUTE QUERY: OVERALL SYNTAX GRAMMAR =========================================================================
 // Author: Haikal Pribadi
 //
 // A compute query is composed of 3 things:
@@ -37,22 +37,25 @@ variables      : VARIABLE (',' VARIABLE)* ;
 // A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
 
 computeQuery                    : 'compute' computeMethod computeConditions? ';';
-computeMethod                   : COUNT | MIN | MAX | MEDIAN | MEAN | STD | SUM
-                                | PATH | PATHS
-                                | CENTRALITY
-                                | CLUSTER ;
+computeMethod                   : COUNT                                                 // compute count
+                                | MIN | MAX | MEDIAN | MEAN | STD | SUM                 // compute statistics
+                                | PATH | PATHS                                          // compute path(s)
+                                | CENTRALITY                                            // compute centrality
+                                | CLUSTER                                               // compute cluster
+                                ;
 computeConditions               : computeCondition (',' computeCondition)* ;
 computeCondition                : 'from'    computeFromID
                                 | 'to'      computeToID
                                 | 'of'      computeOfLabels
                                 | 'in'      computeInLabels
                                 | USING     computeAlgorithm
-                                | WHERE     computeArgs ;
+                                | WHERE     computeArgs
+                                ;
 
-// GRAQL COMPUTE CONDITIONS GRAMMAR
+// GRAQL COMPUTE: CONDITIONS GRAMMAR ===================================================================================
 // Author: Haikal Pribadi
 //
-// The following are definitions of FromID, ToID, OfLabels, InLabels, Algorithm or Args
+// The following are definitions of computeConditions for the Graql Compute Query
 // computeFromID and computeToID takes in a concept ID
 // computeOfLabels and computeInLabels takes in labels, such as types in the schema
 // computeAlgorithm are the different algorithm names that determines how the compute method is performed
@@ -72,36 +75,6 @@ computeArg                      : 'min-k'       '='     INTEGER         # comput
                                 | 'start'       '='     id              # computeArgStart
                                 | MEMBERS       '='     bool            # computeArgMembers
                                 | SIZE          '='     INTEGER         # computeArgSize ;
-
-//computeMethod  : min | max | median | mean | std | sum | count | path | paths
-//               | connectedComponent | kCore | degree | coreness ;
-
-//min            : MIN      'of' ofList      ('in' inList)? ';' ;
-//max            : MAX      'of' ofList      ('in' inList)? ';' ;
-//median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
-//mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
-//std            : STD      'of' ofList      ('in' inList)? ';' ;
-//sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-//coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
-//degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
-//connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
-//kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
-//path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
-//paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
-//count          : COUNT                     ('in' inList)? ';' ;
-
-
-//ccParam        : MEMBERS       '='      bool            # ccClusterMembers
-//               | SIZE          '='      INTEGER         # ccClusterSize
-//               | 'source'      '='      id              # ccStartPoint
-//
-//
-//kcParam        : 'k'           '='      INTEGER         # kValue
-//               ;
-
-//ofList         : labelList ;
-//inList         : labelList ;
-//labelList      : label (',' label)* ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
