@@ -46,7 +46,7 @@ public class CWInferenceTest {
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestUtil.usingTinker());
         qb = cwKB.tx().graql().infer(false);
-        iqb = cwKB.tx().graql().infer(true).materialise(false);
+        iqb = cwKB.tx().graql().infer(true);
     }
 
     @Test

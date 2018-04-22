@@ -94,8 +94,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y has index $ind;" +
                 "{$ind val 'j';} or {$ind val 's';} or {$ind val 'v';}; get $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /*single-directional*/
@@ -110,8 +109,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa person, has name $name;" +
                 "{$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y, $name;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**as above but both directions*/
@@ -124,8 +122,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa person, has name $name;" +
                 "{$name val 'a';} or {$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -141,8 +138,7 @@ public class RecursiveInferenceTest {
                 "{$nameX val 'aa';$nameY val 'aab';} or {$nameX val 'aa';$nameY val 'aaaa';} or " +
                 "{$nameX val 'aaa';$nameY val 'aaaa';} or {$nameX val 'c';$nameY val 'ca';}; get $X, $Y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -168,8 +164,7 @@ public class RecursiveInferenceTest {
                 +
                 "{$nameX val 'c';$nameY val 'ca';} or " +
                 "{$nameY val 'c';$nameX val 'ca';}; get $X, $Y;";
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -181,8 +176,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y, $name;";
         String explicitQuery = "match $Y has name $name;{$name val 'd';} or {$name val 'g';}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -194,8 +188,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
         String explicitQuery = "match $Y has name $name;{$name val 'd';} or {$name val 'g';}; get $Y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -208,8 +201,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $X has name $name;" +
                 "{$name val 'a';} or {$name val 'b';} or {$name val 'c';}; get $X;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -222,8 +214,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $X has name $name;" +
                 "{$name val 'a';} or {$name val 'b';} or {$name val 'c';}; get $X;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
@@ -235,8 +226,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
         String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'a';};get $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
@@ -248,8 +238,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; get $x;";
         String explicitQuery = "match $x has index 'a2'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -267,8 +256,7 @@ public class RecursiveInferenceTest {
                 "{$indX val 'b';$indY val 'd';} or" +
                 "{$indX val 'a';$indY val 'd';};get $x, $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -280,8 +268,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y has index $indY;" +
                 "{$indY val 'a';} or {$indY val 'b';} or {$indY val 'c';} or {$indY val 'd';};get $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /** test 6.1 from Cao p 71*/
@@ -295,8 +282,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
         String explicitQuery = "match $y isa a-entity or $y isa end; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -312,8 +298,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
         String explicitQuery = "match $y isa b-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**test3 from Nguyen (similar to test 6.5 from Cao)
@@ -345,11 +330,9 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
         assertCollectionsEqual(answers, explicitAnswers);
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-        assertCollectionsEqual(answers, answers2);
     }
 
     /**test 6.6 from Cao p.76*/
@@ -362,8 +345,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y has name $name;" +
                 "{$name val 'ann';} or {$name val 'bill';} or {$name val 'peter';};get $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**test 6.9 from Cao p.82*/
@@ -378,8 +360,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**test 6.10 from Cao p. 82*/
@@ -399,12 +380,10 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa vertex; get;";
 
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
 
         assertCollectionsEqual(answers, explicitAnswers);
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -417,8 +396,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
         String explicitQuery = "match $y isa vertex; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -431,8 +409,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
         String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -446,8 +423,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
         String explicitQuery = "match $y isa vertex; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -461,8 +437,7 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;get $y, $ind;";
         String explicitQuery = "match $y isa vertex;$y has index $ind; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
@@ -475,8 +450,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa person, has name $name;" +
                 "{$name val 'b';} or {$name val 'c';} or {$name val 'd';};get $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
     @Test
     public void testReverseSameGeneration2() {
@@ -492,8 +466,7 @@ public class RecursiveInferenceTest {
                 "{$nameX val 'i';$nameY val 'f';} or {$nameX val 'j';$nameY val 'f';} or" +
                 "{$nameX val 'f';$nameY val 'k';};get $x, $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -506,8 +479,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -520,8 +492,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -532,8 +503,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
 
-        assertEquals(iqb.materialise(false).<GetQuery>parse(queryString).execute().size(), 64);
-        assertEquals(iqb.materialise(true).<GetQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.<GetQuery>parse(queryString).execute().size(), 64);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
