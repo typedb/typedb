@@ -69,7 +69,7 @@ computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
 computeArg                      : 'min-k'       '='     INTEGER         # computeArgMinK
                                 | 'k'           '='     INTEGER         # computeArgK
-                                | 'source'      '='     id              # computeArgStart
+                                | 'start'       '='     id              # computeArgStart
                                 | MEMBERS       '='     bool            # computeArgMembers
                                 | SIZE          '='     INTEGER         # computeArgSize ;
 

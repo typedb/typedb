@@ -57,6 +57,7 @@ import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -682,6 +683,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      * @return CountQuery object
      */
     private CountQuery buildComputeCountQuery(GraqlParser.ComputeConditionsContext ctx) {
+
         CountQuery computeCount = queryBuilder.compute().count();
 
         for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
@@ -707,6 +709,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      * @return A subtype of StatisticsQuery object
      */
     private StatisticsQuery<?> buildComputeStatisticsQuery(GraqlParser.ComputeConditionsContext ctx, int methodIndex) {
+
         StatisticsQuery<?> computeStatistics = constructComputeStatisticsQuery(methodIndex);
 
         boolean computeOfConditionExists = false;
@@ -745,6 +748,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      * @return A subtype of StatisticsQuery object
      */
     private StatisticsQuery<?> constructComputeStatisticsQuery(int methodIndex) {
+
         switch (methodIndex) {
             case GraqlParser.MIN:
                 return queryBuilder.compute().min();
@@ -773,6 +777,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      */
     private void throwComputeStatisticsException
     (int methodIndex, boolean computeOfConditionExists, boolean invalidComputeConditionExists) {
+
         switch (methodIndex) {
             case GraqlParser.MIN:
                 if (!computeOfConditionExists) throw GraqlQueryException.invalidComputeMinMissingCondition();
@@ -804,8 +809,8 @@ class QueryVisitor extends GraqlBaseVisitor {
      * @return PathQuery object
      */
     private PathQuery buildComputePathQuery(GraqlParser.ComputeConditionsContext ctx) {
-        PathQuery computePath = queryBuilder.compute().path();
 
+        PathQuery computePath = queryBuilder.compute().path();
         boolean computeFromIDExists = false;
         boolean computeToIDExists = false;
 
@@ -846,6 +851,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      */
     // TODO this function should be merged with the [singular] buildComputePathQuery() once they have an abstraction
     private PathsQuery buildComputePathsQuery(GraqlParser.ComputeConditionsContext ctx) {
+
         PathsQuery computePaths = queryBuilder.compute().paths();
 
         boolean computeFromIDExists = false;
@@ -887,6 +893,7 @@ class QueryVisitor extends GraqlBaseVisitor {
      * @return A subtype of ComputeQuery object: CorenessQuery or DegreeQuery object
      */
     private ComputeQuery<?> buildComputeCentralityQuery(GraqlParser.ComputeConditionsContext ctx) {
+
         GraqlParser.LabelsContext computeOfTypes = null;
         GraqlParser.LabelsContext computeInTypes = null;
         GraqlParser.ComputeAlgorithmContext computeAlgorithm = null;
@@ -927,6 +934,8 @@ class QueryVisitor extends GraqlBaseVisitor {
             return buildComputeCentralityUsingKCoreQuery(computeOfTypes, computeInTypes, computeArgs);
 
         }
+        //TODO: The if checks above compares Strings because our Grammar definition inconsistently declares strings.
+        //TODO: We should make the grammar definition more consistent and clean up these String comparisons
 
         throw GraqlQueryException.invalidComputeCentralityAlgorithm();
     }
@@ -981,22 +990,18 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     /**
      * Builds graql 'compute centrality using k-core, where min-k = <value>' query
+     *
      * @param computeCentralityUsingKCore
      * @param computeArgs
      * @return A CorenessQuery object
      */
     private CorenessQuery buildComputeCentralityUsingKCoreQueryWithMinK
-            (CorenessQuery computeCentralityUsingKCore, GraqlParser.ComputeArgsContext computeArgs) {
+    (CorenessQuery computeCentralityUsingKCore, GraqlParser.ComputeArgsContext computeArgs) {
 
-        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
-
-        if(computeArgs.computeArg() != null) argsList.add(computeArgs.computeArg());
-        else if (computeArgs.computeArgsArray() != null) argsList.addAll(computeArgs.computeArgsArray().computeArg());
-
-        // If a single argument is provided, it can only be the 'min-k = <value' argument
-        for (GraqlParser.ComputeArgContext arg : argsList) {
+        // If an argument is provided, it can only be the 'min-k = <value>' argument
+        for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
             if (arg instanceof GraqlParser.ComputeArgMinKContext) {
-                computeCentralityUsingKCore =  computeCentralityUsingKCore.minK(getInteger(((GraqlParser.ComputeArgMinKContext) arg).INTEGER()));
+                computeCentralityUsingKCore.minK(getInteger(((GraqlParser.ComputeArgMinKContext) arg).INTEGER()));
             } else {
                 throw GraqlQueryException.invalidComputeCentralityUsingKCoreArgs();
             }
@@ -1008,58 +1013,120 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private ComputeQuery<?> buildComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
 
-    }
+        GraqlParser.LabelsContext computeInTypes = null;
+        GraqlParser.ComputeAlgorithmContext computeAlgorithm = null;
+        GraqlParser.ComputeArgsContext computeArgs = null;
 
-    public ConnectedComponentQuery<?> visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
-        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
-
-        if (ctx.inList() != null) {
-            cluster = cluster.in(visitComputeInLabels(ctx.inList()));
+        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
+            switch (condition.getRuleIndex()) {
+                // The 'compute cluster' query requires 'using <algorithm>' condition
+                case GraqlParser.RULE_computeAlgorithm:
+                    computeAlgorithm = condition.computeAlgorithm();
+                    break;
+                // The 'compute cluster' query may be given 'in <types>' condition
+                case GraqlParser.RULE_computeInLabels:
+                    computeInTypes = condition.computeInLabels().labels();
+                    break;
+                // The 'compute cluster' query may be given 'where <args>' condition
+                case GraqlParser.RULE_computeArgs:
+                    computeArgs = condition.computeArgs();
+                    break;
+                // The 'compute cluster' query does not accept any other condition
+                default:
+                    throw GraqlQueryException.invalidComputeClusterCondition();
+            }
         }
 
-        cluster = chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(cluster);
+        // The 'compute cluster' query requires 'using <algorithm>' condition
+        if (computeAlgorithm == null) {
+            throw GraqlQueryException.invalidComputeClusterMissingCondition();
 
-        return cluster;
+        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.CONNECTED_COMPONENT) {
+            return buildComputeClusterUsingConnectedComponentQuery(computeInTypes, computeArgs);
+
+        } else if (computeAlgorithm.getText() == Syntax.Compute.Algorithm.K_CORE) {
+            return buildComputeClusterUsingKCoreQuery(computeInTypes, computeArgs);
+
+        }
+        //TODO: The if checks above compares Strings because our Grammar definition inconsistently declares strings.
+        //TODO: We should make the grammar definition more consistent and clean up these String comparisons
+
+        throw GraqlQueryException.invalidComputeClusterAlgorithm();
     }
 
-    private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
-        return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
-    }
+    private ConnectedComponentQuery buildComputeClusterUsingConnectedComponentQuery
+            (GraqlParser.LabelsContext computeInTypes, GraqlParser.ComputeArgsContext computeArgs) {
 
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
-        return query -> visitBool(ctx.bool()) ? query.membersOn() : query.membersOff();
-    }
+        ConnectedComponentQuery computeCluster = queryBuilder.compute().cluster().usingConnectedComponent();
 
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterSize(GraqlParser.CcClusterSizeContext ctx) {
-        return query -> query.clusterSize(getInteger(ctx.INTEGER()));
-    }
+        // The 'compute cluster using connected-component' query can be given 'in <types>' condition
+        if (computeInTypes != null) computeCluster.in(visitLabels(computeInTypes));
 
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
-        return query -> query.of(visitId(ctx.id()));
-    }
-
-    @Override
-    public KCoreQuery visitKCore(GraqlParser.KCoreContext ctx) {
-        KCoreQuery kCoreQuery = queryBuilder.compute().cluster().usingKCore();
-
-        if (ctx.inList() != null) {
-            kCoreQuery = kCoreQuery.in(visitComputeInLabels(ctx.inList()));
+        // The 'compute cluster using connected-component' query can be given 'where <args>' condition:
+        // The 'start = <id>', 'members = <bool>', 'size = <int>' arguments are accepted
+        for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
+            if (arg instanceof GraqlParser.ComputeArgStartContext) {
+                computeCluster.of(visitId(((GraqlParser.ComputeArgStartContext) arg).id()));
+            } else if (arg instanceof GraqlParser.ComputeArgMembersContext) {
+                if (visitBool(((GraqlParser.ComputeArgMembersContext) arg).bool())) {
+                    computeCluster.membersOn();
+                } else {
+                    computeCluster.membersOff();
+                }
+            } else if (arg instanceof GraqlParser.ComputeArgSizeContext) {
+                computeCluster.clusterSize(getInteger(((GraqlParser.ComputeArgSizeContext) arg).INTEGER()));
+            } else {
+                throw GraqlQueryException.invalidComputeClusterUsingConnectedComponentArgument();
+            }
         }
 
-        kCoreQuery = chainOperators(ctx.kcParam().stream().map(this::visitKcParam)).apply(kCoreQuery);
-
-        return kCoreQuery;
+        return computeCluster;
     }
 
-    private UnaryOperator<KCoreQuery> visitKcParam(GraqlParser.KcParamContext ctx) {
-        return (UnaryOperator<KCoreQuery>) visit(ctx);
+    /**
+     *
+     * @param computeInTypes
+     * @param computeArgs
+     * @return
+     */
+    private KCoreQuery buildComputeClusterUsingKCoreQuery
+            (GraqlParser.LabelsContext computeInTypes, GraqlParser.ComputeArgsContext computeArgs) {
+        KCoreQuery computeCluster = queryBuilder.compute().cluster().usingKCore();
+
+        // The 'compute cluster using connected-component' query can be given 'in <types>' condition
+        if (computeInTypes != null) computeCluster.in(visitLabels(computeInTypes));
+
+        // The 'compute cluster using connected-component' query can be given 'where <args>' condition:
+        // The 'start = <id>', 'members = <bool>', 'size = <int>' arguments are accepted
+        for (GraqlParser.ComputeArgContext arg : visitComputeArgs(computeArgs)) {
+            if (arg instanceof GraqlParser.ComputeArgKContext) {
+                computeCluster.kValue(getInteger(((GraqlParser.ComputeArgKContext) arg).INTEGER()));
+
+            } else {
+                throw GraqlQueryException.invalidComputeClusterUsingKCoreArgument();
+            }
+        }
+
+        return computeCluster;
     }
 
+    /**
+     * Visits the computeArgs tree in the compute query 'where <computeArgs>' condition and get the list of arguments
+     *
+     * @param computeArgs
+     * @return
+     */
     @Override
-    public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
-        return query -> query.kValue(getInteger(ctx.INTEGER()));
+    public List<GraqlParser.ComputeArgContext> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
+
+        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
+
+        if (computeArgs.computeArg() != null) {
+            argsList.add(computeArgs.computeArg());
+        } else if (computeArgs.computeArgsArray() != null) {
+            argsList.addAll(computeArgs.computeArgsArray().computeArg());
+        }
+
+        return argsList;
     }
 }

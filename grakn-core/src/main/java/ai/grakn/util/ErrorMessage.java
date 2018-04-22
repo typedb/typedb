@@ -208,80 +208,109 @@ public enum ErrorMessage {
             "The available compute methods are: count, min, max, median, mean, std, sum, path, paths, centrality, and cluster." +
             "A valid compute method contains 'compute <method> <conditions>', such as: 'compute min of age, in person;"),
 
+    // Graql compute count errors ------------------
+
     INVALID_COMPUTE_COUNT_CONDITION("Invalid 'compute count' condition. " +
-            "Only 'in <types>' is expected, such as: 'compute count in [person, movie]];'."),
+            "Only 'in <types>' is accepted, such as: 'compute count in [person, movie]];'."),
+
+    // Graql compute statistics errors -------------
 
     INVALID_COMPUTE_MIN_CONDITION("Invalid 'compute min' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute min of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute min of age, in [person, animal];'."),
 
     INVALID_COMPUTE_MIN_MISSING_CONDITION("Missing 'compute min' condition. " +
-            "'of <types>' is required, such as: 'compute min of age'."),
+            "'of <types>' is required, such as: 'compute min of age;'."),
 
     INVALID_COMPUTE_MAX_CONDITION("Invalid 'compute max' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute max of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute max of age, in [person, animal];'."),
 
     INVALID_COMPUTE_MAX_MISSING_CONDITION("Missing 'compute max' condition. " +
-            "'of <types>' is required, such as: 'compute max of age'."),
+            "'of <types>' is required, such as: 'compute max of age;'."),
 
     INVALID_COMPUTE_MEDIAN_CONDITION("Invalid 'compute median' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute median of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute median of age, in [person, animal];'."),
 
     INVALID_COMPUTE_MEDIAN_MISSING_CONDITION("Missing 'compute median' condition. " +
-            "'of <types>' is required, such as: 'compute median of age'."),
+            "'of <types>' is required, such as: 'compute median of age;'."),
 
     INVALID_COMPUTE_MEAN_CONDITION("Invalid 'compute mean' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute mean of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute mean of age, in [person, animal];'."),
 
     INVALID_COMPUTE_MEAN_MISSING_CONDITION("Missing 'compute mean' condition. " +
             "'of <types>' is required, such as: 'compute mean of age;'."),
 
     INVALID_COMPUTE_STD_CONDITION("Invalid 'compute std' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute std of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute std of age, in [person, animal];'."),
 
     INVALID_COMPUTE_STD_MISSING_CONDITION("Missing 'compute std' condition. " +
             "'of <types>' is required, such as: 'compute std of age;'."),
 
     INVALID_COMPUTE_SUM_CONDITION("Invalid 'compute sum' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, such as: 'compute sum of age, in [person, animal];'."),
+            "Only 'of <types>' and 'in <types>' are accepted, such as: 'compute sum of age, in [person, animal];'."),
 
     INVALID_COMPUTE_SUM_MISSING_CONDITION("Missing 'compute sum' condition. " +
             "'of <types>' is required, such as: 'compute sum of age;'."),
 
+    // Graql compute path(s) errors -------------
+
     INVALID_COMPUTE_PATH_CONDITION("Invalid 'compute path' condition. " +
-            "Only 'from <id>', 'to <id', and 'in <types>' are expected, " +
+            "Only 'from <id>', 'to <id', and 'in <types>' are accepted, " +
             "such as: 'compute path from 123, to 456, in [movie, cast, person];'."),
 
     INVALID_COMPUTE_PATH_MISSING_CONDITION("Missing 'compute path' condition. " +
             "'from <id>' and 'to <id>' are required, such as: 'compute path from 123, to 456;'."),
 
     INVALID_COMPUTE_PATHS_CONDITION("Invalid 'compute paths' condition. " +
-            "Only 'from <id>', 'to <id', and 'in <types>' are expected, " +
+            "Only 'from <id>', 'to <id', and 'in <types>' are accepted, " +
             "such as: 'compute paths from 123, to 456, in [movie, cast, person];'."),
 
     INVALID_COMPUTE_PATHS_MISSING_CONDITION("Missing 'compute paths' condition. " +
-            "'from <id>' and 'to <id>' are required, such as: 'compute paths from 123, to 456'."),
+            "'from <id>' and 'to <id>' are required, such as: 'compute paths from 123, to 456;'."),
+
+    // Graql compute centrality errors --------------
 
     INVALID_COMPUTE_CENTRALITY_CONDITION("Invalid 'compute centrality' condition. " +
-            "Only 'of <types>', 'in <types>', 'using <algorithm>' and 'where <args>' are expected, " +
+            "Only 'of <types>', 'in <types>', 'using <algorithm>' and 'where <args>' are accepted, " +
             "such as: 'compute centrality of person, in [person, marriage], using k-core, where min-k=10;'. " +
-            "Note that when performing 'compute centrality using degree', 'where <args' is not expected."),
+            "Note that when performing 'compute centrality using degree', 'where <args>' is not accepted."),
 
     INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION("Missing 'compute centrality' condition. " +
-            "'using <algorithm>' is required, such as: 'compute centrality using k-core'."),
+            "'using <algorithm>' is required, such as: 'compute centrality using k-core;'."),
 
     INVALID_COMPUTE_CENTRALITY_ALGORITHM("Invalid 'compute centrality' algorithm." +
             "The available algorithms are: k-core and degree." +
-            "A valid compute centrality query contains 'compute centrality using <algorithm>, <conditions>', " +
+            "A valid compute centrality query contains 'compute centrality using <algorithm>, <conditions>;', " +
             "such as: 'compute centrality of person, in [person, marriage], using degree;'."),
 
     INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION("Invalid 'compute centrality using degree' condition. " +
-            "Only 'of <types>' and 'in <types>' are expected, " +
+            "Only 'of <types>' and 'in <types>' are accepted, " +
             "such as: 'compute centrality of person, in [person, marriage], using degree;'. "),
 
     INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS("Invalid 'compute centrality using k-core' argument(s). " +
-            "Only 'min-k = <value>' is expected," +
-            "such as: 'compute centrality of person, in [person, marriage], using k-core, where min-k = 2'."),
+            "Only 'min-k = <value>' is accepted," +
+            "such as: 'compute centrality of person, in [person, marriage], using k-core, where min-k = 2;'."),
 
+    // Graql compute cluster errors -----------------
+
+    INVALID_COMPUTE_CLUSTER_CONDITION("Invalid 'compute cluster' condition. " +
+            "Only 'in <types>', 'using <algorithm>' and 'where <args>' are accepted, " +
+            "such as: 'compute cluster in [person, marriage], using connected-component, where [members=true, size=3];'. "),
+
+    INVALID_COMPUTE_CLUSTER_MISSING_CONDITION("Missing 'compute cluster' condition. " +
+            "'using <algorithm>' is required, such as: 'compute cluster using connected-component;'."),
+
+    INVALID_COMPUTE_CLUSTER_ALGORITHM("Invalid 'compute cluster' algorithm." +
+            "The available algorithms are: k-core and connected-component." +
+            "A valid compute cluster query contains 'compute cluster using <algorithm>, <conditions>;', " +
+            "such as: 'compute centrality in [person, marriage], using connected-component;'."),
+
+    INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT("invalid 'compute cluster using connected-component' argument(s). " +
+            "Only 'start = <id>', 'members = <bool>', and 'size = <int>' are accepted, " +
+            "such as: 'compute cluster in [person, marriage], using connected-component, where [start = \"V123\", members = true, size = 2];'"),
+
+    INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT("invalid 'compute cluster using k-core' argument(s). " +
+            "Only 'k = <int>' is accepted, " +
+            "such as: 'compute cluster in [person, marriage], using k-core, where k = 2;'"),
 
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),

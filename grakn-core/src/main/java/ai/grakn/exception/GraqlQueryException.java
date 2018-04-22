@@ -45,6 +45,11 @@ import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_ALGORITHM;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_MISSING_CONDITION;
@@ -453,5 +458,25 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidComputeCentralityUsingKCoreArgs() {
         return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeClusterCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeClusterMissingCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_MISSING_CONDITION.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeClusterAlgorithm() {
+        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_ALGORITHM.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeClusterUsingConnectedComponentArgument() {
+        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeClusterUsingKCoreArgument() {
+        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT.getMessage());
     }
 }
