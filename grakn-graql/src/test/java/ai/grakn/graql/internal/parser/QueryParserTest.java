@@ -670,12 +670,12 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithMembers() {
-        assertParseEquivalence("compute cluster in [movie, person], using connected-component, where members = true;");
+        assertParseEquivalence("compute cluster in [movie, person], using connected-component, where members=true;");
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithMembersThenSize() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").membersOn().clusterSize(10);
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").membersOn().size(10);
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [members = true, size = 10];");
 
@@ -684,7 +684,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembers() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn();
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").size(10).membersOn();
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [size = 10, members = true];");
 
@@ -694,7 +694,7 @@ public class QueryParserTest {
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
         ConnectedComponentQuery<?> expected =
-                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn().clusterSize(15);
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").size(10).membersOn().size(15);
 
         ConnectedComponentQuery<?> parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [size = 10, members = true, size = 15];");
@@ -709,7 +709,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithK() {
-        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").k(10);
         KCoreQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using k-core, where k = 10;");
 
@@ -718,7 +718,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithKTwice() {
-        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").k(10);
         KCoreQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];");
 
@@ -732,7 +732,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeCoreness() {
-        assertParseEquivalence("compute centrality in movie, using k-core, where min-k = 3;");
+        assertParseEquivalence("compute centrality in movie, using k-core, where min-k=3;");
     }
 
     @Test
@@ -758,6 +758,11 @@ public class QueryParserTest {
     @Test
     public void testParseComputePath() {
         assertParseEquivalence("compute path from \"1\", to \"2\", in person;");
+    }
+
+    @Test
+    public void testParseComputePaths() {
+        assertParseEquivalence("compute paths from \"1\", to \"2\", in [person, marriage];");
     }
 
     @Test

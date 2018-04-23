@@ -21,7 +21,6 @@ package ai.grakn.graql.analytics;
 import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.Map;
@@ -67,7 +66,7 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
     /**
      * Get the collection of types to execute the query on
      */
-    Collection<? extends Label> targetLabels();
+    Collection<? extends Label> ofTypes();
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph.
@@ -80,7 +79,7 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
     /**
      * @param subLabels a collection of types to include in the subgraph.
      *                  By default CorenessQuery includes all entities, relationships and attributes.
-     * @return a CorenessQuery with the subLabels set
+     * @return a CorenessQuery with the inTypes set
      */
     @Override
     CorenessQuery in(Collection<? extends Label> subLabels);

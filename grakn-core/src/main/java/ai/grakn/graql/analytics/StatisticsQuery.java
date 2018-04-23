@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.analytics;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
@@ -61,5 +61,5 @@ public interface StatisticsQuery<T> extends ComputeQuery<T> {
     /**
      * Get the collection of types of attributes to execute the query on
      */
-    Collection<? extends Label> attributeLabels();
+    Collection<? extends Label> ofTypes();
 }

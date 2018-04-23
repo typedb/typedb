@@ -192,7 +192,7 @@ public class GraqlTest {
 
             Query<?> parsed = graph.graql().parse(
                     "compute cluster; using connected-component where source = V123;");
-            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().of(ConceptId.of("V123"));
+            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().start(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }
     }

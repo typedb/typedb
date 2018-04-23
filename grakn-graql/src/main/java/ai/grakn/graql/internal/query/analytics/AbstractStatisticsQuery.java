@@ -21,21 +21,26 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
+import static ai.grakn.util.GraqlSyntax.SPACE;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
         extends AbstractComputeQuery<T, V> implements StatisticsQuery<T> {
 
-    private ImmutableSet<Label> statisticsResourceLabels = ImmutableSet.of();
+    private ImmutableSet<Label> ofTypes = ImmutableSet.of();
 
     private static final boolean INCLUDE_ATTRIBUTE = true;
 
@@ -50,24 +55,28 @@ abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
 
     @API
     public final V of(Collection<Label> statisticsResourceLabels) {
-        this.statisticsResourceLabels = ImmutableSet.copyOf(statisticsResourceLabels);
+        this.ofTypes = ImmutableSet.copyOf(statisticsResourceLabels);
         return (V) this;
     }
 
-    public final Collection<? extends Label> attributeLabels() {
-        return statisticsResourceLabels;
+    public final Collection<? extends Label> ofTypes() {
+        return ofTypes;
     }
 
     @Override
-    final String graqlString() {
-        return getName() + resourcesString() + subtypeString();
+    String conditionsString() {
+        List<String> conditionsList = new ArrayList<>();
+
+        if (!ofTypes().isEmpty()) conditionsList.add(ofTypesString());
+        if (!inTypes().isEmpty()) conditionsList.add(inTypesString());
+
+        return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
-    abstract String getName();
+    private String ofTypesString() {
+        if (!ofTypes.isEmpty()) return OF + SPACE + typesString(ofTypes);
 
-    private String resourcesString() {
-        return " of " + statisticsResourceLabels.stream()
-                .map(StringConverter::typeLabelToString).collect(joining(", "));
+        return "";
     }
 
     @Override
@@ -78,13 +87,14 @@ abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
 
         AbstractStatisticsQuery<?, ?> that = (AbstractStatisticsQuery<?, ?>) o;
 
-        return statisticsResourceLabels.equals(that.statisticsResourceLabels);
+        return ofTypes.equals(that.ofTypes);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + statisticsResourceLabels.hashCode();
+        result = 31 * result + ofTypes.hashCode();
+        result = 31 * result + inTypes.hashCode();
         return result;
     }
 }

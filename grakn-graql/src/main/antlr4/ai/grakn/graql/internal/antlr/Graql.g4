@@ -52,7 +52,7 @@ computeCondition                : 'from'    computeFromID
                                 | WHERE     computeArgs
                                 ;
 
-// GRAQL COMPUTE: CONDITIONS GRAMMAR ===================================================================================
+// GRAQL COMPUTE QUERY: CONDITIONS GRAMMAR =============================================================================
 // Author: Haikal Pribadi
 //
 // The following are definitions of computeConditions for the Graql Compute Query

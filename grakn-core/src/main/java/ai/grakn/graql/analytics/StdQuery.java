@@ -20,7 +20,6 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -55,7 +54,7 @@ public interface StdQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
      * @param subLabels a collection of types to include in the subgraph
-     * @return a StdQuery with the subLabels set
+     * @return a StdQuery with the inTypes set
      */
     @Override
     StdQuery in(Collection<? extends Label> subLabels);

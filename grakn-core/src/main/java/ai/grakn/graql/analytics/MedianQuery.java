@@ -20,7 +20,6 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -55,7 +54,7 @@ public interface MedianQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
      * @param subLabels a collection of types to include in the subgraph
-     * @return a MedianQuery with the subLabels set
+     * @return a MedianQuery with the inTypes set
      */
     @Override
     MedianQuery in(Collection<? extends Label> subLabels);

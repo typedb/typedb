@@ -21,7 +21,6 @@ package ai.grakn.graql.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -61,9 +60,9 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
     boolean isMembersSet();
 
     /**
-     * Get the source ID, if one is set with {@link #of(ConceptId)}.
+     * Get the source ID, if one is set with {@link #start(ConceptId)}.
      */
-    Optional<ConceptId> sourceId();
+    Optional<ConceptId> start();
 
     /**
      * Return only the cluster containing the given concept after executing the query.
@@ -71,13 +70,13 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * @param conceptId The id of the given concept. conceptId is ignored if it's null.
      * @return a ConnectedComponentQuery
      */
-    ConnectedComponentQuery<T> of(ConceptId conceptId);
+    ConnectedComponentQuery<T> start(ConceptId conceptId);
 
     /**
      * @param clusterSize the size of the clusters returned
      * @return a ConnectedComponentQuery with cluster set
      */
-    ConnectedComponentQuery<T> clusterSize(long clusterSize);
+    ConnectedComponentQuery<T> size(long clusterSize);
 
     /**
      * @param subTypeLabels an array of types to include in the sub graph
@@ -88,7 +87,7 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
 
     /**
      * @param subLabels a collection of types to include in the sub graph
-     * @return a ConnectedComponentQuery with the subLabels set
+     * @return a ConnectedComponentQuery with the inTypes set
      */
     @Override
     ConnectedComponentQuery<T> in(Collection<? extends Label> subLabels);
@@ -110,5 +109,5 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * Get the size of the clusters returned
      */
     @Nullable
-    Long clusterSize();
+    Optional<Long> size();
 }

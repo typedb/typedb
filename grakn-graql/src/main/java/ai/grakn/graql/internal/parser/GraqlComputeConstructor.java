@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -240,7 +240,7 @@ public class GraqlComputeConstructor {
                     break;
                 // The 'compute path' query requires a 'to <id>' condition
                 case GraqlParser.RULE_computeToID:
-                    computePath = computePath.from(graqlConstructor.visitId(condition.computeToID().id()));
+                    computePath = computePath.to(graqlConstructor.visitId(condition.computeToID().id()));
                     computeToIDExists = true;
                     break;
                 // The 'compute path' query may be given 'in <types>' condition
@@ -283,7 +283,7 @@ public class GraqlComputeConstructor {
                     break;
                 // The 'compute paths' query requires a 'to <id>' condition
                 case GraqlParser.RULE_computeToID:
-                    computePaths = computePaths.from(graqlConstructor.visitId(condition.computeToID().id()));
+                    computePaths = computePaths.to(graqlConstructor.visitId(condition.computeToID().id()));
                     computeToIDExists = true;
                     break;
                 // The 'compute paths' query may be given 'in <types>' condition
@@ -494,7 +494,7 @@ public class GraqlComputeConstructor {
         if (computeArgs != null) {
             for (GraqlParser.ComputeArgContext arg : graqlConstructor.visitComputeArgs(computeArgs)) {
                 if (arg instanceof GraqlParser.ComputeArgStartContext) {
-                    computeCluster.of(graqlConstructor.visitId(((GraqlParser.ComputeArgStartContext) arg).id()));
+                    computeCluster.start(graqlConstructor.visitId(((GraqlParser.ComputeArgStartContext) arg).id()));
                 } else if (arg instanceof GraqlParser.ComputeArgMembersContext) {
                     if (graqlConstructor.visitBool(((GraqlParser.ComputeArgMembersContext) arg).bool())) {
                         computeCluster.membersOn();
@@ -502,7 +502,7 @@ public class GraqlComputeConstructor {
                         computeCluster.membersOff();
                     }
                 } else if (arg instanceof GraqlParser.ComputeArgSizeContext) {
-                    computeCluster.clusterSize(graqlConstructor.getInteger(((GraqlParser.ComputeArgSizeContext) arg).INTEGER()));
+                    computeCluster.size(graqlConstructor.getInteger(((GraqlParser.ComputeArgSizeContext) arg).INTEGER()));
                 } else {
                     throw GraqlQueryException.invalidComputeClusterUsingConnectedComponentArgument();
                 }
@@ -530,7 +530,7 @@ public class GraqlComputeConstructor {
         if (computeArgs != null) {
             for (GraqlParser.ComputeArgContext arg : graqlConstructor.visitComputeArgs(computeArgs)) {
                 if (arg instanceof GraqlParser.ComputeArgKContext) {
-                    computeCluster.kValue(graqlConstructor.getInteger(((GraqlParser.ComputeArgKContext) arg).INTEGER()));
+                    computeCluster.k(graqlConstructor.getInteger(((GraqlParser.ComputeArgKContext) arg).INTEGER()));
 
                 } else {
                     throw GraqlQueryException.invalidComputeClusterUsingKCoreArgument();

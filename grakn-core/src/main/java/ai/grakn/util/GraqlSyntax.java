@@ -28,8 +28,18 @@ public class GraqlSyntax {
     public static final String MATCH = "match";
 
 
-    // Analytics GraqlSyntax
+    // Graql Queries
     public static final String COMPUTE = "compute";
+
+
+    // Miscellaneous
+    public static final String EQUAL            = "=";
+    public static final String SEMICOLON        = ";";
+    public static final String SPACE            = " ";
+    public static final String COMMA            = ",";
+    public static final String COMMA_SPACE      = ", ";
+    public static final String SQUARE_OPEN      = "[";
+    public static final String SQUARE_CLOSE     = "]";
 
     /**
      * Graql Compute syntax keyword
@@ -48,12 +58,35 @@ public class GraqlSyntax {
         public static final String CLUSTER      = "cluster";
 
         /**
-         * Graql Compute algorithm options
+         * Graql Compute conditions keyword
+         */
+        public static class Condition {
+            public static final String FROM     = "from";
+            public static final String TO       = "to";
+            public static final String OF       = "of";
+            public static final String IN       = "in";
+            public static final String USING    = "using";
+            public static final String WHERE    = "where";
+        }
+
+        /**
+         * Graql Compute algorithm names
          */
         public static class Algorithm {
             public static final String DEGREE               = "degree";
             public static final String K_CORE               = "k-core";
             public static final String CONNECTED_COMPONENT  = "connected-component";
+        }
+
+        /**
+         * Graql Compute argument keywords
+         */
+        public static class Arg {
+            public static final String MIN_K    = "min-k";
+            public static final String K        = "k";
+            public static final String START    = "start";
+            public static final String MEMBERS  = "members";
+            public static final String SIZE     = "size";
         }
     }
 }

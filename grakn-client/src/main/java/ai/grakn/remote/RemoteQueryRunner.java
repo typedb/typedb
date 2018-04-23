@@ -22,7 +22,7 @@ import ai.grakn.ComputeJob;
 import ai.grakn.QueryRunner;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;

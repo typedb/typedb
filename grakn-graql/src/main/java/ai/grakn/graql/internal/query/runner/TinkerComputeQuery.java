@@ -30,7 +30,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
@@ -225,7 +225,7 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
     }
 
     private boolean subTypesContainsImplicitOrAttributeTypes() {
-        return query.subLabels().stream().anyMatch(label -> {
+        return query.inTypes().stream().anyMatch(label -> {
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));
         });
@@ -234,7 +234,7 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
     private Stream<Type> subTypes() {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        if (query.subLabels().isEmpty()) {
+        if (query.inTypes().isEmpty()) {
             ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
 
             if (isAttributeIncluded()) {
@@ -247,7 +247,7 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
 
             return subTypesBuilder.build().stream();
         } else {
-            Stream<Type> subTypes = query.subLabels().stream().map(label -> {
+            Stream<Type> subTypes = query.inTypes().stream().map(label -> {
                 Type type = tx.getType(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 return type;

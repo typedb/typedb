@@ -25,15 +25,23 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathsQuery;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.graql.internal.util.StringConverter.nullableIdToString;
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
+import static ai.grakn.util.GraqlSyntax.Compute.PATHS;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+import static java.util.stream.Collectors.joining;
 
 class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuery> implements PathsQuery {
 
-    private ConceptId sourceId = null;
-    private ConceptId destinationId = null;
+    private @Nullable ConceptId from = null;
+    private @Nullable ConceptId to = null;
 
     PathsQueryImpl(Optional<GraknTx> tx) {
         super(tx);
@@ -46,32 +54,42 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
 
     @Override
     public PathsQuery from(ConceptId sourceId) {
-        this.sourceId = sourceId;
+        this.from = sourceId;
         return this;
     }
 
     @Override
     public final ConceptId from() {
-        if (sourceId == null) throw GraqlQueryException.noPathSource();
-        return sourceId;
+        if (from == null) throw GraqlQueryException.noPathSource();
+        return from;
     }
 
     @Override
     public PathsQuery to(ConceptId destinationId) {
-        this.destinationId = destinationId;
+        this.to = destinationId;
         return this;
     }
 
     @Override
     public final ConceptId to() {
-        if (destinationId == null) throw GraqlQueryException.noPathDestination();
-        return destinationId;
+        if (to == null) throw GraqlQueryException.noPathDestination();
+        return to;
     }
 
     @Override
-    final String graqlString() {
-        return "paths from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
-                + subtypeString();
+    final String methodString() {
+        return PATHS;
+    }
+
+    @Override
+    final String conditionsString() {
+        List<String> conditionsList = new ArrayList<>();
+
+        conditionsList.add(FROM + SPACE + nullableIdToString(from));
+        conditionsList.add(TO + SPACE + nullableIdToString(to));
+        if (!inTypesString().isEmpty()) conditionsList.add(inTypesString());
+
+        return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
     @Override
@@ -80,16 +98,18 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        PathsQueryImpl pathQuery = (PathsQueryImpl) o;
+        PathsQueryImpl that = (PathsQueryImpl) o;
 
-        return sourceId.equals(pathQuery.sourceId) && destinationId.equals(pathQuery.destinationId);
+        if (from != null ? !from.equals(that.from) : that.from != null) return false;
+        return to != null ? to.equals(that.to) : that.to == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + destinationId.hashCode();
+        result = 31 * result + PATHS.hashCode();
+        result = 31 * result + from.hashCode();
+        result = 31 * result + to.hashCode();
         return result;
     }
 }

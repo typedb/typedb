@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -171,13 +171,13 @@ public class QueryToStringTest {
 
     @Test
     public void testCCSizeToString() {
-        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10);
+        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person").size(10);
         assertEquivalent(query, "compute cluster in movie, person; using connected-component where size = 10;");
     }
 
     @Test
     public void testKCoreToString() {
-        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").k(10);
         assertEquivalent(query, "compute cluster in movie, person; using k-core where k = 10;");
     }
 
