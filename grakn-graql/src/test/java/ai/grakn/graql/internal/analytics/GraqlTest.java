@@ -92,7 +92,7 @@ public class GraqlTest {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in thingy, thingy;").execute()).longValue());
+                    ((Long) graph.graql().parse("compute count in [thingy, thingy];").execute()).longValue());
         }
     }
 
@@ -101,7 +101,7 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees =
-                    graph.graql().<DegreeQuery>parse("compute centrality; using degree;").execute();
+                    graph.graql().<DegreeQuery>parse("compute centrality using degree;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -202,7 +202,7 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
 
             Optional<List<Concept>> path = query.execute();
             List<String> result =
@@ -219,7 +219,7 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathsQuery query = graph.graql().parse("compute paths from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathsQuery query = graph.graql().parse("compute paths from '" + entityId1 + "', to '" + entityId2 + "';");
 
             List<List<Concept>> path = query.execute();
             assertEquals(1, path.size());
@@ -244,8 +244,8 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidKBException {
+    @Test(expected = GraqlQueryException.class)
+    public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
@@ -264,7 +264,7 @@ public class GraqlTest {
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
                 "compute count;",
-                "compute centrality; using degree;",
+                "compute centrality using degree;",
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
