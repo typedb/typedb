@@ -22,7 +22,6 @@ import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.analytics.StatisticsQuery;
-import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;

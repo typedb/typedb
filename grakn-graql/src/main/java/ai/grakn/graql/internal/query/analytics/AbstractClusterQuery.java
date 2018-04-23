@@ -54,15 +54,4 @@ abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        AbstractClusterQuery that = (AbstractClusterQuery) o;
-
-        return algorithmString() == that.algorithmString();
-    }
 }
