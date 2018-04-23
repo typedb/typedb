@@ -35,7 +35,7 @@ import static ai.grakn.util.GraqlSyntax.SPACE;
 
 class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implements CorenessQuery {
 
-    private Optional<Long> k = Optional.empty();
+    private Optional<Long> minK = Optional.empty();
     private final static long DEFAULT_K = 2L;
 
     CorenessQueryImpl(Optional<GraknTx> tx) {
@@ -49,13 +49,13 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
     @Override
     public CorenessQuery minK(long k) {
-        this.k = Optional.of(k);
+        this.minK = Optional.of(k);
         return this;
     }
 
     @Override
     public final long minK() {
-        return k.orElse(DEFAULT_K);
+        return minK.orElse(DEFAULT_K);
     }
 
     @Override
@@ -65,7 +65,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
     @Override
     String argumentsString() {
-        if (k.isPresent()) return WHERE + SPACE + MIN_K + EQUAL + k.get();
+        if (minK.isPresent()) return WHERE + SPACE + MIN_K + EQUAL + minK.get();
 
         return "";
     }

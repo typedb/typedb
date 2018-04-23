@@ -72,7 +72,7 @@ computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
 computeArg                      : 'min-k'       '='     INTEGER         # computeArgMinK
                                 | 'k'           '='     INTEGER         # computeArgK
-                                | 'start'       '='     id              # computeArgStart
+                                | START         '='     id              # computeArgStart
                                 | MEMBERS       '='     bool            # computeArgMembers
                                 | SIZE          '='     INTEGER         # computeArgSize ;
 
@@ -147,7 +147,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREE | MEMBERS | SIZE | WHERE
+               | DEGREE | START | MEMBERS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -167,6 +167,7 @@ PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 CENTRALITY     : 'centrality' ;
 DEGREE         : 'degree' ;
+START          : 'start' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 USING          : 'using' ;

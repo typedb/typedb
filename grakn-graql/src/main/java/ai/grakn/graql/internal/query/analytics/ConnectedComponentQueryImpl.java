@@ -107,8 +107,8 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
         List<String> argumentsList = new ArrayList<>();
         StringBuilder argumentsString = new StringBuilder();
 
-        if (start().isPresent()) argumentsList.add(START + EQUAL + start());
-        if (size().isPresent()) argumentsList.add(SIZE + EQUAL + size());
+        if (start().isPresent()) argumentsList.add(START + EQUAL + start().get());
+        if (size().isPresent()) argumentsList.add(SIZE + EQUAL + size().get());
         if (isMembersSet()) argumentsList.add(MEMBERS + EQUAL + members);
 
         if(!argumentsList.isEmpty()) {
