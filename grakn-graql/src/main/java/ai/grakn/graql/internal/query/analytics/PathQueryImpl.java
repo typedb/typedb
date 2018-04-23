@@ -52,8 +52,8 @@ class PathQueryImpl extends AbstractPathQuery<Optional<List<Concept>>, PathQuery
 
         PathQueryImpl that = (PathQueryImpl) o;
 
-        if (from() != null ? !from().equals(that.from()) : that.from() != null) return false;
-        return to() != null ? to().equals(that.to()) : that.to() == null;
+        if (!from().equals(that.from())) return false;
+        return to().equals(that.to());
     }
 
     @Override
