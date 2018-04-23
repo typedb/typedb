@@ -240,11 +240,11 @@ public class QueryParserImpl implements QueryParser {
         return parser;
     }
 
-    private QueryVisitor getQueryVisitor() {
+    private GraqlConstructor getQueryVisitor() {
         ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
                 ImmutableMap.copyOf(aggregateMethods);
 
-        return new QueryVisitor(immutableAggregates, queryBuilder, defineAllVars);
+        return new GraqlConstructor(immutableAggregates, queryBuilder, defineAllVars);
     }
 
     // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.
@@ -270,23 +270,23 @@ public class QueryParserImpl implements QueryParser {
     }
 
     private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =
-            createQueryPart(GraqlParser::queryList, QueryVisitor::visitQueryList);
+            createQueryPart(GraqlParser::queryList, GraqlConstructor::visitQueryList);
 
     private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
-            createQueryPart(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF);
+            createQueryPart(GraqlParser::queryEOF, GraqlConstructor::visitQueryEOF);
 
     private final QueryPart<QueryContext, Query<?>> QUERY =
-            createQueryPart(GraqlParser::query, QueryVisitor::visitQuery);
+            createQueryPart(GraqlParser::query, GraqlConstructor::visitQuery);
 
     private final QueryPart<PatternsContext, List<Pattern>> PATTERNS =
-            createQueryPart(GraqlParser::patterns, QueryVisitor::visitPatterns);
+            createQueryPart(GraqlParser::patterns, GraqlConstructor::visitPatterns);
 
     private final QueryPart<PatternContext, Pattern> PATTERN =
-            createQueryPart(GraqlParser::pattern, QueryVisitor::visitPattern);
+            createQueryPart(GraqlParser::pattern, GraqlConstructor::visitPattern);
 
 
     private <S extends ParseTree, T> QueryPart<S, T> createQueryPart(
-            Function<GraqlParser, S> parseTree, BiFunction<QueryVisitor, S, T> visit) {
+            Function<GraqlParser, S> parseTree, BiFunction<GraqlConstructor, S, T> visit) {
 
         return new QueryPart<S, T>() {
             @Override
@@ -295,7 +295,7 @@ public class QueryParserImpl implements QueryParser {
             }
 
             @Override
-            T visit(QueryVisitor visitor, S context) {
+            T visit(GraqlConstructor visitor, S context) {
                 return visit.apply(visitor, context);
             }
         };
@@ -312,9 +312,9 @@ public class QueryParserImpl implements QueryParser {
         abstract S parseTree(GraqlParser parser) throws ParseCancellationException;
 
         /**
-         * Parse the {@link ParseTree} into a Java object using a {@link QueryVisitor}.
+         * Parse the {@link ParseTree} into a Java object using a {@link GraqlConstructor}.
          */
-        abstract T visit(QueryVisitor visitor, S context);
+        abstract T visit(GraqlConstructor visitor, S context);
 
         /**
          * Parse the string into a Java object

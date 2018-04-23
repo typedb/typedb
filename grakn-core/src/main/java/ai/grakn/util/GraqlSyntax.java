@@ -23,12 +23,12 @@ package ai.grakn.util;
  *
  * @author Haikal Pribadi
  */
-public class Syntax {
+public class GraqlSyntax {
 
     public static final String MATCH = "match";
 
 
-    // Analytics Syntax
+    // Analytics GraqlSyntax
     public static final String COMPUTE = "compute";
 
     /**
