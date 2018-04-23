@@ -121,32 +121,34 @@ public class GraqlComputeConstructor {
     /**
      * Constructs a graql compute statistics queries: min, max, median, mean, std, sum
      *
-     * @param ctx
+     * @param conditions
      * @param methodIndex
      * @return A subtype of StatisticsQuery object
      */
-    private StatisticsQuery<?> constructComputeStatisticsQuery(GraqlParser.ComputeConditionsContext ctx, int methodIndex) {
+    private StatisticsQuery<?> constructComputeStatisticsQuery(GraqlParser.ComputeConditionsContext conditions, int methodIndex) {
 
         StatisticsQuery<?> computeStatistics = initialiseComputeStatisticsQuery(methodIndex);
 
         boolean computeOfConditionExists = false;
         boolean invalidComputeConditionExists = false;
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                // The 'compute <statistics>' query requires a 'of <types>' condition
-                case GraqlParser.RULE_computeOfLabels:
-                    computeStatistics = computeStatistics.of(graqlConstructor.visitLabels(condition.computeOfLabels().labels()));
-                    computeOfConditionExists = true;
-                    break;
-                // The 'compute <statistics>' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computeStatistics = computeStatistics.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
-                    break;
-                // The 'compute <statistics>' query does not accept any other condition
-                default:
-                    invalidComputeConditionExists = true;
-                    break;
+        if(conditions != null) {
+            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute <statistics>' query requires a 'of <types>' condition
+                    case GraqlParser.RULE_computeOfLabels:
+                        computeStatistics = computeStatistics.of(graqlConstructor.visitLabels(condition.computeOfLabels().labels()));
+                        computeOfConditionExists = true;
+                        break;
+                    // The 'compute <statistics>' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computeStatistics = computeStatistics.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
+                        break;
+                    // The 'compute <statistics>' query does not accept any other condition
+                    default:
+                        invalidComputeConditionExists = true;
+                        break;
+                }
             }
         }
 
@@ -222,34 +224,36 @@ public class GraqlComputeConstructor {
     /**
      * Constructs graql compute path query
      *
-     * @param ctx
+     * @param conditions
      * @return PathQuery object
      */
-    private PathQuery constructComputePathQuery(GraqlParser.ComputeConditionsContext ctx) {
+    private PathQuery constructComputePathQuery(GraqlParser.ComputeConditionsContext conditions) {
 
         PathQuery computePath = queryBuilder.compute().path();
         boolean computeFromIDExists = false;
         boolean computeToIDExists = false;
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                // The 'compute path' query requires a 'from <id>' condition
-                case GraqlParser.RULE_computeFromID:
-                    computePath = computePath.from(graqlConstructor.visitId(condition.computeFromID().id()));
-                    computeFromIDExists = true;
-                    break;
-                // The 'compute path' query requires a 'to <id>' condition
-                case GraqlParser.RULE_computeToID:
-                    computePath = computePath.to(graqlConstructor.visitId(condition.computeToID().id()));
-                    computeToIDExists = true;
-                    break;
-                // The 'compute path' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computePath = computePath.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
-                    break;
-                // The 'compute path' query does not accept any other condition
-                default:
-                    throw GraqlQueryException.invalidComputePathCondition();
+        if (conditions != null) {
+            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute path' query requires a 'from <id>' condition
+                    case GraqlParser.RULE_computeFromID:
+                        computePath = computePath.from(graqlConstructor.visitId(condition.computeFromID().id()));
+                        computeFromIDExists = true;
+                        break;
+                    // The 'compute path' query requires a 'to <id>' condition
+                    case GraqlParser.RULE_computeToID:
+                        computePath = computePath.to(graqlConstructor.visitId(condition.computeToID().id()));
+                        computeToIDExists = true;
+                        break;
+                    // The 'compute path' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computePath = computePath.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
+                        break;
+                    // The 'compute path' query does not accept any other condition
+                    default:
+                        throw GraqlQueryException.invalidComputePathCondition();
+                }
             }
         }
 
@@ -263,36 +267,38 @@ public class GraqlComputeConstructor {
     /**
      * Constructs a graql compute path query
      *
-     * @param ctx
+     * @param conditions
      * @return PathQuery object
      */
     // TODO this function should be merged with the [singular] constructComputePathQuery() once they have an abstraction
-    private PathsQuery constructComputePathsQuery(GraqlParser.ComputeConditionsContext ctx) {
+    private PathsQuery constructComputePathsQuery(GraqlParser.ComputeConditionsContext conditions) {
 
         PathsQuery computePaths = queryBuilder.compute().paths();
 
         boolean computeFromIDExists = false;
         boolean computeToIDExists = false;
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                // The 'compute paths' query requires a 'from <id>' condition
-                case GraqlParser.RULE_computeFromID:
-                    computePaths = computePaths.from(graqlConstructor.visitId(condition.computeFromID().id()));
-                    computeFromIDExists = true;
-                    break;
-                // The 'compute paths' query requires a 'to <id>' condition
-                case GraqlParser.RULE_computeToID:
-                    computePaths = computePaths.to(graqlConstructor.visitId(condition.computeToID().id()));
-                    computeToIDExists = true;
-                    break;
-                // The 'compute paths' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computePaths = computePaths.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
-                    break;
-                // The 'compute paths' query does not accept any other condition
-                default:
-                    throw GraqlQueryException.invalidComputePathsCondition();
+        if (conditions != null) {
+            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute paths' query requires a 'from <id>' condition
+                    case GraqlParser.RULE_computeFromID:
+                        computePaths = computePaths.from(graqlConstructor.visitId(condition.computeFromID().id()));
+                        computeFromIDExists = true;
+                        break;
+                    // The 'compute paths' query requires a 'to <id>' condition
+                    case GraqlParser.RULE_computeToID:
+                        computePaths = computePaths.to(graqlConstructor.visitId(condition.computeToID().id()));
+                        computeToIDExists = true;
+                        break;
+                    // The 'compute paths' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computePaths = computePaths.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
+                        break;
+                    // The 'compute paths' query does not accept any other condition
+                    default:
+                        throw GraqlQueryException.invalidComputePathsCondition();
+                }
             }
         }
 
@@ -306,37 +312,39 @@ public class GraqlComputeConstructor {
     /**
      * Constructs graql 'compute centrality' query
      *
-     * @param ctx
+     * @param conditions
      * @return A subtype of ComputeQuery object: CorenessQuery or DegreeQuery object
      */
-    private ComputeQuery<?> constructComputeCentralityQuery(GraqlParser.ComputeConditionsContext ctx) {
+    private ComputeQuery<?> constructComputeCentralityQuery(GraqlParser.ComputeConditionsContext conditions) {
 
         GraqlParser.LabelsContext computeOfTypes = null;
         GraqlParser.LabelsContext computeInTypes = null;
         GraqlParser.ComputeAlgorithmContext computeAlgorithm = null;
         GraqlParser.ComputeArgsContext computeArgs = null;
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                // The 'compute centrality' query requires 'using <algorithm>' condition
-                case GraqlParser.RULE_computeAlgorithm:
-                    computeAlgorithm = condition.computeAlgorithm();
-                    break;
-                // The 'compute centrality' query may be given 'of <types>' condition
-                case GraqlParser.RULE_computeOfLabels:
-                    computeOfTypes = condition.computeOfLabels().labels();
-                    break;
-                // The 'compute centrality' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computeInTypes = condition.computeInLabels().labels();
-                    break;
-                // The 'compute centrality' query may be given 'where <args>' condition
-                case GraqlParser.RULE_computeArgs:
-                    computeArgs = condition.computeArgs();
-                    break;
-                // The 'compute centrality' query does not accept any other condition
-                default:
-                    throw GraqlQueryException.invalidComputeCentralityCondition();
+        if (conditions != null) {
+            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute centrality' query requires 'using <algorithm>' condition
+                    case GraqlParser.RULE_computeAlgorithm:
+                        computeAlgorithm = condition.computeAlgorithm();
+                        break;
+                    // The 'compute centrality' query may be given 'of <types>' condition
+                    case GraqlParser.RULE_computeOfLabels:
+                        computeOfTypes = condition.computeOfLabels().labels();
+                        break;
+                    // The 'compute centrality' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computeInTypes = condition.computeInLabels().labels();
+                        break;
+                    // The 'compute centrality' query may be given 'where <args>' condition
+                    case GraqlParser.RULE_computeArgs:
+                        computeArgs = condition.computeArgs();
+                        break;
+                    // The 'compute centrality' query does not accept any other condition
+                    default:
+                        throw GraqlQueryException.invalidComputeCentralityCondition();
+                }
             }
         }
 
@@ -429,32 +437,34 @@ public class GraqlComputeConstructor {
 
     /**
      *
-     * @param ctx
+     * @param conditions
      * @return
      */
-    private ComputeQuery<?> constructComputeClusterQuery(GraqlParser.ComputeConditionsContext ctx) {
+    private ComputeQuery<?> constructComputeClusterQuery(GraqlParser.ComputeConditionsContext conditions) {
 
         GraqlParser.LabelsContext computeInTypes = null;
         GraqlParser.ComputeAlgorithmContext computeAlgorithm = null;
         GraqlParser.ComputeArgsContext computeArgs = null;
 
-        for (GraqlParser.ComputeConditionContext condition : ctx.computeCondition()) {
-            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                // The 'compute cluster' query requires 'using <algorithm>' condition
-                case GraqlParser.RULE_computeAlgorithm:
-                    computeAlgorithm = condition.computeAlgorithm();
-                    break;
-                // The 'compute cluster' query may be given 'in <types>' condition
-                case GraqlParser.RULE_computeInLabels:
-                    computeInTypes = condition.computeInLabels().labels();
-                    break;
-                // The 'compute cluster' query may be given 'where <args>' condition
-                case GraqlParser.RULE_computeArgs:
-                    computeArgs = condition.computeArgs();
-                    break;
-                // The 'compute cluster' query does not accept any other condition
-                default:
-                    throw GraqlQueryException.invalidComputeClusterCondition();
+        if (conditions != null) {
+            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                    // The 'compute cluster' query requires 'using <algorithm>' condition
+                    case GraqlParser.RULE_computeAlgorithm:
+                        computeAlgorithm = condition.computeAlgorithm();
+                        break;
+                    // The 'compute cluster' query may be given 'in <types>' condition
+                    case GraqlParser.RULE_computeInLabels:
+                        computeInTypes = condition.computeInLabels().labels();
+                        break;
+                    // The 'compute cluster' query may be given 'where <args>' condition
+                    case GraqlParser.RULE_computeArgs:
+                        computeArgs = condition.computeArgs();
+                        break;
+                    // The 'compute cluster' query does not accept any other condition
+                    default:
+                        throw GraqlQueryException.invalidComputeClusterCondition();
+                }
             }
         }
 

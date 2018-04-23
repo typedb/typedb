@@ -131,7 +131,7 @@ public class GraqlTest {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute centrality of thingy; using degree;").execute();
+            graph.graql().parse("compute centrality of thingy, using degree;").execute();
         }
     }
 
@@ -184,14 +184,14 @@ public class GraqlTest {
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
-                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster; using connected-component;").execute();
+                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster using connected-component;").execute();
             assertTrue(sizeMap.isEmpty());
             Map<String, Set<String>> memberMap = graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse(
-                    "compute cluster; using connected-component where members = true;").execute();
+                    "compute cluster using connected-component, where members = true;").execute();
             assertTrue(memberMap.isEmpty());
 
             Query<?> parsed = graph.graql().parse(
-                    "compute cluster; using connected-component where source = V123;");
+                    "compute cluster using connected-component, where start = V123;");
             Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().start(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }
