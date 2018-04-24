@@ -144,7 +144,7 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 Entity maryYoung = person.addEntity();
 
 Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
+Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
 theMarriage.attribute(marriageDate);
 ```
 
