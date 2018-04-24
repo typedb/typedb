@@ -36,7 +36,7 @@ variables      : VARIABLE (',' VARIABLE)* ;
 // The compute conditions can be a set of zero or more individual condition separated by a comma
 // A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
 
-computeQuery                    : 'compute' computeMethod computeConditions? ';';
+computeQuery                    : COMPUTE computeMethod computeConditions? ';';
 computeMethod                   : COUNT                                                 // compute count
                                 | MIN | MAX | MEDIAN | MEAN | STD | SUM                 // compute statistics
                                 | PATH | PATHS                                          // compute path(s)
@@ -44,10 +44,10 @@ computeMethod                   : COUNT                                         
                                 | CLUSTER                                               // compute cluster
                                 ;
 computeConditions               : computeCondition (',' computeCondition)* ;
-computeCondition                : 'from'    computeFromID
-                                | 'to'      computeToID
-                                | 'of'      computeOfLabels
-                                | 'in'      computeInLabels
+computeCondition                : FROM      computeFromID
+                                | TO        computeToID
+                                | OF        computeOfLabels
+                                | IN        computeInLabels
                                 | USING     computeAlgorithm
                                 | WHERE     computeArgs
                                 ;
@@ -70,8 +70,8 @@ computeInLabels                 : labels ;
 computeAlgorithm                : DEGREE | 'k-core' | 'connected-component' ;
 computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
-computeArg                      : 'min-k'       '='     INTEGER         # computeArgMinK
-                                | 'k'           '='     INTEGER         # computeArgK
+computeArg                      : MIN_K         '='     INTEGER         # computeArgMinK
+                                | K             '='     INTEGER         # computeArgK
                                 | START         '='     id              # computeArgStart
                                 | MEMBERS       '='     bool            # computeArgMembers
                                 | SIZE          '='     INTEGER         # computeArgSize ;
@@ -147,7 +147,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREE | START | MEMBERS | SIZE | WHERE
+               | FROM | TO | OF | IN | DEGREE | MIN_K | K | START | MEMBERS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -166,7 +166,13 @@ PATH           : 'path' ;
 PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 CENTRALITY     : 'centrality' ;
+FROM           : 'from' ;
+TO             : 'to' ;
+OF             : 'of' ;
+IN             : 'in' ;
 DEGREE         : 'degree' ;
+MIN_K          : 'min-k' ;
+K              : 'k' ;
 START          : 'start' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
@@ -176,6 +182,7 @@ MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+COMPUTE        : 'compute' ;
 ASC            : 'asc' ;
 DESC           : 'desc' ;
 LONG_TYPE      : 'long' ;
@@ -188,7 +195,7 @@ FALSE          : 'false' ;
 
 // In StringConverter.java we inspect the lexer to find out which values are keywords.
 // If literals are used in an alternation (e.g. `'true' | 'false'`) in the grammar, then they don't register as keywords.
-// Therefore, we never use an alternation of literals and instead given them proper rule names (e.g. `TRUE | FALSE`).
+// Therefore, we never use an alternation of literals and instead give them proper rule names (e.g. `TRUE | FALSE`).
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
 ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
