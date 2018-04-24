@@ -48,9 +48,9 @@ define
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype date;
-  birth-date sub "date" datatype date;
-  death-date sub "date" datatype date;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;
 
 # Roles and Relations
@@ -96,7 +96,7 @@ event sub entity
   is-abstract
   has degree
   has confidence
-  has "date"
+  has event-date
   has identifier
   has notes
   has conclusion
@@ -123,7 +123,7 @@ death sub event
 # Attributes
   degree sub attribute datatype string;
   confidence sub attribute datatype string;
-  "date" sub attribute datatype date;
+  event-date sub attribute datatype date;
   identifier sub attribute datatype string;
   notes sub attribute datatype string;
   conclusion sub attribute datatype string;
@@ -151,7 +151,7 @@ marriage sub relatives
   relates spouse2
   relates husband
   relates wife
-  has "date";
+  has event-date;
 
 spouse sub role;
 spouse1 sub spouse;
@@ -214,8 +214,8 @@ define
     plays child;
 
     gender sub attribute datatype string;
-    birth-date sub "date";
-    death-date sub "date";
+    birth-date sub event-date;
+    death-date sub event-date;
     name sub attribute datatype string;
     firstname sub name;
     middlename sub name;
@@ -226,7 +226,7 @@ define
     is-abstract
     has degree
     has confidence
-    has "date"
+    has event-date
     has identifier
     has notes
     has conclusion
@@ -261,7 +261,7 @@ define
     relates spouse2
     relates husband
     relates wife
-    has "date";
+    has event-date;
 
   spouse sub role;
   spouse1 sub spouse;
@@ -285,7 +285,7 @@ define
   daughter sub child;
 
 ## Resources
-  "date" sub attribute datatype date;
+  event-date sub attribute datatype date;
   notes sub attribute datatype string;
   happening sub attribute datatype string;
   degree sub attribute datatype string;

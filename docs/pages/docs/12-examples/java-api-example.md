@@ -65,9 +65,9 @@ name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
 surname = tx.putAttributeType("surname", AttributeType.DataType.STRING).sup(name);
 middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING).sup(name);
-date = tx.putAttributeType("date", AttributeType.DataType.DATE);
-birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE).sup(date);
-deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE).sup(date);
+eventDate = tx.putAttributeType("event-date", AttributeType.DataType.DATE);
+birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE).sup(eventDate);
+deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE).sup(eventDate);
 gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
@@ -86,7 +86,7 @@ Then to add the relationship types, `putRelationshipType()`, which is followed b
 ```java
 marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
-marriage.attribute(date);
+marriage.attribute(eventDate);
 parentship = tx.putRelationshipType("parentship");
 parentship.relates(parent).relates(child);
 ```
@@ -144,7 +144,7 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 Entity maryYoung = person.addEntity();
 
 Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
+Attribute marriageDate = eventDate.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
 theMarriage.attribute(marriageDate);
 ```
 

@@ -61,9 +61,9 @@ person sub entity
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype date;
-  birth-date sub "date" datatype date;
-  death-date sub "date" datatype date;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;   
 ```
 
@@ -144,9 +144,9 @@ define
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype date;
-  birth-date sub "date" datatype date;
-  death-date sub "date" datatype date;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;
 
  # Roles and Relations

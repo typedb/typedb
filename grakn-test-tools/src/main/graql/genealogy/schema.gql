@@ -25,7 +25,7 @@ event sub entity
     plays happening
     has degree
     has confidence
-    has "date"
+    has event-date
     has identifier
     has notes;
 
@@ -59,7 +59,7 @@ parent-identifier sub identifier;
 death sub event
     has death-date;
 
-"date" sub attribute datatype date;
+event-date sub attribute datatype date;
 
 #confidence level: low-mid-high
 confidence sub attribute datatype string;
@@ -86,8 +86,8 @@ person sub entity
     has surname;
 
 gender sub attribute datatype string;
-birth-date sub "date";
-death-date sub "date";
+birth-date sub event-date;
+death-date sub event-date;
 name sub attribute datatype string;
 firstname sub name;
 middlename sub name;
@@ -101,7 +101,7 @@ marriage sub relatives
     relates spouse
     relates husband
     relates wife
-    has "date";
+    has event-date;
 spouse sub role;
 husband sub spouse;
 wife sub spouse;
