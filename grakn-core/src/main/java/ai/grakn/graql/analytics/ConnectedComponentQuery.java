@@ -79,18 +79,18 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
     ConnectedComponentQuery<T> size(long clusterSize);
 
     /**
-     * @param subTypeLabels an array of types to include in the sub graph
+     * @param inTypes an array of types to include in the sub graph
      * @return a ConnectedComponentQuery with the subTypeLabels set
      */
     @Override
-    ConnectedComponentQuery<T> in(String... subTypeLabels);
+    ConnectedComponentQuery<T> in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the sub graph
+     * @param inTypes a collection of types to include in the sub graph
      * @return a ConnectedComponentQuery with the inTypes set
      */
     @Override
-    ConnectedComponentQuery<T> in(Collection<? extends Label> subLabels);
+    ConnectedComponentQuery<T> in(Collection<? extends Label> inTypes);
 
     /**
      * @param tx the transaction to execute the query on

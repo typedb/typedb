@@ -32,32 +32,32 @@ import java.util.Optional;
 public interface SumQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery of(String... resourceTypeLabels);
+    SumQuery of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery of(Collection<Label> resourceLabels);
+    SumQuery of(Collection<Label> ofTypes);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery in(String... subTypeLabels);
+    SumQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a SumQuery with the inTypes set
      */
     @Override
-    SumQuery in(Collection<? extends Label> subLabels);
+    SumQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

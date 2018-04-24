@@ -32,32 +32,32 @@ import java.util.Optional;
 public interface MeanQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery of(String... resourceTypeLabels);
+    MeanQuery of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery of(Collection<Label> resourceLabels);
+    MeanQuery of(Collection<Label> ofTypes);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery in(String... subTypeLabels);
+    MeanQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a MeanQuery with the inTypes set
      */
     @Override
-    MeanQuery in(Collection<? extends Label> subLabels);
+    MeanQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

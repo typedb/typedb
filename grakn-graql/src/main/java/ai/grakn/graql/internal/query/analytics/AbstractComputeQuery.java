@@ -90,13 +90,13 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public final V in(String... subTypeLabels) {
-        return in(Arrays.stream(subTypeLabels).map(Label::of).collect(toImmutableSet()));
+    public final V in(String... inTypes) {
+        return in(Arrays.stream(inTypes).map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
-    public final V in(Collection<? extends Label> subLabels) {
-        this.inTypes = ImmutableSet.copyOf(subLabels);
+    public final V in(Collection<? extends Label> inTypes) {
+        this.inTypes = ImmutableSet.copyOf(inTypes);
         return (V) this;
     }
 

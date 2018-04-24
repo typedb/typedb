@@ -32,32 +32,32 @@ import java.util.Optional;
 public interface StdQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery of(String... resourceTypeLabels);
+    StdQuery of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery of(Collection<Label> resourceLabels);
+    StdQuery of(Collection<Label> ofTypes);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery in(String... subTypeLabels);
+    StdQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a StdQuery with the inTypes set
      */
     @Override
-    StdQuery in(Collection<? extends Label> subLabels);
+    StdQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

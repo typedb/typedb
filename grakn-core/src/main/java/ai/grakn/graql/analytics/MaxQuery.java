@@ -32,32 +32,32 @@ import java.util.Optional;
 public interface MaxQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a MaxQuery with the subTypeLabels set
      */
     @Override
-    MaxQuery of(String... resourceTypeLabels);
+    MaxQuery of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a MaxQuery with the subTypeLabels set
      */
     @Override
-    MaxQuery of(Collection<Label> resourceLabels);
+    MaxQuery of(Collection<Label> ofTypes);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a MaxQuery with the subTypeLabels set
      */
     @Override
-    MaxQuery in(String... subTypeLabels);
+    MaxQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a MaxQuery with the inTypes set
      */
     @Override
-    MaxQuery in(Collection<? extends Label> subLabels);
+    MaxQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

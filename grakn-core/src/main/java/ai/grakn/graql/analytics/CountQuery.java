@@ -32,18 +32,18 @@ import java.util.Collection;
 public interface CountQuery extends ComputeQuery<Long> {
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a CountQuery with the subTypeLabels set
      */
     @Override
-    CountQuery in(String... subTypeLabels);
+    CountQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a CountQuery with the inTypes set
      */
     @Override
-    CountQuery in(Collection<? extends Label> subLabels);
+    CountQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

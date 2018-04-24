@@ -48,13 +48,13 @@ abstract class AbstractStatisticsQuery<T, V extends StatisticsQuery<T>>
     }
 
     @API
-    public final V of(String... statisticsResourceTypeLabels) {
-        return of(Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(toImmutableSet()));
+    public final V of(String... ofTypes) {
+        return of(Arrays.stream(ofTypes).map(Label::of).collect(toImmutableSet()));
     }
 
     @API
-    public final V of(Collection<Label> statisticsResourceLabels) {
-        this.ofTypes = ImmutableSet.copyOf(statisticsResourceLabels);
+    public final V of(Collection<Label> ofTypes) {
+        this.ofTypes = ImmutableSet.copyOf(ofTypes);
         return (V) this;
     }
 

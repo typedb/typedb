@@ -69,20 +69,20 @@ public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
     Collection<? extends Label> ofTypes();
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph.
+     * @param inTypes an array of types to include in the subgraph.
      *                      By default CorenessQuery includes all entities, relationships and attributes.
      * @return a CorenessQuery with the subTypeLabels set
      */
     @Override
-    CorenessQuery in(String... subTypeLabels);
+    CorenessQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph.
+     * @param inTypes a collection of types to include in the subgraph.
      *                  By default CorenessQuery includes all entities, relationships and attributes.
      * @return a CorenessQuery with the inTypes set
      */
     @Override
-    CorenessQuery in(Collection<? extends Label> subLabels);
+    CorenessQuery in(Collection<? extends Label> inTypes);
 
     /**
      * @param tx the transaction to execute the query on

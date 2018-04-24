@@ -32,32 +32,32 @@ import java.util.Optional;
 public interface MinQuery extends StatisticsQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a MinQuery with the subTypeLabels set
      */
     @Override
-    MinQuery of(String... resourceTypeLabels);
+    MinQuery of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a MinQuery with the subTypeLabels set
      */
     @Override
-    MinQuery of(Collection<Label> resourceLabels);
+    MinQuery of(Collection<Label> ofTypes);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a MinQuery with the subTypeLabels set
      */
     @Override
-    MinQuery in(String... subTypeLabels);
+    MinQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
+     * @param inTypes a collection of types to include in the subgraph
      * @return a MinQuery with the inTypes set
      */
     @Override
-    MinQuery in(Collection<? extends Label> subLabels);
+    MinQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

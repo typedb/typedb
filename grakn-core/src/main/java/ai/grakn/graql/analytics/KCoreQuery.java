@@ -48,20 +48,20 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
     long k();
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph.
+     * @param inTypes an array of types to include in the subgraph.
      *                      By default KCoreQuery uses instances of all the types.
      * @return a KCoreQuery with the subTypeLabels set
      */
     @Override
-    KCoreQuery in(String... subTypeLabels);
+    KCoreQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph.
+     * @param inTypes a collection of types to include in the subgraph.
      *                  By default KCoreQuery uses instances of all the types.
      * @return a KCoreQuery with the inTypes set
      */
     @Override
-    KCoreQuery in(Collection<? extends Label> subLabels);
+    KCoreQuery in(Collection<? extends Label> inTypes);
 
     /**
      * @param tx the transaction to execute the query on
