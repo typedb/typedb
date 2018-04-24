@@ -125,7 +125,7 @@ public class QueryToStringTest {
 
     @Test
     public void testEscapeStrings() {
-        assertEquals("insert $x val \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
+        assertEquals("insert $x \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
     }
 
     @Test
@@ -209,17 +209,17 @@ public class QueryToStringTest {
 
     @Test
     public void testZeroToString() {
-        assertEquals("match $x val 0.0;", qb.match(var("x").val(0.0)).toString());
+        assertEquals("match $x 0.0;", qb.match(var("x").val(0.0)).toString());
     }
 
     @Test
     public void testExponentsToString() {
-        assertEquals("match $x val 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
+        assertEquals("match $x 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
     }
 
     @Test
     public void testDecimalToString() {
-        assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
+        assertEquals("match $x 0.0001;", qb.match(var("x").val(0.0001)).toString());
     }
 
     @Test
@@ -233,7 +233,7 @@ public class QueryToStringTest {
     public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
         Match match = match(var("x").val(contains(var("y"))));
 
-        assertEquals("match $x val contains $y;", match.toString());
+        assertEquals("match $x contains $y;", match.toString());
     }
 
     private void assertSameResults(GetQuery query) {

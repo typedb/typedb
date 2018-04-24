@@ -31,7 +31,7 @@ class NeqPredicate extends ComparatorPredicate {
 
     @Override
     protected String getSymbol() {
-        return "!=";
+        return "!==";
     }
 
     @Override

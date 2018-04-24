@@ -74,7 +74,7 @@ property       : 'isa' variable                     # isa
                | 'plays' variable                   # plays
                | 'id' id                            # propId
                | 'label' label                      # propLabel
-               | 'val' predicate                    # propValue
+               | 'val'? predicate                   # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
                | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
@@ -92,9 +92,9 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value                     # predicateEq
-               | '=' VARIABLE                   # predicateVariable
-               | '!=' valueOrVar                # predicateNeq
+predicate      : '=='? value                    # predicateEq
+               | '==' VARIABLE                  # predicateVariable
+               | '!==' valueOrVar               # predicateNeq
                | '>' valueOrVar                 # predicateGt
                | '>=' valueOrVar                # predicateGte
                | '<' valueOrVar                 # predicateLt
