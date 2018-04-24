@@ -12,11 +12,11 @@ Computing simple statistics, such as the mean and standard deviations of dataset
 isolated instances. What happens when your knowledge graph becomes so large that it is distributed across many machines? What
 if the values you are calculating correspond to many different types of things?
 
-Graql analytics can perform the necessary statistics computations. 
+Graql analytics can perform the necessary statistics computations.
 For example, the following query executes a distributed computation to determine the mean age of all of the people in the knowledge graph.
 
 ```graql
-compute mean of age in person;
+compute mean of age, in person;
 ```
 
 The [Statistics Queries](./compute-statistics) documentation covers the usage of statistics in more detail.
@@ -24,7 +24,7 @@ The [Statistics Queries](./compute-statistics) documentation covers the usage of
 
 ## Available Statistics Methods
 
-The following methods are available to perform simple statistics computations, 
+The following methods are available to perform simple statistics computations,
 and we aim to add to these as demand dictates. Please get
 in touch on our [discussion](https://discuss.grakn.ai/) page to request any features that are of particular interest
 to you. A summary of the statistics algorithms is given in the table below.
@@ -56,17 +56,17 @@ Computes the mean value of a given attribute. This algorithm requires the [subgr
 For example,
 
 ```graql-skip-test
-compute mean of age in person;
+compute mean of age, in person;
 ```
 
 would compute the mean value of `age` across all instances of the type `person`.
 It is also possible to provide a set of attributes.
 
 ```graql-skip-test
-compute mean of attribute-a, attribute-b in person;
+compute mean of [attribute-a, attribute-b], in person;
 ```
 
-which would compute the mean of the union of the instances of the two attributes, 
+which would compute the mean of the union of the instances of the two attributes,
 given the two attribute types have the same data type.
 
 ### Median
@@ -74,7 +74,7 @@ given the two attribute types have the same data type.
 Computes the median value of a given attribute, similar to [mean](#mean).
 
 ```graql-skip-test
-compute median of age in person;
+compute median of age, in person;
 ```
 
 would compute the median of the value persisted in instances of the attribute `age`.
@@ -84,7 +84,7 @@ would compute the median of the value persisted in instances of the attribute `a
 Computes the minimum value of a given attribute, similar to [mean](#mean).
 
 ```graql-skip-test
-compute min of age in person;
+compute min of age, in person;
 ```
 
 ### Maximum
@@ -92,7 +92,7 @@ compute min of age in person;
 Computes the maximum value of a given attribute, similar to [mean](#mean).
 
 ```graql-skip-test
-compute max of age in person;
+compute max of age, in person;
 ```
 
 ### Standard Deviation
@@ -101,7 +101,7 @@ Computes the standard deviation of a given attribute, similar to [mean](#mean).
 
 
 ```graql-skip-test
-compute std of age in person;
+compute std of age, in person;
 ```
 
 ### Sum
@@ -109,7 +109,7 @@ compute std of age in person;
 Computes the sum of a given attribute, similar to [mean](#mean).
 
 ```graql-skip-test
-compute sum of age in person;
+compute sum of age, in person;
 ```
 
 {% include warning.html content="When an instance has two attributes of the same type attached, or two attributes specified as arguments to the algorithm, statistics will include this by assuming there were two instances each with a single attribute." %}

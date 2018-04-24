@@ -49,13 +49,13 @@ compute <STATISTIC> of <ATTRIBUTE> in <TYPES>;
 Statistics like mean, standard deviation, median etc. can only be computed on numerical attributes, so that is what the `of <ATTRIBUTE>` part of the query is for. If the attribute is shared by several types, then you might want to restrict to the computation to only some of those with the `in <TYPES>` part. Imagine you have a knowledge graph of people, cats and dogs, for example, and both types have an "age" attribute. If you wanted to compute the median age of the dogs in the knowledge graph, you would do:
 
 ```graql-skip-test
-compute median of age in dog;
+compute median of age, in dog;
 ```
 
 On the other hand, if you wanted to find the median age of the pets you would need
 
 ```graql-skip-test
-compute median of age in dog, cats;
+compute median of age, in [dog, cat];
 ```
 
 Finally, if you wanted to find the median age tout-court, you would simply do
@@ -93,4 +93,3 @@ In this lesson you have learned about the basic structure of compute queries, yo
 
 ## What next
 In the next lesson we will conclude our overview of the Grakn Analytics component by looking at something that simple aggregate queries cannot do: perform [graph analytics](./graph-analytics.html). More details about the compute query syntax can be found in the [docs](../index.html). If you want to learn more about the distributed computations that compute queries perform you will have to look around for an introduction to Pregel algorithms. Warning, though: heavy maths ahead.
-
