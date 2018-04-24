@@ -244,7 +244,7 @@ public class GraqlControllerReadOnlyTest {
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
-        String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
@@ -259,7 +259,7 @@ public class GraqlControllerReadOnlyTest {
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
-        String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
@@ -274,7 +274,7 @@ public class GraqlControllerReadOnlyTest {
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
-        String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
 
         assertThat(jsonResponse(response).asJsonList().size(), greaterThan(0));
@@ -286,7 +286,7 @@ public class GraqlControllerReadOnlyTest {
         String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
-        String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         when(printer.graqlString(any())).thenReturn("null");
         Response response = sendRequest(query);
 

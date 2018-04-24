@@ -130,11 +130,11 @@ public class AnalyticsTest {
 
         List<String> queryList = new ArrayList<>();
         queryList.add("compute count;");
-        queryList.add("compute cluster; using connected-component;");
-        queryList.add("compute cluster; using k-core;");
-        queryList.add("compute centrality; using degree;");
-        queryList.add("compute centrality; using k-core;");
-        queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
+        queryList.add("compute cluster using connected-component;");
+        queryList.add("compute cluster using k-core;");
+        queryList.add("compute centrality using degree;");
+        queryList.add("compute centrality using k-core;");
+        queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
