@@ -19,9 +19,8 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.analytics.StatisticsQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -29,8 +28,8 @@ import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.PathsQuery;
+import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.util.GraqlSyntax;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 /**
