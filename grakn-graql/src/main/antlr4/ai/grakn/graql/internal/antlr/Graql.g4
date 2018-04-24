@@ -67,7 +67,7 @@ computeFromID                   : id ;
 computeToID                     : id ;
 computeOfLabels                 : labels ;
 computeInLabels                 : labels ;
-computeAlgorithm                : DEGREE | 'k-core' | 'connected-component' ;
+computeAlgorithm                : DEGREE | K_CORE | CONNECTED_COMPONENT ;
 computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
 computeArg                      : MIN_K         '='     INTEGER         # computeArgMinK
@@ -147,7 +147,9 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | FROM | TO | OF | IN | DEGREE | MIN_K | K | START | MEMBERS | SIZE | WHERE
+               | FROM | TO | OF | IN
+               | DEGREE | K_CORE | CONNECTED_COMPONENT
+               | MIN_K | K | START | MEMBERS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -171,6 +173,8 @@ TO             : 'to' ;
 OF             : 'of' ;
 IN             : 'in' ;
 DEGREE         : 'degree' ;
+K_CORE         : 'k-core' ;
+CONNECTED_COMPONENT : 'connected-component' ;
 MIN_K          : 'min-k' ;
 K              : 'k' ;
 START          : 'start' ;

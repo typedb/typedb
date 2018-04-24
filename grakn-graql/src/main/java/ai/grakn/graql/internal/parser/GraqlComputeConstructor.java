@@ -352,15 +352,13 @@ public class GraqlComputeConstructor {
         if (computeAlgorithm == null) {
             throw GraqlQueryException.invalidComputeCentralityMissingCondition();
 
-        } else if (computeAlgorithm.getText().equals(GraqlSyntax.Compute.Algorithm.DEGREE)) {
+        } else if (computeAlgorithm.DEGREE() != null) {
             return constructComputeCentralityUsingDegreeQuery(computeOfTypes, computeInTypes, computeArgs);
 
-        } else if (computeAlgorithm.getText().equals(GraqlSyntax.Compute.Algorithm.K_CORE)) {
+        } else if (computeAlgorithm.K_CORE() != null) {
             return constructComputeCentralityUsingKCoreQuery(computeOfTypes, computeInTypes, computeArgs);
 
         }
-        //TODO: The if checks above compares Strings because our Grammar definition inconsistently declares strings.
-        //TODO: We should make the grammar definition more consistent and clean up these String comparisons
 
         throw GraqlQueryException.invalidComputeCentralityAlgorithm();
     }
@@ -472,15 +470,15 @@ public class GraqlComputeConstructor {
         if (computeAlgorithm == null) {
             throw GraqlQueryException.invalidComputeClusterMissingCondition();
 
-        } else if (computeAlgorithm.getText().equals(GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT)) {
+        } else if (computeAlgorithm.CONNECTED_COMPONENT() != null) {
             return constructComputeClusterUsingConnectedComponentQuery(computeInTypes, computeArgs);
 
-        } else if (computeAlgorithm.getText().equals(GraqlSyntax.Compute.Algorithm.K_CORE)) {
+        } else if (computeAlgorithm.K_CORE() != null) {
             return constructComputeClusterUsingKCoreQuery(computeInTypes, computeArgs);
 
         }
-        //TODO: The if checks above compares Strings because our Grammar definition inconsistently declares strings.
-        //TODO: We should make the grammar definition more consistent and clean up these String comparisons
+
+        System.out.println("algorithm: " + computeAlgorithm.getRuleIndex() + ": " + computeAlgorithm.getText());
 
         throw GraqlQueryException.invalidComputeClusterAlgorithm();
     }

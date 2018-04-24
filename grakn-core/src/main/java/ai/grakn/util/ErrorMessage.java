@@ -211,7 +211,7 @@ public enum ErrorMessage {
     // Graql compute count errors ------------------
 
     INVALID_COMPUTE_COUNT_CONDITION("Invalid 'compute count' condition. " +
-            "Only 'in <types>' is accepted, such as: 'compute count in [person, movie]];'."),
+            "Only 'in <types>' is accepted, such as: 'compute count in [person, movie];'."),
 
     // Graql compute statistics errors -------------
 
