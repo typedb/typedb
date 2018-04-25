@@ -40,6 +40,7 @@ public class GraqlSyntax {
     public static final String COMMA_SPACE      = ", ";
     public static final String SQUARE_OPEN      = "[";
     public static final String SQUARE_CLOSE     = "]";
+    public static final String QUOTE            = "\"";
 
     /**
      * Graql Compute syntax keyword

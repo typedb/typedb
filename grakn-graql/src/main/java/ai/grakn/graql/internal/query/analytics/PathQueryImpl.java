@@ -33,6 +33,7 @@ import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.Compute.PATH;
+import static ai.grakn.util.GraqlSyntax.QUOTE;
 import static ai.grakn.util.GraqlSyntax.SPACE;
 import static java.util.stream.Collectors.joining;
 
@@ -75,8 +76,8 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
     final String conditionsString() {
         List<String> conditionsList = new ArrayList<>();
 
-        if (from.isPresent()) conditionsList.add(FROM + SPACE + from.get());
-        if (to.isPresent()) conditionsList.add(TO + SPACE + to.get());
+        if (from.isPresent()) conditionsList.add(FROM + SPACE + QUOTE + from.get() + QUOTE);
+        if (to.isPresent()) conditionsList.add(TO + SPACE + QUOTE + to.get() + QUOTE);
         if (!inTypesString().isEmpty()) conditionsList.add(inTypesString());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
