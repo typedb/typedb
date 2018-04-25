@@ -21,22 +21,63 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.Compute.PATH;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+import static java.util.stream.Collectors.joining;
 
-class PathQueryImpl extends AbstractPathQuery<Optional<List<Concept>>, PathQuery> implements PathQuery {
+class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery> implements PathQuery {
+
+    private Optional<ConceptId> from = Optional.empty();
+    private Optional<ConceptId> to = Optional.empty();
 
     PathQueryImpl(Optional<GraknTx> tx) {
         super(tx);
     }
 
     @Override
-    public final ComputeJob<Optional<List<Concept>>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<List<List<Concept>>> executeComputer() {
+        return queryComputer().run(this);
+    }
+
+
+    public final PathQuery from(ConceptId fromID) {
+        this.from = Optional.of(fromID);
+        return this;
+    }
+
+    public final Optional<ConceptId> from() {
+        return from;
+    }
+
+    public PathQuery to(ConceptId toID) {
+        this.to = Optional.of(toID);
+        return this;
+    }
+
+    public final Optional<ConceptId> to() {
+        if (to == null) throw GraqlQueryException.noPathDestination();
+        return to;
+    }
+
+    final String conditionsString() {
+        List<String> conditionsList = new ArrayList<>();
+
+        if (from.isPresent()) conditionsList.add(FROM + SPACE + from.get());
+        if (to.isPresent()) conditionsList.add(TO + SPACE + to.get());
+        if (!inTypesString().isEmpty()) conditionsList.add(inTypesString());
+
+        return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
     @Override
@@ -52,16 +93,18 @@ class PathQueryImpl extends AbstractPathQuery<Optional<List<Concept>>, PathQuery
 
         PathQueryImpl that = (PathQueryImpl) o;
 
-        if (!from().equals(that.from())) return false;
-        return to().equals(that.to());
+        if (!this.from.equals(that.from())) return false;
+        if (!this.to.equals(that.to())) return false;
+
+        return true;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + PATH.hashCode();
-        result = 31 * result + from().hashCode();
-        result = 31 * result + to().hashCode();
+        result = 31 * result + from.hashCode();
+        result = 31 * result + to.hashCode();
         return result;
     }
 }

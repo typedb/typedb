@@ -54,8 +54,8 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
     }
 
     @Override
-    public final ComputeJob<T> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<T> executeComputer() {
+        return queryComputer().run(this);
     }
 
     @Override

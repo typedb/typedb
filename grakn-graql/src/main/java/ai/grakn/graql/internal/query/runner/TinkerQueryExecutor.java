@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
@@ -43,7 +43,6 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.util.AdminConverter;
@@ -63,23 +62,23 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A {@link QueryRunner} that runs queries using a Tinkerpop graph.
+ * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
  *
  * @author Felix Chapman
  */
 @SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
-public class TinkerQueryRunner implements QueryRunner {
+public class TinkerQueryExecutor implements QueryExecutor {
 
     private final GraknTx tx;
-    private final TinkerComputeQueryRunner tinkerComputeQueryRunner;
+    private final TinkerComputeQueryExecutor tinkerComputeQueryExecutor;
 
-    private TinkerQueryRunner(EmbeddedGraknTx<?> tx) {
+    private TinkerQueryExecutor(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
-        this.tinkerComputeQueryRunner = TinkerComputeQueryRunner.create(tx);
+        this.tinkerComputeQueryExecutor = TinkerComputeQueryExecutor.create(tx);
     }
 
-    public static TinkerQueryRunner create(EmbeddedGraknTx<?> tx) {
-        return new TinkerQueryRunner(tx);
+    public static TinkerQueryExecutor create(EmbeddedGraknTx<?> tx) {
+        return new TinkerQueryExecutor(tx);
     }
 
     @Override
@@ -138,67 +137,62 @@ public class TinkerQueryRunner implements QueryRunner {
 
     @Override
     public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Long> run(CountQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Number>> run(MaxQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Number>> run(MinQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
-    public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
-        return tinkerComputeQueryRunner.run(query);
-    }
-
-    @Override
-    public ComputeJob<List<List<Concept>>> run(PathsQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Double>> run(StdQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
     public ComputeJob<Optional<Number>> run(SumQuery query) {
-        return tinkerComputeQueryRunner.run(query);
+        return tinkerComputeQueryExecutor.run(query);
     }
 
     private void deleteResult(Answer result, Collection<? extends Var> vars) {

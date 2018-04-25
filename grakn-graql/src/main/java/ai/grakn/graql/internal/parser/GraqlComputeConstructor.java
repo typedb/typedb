@@ -27,7 +27,6 @@ import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -76,9 +75,6 @@ public class GraqlComputeConstructor {
 
         } else if (computeQuery.computeMethod().PATH() != null) {
             return constructComputePathQuery(computeQuery.computeConditions());
-
-        } else if (computeQuery.computeMethod().PATHS() != null) {
-            return constructComputePathsQuery(computeQuery.computeConditions());
 
         } else if (computeQuery.computeMethod().CENTRALITY() != null) {
             return constructComputeCentralityQuery(computeQuery.computeConditions());
@@ -221,7 +217,7 @@ public class GraqlComputeConstructor {
     }
 
     /**
-     * Constructs graql compute path query
+     * Constructs a graql compute path query
      *
      * @param conditions
      * @return PathQuery object
@@ -229,6 +225,7 @@ public class GraqlComputeConstructor {
     private PathQuery constructComputePathQuery(GraqlParser.ComputeConditionsContext conditions) {
 
         PathQuery computePath = queryBuilder.compute().path();
+
         boolean computeFromIDExists = false;
         boolean computeToIDExists = false;
 
@@ -261,51 +258,6 @@ public class GraqlComputeConstructor {
         }
 
         return computePath;
-    }
-
-    /**
-     * Constructs a graql compute path query
-     *
-     * @param conditions
-     * @return PathQuery object
-     */
-    // TODO this function should be merged with the [singular] constructComputePathQuery() once they have an abstraction
-    private PathsQuery constructComputePathsQuery(GraqlParser.ComputeConditionsContext conditions) {
-
-        PathsQuery computePaths = queryBuilder.compute().paths();
-
-        boolean computeFromIDExists = false;
-        boolean computeToIDExists = false;
-
-        if (conditions != null) {
-            for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
-                switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                    // The 'compute paths' query requires a 'from <id>' condition
-                    case GraqlParser.RULE_computeFromID:
-                        computePaths = computePaths.from(graqlConstructor.visitId(condition.computeFromID().id()));
-                        computeFromIDExists = true;
-                        break;
-                    // The 'compute paths' query requires a 'to <id>' condition
-                    case GraqlParser.RULE_computeToID:
-                        computePaths = computePaths.to(graqlConstructor.visitId(condition.computeToID().id()));
-                        computeToIDExists = true;
-                        break;
-                    // The 'compute paths' query may be given 'in <types>' condition
-                    case GraqlParser.RULE_computeInLabels:
-                        computePaths = computePaths.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
-                        break;
-                    // The 'compute paths' query does not accept any other condition
-                    default:
-                        throw GraqlQueryException.invalidComputePathsCondition();
-                }
-            }
-        }
-
-        if (!computeFromIDExists || !computeToIDExists) {
-            throw GraqlQueryException.invalidComputePathsMissingCondition();
-        }
-
-        return computePaths;
     }
 
     /**

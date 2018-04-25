@@ -50,7 +50,7 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
 
     @Override
     public final Answer execute() {
-        return queryRunner().run(this);
+        return queryComputer().run(this);
     }
 
     @Override

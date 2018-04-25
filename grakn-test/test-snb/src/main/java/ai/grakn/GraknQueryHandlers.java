@@ -352,7 +352,10 @@ public class GraknQueryHandlers {
                 PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
                         .in("knows", "person");
 
-                List<Concept> path = pathQuery.withTx(graknTx).execute().orElse(Collections.emptyList());
+                List<List<Concept>> paths = pathQuery.withTx(graknTx).execute();
+
+                List<Concept> path = Collections.emptyList();
+                if(!paths.isEmpty()) path.get(0);
 
                 // our path is either:
                 //     empty if there is none

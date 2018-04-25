@@ -115,7 +115,7 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
                 .filter(Concept::isAttributeType)
                 .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
-    }// If the sub graph contains attributes, we may need to add implicit relations to the paths
+    }// If the sub graph contains attributes, we may need to add implicit relations to the path
 
     private ImmutableSet<Type> calcStatisticsResourceTypes() {
         if (query().ofTypes().isEmpty()) {

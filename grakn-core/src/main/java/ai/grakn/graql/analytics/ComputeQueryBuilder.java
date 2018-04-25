@@ -19,8 +19,10 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -84,12 +86,6 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     PathQuery path();
-
-    /**
-     * @return a path query that will find all shortest path between two instances
-     */
-    @CheckReturnValue
-    PathsQuery paths();
 
     /**
      * This method is deprecated. Please use centrality query instead.

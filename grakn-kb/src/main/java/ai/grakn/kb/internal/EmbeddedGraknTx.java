@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -950,12 +950,12 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     @Override
-    public final QueryRunner queryRunner() {
+    public final QueryExecutor queryExecutor() {
         if (queryRunnerFactory == null) {
             throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
         }
         try {
-            return (QueryRunner) queryRunnerFactory.invoke(null, this);
+            return (QueryExecutor) queryRunnerFactory.invoke(null, this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

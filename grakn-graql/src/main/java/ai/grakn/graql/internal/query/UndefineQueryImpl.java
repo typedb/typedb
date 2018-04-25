@@ -47,7 +47,7 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
 
     @Override
     public final Void execute() {
-        queryRunner().run(this);
+        queryComputer().run(this);
         return null;
     }
 

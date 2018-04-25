@@ -33,8 +33,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     }
 
     @Override
-    public final ComputeJob<Optional<Number>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Optional<Number>> executeComputer() {
+        return queryComputer().run(this);
     }
 
     @Override

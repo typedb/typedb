@@ -37,8 +37,8 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     }
 
     @Override
-    public final ComputeJob<Map<Long, Set<String>>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Map<Long, Set<String>>> executeComputer() {
+        return queryComputer().run(this);
     }
 
     @Override

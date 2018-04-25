@@ -761,8 +761,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputePaths() {
-        assertParseEquivalence("compute paths from \"1\", to \"2\", in [person, marriage];");
+    public void testParseComputePathWithMultipleInTypes() {
+        assertParseEquivalence("compute path from \"1\", to \"2\", in [person, marriage];");
     }
 
     @Test
