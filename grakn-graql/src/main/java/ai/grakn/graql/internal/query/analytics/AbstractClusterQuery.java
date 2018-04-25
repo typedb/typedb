@@ -19,10 +19,15 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 
-import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.CLUSTER;
+import static java.util.stream.Collectors.joining;
 
 abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
         extends AbstractComputeQuery<T, V> {
@@ -30,50 +35,23 @@ abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
         super(tx);
     }
 
-    /**
-     * The centrality measures supported.
-     */
-    enum ClusterMeasure {
+    abstract String algorithmString();
 
-        CONNECTED_COMPONENT("connected-component"),
-        K_CORE("k-core");
-        private final String name;
-
-        ClusterMeasure(String name) {
-            this.name = name;
-        }
-
-        @CheckReturnValue
-        public String getName() {
-            return name;
-        }
-    }
-
-    abstract ClusterMeasure getMethod();
+    abstract String argumentsString();
 
     @Override
-    String graqlString() {
-        String string = "cluster";
-        string += subtypeString() + " using " + getMethod().getName();
-
-        return string;
+    final String methodString() {
+        return CLUSTER;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+    String conditionsString() {
+        List<String> conditionsList = new ArrayList<>();
 
-        AbstractClusterQuery that = (AbstractClusterQuery) o;
+        if (!inTypes().isEmpty()) conditionsList.add(inTypesString());
+        conditionsList.add(algorithmString());
+        if (!argumentsString().isEmpty()) conditionsList.add(argumentsString());
 
-        return getMethod() == that.getMethod();
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + getMethod().hashCode();
-        return result;
+        return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 }

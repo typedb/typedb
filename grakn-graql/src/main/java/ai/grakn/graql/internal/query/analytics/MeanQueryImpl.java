@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.MeanQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.MEAN;
+
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
 
     MeanQueryImpl(Optional<GraknTx> tx) {
@@ -36,7 +38,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
     }
 
     @Override
-    String getName() {
-        return "mean";
+    String methodString() {
+        return MEAN;
     }
 }

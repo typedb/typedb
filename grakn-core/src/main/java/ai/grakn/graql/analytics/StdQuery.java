@@ -20,7 +20,6 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.StatisticsQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -33,30 +32,32 @@ import java.util.Optional;
 public interface StdQuery extends StatisticsQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
-     * @return a StdQuery with the subTypeLabels set
-     */
-    StdQuery of(String... resourceTypeLabels);
-
-    /**
-     * @param resourceLabels a collection of types of resources to execute the query on
-     * @return a StdQuery with the subTypeLabels set
-     */
-    StdQuery of(Collection<Label> resourceLabels);
-
-    /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery in(String... subTypeLabels);
+    StdQuery of(String... ofTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
-     * @return a StdQuery with the subLabels set
+     * @param ofTypes a collection of types of resources to execute the query on
+     * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery in(Collection<? extends Label> subLabels);
+    StdQuery of(Collection<Label> ofTypes);
+
+    /**
+     * @param inTypes an array of types to include in the subgraph
+     * @return a StdQuery with the subTypeLabels set
+     */
+    @Override
+    StdQuery in(String... inTypes);
+
+    /**
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a StdQuery with the inTypes set
+     */
+    @Override
+    StdQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

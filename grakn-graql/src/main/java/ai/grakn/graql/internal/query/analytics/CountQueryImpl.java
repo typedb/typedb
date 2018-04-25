@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.CountQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.COUNT;
+
 class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements CountQuery {
 
     CountQueryImpl(Optional<GraknTx> tx) {
@@ -36,7 +38,12 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     @Override
-    String graqlString() {
-        return "count" + subtypeString();
+    String methodString() {
+        return COUNT;
+    }
+
+    @Override
+    String conditionsString() {
+        return inTypesString();
     }
 }

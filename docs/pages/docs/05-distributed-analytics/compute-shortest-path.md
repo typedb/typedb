@@ -43,7 +43,7 @@ We have excluded marriage in this subgraph and as a result the shortest path is 
 
 <!-- Ignoring because uses made-up IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2" in person, parentship;
+compute path from "id1", to "id2", in [person, parentship];
 ```
 
 ![Shortest path between people](/images/analytics_path_parentship.png)
@@ -54,7 +54,7 @@ If you are looking for all the shortest paths between two entities, simply chang
 
 <!-- Ignoring because uses made-up IDs -->
 ```graql-test-ignore
-compute paths from "id1" to "id2" in person, parentship;
+compute paths from "id1", to "id2", in [person, parentship];
 ```
 
 You can see below that there are two paths.

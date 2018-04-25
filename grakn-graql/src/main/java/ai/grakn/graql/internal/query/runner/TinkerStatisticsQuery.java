@@ -27,7 +27,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -55,7 +55,7 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
     final Set<Label> getCombinedSubTypes() {
         Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes());
         allSubTypes.addAll(subLabels());
-        allSubTypes.addAll(query().attributeLabels());
+        allSubTypes.addAll(query().ofTypes());
         return allSubTypes;
     }
 
@@ -79,7 +79,7 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
         //TODO: should use the following ask query when ask query is even lazier
 //        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
 //                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-//        List<Pattern> checkSubtypes = subLabels.stream()
+//        List<Pattern> checkSubtypes = inTypes.stream()
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
 //        return tx.get().graql().infer(false)
@@ -103,7 +103,7 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
             } else {
                 // check if all the resource-types have the same data-type
                 if (!dataType.equals(resourceType.getDataType())) {
-                    throw GraqlQueryException.resourcesWithDifferentDataTypes(query().attributeLabels());
+                    throw GraqlQueryException.resourcesWithDifferentDataTypes(query().ofTypes());
                 }
             }
         }
@@ -118,11 +118,11 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
     }// If the sub graph contains attributes, we may need to add implicit relations to the paths
 
     private ImmutableSet<Type> calcStatisticsResourceTypes() {
-        if (query().attributeLabels().isEmpty()) {
+        if (query().ofTypes().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
-        return query().attributeLabels().stream()
+        return query().ofTypes().stream()
                 .map((label) -> {
                     Type type = tx().getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);

@@ -307,7 +307,7 @@ Turning to [Graql analytics](../distributed-analytics/overview), we can illustra
 The mean age at death can be calculated using `compute mean` as follows, entering it into the visualiser's query form:
 
 ```graql
-compute mean of age in person; # returns 77.0 (rounded to 2 decimal places)
+compute mean of age, in person; # returns 77.0 (rounded to 2 decimal places)
 ```
 
 Other statistical values can be calculated similarly, e.g. values for `count`:
@@ -334,8 +334,8 @@ and then search for relationships joining two of them using:
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2"; # Use the actual values of identifier for each person
-# e.g. compute path from "114848" to "348264";
+compute path from "id1", to "id2"; # Use the actual values of identifier for each person
+# e.g. compute path from "114848", to "348264";
 ```
 
 You can see below that the two people selected are married.
@@ -348,7 +348,7 @@ To narrow the path to specific relationships between specific entities:
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2" in person, parentship;
+compute path from "id1", to "id2", in [person, parentship];
 ```
 
 The above limits the path to blood relationships (parent/child relationships) thus excludes marriage. As a result, the shortest path between the two people is now longer: Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, with *their* father being Jacob Young).

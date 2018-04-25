@@ -28,8 +28,8 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.StatisticsQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
+import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -108,8 +108,8 @@ public class TinkerComputeQueryRunner {
             Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
 
             GraknVertexProgram<?> vertexProgram;
-            if (query.sourceId().isPresent()) {
-                ConceptId conceptId = query.sourceId().get();
+            if (query.start().isPresent()) {
+                ConceptId conceptId = query.start().get();
                 if (!tinkerComputeQuery.verticesExistInSubgraph(conceptId)) {
                     throw GraqlQueryException.instanceDoesNotExist();
                 }
@@ -118,13 +118,20 @@ public class TinkerComputeQueryRunner {
                 vertexProgram = new ConnectedComponentsVertexProgram();
             }
 
-            Long clusterSize = query.clusterSize();
-
             GraknMapReduce<?> mapReduce;
-            if (query.isMembersSet()) {
-                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
+
+            if(query.size().isPresent()){
+                if (query.isMembersSet()) {
+                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
+                } else {
+                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
+                }
             } else {
-                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
+                if (query.isMembersSet()) {
+                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                } else {
+                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                }
             }
 
             Memory memory = tinkerComputeQuery.compute(vertexProgram, mapReduce, subLabelIds).memory();
@@ -141,10 +148,10 @@ public class TinkerComputeQueryRunner {
             Set<Label> ofLabels;
 
             // Check if ofType is valid before returning emptyMap
-            if (query.targetLabels().isEmpty()) {
+            if (query.ofTypes().isEmpty()) {
                 ofLabels = tinkerComputeQuery.subLabels();
             } else {
-                ofLabels = query.targetLabels().stream()
+                ofLabels = query.ofTypes().stream()
                         .flatMap(typeLabel -> {
                             Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
@@ -215,10 +222,10 @@ public class TinkerComputeQueryRunner {
             Set<Label> ofLabels;
 
             // Check if ofType is valid before returning emptyMap
-            if (query.targetLabels().isEmpty()) {
+            if (query.ofTypes().isEmpty()) {
                 ofLabels = tinkerComputeQuery.subLabels();
             } else {
-                ofLabels = query.targetLabels().stream()
+                ofLabels = query.ofTypes().stream()
                         .flatMap(typeLabel -> {
                             Type type = tx.getSchemaConcept(typeLabel);
                             if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
@@ -248,7 +255,7 @@ public class TinkerComputeQueryRunner {
 
     public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
         return runCompute(query, tinkerComputeQuery -> {
-            long k = query.kValue();
+            long k = query.k();
 
             if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
@@ -308,7 +315,7 @@ public class TinkerComputeQueryRunner {
     public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
         PathsQuery pathsQuery = tx.graql().compute().paths();
         if (query.isAttributeIncluded()) pathsQuery = pathsQuery.includeAttribute();
-        pathsQuery = pathsQuery.from(query.from()).to(query.to()).in(query.subLabels());
+        pathsQuery = pathsQuery.from(query.from()).to(query.to()).in(query.inTypes());
 
         return run(pathsQuery).map(result -> result.stream().findAny());
     }

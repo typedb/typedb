@@ -21,24 +21,28 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.graql.analytics.ComputeQuery;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
+import static ai.grakn.util.GraqlSyntax.SPACE;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
         extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
 
-    private ImmutableSet<Label> ofLabels = ImmutableSet.of();
+    private ImmutableSet<Label> ofTypes = ImmutableSet.of();
 
     private static final boolean INCLUDE_ATTRIBUTE = true; // TODO: REMOVE THIS LINE
 
@@ -46,24 +50,6 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         super(tx, INCLUDE_ATTRIBUTE);
     }
 
-    /**
-     * The centrality measures supported.
-     */
-    enum CentralityMeasure {
-
-        DEGREE("degree"),
-        K_CORE("k-core");
-        private final String name;
-
-        CentralityMeasure(String name) {
-            this.name = name;
-        }
-
-        @CheckReturnValue
-        public String getName() {
-            return name;
-        }
-    }
 
     @API
     public final V of(String... ofTypeLabels) {
@@ -71,27 +57,39 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     }
 
     public final V of(Collection<Label> ofLabels) {
-        this.ofLabels = ImmutableSet.copyOf(ofLabels);
+        this.ofTypes = ImmutableSet.copyOf(ofLabels);
         return (V) this;
     }
 
-    public final Set<Label> targetLabels() {
-        return ofLabels;
+    public final Set<Label> ofTypes() {
+        return ofTypes;
     }
 
-    abstract CentralityMeasure getMethod();
+    String ofTypesString() {
+        if (!ofTypes.isEmpty()) return OF + SPACE + typesString(ofTypes);
+
+        return "";
+    }
+
+    abstract String algorithmString();
+
+    abstract String argumentsString();
 
     @Override
-    String graqlString() {
-        String string = "centrality";
-        if (!targetLabels().isEmpty()) {
-            string += " of " + targetLabels().stream()
-                    .map(StringConverter::typeLabelToString)
-                    .collect(joining(", "));
-        }
-        string += subtypeString() + " using " + getMethod().getName();
+    final String methodString() {
+        return CENTRALITY;
+    }
 
-        return string;
+    @Override
+    String conditionsString() {
+        List<String> conditionsList = new ArrayList<>();
+
+        if (!ofTypes().isEmpty()) conditionsList.add(ofTypesString());
+        if (!inTypes().isEmpty()) conditionsList.add(inTypesString());
+        conditionsList.add(algorithmString());
+        if (!argumentsString().isEmpty()) conditionsList.add(argumentsString());
+
+        return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
     @Override
@@ -102,13 +100,13 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
 
         AbstractCentralityQuery<?> that = (AbstractCentralityQuery<?>) o;
 
-        return ofLabels.equals(that.ofLabels);
+        return ofTypes.equals(that.ofTypes);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + ofLabels.hashCode();
+        result = 31 * result + ofTypes.hashCode();
         return result;
     }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQueryBuilder;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;

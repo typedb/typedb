@@ -83,12 +83,12 @@ public class ConnectedComponentTest {
     @Test
     public void testNullSourceIdIsIgnored() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().of(null).execute();
+            graph.graql().compute().cluster().usingConnectedComponent().start(null).execute();
         }
 
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().in(thing).of(null).execute();
+            graph.graql().compute().cluster().usingConnectedComponent().in(thing).start(null).execute();
         }
     }
 
@@ -96,7 +96,7 @@ public class ConnectedComponentTest {
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().in(thing).of(entityId4).execute();
+            graph.graql().compute().cluster().usingConnectedComponent().in(thing).start(entityId4).execute();
         }
     }
 
@@ -124,10 +124,10 @@ public class ConnectedComponentTest {
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).execute();
+                    .includeAttribute().size(1L).execute();
             assertEquals(0, sizeMap.size());
             memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .membersOn().clusterSize(1L).execute();
+                    .membersOn().size(1L).execute();
             assertEquals(0, memberMap.size());
         }
 
@@ -135,19 +135,19 @@ public class ConnectedComponentTest {
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).execute();
+                    .includeAttribute().size(1L).execute();
             assertEquals(5, sizeMap.size());
 
             sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).of(entityId1).execute();
+                    .includeAttribute().size(1L).start(entityId1).execute();
             assertEquals(0, sizeMap.size());
 
             memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .membersOn().clusterSize(1L).execute();
+                    .membersOn().size(1L).execute();
             assertEquals(0, memberMap.size());
 
             memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .of(entityId4).membersOn().clusterSize(1L).execute();
+                    .start(entityId4).membersOn().size(1L).execute();
             assertEquals(0, memberMap.size());
         }
     }
@@ -181,7 +181,7 @@ public class ConnectedComponentTest {
             result = graph.graql().compute()
                     .cluster().usingConnectedComponent().in(thing, anotherThing, aResourceTypeLabel,
                             Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .membersOn().of(entityId2).execute();
+                    .membersOn().start(entityId2).execute();
             assertEquals(1, result.size());
             assertEquals(entityId2.getValue(), result.keySet().iterator().next());
             assertEquals(5, result.values().iterator().next().size());
@@ -206,7 +206,7 @@ public class ConnectedComponentTest {
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
 
             sizeMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .of(entityId1).includeAttribute().execute();
+                    .start(entityId1).includeAttribute().execute();
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue());
             assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
@@ -216,7 +216,7 @@ public class ConnectedComponentTest {
             assertEquals(7, memberMap.values().iterator().next().size());
 
             memberMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .of(entityId4).in().membersOn().execute();
+                    .start(entityId4).in().membersOn().execute();
             assertEquals(1, memberMap.size());
             assertEquals(7, memberMap.values().iterator().next().size());
             assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
@@ -235,7 +235,7 @@ public class ConnectedComponentTest {
             assertEquals(1, populationCount00.get(15L).intValue());
 
             sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .of(aDisconnectedAttribute).includeAttribute().execute();
+                    .start(aDisconnectedAttribute).includeAttribute().execute();
             assertEquals(1, sizeMap.size());
 
             memberMap = graph.graql().compute().cluster().usingConnectedComponent().membersOn().execute();

@@ -29,7 +29,7 @@ Currently you can compute the `min`, `max`, `mean`, `median`, `std` (standard de
 can also be achieved on a subgraph, which is a subset of the types in your dataset. For example, you can specify queries to find the mean age of people in a knowledge graph:
 
 ```graql
-compute mean of age in person;
+compute mean of age, in person;
 ```
 
 We cover this topic more in our documentation page on [statistics](./compute-statistics).
@@ -88,7 +88,7 @@ The algorithm for computing the degree is one example.
 If we execute the following query, the number of arrows (edges) attached to each node is returned:
 
 ```graql
-compute centrality in person, marriage; using degree;
+compute centrality in [person, marriage], using degree;
 ```
 
 In the example below this would be 1 for Jacob Young, 2 for Barbara Herchelroth, 1 for John Newman and 0 for the rest because we do not count the arrows indicating type, only arrows labelled with `spouse` roles.

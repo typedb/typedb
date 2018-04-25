@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;

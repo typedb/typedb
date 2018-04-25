@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.MinQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.MIN;
+
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> implements MinQuery {
 
     MinQueryImpl(Optional<GraknTx> tx) {
@@ -36,7 +38,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
     }
 
     @Override
-    String getName() {
-        return "min";
+    String methodString() {
+        return MIN;
     }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -157,37 +157,37 @@ public class QueryToStringTest {
     @Test
     public void testComputeQuerySubgraphToString() {
         ComputeQuery query = qb.compute().centrality().usingDegree().in("movie", "person");
-        assertEquivalent(query, "compute centrality in movie, person; using degree;");
+        assertEquivalent(query, "compute centrality in [movie, person], using degree;");
     }
 
     @Test
     public void testClusterToString() {
         ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person");
-        assertEquivalent(query, "compute cluster in movie, person; using connected-component;");
+        assertEquivalent(query, "compute cluster in [movie, person], using connected-component;");
 
         query = qb.compute().cluster().usingKCore().in("movie", "person");
-        assertEquivalent(query, "compute cluster in movie, person; using k-core;");
+        assertEquivalent(query, "compute cluster in [movie, person], using k-core;");
     }
 
     @Test
     public void testCCSizeToString() {
-        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10);
-        assertEquivalent(query, "compute cluster in movie, person; using connected-component where size = 10;");
+        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person").size(10);
+        assertEquivalent(query, "compute cluster in [movie, person], using connected-component, where size=10;");
     }
 
     @Test
     public void testKCoreToString() {
-        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").kValue(10);
-        assertEquivalent(query, "compute cluster in movie, person; using k-core where k = 10;");
+        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").k(10);
+        assertEquivalent(query, "compute cluster in [movie, person], using k-core, where k=10;");
     }
 
     @Test
     public void testCentralityOf() {
         ComputeQuery query = qb.compute().centrality().usingDegree().in("movie", "person").of("person");
-        assertEquivalent(query, "compute centrality of person in movie, person; using degree;");
+        assertEquivalent(query, "compute centrality of person, in [movie, person], using degree;");
 
         query = qb.compute().centrality().usingKCore().in("movie", "person").of("person").minK(5);
-        assertEquivalent(query, "compute centrality of person in movie, person; using k-core where min-k = 5;");
+        assertEquivalent(query, "compute centrality of person, in [movie, person], using k-core, where min-k=5;");
     }
 
     @Test

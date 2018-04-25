@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.StdQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.STD;
+
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> implements StdQuery {
 
     StdQueryImpl(Optional<GraknTx> tx) {
@@ -36,7 +38,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
     }
 
     @Override
-    String getName() {
-        return "std";
+    String methodString() {
+        return STD;
     }
 }

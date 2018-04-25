@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.MedianQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.MEDIAN;
+
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQuery> implements MedianQuery {
 
     MedianQueryImpl(Optional<GraknTx> tx) {
@@ -36,7 +38,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
     }
 
     @Override
-    String getName() {
-        return "median";
+    String methodString() {
+        return MEDIAN;
     }
 }

@@ -16,10 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.graql.Query;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -40,28 +41,28 @@ public interface ComputeQuery<T> extends Query<T> {
     ComputeQuery<T> withTx(GraknTx tx);
 
     /**
-     * @param subTypelabels an array of types to include in the subgraph
-     * @return a ComputeQuery with the subTypelabels set
+     * @param inTypes an array of types to include in the subgraph
+     * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    ComputeQuery<T> in(String... subTypelabels);
+    ComputeQuery<T> in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
-     * @return a ComputeQuery with the subLabels set
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    ComputeQuery<T> in(Collection<? extends Label> subLabels);
+    ComputeQuery<T> in(Collection<? extends Label> inTypes);
 
     /**
      * Get the collection of types to include in the subgraph
      */
-    Collection<? extends Label> subLabels();
+    Collection<? extends Label> inTypes();
 
     /**
      * Allow analytics query to include attributes and their relationships
      *
-     * @return a ComputeQuery with the subLabels set
+     * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
     ComputeQuery<T> includeAttribute();

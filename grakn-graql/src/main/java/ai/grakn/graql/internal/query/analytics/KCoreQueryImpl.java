@@ -26,6 +26,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Arg.K;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
+import static ai.grakn.util.GraqlSyntax.EQUAL;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+
 class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
     private static long DEFAULT_K = 2L;
@@ -41,31 +48,26 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
     }
 
     @Override
-    public final KCoreQuery kValue(long kValue) {
+    public final KCoreQuery k(long kValue) {
         k = Optional.of(kValue);
         return this;
     }
 
     @Override
-    public final long kValue() {
+    public final long k() {
         return k.orElse(DEFAULT_K);
     }
 
     @Override
-    ClusterMeasure getMethod() {
-        return ClusterMeasure.K_CORE;
+    String algorithmString() {
+        return USING + SPACE + K_CORE;
     }
 
     @Override
-    String graqlString() {
-        String string = super.graqlString();
-        if (k.isPresent()) {
-            string += " where k = ";
-            string += k.get();
-        }
-        string += ";";
+    String argumentsString(){
+        if(k.isPresent()) return WHERE + SPACE + K + EQUAL + k.get();
 
-        return string;
+        return "";
     }
 
     @Override
@@ -76,13 +78,14 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
         KCoreQueryImpl that = (KCoreQueryImpl) o;
 
-        return k.equals(that.k);
+        return k() == that.k();
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + k.hashCode();
+        result = 31 * result + K_CORE.hashCode();
+        result = 31 * result + Long.hashCode(k());
         return result;
     }
 }

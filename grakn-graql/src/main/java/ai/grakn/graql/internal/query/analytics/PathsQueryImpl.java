@@ -21,19 +21,14 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathsQuery;
 
 import java.util.List;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.nullableIdToString;
+import static ai.grakn.util.GraqlSyntax.Compute.PATHS;
 
-class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuery> implements PathsQuery {
-
-    private ConceptId sourceId = null;
-    private ConceptId destinationId = null;
+class PathsQueryImpl extends AbstractPathQuery<List<List<Concept>>, PathsQuery> implements PathsQuery {
 
     PathsQueryImpl(Optional<GraknTx> tx) {
         super(tx);
@@ -45,33 +40,8 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    public PathsQuery from(ConceptId sourceId) {
-        this.sourceId = sourceId;
-        return this;
-    }
-
-    @Override
-    public final ConceptId from() {
-        if (sourceId == null) throw GraqlQueryException.noPathSource();
-        return sourceId;
-    }
-
-    @Override
-    public PathsQuery to(ConceptId destinationId) {
-        this.destinationId = destinationId;
-        return this;
-    }
-
-    @Override
-    public final ConceptId to() {
-        if (destinationId == null) throw GraqlQueryException.noPathDestination();
-        return destinationId;
-    }
-
-    @Override
-    final String graqlString() {
-        return "paths from " + nullableIdToString(sourceId) + " to " + nullableIdToString(destinationId)
-                + subtypeString();
+    final String methodString() {
+        return PATHS;
     }
 
     @Override
@@ -80,16 +50,18 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        PathsQueryImpl pathQuery = (PathsQueryImpl) o;
+        PathsQueryImpl that = (PathsQueryImpl) o;
 
-        return sourceId.equals(pathQuery.sourceId) && destinationId.equals(pathQuery.destinationId);
+        if (!from().equals(that.from())) return false;
+        return to().equals(that.to());
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + destinationId.hashCode();
+        result = 31 * result + PATHS.hashCode();
+        result = 31 * result + from().hashCode();
+        result = 31 * result + to().hashCode();
         return result;
     }
 }

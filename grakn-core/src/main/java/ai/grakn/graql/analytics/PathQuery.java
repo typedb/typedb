@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.List;
@@ -58,18 +57,18 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     ConceptId to();
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a PathQuery with the subTypeLabels set
      */
     @Override
-    PathQuery in(String... subTypeLabels);
+    PathQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
-     * @return a PathQuery with the subLabels set
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a PathQuery with the inTypes set
      */
     @Override
-    PathQuery in(Collection<? extends Label> subLabels);
+    PathQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

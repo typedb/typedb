@@ -26,6 +26,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+
 class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements DegreeQuery {
 
     DegreeQueryImpl(Optional<GraknTx> tx) {
@@ -38,12 +42,12 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     }
 
     @Override
-    CentralityMeasure getMethod() {
-        return CentralityMeasure.DEGREE;
+    String algorithmString() {
+        return USING + SPACE + DEGREE;
     }
 
     @Override
-    String graqlString() {
-        return super.graqlString() + ";";
+    String argumentsString() {
+        return "";
     }
 }
