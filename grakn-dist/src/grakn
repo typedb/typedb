@@ -49,6 +49,6 @@ update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.bootup.GraknBootup $@
+java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.bootup.GraknBootup $@
 
 popd > /dev/null
