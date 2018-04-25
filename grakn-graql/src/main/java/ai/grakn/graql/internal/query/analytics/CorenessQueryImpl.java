@@ -43,7 +43,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    public final ComputeJob<Map<Long, Set<String>>> executeComputer() {
+    public final ComputeJob<Map<Long, Set<String>>> run() {
         return queryComputer().run(this);
     }
 

@@ -46,7 +46,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
     }
 
     @Override
-    public final ComputeJob<List<List<Concept>>> executeComputer() {
+    public final ComputeJob<List<List<Concept>>> run() {
         return queryComputer().run(this);
     }
 

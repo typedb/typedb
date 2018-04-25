@@ -33,7 +33,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> i
     }
 
     @Override
-    public final ComputeJob<Optional<Double>> executeComputer() {
+    public final ComputeJob<Optional<Double>> run() {
         return queryComputer().run(this);
     }
 

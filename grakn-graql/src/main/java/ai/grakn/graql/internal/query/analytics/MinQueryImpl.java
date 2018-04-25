@@ -33,7 +33,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MinQuery> i
     }
 
     @Override
-    public final ComputeJob<Optional<Number>> executeComputer() {
+    public final ComputeJob<Optional<Number>> run() {
         return queryComputer().run(this);
     }
 
