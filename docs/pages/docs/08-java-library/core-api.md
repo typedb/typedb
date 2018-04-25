@@ -41,9 +41,9 @@ surname sub name datatype string;
 middlename sub name datatype string;
 picture sub attribute datatype string;
 age sub attribute datatype long;
-"date" sub attribute datatype string;
-birth-date sub "date" datatype string;
-death-date sub "date" datatype string;
+event-date sub attribute datatype date;
+birth-date sub event-date datatype date;
+death-date sub event-date datatype date;
 gender sub attribute datatype string;
 ```
 
@@ -56,8 +56,8 @@ AttributeType surname = tx.putAttributeType("surname", AttributeType.DataType.ST
 AttributeType middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING);
 AttributeType picture = tx.putAttributeType("picture", AttributeType.DataType.STRING);
 AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-AttributeType birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING);
-AttributeType deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING);
+AttributeType birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE);
+AttributeType deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE);
 AttributeType gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
