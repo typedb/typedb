@@ -110,7 +110,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
+    private static final String QUERY_EXECUTOR_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryExecutor";
 
     //----------------------------- Shared Variables
     private final EmbeddedGraknSession session;
@@ -335,7 +335,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     @Override
     public QueryBuilder graql() {
         if (queryConstructor == null) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_EXECUTOR_CLASS_NAME));
         }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);
@@ -971,7 +971,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     private static @Nullable Method getQueryRunnerFactory() {
         try {
-            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
+            return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }
