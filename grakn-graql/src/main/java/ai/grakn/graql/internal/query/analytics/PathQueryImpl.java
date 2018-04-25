@@ -55,7 +55,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
 
 
     public final PathQuery from(ConceptId fromID) {
-        this.from = Optional.of(fromID);
+        this.from = Optional.ofNullable(fromID);
         return this;
     }
 
@@ -64,7 +64,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
     }
 
     public PathQuery to(ConceptId toID) {
-        this.to = Optional.of(toID);
+        this.to = Optional.ofNullable(toID);
         return this;
     }
 
