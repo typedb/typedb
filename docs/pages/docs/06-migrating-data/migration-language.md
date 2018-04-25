@@ -315,7 +315,7 @@ would result in the expanded Graql queries:
 ```graql
 # ...
 insert $p0 isa person has firstname "Barbara" has identifier "Barbara Newman" has surname "Newman" has gender "female";
-insert $p1 has birth-date "1811-03-06" isa person has surname "Newman" has gender "male" has death-date "1898-09-10" has identifier "Henry Newman" has age 87 has firstname "Henry";
+insert $p1 has birth-date 1811-03-06 isa person has surname "Newman" has gender "male" has death-date 1898-09-10 has identifier "Henry Newman" has age 87 has firstname "Henry";
 # ...
 ```
 
