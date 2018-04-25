@@ -355,7 +355,7 @@ public class GraknQueryHandlers {
                 List<List<Concept>> paths = pathQuery.withTx(graknTx).execute();
 
                 List<Concept> path = Collections.emptyList();
-                if(!paths.isEmpty()) path.get(0);
+                if(!paths.isEmpty()) path = paths.get(0);
 
                 // our path is either:
                 //     empty if there is none

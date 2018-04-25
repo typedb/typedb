@@ -19,10 +19,8 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 
 import javax.annotation.CheckReturnValue;
-import java.util.List;
 import java.util.Map;
 
 /**
