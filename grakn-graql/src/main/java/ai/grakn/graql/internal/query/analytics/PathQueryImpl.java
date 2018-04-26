@@ -69,7 +69,6 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
     }
 
     public final Optional<ConceptId> to() {
-        if (to == null) throw GraqlQueryException.noPathDestination();
         return to;
     }
 
