@@ -48,13 +48,13 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class BenchmarkTests {
+public class BenchmarkTest {
 
     //Needed to start cass depending on profile
     @ClassRule
     public static final SessionContext sessionContext = SessionContext.create();
 
-    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTest.class);
 
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:

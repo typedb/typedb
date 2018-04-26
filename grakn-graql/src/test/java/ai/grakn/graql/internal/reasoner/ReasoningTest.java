@@ -58,7 +58,7 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 /**
  * Suite of tests checking different meanders and aspects of reasoning - full reasoning cycle is being tested.
  */
-public class ReasoningTests {
+public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext reflexiveRelation = SampleKBContext.load("reflexiveRelationTest.gql");
