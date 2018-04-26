@@ -60,8 +60,6 @@ import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEDIAN_MISSING_CONDITIO
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATHS_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATHS_MISSING_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_MISSING_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_STD_CONDITION;
@@ -430,14 +428,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidComputePathMissingCondition() {
         return new GraqlQueryException(INVALID_COMPUTE_PATH_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputePathsCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_PATHS_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputePathsMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_PATHS_MISSING_CONDITION.getMessage());
     }
 
     public static GraqlQueryException invalidComputeCentralityCondition() {

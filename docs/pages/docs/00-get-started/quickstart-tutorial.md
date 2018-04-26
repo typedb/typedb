@@ -320,7 +320,7 @@ A full list of statistics that can be explored is documented in the [Compute Que
 
 ### Shortest Path
 
-It is also possible to find the shortest path between two nodes in the knowledge graph. The documentation for the Grakn
+It is also possible to find the shortest path(s) between two nodes in the knowledge graph. The documentation for the Grakn
 visualiser describes how to use the [query builder tool](../visualisation-dashboard/visualiser#shortest-path), and includes
 a video.
 
@@ -344,7 +344,7 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
-To narrow the path to specific relationships between specific entities:
+To scope the specific types of entities an relationships to be considered in the shortest path computation, you can provide a list of types to the query.
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore

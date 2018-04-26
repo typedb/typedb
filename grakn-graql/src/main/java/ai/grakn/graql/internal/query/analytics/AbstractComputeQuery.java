@@ -65,7 +65,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final T execute() {
-        ComputeJob<T> job = createJob();
+        ComputeJob<T> job = run();
 
         runningJobs.add(job);
 
@@ -76,7 +76,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         }
     }
 
-    protected abstract ComputeJob<T> createJob();
+    protected abstract ComputeJob<T> run();
 
     @Override
     public final Optional<GraknTx> tx() {

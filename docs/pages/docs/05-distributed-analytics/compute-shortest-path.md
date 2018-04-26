@@ -19,14 +19,14 @@ $y has identifier "Jacob J. Niesz";
 get;
 ```
 
-and then searched for relationships joining two of them using:
+and then searched for the shortest path(s) joining two of them using:
 
 <!-- Ignoring because uses made-up IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2";
+compute path from "id1", to "id2";
 ```
 
-There is an easier way to do this in dashboard: simply selecting the two entities, right-click on either of them, select `Shortest path`, then hit `Enter`.
+There is an easy way to do this in dashboard: simply selecting the two entities, right-click on either of them, select `Shortest path`, then hit `Enter`.
 
 ![Shortest path between people](/images/analytics_path_selecting_persons.png)
 
@@ -48,15 +48,5 @@ compute path from "id1", to "id2", in [person, parentship];
 
 ![Shortest path between people](/images/analytics_path_parentship.png)
 
-## Finding all paths
-
-If you are looking for all the shortest paths between two entities, simply change `compute path` to `compute paths`.
-
-<!-- Ignoring because uses made-up IDs -->
-```graql-test-ignore
-compute paths from "id1", to "id2", in [person, parentship];
-```
-
-You can see below that there are two paths.
 
 ![Shortest path between people](/images/analytics_path_parentships.png)

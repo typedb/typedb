@@ -33,8 +33,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MedianQu
     }
 
     @Override
-    public final ComputeJob<Optional<Number>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Optional<Number>> run() {
+        return queryComputer().run(this);
     }
 
     @Override

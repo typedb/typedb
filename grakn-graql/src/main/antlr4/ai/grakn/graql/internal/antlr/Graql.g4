@@ -29,7 +29,7 @@ variables      : VARIABLE (',' VARIABLE)* ;
 // A compute method could only be:
 // count                                    (to count the number of concepts in the graph)
 // min, max, median, mean, std and sum      (to calculate statistics functions)
-// path, paths                              (to compute the the shortest path / possible paths between concepts)
+// path                                     (to compute the paths between concepts)
 // centrality                               (to compute how densely connected concepts are in the graph)
 // cluster                                  (to detect communities in the graph)
 //
@@ -39,7 +39,7 @@ variables      : VARIABLE (',' VARIABLE)* ;
 computeQuery                    : COMPUTE computeMethod computeConditions? ';';
 computeMethod                   : COUNT                                                 // compute count
                                 | MIN | MAX | MEDIAN | MEAN | STD | SUM                 // compute statistics
-                                | PATH | PATHS                                          // compute path(s)
+                                | PATH                                                  // compute path
                                 | CENTRALITY                                            // compute centrality
                                 | CLUSTER                                               // compute cluster
                                 ;
@@ -165,7 +165,6 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
-PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 CENTRALITY     : 'centrality' ;
 FROM           : 'from' ;

@@ -86,12 +86,6 @@ public interface ComputeQueryBuilder {
     PathQuery path();
 
     /**
-     * @return a path query that will find all shortest path between two instances
-     */
-    @CheckReturnValue
-    PathsQuery paths();
-
-    /**
      * This method is deprecated. Please use centrality query instead.
      *
      * @return a cluster query that will find the connected components

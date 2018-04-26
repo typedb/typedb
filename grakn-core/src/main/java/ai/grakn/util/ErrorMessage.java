@@ -205,7 +205,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     INVALID_COMPUTE_METHOD("Invalid compute method. " +
-            "The available compute methods are: count, min, max, median, mean, std, sum, path, paths, centrality, and cluster. " +
+            "The available compute methods are: count, min, max, median, mean, std, sum, path, centrality, and cluster. " +
             "A valid compute method contains 'compute <method> <conditions>', such as: 'compute min of age, in person;"),
 
     // Graql compute count errors ------------------
@@ -259,13 +259,6 @@ public enum ErrorMessage {
 
     INVALID_COMPUTE_PATH_MISSING_CONDITION("Missing 'compute path' condition. " +
             "'from <id>' and 'to <id>' are required, such as: 'compute path from 123, to 456;'."),
-
-    INVALID_COMPUTE_PATHS_CONDITION("Invalid 'compute paths' condition. " +
-            "Only 'from <id>', 'to <id', and 'in <types>' are accepted, " +
-            "such as: 'compute paths from 123, to 456, in [movie, cast, person];'."),
-
-    INVALID_COMPUTE_PATHS_MISSING_CONDITION("Missing 'compute paths' condition. " +
-            "'from <id>' and 'to <id>' are required, such as: 'compute paths from 123, to 456;'."),
 
     // Graql compute centrality errors --------------
 

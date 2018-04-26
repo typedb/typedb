@@ -63,7 +63,7 @@ After this, you can right click one of the nodes and you will be able to select 
 
   ![Shortest path GUI](/images/academy/6-analytics/path-gui.png)
 
-Runnning a path query in the Graph visualiser actually lets you see the path between the two nodes, as shown in the following screenshot:
+Running a path query in the Graph visualiser actually lets you see the path between the two nodes, as shown in the following screenshot:
 
   ![Shortest path in the Visualiser](/images/academy/6-analytics/path-visualiser.png)
 
