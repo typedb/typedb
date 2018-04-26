@@ -50,7 +50,7 @@ abstract class AbstractQuery<T, S> implements Query<T> {
         return stream().map(converter::convert);
     }
 
-    protected final QueryExecutor queryComputer() {
+    protected final QueryExecutor executor() {
         return tx().orElseThrow(GraqlQueryException::noTx).admin().queryExecutor();
     }
 }

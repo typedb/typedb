@@ -50,7 +50,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathQuery>
     public final ComputeJob<List<List<Concept>>> run() {
         if (!from.isPresent() || !to.isPresent()) throw GraqlQueryException.invalidComputePathMissingCondition();
 
-        return queryComputer().run(this);
+        return executor().run(this);
     }
 
 

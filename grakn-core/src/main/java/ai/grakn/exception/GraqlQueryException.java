@@ -274,14 +274,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
 
-    public static GraqlQueryException noPathDestination() {
-        return new GraqlQueryException(ErrorMessage.NO_DESTINATION.getMessage());
-    }
-
-    public static GraqlQueryException noPathSource() {
-        return new GraqlQueryException(ErrorMessage.NO_SOURCE.getMessage());
-    }
-
     public static GraqlQueryException instanceDoesNotExist() {
         return new GraqlQueryException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
     }
