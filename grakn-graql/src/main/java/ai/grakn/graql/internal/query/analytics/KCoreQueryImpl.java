@@ -44,7 +44,7 @@ class KCoreQueryImpl extends AbstractClusterQuery<Map<String, Set<String>>, KCor
 
     @Override
     public final ComputeJob<Map<String, Set<String>>> run() {
-        return queryComputer().run(this);
+        return executor().run(this);
     }
 
     @Override

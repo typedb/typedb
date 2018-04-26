@@ -34,7 +34,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery>
 
     @Override
     public final ComputeJob<Optional<Double>> run() {
-        return queryComputer().run(this);
+        return executor().run(this);
     }
 
     @Override

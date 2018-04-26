@@ -34,7 +34,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> i
 
     @Override
     public final ComputeJob<Optional<Number>> run() {
-        return queryComputer().run(this);
+        return executor().run(this);
     }
 
     @Override

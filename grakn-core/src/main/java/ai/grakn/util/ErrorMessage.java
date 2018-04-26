@@ -304,9 +304,7 @@ public enum ErrorMessage {
     INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT("invalid 'compute cluster using k-core' argument(s). " +
             "Only 'k = <int>' is accepted, " +
             "such as: 'compute cluster in [person, marriage], using k-core, where k = 2;'"),
-
-    NO_SOURCE("No valid source id provided"),
-    NO_DESTINATION("No valid destination id provided"),
+    
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
