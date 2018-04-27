@@ -89,8 +89,8 @@ public class IntMacroTest {
 
     @Test
     public void whenUsingIntMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @int(<value>);";
-        String expected = "insert $x0 val 4;";
+        String template = "insert $x == @int(<value>);";
+        String expected = "insert $x0 == 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
@@ -98,8 +98,8 @@ public class IntMacroTest {
 
     @Test
     public void whenIntMacroIsWrongCase_ResolvedToLowerCase(){
-        String template = "insert $x val @InT(<value>);";
-        String expected = "insert $x0 val 4;";
+        String template = "insert $x == @InT(<value>);";
+        String expected = "insert $x0 == 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);

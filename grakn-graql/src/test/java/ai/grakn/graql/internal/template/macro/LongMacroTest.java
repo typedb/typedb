@@ -95,8 +95,8 @@ public class LongMacroTest {
 
     @Test
     public void whenUsingLongMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @long(<value>);";
-        String expected = "insert $x0 val 4;";
+        String template = "insert $x == @long(<value>);";
+        String expected = "insert $x0 == 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);

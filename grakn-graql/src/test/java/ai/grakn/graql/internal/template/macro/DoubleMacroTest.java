@@ -88,8 +88,8 @@ public class DoubleMacroTest {
 
     @Test
     public void whenUsingDoubleMacroInTemplate_ResultIsAsExpected(){
-        String template = "insert $x val @double(<value>);";
-        String expected = "insert $x0 val 4.0;";
+        String template = "insert $x == @double(<value>);";
+        String expected = "insert $x0 == 4.0;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
@@ -110,8 +110,8 @@ public class DoubleMacroTest {
         try {
             Locale.setDefault(Locale.FRANCE);
 
-            String template = "insert $x val @double(<value>);";
-            String expected = "insert $x0 val 4.0;";
+            String template = "insert $x == @double(<value>);";
+            String expected = "insert $x0 == 4.0;";
 
             assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
             assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
