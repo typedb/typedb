@@ -90,10 +90,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     width: 100%;
 }
 
-.close-cross span {
-    color: #0f0f0f;
-}
-
 .same-line {
     display: flex;
     justify-content: flex-start;
@@ -217,7 +213,7 @@ input {
 
 .close:hover,
 .close:focus {
-    color: #000;
+    color: #00eca2;
     text-decoration: none;
     cursor: pointer;
 }

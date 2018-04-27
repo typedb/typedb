@@ -62,6 +62,20 @@ export default {
     return (modalShown === 'true');
   },
 
+    // ------ Commands modal setter and getter (has it already be shown to the user) ----//
+    setCmdModalShown(shown) {
+      localStorage.setItem('commands_modal', shown);
+    },
+  
+    getCmdModalShown() {
+      const cmdModalShown = localStorage.getItem('commands_modal');
+      if (!cmdModalShown) {
+        this.setCmdModalShown(false);
+        return false;
+      }
+      return (cmdModalShown === 'true');
+    },
+
   // ------------ Limit number of results ---------------- //
   getQueryLimit() {
     const queryLimit = localStorage.getItem('query_limit');
