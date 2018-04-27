@@ -100,7 +100,7 @@ property       : 'isa' variable                     # isa
                | 'plays' variable                   # plays
                | 'id' id                            # propId
                | 'label' label                      # propLabel
-               | 'val'? predicate                   # propValue
+               |  predicate                         # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
                | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas

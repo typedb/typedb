@@ -281,7 +281,7 @@ public class GenealogyTest {
 
     @Test
     public void testFemaleFather() {
-        String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female'; get;";
+        String queryString = "match (father: $x) isa parentship; $x has gender $g; $g == 'female'; get;";
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
         List<Answer> answers2 =  genealogyKB.tx().graql().infer(true).<GetQuery>parse(queryString).execute();
