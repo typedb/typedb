@@ -73,44 +73,67 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
     Optional<ConceptId> to();
 
     /**
-     * @param types an array of types in which the compute query would apply to
-     * @return a ComputeQuery with the of set
+     * @param types is an array of concept types in which the compute query would apply to
+     * @return a NewComputeQuery with the of set
      */
     @CheckReturnValue
     NewComputeQuery of(String... types);
 
     /**
-     * @param types an array of types in which the compute query would apply to
-     * @return a ComputeQuery with the of set
+     * @param types is an array of concept types in which the compute query would apply to
+     * @return a NewComputeQuery with the of set
      */
     @CheckReturnValue
     NewComputeQuery of(Collection<Label> types);
 
     /**
-     * Get the collection of types in which the compute query would apply to
+     * @return the collection of concept types in which the compute query would apply to
      */
     @CheckReturnValue
     Optional<Set<Label>> of();
 
     /**
-     * @param types an array of types that determines the scope of graph for the compute query
-     * @return a ComputeQuery with the inTypes set
+     * @param types is an array of concept types that determines the scope of graph for the compute query
+     * @return a NewComputeQuery with the inTypes set
      */
     @CheckReturnValue
     NewComputeQuery in(String... types);
 
     /**
-     * @param types an array of types that determines the scope of graph for the compute query
-     * @return a ComputeQuery with the inTypes set
+     * @param types is an array of concept types that determines the scope of graph for the compute query
+     * @return a NewComputeQuery with the inTypes set
      */
     @CheckReturnValue
     NewComputeQuery in(Collection<Label> types);
 
     /**
-     * Get the collection of types that determines the scope of graph for the compute query
+     * @return the collection of concept types that determines the scope of graph for the compute query
      */
     @CheckReturnValue
     Optional<Set<Label>> in();
+
+    /**
+     * @param algorithm name as an argument for the compute query
+     * @return a NewComputeQuery with algorithm argument set
+     */
+    NewComputeQuery using(String algorithm);
+
+    /**
+     * @return the algorithm argument for the compute query
+     */
+    Optional<String> using();
+
+    /**
+     * @param minK is a number representing the minimum K (aka. min-k) value as an argument for the compute query
+     * @return a NewComputeQuery with the min-k argument set
+     */
+    NewComputeQuery minK(long minK);
+
+    /**
+     * @return the min-k argument for the compute query
+     */
+    @CheckReturnValue
+    Optional<Long> minK();
 
     /**
      * Allow analytics query to include attributes and their relationships

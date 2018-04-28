@@ -44,8 +44,11 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private Optional<ConceptId> toID = Optional.empty();
     private Optional<Set<Label>> ofTypes = Optional.empty();
     private Optional<Set<Label>> inTypes = Optional.empty();
+    private Optional<String> algorithm = Optional.empty();
+    private Optional<Long> minK = Optional.empty();
     private boolean includeAttribute;
 
+    private final static long DEFAULT_MIN_K = 2L;
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
     NewComputeQueryImpl(String method, Optional<GraknTx> tx) {
@@ -155,6 +158,27 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     @Override
+    public final NewComputeQuery using(String algorithm) {
+        this.algorithm = Optional.of(algorithm);
+        return this;
+    }
+
+    @Override
+    public final Optional<String> using() {
+        return algorithm;
+    }
+
+    @Override
+    public final NewComputeQuery minK(long minK) {
+        this.minK = Optional.of(minK);
+        return this;
+    }
+
+    @Override
+    public final Optional<Long> minK() {
+        return minK;
+    }
+    @Override
     public final NewComputeQueryImpl includeAttribute() {
         this.includeAttribute = true;
         return this;
@@ -203,6 +227,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         if (toID.isPresent()) conditionsList.add(TO + SPACE + QUOTE + toID.get() + QUOTE);
         if (ofTypes.isPresent()) conditionsList.add(ofTypesString());
         if (inTypes.isPresent()) conditionsList.add(inTypesString());
+        if (algoritghm.isPresent()) conditionsList.add(algorithmString());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
@@ -247,6 +272,8 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
                 this.to().equals(that.to()) &&
                 this.of().equals(that.of()) &&
                 this.in().equals(that.in())) &&
+                this.using().equals(that.using()) &&
+                this.minK().equals(that.minK()) &&
                 this.isAttributeIncluded() == that.isAttributeIncluded();
     }
 
@@ -258,6 +285,8 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         result = 31 * result + toID.hashCode();
         result = 31 * result + ofTypes.hashCode();
         result = 31 * result + inTypes.hashCode();
+        result = 31 * result + algorithm.hashCode();
+        result = 31 * result + minK.hashCode();
         result = 31 * result + Boolean.hashCode(includeAttribute);
         return result;
     }
