@@ -205,6 +205,8 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     final String ofTypesString() {
         if (ofTypes.isPresent()) return OF + SPACE + typesString(ofTypes.get());
+
+        return "";
     }
 
     final String inTypesString() {
