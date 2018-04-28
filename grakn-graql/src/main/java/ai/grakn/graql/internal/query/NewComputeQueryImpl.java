@@ -10,6 +10,7 @@ import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +23,8 @@ import java.util.stream.Stream;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.COMPUTE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
@@ -177,6 +180,10 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final Optional<Long> minK() {
+        if(method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !minK.isPresent()) {
+            return Optional.of(DEFAULT_MIN_K);
+        }
+
         return minK;
     }
     @Override
