@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ComputeQuery;
 
 import javax.annotation.CheckReturnValue;
@@ -149,10 +150,16 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
     boolean isAttributeIncluded();
 
     /**
-     * Checks whether this query is a valid Graql Compute query given the provided conditions
+     * @return a boolean representing whether this query is a valid Graql Compute query given the provided conditions
      */
     @CheckReturnValue
     boolean isValid();
+
+    /**
+     * @return any exception if the query is invalid
+     */
+    @CheckReturnValue
+    Optional<GraqlQueryException> collectExceptions();
 
     /**
      * Checks Whether this query will modify the graph

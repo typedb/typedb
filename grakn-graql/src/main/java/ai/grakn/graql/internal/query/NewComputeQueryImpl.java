@@ -207,7 +207,8 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         return !collectExceptions().isPresent();
     }
 
-    private Optional<GraqlQueryException> collectExceptions() {
+    @Override
+    public Optional<GraqlQueryException> collectExceptions() {
         //TODO
 
         return Optional.empty();
