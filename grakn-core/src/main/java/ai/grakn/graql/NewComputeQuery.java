@@ -50,6 +50,10 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
     NewComputeQuery from(ConceptId fromID);
 
     /**
+     * @return a String representing the name of the compute query method
+     */
+    String method();
+    /**
      * @return a Concept ID in which which compute query will start from
      */
     @CheckReturnValue

@@ -46,7 +46,6 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private Optional<Set<Label>> inTypes = Optional.empty();
     private boolean includeAttribute;
 
-
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
     NewComputeQueryImpl(String method, Optional<GraknTx> tx) {
@@ -94,6 +93,11 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     @Override
     public final Optional<GraknTx> tx() {
         return tx;
+    }
+
+    @Override
+    public final String method() {
+        return method;
     }
 
     @Override
@@ -237,14 +241,24 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
         NewComputeQuery that = (NewComputeQuery) o;
 
-        return tx.equals(that.tx()) && includeAttribute == that.isAttributeIncluded() && inTypes.equals(that.in());
+        return (this.tx().equals(that.tx()) &&
+                this.method().equals(that.method()) &&
+                this.from().equals(that.from()) &&
+                this.to().equals(that.to()) &&
+                this.of().equals(that.of()) &&
+                this.in().equals(that.in())) &&
+                this.isAttributeIncluded() == that.isAttributeIncluded();
     }
 
     @Override
     public int hashCode() {
         int result = tx.hashCode();
-        result = 31 * result + Boolean.hashCode(includeAttribute);
+        result = 31 * result + method.hashCode();
+        result = 31 * result + fromID.hashCode();
+        result = 31 * result + toID.hashCode();
+        result = 31 * result + ofTypes.hashCode();
         result = 31 * result + inTypes.hashCode();
+        result = 31 * result + Boolean.hashCode(includeAttribute);
         return result;
     }
 }
