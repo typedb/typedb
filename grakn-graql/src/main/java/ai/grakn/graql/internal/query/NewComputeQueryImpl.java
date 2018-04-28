@@ -26,6 +26,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
 import static ai.grakn.util.GraqlSyntax.QUOTE;
 import static ai.grakn.util.GraqlSyntax.SEMICOLON;
 import static ai.grakn.util.GraqlSyntax.SPACE;
@@ -199,7 +200,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         return !collectExceptions().isPresent();
     }
 
-    private final Optional<GraqlQueryException> collectExceptions() {
+    private Optional<GraqlQueryException> collectExceptions() {
         //TODO
 
         return Optional.empty();
@@ -209,46 +210,46 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(COMPUTE + SPACE + methodString());
-        if (!conditionsString().isEmpty()) query.append(SPACE + conditionsString());
+        query.append(COMPUTE + SPACE + methodSyntax());
+        if (!conditionsSyntax().isEmpty()) query.append(SPACE + conditionsSyntax());
         query.append(SEMICOLON);
 
         return query.toString();
     }
 
-    private final String methodString() {
+    private String methodSyntax() {
         return method;
     }
 
-    private final String conditionsString() {
+    private String conditionsSyntax() {
         List<String> conditionsList = new ArrayList<>();
 
         if (fromID.isPresent()) conditionsList.add(FROM + SPACE + QUOTE + fromID.get() + QUOTE);
         if (toID.isPresent()) conditionsList.add(TO + SPACE + QUOTE + toID.get() + QUOTE);
-        if (ofTypes.isPresent()) conditionsList.add(ofTypesString());
-        if (inTypes.isPresent()) conditionsList.add(inTypesString());
-        if (algoritghm.isPresent()) conditionsList.add(algorithmString());
+        if (ofTypes.isPresent()) conditionsList.add(ofTypesSyntax());
+        if (inTypes.isPresent()) conditionsList.add(inTypesSyntax());
+        if (algorithm.isPresent()) conditionsList.add(algorithmSyntax());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
-    final String ofTypesString() {
-        if (ofTypes.isPresent()) return OF + SPACE + typesString(ofTypes.get());
+    private String ofTypesSyntax() {
+        if (ofTypes.isPresent()) return OF + SPACE + typesSyntax(ofTypes);
 
         return "";
     }
 
-    final String inTypesString() {
-        if (inTypes.isPresent()) return IN + SPACE + typesString(inTypes.get());
+    private String inTypesSyntax() {
+        if (inTypes.isPresent()) return IN + SPACE + typesSyntax(inTypes);
 
         return "";
     }
 
-    final String typesString(Set<Label> types) {
+    private String typesSyntax(Optional<Set<Label>> types) {
         StringBuilder inTypesString = new StringBuilder();
 
-        if (!types.isEmpty()) {
-            if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
+        if (types.isPresent() && !types.get().isEmpty()) {
+            if (types.get().size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.get().iterator().next()));
             else {
                 inTypesString.append(SQUARE_OPEN);
                 inTypesString.append(inTypes.get().stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
@@ -258,6 +259,13 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
         return inTypesString.toString();
     }
+
+    private String algorithmSyntax() {
+        if (algorithm.isPresent()) return USING + SPACE + algorithm.get();
+
+        return "";
+    }
+
 
     @Override
     public boolean equals(Object o) {
