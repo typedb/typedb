@@ -26,13 +26,14 @@ import ai.grakn.graql.analytics.ComputeQuery;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn.
  *
  * @author Haikal Pribadi
  */
-public interface NewComputeQuery extends ComputeQuery<ComputeAnswer> {
+public interface NewComputeQuery extends Query<ComputeAnswer> {
 
     /**
      * @param tx the graph to execute the compute query on
@@ -41,36 +42,71 @@ public interface NewComputeQuery extends ComputeQuery<ComputeAnswer> {
     @Override
     NewComputeQuery withTx(GraknTx tx);
 
+    /**
+     * @param fromID is the Concept ID of in which compute path query will start from
+     * @return A NewComputeQuery with the fromID set
+     */
     @CheckReturnValue
     NewComputeQuery from(ConceptId fromID);
 
+    /**
+     * @return a Concept ID in which which compute query will start from
+     */
     @CheckReturnValue
     Optional<ConceptId> from();
 
+    /**
+     * @param toID is the Concept ID in which compute query will stop at
+     * @return A NewComputeQuery with the toID set
+     */
     @CheckReturnValue
     NewComputeQuery to(ConceptId toID);
 
+    /**
+     * @return a Concept ID in which which compute query will stop at
+     */
     @CheckReturnValue
     Optional<ConceptId> to();
 
     /**
-     * @param inTypes an array of types to include in the subgraph
+     * @param types an array of types in which the compute query would apply to
+     * @return a ComputeQuery with the of set
+     */
+    @CheckReturnValue
+    NewComputeQuery of(String... types);
+
+    /**
+     * @param types an array of types in which the compute query would apply to
+     * @return a ComputeQuery with the of set
+     */
+    @CheckReturnValue
+    NewComputeQuery of(Collection<Label> types);
+
+    /**
+     * Get the collection of types in which the compute query would apply to
+     */
+    @CheckReturnValue
+    Optional<Set<Label>> of();
+
+    /**
+     * @param types an array of types that determines the scope of graph for the compute query
      * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    NewComputeQuery in(String... inTypes);
+    NewComputeQuery in(String... types);
 
     /**
-     * @param inTypes a collection of types to include in the subgraph
+     * @param types an array of types that determines the scope of graph for the compute query
      * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    NewComputeQuery in(Collection<? extends Label> inTypes);
+    NewComputeQuery in(Collection<Label> types);
 
     /**
-     * Get the collection of types to include in the subgraph
+     * Get the collection of types that determines the scope of graph for the compute query
      */
-    Collection<? extends Label> inTypes();
+    @CheckReturnValue
+    Optional<Set<Label>> in();
 
     /**
      * Allow analytics query to include attributes and their relationships

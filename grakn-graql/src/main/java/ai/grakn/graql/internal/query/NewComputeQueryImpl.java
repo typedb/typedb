@@ -24,6 +24,7 @@ import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.COMPUTE;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.QUOTE;
 import static ai.grakn.util.GraqlSyntax.SEMICOLON;
@@ -39,9 +40,10 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private Set<ComputeJob<ComputeAnswer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private String method;
-    private Optional<ConceptId> from = Optional.empty();
-    private Optional<ConceptId> to = Optional.empty();
-    protected ImmutableSet<Label> inTypes = ImmutableSet.of();
+    private Optional<ConceptId> fromID = Optional.empty();
+    private Optional<ConceptId> toID = Optional.empty();
+    private Optional<Set<Label>> ofTypes = Optional.empty();
+    private Optional<Set<Label>> inTypes = Optional.empty();
     private boolean includeAttribute;
 
 
@@ -96,39 +98,55 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery from(ConceptId fromID) {
-        this.from = Optional.ofNullable(fromID);
+        this.fromID = Optional.ofNullable(fromID);
         return this;
     }
 
     @Override
     public final Optional<ConceptId> from() {
-        return from;
+        return fromID;
     }
 
     @Override
     public final NewComputeQuery to(ConceptId toID) {
-        this.to = Optional.ofNullable(toID);
+        this.toID = Optional.ofNullable(toID);
         return this;
     }
 
     @Override
     public final Optional<ConceptId> to() {
-        return to;
+        return toID;
     }
 
     @Override
-    public final NewComputeQuery in(String... inTypes) {
-        return in(Arrays.stream(inTypes).map(Label::of).collect(toImmutableSet()));
+    public final NewComputeQuery of(String... types) {
+        return of(Arrays.stream(types).map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
-    public final NewComputeQuery in(Collection<? extends Label> inTypes) {
-        this.inTypes = ImmutableSet.copyOf(inTypes);
+    public final NewComputeQuery of(Collection<Label> types) {
+        this.ofTypes = Optional.of(ImmutableSet.copyOf(types));
         return this;
     }
 
     @Override
-    public final ImmutableSet<Label> inTypes() {
+    public final Optional<Set<Label>> of() {
+        return ofTypes;
+    }
+
+    @Override
+    public final NewComputeQuery in(String... types) {
+        return in(Arrays.stream(types).map(Label::of).collect(toImmutableSet()));
+    }
+
+    @Override
+    public final NewComputeQuery in(Collection<Label> types) {
+        this.inTypes = Optional.of(ImmutableSet.copyOf(types));
+        return this;
+    }
+
+    @Override
+    public final Optional<Set<Label>> in() {
         return inTypes;
     }
 
@@ -159,6 +177,17 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         return Optional.empty();
     }
 
+    @Override
+    public final String toString() {
+        StringBuilder query = new StringBuilder();
+
+        query.append(COMPUTE + SPACE + methodString());
+        if (!conditionsString().isEmpty()) query.append(SPACE + conditionsString());
+        query.append(SEMICOLON);
+
+        return query.toString();
+    }
+
     private final String methodString() {
         return method;
     }
@@ -166,47 +195,37 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private final String conditionsString() {
         List<String> conditionsList = new ArrayList<>();
 
-        if (from.isPresent()) conditionsList.add(FROM + SPACE + QUOTE + from.get() + QUOTE);
-        if (to.isPresent()) conditionsList.add(TO + SPACE + QUOTE + to.get() + QUOTE);
-        if (!inTypesString().isEmpty()) conditionsList.add(inTypesString());
+        if (fromID.isPresent()) conditionsList.add(FROM + SPACE + QUOTE + fromID.get() + QUOTE);
+        if (toID.isPresent()) conditionsList.add(TO + SPACE + QUOTE + toID.get() + QUOTE);
+        if (ofTypes.isPresent()) conditionsList.add(ofTypesString());
+        if (inTypes.isPresent()) conditionsList.add(inTypesString());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
+    final String ofTypesString() {
+        if (ofTypes.isPresent()) return OF + SPACE + typesString(ofTypes.get());
+    }
+
     final String inTypesString() {
-        if (!inTypes.isEmpty()) return IN + SPACE + typesString(inTypes);
+        if (inTypes.isPresent()) return IN + SPACE + typesString(inTypes.get());
 
         return "";
     }
 
-    final String typesString(ImmutableSet<Label> types) {
+    final String typesString(Set<Label> types) {
         StringBuilder inTypesString = new StringBuilder();
 
         if (!types.isEmpty()) {
             if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
             else {
                 inTypesString.append(SQUARE_OPEN);
-                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
+                inTypesString.append(inTypes.get().stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
                 inTypesString.append(SQUARE_CLOSE);
             }
         }
 
         return inTypesString.toString();
-    }
-
-    @Override
-    public final String toString() {
-        StringBuilder query = new StringBuilder();
-
-        query.append(COMPUTE + SPACE + methodString());
-
-        if (!conditionsString().isEmpty()) {
-            query.append(SPACE + conditionsString());
-        }
-
-        query.append(SEMICOLON);
-
-        return query.toString();
     }
 
     @Override
@@ -216,7 +235,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
         NewComputeQuery that = (NewComputeQuery) o;
 
-        return tx.equals(that.tx()) && includeAttribute == that.isAttributeIncluded() && inTypes.equals(that.inTypes());
+        return tx.equals(that.tx()) && includeAttribute == that.isAttributeIncluded() && inTypes.equals(that.in());
     }
 
     @Override
