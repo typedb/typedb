@@ -270,20 +270,24 @@ public class QueryParserImpl implements QueryParser {
     }
 
     private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =
-            createQueryPart(GraqlParser::queryList, GraqlConstructor::visitQueryList);
+            createQueryPart(parser -> parser.queryList(),
+                    (constructor, context) -> constructor.visitQueryList(context));
 
     private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
-            createQueryPart(GraqlParser::queryEOF, GraqlConstructor::visitQueryEOF);
+            createQueryPart(parser -> parser.queryEOF(),
+                    (constructor, context) -> constructor.visitQueryEOF(context));
 
     private final QueryPart<QueryContext, Query<?>> QUERY =
-            createQueryPart(GraqlParser::query, GraqlConstructor::visitQuery);
+            createQueryPart(parser -> parser.query(),
+                    (constructor, context) -> constructor.visitQuery(context));
 
     private final QueryPart<PatternsContext, List<Pattern>> PATTERNS =
-            createQueryPart(GraqlParser::patterns, GraqlConstructor::visitPatterns);
+            createQueryPart(parser -> parser.patterns(),
+                    (constructor, context) -> constructor.visitPatterns(context));
 
     private final QueryPart<PatternContext, Pattern> PATTERN =
-            createQueryPart(GraqlParser::pattern, GraqlConstructor::visitPattern);
-
+            createQueryPart(parser -> parser.pattern(),
+                    (constructor, context) -> constructor.visitPattern(context));
 
     private <S extends ParseTree, T> QueryPart<S, T> createQueryPart(
             Function<GraqlParser, S> parseTree, BiFunction<GraqlConstructor, S, T> visit) {
