@@ -59,7 +59,8 @@ import java.util.stream.Collectors;
 /**
  * A compute query job executed against a {@link GraknComputer}.
  *
- * @author Felix Chapman
+ * @author Haikal Pribadi
+ * @author Ganeshwara Herawan Hananda
  */
 class TinkerComputeJob<T> implements ComputeJob<T> {
 
@@ -178,18 +179,13 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private StatisticsMapReduce<?> initialiseStatisticsMapReduce(StatisticsQuery<?> query,
-                                                                 Set<LabelId> statisticsResourceLabelIds,
-                                                                 AttributeType.DataType<?> dataType) {
-        if (query instanceof MinQuery)
-            return new MinMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof MaxQuery)
-            return new MaxMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof MeanQuery)
-            return new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof StdQuery)
-            return new StdMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof SumQuery)
-            return new SumMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+                                                                 Set<LabelId> attributeTypes,
+                                                                 AttributeType.DataType<?> dataTypes) {
+        if (query instanceof MinQuery) return new MinMapReduce(attributeTypes, dataTypes, DegreeVertexProgram.DEGREE);
+        if (query instanceof MaxQuery) return new MaxMapReduce(attributeTypes, dataTypes, DegreeVertexProgram.DEGREE);
+        if (query instanceof MeanQuery) return new MeanMapReduce(attributeTypes, dataTypes, DegreeVertexProgram.DEGREE);
+        if (query instanceof StdQuery) return new StdMapReduce(attributeTypes, dataTypes, DegreeVertexProgram.DEGREE);
+        if (query instanceof SumQuery) return new SumMapReduce(attributeTypes, dataTypes, DegreeVertexProgram.DEGREE);
 
         return null;
     }

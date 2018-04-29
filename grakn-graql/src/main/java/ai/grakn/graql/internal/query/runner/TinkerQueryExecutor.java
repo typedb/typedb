@@ -63,7 +63,8 @@ import static java.util.stream.Collectors.toList;
 /**
  * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
  *
- * @author Felix Chapman
+ * @author Haikal Pribadi
+ * @author Ganeshwara Herawan Hananda
  */
 @SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
 public class TinkerQueryExecutor implements QueryExecutor {
