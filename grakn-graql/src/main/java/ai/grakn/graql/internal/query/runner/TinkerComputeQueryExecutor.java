@@ -32,10 +32,6 @@ import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
@@ -106,7 +102,7 @@ public class TinkerComputeQueryExecutor {
 
             GraknMapReduce<?> mapReduce;
 
-            if(query.size().isPresent()){
+            if (query.size().isPresent()) {
                 if (query.isMembersSet()) {
                     mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
                 } else {

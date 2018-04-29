@@ -131,7 +131,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     private Optional<Double> runComputeMean() {
         Map<String, Double> meanPair = computeStatistics((MeanQuery) query);
-        if(meanPair == null) return Optional.empty();
+        if (meanPair == null) return Optional.empty();
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
 
@@ -140,7 +140,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     private Optional<Double> runComputeStd() {
         Map<String, Double> stdTuple = computeStatistics((StdQuery) query);
-        if(stdTuple == null) return Optional.empty();
+        if (stdTuple == null) return Optional.empty();
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
@@ -167,7 +167,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         DegreeStatisticsVertexProgram program = new DegreeStatisticsVertexProgram(statisticsResourceLabelIds);
 
         StatisticsMapReduce<?> mapReduce = initialiseStatisticsMapReduce(query, statisticsResourceLabelIds, dataType);
-        if(mapReduce == null) return null;
+        if (mapReduce == null) return null;
 
         ComputerResult computerResult = tinkerComputeQuery.compute(program, mapReduce, allSubLabelIds);
         Map<Serializable, T> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
@@ -178,13 +178,18 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private StatisticsMapReduce<?> initialiseStatisticsMapReduce(StatisticsQuery<?> query,
-                                                             Set<LabelId> statisticsResourceLabelIds,
-                                                             AttributeType.DataType<?> dataType) {
-        if (query instanceof MinQuery) return new MinMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof MaxQuery) return new MaxMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof MeanQuery) return new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof StdQuery) return new StdMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
-        if (query instanceof SumQuery) return new SumMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+                                                                 Set<LabelId> statisticsResourceLabelIds,
+                                                                 AttributeType.DataType<?> dataType) {
+        if (query instanceof MinQuery)
+            return new MinMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+        if (query instanceof MaxQuery)
+            return new MaxMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+        if (query instanceof MeanQuery)
+            return new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+        if (query instanceof StdQuery)
+            return new StdMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+        if (query instanceof SumQuery)
+            return new SumMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
 
         return null;
     }
