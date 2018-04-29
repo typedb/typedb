@@ -148,7 +148,7 @@ public class QueryParserImpl implements QueryParser {
      * @return a list of queries
      */
     @Override
-    public <T extends Query<?>> Stream<T> parseList(Reader reader) {
+    public <T extends Query<?>> Stream<T> parseReader(Reader reader) {
         UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
         GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
         GraqlLexer lexer = createLexer(charStream, errorListener);

@@ -41,13 +41,13 @@ public interface QueryParser {
 
     /**
      * @param reader a reader representing several queries
-     * @return a list of queries
+     * @return a stream of query objects
      */
-    <T extends Query<?>> Stream<T> parseList(Reader reader);
+    <T extends Query<?>> Stream<T> parseReader(Reader reader);
 
     /**
      * @param queryString a string representing several queries
-     * @return a list of queries
+     * @return a stream of query objects
      */
     <T extends Query<?>> Stream<T> parseList(String queryString);
 

@@ -55,7 +55,7 @@ final class BatchLoader {
             batchExecutorClient.onNext(queryResponse -> queriesExecuted.incrementAndGet());
             batchExecutorClient.onError(serr::println);
 
-            Graql.parser().parseList(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
+            Graql.parser().parseReader(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
         }
 
         sout.println("Statements executed: " + queriesExecuted.get());

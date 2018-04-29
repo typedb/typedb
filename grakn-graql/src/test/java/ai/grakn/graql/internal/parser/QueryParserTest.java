@@ -956,7 +956,7 @@ public class QueryParserTest {
 
         final int[] count = {0, 0};
 
-        Graql.parser().parseList(new StringReader(massiveQuery)).forEach(q -> {
+        Graql.parser().parseReader(new StringReader(massiveQuery)).forEach(q -> {
             if (q.equals(query1)) {
                 count[0]++;
             } else if (q.equals(query2)) {
@@ -993,7 +993,7 @@ public class QueryParserTest {
             }
         };
 
-        Stream<Query<?>> queries = Graql.parser().parseList(new InputStreamReader(infStream));
+        Stream<Query<?>> queries = Graql.parser().parseReader(new InputStreamReader(infStream));
 
         Iterator<Query<?>> iterator = queries.iterator();
 
@@ -1027,7 +1027,7 @@ public class QueryParserTest {
             }
         };
 
-        Stream<Query<?>> queries = Graql.parser().parseList(new InputStreamReader(infStream));
+        Stream<Query<?>> queries = Graql.parser().parseReader(new InputStreamReader(infStream));
 
         Iterator<Query<?>> iterator = queries.iterator();
 
