@@ -288,7 +288,11 @@ public class TinkerComputeQueryExecutor {
     }
 
     public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return runStatistics(query, tinkerComputeQuery -> {
+        
+        return TinkerComputeJob.create(tx.session(), computer -> {
+            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
+
+
             AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
             if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
                 return Optional.empty();
@@ -366,15 +370,6 @@ public class TinkerComputeQueryExecutor {
         });
     }
 
-    private <T, Q extends StatisticsQuery<?>> TinkerComputeJob<T> runStatistics(
-            Q query, ComputeRunner<T, TinkerStatisticsQuery> runner) {
-
-        return TinkerComputeJob.create(tx.session(), computer -> {
-            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
-            return runner.apply(tinkerComputeQuery);
-        });
-    }
-
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
                 .map(tx::convertToId)
@@ -390,7 +385,8 @@ public class TinkerComputeQueryExecutor {
     private <T, S, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<S>> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory, Function<T, S> operator) {
 
-        return runStatistics(query, tinkerComputeQuery -> {
+        return TinkerComputeJob.create(tx.session(), computer -> {
+            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
             AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
             if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
                 return Optional.empty();
