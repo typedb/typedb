@@ -52,21 +52,21 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
         return new TinkerStatisticsQuery(tx, query, computer);
     }
 
-    final Set<Label> getCombinedSubTypes() {
-        Set<Label> allSubTypes = getHasAttributeRelationLabels(calcStatisticsAttributeTypes());
+    final Set<Label> combinedTypes() {
+        Set<Label> allSubTypes = getHasAttributeRelationLabels(calcOfTypes());
         allSubTypes.addAll(subLabels());
         allSubTypes.addAll(query().ofTypes());
         return allSubTypes;
     }
 
-    final Set<Label> statisticsAttributeLabels() {
-        return calcStatisticsAttributeTypes().stream()
+    final Set<Label> ofTypes() {
+        return calcOfTypes().stream()
                 .map(SchemaConcept::getLabel)
                 .collect(CommonUtil.toImmutableSet());
     }
 
-    final boolean selectedAttributeTypesHaveInstance() {
-        for (Label attributeType : statisticsAttributeLabels()) {
+    final boolean ofTypesHaveInstances() {
+        for (Label attributeType : ofTypes()) {
             for (Label type : subLabels()) {
                 Boolean patternExist = tx().graql().infer(false).match(
                         Graql.var("x").has(attributeType, Graql.var()),
@@ -86,9 +86,9 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    final @Nullable AttributeType.DataType<?> getDataTypeOfSelectedAttributeTypes() {
+    final @Nullable AttributeType.DataType<?> validateAndGetDataTypes() {
         AttributeType.DataType<?> dataType = null;
-        for (Type type : calcStatisticsAttributeTypes()) {
+        for (Type type : calcOfTypes()) {
             // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
             AttributeType<?> attributeType = type.asAttributeType();
@@ -117,7 +117,7 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
                 .collect(Collectors.toSet());
     }// If the sub graph contains attributes, we may need to add implicit relations to the path
 
-    private ImmutableSet<Type> calcStatisticsAttributeTypes() {
+    private ImmutableSet<Type> calcOfTypes() {
         if (query().ofTypes().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
