@@ -282,14 +282,8 @@ public class TinkerComputeQueryExecutor {
     }
 
     public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return execWithMapReduce(query, MeanMapReduce::new, meanPair ->
-                meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT)
-        );
-    }
 
-    public ComputeJob<Optional<Number>> run(MedianQuery query) {
-
-        return new TinkerComputeJob<Optional<Number>>(tx.session().getGraphComputer(),
+        return new TinkerComputeJob<Optional<Double>>(tx,
                 computer -> {
                     TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
                     AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
@@ -299,15 +293,24 @@ public class TinkerComputeQueryExecutor {
                     Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
                     Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
 
+                    MeanMapReduce mapReduce = new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+
                     ComputerResult result = tinkerComputeQuery.compute(
-                            new MedianVertexProgram(statisticsResourceLabelIds, dataType),
-                            null, allSubLabelIds);
+                            new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                            mapReduce,
+                            allSubLabelIds);
+                    Map<Serializable, Map<String, Double>> map = result.memory().get(mapReduce.getClass().getName());
 
-                    Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
-                    LOG.debug("Median = " + finalResult);
+                    LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
 
-                    return Optional.of(finalResult);
+                    Map<String, Double> meanPair = map.get(MapReduce.NullObject.instance());
+                    return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
                 });
+    }
+
+    public ComputeJob<Optional<Number>> run(MedianQuery query) {
+
+        return new TinkerComputeJob<Optional<Number>>(tx, query);
     }
 
     public ComputeJob<Optional<Number>> run(MinQuery query) {
@@ -363,7 +366,7 @@ public class TinkerComputeQueryExecutor {
     private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(
             Q query, ComputeRunner<T, TinkerComputeQuery<Q>> runner) {
 
-        return new TinkerComputeJob<T>(tx.session().getGraphComputer(),
+        return new TinkerComputeJob<T>(tx,
                 computer -> {
                     TinkerComputeQuery<Q> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, computer);
                     return runner.apply(tinkerComputeQuery);
@@ -379,13 +382,35 @@ public class TinkerComputeQueryExecutor {
 
     private <T, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<T>> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory) {
-        return execWithMapReduce(query, mapReduceFactory, Function.identity());
+
+        return new TinkerComputeJob<Optional<T>>(tx,
+                computer -> {
+                    TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
+                    AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
+                    if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
+                        return Optional.empty();
+                    }
+                    Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
+                    Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
+
+                    GraknMapReduce<T> mapReduce =
+                            mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+
+                    ComputerResult result = tinkerComputeQuery.compute(
+                            new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                            mapReduce,
+                            allSubLabelIds);
+                    Map<Serializable, T> map = result.memory().get(mapReduce.getClass().getName());
+
+                    LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
+                    return Optional.of(map.get(MapReduce.NullObject.instance()));
+                });
     }
 
     private <T, S, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<S>> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory, Function<T, S> operator) {
 
-        return new TinkerComputeJob<Optional<S>>(tx.session().getGraphComputer(),
+        return new TinkerComputeJob<Optional<S>>(tx,
                 computer -> {
                     TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
                     AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
