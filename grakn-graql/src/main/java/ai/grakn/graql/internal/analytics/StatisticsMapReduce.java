@@ -35,7 +35,7 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
  * @author Jason Liu
  */
 
-abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
+public abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
     String degreePropertyKey;
 

@@ -50,6 +50,8 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import ai.grakn.graql.internal.query.runner.TinkerComputeJob;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +71,7 @@ import static java.util.stream.Collectors.toList;
 @SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
 public class TinkerQueryExecutor implements QueryExecutor {
 
-    private final GraknTx tx;
+    private final EmbeddedGraknTx<?> tx;
     private final TinkerComputeQueryExecutor tinkerComputeQueryExecutor;
 
     private TinkerQueryExecutor(EmbeddedGraknTx<?> tx) {
@@ -161,38 +163,38 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public ComputeJob<Optional<Number>> run(MaxQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MinQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
     public ComputeJob<List<List<Concept>>> run(PathQuery query) {
         return tinkerComputeQueryExecutor.run(query);
     }
 
     @Override
+    public ComputeJob<Optional<Number>> run(MinQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Optional<Number>> run(MaxQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Optional<Number>> run(MedianQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Optional<Double>> run(MeanQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
     public ComputeJob<Optional<Double>> run(StdQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
+        return new TinkerComputeJob<>(tx, query);
     }
 
     @Override
     public ComputeJob<Optional<Number>> run(SumQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
+        return new TinkerComputeJob<>(tx, query);
     }
 
     private void deleteResult(Answer result, Collection<? extends Var> vars) {

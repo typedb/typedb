@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
-import ai.grakn.GraknComputer;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -29,7 +27,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ComputeQuery;
-import ai.grakn.graql.analytics.StatisticsQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -50,35 +47,25 @@ import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
-import ai.grakn.graql.internal.analytics.MedianVertexProgram;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import ai.grakn.graql.internal.analytics.StdMapReduce;
-import ai.grakn.graql.internal.analytics.SumMapReduce;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -275,22 +262,6 @@ public class TinkerComputeQueryExecutor {
 
             return result.memory().get(ClusterMemberMapReduce.class.getName());
         });
-    }
-
-    public ComputeJob<Optional<Number>> run(MaxQuery query) {
-        return new TinkerComputeJob<Optional<Number>>(tx, query);
-    }
-
-    public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return new TinkerComputeJob<Optional<Double>>(tx, query);
-    }
-
-    public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return new TinkerComputeJob<Optional<Number>>(tx, query);
-    }
-
-    public ComputeJob<Optional<Number>> run(MinQuery query) {
-        return new TinkerComputeJob<Optional<Number>>(tx, query);
     }
 
     public TinkerComputeJob<List<List<Concept>>> run(PathQuery query) {
