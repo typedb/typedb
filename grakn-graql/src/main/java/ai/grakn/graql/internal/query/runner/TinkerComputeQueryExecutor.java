@@ -288,27 +288,26 @@ public class TinkerComputeQueryExecutor {
     }
 
     public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        
-        return TinkerComputeJob.create(tx.session(), computer -> {
-            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
 
+        return new TinkerComputeJob<Optional<Number>>(tx.session().getGraphComputer(),
+                computer -> {
+                    TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
+                    AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
+                    if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
+                        return Optional.empty();
+                    }
+                    Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
+                    Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
 
-            AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
-            if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
-                return Optional.empty();
-            }
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
+                    ComputerResult result = tinkerComputeQuery.compute(
+                            new MedianVertexProgram(statisticsResourceLabelIds, dataType),
+                            null, allSubLabelIds);
 
-            ComputerResult result = tinkerComputeQuery.compute(
-                    new MedianVertexProgram(statisticsResourceLabelIds, dataType),
-                    null, allSubLabelIds);
+                    Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
+                    LOG.debug("Median = " + finalResult);
 
-            Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
-            LOG.debug("Median = " + finalResult);
-
-            return Optional.of(finalResult);
-        });
+                    return Optional.of(finalResult);
+                });
     }
 
     public ComputeJob<Optional<Number>> run(MinQuery query) {
@@ -364,10 +363,11 @@ public class TinkerComputeQueryExecutor {
     private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(
             Q query, ComputeRunner<T, TinkerComputeQuery<Q>> runner) {
 
-        return TinkerComputeJob.create(tx.session(), computer -> {
-            TinkerComputeQuery<Q> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, computer);
-            return runner.apply(tinkerComputeQuery);
-        });
+        return new TinkerComputeJob<T>(tx.session().getGraphComputer(),
+                computer -> {
+                    TinkerComputeQuery<Q> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, computer);
+                    return runner.apply(tinkerComputeQuery);
+                });
     }
 
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
@@ -385,27 +385,28 @@ public class TinkerComputeQueryExecutor {
     private <T, S, Q extends StatisticsQuery<?>> TinkerComputeJob<Optional<S>> execWithMapReduce(
             Q query, MapReduceFactory<T> mapReduceFactory, Function<T, S> operator) {
 
-        return TinkerComputeJob.create(tx.session(), computer -> {
-            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
-            AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
-            if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
-                return Optional.empty();
-            }
-            Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
-            Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
+        return new TinkerComputeJob<Optional<S>>(tx.session().getGraphComputer(),
+                computer -> {
+                    TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
+                    AttributeType.DataType<?> dataType = tinkerComputeQuery.getDataTypeOfSelectedResourceTypes();
+                    if (!tinkerComputeQuery.selectedResourceTypesHaveInstance()) {
+                        return Optional.empty();
+                    }
+                    Set<LabelId> allSubLabelIds = convertLabelsToIds(tinkerComputeQuery.getCombinedSubTypes());
+                    Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(tinkerComputeQuery.statisticsResourceLabels());
 
-            GraknMapReduce<T> mapReduce =
-                    mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
+                    GraknMapReduce<T> mapReduce =
+                            mapReduceFactory.get(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE);
 
-            ComputerResult result = tinkerComputeQuery.compute(
-                    new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
-                    mapReduce,
-                    allSubLabelIds);
-            Map<Serializable, T> map = result.memory().get(mapReduce.getClass().getName());
+                    ComputerResult result = tinkerComputeQuery.compute(
+                            new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                            mapReduce,
+                            allSubLabelIds);
+                    Map<Serializable, T> map = result.memory().get(mapReduce.getClass().getName());
 
-            LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
-            return Optional.of(operator.apply(map.get(MapReduce.NullObject.instance())));
-        });
+                    LOG.debug("Result = " + map.get(MapReduce.NullObject.instance()));
+                    return Optional.of(operator.apply(map.get(MapReduce.NullObject.instance())));
+                });
     }
 
     private interface ComputeRunner<T, Q extends TinkerComputeQuery<?>> {

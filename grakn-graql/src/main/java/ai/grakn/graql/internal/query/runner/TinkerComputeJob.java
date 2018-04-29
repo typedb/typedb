@@ -36,15 +36,9 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     private final Supplier<T> supplier;
 
-    private TinkerComputeJob(GraknComputer computer, Supplier<T> supplier) {
+    public TinkerComputeJob (GraknComputer computer, Function<GraknComputer, T> function) {
         this.computer = computer;
-        this.supplier = supplier;
-    }
-
-    static <T> TinkerComputeJob<T> create(EmbeddedGraknSession session, Function<GraknComputer, T> function) {
-        GraknComputer computer = session.getGraphComputer();
-
-        return new TinkerComputeJob<>(computer, () -> function.apply(computer));
+        this.supplier = () -> function.apply(this.computer);
     }
 
     @Override
@@ -55,9 +49,5 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     @Override
     public void kill() {
         computer.killJobs();
-    }
-
-    public <S> TinkerComputeJob<S> map(Function<T, S> function) {
-        return new TinkerComputeJob<>(computer, () -> function.apply(supplier.get()));
     }
 }
