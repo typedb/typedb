@@ -30,9 +30,9 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.graql.internal.analytics.Utility;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -220,7 +220,8 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
         return allPaths;
     }
 
-    private @Nullable Thing getConcept(String conceptId) {
+    @Nullable
+    private Thing getConcept(String conceptId) {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 

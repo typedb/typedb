@@ -86,7 +86,8 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    final @Nullable AttributeType.DataType<?> validateAndGetDataTypes() {
+    final @Nullable
+    AttributeType.DataType<?> validateAndGetDataTypes() {
         AttributeType.DataType<?> dataType = null;
         for (Type type : calcOfTypes()) {
             // check if the selected type is a attribute type
