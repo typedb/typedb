@@ -212,7 +212,7 @@ public class GraqlQueryException extends GraknException {
     /**
      * Thrown when a concept does not have all expected properties required to insert it.
      * <p>
-     * For example, a resource without a value: {@code insert $x isa name;}
+     * For example, an attribute without a value: {@code insert $x isa name;}
      * </p>
      */
     public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
@@ -282,12 +282,12 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.K_SMALLER_THAN_TWO.getMessage());
     }
 
-    public static GraqlQueryException resourceMustBeANumber(AttributeType.DataType dataType, Label resourceType) {
-        return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
+    public static GraqlQueryException attributeMustBeANumber(AttributeType.DataType dataType, Label attributeType) {
+        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException resourcesWithDifferentDataTypes(Collection<? extends Label> resourceTypes) {
-        return new GraqlQueryException("resource types " + resourceTypes + " have different data types");
+    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<? extends Label> attributeTypes) {
+        return new GraqlQueryException("resource types " + attributeTypes + " have different data types");
     }
 
     public static GraqlQueryException unificationAtomIncompatibility() {

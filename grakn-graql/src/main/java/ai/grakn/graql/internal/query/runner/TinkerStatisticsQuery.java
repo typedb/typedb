@@ -53,23 +53,23 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
     }
 
     final Set<Label> getCombinedSubTypes() {
-        Set<Label> allSubTypes = getHasResourceRelationLabels(calcStatisticsResourceTypes());
+        Set<Label> allSubTypes = getHasAttributeRelationLabels(calcStatisticsAttributeTypes());
         allSubTypes.addAll(subLabels());
         allSubTypes.addAll(query().ofTypes());
         return allSubTypes;
     }
 
-    final Set<Label> statisticsResourceLabels() {
-        return calcStatisticsResourceTypes().stream()
+    final Set<Label> statisticsAttributeLabels() {
+        return calcStatisticsAttributeTypes().stream()
                 .map(SchemaConcept::getLabel)
                 .collect(CommonUtil.toImmutableSet());
     }
 
-    final boolean selectedResourceTypesHaveInstance() {
-        for (Label resourceType : statisticsResourceLabels()) {
+    final boolean selectedAttributeTypesHaveInstance() {
+        for (Label attributeType : statisticsAttributeLabels()) {
             for (Label type : subLabels()) {
                 Boolean patternExist = tx().graql().infer(false).match(
-                        Graql.var("x").has(resourceType, Graql.var()),
+                        Graql.var("x").has(attributeType, Graql.var()),
                         Graql.var("x").isa(Graql.label(type))
                 ).iterator().hasNext();
                 if (patternExist) return true;
@@ -86,38 +86,38 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    final @Nullable AttributeType.DataType<?> getDataTypeOfSelectedResourceTypes() {
+    final @Nullable AttributeType.DataType<?> getDataTypeOfSelectedAttributeTypes() {
         AttributeType.DataType<?> dataType = null;
-        for (Type type : calcStatisticsResourceTypes()) {
-            // check if the selected type is a resource-type
+        for (Type type : calcStatisticsAttributeTypes()) {
+            // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-            AttributeType<?> resourceType = type.asAttributeType();
+            AttributeType<?> attributeType = type.asAttributeType();
             if (dataType == null) {
-                // check if the resource-type has data-type LONG or DOUBLE
-                dataType = resourceType.getDataType();
+                // check if the attribute type has data-type LONG or DOUBLE
+                dataType = attributeType.getDataType();
                 if (!dataType.equals(AttributeType.DataType.LONG) &&
                         !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType.getLabel());
+                    throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.getLabel());
                 }
 
             } else {
-                // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceType.getDataType())) {
-                    throw GraqlQueryException.resourcesWithDifferentDataTypes(query().ofTypes());
+                // check if all the attribute types have the same data-type
+                if (!dataType.equals(attributeType.getDataType())) {
+                    throw GraqlQueryException.attributesWithDifferentDataTypes(query().ofTypes());
                 }
             }
         }
         return dataType;
     }
 
-    private static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+    private static Set<Label> getHasAttributeRelationLabels(Set<Type> subTypes) {
         return subTypes.stream()
                 .filter(Concept::isAttributeType)
-                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
+                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()))
                 .collect(Collectors.toSet());
     }// If the sub graph contains attributes, we may need to add implicit relations to the path
 
-    private ImmutableSet<Type> calcStatisticsResourceTypes() {
+    private ImmutableSet<Type> calcStatisticsAttributeTypes() {
         if (query().ofTypes().isEmpty()) {
             throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
