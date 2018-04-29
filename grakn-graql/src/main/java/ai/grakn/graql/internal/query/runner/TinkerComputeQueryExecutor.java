@@ -359,18 +359,18 @@ public class TinkerComputeQueryExecutor {
 
     private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(
             Q query, ComputeRunner<T, TinkerComputeQuery<Q>> runner) {
-        return runComputeGeneric(computer -> TinkerComputeQuery.create(tx, query, computer), runner);
+
+        return TinkerComputeJob.create(tx.session(), computer -> {
+            TinkerComputeQuery<Q> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, computer);
+            return runner.apply(tinkerComputeQuery);
+        });
     }
 
     private <T, Q extends StatisticsQuery<?>> TinkerComputeJob<T> runStatistics(
             Q query, ComputeRunner<T, TinkerStatisticsQuery> runner) {
-        return runComputeGeneric(computer -> TinkerStatisticsQuery.create(tx, query, computer), runner);
-    }
 
-    private <T, Q extends ComputeQuery<?>, TQ extends TinkerComputeQuery<Q>> TinkerComputeJob<T> runComputeGeneric(
-            Function<GraknComputer, TQ> tinkerComputeQueryFactory, ComputeRunner<T, TQ> runner) {
         return TinkerComputeJob.create(tx.session(), computer -> {
-            TQ tinkerComputeQuery = tinkerComputeQueryFactory.apply(computer);
+            TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, computer);
             return runner.apply(tinkerComputeQuery);
         });
     }
