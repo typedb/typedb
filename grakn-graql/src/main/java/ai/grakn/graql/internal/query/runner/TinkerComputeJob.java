@@ -68,7 +68,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import jline.internal.Nullable;
-import org.apache.hadoop.fs.shell.Count;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -82,7 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -255,7 +253,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
 
 
-
         GraknVertexProgram<?> vertexProgram;
         if (ccQuery.start().isPresent()) {
             ConceptId conceptId = ccQuery.start().get();
@@ -286,6 +283,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         Memory memory = tinkerComputeQuery.compute(vertexProgram, mapReduce, subLabelIds).memory();
         return memory.get(mapReduce.getClass().getName());
     }
+
     private Map<String, Set<String>> runComputeKCore() {
         TinkerComputeQuery<KCoreQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (KCoreQuery) query, tx.session().getGraphComputer());
         long k = ((KCoreQuery) query).k();
@@ -339,6 +337,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         LOG.debug("Count = " + finalCount);
         return finalCount;
     }
+
     private Optional<Number> runComputeMin() {
         return Optional.ofNullable(runComputeStatistics((MinQuery) query));
     }
@@ -385,8 +384,8 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         Set<LabelId> allTypes = convertLabelsToIds(tinkerComputeQuery.combinedTypes());
         Set<LabelId> ofTypes = convertLabelsToIds(tinkerComputeQuery.ofTypes());
 
-        VertexProgram program = initialiseVertexProgram(query, ofTypes, dataType);
-        StatisticsMapReduce<?> mapReduce = initialiseStatisticsMapReduce(query, ofTypes, dataType);
+        VertexProgram program = initVertexProgram(query, ofTypes, dataType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, ofTypes, dataType);
         ComputerResult computerResult = tinkerComputeQuery.compute(program, mapReduce, allTypes);
 
         if (query instanceof MedianQuery) {
@@ -400,14 +399,13 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         return resultMap.get(MapReduce.NullObject.instance());
     }
 
-    private VertexProgram initialiseVertexProgram(StatisticsQuery<?> query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
+    private VertexProgram initVertexProgram(StatisticsQuery<?> query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
         if (query instanceof MedianQuery) return new MedianVertexProgram(ofTypes, dataTypes);
         else return new DegreeStatisticsVertexProgram(ofTypes);
     }
 
-    private StatisticsMapReduce<?> initialiseStatisticsMapReduce(StatisticsQuery<?> query,
-                                                                 Set<LabelId> ofTypes,
-                                                                 AttributeType.DataType<?> dataTypes) {
+    private StatisticsMapReduce<?> initStatisticsMapReduce
+            (StatisticsQuery<?> query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
         if (query instanceof MinQuery) return new MinMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
         if (query instanceof MaxQuery) return new MaxMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
         if (query instanceof MeanQuery) return new MeanMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
