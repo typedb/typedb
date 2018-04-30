@@ -43,7 +43,7 @@ import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.grpc.GrpcOpenRequestExecutor;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
 import spark.Service;
 
 import java.util.Collection;
@@ -55,6 +55,8 @@ import java.util.Collections;
  * @author Michele Orsi
  */
 public class GraknEngineServerFactory {
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = 209715200; // 200MB
+
     /**
      * Create a {@link GraknEngineServer} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
      *
@@ -132,7 +134,7 @@ public class GraknEngineServerFactory {
     private static GrpcServer configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server grpcServer = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
+        Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
         return GrpcServer.create(grpcServer);
     }
 

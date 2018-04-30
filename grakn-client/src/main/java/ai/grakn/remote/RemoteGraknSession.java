@@ -41,6 +41,8 @@ import io.grpc.ManagedChannelBuilder;
  */
 public class RemoteGraknSession implements GraknSession {
 
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = 209715200; // 200MB
+
     private final Keyspace keyspace;
     private final SimpleURI uri;
     private final ManagedChannel channel;
@@ -58,7 +60,7 @@ public class RemoteGraknSession implements GraknSession {
 
     public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+                ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).maxInboundMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).usePlaintext(true).build();
 
         return create(keyspace, uri, channel);
     }
