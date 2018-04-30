@@ -132,6 +132,22 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             Modify node visualisation settings
                         </td>                             
                     </tr>
+                    <tr>
+                        <td style="text-align:center;">
+                            Hold shift + double click on entitiy node
+                        </td>  
+                        <td>
+                            Show all attributes associated with entity
+                        </td>                             
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">
+                            Hold shift + right click on node
+                        </td>  
+                        <td>
+                            Remove node from graph
+                        </td>                             
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -202,7 +218,7 @@ td {
     background-color: #0f0f0f;
     margin: auto;
     padding: 15px;
-    width: 50%;
+    width: 60%;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
     display: flex;
     flex-direction: column;
