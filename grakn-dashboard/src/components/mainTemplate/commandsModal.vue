@@ -57,7 +57,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <i class="pe-7s-close-circle"></i>
                         </td>  
                         <td>
-                            To clear the query from the form
+                            To clear the query
                         </td>                             
                     </tr>
                     <tr>
@@ -110,7 +110,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Single click on node
+                            Single left click on node
                         </td>  
                         <td>
                             Bring up information about node
@@ -118,7 +118,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Double click on node
+                            Double left click on node
                         </td>  
                         <td>
                             Show relationships associated with the node
@@ -126,7 +126,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Single click and hold on node
+                            Single left click + hold on node
                         </td>  
                         <td>
                             Modify node visualisation settings
@@ -134,7 +134,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Hold shift + double click on entitiy node
+                            Hold shift + double left click on entitiy node
                         </td>  
                         <td>
                             Show all attributes associated with entity
@@ -146,6 +146,22 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         </td>  
                         <td>
                             Remove node from graph
+                        </td>                             
+                    </tr>                    
+                    <tr>
+                        <td style="text-align:center;">
+                            Hold Ctrl + left click on nodes
+                        </td>  
+                        <td>
+                            Select multiple nodes
+                        </td>                             
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">
+                            Right click on node(s)
+                        </td>  
+                        <td>
+                            To build queries or align nodes
                         </td>                             
                     </tr>
                 </tbody>
@@ -194,7 +210,7 @@ td {
     /* Stay in place */
     z-index: 10;
     /* Sit on top */
-    padding-top: 100px;
+    padding-top: 80px;
     /* Location of the box */
     left: 0;
     top: 0;
