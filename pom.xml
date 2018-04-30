@@ -1259,14 +1259,14 @@
             </distributionManagement>
         </profile>
         <profile>
-            <id>grakn-snapshots</id>
+            <id>internal-releases</id>
             <properties>
                 <skip.deploy.dist>false</skip.deploy.dist>
             </properties>
             <distributionManagement>
                 <repository>
-                    <id>releases</id>
-                    <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+                    <id>internal-releases</id>
+                    <url>https://maven.grakn.ai/content/repositories/internal-releases/</url>
                 </repository>
             </distributionManagement>
         </profile>
