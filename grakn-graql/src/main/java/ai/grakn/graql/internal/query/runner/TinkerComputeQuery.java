@@ -67,16 +67,10 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
     private final Q query;
     private final GraknComputer computer;
 
-    TinkerComputeQuery(EmbeddedGraknTx<?> tx, Q query, GraknComputer computer) {
+    TinkerComputeQuery(EmbeddedGraknTx<?> tx, Q query) {
         this.tx = tx;
         this.query = query;
-        this.computer = computer;
-    }
-
-    static <Q extends ComputeQuery<?>> TinkerComputeQuery<Q> create(
-            EmbeddedGraknTx<?> tx, Q query, GraknComputer computer
-    ) {
-        return new TinkerComputeQuery<>(tx, query, computer);
+        this.computer = tx.session().getGraphComputer();
     }
 
     protected final GraknTx tx() {
@@ -94,33 +88,20 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
         return computer.compute(program, mapReduce, types, includesRolePlayerEdges);
     }
 
-    public final ComputerResult compute(
-            @Nullable VertexProgram<?> program, @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
-            @Nullable Set<LabelId> types
-    ) {
+    public final ComputerResult compute(@Nullable VertexProgram<?> program,
+                                        @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
+                                        @Nullable Set<LabelId> types) {
+
         return computer.compute(program, mapReduce, types);
     }
 
-    final boolean selectedTypesHaveInstance() {
-        if (subLabels().isEmpty()) {
-            return false;
-        }
-
-        List<Pattern> checkSubtypes = subLabels().stream()
-                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
-    }
-
-    final ImmutableSet<Label> subLabels() {
-        return subTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
-    }
-
-    final boolean isAttributeIncluded() {
-        return query.isAttributeIncluded() || subTypesContainsImplicitOrAttributeTypes();
+    @Nullable
+    private Thing getConcept(String conceptId) {
+        return tx.getConcept(ConceptId.of(conceptId));
     }
 
     final Set<LabelId> getRolePlayerLabelIds() {
-        return subTypes()
+        return inTypes()
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
@@ -131,12 +112,91 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
                 .collect(Collectors.toSet());
     }
 
-    final boolean verticesExistInSubgraph(ConceptId... ids) {
+    final Stream<Type> inTypes() {
+        // get all types if subGraph is empty, else get all inTypes of each type in subGraph
+        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        if (query.inTypes().isEmpty()) {
+            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
+
+            if (isAttributeIncluded()) {
+                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
+            } else {
+                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
+                tx.admin().getMetaRelationType().subs()
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
+            }
+
+            return subTypesBuilder.build().stream();
+        } else {
+            Stream<Type> subTypes = query.inTypes().stream().map(label -> {
+                Type type = tx.getType(label);
+                if (type == null) throw GraqlQueryException.labelNotFound(label);
+                return type;
+            }).flatMap(Type::subs);
+
+            if (!isAttributeIncluded()) {
+                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
+            }
+
+            return subTypes;
+        }
+    }
+
+    final ImmutableSet<Label> inTypeLabels() {
+        return inTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
+    }
+
+    final boolean inTypesHaveInstances() {
+        if (inTypeLabels().isEmpty()) return false;
+        List<Pattern> checkSubtypes = inTypeLabels().stream()
+                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
+
+        return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
+    }
+
+    final boolean inTypesContainConcepts(ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !subLabels().contains(thing.type().getLabel())) return false;
+            if (thing == null || !inTypeLabels().contains(thing.type().getLabel())) return false;
         }
         return true;
+    }
+
+    final boolean inTypesContainImplicitOrAttributeTypes() {
+        return query.inTypes().stream().anyMatch(label -> {
+            SchemaConcept type = tx.getSchemaConcept(label);
+            return (type != null && (type.isAttributeType() || type.isImplicit()));
+        });
+    }
+
+    final boolean isAttributeIncluded() {
+        return query.isAttributeIncluded() || inTypesContainImplicitOrAttributeTypes();
+    }
+
+    final List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource, ConceptId sourceId) {
+        List<List<Concept>> allPaths = new ArrayList<>();
+        List<Concept> firstPath = new ArrayList<>();
+        firstPath.add(getConcept(sourceId.getValue()));
+
+        Deque<List<Concept>> queue = new ArrayDeque<>();
+        queue.addLast(firstPath);
+        while (!queue.isEmpty()) {
+            List<Concept> currentPath = queue.pollFirst();
+            if (predecessorMapFromSource.containsKey(currentPath.get(currentPath.size() - 1))) {
+                Collection<Concept> successors = predecessorMapFromSource.get(currentPath.get(currentPath.size() - 1));
+                Iterator<Concept> iterator = successors.iterator();
+                for (int i = 0; i < successors.size() - 1; i++) {
+                    List<Concept> extendedPath = new ArrayList<>(currentPath);
+                    extendedPath.add(iterator.next());
+                    queue.addLast(extendedPath);
+                }
+                currentPath.add(iterator.next());
+                queue.addLast(currentPath);
+            } else {
+                allPaths.add(currentPath);
+            }
+        }
+        return allPaths;
     }
 
     final List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
@@ -194,72 +254,12 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
         return predecessors;
     }
 
-    final List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource, ConceptId sourceId) {
-        List<List<Concept>> allPaths = new ArrayList<>();
-        List<Concept> firstPath = new ArrayList<>();
-        firstPath.add(getConcept(sourceId.getValue()));
 
-        Deque<List<Concept>> queue = new ArrayDeque<>();
-        queue.addLast(firstPath);
-        while (!queue.isEmpty()) {
-            List<Concept> currentPath = queue.pollFirst();
-            if (predecessorMapFromSource.containsKey(currentPath.get(currentPath.size() - 1))) {
-                Collection<Concept> successors = predecessorMapFromSource.get(currentPath.get(currentPath.size() - 1));
-                Iterator<Concept> iterator = successors.iterator();
-                for (int i = 0; i < successors.size() - 1; i++) {
-                    List<Concept> extendedPath = new ArrayList<>(currentPath);
-                    extendedPath.add(iterator.next());
-                    queue.addLast(extendedPath);
-                }
-                currentPath.add(iterator.next());
-                queue.addLast(currentPath);
-            } else {
-                allPaths.add(currentPath);
-            }
-        }
-        return allPaths;
-    }
 
-    @Nullable
-    private Thing getConcept(String conceptId) {
-        return tx.getConcept(ConceptId.of(conceptId));
-    }
 
-    private boolean subTypesContainsImplicitOrAttributeTypes() {
-        return query.inTypes().stream().anyMatch(label -> {
-            SchemaConcept type = tx.getSchemaConcept(label);
-            return (type != null && (type.isAttributeType() || type.isImplicit()));
-        });
-    }
 
-    private Stream<Type> subTypes() {
-        // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
-        if (query.inTypes().isEmpty()) {
-            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
 
-            if (isAttributeIncluded()) {
-                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
-            } else {
-                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
-                tx.admin().getMetaRelationType().subs()
-                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
-            }
 
-            return subTypesBuilder.build().stream();
-        } else {
-            Stream<Type> subTypes = query.inTypes().stream().map(label -> {
-                Type type = tx.getType(label);
-                if (type == null) throw GraqlQueryException.labelNotFound(label);
-                return type;
-            }).flatMap(Type::subs);
 
-            if (!isAttributeIncluded()) {
-                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
-            }
-
-            return subTypes;
-        }
-    }
 
 }

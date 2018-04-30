@@ -131,11 +131,11 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private List<List<Concept>> runComputePath() {
-        TinkerComputeQuery<PathQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (PathQuery) query, tx.session().getGraphComputer());
+        TinkerComputeQuery<PathQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
         ConceptId sourceId = ((PathQuery) query).from().get();
         ConceptId destinationId = ((PathQuery) query).to().get();
 
-        if (!tinkerComputeQuery.verticesExistInSubgraph(sourceId, destinationId)) {
+        if (!tinkerComputeQuery.inTypesContainConcepts(sourceId, destinationId)) {
             throw GraqlQueryException.instanceDoesNotExist();
         }
         if (sourceId.equals(destinationId)) {
@@ -143,7 +143,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
         try {
             result = tinkerComputeQuery.compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
@@ -162,12 +162,12 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private Map<Long, Set<String>> runComputeDegree() {
-        TinkerComputeQuery<DegreeQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (DegreeQuery) query, tx.session().getGraphComputer());
+        TinkerComputeQuery<DegreeQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
         Set<Label> ofLabels;
 
         // Check if ofType is valid before returning emptyMap
         if (((DegreeQuery) query).ofTypes().isEmpty()) {
-            ofLabels = tinkerComputeQuery.subLabels();
+            ofLabels = tinkerComputeQuery.inTypeLabels();
         } else {
             ofLabels = ((DegreeQuery) query).ofTypes().stream()
                     .flatMap(typeLabel -> {
@@ -179,9 +179,9 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
                     .collect(Collectors.toSet());
         }
 
-        Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
+        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
 
-        if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+        if (!tinkerComputeQuery.inTypesHaveInstances()) {
             return Collections.emptyMap();
         }
 
@@ -197,7 +197,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private Map<Long, Set<String>> runComputeCoreness() {
-        TinkerComputeQuery<CorenessQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (CorenessQuery) query, tx.session().getGraphComputer());
+        TinkerComputeQuery<CorenessQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
         long k = ((CorenessQuery) query).minK();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -206,7 +206,7 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
         // Check if ofType is valid before returning emptyMap
         if (((CorenessQuery) query).ofTypes().isEmpty()) {
-            ofLabels = tinkerComputeQuery.subLabels();
+            ofLabels = tinkerComputeQuery.inTypeLabels();
         } else {
             ofLabels = ((CorenessQuery) query).ofTypes().stream()
                     .flatMap(typeLabel -> {
@@ -219,9 +219,9 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
                     .collect(Collectors.toSet());
         }
 
-        Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
+        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
 
-        if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+        if (!tinkerComputeQuery.inTypesHaveInstances()) {
             return Collections.emptyMap();
         }
 
@@ -244,19 +244,19 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     private <T> T runComputeConnectedComponent() {
         ConnectedComponentQuery<T> ccQuery = (ConnectedComponentQuery) query;
 
-        TinkerComputeQuery<ConnectedComponentQuery<T>> tinkerComputeQuery = TinkerComputeQuery.create(tx, ccQuery, tx.session().getGraphComputer());
-        if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+        TinkerComputeQuery<ConnectedComponentQuery<T>> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
+        if (!tinkerComputeQuery.inTypesHaveInstances()) {
             LOG.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
 
 
         GraknVertexProgram<?> vertexProgram;
         if (ccQuery.start().isPresent()) {
             ConceptId conceptId = ccQuery.start().get();
-            if (!tinkerComputeQuery.verticesExistInSubgraph(conceptId)) {
+            if (!tinkerComputeQuery.inTypesContainConcepts(conceptId)) {
                 throw GraqlQueryException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
@@ -285,17 +285,17 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private Map<String, Set<String>> runComputeKCore() {
-        TinkerComputeQuery<KCoreQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (KCoreQuery) query, tx.session().getGraphComputer());
+        TinkerComputeQuery<KCoreQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
         long k = ((KCoreQuery) query).k();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+        if (!tinkerComputeQuery.inTypesHaveInstances()) {
             return Collections.emptyMap();
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
         try {
             result = tinkerComputeQuery.compute(
                     new KCoreVertexProgram(k),
@@ -309,13 +309,13 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     }
 
     private Long runComputeCount() {
-        TinkerComputeQuery<CountQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, (CountQuery) query, tx.session().getGraphComputer());
-        if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+        TinkerComputeQuery<CountQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
+        if (!tinkerComputeQuery.inTypesHaveInstances()) {
             LOG.debug("Count = 0");
             return 0L;
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+        Set<LabelId> typeLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
         Map<Integer, Long> count;
 
         Set<LabelId> rolePlayerLabelIds = tinkerComputeQuery.getRolePlayerLabelIds();
@@ -377,12 +377,12 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     @Nullable
     private <T> T runComputeStatistics(StatisticsQuery<?> query) {
-        TinkerStatisticsQuery tinkerComputeQuery = TinkerStatisticsQuery.create(tx, query, tx.session().getGraphComputer());
+        TinkerStatisticsQuery tinkerComputeQuery = new TinkerStatisticsQuery(tx, query);
         AttributeType.DataType<?> dataType = tinkerComputeQuery.validateAndGetDataTypes();
         if (!tinkerComputeQuery.ofTypesHaveInstances()) return null;
 
-        Set<LabelId> allTypes = convertLabelsToIds(tinkerComputeQuery.combinedTypes());
-        Set<LabelId> ofTypes = convertLabelsToIds(tinkerComputeQuery.ofTypes());
+        Set<LabelId> allTypes = convertLabelsToIds(tinkerComputeQuery.fullScopeTypeLabels());
+        Set<LabelId> ofTypes = convertLabelsToIds(tinkerComputeQuery.ofTypeLabels());
 
         VertexProgram program = initVertexProgram(query, ofTypes, dataType);
         StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, ofTypes, dataType);

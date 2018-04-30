@@ -44,30 +44,42 @@ import java.util.stream.Collectors;
  */
 class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 
-    private TinkerStatisticsQuery(EmbeddedGraknTx<?> tx, StatisticsQuery<?> query, GraknComputer computer) {
-        super(tx, query, computer);
+    TinkerStatisticsQuery(EmbeddedGraknTx<?> tx, StatisticsQuery<?> query) {
+        super(tx, query);
     }
 
-    static TinkerStatisticsQuery create(EmbeddedGraknTx<?> tx, StatisticsQuery<?> query, GraknComputer computer) {
-        return new TinkerStatisticsQuery(tx, query, computer);
+    final Set<Label> fullScopeTypeLabels() {
+        Set<Label> allTypeLabels = getHasAttributeRelationLabels(ofTypes());
+        allTypeLabels.addAll(inTypeLabels());
+        allTypeLabels.addAll(query().ofTypes());
+        return allTypeLabels;
     }
 
-    final Set<Label> combinedTypes() {
-        Set<Label> allSubTypes = getHasAttributeRelationLabels(calcOfTypes());
-        allSubTypes.addAll(subLabels());
-        allSubTypes.addAll(query().ofTypes());
-        return allSubTypes;
+    final ImmutableSet<Type> ofTypes() {
+        if (query().ofTypes().isEmpty()) {
+            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
+        }
+
+        return query().ofTypes().stream()
+                .map((label) -> {
+                    Type type = tx().getSchemaConcept(label);
+                    if (type == null) throw GraqlQueryException.labelNotFound(label);
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+                    return type;
+                })
+                .flatMap(Type::subs)
+                .collect(CommonUtil.toImmutableSet());
     }
 
-    final Set<Label> ofTypes() {
-        return calcOfTypes().stream()
+    final Set<Label> ofTypeLabels() {
+        return ofTypes().stream()
                 .map(SchemaConcept::getLabel)
                 .collect(CommonUtil.toImmutableSet());
     }
 
     final boolean ofTypesHaveInstances() {
-        for (Label attributeType : ofTypes()) {
-            for (Label type : subLabels()) {
+        for (Label attributeType : ofTypeLabels()) {
+            for (Label type : inTypeLabels()) {
                 Boolean patternExist = tx().graql().infer(false).match(
                         Graql.var("x").has(attributeType, Graql.var()),
                         Graql.var("x").isa(Graql.label(type))
@@ -86,10 +98,10 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    final @Nullable
-    AttributeType.DataType<?> validateAndGetDataTypes() {
+    @Nullable
+    final AttributeType.DataType<?> validateAndGetDataTypes() {
         AttributeType.DataType<?> dataType = null;
-        for (Type type : calcOfTypes()) {
+        for (Type type : ofTypes()) {
             // check if the selected type is a attribute type
             if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
             AttributeType<?> attributeType = type.asAttributeType();
@@ -111,26 +123,11 @@ class TinkerStatisticsQuery extends TinkerComputeQuery<StatisticsQuery<?>> {
         return dataType;
     }
 
-    private static Set<Label> getHasAttributeRelationLabels(Set<Type> subTypes) {
-        return subTypes.stream()
+    private static Set<Label> getHasAttributeRelationLabels(Set<Type> types) {
+        // If the sub graph contains attributes, we may need to add implicit relations to the path
+        return types.stream()
                 .filter(Concept::isAttributeType)
                 .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()))
                 .collect(Collectors.toSet());
-    }// If the sub graph contains attributes, we may need to add implicit relations to the path
-
-    private ImmutableSet<Type> calcOfTypes() {
-        if (query().ofTypes().isEmpty()) {
-            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
-        }
-
-        return query().ofTypes().stream()
-                .map((label) -> {
-                    Type type = tx().getSchemaConcept(label);
-                    if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
-                    return type;
-                })
-                .flatMap(Type::subs)
-                .collect(CommonUtil.toImmutableSet());
     }
 }
