@@ -104,16 +104,16 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         throw GraqlQueryException.invalidComputeMethod();
     }
 
-    private Optional<Number> runComputeMedian() {
-        return Optional.ofNullable(runComputeStatistics((MedianQuery) query));
-    }
-
     private Optional<Number> runComputeMin() {
         return Optional.ofNullable(runComputeStatistics((MinQuery) query));
     }
 
     private Optional<Number> runComputeMax() {
         return Optional.ofNullable(runComputeStatistics((MaxQuery) query));
+    }
+
+    private Optional<Number> runComputeMedian() {
+        return Optional.ofNullable(runComputeStatistics((MedianQuery) query));
     }
 
     private Optional<Double> runComputeMean() {

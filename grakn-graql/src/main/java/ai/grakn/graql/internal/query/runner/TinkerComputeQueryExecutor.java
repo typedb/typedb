@@ -26,15 +26,12 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
@@ -60,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,233 +77,225 @@ public class TinkerComputeQueryExecutor {
     }
 
     public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
-        return runCompute(query, tinkerComputeQuery -> {
-            if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
-                LOG.info("Selected types don't have instances");
-                return (T) Collections.emptyMap();
-            }
+        return new TinkerComputeJob<T>(tx,
+                computer -> {
+                    TinkerComputeQuery<ConnectedComponentQuery<T>> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+                        LOG.info("Selected types don't have instances");
+                        return (T) Collections.emptyMap();
+                    }
 
-            Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+                    Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
 
-            GraknVertexProgram<?> vertexProgram;
-            if (query.start().isPresent()) {
-                ConceptId conceptId = query.start().get();
-                if (!tinkerComputeQuery.verticesExistInSubgraph(conceptId)) {
-                    throw GraqlQueryException.instanceDoesNotExist();
-                }
-                vertexProgram = new ConnectedComponentVertexProgram(conceptId);
-            } else {
-                vertexProgram = new ConnectedComponentsVertexProgram();
-            }
+                    GraknVertexProgram<?> vertexProgram;
+                    if (query.start().isPresent()) {
+                        ConceptId conceptId = query.start().get();
+                        if (!tinkerComputeQuery.verticesExistInSubgraph(conceptId)) {
+                            throw GraqlQueryException.instanceDoesNotExist();
+                        }
+                        vertexProgram = new ConnectedComponentVertexProgram(conceptId);
+                    } else {
+                        vertexProgram = new ConnectedComponentsVertexProgram();
+                    }
 
-            GraknMapReduce<?> mapReduce;
+                    GraknMapReduce<?> mapReduce;
 
-            if (query.size().isPresent()) {
-                if (query.isMembersSet()) {
-                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
-                } else {
-                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
-                }
-            } else {
-                if (query.isMembersSet()) {
-                    mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-                } else {
-                    mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-                }
-            }
+                    if (query.size().isPresent()) {
+                        if (query.isMembersSet()) {
+                            mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
+                        } else {
+                            mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.size().get());
+                        }
+                    } else {
+                        if (query.isMembersSet()) {
+                            mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                        } else {
+                            mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+                        }
+                    }
 
-            Memory memory = tinkerComputeQuery.compute(vertexProgram, mapReduce, subLabelIds).memory();
-            return memory.get(mapReduce.getClass().getName());
-        });
+                    Memory memory = tinkerComputeQuery.compute(vertexProgram, mapReduce, subLabelIds).memory();
+                    return memory.get(mapReduce.getClass().getName());
+                });
     }
 
     public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
-        return runCompute(query, tinkerComputeQuery -> {
-            long k = query.minK();
+        return new TinkerComputeJob<Map<Long, Set<String>>>(tx,
+                computer -> {
+                    TinkerComputeQuery<CorenessQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    long k = query.minK();
 
-            if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+                    if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-            Set<Label> ofLabels;
+                    Set<Label> ofLabels;
 
-            // Check if ofType is valid before returning emptyMap
-            if (query.ofTypes().isEmpty()) {
-                ofLabels = tinkerComputeQuery.subLabels();
-            } else {
-                ofLabels = query.ofTypes().stream()
-                        .flatMap(typeLabel -> {
-                            Type type = tx.getSchemaConcept(typeLabel);
-                            if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                            if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
-                            return type.subs();
-                        })
-                        .map(SchemaConcept::getLabel)
-                        .collect(Collectors.toSet());
-            }
+                    // Check if ofType is valid before returning emptyMap
+                    if (query.ofTypes().isEmpty()) {
+                        ofLabels = tinkerComputeQuery.subLabels();
+                    } else {
+                        ofLabels = query.ofTypes().stream()
+                                .flatMap(typeLabel -> {
+                                    Type type = tx.getSchemaConcept(typeLabel);
+                                    if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                                    if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+                                    return type.subs();
+                                })
+                                .map(SchemaConcept::getLabel)
+                                .collect(Collectors.toSet());
+                    }
 
-            Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
+                    Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
 
-            if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
-                return Collections.emptyMap();
-            }
+                    if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+                        return Collections.emptyMap();
+                    }
 
-            ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-            Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+                    ComputerResult result;
+                    Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+                    Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
-            try {
-                result = tinkerComputeQuery.compute(
-                        new CorenessVertexProgram(k),
-                        new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
-                        subLabelIds);
-            } catch (NoResultException e) {
-                return Collections.emptyMap();
-            }
+                    try {
+                        result = tinkerComputeQuery.compute(
+                                new CorenessVertexProgram(k),
+                                new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
+                                subLabelIds);
+                    } catch (NoResultException e) {
+                        return Collections.emptyMap();
+                    }
 
-            return result.memory().get(DegreeDistributionMapReduce.class.getName());
-        });
+                    return result.memory().get(DegreeDistributionMapReduce.class.getName());
+                });
     }
 
     public ComputeJob<Long> run(CountQuery query) {
-        return runCompute(query, tinkerComputeQuery -> {
+        return new TinkerComputeJob<Long>(tx,
+                computer -> {
+                    TinkerComputeQuery<CountQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+                        LOG.debug("Count = 0");
+                        return 0L;
+                    }
 
-            if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
-                LOG.debug("Count = 0");
-                return 0L;
-            }
+                    Set<LabelId> typeLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+                    Map<Integer, Long> count;
 
-            Set<LabelId> typeLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
-            Map<Integer, Long> count;
+                    Set<LabelId> rolePlayerLabelIds = tinkerComputeQuery.getRolePlayerLabelIds();
+                    rolePlayerLabelIds.addAll(typeLabelIds);
 
-            Set<LabelId> rolePlayerLabelIds = tinkerComputeQuery.getRolePlayerLabelIds();
-            rolePlayerLabelIds.addAll(typeLabelIds);
+                    ComputerResult result = tinkerComputeQuery.compute(
+                            new CountVertexProgram(),
+                            new CountMapReduceWithAttribute(),
+                            rolePlayerLabelIds, false);
+                    count = result.memory().get(CountMapReduceWithAttribute.class.getName());
 
-            ComputerResult result = tinkerComputeQuery.compute(
-                    new CountVertexProgram(),
-                    new CountMapReduceWithAttribute(),
-                    rolePlayerLabelIds, false);
-            count = result.memory().get(CountMapReduceWithAttribute.class.getName());
+                    long finalCount = count.keySet().stream()
+                            .filter(id -> typeLabelIds.contains(LabelId.of(id)))
+                            .mapToLong(count::get).sum();
+                    if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
+                        finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
+                    }
 
-            long finalCount = count.keySet().stream()
-                    .filter(id -> typeLabelIds.contains(LabelId.of(id)))
-                    .mapToLong(count::get).sum();
-            if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
-                finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
-            }
-
-            LOG.debug("Count = " + finalCount);
-            return finalCount;
-        });
+                    LOG.debug("Count = " + finalCount);
+                    return finalCount;
+                });
     }
 
     public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
-        return runCompute(query, tinkerComputeQuery -> {
-            Set<Label> ofLabels;
+        return new TinkerComputeJob<Map<Long, Set<String>>>(tx,
+                computer -> {
+                    TinkerComputeQuery<DegreeQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    Set<Label> ofLabels;
 
-            // Check if ofType is valid before returning emptyMap
-            if (query.ofTypes().isEmpty()) {
-                ofLabels = tinkerComputeQuery.subLabels();
-            } else {
-                ofLabels = query.ofTypes().stream()
-                        .flatMap(typeLabel -> {
-                            Type type = tx.getSchemaConcept(typeLabel);
-                            if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                            return type.subs();
-                        })
-                        .map(SchemaConcept::getLabel)
-                        .collect(Collectors.toSet());
-            }
+                    // Check if ofType is valid before returning emptyMap
+                    if (query.ofTypes().isEmpty()) {
+                        ofLabels = tinkerComputeQuery.subLabels();
+                    } else {
+                        ofLabels = query.ofTypes().stream()
+                                .flatMap(typeLabel -> {
+                                    Type type = tx.getSchemaConcept(typeLabel);
+                                    if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                                    return type.subs();
+                                })
+                                .map(SchemaConcept::getLabel)
+                                .collect(Collectors.toSet());
+                    }
 
-            Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
+                    Set<Label> subLabels = Sets.union(tinkerComputeQuery.subLabels(), ofLabels);
 
-            if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
-                return Collections.emptyMap();
-            }
+                    if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+                        return Collections.emptyMap();
+                    }
 
-            Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-            Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+                    Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+                    Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
-            ComputerResult result = tinkerComputeQuery.compute(
-                    new DegreeVertexProgram(ofLabelIds),
-                    new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                    subLabelIds);
+                    ComputerResult result = tinkerComputeQuery.compute(
+                            new DegreeVertexProgram(ofLabelIds),
+                            new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
+                            subLabelIds);
 
-            return result.memory().get(DegreeDistributionMapReduce.class.getName());
-        });
+                    return result.memory().get(DegreeDistributionMapReduce.class.getName());
+                });
     }
 
     public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
-        return runCompute(query, tinkerComputeQuery -> {
-            long k = query.k();
+        return new TinkerComputeJob<Map<String, Set<String>>>(tx,
+                computer -> {
+                    TinkerComputeQuery<KCoreQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    long k = query.k();
 
-            if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+                    if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-            if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
-                return Collections.emptyMap();
-            }
+                    if (!tinkerComputeQuery.selectedTypesHaveInstance()) {
+                        return Collections.emptyMap();
+                    }
 
-            ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
-            try {
-                result = tinkerComputeQuery.compute(
-                        new KCoreVertexProgram(k),
-                        new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
-                        subLabelIds);
-            } catch (NoResultException e) {
-                return Collections.emptyMap();
-            }
+                    ComputerResult result;
+                    Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+                    try {
+                        result = tinkerComputeQuery.compute(
+                                new KCoreVertexProgram(k),
+                                new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
+                                subLabelIds);
+                    } catch (NoResultException e) {
+                        return Collections.emptyMap();
+                    }
 
-            return result.memory().get(ClusterMemberMapReduce.class.getName());
-        });
+                    return result.memory().get(ClusterMemberMapReduce.class.getName());
+                });
     }
 
     public TinkerComputeJob<List<List<Concept>>> run(PathQuery query) {
-        return runCompute(query, tinkerComputeQuery -> {
-
-            ConceptId sourceId = query.from().get();
-            ConceptId destinationId = query.to().get();
-
-            if (!tinkerComputeQuery.verticesExistInSubgraph(sourceId, destinationId)) {
-                throw GraqlQueryException.instanceDoesNotExist();
-            }
-            if (sourceId.equals(destinationId)) {
-                return Collections.singletonList(Collections.singletonList(tx.getConcept(sourceId)));
-            }
-
-            ComputerResult result;
-            Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
-            try {
-                result = tinkerComputeQuery.compute(
-                        new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
-            } catch (NoResultException e) {
-                return Collections.emptyList();
-            }
-
-            Multimap<Concept, Concept> predecessorMapFromSource = tinkerComputeQuery.getPredecessorMap(result);
-            List<List<Concept>> allPaths = tinkerComputeQuery.getAllPaths(predecessorMapFromSource, sourceId);
-            if (tinkerComputeQuery.isAttributeIncluded()) { // this can be slow
-                return tinkerComputeQuery.getExtendedPaths(allPaths);
-            }
-
-            LOG.info("Number of path: " + allPaths.size());
-            return allPaths;
-        });
-    }
-
-    public ComputeJob<Optional<Double>> run(StdQuery query) {
-        return new TinkerComputeJob<Optional<Double>>(tx, query);
-    }
-
-    public ComputeJob<Optional<Number>> run(SumQuery query) {
-        return new TinkerComputeJob<Optional<Number>>(tx, query);
-    }
-
-    private <T, Q extends ComputeQuery<?>> TinkerComputeJob<T> runCompute(
-            Q query, ComputeRunner<T, TinkerComputeQuery<Q>> runner) {
-
-        return new TinkerComputeJob<T>(tx,
+        return new TinkerComputeJob<List<List<Concept>>>(tx,
                 computer -> {
-                    TinkerComputeQuery<Q> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, computer);
-                    return runner.apply(tinkerComputeQuery);
+                    TinkerComputeQuery<PathQuery> tinkerComputeQuery = TinkerComputeQuery.create(tx, query, tx.session().getGraphComputer());
+                    ConceptId sourceId = query.from().get();
+                    ConceptId destinationId = query.to().get();
+
+                    if (!tinkerComputeQuery.verticesExistInSubgraph(sourceId, destinationId)) {
+                        throw GraqlQueryException.instanceDoesNotExist();
+                    }
+                    if (sourceId.equals(destinationId)) {
+                        return Collections.singletonList(Collections.singletonList(tx.getConcept(sourceId)));
+                    }
+
+                    ComputerResult result;
+                    Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.subLabels());
+                    try {
+                        result = tinkerComputeQuery.compute(
+                                new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
+                    } catch (NoResultException e) {
+                        return Collections.emptyList();
+                    }
+
+                    Multimap<Concept, Concept> predecessorMapFromSource = tinkerComputeQuery.getPredecessorMap(result);
+                    List<List<Concept>> allPaths = tinkerComputeQuery.getAllPaths(predecessorMapFromSource, sourceId);
+                    if (tinkerComputeQuery.isAttributeIncluded()) { // this can be slow
+                        return tinkerComputeQuery.getExtendedPaths(allPaths);
+                    }
+
+                    LOG.info("Number of path: " + allPaths.size());
+                    return allPaths;
                 });
     }
 
@@ -316,9 +304,5 @@ public class TinkerComputeQueryExecutor {
                 .map(tx::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
-    }
-
-    private interface ComputeRunner<T, Q extends TinkerComputeQuery<?>> {
-        T apply(Q tinkerComputeQuery);
     }
 }
