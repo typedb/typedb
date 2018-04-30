@@ -70,11 +70,9 @@ import static java.util.stream.Collectors.toList;
 public class TinkerQueryExecutor implements QueryExecutor {
 
     private final EmbeddedGraknTx<?> tx;
-    private final TinkerComputeQueryExecutor tinkerComputeQueryExecutor;
 
     private TinkerQueryExecutor(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
-        this.tinkerComputeQueryExecutor = TinkerComputeQueryExecutor.create(tx);
     }
 
     public static TinkerQueryExecutor create(EmbeddedGraknTx<?> tx) {
@@ -135,34 +133,10 @@ public class TinkerQueryExecutor implements QueryExecutor {
         return query.aggregate().apply(query.match().stream());
     }
 
-    @Override
-    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
 
     @Override
     public ComputeJob<Long> run(CountQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
-    }
-
-    @Override
-    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
-        return tinkerComputeQueryExecutor.run(query);
+        return new TinkerComputeJob<>(tx, query);
     }
 
     @Override
@@ -192,6 +166,31 @@ public class TinkerQueryExecutor implements QueryExecutor {
 
     @Override
     public ComputeJob<Optional<Number>> run(SumQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
+        return new TinkerComputeJob<>(tx, query);
+    }
+
+    @Override
+    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
         return new TinkerComputeJob<>(tx, query);
     }
 

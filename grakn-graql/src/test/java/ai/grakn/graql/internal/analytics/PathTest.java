@@ -55,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
-public class ShortestPathTest {
+public class PathTest {
     private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
