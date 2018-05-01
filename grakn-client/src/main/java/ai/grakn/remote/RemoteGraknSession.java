@@ -30,6 +30,7 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.NettyChannelBuilder;
 
 /**
  * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
@@ -41,7 +42,7 @@ import io.grpc.ManagedChannelBuilder;
  */
 public class RemoteGraknSession implements GraknSession {
 
-    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = 209715200; // 200MB
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE;
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
@@ -60,7 +61,7 @@ public class RemoteGraknSession implements GraknSession {
 
     public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).maxInboundMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).usePlaintext(true).build();
+                NettyChannelBuilder.forAddress(uri.getHost(), uri.getPort()).maxInboundMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).usePlaintext(true).build();
 
         return create(keyspace, uri, channel);
     }
