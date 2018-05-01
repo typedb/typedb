@@ -51,6 +51,8 @@ public class GraknBootup {
      * @param args
      */
     public static void main(String[] args) {
+        assertJava8();
+
         printAscii();
 
         try {
@@ -61,7 +63,16 @@ public class GraknBootup {
 
             newGraknBootup(homeStatic, configStatic).run(args);
         } catch (RuntimeException ex) {
-            System.out.println("Problem with bash script: cannot run Grakn");
+            ex.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static void assertJava8() {
+        String javaVersion = System.getProperty("java.specification.version");
+        if (!javaVersion.equals("1.8")) {
+            System.err.println(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
+            System.exit(1);
         }
     }
 
