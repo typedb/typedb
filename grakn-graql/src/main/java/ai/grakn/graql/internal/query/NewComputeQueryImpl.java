@@ -40,26 +40,26 @@ import static java.util.stream.Collectors.joining;
 public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAnswer> implements NewComputeQuery {
 
 
-    private Optional<GraknTx> tx;
+    private GraknTx tx;
     private Set<ComputeJob<ComputeAnswer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private String method;
-    private Optional<ConceptId> fromID = Optional.empty();
-    private Optional<ConceptId> toID = Optional.empty();
-    private Optional<Set<Label>> ofTypes = Optional.empty();
-    private Optional<Set<Label>> inTypes = Optional.empty();
-    private Optional<String> algorithm = Optional.empty();
-    private Optional<Long> minK = Optional.empty();
+    private ConceptId fromID = null;
+    private ConceptId toID = null;
+    private Set<Label> ofTypes = null;
+    private Set<Label> inTypes = null;
+    private String algorithm = null;
+    private Long minK = null;
     private boolean includeAttribute;
 
     private final static long DEFAULT_MIN_K = 2L;
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
-    NewComputeQueryImpl(String method, Optional<GraknTx> tx) {
+    NewComputeQueryImpl(String method, GraknTx tx) {
         this(method, tx, DEFAULT_INCLUDE_ATTRIBUTE);
     }
 
-    NewComputeQueryImpl(String method, Optional<GraknTx> tx, boolean includeAttribute) {
+    NewComputeQueryImpl(String method, GraknTx tx, boolean includeAttribute) {
         this.method = method;
         this.tx = tx;
         this.includeAttribute = includeAttribute;
@@ -93,13 +93,13 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery withTx(GraknTx tx) {
-        this.tx = Optional.of(tx);
+        this.tx = tx;
         return this;
     }
 
     @Override
     public final Optional<GraknTx> tx() {
-        return tx;
+        return Optional.ofNullable(tx);
     }
 
     @Override
@@ -109,24 +109,24 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery from(ConceptId fromID) {
-        this.fromID = Optional.ofNullable(fromID);
+        this.fromID = fromID;
         return this;
     }
 
     @Override
     public final Optional<ConceptId> from() {
-        return fromID;
+        return Optional.ofNullable(fromID);
     }
 
     @Override
     public final NewComputeQuery to(ConceptId toID) {
-        this.toID = Optional.ofNullable(toID);
+        this.toID = toID;
         return this;
     }
 
     @Override
     public final Optional<ConceptId> to() {
-        return toID;
+        return Optional.ofNullable(toID);
     }
 
     @Override
@@ -136,13 +136,14 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery of(Collection<Label> types) {
-        this.ofTypes = Optional.of(ImmutableSet.copyOf(types));
+        this.ofTypes = ImmutableSet.copyOf(types);
+
         return this;
     }
 
     @Override
     public final Optional<Set<Label>> of() {
-        return ofTypes;
+        return Optional.ofNullable(ofTypes);
     }
 
     @Override
@@ -152,39 +153,39 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery in(Collection<Label> types) {
-        this.inTypes = Optional.of(ImmutableSet.copyOf(types));
+        this.inTypes = ImmutableSet.copyOf(types);
         return this;
     }
 
     @Override
     public final Optional<Set<Label>> in() {
-        return inTypes;
+        return Optional.ofNullable(inTypes);
     }
 
     @Override
     public final NewComputeQuery using(String algorithm) {
-        this.algorithm = Optional.of(algorithm);
+        this.algorithm = algorithm;
         return this;
     }
 
     @Override
     public final Optional<String> using() {
-        return algorithm;
+        return Optional.ofNullable(algorithm);
     }
 
     @Override
     public final NewComputeQuery minK(long minK) {
-        this.minK = Optional.of(minK);
+        this.minK = minK;
         return this;
     }
 
     @Override
     public final Optional<Long> minK() {
-        if(method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !minK.isPresent()) {
+        if(method.equals(CENTRALITY) && algorithm.equals(K_CORE) && minK == null) {
             return Optional.of(DEFAULT_MIN_K);
         }
 
-        return minK;
+        return Optional.ofNullable(minK);
     }
     @Override
     public final NewComputeQueryImpl includeAttribute() {
@@ -232,35 +233,35 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private String conditionsSyntax() {
         List<String> conditionsList = new ArrayList<>();
 
-        if (fromID.isPresent()) conditionsList.add(FROM + SPACE + QUOTE + fromID.get() + QUOTE);
-        if (toID.isPresent()) conditionsList.add(TO + SPACE + QUOTE + toID.get() + QUOTE);
-        if (ofTypes.isPresent()) conditionsList.add(ofTypesSyntax());
-        if (inTypes.isPresent()) conditionsList.add(inTypesSyntax());
-        if (algorithm.isPresent()) conditionsList.add(algorithmSyntax());
+        if (fromID != null) conditionsList.add(FROM + SPACE + QUOTE + fromID + QUOTE);
+        if (toID != null) conditionsList.add(TO + SPACE + QUOTE + toID + QUOTE);
+        if (ofTypes != null) conditionsList.add(ofTypesSyntax());
+        if (inTypes != null) conditionsList.add(inTypesSyntax());
+        if (algorithm != null) conditionsList.add(algorithmSyntax());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE));
     }
 
     private String ofTypesSyntax() {
-        if (ofTypes.isPresent()) return OF + SPACE + typesSyntax(ofTypes);
+        if (ofTypes != null) return OF + SPACE + typesSyntax(ofTypes);
 
         return "";
     }
 
     private String inTypesSyntax() {
-        if (inTypes.isPresent()) return IN + SPACE + typesSyntax(inTypes);
+        if (inTypes != null) return IN + SPACE + typesSyntax(inTypes);
 
         return "";
     }
 
-    private String typesSyntax(Optional<Set<Label>> types) {
+    private String typesSyntax(Set<Label> types) {
         StringBuilder inTypesString = new StringBuilder();
 
-        if (types.isPresent() && !types.get().isEmpty()) {
-            if (types.get().size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.get().iterator().next()));
+        if (!types.isEmpty()) {
+            if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
             else {
                 inTypesString.append(SQUARE_OPEN);
-                inTypesString.append(inTypes.get().stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
+                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
                 inTypesString.append(SQUARE_CLOSE);
             }
         }
@@ -269,7 +270,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     private String algorithmSyntax() {
-        if (algorithm.isPresent()) return USING + SPACE + algorithm.get();
+        if (algorithm != null) return USING + SPACE + algorithm;
 
         return "";
     }
