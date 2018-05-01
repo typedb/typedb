@@ -55,7 +55,7 @@ import java.util.Collections;
  * @author Michele Orsi
  */
 public class GraknEngineServerFactory {
-    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 200MB
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
 
     /**
      * Create a {@link GraknEngineServer} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store

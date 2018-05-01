@@ -42,7 +42,7 @@ import io.grpc.netty.NettyChannelBuilder;
  */
 public class RemoteGraknSession implements GraknSession {
 
-    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE;
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
