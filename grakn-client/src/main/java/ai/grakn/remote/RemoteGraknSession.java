@@ -29,7 +29,6 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.util.SimpleURI;
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.NettyChannelBuilder;
 
 import static ai.grakn.grpc.GrpcUtil.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
