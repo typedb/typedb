@@ -32,6 +32,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.NettyChannelBuilder;
 
+import static ai.grakn.grpc.GrpcUtil.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
+
 /**
  * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
  *
@@ -41,8 +43,6 @@ import io.grpc.netty.NettyChannelBuilder;
  * @author Felix Chapman
  */
 public class RemoteGraknSession implements GraknSession {
-
-    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
 
     private final Keyspace keyspace;
     private final SimpleURI uri;

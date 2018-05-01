@@ -49,14 +49,14 @@ import spark.Service;
 import java.util.Collection;
 import java.util.Collections;
 
+import static ai.grakn.grpc.GrpcUtil.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
+
 /**
  * This is a factory class which contains methods for instantiating a {@link GraknEngineServer} in different ways.
  *
  * @author Michele Orsi
  */
 public class GraknEngineServerFactory {
-    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
-
     /**
      * Create a {@link GraknEngineServer} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
      *
