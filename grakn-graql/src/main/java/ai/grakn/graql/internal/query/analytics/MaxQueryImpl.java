@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.MaxQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.MAX;
+
 class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> implements MaxQuery {
 
     MaxQueryImpl(Optional<GraknTx> tx) {
@@ -31,12 +33,12 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> i
     }
 
     @Override
-    public final ComputeJob<Optional<Number>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Optional<Number>> run() {
+        return queryComputer().run(this);
     }
 
     @Override
-    String getName() {
-        return "max";
+    String methodString() {
+        return MAX;
     }
 }

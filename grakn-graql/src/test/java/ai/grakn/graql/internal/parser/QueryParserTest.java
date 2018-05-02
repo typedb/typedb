@@ -131,7 +131,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match\n" +
-                        "$brando val \"Marl B\" isa person;\n" +
+                        "$brando == \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
                         "get $char, $prod;"
         );
@@ -156,8 +156,8 @@ public class QueryParserTest {
         GetQuery parsed = parse(
                 "match\n" +
                         "$x isa movie, has title $t;\n" +
-                        "$t val = \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
-                        "$t val !='Apocalypse Now'; get;\n"
+                        "$t == \"Apocalypse Now\" or {$t < 'Juno'; $t > 'Godfather';} or $t 'Spy';" +
+                        "$t !=='Apocalypse Now'; get;\n"
         );
 
         assertEquals(expected, parsed);
@@ -175,7 +175,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match $x isa movie, has title $t;" +
-                        "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val != 'Heat';} or $t val = 'The Muppets'; get;"
+                        "{$t <= 'Juno'; $t >= 'Godfather'; $t !== 'Heat';} or $t == 'The Muppets'; get;"
         );
 
         assertEquals(expected, parsed);
@@ -191,7 +191,7 @@ public class QueryParserTest {
 
         GetQuery parsed = parse(
                 "match ($x, $y); $y isa person, has name $n;" +
-                        "$n val contains 'ar' or $n val /^M.*$/; get;"
+                        "$n contains 'ar' or $n /^M.*$/; get;"
         );
 
         assertEquals(expected, parsed);
@@ -201,7 +201,7 @@ public class QueryParserTest {
     public void whenParsingContainsPredicateWithAVariable_ResultMatchesJavaGraql() {
         GetQuery expected = match(var("x").val(contains(var("y")))).get();
 
-        GetQuery parsed = parse("match $x val contains $y; get;");
+        GetQuery parsed = parse("match $x contains $y; get;");
 
         assertEquals(expected, parsed);
     }
@@ -210,7 +210,7 @@ public class QueryParserTest {
     public void testValueEqualsVariableQuery() {
         GetQuery expected = match(var("s1").val(var("s2"))).get();
 
-        GetQuery parsed = parse("match $s1 val = $s2; get;");
+        GetQuery parsed = parse("match $s1 == $s2; get;");
 
         assertEquals(expected, parsed);
     }
@@ -340,7 +340,7 @@ public class QueryParserTest {
                 "match" +
                         "($p: $x, $y);" +
                         "$x isa $z;" +
-                        "$y val 'crime';" +
+                        "$y == 'crime';" +
                         "$z sub production;" +
                         "has-genre relates $p; get;"
         );
@@ -359,7 +359,7 @@ public class QueryParserTest {
         ).get();
 
         GetQuery parsed = parse(
-                "match $x isa movie; { $y isa genre val 'drama'; ($x, $y); } or $x val 'The Muppets'; get;"
+                "match $x isa movie; { $y isa genre == 'drama'; ($x, $y); } or $x == 'The Muppets'; get;"
         );
 
         assertEquals(expected, parsed);
@@ -650,6 +650,9 @@ public class QueryParserTest {
         assertEquals(expected, parsed);
     }
 
+    // ===============================================================================================================//
+    // Test Graql Compute queries
+    // ===============================================================================================================//
     @Test
     public void testParseComputeCount() {
         assertParseEquivalence("compute count;");
@@ -657,33 +660,33 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeCountWithSubgraph() {
-        assertParseEquivalence("compute count in movie, person;");
+        assertParseEquivalence("compute count in [movie, person];");
     }
 
     @Test
     public void testParseComputeClusterUsingCC() {
-        assertParseEquivalence("compute cluster in movie, person; using connected-component;");
+        assertParseEquivalence("compute cluster in [movie, person], using connected-component;");
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithMembers() {
-        assertParseEquivalence("compute cluster in movie, person; using connected-component where members = true;");
+        assertParseEquivalence("compute cluster in [movie, person], using connected-component, where members=true;");
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithMembersThenSize() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").membersOn().clusterSize(10);
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").membersOn().size(10);
         ConnectedComponentQuery<?> parsed = Graql.parse(
-                "compute cluster in movie, person; using connected-component where members = true size = 10;");
+                "compute cluster in [movie, person], using connected-component, where [members = true, size = 10];");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembers() {
-        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn();
+        ConnectedComponentQuery<?> expected = Graql.compute().cluster().usingConnectedComponent().in("movie", "person").size(10).membersOn();
         ConnectedComponentQuery<?> parsed = Graql.parse(
-                "compute cluster in movie, person; using connected-component where size = 10 members=true;");
+                "compute cluster in [movie, person], using connected-component, where [size = 10, members = true];");
 
         assertEquals(expected, parsed);
     }
@@ -691,70 +694,75 @@ public class QueryParserTest {
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
         ConnectedComponentQuery<?> expected =
-                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10).membersOn().clusterSize(15);
+                Graql.compute().cluster().usingConnectedComponent().in("movie", "person").size(10).membersOn().size(15);
 
         ConnectedComponentQuery<?> parsed = Graql.parse(
-                "compute cluster in movie, person; using connected-component where size = 10 members = true size = 15;");
+                "compute cluster in [movie, person], using connected-component, where [size = 10, members = true, size = 15];");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingKCore() {
-        assertParseEquivalence("compute cluster in movie, person; using k-core;");
+        assertParseEquivalence("compute cluster in [movie, person], using k-core;");
     }
 
     @Test
     public void testParseComputeClusterUsingKCoreWithK() {
-        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").k(10);
         KCoreQuery parsed = Graql.parse(
-                "compute cluster in movie, person; using k-core where k = 10;");
+                "compute cluster in [movie, person], using k-core, where k = 10;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeClusterUsingKCoreWithKTwice() {
-        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").kValue(10);
+        KCoreQuery expected = Graql.compute().cluster().usingKCore().in("movie", "person").k(10);
         KCoreQuery parsed = Graql.parse(
-                "compute cluster in movie, person; using k-core where k = 5 k = 10;");
+                "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseComputeDegree() {
-        assertParseEquivalence("compute centrality in movie; using degree;");
+        assertParseEquivalence("compute centrality in movie, using degree;");
     }
 
     @Test
     public void testParseComputeCoreness() {
-        assertParseEquivalence("compute centrality in movie; using k-core where min-k = 3;");
+        assertParseEquivalence("compute centrality in movie, using k-core, where min-k=3;");
     }
 
     @Test
     public void testParseComputeMax() {
-        assertParseEquivalence("compute max of person in movie;");
+        assertParseEquivalence("compute max of person, in movie;");
     }
 
     @Test
     public void testParseComputeMean() {
-        assertParseEquivalence("compute mean of person in movie;");
+        assertParseEquivalence("compute mean of person, in movie;");
     }
 
     @Test
     public void testParseComputeMedian() {
-        assertParseEquivalence("compute median of person in movie;");
+        assertParseEquivalence("compute median of person, in movie;");
     }
 
     @Test
     public void testParseComputeMin() {
-        assertParseEquivalence("compute min of movie in person;");
+        assertParseEquivalence("compute min of movie, in person;");
     }
 
     @Test
     public void testParseComputePath() {
-        assertParseEquivalence("compute path from \"1\" to \"2\" in person;");
+        assertParseEquivalence("compute path from \"1\", to \"2\", in person;");
+    }
+
+    @Test
+    public void testParseComputePathWithMultipleInTypes() {
+        assertParseEquivalence("compute path from \"1\", to \"2\", in [person, marriage];");
     }
 
     @Test
@@ -764,8 +772,11 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeSum() {
-        assertParseEquivalence("compute sum of movie in person;");
+        assertParseEquivalence("compute sum of movie, in person;");
     }
+
+    // ===============================================================================================================//
+
 
     @Test
     public void whenParseIncorrectSyntax_ThrowGraqlSyntaxExceptionWithHelpfulError() {
@@ -1098,27 +1109,27 @@ public class QueryParserTest {
 
     @Test
     public void regexPredicateParsesCharacterClassesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x val /\\d/; get;"));
+        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x /\\d/; get;"));
     }
 
     @Test
     public void regexPredicateParsesQuotesCorrectly() {
-        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x val /\"/; get;"));
+        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x /\"/; get;"));
     }
 
     @Test
     public void regexPredicateParsesBackslashesCorrectly() {
-        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x val /\\\\/; get;"));
+        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x /\\\\/; get;"));
     }
 
     @Test
     public void regexPredicateParsesNewlineCorrectly() {
-        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x val /\\n/; get;"));
+        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x /\\n/; get;"));
     }
 
     @Test
     public void regexPredicateParsesForwardSlashesCorrectly() {
-        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x val /\\//; get;"));
+        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x /\\//; get;"));
     }
 
     @Test

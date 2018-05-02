@@ -80,7 +80,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public final Stream<Answer> stream() {
-        return queryRunner().run(this);
+        return queryComputer().run(this);
     }
 
     @Override

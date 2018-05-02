@@ -19,7 +19,7 @@
 package ai.grakn.kb.admin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
@@ -121,5 +121,5 @@ public interface GraknAdmin extends GraknTx{
      */
     void delete();
 
-    QueryRunner queryRunner();
+    QueryExecutor queryExecutor();
 }

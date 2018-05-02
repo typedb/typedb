@@ -20,7 +20,6 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.Map;
@@ -41,28 +40,28 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
      * @param k set the value of k in k-core. k can not be smaller than 2.
      * @return a KCoreQuery with k value set
      */
-    KCoreQuery kValue(long k);
+    KCoreQuery k(long k);
 
     /**
      * Get the value of k in k-core.
      */
-    long kValue();
+    long k();
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph.
+     * @param inTypes an array of types to include in the subgraph.
      *                      By default KCoreQuery uses instances of all the types.
      * @return a KCoreQuery with the subTypeLabels set
      */
     @Override
-    KCoreQuery in(String... subTypeLabels);
+    KCoreQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph.
+     * @param inTypes a collection of types to include in the subgraph.
      *                  By default KCoreQuery uses instances of all the types.
-     * @return a KCoreQuery with the subLabels set
+     * @return a KCoreQuery with the inTypes set
      */
     @Override
-    KCoreQuery in(Collection<? extends Label> subLabels);
+    KCoreQuery in(Collection<? extends Label> inTypes);
 
     /**
      * @param tx the transaction to execute the query on

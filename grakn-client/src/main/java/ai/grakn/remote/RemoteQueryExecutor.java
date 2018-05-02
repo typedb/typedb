@@ -19,10 +19,10 @@
 package ai.grakn.remote;
 
 import ai.grakn.ComputeJob;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -40,7 +40,6 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.grpc.GrpcClient;
@@ -55,7 +54,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Remote implementation of {@link QueryRunner} that communicates with a Grakn server using gRPC.
+ * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
  *
  * <p>
  *     Like {@link RemoteGraknTx}, this class is an adapter that uses the {@link GrpcClient} for gRPC calls.
@@ -63,16 +62,16 @@ import java.util.stream.StreamSupport;
  *
  * @author Felix Chapman
  */
-final class RemoteQueryRunner implements QueryRunner {
+final class RemoteQueryExecutor implements QueryExecutor {
 
     private final GrpcClient client;
 
-    private RemoteQueryRunner(GrpcClient client) {
+    private RemoteQueryExecutor(GrpcClient client) {
         this.client = client;
     }
 
-    public static RemoteQueryRunner create(GrpcClient client) {
-        return new RemoteQueryRunner(client);
+    public static RemoteQueryExecutor create(GrpcClient client) {
+        return new RemoteQueryExecutor(client);
     }
 
     @Override
@@ -151,12 +150,7 @@ final class RemoteQueryRunner implements QueryRunner {
     }
 
     @Override
-    public ComputeJob<Optional<List<Concept>>> run(PathQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<List<List<Concept>>> run(PathsQuery query) {
+    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
         return runComputeUnchecked(query);
     }
 

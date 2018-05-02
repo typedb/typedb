@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.SumQuery;
 
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.SUM;
+
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> implements SumQuery {
 
     SumQueryImpl(Optional<GraknTx> tx) {
@@ -31,12 +33,12 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> i
     }
 
     @Override
-    public final ComputeJob<Optional<Number>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Optional<Number>> run() {
+        return queryComputer().run(this);
     }
 
     @Override
-    String getName() {
-        return "sum";
+    String methodString() {
+        return SUM;
     }
 }

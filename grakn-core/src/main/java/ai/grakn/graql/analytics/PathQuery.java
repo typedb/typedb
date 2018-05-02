@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,7 +32,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
+public interface PathQuery extends ComputeQuery<List<List<Concept>>> {
 
     /**
      * @param sourceId the id of the source instance
@@ -44,7 +43,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     /**
      * Get the id of the source instance
      */
-    ConceptId from();
+    Optional<ConceptId> from();
 
     /**
      * @param destinationId the id of the destination instance
@@ -55,21 +54,21 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     /**
      * Get the id of the destination instance
      */
-    ConceptId to();
+    Optional<ConceptId> to();
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a PathQuery with the subTypeLabels set
      */
     @Override
-    PathQuery in(String... subTypeLabels);
+    PathQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
-     * @return a PathQuery with the subLabels set
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a PathQuery with the inTypes set
      */
     @Override
-    PathQuery in(Collection<? extends Label> subLabels);
+    PathQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.
@@ -77,7 +76,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @return the list of shortest paths
      */
     @Override
-    Optional<List<Concept>> execute();
+    List<List<Concept>> execute();
 
     /**
      * @param tx the transaction to execute the query on

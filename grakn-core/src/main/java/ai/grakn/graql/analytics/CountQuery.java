@@ -20,7 +20,6 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 
@@ -33,18 +32,18 @@ import java.util.Collection;
 public interface CountQuery extends ComputeQuery<Long> {
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param inTypes an array of types to include in the subgraph
      * @return a CountQuery with the subTypeLabels set
      */
     @Override
-    CountQuery in(String... subTypeLabels);
+    CountQuery in(String... inTypes);
 
     /**
-     * @param subLabels a collection of types to include in the subgraph
-     * @return a CountQuery with the subLabels set
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a CountQuery with the inTypes set
      */
     @Override
-    CountQuery in(Collection<? extends Label> subLabels);
+    CountQuery in(Collection<? extends Label> inTypes);
 
     /**
      * Execute the query.

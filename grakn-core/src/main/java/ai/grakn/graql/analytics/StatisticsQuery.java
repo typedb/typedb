@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.analytics;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
@@ -33,19 +33,33 @@ import java.util.Collection;
 public interface StatisticsQuery<T> extends ComputeQuery<T> {
 
     /**
-     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @param ofTypes an array of types of resources to execute the query on
      * @return a ComputeQuery with the subTypeLabels set
      */
-    StatisticsQuery<T> of(String... resourceTypeLabels);
+    StatisticsQuery<T> of(String... ofTypes);
 
     /**
-     * @param resourceLabels a collection of types of resources to execute the query on
+     * @param ofTypes a collection of types of resources to execute the query on
      * @return a ComputeQuery with the subTypeLabels set
      */
-    StatisticsQuery<T> of(Collection<Label> resourceLabels);
+    StatisticsQuery<T> of(Collection<Label> ofTypes);
+
+    /**
+     * @param inTypes an array of types to include in the subgraph
+     * @return a StatisticsQuery with the subTypelabels set
+     */
+    @Override
+    StatisticsQuery<T> in(String... inTypes);
+
+    /**
+     * @param inTypes a collection of types to include in the subgraph
+     * @return a StatisticsQuery with the subTypelabels set
+     */
+    @Override
+    StatisticsQuery<T> in(Collection<? extends Label> inTypes);
 
     /**
      * Get the collection of types of attributes to execute the query on
      */
-    Collection<? extends Label> attributeLabels();
+    Collection<? extends Label> ofTypes();
 }

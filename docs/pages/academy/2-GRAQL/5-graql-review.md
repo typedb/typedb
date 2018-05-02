@@ -1,7 +1,7 @@
 ---
 title: Module Review
 keywords: setup, getting started
-last_updated: September 2017
+last_updated: April 2018
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graql-review.html
@@ -10,7 +10,7 @@ toc: false
 KB: academy
 ---
 
-Wow! This was intense! We have gone through all the basic of the Graql. Let us review them with a few extra exercises.
+Wow! This was intense! We have gone through all the basics of the Graql. Let us review them with a few extra exercises.
 
 ### Exercise 1: Graql review
 Do you remember the big query that I showed you at the beginning of this module? It looked like this:
@@ -30,17 +30,17 @@ Maybe it looked scary at the time, but by now you should be able to understand i
 After doing so, run the query in the graph visualiser. Can you guess why the results appears as disconnected nodes?
 
 ### Exercise 2: Get queries
-Run in the dashboard a query that retrieves all bonds issued by a company that owns an oil platform in the USA.
+Run a query in the dashboard that retrieves all bonds issued by a company that owns an oil platform in the USA.
 
 Don’t worry too much if the results don’t make too much sense: they have been generated randomly, so you are likely to see weird stuff like offshore platforms in landlocked countries and similar stuff.
 
 ### Exercise 3: Insert queries
-Add to the knowledge graph a new bond named "MyAwesomeBond" issued by at least 3 companies.
+Add a new bond named "MyAwesomeBond" to the knowledge graph. It should be issued by at least three different companies.
 
-Check in the graph visualiser that the bond has been correctly added and double click on it to show which companies it is connected to.
+Check in the graph visualiser that the bond has been correctly added. Double click it to show which companies it is connected to.
 
 ### Exercise 4: Delete queries
-Delete from the knowledge graph the bond you have inserted in Exercise 3.
+Delete the bond you have inserted in Exercise 3 from the knowledge graph.
 
 ### Exercise 5: Ask
 Write a query that tells you whether a country named "Burundi" is in the knowledge graph.

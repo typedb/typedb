@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Printer;
@@ -50,7 +50,7 @@ abstract class AbstractQuery<T, S> implements Query<T> {
         return stream().map(converter::convert);
     }
 
-    protected final QueryRunner queryRunner() {
-        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner();
+    protected final QueryExecutor queryComputer() {
+        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryExecutor();
     }
 }

@@ -30,7 +30,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
@@ -40,7 +39,6 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
@@ -50,6 +48,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,7 +92,7 @@ public class GraqlTest {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in thingy, thingy;").execute()).longValue());
+                    ((Long) graph.graql().parse("compute count in [thingy, thingy];").execute()).longValue());
         }
     }
 
@@ -101,7 +101,7 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees =
-                    graph.graql().<DegreeQuery>parse("compute centrality; using degree;").execute();
+                    graph.graql().<DegreeQuery>parse("compute centrality using degree;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -131,7 +131,7 @@ public class GraqlTest {
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.graql().parse("compute centrality of thingy; using degree;").execute();
+            graph.graql().parse("compute centrality of thingy, using degree;").execute();
         }
     }
 
@@ -184,29 +184,30 @@ public class GraqlTest {
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
-                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster; using connected-component;").execute();
+                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster using connected-component;").execute();
             assertTrue(sizeMap.isEmpty());
             Map<String, Set<String>> memberMap = graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse(
-                    "compute cluster; using connected-component where members = true;").execute();
+                    "compute cluster using connected-component, where members = true;").execute();
             assertTrue(memberMap.isEmpty());
 
             Query<?> parsed = graph.graql().parse(
-                    "compute cluster; using connected-component where source = V123;");
-            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().of(ConceptId.of("V123"));
+                    "compute cluster using connected-component, where start = V123;");
+            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().start(ConceptId.of("V123"));
             assertEquals(expected, parsed);
         }
     }
 
     @Test
-    public void testPath() throws InvalidKBException {
+    public void testSinglePath() throws InvalidKBException {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            List<List<Concept>> paths = query.execute();
 
-            Optional<List<Concept>> path = query.execute();
-            List<String> result =
-                    path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+            List<Concept> path = Collections.emptyList();
+            if (!paths.isEmpty()) path = paths.get(0);
+            List<String> result = path.stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
@@ -215,11 +216,11 @@ public class GraqlTest {
     }
 
     @Test
-    public void testPaths() throws InvalidKBException {
+    public void testPath() throws InvalidKBException {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathsQuery query = graph.graql().parse("compute paths from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
 
             List<List<Concept>> path = query.execute();
             assertEquals(1, path.size());
@@ -244,8 +245,8 @@ public class GraqlTest {
         }
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidKBException {
+    @Test(expected = GraqlQueryException.class)
+    public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
@@ -264,7 +265,7 @@ public class GraqlTest {
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
                 "compute count;",
-                "compute centrality; using degree;",
+                "compute centrality using degree;",
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {

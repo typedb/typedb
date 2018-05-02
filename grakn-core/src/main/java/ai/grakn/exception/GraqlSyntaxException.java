@@ -20,7 +20,7 @@ package ai.grakn.exception;
 
 import java.util.Map;
 
-import static ai.grakn.util.ErrorMessage.INVALID_STATMENT;
+import static ai.grakn.util.ErrorMessage.INVALID_STATEMENT;
 import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 
 /**
@@ -51,7 +51,7 @@ public class GraqlSyntaxException extends GraknException {
      * Thrown when there is a syntactic error in a Graql template
      */
     public static GraqlSyntaxException parsingIncorrectValueType(Object object, Class clazz, Map data){
-        return new GraqlSyntaxException(INVALID_STATMENT.getMessage(object, clazz.getName(), data.toString()));
+        return new GraqlSyntaxException(INVALID_STATEMENT.getMessage(object, clazz.getName(), data.toString()));
     }
 
     /**

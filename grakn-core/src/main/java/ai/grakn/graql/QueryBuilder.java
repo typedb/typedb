@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.analytics.ComputeQueryBuilder;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

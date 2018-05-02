@@ -56,7 +56,7 @@ An image showing that King's Cross is 'located-in' London and London is 'located
 
 The rule above expresses that, if `$x` has a `located-in` relationship with `$y`, and `$y` has a `located-in` relationship with `$z`, then `$x` has a `located-in` relationship with `$z`. As a concrete example: King's Cross is in London, and London is in the UK, so one can infer that King's Cross is in the UK.
 
-The rule-based inference is currently set OFF by default when querying Grakn, and can be activated as it is needed. For more detailed documentation on rules see [Graql Rules](../building-schema/defining-rules).
+The rule-based inference is currently set ON by default when querying Grakn. It can be deactivated if needed. For more detailed documentation on rules see [Graql Rules](../building-schema/defining-rules).
 
 
 ## Where Next?

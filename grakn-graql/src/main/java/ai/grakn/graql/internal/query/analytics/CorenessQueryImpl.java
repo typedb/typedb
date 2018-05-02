@@ -26,38 +26,48 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Arg.MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
+import static ai.grakn.util.GraqlSyntax.EQUAL;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+
 class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implements CorenessQuery {
 
-    private long k = 2L;
+    private Optional<Long> minK = Optional.empty();
+    private final static long DEFAULT_K = 2L;
 
     CorenessQueryImpl(Optional<GraknTx> tx) {
         super(tx);
     }
 
     @Override
-    public final ComputeJob<Map<Long, Set<String>>> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Map<Long, Set<String>>> run() {
+        return queryComputer().run(this);
     }
 
     @Override
     public CorenessQuery minK(long k) {
-        this.k = k;
+        this.minK = Optional.of(k);
         return this;
     }
 
     @Override
     public final long minK() {
-        return k;
+        return minK.orElse(DEFAULT_K);
     }
 
     @Override
-    CentralityMeasure getMethod() {
-        return CentralityMeasure.K_CORE;
+    String algorithmString() {
+        return USING + SPACE + K_CORE;
     }
 
     @Override
-    String graqlString() {
-        return super.graqlString() + " where min-k = " + k + ";";
+    String argumentsString() {
+        if (minK.isPresent()) return WHERE + SPACE + MIN_K + EQUAL + minK.get();
+
+        return "";
     }
 
     @Override
@@ -68,13 +78,13 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
 
         CorenessQueryImpl that = (CorenessQueryImpl) o;
 
-        return k == that.k;
+        return minK() == that.minK();
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + Long.hashCode(k);
+        result = 31 * result + Long.hashCode(minK());
         return result;
     }
 }

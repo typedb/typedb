@@ -23,28 +23,39 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Arg.MEMBERS;
+import static ai.grakn.util.GraqlSyntax.Compute.Arg.SIZE;
+import static ai.grakn.util.GraqlSyntax.Compute.Arg.START;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
+import static ai.grakn.util.GraqlSyntax.EQUAL;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+import static ai.grakn.util.GraqlSyntax.SQUARE_CLOSE;
+import static ai.grakn.util.GraqlSyntax.SQUARE_OPEN;
+import static java.util.stream.Collectors.joining;
+
 class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedComponentQuery<T>>
         implements ConnectedComponentQuery<T> {
 
     private boolean members = false;
-    private boolean anySize = true;
-    private Optional<ConceptId> sourceId = Optional.empty();
-    private long clusterSize = -1L;
+    private Optional<ConceptId> start = Optional.empty();
+    private Optional<Long> size = Optional.empty();
 
     ConnectedComponentQueryImpl(Optional<GraknTx> tx) {
         super(tx);
     }
 
     @Override
-    public final ComputeJob<T> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<T> run() {
+        return queryComputer().run(this);
     }
 
     @Override
@@ -65,54 +76,52 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
     }
 
     @Override
-    public ConnectedComponentQuery<T> of(ConceptId conceptId) {
-        this.sourceId = Optional.ofNullable(conceptId);
+    public ConnectedComponentQuery<T> start(ConceptId conceptId) {
+        this.start = Optional.ofNullable(conceptId);
         return this;
     }
 
     @Override
-    public final Optional<ConceptId> sourceId() {
-        return sourceId;
+    public final Optional<ConceptId> start() {
+        return start;
     }
 
     @Override
-    public ConnectedComponentQuery<T> clusterSize(long clusterSize) {
-        this.anySize = false;
-        this.clusterSize = clusterSize;
+    public ConnectedComponentQuery<T> size(long size) {
+        this.size = Optional.of(size);
         return this;
     }
 
     @Override
-    @Nullable
-    public final Long clusterSize() {
-        return anySize ? null : clusterSize;
+    public final Optional<Long> size() {
+        return size;
     }
 
     @Override
-    ClusterMeasure getMethod() {
-        return ClusterMeasure.CONNECTED_COMPONENT;
+    String algorithmString() {
+        return USING + SPACE + CONNECTED_COMPONENT;
     }
 
     @Override
-    String graqlString() {
-        final String[] string = {super.graqlString()};
-        List<String> options = new ArrayList<>();
-        if (sourceId.isPresent()) {
-            options.add(" source = " + sourceId.get().getValue());
-        }
-        if (members) {
-            options.add(" members = true");
-        }
-        if (!anySize) {
-            options.add(" size = " + clusterSize);
-        }
-        if (!options.isEmpty()) {
-            string[0] += " where";
-            options.forEach(option -> string[0] += option);
-        }
-        string[0] += ";";
+    String argumentsString() {
+        List<String> argumentsList = new ArrayList<>();
+        StringBuilder argumentsString = new StringBuilder();
 
-        return string[0];
+        if (start().isPresent()) argumentsList.add(START + EQUAL + start().get());
+        if (size().isPresent()) argumentsList.add(SIZE + EQUAL + size().get());
+        if (isMembersSet()) argumentsList.add(MEMBERS + EQUAL + members);
+
+        if(!argumentsList.isEmpty()) {
+            argumentsString.append(WHERE + SPACE);
+            if(argumentsList.size() == 1) argumentsString.append(argumentsList.get(0));
+            else {
+                argumentsString.append(SQUARE_OPEN);
+                argumentsString.append(argumentsList.stream().collect(joining(COMMA_SPACE)));
+                argumentsString.append(SQUARE_CLOSE);
+            }
+        }
+
+        return argumentsString.toString();
     }
 
     @Override
@@ -123,17 +132,16 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
 
         ConnectedComponentQueryImpl<?> that = (ConnectedComponentQueryImpl<?>) o;
 
-        return sourceId.equals(that.sourceId) && members == that.members &&
-                anySize == that.anySize && clusterSize == that.clusterSize;
+        return start.equals(that.start) && members == that.members && size().equals(that.size());
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + sourceId.hashCode();
-        result = 31 * result + (members ? 1 : 0);
-        result = 31 * result + (anySize ? 1 : 0);
-        result = 31 * result + (int) (clusterSize ^ (clusterSize >>> 32));
+        result = 31 * result + CONNECTED_COMPONENT.hashCode();
+        result = 31 * result + start.hashCode();
+        result = 31 * result + Boolean.hashCode(members);
+        result = 31 * result + size.hashCode();
         return result;
     }
 }

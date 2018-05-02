@@ -40,8 +40,8 @@ rule-1 sub rule
     when {
         $x isa word;
         $y isa word;
-        $x has name != 'f';
-        $y has name != 'o';
+        $x has name !== 'f';
+        $y has name !== 'o';
     }
     then {
         (prep: $x, pobj: $y) isa pair;

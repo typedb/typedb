@@ -66,7 +66,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
 
     @Override
     public final Stream<Answer> stream() {
-        return queryRunner().run(this);
+        return queryComputer().run(this);
     }
 
     @Override

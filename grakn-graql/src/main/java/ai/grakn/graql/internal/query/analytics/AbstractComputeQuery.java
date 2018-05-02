@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.internal.query.AbstractExecutableQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
@@ -34,6 +34,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.COMPUTE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
+import static ai.grakn.util.GraqlSyntax.SEMICOLON;
+import static ai.grakn.util.GraqlSyntax.SPACE;
+import static ai.grakn.util.GraqlSyntax.SQUARE_CLOSE;
+import static ai.grakn.util.GraqlSyntax.SQUARE_OPEN;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
@@ -41,7 +48,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     private Optional<GraknTx> tx;
     private boolean includeAttribute;
-    private ImmutableSet<Label> subLabels = ImmutableSet.of();
+    protected ImmutableSet<Label> inTypes = ImmutableSet.of();
 
     private Set<ComputeJob<T>> runningJobs = ConcurrentHashMap.newKeySet();
 
@@ -58,7 +65,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
     @Override
     public final T execute() {
-        ComputeJob<T> job = createJob();
+        ComputeJob<T> job = run();
 
         runningJobs.add(job);
 
@@ -69,7 +76,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         }
     }
 
-    protected abstract ComputeJob<T> createJob();
+    protected abstract ComputeJob<T> run();
 
     @Override
     public final Optional<GraknTx> tx() {
@@ -83,19 +90,19 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
     }
 
     @Override
-    public final V in(String... subTypeLabels) {
-        return in(Arrays.stream(subTypeLabels).map(Label::of).collect(toImmutableSet()));
+    public final V in(String... inTypes) {
+        return in(Arrays.stream(inTypes).map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
-    public final V in(Collection<? extends Label> subLabels) {
-        this.subLabels = ImmutableSet.copyOf(subLabels);
+    public final V in(Collection<? extends Label> inTypes) {
+        this.inTypes = ImmutableSet.copyOf(inTypes);
         return (V) this;
     }
 
     @Override
-    public final ImmutableSet<Label> subLabels() {
-        return subLabels;
+    public final ImmutableSet<Label> inTypes() {
+        return inTypes;
     }
 
     @Override
@@ -114,16 +121,44 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         runningJobs.forEach(ComputeJob::kill);
     }
 
-    abstract String graqlString();
+    abstract String methodString();
 
-    final String subtypeString() {
-        return subLabels.isEmpty() ? ";" : " in "
-                + subLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
+    abstract String conditionsString();
+
+    final String inTypesString() {
+        if (!inTypes.isEmpty()) return IN + SPACE + typesString(inTypes);
+
+        return "";
+    }
+
+    final String typesString(ImmutableSet<Label> types) {
+        StringBuilder inTypesString = new StringBuilder();
+
+        if (!types.isEmpty()) {
+            if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
+            else {
+                inTypesString.append(SQUARE_OPEN);
+                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
+                inTypesString.append(SQUARE_CLOSE);
+            }
+        }
+
+        return inTypesString.toString();
     }
 
     @Override
     public final String toString() {
-        return "compute " + graqlString();
+        StringBuilder query = new StringBuilder();
+
+        query.append(COMPUTE + SPACE + methodString());
+
+        if (!conditionsString().isEmpty()) {
+            query.append(SPACE + conditionsString());
+        }
+
+        query.append(SEMICOLON);
+
+        return query.toString();
     }
 
     @Nullable
@@ -139,14 +174,14 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
 
         AbstractComputeQuery<?, ?> that = (AbstractComputeQuery<?, ?>) o;
 
-        return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
+        return tx.equals(that.tx) && includeAttribute == that.includeAttribute && inTypes.equals(that.inTypes);
     }
 
     @Override
     public int hashCode() {
         int result = tx.hashCode();
         result = 31 * result + Boolean.hashCode(includeAttribute);
-        result = 31 * result + subLabels.hashCode();
+        result = 31 * result + inTypes.hashCode();
         return result;
     }
 }

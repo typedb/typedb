@@ -46,7 +46,7 @@ import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
-    private static final String CLUSTER_SIZE = "clusterMemberMapReduce.clusterSize";
+    private static final String CLUSTER_SIZE = "clusterMemberMapReduce.size";
 
     // Needed internally for OLAP tasks
     public ClusterMemberMapReduce() {

@@ -747,8 +747,8 @@ public class AtomicTest {
         String resourceString4 = "{$x has res-double < 4.0;}";
         String resourceString5 = "{$x has res-double >= 5;}";
         String resourceString6 = "{$x has res-double <= 5;}";
-        String resourceString7 = "{$x has res-double = 3.14;}";
-        String resourceString8 = "{$x has res-double != 5;}";
+        String resourceString7 = "{$x has res-double == 3.14;}";
+        String resourceString8 = "{$x has res-double !== 5;}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -778,8 +778,8 @@ public class AtomicTest {
         String resourceString4 = "{$x has res-long < 200;}";
         String resourceString5 = "{$x has res-long >= 130;}";
         String resourceString6 = "{$x has res-long <= 130;}";
-        String resourceString7 = "{$x has res-long = 123;}";
-        String resourceString8 = "{$x has res-long != 200;}";
+        String resourceString7 = "{$x has res-long == 123;}";
+        String resourceString8 = "{$x has res-long !== 200;}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -859,14 +859,14 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceDouble(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-double val > 3.0;($x, $y);}";
-        String queryString2 = "{$x isa res-double val > 4.0;($x, $y);}";
-        String queryString3 = "{$x isa res-double val < 3.0;($x, $y);}";
-        String queryString4 = "{$x isa res-double val < 4.0;($x, $y);}";
-        String queryString5 = "{$x isa res-double val >= 5;($x, $y);}";
-        String queryString6 = "{$x isa res-double val <= 5;($x, $y);}";
-        String queryString7 = "{$x isa res-double val = 3.14;($x, $y);}";
-        String queryString8 = "{$x isa res-double val != 5;($x, $y);}";
+        String queryString = "{$x isa res-double > 3.0;($x, $y);}";
+        String queryString2 = "{$x isa res-double > 4.0;($x, $y);}";
+        String queryString3 = "{$x isa res-double < 3.0;($x, $y);}";
+        String queryString4 = "{$x isa res-double < 4.0;($x, $y);}";
+        String queryString5 = "{$x isa res-double >= 5;($x, $y);}";
+        String queryString6 = "{$x isa res-double <= 5;($x, $y);}";
+        String queryString7 = "{$x isa res-double == 3.14;($x, $y);}";
+        String queryString8 = "{$x isa res-double !== 5;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -890,14 +890,14 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceLong(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-long val > 100;($x, $y);}";
-        String queryString2 = "{$x isa res-long val > 150;($x, $y);}";
-        String queryString3 = "{$x isa res-long val < 100;($x, $y);}";
-        String queryString4 = "{$x isa res-long val < 200;($x, $y);}";
-        String queryString5 = "{$x isa res-long val >= 130;($x, $y);}";
-        String queryString6 = "{$x isa res-long val <= 130;($x, $y);}";
-        String queryString7 = "{$x isa res-long val = 123;($x, $y);}";
-        String queryString8 = "{$x isa res-long val != 200;($x, $y);}";
+        String queryString = "{$x isa res-long > 100;($x, $y);}";
+        String queryString2 = "{$x isa res-long > 150;($x, $y);}";
+        String queryString3 = "{$x isa res-long < 100;($x, $y);}";
+        String queryString4 = "{$x isa res-long < 200;($x, $y);}";
+        String queryString5 = "{$x isa res-long >= 130;($x, $y);}";
+        String queryString6 = "{$x isa res-long <= 130;($x, $y);}";
+        String queryString7 = "{$x isa res-long == 123;($x, $y);}";
+        String queryString8 = "{$x isa res-long !== 200;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -921,10 +921,10 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceString(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-string val contains 'val';($x, $y);}";
-        String queryString2 = "{$x isa res-string val 'test';($x, $y);}";
-        String queryString3 = "{$x isa res-string val /.*(fast|value).*/;($x, $y);}";
-        String queryString4 = "{$x isa res-string val /.*/;($x, $y);}";
+        String queryString = "{$x isa res-string contains 'val';($x, $y);}";
+        String queryString2 = "{$x isa res-string 'test';($x, $y);}";
+        String queryString3 = "{$x isa res-string /.*(fast|value).*/;($x, $y);}";
+        String queryString4 = "{$x isa res-string /.*/;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -940,8 +940,8 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceBoolean(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-boolean val 'true';($x, $y);}";
-        String queryString2 = "{$x isa res-boolean val 'false';($x, $y);}";
+        String queryString = "{$x isa res-boolean 'true';($x, $y);}";
+        String queryString2 = "{$x isa res-boolean 'false';($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -1104,11 +1104,11 @@ public class AtomicTest {
     @Test
     public void testUnification_VariousResourceAtoms(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String resource = "{$x has resource $r;$r val 'f';}";
-        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource = "{$x has resource $r;$r 'f';}";
+        String resource2 = "{$r has resource $x;$x 'f';}";
         String resource3 = "{$r has resource 'f';}";
-        String resource4 = "{$x has resource $y via $r;$y val 'f';}";
-        String resource5 = "{$y has resource $r via $x;$r val 'f';}";
+        String resource4 = "{$x has resource $y via $r;$y 'f';}";
+        String resource5 = "{$y has resource $r via $x;$r 'f';}";
         exactUnification(resource, resource2, true, true, graph);
         exactUnification(resource, resource3, true, true, graph);
         exactUnification(resource2, resource3, true, true, graph);
@@ -1172,8 +1172,8 @@ public class AtomicTest {
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String resource = "{$x has resource $r;$r val 'f';}";
-        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource = "{$x has resource $r;$r 'f';}";
+        String resource2 = "{$r has resource $x;$x 'f';}";
         String resource3 = "{$r has resource 'f';}";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, graph), graph);

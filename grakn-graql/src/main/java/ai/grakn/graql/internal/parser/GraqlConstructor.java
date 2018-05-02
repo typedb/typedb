@@ -24,7 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -39,19 +39,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.CommonUtil;
@@ -65,6 +52,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -82,22 +70,26 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
+ *
+ * @author Haikal Pribadi
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
-class QueryVisitor extends GraqlBaseVisitor {
+class GraqlConstructor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
     private final boolean defineAllVars;
+    private final GraqlComputeConstructor computeVisitor;
 
-    QueryVisitor(
+    GraqlConstructor(
             ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder,
             boolean defineAllVars
     ) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
         this.defineAllVars = defineAllVars;
+        this.computeVisitor = new GraqlComputeConstructor(this, queryBuilder);
     }
 
     @Override
@@ -146,15 +138,15 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
-        Set<Var> vars = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-
         Match match = visitMatchPart(ctx.matchPart());
 
-        if (vars.isEmpty()) {
-            return match.get();
-        } else {
-            return match.get(vars);
+        if (ctx.variables() != null) {
+            Set<Var> vars = ctx.variables().VARIABLE().stream().map(this::getVariable).collect(toSet());
+
+            if (!vars.isEmpty()) return match.get(vars);
         }
+
+        return match.get();
     }
 
     @Override
@@ -186,225 +178,10 @@ class QueryVisitor extends GraqlBaseVisitor {
         return visitMatchPart(ctx.matchPart()).delete(vars);
     }
 
-    @Override
-    public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
-        return visitComputeMethod(ctx.computeMethod());
-    }
 
     @Override
     public Set<Var> visitVariables(GraqlParser.VariablesContext ctx) {
         return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-    }
-
-    @Override
-    public MinQuery visitMin(GraqlParser.MinContext ctx) {
-        MinQuery min = queryBuilder.compute().min().of(visitOfList(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            min = min.in(visitInList(ctx.inList()));
-        }
-
-        return min;
-    }
-
-    @Override
-    public MaxQuery visitMax(GraqlParser.MaxContext ctx) {
-        MaxQuery max = queryBuilder.compute().max().of(visitOfList(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            max = max.in(visitInList(ctx.inList()));
-        }
-
-        return max;
-    }
-
-    @Override
-    public MedianQuery visitMedian(GraqlParser.MedianContext ctx) {
-        MedianQuery median = queryBuilder.compute().median().of(visitOfList(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            median = median.in(visitInList(ctx.inList()));
-        }
-
-        return median;
-    }
-
-    @Override
-    public MeanQuery visitMean(GraqlParser.MeanContext ctx) {
-        MeanQuery mean = queryBuilder.compute().mean();
-
-        if (ctx.ofList() != null) {
-            mean = mean.of(visitOfList(ctx.ofList()));
-        }
-
-        if (ctx.inList() != null) {
-            mean = mean.in(visitInList(ctx.inList()));
-        }
-
-        return mean;
-    }
-
-    @Override
-    public StdQuery visitStd(GraqlParser.StdContext ctx) {
-        StdQuery std = queryBuilder.compute().std().of(visitOfList(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            std = std.in(visitInList(ctx.inList()));
-        }
-
-        return std;
-    }
-
-    @Override
-    public SumQuery visitSum(GraqlParser.SumContext ctx) {
-        SumQuery sum = queryBuilder.compute().sum().of(visitOfList(ctx.ofList()));
-
-        if (ctx.inList() != null) {
-            sum = sum.in(visitInList(ctx.inList()));
-        }
-
-        return sum;
-    }
-
-    @Override
-    public CountQuery visitCount(GraqlParser.CountContext ctx) {
-        CountQuery count = queryBuilder.compute().count();
-
-        if (ctx.inList() != null) {
-            count = count.in(visitInList(ctx.inList()));
-        }
-
-        return count;
-    }
-
-    @Override
-    public PathQuery visitPath(GraqlParser.PathContext ctx) {
-        PathQuery path = queryBuilder.compute().path().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
-
-        if (ctx.inList() != null) {
-            path = path.in(visitInList(ctx.inList()));
-        }
-
-        return path;
-    }
-
-    @Override
-    public PathsQuery visitPaths(GraqlParser.PathsContext ctx) {
-        PathsQuery paths = queryBuilder.compute().paths().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
-
-        if (ctx.inList() != null) {
-            paths = paths.in(visitInList(ctx.inList()));
-        }
-
-        return paths;
-    }
-
-    @Override
-    public ConnectedComponentQuery<?> visitConnectedComponent(GraqlParser.ConnectedComponentContext ctx) {
-        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster().usingConnectedComponent();
-
-        if (ctx.inList() != null) {
-            cluster = cluster.in(visitInList(ctx.inList()));
-        }
-
-        cluster = chainOperators(ctx.ccParam().stream().map(this::visitCcParam)).apply(cluster);
-
-        return cluster;
-    }
-
-    private UnaryOperator<ConnectedComponentQuery<?>> visitCcParam(GraqlParser.CcParamContext ctx) {
-        return (UnaryOperator<ConnectedComponentQuery<?>>) visit(ctx);
-    }
-
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterMembers(GraqlParser.CcClusterMembersContext ctx) {
-        return query -> visitBool(ctx.bool()) ? query.membersOn() : query.membersOff();
-    }
-
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcClusterSize(GraqlParser.CcClusterSizeContext ctx) {
-        return query -> query.clusterSize(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public UnaryOperator<ConnectedComponentQuery<?>> visitCcStartPoint(GraqlParser.CcStartPointContext ctx) {
-        return query -> query.of(visitId(ctx.id()));
-    }
-
-    @Override
-    public KCoreQuery visitKCore(GraqlParser.KCoreContext ctx) {
-        KCoreQuery kCoreQuery = queryBuilder.compute().cluster().usingKCore();
-
-        if (ctx.inList() != null) {
-            kCoreQuery = kCoreQuery.in(visitInList(ctx.inList()));
-        }
-
-        kCoreQuery = chainOperators(ctx.kcParam().stream().map(this::visitKcParam)).apply(kCoreQuery);
-
-        return kCoreQuery;
-    }
-
-    private UnaryOperator<KCoreQuery> visitKcParam(GraqlParser.KcParamContext ctx) {
-        return (UnaryOperator<KCoreQuery>) visit(ctx);
-    }
-
-    @Override
-    public UnaryOperator<KCoreQuery> visitKValue(GraqlParser.KValueContext ctx) {
-        return query -> query.kValue(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public DegreeQuery visitDegree(GraqlParser.DegreeContext ctx) {
-        DegreeQuery degreeQuery = queryBuilder.compute().centrality().usingDegree();
-
-        if (ctx.ofList() != null) {
-            degreeQuery = degreeQuery.of(visitOfList(ctx.ofList()));
-        }
-
-        if (ctx.inList() != null) {
-            degreeQuery = degreeQuery.in(visitInList(ctx.inList()));
-        }
-
-        return degreeQuery;
-    }
-
-    @Override
-    public CorenessQuery visitCoreness(GraqlParser.CorenessContext ctx) {
-        CorenessQuery corenessQuery = queryBuilder.compute().centrality().usingKCore();
-
-        if (ctx.ofList() != null) {
-            corenessQuery = corenessQuery.of(visitOfList(ctx.ofList()));
-        }
-
-        if (ctx.inList() != null) {
-            corenessQuery = corenessQuery.in(visitInList(ctx.inList()));
-        }
-
-        if (ctx.INTEGER() != null) {
-            corenessQuery = corenessQuery.minK(getInteger(ctx.INTEGER()));
-        }
-
-        return corenessQuery;
-    }
-
-    @Override
-    public ComputeQuery<?> visitComputeMethod(GraqlParser.ComputeMethodContext ctx) {
-        return (ComputeQuery<?>) super.visitComputeMethod(ctx);
-    }
-
-    @Override
-    public Set<Label> visitInList(GraqlParser.InListContext ctx) {
-        return visitLabelList(ctx.labelList());
-    }
-
-    @Override
-    public Set<Label> visitOfList(GraqlParser.OfListContext ctx) {
-        return visitLabelList(ctx.labelList());
-    }
-
-    @Override
-    public Set<Label> visitLabelList(GraqlParser.LabelListContext ctx) {
-        return ctx.label().stream().map(this::visitLabel).collect(toSet());
     }
 
     @Override
@@ -602,6 +379,19 @@ class QueryVisitor extends GraqlBaseVisitor {
             return Label.of(ctx.IMPLICIT_IDENTIFIER().getText());
         }
         return Label.of(visitIdentifier(label));
+    }
+
+    @Override
+    public Set<Label> visitLabels(GraqlParser.LabelsContext labels) {
+        List<GraqlParser.LabelContext> labelsList = new ArrayList<>();
+
+        if (labels.label() != null) {
+            labelsList.add(labels.label());
+        } else if (labels.labelsArray() != null) {
+            labelsList.addAll(labels.labelsArray().label());
+        }
+
+        return labelsList.stream().map(this::visitLabel).collect(toSet());
     }
 
     @Override
@@ -810,7 +600,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         return chainOperators(contexts.stream().map(ctx -> (UnaryOperator<VarPattern>) visit(ctx)));
     }
 
-    private long getInteger(TerminalNode integer) {
+    protected long getInteger(TerminalNode integer) {
         return Long.parseLong(integer.getText());
     }
 
@@ -832,5 +622,40 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else {
             return var;
         }
+    }
+
+    //================================================================================================================//
+    // Building Graql Compute (Analytics) Queries                                                                     //
+    //================================================================================================================//
+
+    /**
+     * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
+     *
+     * @param ctx
+     * @return A subtype of ComputeQuery object
+     */
+    @Override
+    public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
+        return computeVisitor.constructComputeQuery(ctx);
+    }
+
+    /**
+     * Visits the computeArgs tree in the compute query 'where <computeArgs>' condition and get the list of arguments
+     *
+     * @param computeArgs
+     * @return
+     */
+    @Override
+    public List<GraqlParser.ComputeArgContext> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
+
+        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
+
+        if (computeArgs.computeArg() != null) {
+            argsList.add(computeArgs.computeArg());
+        } else if (computeArgs.computeArgsArray() != null) {
+            argsList.addAll(computeArgs.computeArgsArray().computeArg());
+        }
+
+        return argsList;
     }
 }
