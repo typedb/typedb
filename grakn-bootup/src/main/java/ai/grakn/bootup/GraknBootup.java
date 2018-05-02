@@ -22,6 +22,8 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.config.ConfigProcessor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +37,7 @@ import java.util.Scanner;
  * @author Michele Orsi
  */
 public class GraknBootup {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);
 
     private static final String ENGINE = "engine";
     private static final String QUEUE = "queue";
@@ -51,17 +54,26 @@ public class GraknBootup {
      * @param args
      */
     public static void main(String[] args) {
-        printAscii();
-
         try {
             Path homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
             Path configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
 
+            assertJava8();
             assertConfigurationCorrect(homeStatic, configStatic);
 
+            printAscii();
             newGraknBootup(homeStatic, configStatic).run(args);
         } catch (RuntimeException ex) {
-            System.out.println("Problem with bash script: cannot run Grakn");
+            LOG.error("An error has occurred during boot-up.", ex);
+            System.err.println(ex.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void assertJava8() {
+        String javaVersion = System.getProperty("java.specification.version");
+        if (!javaVersion.equals("1.8")) {
+            throw new RuntimeException(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
         }
     }
 
