@@ -38,7 +38,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="side-column"><colour-picker :node="node"></colour-picker></div>
         </div>
         <div class="panel-footer">
-            <button class="btn reset" @click="configureNode()">Reset</button>
+            <button class="btn reset" @click="configureNode()">Reset Label</button>
+            <button class="btn reset" @click="resetNodeColour()">Reset Colour</button>
             <button class="btn" @click="showNodeLabelPanel=false;">Done</button>
         </div>
     </div>
@@ -61,7 +62,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   position: absolute;
   bottom: 100%;
   background-color: #0f0f0f;
-  width:250px;
+  width:300px;
   margin-bottom:5px;
   padding: 10px 30px;
   display: flex;
@@ -129,6 +130,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .reset{
   background-color:crimson;
   color: white;
+  white-space: nowrap;
 }
 
 </style>
@@ -172,8 +174,6 @@ export default {
         for(var i in nodeProps){
           NodeSettings.removeTypeLabel(this.nodeType, nodeProps[i]);;
         }   
-        // Reset color
-        visualiser.setColourOnNodeType(this.node.baseType, this.node.type);
       }
       else if (NodeSettings.getLabelProperties(this.nodeType).includes(p)) {
         NodeSettings.removeTypeLabel(this.nodeType, p);
@@ -182,6 +182,11 @@ export default {
       }
       this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
       visualiser.setDisplayProperties(this.nodeType, this.currentTypeProperties);
+    },
+
+    // Reset node colour
+    resetNodeColour(){
+      visualiser.setColourOnNodeType(this.node.baseType, this.node.type);
     },
 
     openNodeLabelPanel(nodeId) {
