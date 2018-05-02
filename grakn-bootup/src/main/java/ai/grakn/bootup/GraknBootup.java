@@ -51,14 +51,12 @@ public class GraknBootup {
      * @param args
      */
     public static void main(String[] args) {
-        assertJava8();
-
-        printAscii();
-
         try {
             Path homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
             Path configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
 
+            printAscii();
+            assertJava8();
             assertConfigurationCorrect(homeStatic, configStatic);
 
             newGraknBootup(homeStatic, configStatic).run(args);
