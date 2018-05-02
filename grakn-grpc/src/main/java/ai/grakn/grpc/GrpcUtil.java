@@ -84,9 +84,10 @@ import static java.util.stream.Collectors.toList;
  * @author Felix Chapman
  */
 public class GrpcUtil {
+    public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
 
     private static final GrpcConcept.Unit UNIT = GrpcConcept.Unit.getDefaultInstance();
-
+    
     static class UnknownGraknException extends GraknException {
 
         private static final long serialVersionUID = 4354432748314041017L;
