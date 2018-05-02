@@ -224,7 +224,7 @@ public class GraqlComputeConstructor {
      */
     private PathQuery constructComputePathQuery(GraqlParser.ComputeConditionsContext conditions) {
 
-        PathQuery computePath = queryBuilder.compute().path();
+        PathQuery computePath = null; //todo: queryBuilder.compute().path();
 
         boolean computeFromIDExists = false;
         boolean computeToIDExists = false;

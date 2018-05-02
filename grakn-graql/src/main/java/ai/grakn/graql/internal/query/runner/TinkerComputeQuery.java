@@ -33,25 +33,15 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.analytics.ComputeQuery;
-import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import ai.grakn.graql.internal.analytics.Utility;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 
 import javax.annotation.Nullable;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -172,94 +162,4 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
     final boolean isAttributeIncluded() {
         return query.isAttributeIncluded() || inTypesContainImplicitOrAttributeTypes();
     }
-
-    final List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource, ConceptId sourceId) {
-        List<List<Concept>> allPaths = new ArrayList<>();
-        List<Concept> firstPath = new ArrayList<>();
-        firstPath.add(getConcept(sourceId.getValue()));
-
-        Deque<List<Concept>> queue = new ArrayDeque<>();
-        queue.addLast(firstPath);
-        while (!queue.isEmpty()) {
-            List<Concept> currentPath = queue.pollFirst();
-            if (predecessorMapFromSource.containsKey(currentPath.get(currentPath.size() - 1))) {
-                Collection<Concept> successors = predecessorMapFromSource.get(currentPath.get(currentPath.size() - 1));
-                Iterator<Concept> iterator = successors.iterator();
-                for (int i = 0; i < successors.size() - 1; i++) {
-                    List<Concept> extendedPath = new ArrayList<>(currentPath);
-                    extendedPath.add(iterator.next());
-                    queue.addLast(extendedPath);
-                }
-                currentPath.add(iterator.next());
-                queue.addLast(currentPath);
-            } else {
-                allPaths.add(currentPath);
-            }
-        }
-        return allPaths;
-    }
-
-    final List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
-        List<List<Concept>> extendedPaths = new ArrayList<>();
-        for (List<Concept> currentPath : allPaths) {
-            boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
-            if (!hasAttribute) {
-                extendedPaths.add(currentPath);
-            }
-        }
-
-        // If there exist a path without attributes, we don't need to expand any path
-        // as paths contain attributes would be longer after implicit relations are added
-        int numExtensionAllowed = extendedPaths.isEmpty() ? Integer.MAX_VALUE : 0;
-        for (List<Concept> currentPath : allPaths) {
-            List<Concept> extendedPath = new ArrayList<>();
-            int numExtension = 0; // record the number of extensions needed for the current path
-            for (int j = 0; j < currentPath.size() - 1; j++) {
-                extendedPath.add(currentPath.get(j));
-                ConceptId resourceRelationId = Utility.getResourceEdgeId(tx,
-                        currentPath.get(j).getId(), currentPath.get(j + 1).getId());
-                if (resourceRelationId != null) {
-                    numExtension++;
-                    if (numExtension > numExtensionAllowed) break;
-                    extendedPath.add(tx.getConcept(resourceRelationId));
-                }
-            }
-            if (numExtension == numExtensionAllowed) {
-                extendedPath.add(currentPath.get(currentPath.size() - 1));
-                extendedPaths.add(extendedPath);
-            } else if (numExtension < numExtensionAllowed) {
-                extendedPath.add(currentPath.get(currentPath.size() - 1));
-                extendedPaths.clear(); // longer paths are discarded
-                extendedPaths.add(extendedPath);
-                // update the minimum number of extensions needed so all the paths have the same length
-                numExtensionAllowed = numExtension;
-            }
-        }
-        return extendedPaths;
-    }
-
-    final Multimap<Concept, Concept> getPredecessorMap(ComputerResult result) {
-        Map<String, Set<String>> predecessorMapFromSource =
-                result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
-        Map<String, Set<String>> predecessorMapFromDestination =
-                result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
-
-        Multimap<Concept, Concept> predecessors = HashMultimap.create();
-        predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(id), getConcept(id2));
-        }));
-        predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            predecessors.put(getConcept(id2), getConcept(id));
-        }));
-        return predecessors;
-    }
-
-
-
-
-
-
-
-
-
 }

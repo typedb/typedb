@@ -10,7 +10,6 @@ import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,6 +29,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.PATH;
 import static ai.grakn.util.GraqlSyntax.QUOTE;
 import static ai.grakn.util.GraqlSyntax.SEMICOLON;
 import static ai.grakn.util.GraqlSyntax.SPACE;
@@ -55,11 +55,11 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private final static long DEFAULT_MIN_K = 2L;
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
-    NewComputeQueryImpl(String method, GraknTx tx) {
-        this(method, tx, DEFAULT_INCLUDE_ATTRIBUTE);
+    public NewComputeQueryImpl(GraknTx tx, String method) {
+        this(tx, method, DEFAULT_INCLUDE_ATTRIBUTE);
     }
 
-    NewComputeQueryImpl(String method, GraknTx tx, boolean includeAttribute) {
+    public NewComputeQueryImpl(GraknTx tx, String method, boolean includeAttribute) {
         this.method = method;
         this.tx = tx;
         this.includeAttribute = includeAttribute;
@@ -72,10 +72,10 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final ComputeAnswer execute() {
-        Optional<GraqlQueryException> exception = collectExceptions();
+        Optional<GraqlQueryException> exception = getException();
         if (exception.isPresent()) throw exception.get();
 
-        ComputeJob<ComputeAnswer> job = null;//TODO: executor().run(this);
+        ComputeJob<ComputeAnswer> job = executor().run(this);
 
         runningJobs.add(job);
 
@@ -188,13 +188,13 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         return Optional.ofNullable(minK);
     }
     @Override
-    public final NewComputeQueryImpl includeAttribute() {
-        this.includeAttribute = true;
+    public final NewComputeQueryImpl includeAttributes(boolean include) {
+        this.includeAttribute = include;
         return this;
     }
 
     @Override
-    public final boolean isAttributeIncluded() {
+    public final boolean includesAttributes() {
         return includeAttribute;
     }
 
@@ -205,12 +205,16 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final boolean isValid() {
-        return !collectExceptions().isPresent();
+        return !getException().isPresent();
     }
 
     @Override
-    public Optional<GraqlQueryException> collectExceptions() {
+    public Optional<GraqlQueryException> getException() {
         //TODO
+
+        if (method.equals(PATH) && (!from().isPresent() || !to().isPresent())) {
+            return Optional.of(GraqlQueryException.invalidComputePathMissingCondition());
+        }
 
         return Optional.empty();
     }
@@ -291,7 +295,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
                 this.in().equals(that.in())) &&
                 this.using().equals(that.using()) &&
                 this.minK().equals(that.minK()) &&
-                this.isAttributeIncluded() == that.isAttributeIncluded();
+                this.includesAttributes() == that.includesAttributes();
     }
 
     @Override

@@ -92,7 +92,6 @@ import java.util.stream.Collectors;
  */
 class TinkerComputeJob<T> implements ComputeJob<T> {
 
-    private final Supplier<T> supplier;
     private final ComputeQuery<?> query;
 
     private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeJob.class);
@@ -101,8 +100,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
     public TinkerComputeJob(EmbeddedGraknTx<?> tx, ComputeQuery<?> query) {
         this.tx = tx;
         this.query = query;
-
-        this.supplier = null; //todo: to be removed;
     }
 
     @Override
@@ -112,8 +109,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     @Override
     public T get() {
-        if (supplier != null) return supplier.get();
-
         if (query instanceof CountQuery) return (T) runComputeCount();
         if (query instanceof MinQuery) return (T) runComputeMin();
         if (query instanceof MaxQuery) return (T) runComputeMax();
@@ -121,44 +116,12 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         if (query instanceof MeanQuery) return (T) runComputeMean();
         if (query instanceof StdQuery) return (T) runComputeStd();
         if (query instanceof SumQuery) return (T) runComputeSum();
-        if (query instanceof PathQuery) return (T) runComputePath();
         if (query instanceof DegreeQuery) return (T) runComputeDegree();
         if (query instanceof CorenessQuery) return (T) runComputeCoreness();
         if (query instanceof ConnectedComponentQuery) return (T) runComputeConnectedComponent();
         if (query instanceof KCoreQuery) return (T) runComputeKCore();
 
         throw GraqlQueryException.invalidComputeMethod();
-    }
-
-    private List<List<Concept>> runComputePath() {
-        TinkerComputeQuery<PathQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
-        ConceptId sourceId = ((PathQuery) query).from().get();
-        ConceptId destinationId = ((PathQuery) query).to().get();
-
-        if (!tinkerComputeQuery.inTypesContainConcepts(sourceId, destinationId)) {
-            throw GraqlQueryException.instanceDoesNotExist();
-        }
-        if (sourceId.equals(destinationId)) {
-            return Collections.singletonList(Collections.singletonList(tx.getConcept(sourceId)));
-        }
-
-        ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
-        try {
-            result = tinkerComputeQuery.compute(
-                    new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
-        } catch (NoResultException e) {
-            return Collections.emptyList();
-        }
-
-        Multimap<Concept, Concept> predecessorMapFromSource = tinkerComputeQuery.getPredecessorMap(result);
-        List<List<Concept>> allPaths = tinkerComputeQuery.getAllPaths(predecessorMapFromSource, sourceId);
-        if (tinkerComputeQuery.isAttributeIncluded()) { // this can be slow
-            return tinkerComputeQuery.getExtendedPaths(allPaths);
-        }
-
-        LOG.info("Number of path: " + allPaths.size());
-        return allPaths;
     }
 
     private Map<Long, Set<String>> runComputeDegree() {

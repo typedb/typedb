@@ -142,12 +142,12 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * @return a ComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    NewComputeQuery includeAttribute();
+    NewComputeQuery includeAttributes(boolean include);
 
     /**
      * Get if this query will include attributes and their relationships
      */
-    boolean isAttributeIncluded();
+    boolean includesAttributes();
 
     /**
      * @return a boolean representing whether this query is a valid Graql Compute query given the provided conditions
@@ -159,7 +159,7 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * @return any exception if the query is invalid
      */
     @CheckReturnValue
-    Optional<GraqlQueryException> collectExceptions();
+    Optional<GraqlQueryException> getException();
 
     /**
      * Checks Whether this query will modify the graph

@@ -22,6 +22,8 @@ import ai.grakn.ComputeJob;
 import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeAnswer;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -104,6 +106,10 @@ final class RemoteQueryExecutor implements QueryExecutor {
         return runSingleUnchecked(query);
     }
 
+    @Override
+    public ComputeJob<ComputeAnswer> run(NewComputeQuery query) {
+        return null; //TODO: implement run(NewComputeQuery) for RemoteQueryExecutor
+    }
     @Override
     public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
         return runComputeUnchecked(query);

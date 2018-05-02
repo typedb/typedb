@@ -23,11 +23,13 @@ import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -134,6 +136,8 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
 
+    @Override
+    public ComputeJob<ComputeAnswer> run(NewComputeQuery query) {return new NewTinkerComputeJob(tx, query);}
     @Override
     public ComputeJob<Long> run(CountQuery query) {
         return new TinkerComputeJob<>(tx, query);

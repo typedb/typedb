@@ -20,10 +20,12 @@ package ai.grakn;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
@@ -69,6 +71,8 @@ public interface QueryExecutor {
     void run(UndefineQuery query);
 
     <T> T run(AggregateQuery<T> query);
+
+    ComputeJob<ComputeAnswer> run(NewComputeQuery query);
 
     <T> ComputeJob<T> run(ConnectedComponentQuery<T> query);
 

@@ -9,5 +9,5 @@ public interface ComputeAnswer{
 
     Optional<List<List<Concept>>> paths();
 
-    void paths(List<List<Concept>> paths);
+    ComputeAnswer paths(List<List<Concept>> paths);
 }

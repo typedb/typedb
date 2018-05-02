@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQueryBuilder;
@@ -34,6 +35,8 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
+import ai.grakn.graql.internal.query.NewComputeQueryImpl;
+import ai.grakn.util.GraqlSyntax;
 
 import java.util.Map;
 import java.util.Optional;
@@ -94,8 +97,8 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public PathQuery path() {
-        return new PathQueryImpl(tx);
+    public NewComputeQuery path() {
+        return new NewComputeQueryImpl(tx.get(), GraqlSyntax.Compute.PATH);
     }
 
     @Override
