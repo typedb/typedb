@@ -36,7 +36,6 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 
@@ -52,12 +51,12 @@ import java.util.stream.Stream;
  *
  * <p>
  *     This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
- *     (here in {@link QueryRunner}).
+ *     (here in {@link QueryExecutor}).
  * </p>
  *
  * @author Felix Chapman
  */
-public interface QueryRunner {
+public interface QueryExecutor {
 
     Stream<Answer> run(GetQuery query);
 
@@ -89,9 +88,7 @@ public interface QueryRunner {
 
     ComputeJob<Optional<Number>> run(MinQuery query);
 
-    ComputeJob<Optional<List<Concept>>> run(PathQuery query);
-
-    ComputeJob<List<List<Concept>>> run(PathsQuery query);
+    ComputeJob<List<List<Concept>>> run(PathQuery query);
 
     ComputeJob<Optional<Double>> run(StdQuery query);
 

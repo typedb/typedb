@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -79,6 +78,11 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
     ConnectedComponentQuery<T> size(long clusterSize);
 
     /**
+     * Get the size of the clusters returned
+     */
+    Optional<Long> size();
+
+    /**
      * @param inTypes an array of types to include in the sub graph
      * @return a ConnectedComponentQuery with the subTypeLabels set
      */
@@ -104,10 +108,4 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      */
     @Override
     ConnectedComponentQuery<T> includeAttribute();
-
-    /**
-     * Get the size of the clusters returned
-     */
-    @Nullable
-    Optional<Long> size();
 }

@@ -40,6 +40,7 @@ public class GraqlSyntax {
     public static final String COMMA_SPACE      = ", ";
     public static final String SQUARE_OPEN      = "[";
     public static final String SQUARE_CLOSE     = "]";
+    public static final String QUOTE            = "\"";
 
     /**
      * Graql Compute syntax keyword
@@ -53,7 +54,6 @@ public class GraqlSyntax {
         public static final String STD          = "std";
         public static final String SUM          = "sum";
         public static final String PATH         = "path";
-        public static final String PATHS        = "paths";
         public static final String CENTRALITY   = "centrality";
         public static final String CLUSTER      = "cluster";
 

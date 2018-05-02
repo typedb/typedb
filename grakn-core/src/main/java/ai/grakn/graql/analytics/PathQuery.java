@@ -32,7 +32,7 @@ import java.util.Optional;
  *
  * @author Jason Liu
  */
-public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
+public interface PathQuery extends ComputeQuery<List<List<Concept>>> {
 
     /**
      * @param sourceId the id of the source instance
@@ -43,7 +43,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     /**
      * Get the id of the source instance
      */
-    ConceptId from();
+    Optional<ConceptId> from();
 
     /**
      * @param destinationId the id of the destination instance
@@ -54,7 +54,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     /**
      * Get the id of the destination instance
      */
-    ConceptId to();
+    Optional<ConceptId> to();
 
     /**
      * @param inTypes an array of types to include in the subgraph
@@ -76,7 +76,7 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @return the list of shortest paths
      */
     @Override
-    Optional<List<Concept>> execute();
+    List<List<Concept>> execute();
 
     /**
      * @param tx the transaction to execute the query on

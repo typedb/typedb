@@ -21,7 +21,7 @@ package ai.grakn.remote;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -215,8 +215,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public QueryRunner queryRunner() {
-        return RemoteQueryRunner.create(client);
+    public QueryExecutor queryExecutor() {
+        return RemoteQueryExecutor.create(client);
     }
 
     private Concept convert(GrpcConcept.Concept concept) {

@@ -48,7 +48,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public final Void execute() {
-        queryRunner().run(this);
+        queryComputer().run(this);
         return null;
     }
 

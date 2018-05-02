@@ -33,8 +33,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements C
     }
 
     @Override
-    public final ComputeJob<Long> createJob() {
-        return queryRunner().run(this);
+    public final ComputeJob<Long> run() {
+        return queryComputer().run(this);
     }
 
     @Override

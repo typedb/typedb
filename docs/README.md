@@ -89,7 +89,10 @@ After you are done making changes, run the deployment server with ```node ./depl
 You can access the site on `http://127.0.0.1:3003/`
 
 If everything works, create a new PR against grakn [stable branch](https://github.com/graknlabs/grakn/tree/stable).
-Once the PR has been merged run the `deploy.sh` script inside `/docs`.
+Once the PR has been merged run the following:
+```
+cd docs && ./deploy.sh
+```
 The script deploys the application to our heroku server. Make sure you have the correct git credentials.
 
 > If deploying from some other branch make sure to edit `deploy.sh` file to branch off accordingly.

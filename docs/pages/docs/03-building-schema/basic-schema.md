@@ -61,9 +61,9 @@ person sub entity
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype string;
-  birth-date sub "date" datatype string;
-  death-date sub "date" datatype string;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;   
 ```
 
@@ -135,7 +135,7 @@ define
     plays spouse1
     plays spouse2;
 
- # Resources
+ # Attributes
 
   identifier sub attribute datatype string;
   name sub attribute datatype string;
@@ -144,9 +144,9 @@ define
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype string;
-  birth-date sub "date" datatype string;
-  death-date sub "date" datatype string;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;
 
  # Roles and Relations

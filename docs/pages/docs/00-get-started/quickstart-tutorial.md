@@ -80,9 +80,9 @@ surname sub name datatype string;
 middlename sub name datatype string;
 picture sub attribute datatype string;
 age sub attribute datatype long;
-"date" sub attribute datatype string;
-birth-date sub "date" datatype string;
-death-date sub "date" datatype string;
+event-date sub attribute datatype date;
+birth-date sub event-date datatype date;
+death-date sub event-date datatype date;
 gender sub attribute datatype string;
 
 # Roles and Relations
@@ -100,7 +100,7 @@ parentship sub relationship
 There are a number of things we can say about schema shown above:
 
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying.
-* the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are all expressed as strings, except for the age, which is of datatype long.
+* the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are expressed as strings, long, or date. Grakn also supports double and boolean.
 * there are two relationships that a `person` can participate in: `marriage` and `parentship`
 * the person can play different roles in those relationships, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
 * the `marriage` relationship has an attribute, which is a URL to a wedding picture, if one exists.
@@ -187,7 +187,7 @@ commit
 Alternatively, we can use `match...insert` syntax, to insert additional data associated with something already in the knowledge graph. Adding some fictional information (middle name, birth date, death date and age at death) for one of our family, Mary Guthrie:
 
 ```graql
-match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date "1902-01-01"; $p has death-date "1952-01-01"; $p has age 50;
+match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date 1902-01-01; $p has death-date 1952-01-01; $p has age 50;
 commit
 ```
 
@@ -320,7 +320,7 @@ A full list of statistics that can be explored is documented in the [Compute Que
 
 ### Shortest Path
 
-It is also possible to find the shortest path between two nodes in the knowledge graph. The documentation for the Grakn
+It is also possible to find the shortest path(s) between two nodes in the knowledge graph. The documentation for the Grakn
 visualiser describes how to use the [query builder tool](../visualisation-dashboard/visualiser#shortest-path), and includes
 a video.
 
@@ -344,7 +344,7 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
-To narrow the path to specific relationships between specific entities:
+To scope the specific types of entities an relationships to be considered in the shortest path computation, you can provide a list of types to the query.
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
