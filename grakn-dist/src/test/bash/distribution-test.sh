@@ -92,7 +92,7 @@ count_marriage_equal_to_1()
 
 can_pass_query_as_argument()
 {
-  local count=$("${GRAKN_DIST_TMP}"/graql console -e 'match $x isa person; aggregate count;')
+  local count=$("${GRAKN_DIST_TMP}"/graql console -e 'match $x isa person; aggregate setNumber;')
   if [[ $count -eq 4 ]]; then
     return 0
   else
@@ -245,7 +245,7 @@ main() {
   count_person_equal_to_4
   local count_person_status=$?
   if [[ $count_person_status -ne 0 ]]; then
-    echo "Person count != 4. Halting test."
+    echo "Person setNumber != 4. Halting test."
     force_kill
     exit 1
   fi
@@ -254,7 +254,7 @@ main() {
   count_marriage_equal_to_1
   local count_marriage_status=$?
   if [[ $count_marriage_status -ne 0 ]]; then
-    echo "Marriage count != 1. Halting test."
+    echo "Marriage setNumber != 1. Halting test."
     force_kill
     exit 1
   fi

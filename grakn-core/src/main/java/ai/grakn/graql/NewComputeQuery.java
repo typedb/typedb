@@ -78,7 +78,7 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * @return a NewComputeQuery with the of set
      */
     @CheckReturnValue
-    NewComputeQuery of(String... types);
+    NewComputeQuery of(String type, String... types);
 
     /**
      * @param types is an array of concept types in which the compute query would apply to
@@ -98,7 +98,7 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * @return a NewComputeQuery with the inTypes set
      */
     @CheckReturnValue
-    NewComputeQuery in(String... types);
+    NewComputeQuery in(String type, String... types);
 
     /**
      * @param types is an array of concept types that determines the scope of graph for the compute query

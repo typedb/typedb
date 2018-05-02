@@ -151,15 +151,15 @@ public class SQLMigratorTest {
     @Test
     public void whenSQLQueryContainsFunction_MigrationCanAccessResultOfFunction() throws SQLException {
         try(Connection connection = setupExample(factory, "pets")){
-            String template = "insert $x isa count val <COUNT>;";
-            String query = "SELECT count(*) AS count FROM pet";
+            String template = "insert $x isa setNumber val <COUNT>;";
+            String query = "SELECT setNumber(*) AS setNumber FROM pet";
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
             GraknTx graph = factory.open(GraknTxType.WRITE);
             Attribute<Long> count = graph.getAttributesByValue(9L).iterator().next();
             assertNotNull(count);
-            assertEquals(count.type(), graph.getAttributeType("count"));
+            assertEquals(count.type(), graph.getAttributeType("setNumber"));
         }
     }
 

@@ -382,7 +382,7 @@ public class MatchTest {
     @Test
     public void testIntPredicateQuery() {
         Match query = qb.match(
-                x.has("tmdb-vote-count", lte(400))
+                x.has("tmdb-vote-setNumber", lte(400))
         );
 
         assertThat(query, variable(x, containsInAnyOrder(apocalypseNow, theMuppets, chineseCoffee)));
@@ -626,7 +626,7 @@ public class MatchTest {
 
     @Test
     public void testHasVariable() {
-        Match query = qb.match(var().has("title", "Godfather").has("tmdb-vote-count", x));
+        Match query = qb.match(var().has("title", "Godfather").has("tmdb-vote-setNumber", x));
         assertThat(query, variable(x, contains(hasValue(1000L))));
     }
 
@@ -771,8 +771,8 @@ public class MatchTest {
     public void testMoviesHasHigherTmdbCount() {
 
         Match query = qb.match(
-                x.has("tmdb-vote-count", lt(r)),
-                var().has("title", "The Muppets").has("tmdb-vote-count", r)
+                x.has("tmdb-vote-setNumber", lt(r)),
+                var().has("title", "The Muppets").has("tmdb-vote-setNumber", r)
         );
 
         assertThat(query, variable(x, contains(chineseCoffee)));

@@ -111,7 +111,7 @@ public class ConnectedComponentTest {
             Map<String, Set<String>> memberMap = graph.graql().compute().cluster().usingConnectedComponent()
                     .membersOn().execute();
             assertTrue(memberMap.isEmpty());
-            assertEquals(0L, graph.graql().compute().count().execute().count().get().longValue());
+            assertEquals(0L, graph.graql().compute().count().execute().getNumber().get().longValue());
         }
     }
 
@@ -250,7 +250,7 @@ public class ConnectedComponentTest {
                     resourceType3, resourceType4, resourceType5, resourceType6)
                     .stream().map(Label::of).collect(Collectors.toSet());
             sizeMap = graph.graql().compute().cluster().usingConnectedComponent().in(subTypes).execute();
-            assertEquals(17, sizeMap.size()); // No relationships, so this is the entity count;
+            assertEquals(17, sizeMap.size()); // No relationships, so this is the entity setNumber;
             memberMap = graph.graql().compute().cluster().usingConnectedComponent().membersOn().in(subTypes).execute();
             assertEquals(17, memberMap.size());
         }

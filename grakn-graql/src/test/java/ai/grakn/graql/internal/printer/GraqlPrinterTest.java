@@ -111,7 +111,7 @@ public class GraqlPrinterTest {
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
-                true, rule.tx().getAttributeType("title"), rule.tx().getAttributeType("tmdb-vote-count"), rule.tx().getAttributeType("name")
+                true, rule.tx().getAttributeType("title"), rule.tx().getAttributeType("tmdb-vote-setNumber"), rule.tx().getAttributeType("name")
         );
 
         Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
@@ -120,7 +120,7 @@ public class GraqlPrinterTest {
 
         assertThat(repr, allOf(
                 containsString("movie"), containsString("has"), containsString("title"), containsString("\"Godfather\""),
-                containsString("tmdb-vote-count"), containsString("1000"), not(containsString("name"))
+                containsString("tmdb-vote-setNumber"), containsString("1000"), not(containsString("name"))
         ));
     }
 

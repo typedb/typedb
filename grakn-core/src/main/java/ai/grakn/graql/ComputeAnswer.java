@@ -7,9 +7,9 @@ import java.util.Optional;
 
 public interface ComputeAnswer{
 
-    Optional<Long> count();
+    Optional<Number> getNumber();
 
-    ComputeAnswer count(Long count);
+    ComputeAnswer setNumber(Number count);
 
     Optional<List<List<Concept>>> paths();
 

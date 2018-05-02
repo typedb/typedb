@@ -160,18 +160,18 @@ public class DeleteQueryTest {
     public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
         ConceptId id = qb.match(
                 x.has("title", "Godfather"),
-                var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
+                var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-setNumber").getValue())
         ).get("a").findFirst().get().getId();
 
         assertExists(qb, var().has("title", "Godfather"));
         assertExists(qb, var().id(id));
-        assertExists(qb, var().val(1000L).isa("tmdb-vote-count"));
+        assertExists(qb, var().val(1000L).isa("tmdb-vote-setNumber"));
 
-        qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
+        qb.match(x.val(1000L).isa("tmdb-vote-setNumber")).delete(x).execute();
 
         assertExists(qb, var().has("title", "Godfather"));
         assertNotExists(qb, var().id(id));
-        assertNotExists(qb, var().val(1000L).isa("tmdb-vote-count"));
+        assertNotExists(qb, var().val(1000L).isa("tmdb-vote-setNumber"));
     }
 
     @Test

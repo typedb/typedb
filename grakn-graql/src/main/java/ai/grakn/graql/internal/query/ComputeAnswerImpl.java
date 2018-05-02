@@ -3,24 +3,23 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.ComputeAnswer;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Optional;
 
 public class ComputeAnswerImpl implements ComputeAnswer {
 
-    private Long count = null;
+    private Number number = null;
     private List<List<Concept>> paths = null;
 
     public ComputeAnswerImpl() {}
 
-    public Optional<Long> count() {
-        return Optional.ofNullable(count);
+    public Optional<Number> getNumber() {
+        return Optional.ofNullable(number);
     }
 
-    public ComputeAnswer count(Long count) {
-        this.count = count;
+    public ComputeAnswer setNumber(Number number) {
+        this.number = number;
         return this;
     }
 
@@ -41,12 +40,12 @@ public class ComputeAnswerImpl implements ComputeAnswer {
         ComputeAnswer that = (ComputeAnswer) o;
 
         return (this.paths().equals(that.paths()) &&
-                this.count().equals(that.count()));
+                this.getNumber().equals(that.getNumber()));
     }
 
     @Override
     public int hashCode() {
-        int result = count.hashCode();
+        int result = number.hashCode();
         result = 31 * result + paths.hashCode();
 
         return result;

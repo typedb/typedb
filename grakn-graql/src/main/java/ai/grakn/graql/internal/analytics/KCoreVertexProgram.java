@@ -143,7 +143,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             }
             memory.add(K_CORE_EXIST, true);
 
-            // send ids from now on, as we want to count connected entities, not relationships
+            // send ids from now on, as we want to setNumber connected entities, not relationships
             sendMessage(messenger, id);
         }
     }
@@ -156,7 +156,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             } else if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                     vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                     vertex.property(K_CORE_LABEL).isPresent()) {
-                // messages received via implicit edge, save the count for next iteration
+                // messages received via implicit edge, save the setNumber for next iteration
                 vertex.property(IMPLICIT_MESSAGE_COUNT, (long) newHashSet(messenger.receiveMessages()).size());
             }
         }
@@ -169,7 +169,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             long messageCount = (long) getMessageCountExcludeSelf(messenger, id);
             if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
                 messageCount += vertex.<Long>value(IMPLICIT_MESSAGE_COUNT);
-                // need to remove implicit count as the vertex may not receive msg via implicit edge
+                // need to remove implicit setNumber as the vertex may not receive msg via implicit edge
                 vertex.property(IMPLICIT_MESSAGE_COUNT).remove();
             }
 
@@ -179,7 +179,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 memory.add(K_CORE_EXIST, true);
 
                 if (persistMessageCount) {
-                    // message count may help eliminate unqualified vertex in earlier iterations
+                    // message setNumber may help eliminate unqualified vertex in earlier iterations
                     vertex.property(MESSAGE_COUNT, messageCount);
                 }
             } else {
@@ -212,7 +212,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         memory.add(VOTE_TO_HALT, false);
     }
 
-    // count the messages from relationships, so need to filter its own msg
+    // setNumber the messages from relationships, so need to filter its own msg
     private static int getMessageCountExcludeSelf(Messenger<String> messenger, String id) {
         Set<String> messageSet = newHashSet(messenger.receiveMessages());
         messageSet.remove(id);

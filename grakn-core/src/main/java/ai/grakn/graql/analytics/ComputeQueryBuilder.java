@@ -39,7 +39,7 @@ public interface ComputeQueryBuilder {
     ComputeQueryBuilder withTx(GraknTx tx);
 
     /**
-     * @return a count query that will count the number of instances
+     * @return a setNumber query that will setNumber the number of instances
      */
     @CheckReturnValue
     NewComputeQuery count();
@@ -48,37 +48,37 @@ public interface ComputeQueryBuilder {
      * @return a min query that will find the min value of the given resource types
      */
     @CheckReturnValue
-    MinQuery min();
+    NewComputeQuery min();
 
     /**
      * @return a max query that will find the max value of the given resource types
      */
     @CheckReturnValue
-    MaxQuery max();
+    NewComputeQuery max();
 
     /**
      * @return a sum query that will compute the sum of values of the given resource types
      */
     @CheckReturnValue
-    SumQuery sum();
+    NewComputeQuery sum();
 
     /**
      * @return a mean query that will compute the mean of values of the given resource types
      */
     @CheckReturnValue
-    MeanQuery mean();
+    NewComputeQuery mean();
 
     /**
      * @return a std query that will compute the standard deviation of values of the given resource types
      */
     @CheckReturnValue
-    StdQuery std();
+    NewComputeQuery std();
 
     /**
      * @return a median query that will compute the median of values of the given resource types
      */
     @CheckReturnValue
-    MedianQuery median();
+    NewComputeQuery median();
 
     /**
      * @return a path query that will find the shortest path between two instances

@@ -67,33 +67,33 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public MinQuery min() {
-        return new MinQueryImpl(tx);
+    public NewComputeQuery min() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MIN);
     }
 
     @Override
-    public MaxQuery max() {
-        return new MaxQueryImpl(tx);
+    public NewComputeQuery max() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MAX);
     }
 
     @Override
-    public SumQuery sum() {
-        return new SumQueryImpl(tx);
+    public NewComputeQuery sum() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.SUM);
     }
 
     @Override
-    public MeanQuery mean() {
-        return new MeanQueryImpl(tx);
+    public NewComputeQuery mean() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MEAN);
     }
 
     @Override
-    public StdQuery std() {
-        return new StdQueryImpl(tx);
+    public NewComputeQuery std() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.STD);
     }
 
     @Override
-    public MedianQuery median() {
-        return new MedianQueryImpl(tx);
+    public NewComputeQuery median() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MEDIAN);
     }
 
     @Override

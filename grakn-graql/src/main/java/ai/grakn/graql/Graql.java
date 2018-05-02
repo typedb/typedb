@@ -251,7 +251,7 @@ public class Graql {
     }
 
     /**
-     * Create an aggregate that will count the results of a query.
+     * Create an aggregate that will setNumber the results of a query.
      */
     @CheckReturnValue
     public static Aggregate<Object, Long> count() {

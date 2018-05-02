@@ -84,7 +84,7 @@ public class EmbeddedGraknSession implements GraknSession {
 
 
 
-    //References so we don't have to open a tx just to check the count of the transactions
+    //References so we don't have to open a tx just to check the setNumber of the transactions
     private EmbeddedGraknTx<?> tx = null;
     private EmbeddedGraknTx<?> txBatch = null;
 

@@ -50,7 +50,7 @@ public class AskQueryTest {
 
     @Test
     public void whenExecutingAskWithPatternThatShouldMatch_ReturnTrue() {
-        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).aggregate(ask()).execute());
+        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-setNumber", 1000)).aggregate(ask()).execute());
     }
 
     @Test

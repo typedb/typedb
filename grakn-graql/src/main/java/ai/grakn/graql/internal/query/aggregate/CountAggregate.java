@@ -33,7 +33,7 @@ class CountAggregate extends AbstractAggregate<Object, Long> {
 
     @Override
     public String toString() {
-        return "count";
+        return "setNumber";
     }
 
     @Override

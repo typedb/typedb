@@ -402,7 +402,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-     * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
+     * Adds a new type vertex which occupies a grakn id. This result in the grakn id setNumber on the meta concept to be
      * incremented.
      *
      * @param label    The label of the new type vertex

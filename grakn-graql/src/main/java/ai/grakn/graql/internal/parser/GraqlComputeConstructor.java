@@ -87,23 +87,23 @@ public class GraqlComputeConstructor {
     }
 
     /**
-     * Constructs a graql compute count query
+     * Constructs a graql compute setNumber query
      *
      * @param conditions
      * @return CountQuery object
      */
     private CountQuery constructComputeCountQuery(GraqlParser.ComputeConditionsContext conditions) {
 
-        CountQuery computeCount = null; //todo: queryBuilder.compute().count();
+        CountQuery computeCount = null; //todo: queryBuilder.compute().setNumber();
 
         if(conditions != null) {
             for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
                 switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
-                    // The 'compute count' query may be given 'in <types>' condition
+                    // The 'compute setNumber' query may be given 'in <types>' condition
                     case GraqlParser.RULE_computeInLabels:
                         computeCount = computeCount.in(graqlConstructor.visitLabels(condition.computeInLabels().labels()));
                         break;
-                    // The 'compute count query does not accept any other condition
+                    // The 'compute setNumber query does not accept any other condition
                     default:
                         throw GraqlQueryException.invalidComputeCountCondition();
                 }
@@ -163,22 +163,24 @@ public class GraqlComputeConstructor {
      */
     private StatisticsQuery<?> initialiseComputeStatisticsQuery(int methodIndex) {
 
-        switch (methodIndex) {
-            case GraqlParser.MIN:
-                return queryBuilder.compute().min();
-            case GraqlParser.MAX:
-                return queryBuilder.compute().max();
-            case GraqlParser.MEDIAN:
-                return queryBuilder.compute().median();
-            case GraqlParser.MEAN:
-                return queryBuilder.compute().mean();
-            case GraqlParser.STD:
-                return queryBuilder.compute().std();
-            case GraqlParser.SUM:
-                return queryBuilder.compute().sum();
-            default:
-                throw GraqlQueryException.invalidComputeMethod();
-        }
+        return null;
+
+//        switch (methodIndex) {
+//            case GraqlParser.MIN:
+//                return queryBuilder.compute().min();
+//            case GraqlParser.MAX:
+//                return queryBuilder.compute().max();
+//            case GraqlParser.MEDIAN:
+//                return queryBuilder.compute().median();
+//            case GraqlParser.MEAN:
+//                return queryBuilder.compute().mean();
+//            case GraqlParser.STD:
+//                return queryBuilder.compute().std();
+//            case GraqlParser.SUM:
+//                return queryBuilder.compute().sum();
+//            default:
+//                throw GraqlQueryException.invalidComputeMethod();
+//        }
     }
 
     /**

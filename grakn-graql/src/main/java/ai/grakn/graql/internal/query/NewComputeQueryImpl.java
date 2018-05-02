@@ -130,8 +130,12 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     @Override
-    public final NewComputeQuery of(String... types) {
-        return of(Arrays.stream(types).map(Label::of).collect(toImmutableSet()));
+    public final NewComputeQuery of(String type, String... types) {
+        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
+        typeList.add(type);
+        typeList.addAll(Arrays.asList(types));
+
+        return of(typeList.stream().map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
@@ -147,8 +151,12 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     @Override
-    public final NewComputeQuery in(String... types) {
-        return in(Arrays.stream(types).map(Label::of).collect(toImmutableSet()));
+    public final NewComputeQuery in(String type, String... types) {
+        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
+        typeList.add(type);
+        typeList.addAll(Arrays.asList(types));
+
+        return in(typeList.stream().map(Label::of).collect(toImmutableSet()));
     }
 
     @Override
@@ -181,12 +189,13 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final Optional<Long> minK() {
-        if(method.equals(CENTRALITY) && algorithm.equals(K_CORE) && minK == null) {
+        if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && minK == null) {
             return Optional.of(DEFAULT_MIN_K);
         }
 
         return Optional.ofNullable(minK);
     }
+
     @Override
     public final NewComputeQueryImpl includeAttributes(boolean include) {
         this.includeAttribute = include;

@@ -57,7 +57,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";
     private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
     private static final String LABEL = "medianVertexProgram.label";
-    private static final String COUNT = "medianVertexProgram.count";
+    private static final String COUNT = "medianVertexProgram.setNumber";
     private static final String INDEX_START = "medianVertexProgram.indexStart";
     private static final String INDEX_END = "medianVertexProgram.indexEnd";
     private static final String INDEX_MEDIAN = "medianVertexProgram.indexMedian";
@@ -234,7 +234,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             memory.set(INDEX_END, memory.<Long>get(COUNT) - 1L);
             memory.set(INDEX_MEDIAN, (memory.<Long>get(COUNT) - 1L) / 2L);
 
-            LOGGER.debug("count: " + memory.<Long>get(COUNT));
+            LOGGER.debug("setNumber: " + memory.<Long>get(COUNT));
             LOGGER.debug("first pivot: " + memory.<Long>get(PIVOT));
 
         } else if (memory.getIteration() > 2) {
@@ -247,8 +247,8 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             LOGGER.debug(memory.<Long>get(INDEX_START) + ", " + indexNegativeEnd);
             LOGGER.debug(indexPositiveStart + ", " + memory.<Long>get(INDEX_END));
 
-            LOGGER.debug("negative count: " + memory.<Long>get(NEGATIVE_COUNT));
-            LOGGER.debug("positive count: " + memory.<Long>get(POSITIVE_COUNT));
+            LOGGER.debug("negative setNumber: " + memory.<Long>get(NEGATIVE_COUNT));
+            LOGGER.debug("positive setNumber: " + memory.<Long>get(POSITIVE_COUNT));
 
             LOGGER.debug("negative pivot: " + memory.get(PIVOT_NEGATIVE));
             LOGGER.debug("positive pivot: " + memory.get(PIVOT_POSITIVE));

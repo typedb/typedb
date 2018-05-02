@@ -394,7 +394,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingAQueryRemotelyThatReturnsOneResult_ReturnOneResult() throws InterruptedException {
-        String COUNT_QUERY = "compute count;";
+        String COUNT_QUERY = "compute setNumber;";
         CountQuery countQuery = mock(CountQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 

@@ -48,7 +48,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,9 +89,9 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             assertEquals(6L,
-                    ((Long) graph.graql().parse("compute count;").execute()).longValue());
+                    ((Long) graph.graql().parse("compute setNumber;").execute()).longValue());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in [thingy, thingy];").execute()).longValue());
+                    ((Long) graph.graql().parse("compute setNumber in [thingy, thingy];").execute()).longValue());
         }
     }
 
@@ -264,7 +263,7 @@ public class GraqlTest {
         }
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
-                "compute count;",
+                "compute setNumber;",
                 "compute centrality using degree;",
                 "compute mean of number;"));
 

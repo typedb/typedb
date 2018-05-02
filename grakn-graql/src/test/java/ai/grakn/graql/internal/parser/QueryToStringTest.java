@@ -74,7 +74,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertSameResults(qb.match(var("x").has("tmdb-vote-count", lte(400))).get());
+        assertSameResults(qb.match(var("x").has("tmdb-vote-setNumber", lte(400))).get());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count;", qb.compute().count().toString());
+        assertEquals("compute setNumber;", qb.compute().count().toString());
     }
 
     @Test

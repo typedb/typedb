@@ -47,7 +47,7 @@ public abstract class CommitLog {
     @JsonProperty
     public abstract Keyspace keyspace();
 
-    @JsonProperty("instance-count")
+    @JsonProperty("instance-setNumber")
     public abstract Map<ConceptId, Long> instanceCount();
 
     @JsonProperty("new-attributes")
@@ -56,7 +56,7 @@ public abstract class CommitLog {
     @JsonCreator
     public static CommitLog create(
             @JsonProperty("keyspace") Keyspace keyspace,
-            @JsonProperty("instance-count") Map<ConceptId, Long> instanceCount,
+            @JsonProperty("instance-setNumber") Map<ConceptId, Long> instanceCount,
             @JsonProperty("new-attributes") Map<String, Set<ConceptId>> newAttributes
     ){
         return new AutoValue_CommitLog(keyspace, instanceCount, newAttributes);

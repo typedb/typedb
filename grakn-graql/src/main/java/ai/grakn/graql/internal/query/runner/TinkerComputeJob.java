@@ -20,8 +20,6 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -31,57 +29,29 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StatisticsQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
 import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
-import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
-import ai.grakn.graql.internal.analytics.CountVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
-import ai.grakn.graql.internal.analytics.MedianVertexProgram;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
-import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import ai.grakn.graql.internal.analytics.StatisticsMapReduce;
-import ai.grakn.graql.internal.analytics.StdMapReduce;
-import ai.grakn.graql.internal.analytics.SumMapReduce;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import jline.internal.Nullable;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -109,12 +79,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     @Override
     public T get() {
-        if (query instanceof MinQuery) return (T) runComputeMin();
-        if (query instanceof MaxQuery) return (T) runComputeMax();
-        if (query instanceof MedianQuery) return (T) runComputeMedian();
-        if (query instanceof MeanQuery) return (T) runComputeMean();
-        if (query instanceof StdQuery) return (T) runComputeStd();
-        if (query instanceof SumQuery) return (T) runComputeSum();
         if (query instanceof DegreeQuery) return (T) runComputeDegree();
         if (query instanceof CorenessQuery) return (T) runComputeCoreness();
         if (query instanceof ConnectedComponentQuery) return (T) runComputeConnectedComponent();
@@ -270,82 +234,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         return result.memory().get(ClusterMemberMapReduce.class.getName());
     }
 
-    private Optional<Number> runComputeMin() {
-        return Optional.ofNullable(runComputeStatistics((MinQuery) query));
-    }
-
-    private Optional<Number> runComputeMax() {
-        return Optional.ofNullable(runComputeStatistics((MaxQuery) query));
-    }
-
-    private Optional<Number> runComputeMedian() {
-        return Optional.ofNullable(runComputeStatistics((MedianQuery) query));
-    }
-
-    private Optional<Double> runComputeMean() {
-        Map<String, Double> meanPair = runComputeStatistics((MeanQuery) query);
-        if (meanPair == null) return Optional.empty();
-
-        Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-
-        return Optional.of(mean);
-    }
-
-    private Optional<Double> runComputeStd() {
-        Map<String, Double> stdTuple = runComputeStatistics((StdQuery) query);
-        if (stdTuple == null) return Optional.empty();
-
-        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
-        double sum = stdTuple.get(StdMapReduce.SUM);
-        double count = stdTuple.get(StdMapReduce.COUNT);
-        Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
-
-        return Optional.of(std);
-    }
-
-    private Optional<Number> runComputeSum() {
-        return Optional.ofNullable(runComputeStatistics((SumQuery) query));
-    }
-
-    @Nullable
-    private <T> T runComputeStatistics(StatisticsQuery<?> query) {
-        TinkerStatisticsQuery tinkerComputeQuery = new TinkerStatisticsQuery(tx, query);
-        AttributeType.DataType<?> dataType = tinkerComputeQuery.validateAndGetDataTypes();
-        if (!tinkerComputeQuery.ofTypesHaveInstances()) return null;
-
-        Set<LabelId> allTypes = convertLabelsToIds(tinkerComputeQuery.fullScopeTypeLabels());
-        Set<LabelId> ofTypes = convertLabelsToIds(tinkerComputeQuery.ofTypeLabels());
-
-        VertexProgram program = initVertexProgram(query, ofTypes, dataType);
-        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(query, ofTypes, dataType);
-        ComputerResult computerResult = tinkerComputeQuery.compute(program, mapReduce, allTypes);
-
-        if (query instanceof MedianQuery) {
-            Number result = computerResult.memory().get(MedianVertexProgram.MEDIAN);
-            LOG.debug("Median = " + result);
-            return (T) result;
-        }
-
-        Map<Serializable, T> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
-        LOG.debug("Result = " + resultMap.get(MapReduce.NullObject.instance()));
-        return resultMap.get(MapReduce.NullObject.instance());
-    }
-
-    private VertexProgram initVertexProgram(StatisticsQuery<?> query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
-        if (query instanceof MedianQuery) return new MedianVertexProgram(ofTypes, dataTypes);
-        else return new DegreeStatisticsVertexProgram(ofTypes);
-    }
-
-    private StatisticsMapReduce<?> initStatisticsMapReduce
-            (StatisticsQuery<?> query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
-        if (query instanceof MinQuery) return new MinMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
-        if (query instanceof MaxQuery) return new MaxMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
-        if (query instanceof MeanQuery) return new MeanMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
-        if (query instanceof StdQuery) return new StdMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
-        if (query instanceof SumQuery) return new SumMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
-
-        return null;
-    }
 
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()

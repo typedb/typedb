@@ -94,7 +94,7 @@ public class MatchModifierTest {
     @Test
     public void testOrPatternOrderByResource() {
         Match match = qb.match(
-                x.isa("movie").has("tmdb-vote-count", var("v")),
+                x.isa("movie").has("tmdb-vote-setNumber", var("v")),
                 var().rel(x).rel(y),
                 or(
                         y.isa("person").has("name", "Marlon Brando"),
@@ -134,7 +134,7 @@ public class MatchModifierTest {
     @Test
     public void testVoteCountOrderedQuery() {
         Var z = var("z");
-        Match match = qb.match(z.isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
+        Match match = qb.match(z.isa("movie").has("tmdb-vote-setNumber", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
         assertThat(match, variable(z, contains(godfather, hocusPocus, apocalypseNow, theMuppets, chineseCoffee)));

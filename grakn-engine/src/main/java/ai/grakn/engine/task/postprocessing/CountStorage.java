@@ -32,7 +32,7 @@ import ai.grakn.concept.ConceptId;
  */
 public interface CountStorage {
     /**
-     * Adjusts the count for a specific concept.
+     * Adjusts the setNumber for a specific concept.
      *
      * @param keyspace
      * @param conceptId
@@ -42,7 +42,7 @@ public interface CountStorage {
     long incrementInstanceCount(Keyspace keyspace, ConceptId conceptId, long incrementBy);
 
     /**
-     * Adjusts the shard count for a specific concept.
+     * Adjusts the shard setNumber for a specific concept.
      *
      * @param keyspace
      * @param conceptId
@@ -52,20 +52,20 @@ public interface CountStorage {
     long incrementShardCount(Keyspace keyspace, ConceptId conceptId, long incrementBy);
 
     /**
-     * Get the instance count for a specific concept.
+     * Get the instance setNumber for a specific concept.
      *
      * @param keyspace
      * @param conceptId
-     * @return the instance count
+     * @return the instance setNumber
      */
     long getInstanceCount(Keyspace keyspace, ConceptId conceptId);
 
     /**
-     * Get the shard count for a specific concept.
+     * Get the shard setNumber for a specific concept.
      *
      * @param keyspace
      * @param conceptId
-     * @return the shard count
+     * @return the shard setNumber
      */
     long getShardCount(Keyspace keyspace, ConceptId conceptId);
 }

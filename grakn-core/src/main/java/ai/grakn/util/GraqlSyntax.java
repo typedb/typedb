@@ -46,7 +46,7 @@ public class GraqlSyntax {
      * Graql Compute syntax keyword
      */
     public static class Compute {
-        public static final String COUNT        = "count";
+        public static final String COUNT        = "setNumber";
         public static final String MIN          = "min";
         public static final String MAX          = "max";
         public static final String MEDIAN       = "median";

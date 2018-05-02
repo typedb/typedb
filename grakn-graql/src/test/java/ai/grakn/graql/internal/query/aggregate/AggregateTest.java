@@ -129,7 +129,7 @@ public class AggregateTest {
     @Test
     public void testSumLong() {
         AggregateQuery<Number> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-setNumber"))
                 .aggregate(sum("y"));
 
         assertEquals(1940L, query.execute());
@@ -147,7 +147,7 @@ public class AggregateTest {
     @Test
     public void testMaxLong() {
         AggregateQuery<Optional<Long>> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-setNumber"))
                 .aggregate(max("y"));
 
         assertEquals(Optional.of(1000L), query.execute());
@@ -171,7 +171,7 @@ public class AggregateTest {
     @Test
     public void testMinLong() {
         AggregateQuery<Optional<Long>> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-setNumber"))
                 .aggregate(min("y"));
 
         assertEquals(Optional.of(5L), query.execute());
@@ -190,7 +190,7 @@ public class AggregateTest {
     @Test
     public void testMedianLong() {
         AggregateQuery<Optional<Number>> query = qb
-                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-setNumber"))
                 .aggregate(median("y"));
 
         assertEquals(Optional.of(400L), query.execute());
@@ -209,7 +209,7 @@ public class AggregateTest {
     @Test
     public void testStdevLong() {
         AggregateQuery<Optional<Double>> query = qb
-                .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
+                .match(var("x").isa("movie").has("tmdb-vote-setNumber", var("y")))
                 .aggregate(std("y"));
 
         double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;

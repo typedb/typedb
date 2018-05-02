@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknComputer;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -36,14 +37,23 @@ import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
+import ai.grakn.graql.internal.analytics.MaxMapReduce;
+import ai.grakn.graql.internal.analytics.MeanMapReduce;
+import ai.grakn.graql.internal.analytics.MedianVertexProgram;
+import ai.grakn.graql.internal.analytics.MinMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
+import ai.grakn.graql.internal.analytics.StatisticsMapReduce;
+import ai.grakn.graql.internal.analytics.StdMapReduce;
+import ai.grakn.graql.internal.analytics.SumMapReduce;
 import ai.grakn.graql.internal.analytics.Utility;
 import ai.grakn.graql.internal.query.ComputeAnswerImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.GraqlSyntax;
+import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -55,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +77,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.GraqlSyntax.Compute.COUNT;
+import static ai.grakn.util.GraqlSyntax.Compute.MAX;
+import static ai.grakn.util.GraqlSyntax.Compute.MEAN;
+import static ai.grakn.util.GraqlSyntax.Compute.MEDIAN;
+import static ai.grakn.util.GraqlSyntax.Compute.MIN;
+import static ai.grakn.util.GraqlSyntax.Compute.PATH;
+import static ai.grakn.util.GraqlSyntax.Compute.STD;
+import static ai.grakn.util.GraqlSyntax.Compute.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
@@ -91,8 +111,13 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     @Override
     public ComputeAnswer get() {
-        if (query.method().equals(GraqlSyntax.Compute.COUNT)) return runComputeCount();
-        if (query.method().equals(GraqlSyntax.Compute.PATH)) return runComputePath();
+        switch (query.method()) {
+            case MIN: case MAX: case MEDIAN: case SUM: return runComputeMinMaxMedianOrSum();
+            case MEAN: return runComputeMean();
+            case STD: return runComputeStd();
+            case COUNT: return runComputeCount();
+            case PATH: return runComputePath();
+        }
 
         throw GraqlQueryException.invalidComputeMethod();
     }
@@ -100,8 +125,8 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> types,
-                                        Boolean includesRolePlayerEdges
-    ) {
+                                        Boolean includesRolePlayerEdges) {
+
         return tx.session().getGraphComputer().compute(program, mapReduce, types, includesRolePlayerEdges);
     }
 
@@ -112,19 +137,120 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return tx.session().getGraphComputer().compute(program, mapReduce, types);
     }
 
+    private ComputeAnswer runComputeMinMaxMedianOrSum() {
+        return new ComputeAnswerImpl().setNumber(runComputeStatistics());
+    }
+
+    private ComputeAnswer runComputeMean() {
+        ComputeAnswer answer = new ComputeAnswerImpl();
+
+        Map<String, Double> meanPair = runComputeStatistics();
+        if (meanPair == null) return answer;
+
+        Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
+
+        return answer.setNumber(mean);
+    }
+
+    private ComputeAnswer runComputeStd() {
+        ComputeAnswer answer = new ComputeAnswerImpl();
+
+        Map<String, Double> stdTuple = runComputeStatistics();
+        if (stdTuple == null) return answer;
+
+        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
+        double sum = stdTuple.get(StdMapReduce.SUM);
+        double count = stdTuple.get(StdMapReduce.COUNT);
+        Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
+
+        return answer.setNumber(std);
+    }
+
+    @jline.internal.Nullable
+    private <T> T runComputeStatistics() {
+        AttributeType.DataType<?> dataType = validateAndGetDataTypes();
+        if (!targetContainsInstance()) return null;
+
+        Set<LabelId> allTypes = convertLabelsToIds(extendedScopeTypeLabels());
+        Set<LabelId> ofTypes = convertLabelsToIds(targetTypeLabels());
+
+        VertexProgram program = initVertexProgram(query, ofTypes, dataType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(ofTypes, dataType);
+        ComputerResult computerResult = compute(program, mapReduce, allTypes);
+
+        if (query.method().equals(MEDIAN)) {
+            Number result = computerResult.memory().get(MedianVertexProgram.MEDIAN);
+            LOG.debug("Median = " + result);
+            return (T) result;
+        }
+
+        Map<Serializable, T> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
+        LOG.debug("Result = " + resultMap.get(MapReduce.NullObject.instance()));
+        return resultMap.get(MapReduce.NullObject.instance());
+    }
+
+    @Nullable
+    private AttributeType.DataType<?> validateAndGetDataTypes() {
+        AttributeType.DataType<?> dataType = null;
+        for (Type type : targetTypes()) {
+            // check if the selected type is a attribute type
+            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+            AttributeType<?> attributeType = type.asAttributeType();
+            if (dataType == null) {
+                // check if the attribute type has data-type LONG or DOUBLE
+                dataType = attributeType.getDataType();
+                if (!dataType.equals(AttributeType.DataType.LONG) &&
+                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
+                    throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.getLabel());
+                }
+
+            } else {
+                // check if all the attribute types have the same data-type
+                if (!dataType.equals(attributeType.getDataType())) {
+                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of().get());
+                }
+            }
+        }
+        return dataType;
+    }
+
+
+    private VertexProgram initVertexProgram(NewComputeQuery query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
+        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(ofTypes, dataTypes);
+        else return new DegreeStatisticsVertexProgram(ofTypes);
+    }
+
+    private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
+        switch (query.method()) {
+            case MIN:
+                return new MinMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+            case MAX:
+                return new MaxMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+            case MEAN:
+                return new MeanMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+            case STD:
+                return new StdMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+            case SUM:
+                return new SumMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+        }
+
+        return null;
+    }
+
     /**
-     * Run Graql compute count query
-     * @return a ComputeAnswer object containing the count value
+     * Run Graql compute setNumber query
+     *
+     * @return a ComputeAnswer object containing the setNumber value
      */
     private ComputeAnswer runComputeCount() {
         ComputeAnswer answer = new ComputeAnswerImpl();
 
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return answer.count(0L);
+            return answer.setNumber(0L);
         }
 
-        Set<LabelId> typeLabelIds = convertLabelsToIds(scopedTypeLabels());
+        Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
         Map<Integer, Long> count;
 
         Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
@@ -144,11 +270,12 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return answer.count(finalCount);
+        return answer.setNumber(finalCount);
     }
 
     /**
      * Run Graql compute path query
+     *
      * @return a ComputeAnswer containing the list of shortest paths
      */
     private ComputeAnswer runComputePath() {
@@ -161,7 +288,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         if (fromID.equals(toID)) return answer.paths(ImmutableList.of(ImmutableList.of(tx.getConcept(fromID))));
 
         ComputerResult result;
-        Set<LabelId> scopedLabelIDs = convertLabelsToIds(scopedTypeLabels());
+        Set<LabelId> scopedLabelIDs = convertLabelsToIds(scopeTypeLabels());
         try {
             result = compute(new ShortestPathVertexProgram(fromID, toID), null, scopedLabelIDs);
         } catch (NoResultException e) {
@@ -206,7 +333,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
      * @param fromID
      * @return
      */
-    final List<List<Concept>> getComputePathResultList(Multimap<Concept, Concept> resultGraph, ConceptId fromID) {
+    private List<List<Concept>> getComputePathResultList(Multimap<Concept, Concept> resultGraph, ConceptId fromID) {
         List<List<Concept>> allPaths = new ArrayList<>();
         List<Concept> firstPath = new ArrayList<>();
         firstPath.add(getConcept(fromID.getValue()));
@@ -235,10 +362,11 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     /**
      * Helper method t get the list of all shortest path, but also including the implicit relations that connect
      * entities and attributes
+     *
      * @param allPaths
      * @return
      */
-    final List<List<Concept>> getComputePathResultListIncludingImplicitRelations(List<List<Concept>> allPaths) {
+    private List<List<Concept>> getComputePathResultListIncludingImplicitRelations(List<List<Concept>> allPaths) {
         List<List<Concept>> extendedPaths = new ArrayList<>();
         for (List<Concept> currentPath : allPaths) {
             boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
@@ -290,10 +418,11 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     /**
      * Helper method to get the label IDs of role players in a relationship
-     * @return
+     *
+     * @return a set of type label IDs
      */
     private Set<LabelId> getRolePlayerLabelIds() {
-        return scopedTypes()
+        return scopeTypes()
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
@@ -305,11 +434,90 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Helper method to get the types to be included in the scope of computation
+     * Helper method to get implicit relationship types of attributes
+     *
+     * @param types
+     * @return a set of type Labels
+     */
+    private static Set<Label> getAttributeImplicitRelationTypeLabes(Set<Type> types) {
+        // If the sub graph contains attributes, we may need to add implicit relations to the path
+        return types.stream()
+                .filter(Concept::isAttributeType)
+                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Helper method to get the types to be included in the query target
+     * 
+     * @return a set of Types
+     */
+    private ImmutableSet<Type> targetTypes() {
+        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
+        }
+
+        return query.of().get().stream()
+                .map((label) -> {
+                    Type type = tx.getSchemaConcept(label);
+                    if (type == null) throw GraqlQueryException.labelNotFound(label);
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+                    return type;
+                })
+                .flatMap(Type::subs)
+                .collect(CommonUtil.toImmutableSet());
+    }
+
+    /**
+     * Helper method to get the labels of the type in the query target
+     *
+     * @return a set of type Labels
+     */
+    private Set<Label> targetTypeLabels() {
+        return targetTypes().stream()
+                .map(SchemaConcept::getLabel)
+                .collect(CommonUtil.toImmutableSet());
+    }
+
+    /**
+     * Helper method to check whether the concept types in the target have any instances
+     *
+     * @return true if they exist, false if they don't
+     */
+    private boolean targetContainsInstance() {
+        for (Label attributeType : targetTypeLabels()) {
+            for (Label type : scopeTypeLabels()) {
+                Boolean patternExist = tx.graql().infer(false).match(
+                        Graql.var("x").has(attributeType, Graql.var()),
+                        Graql.var("x").isa(Graql.label(type))
+                ).iterator().hasNext();
+                if (patternExist) return true;
+            }
+        }
+        return false;
+        //TODO: should use the following ask query when ask query is even lazier
+//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
+//                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
+//        List<Pattern> checkSubtypes = inTypes.stream()
+//                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
+//
+//        return tx.get().graql().infer(false)
+//                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
+    }
+
+    private Set<Label> extendedScopeTypeLabels() {
+        Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes());
+        extendedTypeLabels.addAll(scopeTypeLabels());
+        extendedTypeLabels.addAll(query.of().get());
+        return extendedTypeLabels;
+    }
+
+    /**
+     * Helper method to get the types to be included in the query scope
      *
      * @return stream of Concept Types
      */
-    private Stream<Type> scopedTypes() {
+    private Stream<Type> scopeTypes() {
         // get all types if query.inTypes() is empty, else get all scoped types of each meta type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
         if (!query.in().isPresent() || query.in().get().isEmpty()) {
@@ -340,29 +548,30 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Helper method to get the inType labels
+     * Helper method to get the labels of the type in the query scope
      *
      * @return a set of Concept Type Labels
      */
-    private ImmutableSet<Label> scopedTypeLabels() {
-        return scopedTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
+    private ImmutableSet<Label> scopeTypeLabels() {
+        return scopeTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
     }
 
 
     /**
      * Helper method to check whether the concept types in the scope have any instances
+     *
      * @return
      */
     private boolean scopeContainsInstance() {
-        if (scopedTypeLabels().isEmpty()) return false;
-        List<Pattern> checkSubtypes = scopedTypeLabels().stream()
+        if (scopeTypeLabels().isEmpty()) return false;
+        List<Pattern> checkSubtypes = scopeTypeLabels().stream()
                 .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
 
         return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
     }
 
     /**
-     * Helper method to check if Concept instances exist in the scope of computation
+     * Helper method to check if concept instances exist in the query scope
      *
      * @param ids
      * @return true if they exist, false if they don't
@@ -370,13 +579,13 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     private boolean scopeContainsInstances(ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !scopedTypeLabels().contains(thing.type().getLabel())) return false;
+            if (thing == null || !scopeTypeLabels().contains(thing.type().getLabel())) return false;
         }
         return true;
     }
 
     /**
-     * Helper method to check whether attribute types should be included in the scope of computation
+     * Helper method to check whether attribute types should be included in the query scope
      *
      * @return true if they exist, false if they don't
      */
@@ -385,7 +594,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Helper method to check whether implicit or attribute types are included in the scope of computation
+     * Helper method to check whether implicit or attribute types are included in the query scope
      *
      * @return true if they exist, false if they don't
      */

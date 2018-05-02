@@ -20,12 +20,9 @@ package ai.grakn.graql.internal.query.runner;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -83,11 +80,6 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
                                         @Nullable Set<LabelId> types) {
 
         return computer.compute(program, mapReduce, types);
-    }
-
-    @Nullable
-    private Thing getConcept(String conceptId) {
-        return tx.getConcept(ConceptId.of(conceptId));
     }
 
     final Stream<Type> inTypes() {
