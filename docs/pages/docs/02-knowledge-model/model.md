@@ -149,11 +149,11 @@ define
   plays employer;
 
   name sub attribute, datatype string;
-  "date" sub attribute, datatype string;
+  event-date sub attribute, datatype date;
 
   employment sub relationship,
     relates employee, relates employer,
-    has "date";
+    has event-date;
 ```
 
 <br /> <img src="/images/knowledge-model6.png" style="width: 400px;" alt="

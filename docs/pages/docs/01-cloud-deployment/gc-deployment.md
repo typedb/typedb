@@ -12,7 +12,7 @@ folder: docs
 
 ## Deployment
 We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the
-[Cloud Launcher](https://console.cloud.google.com/launcher/details/grakn-public/grakn-kbms-public):
+[Cloud Launcher](https://console.cloud.google.com/launcher/details/grakn-public/grakn-kgms-premium):
 
 ![](/images/gc-solution-listing.png)
 
@@ -29,6 +29,8 @@ That is all! Your cluster deployment is now pending.
 When the deployment is complete you should be able to see the post-deployment screen:
 
 ![](/images/gc-deployment-complete.png)
+
+Once the vms are deployed, please allow some time for cluster to fully bootup and synchronise. 2 minutes per node in a cluster is a reasonable rule of thumb for full bootup time.
 
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
