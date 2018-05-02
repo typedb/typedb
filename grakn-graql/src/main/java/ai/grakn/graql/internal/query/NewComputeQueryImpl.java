@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.joining;
 public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAnswer> implements NewComputeQuery {
 
 
-    private GraknTx tx;
+    private Optional<GraknTx> tx;
     private Set<ComputeJob<ComputeAnswer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private String method;
@@ -55,11 +55,11 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private final static long DEFAULT_MIN_K = 2L;
     private static final boolean DEFAULT_INCLUDE_ATTRIBUTE = false;
 
-    public NewComputeQueryImpl(GraknTx tx, String method) {
+    public NewComputeQueryImpl(Optional<GraknTx> tx, String method) {
         this(tx, method, DEFAULT_INCLUDE_ATTRIBUTE);
     }
 
-    public NewComputeQueryImpl(GraknTx tx, String method, boolean includeAttribute) {
+    public NewComputeQueryImpl(Optional<GraknTx> tx, String method, boolean includeAttribute) {
         this.method = method;
         this.tx = tx;
         this.includeAttribute = includeAttribute;
@@ -93,13 +93,13 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
     @Override
     public final NewComputeQuery withTx(GraknTx tx) {
-        this.tx = tx;
+        this.tx = Optional.of(tx);
         return this;
     }
 
     @Override
     public final Optional<GraknTx> tx() {
-        return Optional.ofNullable(tx);
+        return tx;
     }
 
     @Override
@@ -309,6 +309,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
         result = 31 * result + algorithm.hashCode();
         result = 31 * result + minK.hashCode();
         result = 31 * result + Boolean.hashCode(includeAttribute);
+
         return result;
     }
 }

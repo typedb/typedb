@@ -111,7 +111,7 @@ public class ConnectedComponentTest {
             Map<String, Set<String>> memberMap = graph.graql().compute().cluster().usingConnectedComponent()
                     .membersOn().execute();
             assertTrue(memberMap.isEmpty());
-            assertEquals(0L, graph.graql().compute().count().execute().longValue());
+            assertEquals(0L, graph.graql().compute().count().execute().count().get().longValue());
         }
     }
 

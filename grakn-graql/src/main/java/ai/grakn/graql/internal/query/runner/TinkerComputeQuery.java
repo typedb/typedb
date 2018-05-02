@@ -90,18 +90,6 @@ class TinkerComputeQuery<Q extends ComputeQuery<?>> {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
-    final Set<LabelId> getRolePlayerLabelIds() {
-        return inTypes()
-                .filter(Concept::isRelationshipType)
-                .map(Concept::asRelationshipType)
-                .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::relates)
-                .flatMap(Role::playedByTypes)
-                .map(type -> tx.convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
-    }
-
     final Stream<Type> inTypes() {
         // get all types if subGraph is empty, else get all inTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them

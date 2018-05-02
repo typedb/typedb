@@ -109,7 +109,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     @Override
     public T get() {
-        if (query instanceof CountQuery) return (T) runComputeCount();
         if (query instanceof MinQuery) return (T) runComputeMin();
         if (query instanceof MaxQuery) return (T) runComputeMax();
         if (query instanceof MedianQuery) return (T) runComputeMedian();
@@ -269,36 +268,6 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
         }
 
         return result.memory().get(ClusterMemberMapReduce.class.getName());
-    }
-
-    private Long runComputeCount() {
-        TinkerComputeQuery<CountQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
-        if (!tinkerComputeQuery.inTypesHaveInstances()) {
-            LOG.debug("Count = 0");
-            return 0L;
-        }
-
-        Set<LabelId> typeLabelIds = convertLabelsToIds(tinkerComputeQuery.inTypeLabels());
-        Map<Integer, Long> count;
-
-        Set<LabelId> rolePlayerLabelIds = tinkerComputeQuery.getRolePlayerLabelIds();
-        rolePlayerLabelIds.addAll(typeLabelIds);
-
-        ComputerResult result = tinkerComputeQuery.compute(
-                new CountVertexProgram(),
-                new CountMapReduceWithAttribute(),
-                rolePlayerLabelIds, false);
-        count = result.memory().get(CountMapReduceWithAttribute.class.getName());
-
-        long finalCount = count.keySet().stream()
-                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
-                .mapToLong(count::get).sum();
-        if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
-            finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
-        }
-
-        LOG.debug("Count = " + finalCount);
-        return finalCount;
     }
 
     private Optional<Number> runComputeMin() {

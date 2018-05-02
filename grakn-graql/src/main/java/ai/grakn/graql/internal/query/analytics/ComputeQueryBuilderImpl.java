@@ -62,8 +62,8 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public CountQuery count() {
-        return new CountQueryImpl(tx);
+    public NewComputeQuery count() {
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.COUNT);
     }
 
     @Override
@@ -98,7 +98,7 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     @Override
     public NewComputeQuery path() {
-        return new NewComputeQueryImpl(tx.get(), GraqlSyntax.Compute.PATH);
+        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.PATH);
     }
 
     @Override

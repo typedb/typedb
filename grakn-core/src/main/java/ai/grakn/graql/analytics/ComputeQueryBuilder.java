@@ -42,7 +42,7 @@ public interface ComputeQueryBuilder {
      * @return a count query that will count the number of instances
      */
     @CheckReturnValue
-    CountQuery count();
+    NewComputeQuery count();
 
     /**
      * @return a min query that will find the min value of the given resource types

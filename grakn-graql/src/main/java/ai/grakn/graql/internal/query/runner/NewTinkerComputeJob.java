@@ -24,12 +24,19 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeAnswer;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
+import ai.grakn.graql.internal.analytics.CountVertexProgram;
+import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.graql.internal.analytics.Utility;
@@ -84,6 +91,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     @Override
     public ComputeAnswer get() {
+        if (query.method().equals(GraqlSyntax.Compute.COUNT)) return runComputeCount();
         if (query.method().equals(GraqlSyntax.Compute.PATH)) return runComputePath();
 
         throw GraqlQueryException.invalidComputeMethod();
@@ -105,8 +113,43 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Run graql compute path query
-     * @return a ComputeAnswer object
+     * Run Graql compute count query
+     * @return a ComputeAnswer object containing the count value
+     */
+    private ComputeAnswer runComputeCount() {
+        ComputeAnswer answer = new ComputeAnswerImpl();
+
+        if (!scopeContainsInstance()) {
+            LOG.debug("Count = 0");
+            return answer.count(0L);
+        }
+
+        Set<LabelId> typeLabelIds = convertLabelsToIds(scopedTypeLabels());
+        Map<Integer, Long> count;
+
+        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
+        rolePlayerLabelIds.addAll(typeLabelIds);
+
+        ComputerResult result = compute(
+                new CountVertexProgram(),
+                new CountMapReduceWithAttribute(),
+                rolePlayerLabelIds, false);
+        count = result.memory().get(CountMapReduceWithAttribute.class.getName());
+
+        long finalCount = count.keySet().stream()
+                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
+                .mapToLong(count::get).sum();
+        if (count.containsKey(GraknMapReduce.RESERVED_TYPE_LABEL_KEY)) {
+            finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
+        }
+
+        LOG.debug("Count = " + finalCount);
+        return answer.count(finalCount);
+    }
+
+    /**
+     * Run Graql compute path query
+     * @return a ComputeAnswer containing the list of shortest paths
      */
     private ComputeAnswer runComputePath() {
         ComputeAnswer answer = new ComputeAnswerImpl();
@@ -114,7 +157,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         ConceptId fromID = query.from().get();
         ConceptId toID = query.to().get();
 
-        if (!conceptsExistAndWithinScope(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
+        if (!scopeContainsInstances(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
         if (fromID.equals(toID)) return answer.paths(ImmutableList.of(ImmutableList.of(tx.getConcept(fromID))));
 
         ComputerResult result;
@@ -245,6 +288,21 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return tx.getConcept(ConceptId.of(conceptId));
     }
 
+    /**
+     * Helper method to get the label IDs of role players in a relationship
+     * @return
+     */
+    private Set<LabelId> getRolePlayerLabelIds() {
+        return scopedTypes()
+                .filter(Concept::isRelationshipType)
+                .map(Concept::asRelationshipType)
+                .filter(RelationshipType::isImplicit)
+                .flatMap(RelationshipType::relates)
+                .flatMap(Role::playedByTypes)
+                .map(type -> tx.convertToId(type.getLabel()))
+                .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
+    }
 
     /**
      * Helper method to get the types to be included in the scope of computation
@@ -290,6 +348,33 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return scopedTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
     }
 
+
+    /**
+     * Helper method to check whether the concept types in the scope have any instances
+     * @return
+     */
+    private boolean scopeContainsInstance() {
+        if (scopedTypeLabels().isEmpty()) return false;
+        List<Pattern> checkSubtypes = scopedTypeLabels().stream()
+                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
+
+        return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
+    }
+
+    /**
+     * Helper method to check if Concept instances exist in the scope of computation
+     *
+     * @param ids
+     * @return true if they exist, false if they don't
+     */
+    private boolean scopeContainsInstances(ConceptId... ids) {
+        for (ConceptId id : ids) {
+            Thing thing = tx.getConcept(id);
+            if (thing == null || !scopedTypeLabels().contains(thing.type().getLabel())) return false;
+        }
+        return true;
+    }
+
     /**
      * Helper method to check whether attribute types should be included in the scope of computation
      *
@@ -310,20 +395,6 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));
         });
-    }
-
-    /**
-     * Helper method to check if Concept instances exist in the scope of computation
-     *
-     * @param ids
-     * @return true if they exist, false if they don't
-     */
-    private boolean conceptsExistAndWithinScope(ConceptId... ids) {
-        for (ConceptId id : ids) {
-            Thing thing = tx.getConcept(id);
-            if (thing == null || !scopedTypeLabels().contains(thing.type().getLabel())) return false;
-        }
-        return true;
     }
 
     /**

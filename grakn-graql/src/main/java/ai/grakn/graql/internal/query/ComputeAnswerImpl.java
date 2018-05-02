@@ -10,16 +10,45 @@ import java.util.Optional;
 
 public class ComputeAnswerImpl implements ComputeAnswer {
 
-    private Optional<List<List<Concept>>> paths;
+    private Long count = null;
+    private List<List<Concept>> paths = null;
 
     public ComputeAnswerImpl() {}
 
+    public Optional<Long> count() {
+        return Optional.ofNullable(count);
+    }
+
+    public ComputeAnswer count(Long count) {
+        this.count = count;
+        return this;
+    }
+
     public Optional<List<List<Concept>>> paths() {
-        return paths;
+        return Optional.ofNullable(paths);
     }
 
     public ComputeAnswer paths(List<List<Concept>> paths) {
-        this.paths = Optional.of(ImmutableList.copyOf(paths));
+        this.paths = ImmutableList.copyOf(paths);
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        ComputeAnswer that = (ComputeAnswer) o;
+
+        return (this.paths().equals(that.paths()) &&
+                this.count().equals(that.count()));
+    }
+
+    @Override
+    public int hashCode() {
+        int result = count.hashCode();
+        result = 31 * result + paths.hashCode();
+
+        return result;
     }
 }

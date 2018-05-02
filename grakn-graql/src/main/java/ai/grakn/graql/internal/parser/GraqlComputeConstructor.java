@@ -94,7 +94,7 @@ public class GraqlComputeConstructor {
      */
     private CountQuery constructComputeCountQuery(GraqlParser.ComputeConditionsContext conditions) {
 
-        CountQuery computeCount = queryBuilder.compute().count();
+        CountQuery computeCount = null; //todo: queryBuilder.compute().count();
 
         if(conditions != null) {
             for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
