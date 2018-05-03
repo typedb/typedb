@@ -124,23 +124,32 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
-                                        @Nullable Set<LabelId> types,
+                                        @Nullable Set<LabelId> scope,
                                         Boolean includesRolePlayerEdges) {
 
-        return tx.session().getGraphComputer().compute(program, mapReduce, types, includesRolePlayerEdges);
+        return tx.session().getGraphComputer().compute(program, mapReduce, scope, includesRolePlayerEdges);
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
-                                        @Nullable Set<LabelId> types) {
+                                        @Nullable Set<LabelId> scope) {
 
-        return tx.session().getGraphComputer().compute(program, mapReduce, types);
+        return tx.session().getGraphComputer().compute(program, mapReduce, scope);
     }
 
+    /**
+     * The Graql compute min, max, median, or sum query run method
+     *
+     * @return a ComputeAnswer object containing a Number that represents the answer
+     */
     private ComputeAnswer runComputeMinMaxMedianOrSum() {
         return new ComputeAnswerImpl().setNumber(runComputeStatistics());
     }
 
+    /**
+     * The Graql compute mean query run method
+     * @return a ComputeAnswer object containing a Number that represents the answer
+     */
     private ComputeAnswer runComputeMean() {
         ComputeAnswer answer = new ComputeAnswerImpl();
 
@@ -152,6 +161,11 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return answer.setNumber(mean);
     }
 
+    /**
+     * The Graql compute std query run method
+     *
+     * @return a ComputeAnswer object containing a Number that represents the answer
+     */
     private ComputeAnswer runComputeStd() {
         ComputeAnswer answer = new ComputeAnswerImpl();
 
@@ -166,17 +180,23 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return answer.setNumber(std);
     }
 
-    @jline.internal.Nullable
+    /**
+     * The compute statistics base algorithm that is called in every compute statistics query
+     *
+     * @param <T> The return type of {@link StatisticsMapReduce}
+     * @return result of compute statistics algorithm, which will be of type T
+     */
+    @Nullable
     private <T> T runComputeStatistics() {
-        AttributeType.DataType<?> dataType = validateAndGetDataTypes();
+        AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType();
         if (!targetContainsInstance()) return null;
 
-        Set<LabelId> allTypes = convertLabelsToIds(extendedScopeTypeLabels());
-        Set<LabelId> ofTypes = convertLabelsToIds(targetTypeLabels());
+        Set<LabelId> extendedScopeTypes = convertLabelsToIds(extendedScopeTypeLabels());
+        Set<LabelId> targetTypes = convertLabelsToIds(targetTypeLabels());
 
-        VertexProgram program = initVertexProgram(query, ofTypes, dataType);
-        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(ofTypes, dataType);
-        ComputerResult computerResult = compute(program, mapReduce, allTypes);
+        VertexProgram program = initStatisticsVertexProgram(query, targetTypes, targetDataType);
+        StatisticsMapReduce<?> mapReduce = initStatisticsMapReduce(targetTypes, targetDataType);
+        ComputerResult computerResult = compute(program, mapReduce, extendedScopeTypes);
 
         if (query.method().equals(MEDIAN)) {
             Number result = computerResult.memory().get(MedianVertexProgram.MEDIAN);
@@ -189,8 +209,13 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return resultMap.get(MapReduce.NullObject.instance());
     }
 
+    /**
+     * Helper method to validate that the target types are of one data type, and get that data type
+     *
+     * @return the DataType of the target types
+     */
     @Nullable
-    private AttributeType.DataType<?> validateAndGetDataTypes() {
+    private AttributeType.DataType<?> validateAndGetTargetDataType() {
         AttributeType.DataType<?> dataType = null;
         for (Type type : targetTypes()) {
             // check if the selected type is a attribute type
@@ -199,11 +224,9 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
             if (dataType == null) {
                 // check if the attribute type has data-type LONG or DOUBLE
                 dataType = attributeType.getDataType();
-                if (!dataType.equals(AttributeType.DataType.LONG) &&
-                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
+                if (!dataType.equals(AttributeType.DataType.LONG) && !dataType.equals(AttributeType.DataType.DOUBLE)) {
                     throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.getLabel());
                 }
-
             } else {
                 // check if all the attribute types have the same data-type
                 if (!dataType.equals(attributeType.getDataType())) {
@@ -214,24 +237,38 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         return dataType;
     }
 
-
-    private VertexProgram initVertexProgram(NewComputeQuery query, Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
-        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(ofTypes, dataTypes);
-        else return new DegreeStatisticsVertexProgram(ofTypes);
+    /**
+     * Helper method to intialise the vertex program for compute statistics queries
+     *
+     * @param query representing the compute query
+     * @param targetTypes representing the attribute types in which the statistics computation is targeted for
+     * @param targetDataType representing the data type of the target attribute types
+     * @return an object which is a subclass of VertexProgram
+     */
+    private VertexProgram initStatisticsVertexProgram(NewComputeQuery query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
+        if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetDataType);
+        else return new DegreeStatisticsVertexProgram(targetTypes);
     }
 
-    private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> ofTypes, AttributeType.DataType<?> dataTypes) {
+    /**
+     * Helper method to initialise the MapReduce algorithm for compute statistics queries
+     *
+     * @param targetTypes representing the attribute types in which the statistics computation is targeted for
+     * @param targetDataType representing the data type of the target attribute types
+     * @return an object which is a subclass of StatisticsMapReduce
+     */
+    private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
         switch (query.method()) {
             case MIN:
-                return new MinMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+                return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
             case MAX:
-                return new MaxMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+                return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
             case MEAN:
-                return new MeanMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+                return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
             case STD:
-                return new StdMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+                return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
             case SUM:
-                return new SumMapReduce(ofTypes, dataTypes, DegreeVertexProgram.DEGREE);
+                return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         }
 
         return null;
@@ -274,7 +311,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Run Graql compute path query
+     * The Graql compute path query run method
      *
      * @return a ComputeAnswer containing the list of shortest paths
      */
@@ -305,17 +342,21 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     }
 
     /**
-     * Helper methed to get predecessor map from the result of shortest path computation
+     * Helper methed to get the graph of concepts that contains all the shortest path as a result of compute path query.
      *
      * @param result
-     * @return a multmap of Concept to Concepts
+     * @return a multimap of Concept to Concepts, representing a graph
      */
     private Multimap<Concept, Concept> getComputePathResultGraph(ComputerResult result) {
+        // The result is contained in 2 halves:
+        // The first half of the result are the half-way paths from the source concept
+        // The second half o the result are the half-way paths from the destination concept
         Map<String, Set<String>> predecessorMapFromSource =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
         Map<String, Set<String>> predecessorMapFromDestination =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
 
+        // Stitching the two halves provides us the full graph that contains all the shortest path
         Multimap<Concept, Concept> resultGraph = HashMultimap.create();
         predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
             resultGraph.put(getConcept(id), getConcept(id2));
@@ -449,7 +490,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     /**
      * Helper method to get the types to be included in the query target
-     * 
+     *
      * @return a set of Types
      */
     private ImmutableSet<Type> targetTypes() {
@@ -505,6 +546,12 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
+    /**
+     * Helper method to get all the concept types that should scope of compute query, which includes the implicit types
+     * between attributes and entities, if target types were provided. This is used for compute statistics queries.
+     *
+     * @return a set of type labels
+     */
     private Set<Label> extendedScopeTypeLabels() {
         Set<Label> extendedTypeLabels = getAttributeImplicitRelationTypeLabes(targetTypes());
         extendedTypeLabels.addAll(scopeTypeLabels());
@@ -518,8 +565,8 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
      * @return stream of Concept Types
      */
     private Stream<Type> scopeTypes() {
-        // get all types if query.inTypes() is empty, else get all scoped types of each meta type in subGraph
-        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
+        // Only include attributes and implicit "has-xxx" relationships when user specifically asked for them.
         if (!query.in().isPresent() || query.in().get().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
