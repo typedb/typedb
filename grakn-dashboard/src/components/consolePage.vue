@@ -130,6 +130,12 @@ export default {
          * EngineClient callbacks
          */
     shellResponse(resp, err) {
+
+      // Remove unwanted characters during ask query
+      if(resp.includes('[')){
+        resp = resp.slice(5,-4);
+      } 
+
       if (resp.length === 0) {
         this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
       } else {
