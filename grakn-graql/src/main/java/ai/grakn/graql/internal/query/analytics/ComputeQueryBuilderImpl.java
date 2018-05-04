@@ -95,28 +95,8 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public ConnectedComponentQuery<Map<String, Long>> connectedComponent() {
-        return new ConnectedComponentQueryImpl<>(tx);
-    }
-
-    @Override
-    public KCoreQuery kCore() {
-        return new KCoreQueryImpl(tx);
-    }
-
-    @Override
-    public CorenessQuery coreness() {
-        return new CorenessQueryImpl(tx);
-    }
-
-    @Override
-    public DegreeQuery degree() {
-        return new DegreeQueryImpl(tx);
-    }
-
-    @Override
-    public CentralityQueryBuilder centrality() {
-        return new CentralityQueryBuilderImpl(tx);
+    public NewComputeQuery centrality() {
+        return new NewComputeQueryImpl(tx, Method.CENTRALITY);
     }
 
     @Override

@@ -20,6 +20,22 @@ package ai.grakn.util;
 
 import ai.grakn.concept.ConceptId;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
+
 /**
  * Graql syntax keywords
  *
@@ -143,6 +159,23 @@ public class GraqlSyntax {
             public final static long DEFAULT_MIN_K = 2L;
             public final static long DEFAULT_K = 2L;
             public final static boolean DEFAULT_MEMBERS = false;
+
+            public final static Map<Method, Boolean> DEFAULT_INCLUDE_ATTRIBUTES = defaultIncludeAttributes();
+            private static Map<Method, Boolean> defaultIncludeAttributes() {
+                Map<Method,Boolean> map = new HashMap<>();
+                map.put(COUNT, false);
+                map.put(MIN, true);
+                map.put(MAX, true);
+                map.put(MEDIAN, true);
+                map.put(MEAN, true);
+                map.put(STD, true);
+                map.put(SUM, true);
+                map.put(PATH, false);
+                map.put(CENTRALITY, true);
+                map.put(CLUSTER, false);
+
+                return Collections.unmodifiableMap(map);
+            }
 
             private Type type;
             private T arg;

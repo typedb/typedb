@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -97,7 +98,7 @@ public class AnalyticsTest {
 
         // the null role-player caused analytics to fail at some stage
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().centrality().usingDegree().execute();
+            graph.graql().compute().centrality().using(DEGREE).execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();

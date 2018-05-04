@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -112,7 +113,7 @@ public class DegreeTest {
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+                return graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
@@ -127,7 +128,7 @@ public class DegreeTest {
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees1 =
-                    graph.graql().compute().centrality().usingDegree().of("thingy").execute().getCountMap().get();
+                    graph.graql().compute().centrality().using(DEGREE).of("thingy").execute().getCountMap().get();
 
             assertEquals(2, degrees1.size());
             assertEquals(2, degrees1.get(1L).size());
@@ -140,18 +141,18 @@ public class DegreeTest {
             ));
 
             Map<Long, Set<String>> degrees2 =
-                    graph.graql().compute().centrality().usingDegree().of("thingy", "related").execute().getCountMap().get();
+                    graph.graql().compute().centrality().using(DEGREE).of("thingy", "related").execute().getCountMap().get();
             assertEquals(degrees1, degrees2);
 
-            degrees2 = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            degrees2 = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(degrees0, degrees2);
 
             // compute degrees on subgraph
-            Map<Long, Set<String>> degrees3 = graph.graql().compute().centrality().usingDegree()
+            Map<Long, Set<String>> degrees3 = graph.graql().compute().centrality().using(DEGREE)
                     .in("thingy", "related").execute().getCountMap().get();
             assertEquals(degrees1, degrees3);
 
-            degrees3 = graph.graql().compute().centrality().usingDegree().of("thingy").in("related").execute().getCountMap().get();
+            degrees3 = graph.graql().compute().centrality().using(DEGREE).of("thingy").in("related").execute().getCountMap().get();
             assertEquals(degrees1, degrees3);
         }
     }
@@ -178,7 +179,7 @@ public class DegreeTest {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute().getCountMap().get();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE).in(ct).execute().getCountMap().get();
             // check that dog has a degree to confirm sub has been inferred
             assertEquals(correctDegrees, degrees);
         }
@@ -229,18 +230,18 @@ public class DegreeTest {
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree()
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE)
                     .in(subGraphTypes).execute().getCountMap().get();
             assertEquals(subgraphReferenceDegrees, degrees);
 
             // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
-            degrees = graph.graql().compute().centrality().usingDegree().in(almostFullTypes).execute().getCountMap().get();
+            degrees = graph.graql().compute().centrality().using(DEGREE).in(almostFullTypes).execute().getCountMap().get();
             assertEquals(almostFullReferenceDegrees, degrees);
 
             // full graph
-            degrees = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            degrees = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(fullReferenceDegrees, degrees);
         }
     }
@@ -267,7 +268,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -307,7 +308,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -343,7 +344,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -375,7 +376,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute().getCountMap().get();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().using(DEGREE).execute().getCountMap().get();
             assertEquals(referenceDegrees, degrees);
         }
     }

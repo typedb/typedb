@@ -87,46 +87,10 @@ public interface ComputeQueryBuilder {
     NewComputeQuery path();
 
     /**
-     * This method is deprecated. Please use centrality query instead.
-     *
-     * @return a cluster query that will find the connected components
-     */
-    @Deprecated
-    @CheckReturnValue
-    ConnectedComponentQuery<Map<String, Long>> connectedComponent();
-
-    /**
-     * This method is deprecated. Please use cluster query instead.
-     *
-     * @return a k-core query that will find interlinked core areas using k-core.
-     */
-    @Deprecated
-    @CheckReturnValue
-    KCoreQuery kCore();
-
-    /**
-     * This method is deprecated. Please use centrality query instead.
-     *
-     * @return a coreness query that computes centrality using k-core.
-     */
-    @Deprecated
-    @CheckReturnValue
-    CorenessQuery coreness();
-
-    /**
-     * This method is deprecated. Please use centrality query instead.
-     *
-     * @return a degree query that will compute the degree of instances
-     */
-    @Deprecated
-    @CheckReturnValue
-    DegreeQuery degree();
-
-    /**
      * @return a centrality query builder for creating centrality query
      */
     @CheckReturnValue
-    CentralityQueryBuilder centrality();
+    NewComputeQuery centrality();
 
     /**
      * @return a cluster query builder for creating cluster query

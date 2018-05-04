@@ -45,6 +45,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_INCLUDE_ATTRIBUTES;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MIN_K;
@@ -78,7 +79,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private boolean includeAttributes = false;
 
     public NewComputeQueryImpl(Optional<GraknTx> tx, Method method) {
-        this(tx, method, false);
+        this(tx, method, DEFAULT_INCLUDE_ATTRIBUTES.get(method));
     }
 
     public NewComputeQueryImpl(Optional<GraknTx> tx, Method method, boolean includeAttributes) {
