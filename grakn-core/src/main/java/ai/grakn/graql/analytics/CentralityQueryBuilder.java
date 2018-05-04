@@ -20,6 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.API;
 import ai.grakn.GraknTx;
+import ai.grakn.graql.NewComputeQuery;
 
 import javax.annotation.CheckReturnValue;
 
@@ -48,7 +49,7 @@ public interface CentralityQueryBuilder {
      * @return a Coreness Query
      */
     @CheckReturnValue
-    CorenessQuery usingKCore();
+    NewComputeQuery usingKCore();
 
     /**
      * Compute centrality using degree.
@@ -56,5 +57,5 @@ public interface CentralityQueryBuilder {
      * @return a Degree Query
      */
     @CheckReturnValue
-    DegreeQuery usingDegree();
+    NewComputeQuery usingDegree();
 }

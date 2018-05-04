@@ -26,7 +26,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
-import static ai.grakn.util.GraqlSyntax.Compute.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
@@ -40,7 +41,7 @@ abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
     abstract String argumentsString();
 
     @Override
-    final String methodString() {
+    final Method methodString() {
         return CLUSTER;
     }
 

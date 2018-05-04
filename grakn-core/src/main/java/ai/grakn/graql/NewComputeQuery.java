@@ -22,12 +22,15 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.analytics.ComputeQuery;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument;
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn.
@@ -53,7 +56,8 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
     /**
      * @return a String representing the name of the compute query method
      */
-    String method();
+    Method method();
+
     /**
      * @return a Concept ID in which which compute query will start from
      */
@@ -117,24 +121,16 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * @param algorithm name as an argument for the compute query
      * @return a NewComputeQuery with algorithm argument set
      */
-    NewComputeQuery using(String algorithm);
+    NewComputeQuery using(Algorithm algorithm);
 
     /**
      * @return the algorithm argument for the compute query
      */
-    Optional<String> using();
+    Optional<Algorithm> using();
 
-    /**
-     * @param minK is a number representing the minimum K (aka. min-k) value as an argument for the compute query
-     * @return a NewComputeQuery with the min-k argument set
-     */
-    NewComputeQuery minK(long minK);
+    NewComputeQuery where(Argument arg, Argument... args);
 
-    /**
-     * @return the min-k argument for the compute query
-     */
-    @CheckReturnValue
-    Optional<Long> minK();
+    Optional<Arguments> where();
 
     /**
      * Allow analytics query to include attributes and their relationships
@@ -173,4 +169,17 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
      * kill the compute query, terminate the job
      */
     void kill();
+
+    interface Arguments {
+
+        Optional<Long> minK();
+
+        Optional<Long> k();
+
+        Optional<Long> size();
+
+        Optional<Boolean> members();
+
+        Optional<ConceptId> contains();
+    }
 }

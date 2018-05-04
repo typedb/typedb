@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Arg.MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.Type.MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
 import static ai.grakn.util.GraqlSyntax.EQUAL;

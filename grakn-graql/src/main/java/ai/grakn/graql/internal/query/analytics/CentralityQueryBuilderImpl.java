@@ -19,11 +19,14 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.internal.query.NewComputeQueryImpl;
 
 import java.util.Optional;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
  * This class implements CentralityQueryBuilder.
@@ -46,12 +49,12 @@ public class CentralityQueryBuilderImpl implements CentralityQueryBuilder {
     }
 
     @Override
-    public CorenessQuery usingKCore() {
-        return new CorenessQueryImpl(tx);
+    public NewComputeQuery usingKCore() {
+        return new NewComputeQueryImpl(tx, Method.CENTRALITY).using(Algorithm.K_CORE);
     }
 
     @Override
-    public DegreeQuery usingDegree() {
-        return new DegreeQueryImpl(tx);
+    public NewComputeQuery usingDegree() {
+        return new NewComputeQueryImpl(tx, Method.CENTRALITY).using(Algorithm.DEGREE);
     }
 }

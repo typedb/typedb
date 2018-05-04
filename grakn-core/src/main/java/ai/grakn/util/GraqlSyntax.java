@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.ConceptId;
+
 /**
  * Graql syntax keywords
  *
@@ -33,60 +35,145 @@ public class GraqlSyntax {
 
 
     // Miscellaneous
-    public static final String EQUAL            = "=";
-    public static final String SEMICOLON        = ";";
-    public static final String SPACE            = " ";
-    public static final String COMMA            = ",";
-    public static final String COMMA_SPACE      = ", ";
-    public static final String SQUARE_OPEN      = "[";
-    public static final String SQUARE_CLOSE     = "]";
-    public static final String QUOTE            = "\"";
+    public static final String EQUAL = "=";
+    public static final String SEMICOLON = ";";
+    public static final String SPACE = " ";
+    public static final String COMMA = ",";
+    public static final String COMMA_SPACE = ", ";
+    public static final String SQUARE_OPEN = "[";
+    public static final String SQUARE_CLOSE = "]";
+    public static final String QUOTE = "\"";
 
     /**
      * Graql Compute syntax keyword
      */
     public static class Compute {
-        public static final String COUNT        = "setNumber";
-        public static final String MIN          = "min";
-        public static final String MAX          = "max";
-        public static final String MEDIAN       = "median";
-        public static final String MEAN         = "mean";
-        public static final String STD          = "std";
-        public static final String SUM          = "sum";
-        public static final String PATH         = "path";
-        public static final String CENTRALITY   = "centrality";
-        public static final String CLUSTER      = "cluster";
+        
 
+        public enum Method {
+            COUNT("setNumber"),
+            MIN("min"),
+            MAX("max"),
+            MEDIAN("median"),
+            MEAN("mean"),
+            STD("std"),
+            SUM("sum"),
+            PATH("path"),
+            CENTRALITY("centrality"),
+            CLUSTER("cluster");
+
+            private final String method;
+
+            Method(String algorithm) {
+                this.method = algorithm;
+            }
+
+            @Override
+            public String toString(){
+                return this.method;
+            }
+        }
         /**
          * Graql Compute conditions keyword
          */
-        public static class Condition {
-            public static final String FROM     = "from";
-            public static final String TO       = "to";
-            public static final String OF       = "of";
-            public static final String IN       = "in";
-            public static final String USING    = "using";
-            public static final String WHERE    = "where";
+        public enum Condition {
+            FROM("from"),
+            TO("to"),
+            OF("of"),
+            IN("in"),
+            USING("using"),
+            WHERE("where");
+
+            private final String condition;
+
+            Condition(String algorithm) {
+                this.condition = algorithm;
+            }
+
+            @Override
+            public String toString(){
+                return this.condition;
+            }
         }
 
         /**
          * Graql Compute algorithm names
          */
-        public static class Algorithm {
-            public static final String DEGREE               = "degree";
-            public static final String K_CORE               = "k-core";
-            public static final String CONNECTED_COMPONENT  = "connected-component";
+        public enum Algorithm {
+            DEGREE("degree"),
+            K_CORE("k-core"),
+            CONNECTED_COMPONENT("connected-component");
+
+            private final String algorithm;
+
+            Algorithm(String algorithm) {
+                this.algorithm = algorithm;
+            }
+
+            @Override
+            public String toString(){
+                return this.algorithm;
+            }
         }
 
-        /**
-         * Graql Compute argument keywords
-         */
-        public static class Arg {
-            public static final String MIN_K    = "min-k";
-            public static final String K        = "k";
-            public static final String START    = "start";
-            public static final String MEMBERS  = "members";
-            public static final String SIZE     = "size";
+        //TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
+        public static class Argument<T> {
+            /**
+             * Graql Compute argument keywords
+             */
+            public enum Type {
+                MIN_K("min-k"),
+                K("k"),
+                CONTAINS("contains"),
+                MEMBERS("members"),
+                SIZE("size");
+
+                private final String arg;
+
+                Type(String arg) {
+                    this.arg = arg;
+                }
+
+                @Override
+                public String toString(){
+                    return this.arg;
+                }
+            }
+
+            public final static long DEFAULT_MIN_K = 2L;
+            public final static long DEFAULT_K = 2L;
+            public final static boolean DEFAULT_MEMBERS = false;
+
+            private Type type;
+            private T arg;
+
+            private Argument(Type type, T arg) {
+                this.type = type;
+                this.arg = arg;
+            }
+
+            public final Type type() {return this.type;}
+
+            public final T get() {return this.arg;}
+
+            public static Argument<Long> min_k(long minK) { return new Argument<>(Type.MIN_K, minK); }
+
+            public static Argument<Long> k(long k) {
+                return new Argument<>(Type.K, k);
+            }
+
+            public static Argument<Long> size(long size) { return new Argument<>(Type.SIZE, size); }
+
+            public static Argument<Boolean> members(boolean members) { return new Argument<>(Type.MEMBERS, members); }
+
+            public static Argument<ConceptId> contains(ConceptId conceptId) {
+                return new Argument<>(Type.CONTAINS, conceptId);
+            }
+
+            @Override
+            public String toString() {
+                return type + EQUAL + arg.toString();
+            }
         }
     }
 }

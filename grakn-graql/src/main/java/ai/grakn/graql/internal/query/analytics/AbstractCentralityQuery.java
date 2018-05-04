@@ -34,7 +34,8 @@ import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
-import static ai.grakn.util.GraqlSyntax.Compute.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.SPACE;
 import static java.util.stream.Collectors.joining;
@@ -76,7 +77,7 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
     abstract String argumentsString();
 
     @Override
-    final String methodString() {
+    final Method methodString() {
         return CENTRALITY;
     }
 

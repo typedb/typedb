@@ -35,8 +35,12 @@ import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.analytics.CorenessQuery;
+import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -58,6 +62,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -78,14 +83,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.GraqlSyntax.Compute.COUNT;
-import static ai.grakn.util.GraqlSyntax.Compute.MAX;
-import static ai.grakn.util.GraqlSyntax.Compute.MEAN;
-import static ai.grakn.util.GraqlSyntax.Compute.MEDIAN;
-import static ai.grakn.util.GraqlSyntax.Compute.MIN;
-import static ai.grakn.util.GraqlSyntax.Compute.PATH;
-import static ai.grakn.util.GraqlSyntax.Compute.STD;
-import static ai.grakn.util.GraqlSyntax.Compute.SUM;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
 
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
@@ -112,11 +112,21 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     @Override
     public ComputeAnswer get() {
         switch (query.method()) {
-            case MIN: case MAX: case MEDIAN: case SUM: return runComputeMinMaxMedianOrSum();
-            case MEAN: return runComputeMean();
-            case STD: return runComputeStd();
-            case COUNT: return runComputeCount();
-            case PATH: return runComputePath();
+            case MIN:
+            case MAX:
+            case MEDIAN:
+            case SUM:
+                return runComputeMinMaxMedianOrSum();
+            case MEAN:
+                return runComputeMean();
+            case STD:
+                return runComputeStd();
+            case COUNT:
+                return runComputeCount();
+            case PATH:
+                return runComputePath();
+            case CENTRALITY:
+                return runComputeCentrality();
         }
 
         throw GraqlQueryException.invalidComputeMethod();
@@ -148,6 +158,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
     /**
      * The Graql compute mean query run method
+     *
      * @return a ComputeAnswer object containing a Number that represents the answer
      */
     private ComputeAnswer runComputeMean() {
@@ -240,8 +251,8 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     /**
      * Helper method to intialise the vertex program for compute statistics queries
      *
-     * @param query representing the compute query
-     * @param targetTypes representing the attribute types in which the statistics computation is targeted for
+     * @param query          representing the compute query
+     * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
      * @param targetDataType representing the data type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
@@ -253,7 +264,7 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
     /**
      * Helper method to initialise the MapReduce algorithm for compute statistics queries
      *
-     * @param targetTypes representing the attribute types in which the statistics computation is targeted for
+     * @param targetTypes    representing the attribute types in which the statistics computation is targeted for
      * @param targetDataType representing the data type of the target attribute types
      * @return an object which is a subclass of StatisticsMapReduce
      */
@@ -322,14 +333,14 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
         ConceptId toID = query.to().get();
 
         if (!scopeContainsInstances(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
-        if (fromID.equals(toID)) return answer.paths(ImmutableList.of(ImmutableList.of(tx.getConcept(fromID))));
+        if (fromID.equals(toID)) return answer.setPaths(ImmutableList.of(ImmutableList.of(tx.getConcept(fromID))));
 
         ComputerResult result;
         Set<LabelId> scopedLabelIDs = convertLabelsToIds(scopeTypeLabels());
         try {
             result = compute(new ShortestPathVertexProgram(fromID, toID), null, scopedLabelIDs);
         } catch (NoResultException e) {
-            return answer.paths(Collections.emptyList());
+            return answer.setPaths(Collections.emptyList());
         }
 
         Multimap<Concept, Concept> resultGraph = getComputePathResultGraph(result);
@@ -338,7 +349,258 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
 
         LOG.info("Number of path: " + allPaths.size());
 
-        return answer.paths(allPaths);
+        return answer.setPaths(allPaths);
+    }
+
+    /**
+     * The Graql compute centrality query run method
+     *
+     * @return a ComputeAnswer containing the centrality count map
+     */
+    private ComputeAnswer runComputeCentrality() {
+        if (query.using().get().equals(DEGREE)) return runComputeDegree();
+        if (query.using().get().equals(K_CORE)) return runComputeCoreness();
+
+        throw GraqlQueryException.invalidComputeCentralityAlgorithm();
+    }
+
+//    private ComputeAnswer runComputeDegree2() {
+//        ComputeAnswer answer = new ComputeAnswerImpl();
+//        Set<Label> ofLabels;
+//
+//        // Check if ofType is valid before returning emptyMap
+//        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+//            ofLabels = inTypeLabels();
+//        } else {
+//            ofLabels = query.of().get().stream()
+//                    .flatMap(typeLabel -> {
+//                        Type type = tx.getSchemaConcept(typeLabel);
+//                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+//                        return type.subs();
+//                    })
+//                    .map(SchemaConcept::getLabel)
+//                    .collect(Collectors.toSet());
+//        }
+//
+//        Set<Label> subLabels = Sets.union(inTypeLabels(), ofLabels);
+//
+//        if (!inTypesHaveInstances()) {
+//            return answer.setCountMap(Collections.emptyMap());
+//        }
+//
+//        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+//        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+//
+//        ComputerResult result = compute(
+//                new DegreeVertexProgram(ofLabelIds),
+//                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
+//                subLabelIds);
+//
+//        return answer.setCountMap(result.memory().get(DegreeDistributionMapReduce.class.getName()));
+//    }
+//
+//    private ComputeAnswer runComputeCoreness2() {
+//        ComputeAnswer answer = new ComputeAnswerImpl();
+//        long k = query.where().get().minK().get();
+//
+//        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+//
+//        Set<Label> ofLabels;
+//
+//        // Check if ofType is valid before returning emptyMap
+//        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+//            ofLabels = inTypeLabels();
+//        } else {
+//            ofLabels = query.of().get().stream()
+//                    .flatMap(typeLabel -> {
+//                        Type type = tx.getSchemaConcept(typeLabel);
+//                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+//                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+//                        return type.subs();
+//                    })
+//                    .map(SchemaConcept::getLabel)
+//                    .collect(Collectors.toSet());
+//        }
+//
+//        Set<Label> subLabels = Sets.union(inTypeLabels(), ofLabels);
+//
+//        if (!inTypesHaveInstances()) {
+//            return answer.setCountMap(Collections.emptyMap());
+//        }
+//
+//        ComputerResult result;
+//        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+//        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+//
+//        try {
+//            result = compute(
+//                    new CorenessVertexProgram(k),
+//                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
+//                    subLabelIds);
+//        } catch (NoResultException e) {
+//            return answer.setCountMap(Collections.emptyMap());
+//        }
+//
+//        return answer.setCountMap(result.memory().get(DegreeDistributionMapReduce.class.getName()));
+//    }
+//
+//    final Stream<Type> inTypes() {
+//        // get all types if subGraph is empty, else get all inTypes of each type in subGraph
+//        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+//        if (!query.in().isPresent() || query.in().get().isEmpty()) {
+//            ImmutableSet.Builder<Type> subTypesBuilder = ImmutableSet.builder();
+//
+//            if (isAttributeIncluded()) {
+//                tx.admin().getMetaConcept().subs().forEach(subTypesBuilder::add);
+//            } else {
+//                tx.admin().getMetaEntityType().subs().forEach(subTypesBuilder::add);
+//                tx.admin().getMetaRelationType().subs()
+//                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypesBuilder::add);
+//            }
+//
+//            return subTypesBuilder.build().stream();
+//        } else {
+//            Stream<Type> subTypes = query.in().get().stream().map(label -> {
+//                Type type = tx.getType(label);
+//                if (type == null) throw GraqlQueryException.labelNotFound(label);
+//                return type;
+//            }).flatMap(Type::subs);
+//
+//            if (!isAttributeIncluded()) {
+//                subTypes = subTypes.filter(relationshipType -> !relationshipType.isImplicit());
+//            }
+//
+//            return subTypes;
+//        }
+//    }
+//
+//    final ImmutableSet<Label> inTypeLabels() {
+//        return inTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
+//    }
+//
+//    final boolean inTypesHaveInstances() {
+//        if (inTypeLabels().isEmpty()) return false;
+//        List<Pattern> checkSubtypes = inTypeLabels().stream()
+//                .map(type -> Graql.var("x").isa(Graql.label(type))).collect(Collectors.toList());
+//
+//        return tx.graql().infer(false).match(Graql.or(checkSubtypes)).iterator().hasNext();
+//    }
+//
+//    final boolean inTypesContainConcepts(ConceptId... ids) {
+//        for (ConceptId id : ids) {
+//            Thing thing = tx.getConcept(id);
+//            if (thing == null || !inTypeLabels().contains(thing.type().getLabel())) return false;
+//        }
+//        return true;
+//    }
+//
+//    final boolean inTypesContainImplicitOrAttributeTypes() {
+//
+//        return query.in().get().stream().anyMatch(label -> {
+//            SchemaConcept type = tx.getSchemaConcept(label);
+//            return (type != null && (type.isAttributeType() || type.isImplicit()));
+//        });
+//    }
+//
+//    final boolean isAttributeIncluded() {
+//        return query.includesAttributes() || inTypesContainImplicitOrAttributeTypes();
+//    }
+
+    /**
+     * The Graql compute centrality using degree query run method
+     *
+     * @return a ComputeAnswer containing the centrality count map
+     */
+    private ComputeAnswer runComputeDegree() {
+        Set<Label> targetTypeLabels;
+        ComputeAnswer answer = new ComputeAnswerImpl();
+
+        // Check if ofType is valid before returning emptyMap
+        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+            targetTypeLabels = scopeTypeLabels();
+        } else {
+            targetTypeLabels = query.of().get().stream()
+                    .flatMap(typeLabel -> {
+                        Type type = tx.getSchemaConcept(typeLabel);
+                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        return type.subs();
+                    })
+                    .map(SchemaConcept::getLabel)
+                    .collect(Collectors.toSet());
+        }
+
+        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
+
+        if (!scopeContainsInstance()) {
+            return answer;
+        }
+
+        Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(targetTypeLabels);
+
+        ComputerResult result = compute(
+                new DegreeVertexProgram(ofLabelIds),
+                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
+                subLabelIds);
+
+        Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
+        System.out.println("XXXXXXXXXXXXXX -> " + xxx.toString() );
+        return answer.setCountMap(xxx);
+    }
+
+    /**
+     * The Graql compute centrality using k-core query run method
+     *
+     * @return a ComputeAnswer containing the centrality count map
+     */
+    private ComputeAnswer runComputeCoreness() {
+        ComputeAnswer answer = new ComputeAnswerImpl();
+
+        long k = query.where().get().minK().get();
+
+        System.out.println("OOOOOOOOOOOOOOOOOO -> " + k);
+
+        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+
+        Set<Label> targetTypeLabels;
+
+        // Check if ofType is valid before returning emptyMap
+        if (!query.of().isPresent() || query.of().get().isEmpty()) {
+            targetTypeLabels = scopeTypeLabels();
+        } else {
+            targetTypeLabels = query.of().get().stream()
+                    .flatMap(typeLabel -> {
+                        Type type = tx.getSchemaConcept(typeLabel);
+                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+                        return type.subs();
+                    })
+                    .map(SchemaConcept::getLabel)
+                    .collect(Collectors.toSet());
+        }
+
+        Set<Label> subLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
+
+        if (!scopeContainsInstance()) {
+            return answer.setCountMap(Collections.emptyMap());
+        }
+
+        ComputerResult result;
+        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(targetTypeLabels);
+
+        try {
+            result = compute(
+                    new CorenessVertexProgram(k),
+                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
+                    subLabelIds);
+        } catch (NoResultException e) {
+            return answer.setCountMap(Collections.emptyMap());
+        }
+
+        Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
+        System.out.println("OOOOOOOOOOOOOOOOOO -> " + xxx.toString() );
+        return answer.setCountMap(xxx);
     }
 
     /**
@@ -646,7 +908,14 @@ class NewTinkerComputeJob implements ComputeJob<ComputeAnswer> {
      * @return true if they exist, false if they don't
      */
     private boolean scopeIncludesImplicitOrAttributeTypes() {
-        if (!query.in().isPresent()) return false;
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println(query.in().get().isEmpty());
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXX");
         return query.in().get().stream().anyMatch(label -> {
             SchemaConcept type = tx.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));

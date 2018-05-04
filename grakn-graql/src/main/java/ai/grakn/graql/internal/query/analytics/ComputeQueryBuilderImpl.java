@@ -20,26 +20,19 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.NewComputeQuery;
-import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQueryBuilder;
+import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.query.NewComputeQueryImpl;
-import ai.grakn.util.GraqlSyntax;
 
 import java.util.Map;
 import java.util.Optional;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
  * This class implements ComputeQueryBuilder.
@@ -63,42 +56,42 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     @Override
     public NewComputeQuery count() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.COUNT);
+        return new NewComputeQueryImpl(tx, Method.COUNT);
     }
 
     @Override
     public NewComputeQuery min() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MIN);
+        return new NewComputeQueryImpl(tx, Method.MIN);
     }
 
     @Override
     public NewComputeQuery max() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MAX);
+        return new NewComputeQueryImpl(tx, Method.MAX);
     }
 
     @Override
     public NewComputeQuery sum() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.SUM);
+        return new NewComputeQueryImpl(tx, Method.SUM);
     }
 
     @Override
     public NewComputeQuery mean() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MEAN);
+        return new NewComputeQueryImpl(tx, Method.MEAN);
     }
 
     @Override
     public NewComputeQuery std() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.STD);
+        return new NewComputeQueryImpl(tx, Method.STD);
     }
 
     @Override
     public NewComputeQuery median() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.MEDIAN);
+        return new NewComputeQueryImpl(tx, Method.MEDIAN);
     }
 
     @Override
     public NewComputeQuery path() {
-        return new NewComputeQueryImpl(tx, GraqlSyntax.Compute.PATH);
+        return new NewComputeQueryImpl(tx, Method.PATH);
     }
 
     @Override

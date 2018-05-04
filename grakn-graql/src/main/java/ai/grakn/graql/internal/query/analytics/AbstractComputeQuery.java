@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.COMPUTE;
@@ -121,7 +122,7 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>>
         runningJobs.forEach(ComputeJob::kill);
     }
 
-    abstract String methodString();
+    abstract Method methodString();
 
     abstract String conditionsString();
 

@@ -79,93 +79,93 @@ class TinkerComputeJob<T> implements ComputeJob<T> {
 
     @Override
     public T get() {
-        if (query instanceof DegreeQuery) return (T) runComputeDegree();
-        if (query instanceof CorenessQuery) return (T) runComputeCoreness();
+//        if (query instanceof DegreeQuery) return (T) runComputeDegree();
+//        if (query instanceof CorenessQuery) return (T) runComputeCoreness();
         if (query instanceof ConnectedComponentQuery) return (T) runComputeConnectedComponent();
         if (query instanceof KCoreQuery) return (T) runComputeKCore();
 
         throw GraqlQueryException.invalidComputeMethod();
     }
 
-    private Map<Long, Set<String>> runComputeDegree() {
-        TinkerComputeQuery<DegreeQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
-        Set<Label> ofLabels;
-
-        // Check if ofType is valid before returning emptyMap
-        if (((DegreeQuery) query).ofTypes().isEmpty()) {
-            ofLabels = tinkerComputeQuery.inTypeLabels();
-        } else {
-            ofLabels = ((DegreeQuery) query).ofTypes().stream()
-                    .flatMap(typeLabel -> {
-                        Type type = tx.getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        return type.subs();
-                    })
-                    .map(SchemaConcept::getLabel)
-                    .collect(Collectors.toSet());
-        }
-
-        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
-
-        if (!tinkerComputeQuery.inTypesHaveInstances()) {
-            return Collections.emptyMap();
-        }
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
-
-        ComputerResult result = tinkerComputeQuery.compute(
-                new DegreeVertexProgram(ofLabelIds),
-                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                subLabelIds);
-
-        return result.memory().get(DegreeDistributionMapReduce.class.getName());
-    }
-
-    private Map<Long, Set<String>> runComputeCoreness() {
-        TinkerComputeQuery<CorenessQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
-        long k = ((CorenessQuery) query).minK();
-
-        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
-
-        Set<Label> ofLabels;
-
-        // Check if ofType is valid before returning emptyMap
-        if (((CorenessQuery) query).ofTypes().isEmpty()) {
-            ofLabels = tinkerComputeQuery.inTypeLabels();
-        } else {
-            ofLabels = ((CorenessQuery) query).ofTypes().stream()
-                    .flatMap(typeLabel -> {
-                        Type type = tx.getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
-                        return type.subs();
-                    })
-                    .map(SchemaConcept::getLabel)
-                    .collect(Collectors.toSet());
-        }
-
-        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
-
-        if (!tinkerComputeQuery.inTypesHaveInstances()) {
-            return Collections.emptyMap();
-        }
-
-        ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
-
-        try {
-            result = tinkerComputeQuery.compute(
-                    new CorenessVertexProgram(k),
-                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
-                    subLabelIds);
-        } catch (NoResultException e) {
-            return Collections.emptyMap();
-        }
-
-        return result.memory().get(DegreeDistributionMapReduce.class.getName());
-    }
+//    private Map<Long, Set<String>> runComputeDegree() {
+//        TinkerComputeQuery<DegreeQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
+//        Set<Label> ofLabels;
+//
+//        // Check if ofType is valid before returning emptyMap
+//        if (((DegreeQuery) query).ofTypes().isEmpty()) {
+//            ofLabels = tinkerComputeQuery.inTypeLabels();
+//        } else {
+//            ofLabels = ((DegreeQuery) query).ofTypes().stream()
+//                    .flatMap(typeLabel -> {
+//                        Type type = tx.getSchemaConcept(typeLabel);
+//                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+//                        return type.subs();
+//                    })
+//                    .map(SchemaConcept::getLabel)
+//                    .collect(Collectors.toSet());
+//        }
+//
+//        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
+//
+//        if (!tinkerComputeQuery.inTypesHaveInstances()) {
+//            return Collections.emptyMap();
+//        }
+//
+//        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+//        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+//
+//        ComputerResult result = tinkerComputeQuery.compute(
+//                new DegreeVertexProgram(ofLabelIds),
+//                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
+//                subLabelIds);
+//
+//        return result.memory().get(DegreeDistributionMapReduce.class.getName());
+//    }
+//
+//    private Map<Long, Set<String>> runComputeCoreness() {
+//        TinkerComputeQuery<CorenessQuery> tinkerComputeQuery = new TinkerComputeQuery(tx, query);
+//        long k = ((CorenessQuery) query).minK();
+//
+//        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+//
+//        Set<Label> ofLabels;
+//
+//        // Check if ofType is valid before returning emptyMap
+//        if (((CorenessQuery) query).ofTypes().isEmpty()) {
+//            ofLabels = tinkerComputeQuery.inTypeLabels();
+//        } else {
+//            ofLabels = ((CorenessQuery) query).ofTypes().stream()
+//                    .flatMap(typeLabel -> {
+//                        Type type = tx.getSchemaConcept(typeLabel);
+//                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+//                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+//                        return type.subs();
+//                    })
+//                    .map(SchemaConcept::getLabel)
+//                    .collect(Collectors.toSet());
+//        }
+//
+//        Set<Label> subLabels = Sets.union(tinkerComputeQuery.inTypeLabels(), ofLabels);
+//
+//        if (!tinkerComputeQuery.inTypesHaveInstances()) {
+//            return Collections.emptyMap();
+//        }
+//
+//        ComputerResult result;
+//        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+//        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+//
+//        try {
+//            result = tinkerComputeQuery.compute(
+//                    new CorenessVertexProgram(k),
+//                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
+//                    subLabelIds);
+//        } catch (NoResultException e) {
+//            return Collections.emptyMap();
+//        }
+//
+//        return result.memory().get(DegreeDistributionMapReduce.class.getName());
+//    }
 
     private <T> T runComputeConnectedComponent() {
         ConnectedComponentQuery<T> ccQuery = (ConnectedComponentQuery) query;

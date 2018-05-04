@@ -31,9 +31,9 @@ import java.util.Set;
 
 import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static ai.grakn.util.GraqlSyntax.Compute.Arg.MEMBERS;
-import static ai.grakn.util.GraqlSyntax.Compute.Arg.SIZE;
-import static ai.grakn.util.GraqlSyntax.Compute.Arg.START;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.Type.MEMBERS;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.Type.SIZE;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.Type.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
 import static ai.grakn.util.GraqlSyntax.EQUAL;
@@ -107,7 +107,7 @@ class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedCo
         List<String> argumentsList = new ArrayList<>();
         StringBuilder argumentsString = new StringBuilder();
 
-        if (start().isPresent()) argumentsList.add(START + EQUAL + start().get());
+        if (start().isPresent()) argumentsList.add(CONTAINS + EQUAL + start().get());
         if (size().isPresent()) argumentsList.add(SIZE + EQUAL + size().get());
         if (isMembersSet()) argumentsList.add(MEMBERS + EQUAL + members);
 

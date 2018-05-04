@@ -331,7 +331,7 @@ public class GraqlComputeConstructor {
         // The 'compute centrality using degree' query does not accept 'where <arguments>' condition
         if (computeArgs != null) throw GraqlQueryException.invalidComputeCentralityUsingDegreeCondition();
 
-        DegreeQuery computeCentrality = queryBuilder.compute().centrality().usingDegree();
+        DegreeQuery computeCentrality = null;// queryBuilder.compute().centrality().usingDegree();
 
         // The 'compute centrality using degree' query can be given 'of <types>' or 'in <types>' condition
         if (computeOfTypes != null) computeCentrality.of(graqlConstructor.visitLabels(computeOfTypes));
@@ -352,7 +352,7 @@ public class GraqlComputeConstructor {
     (GraqlParser.LabelsContext computeOfTypes, GraqlParser.LabelsContext computeInTypes,
      GraqlParser.ComputeArgsContext computeArgs) {
 
-        CorenessQuery computeCentrality = queryBuilder.compute().centrality().usingKCore();
+        CorenessQuery computeCentrality = null;//queryBuilder.compute().centrality().usingKCore();
 
         // The 'compute centrality using k-core' query can be given 'of <types>' or 'in <types>' condition
         if (computeOfTypes != null) computeCentrality.of(graqlConstructor.visitLabels(computeOfTypes));
