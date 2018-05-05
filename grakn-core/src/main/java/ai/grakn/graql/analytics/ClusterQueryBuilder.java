@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.NewComputeQuery;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 
 /**
  * Starting point for creating centrality queries.

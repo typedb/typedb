@@ -198,7 +198,7 @@ public class DefineQueryTest {
 
         assertEquals(1, typeQuery.stream().count());
 
-        // We checked setNumber ahead of time
+        // We checked count ahead of time
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 

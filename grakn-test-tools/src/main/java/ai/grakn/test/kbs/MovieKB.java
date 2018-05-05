@@ -95,7 +95,7 @@ public class MovieKB extends TestKB {
         title = tx.putAttributeType("title", AttributeType.DataType.STRING);
         title.attribute(title);
 
-        tmdbVoteCount = tx.putAttributeType("tmdb-vote-setNumber", AttributeType.DataType.LONG);
+        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
         tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
         releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
         runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);

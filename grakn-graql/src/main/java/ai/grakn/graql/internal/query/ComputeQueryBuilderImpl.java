@@ -20,16 +20,8 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.NewComputeQuery;
-import ai.grakn.graql.analytics.CentralityQueryBuilder;
-import ai.grakn.graql.analytics.ClusterQueryBuilder;
 import ai.grakn.graql.analytics.ComputeQueryBuilder;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.internal.query.NewComputeQueryImpl;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;

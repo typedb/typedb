@@ -85,7 +85,7 @@ public class CommonUtil {
      * Helper which lazily checks if a {@link Stream} contains the number specified
      * WARNING: This consumes the stream rendering it unusable afterwards
      *
-     * @param stream the {@link Stream} to check the setNumber against
+     * @param stream the {@link Stream} to check the count against
      * @param size the expected number of elements in the stream
      * @return true if the expected size is found
      */

@@ -108,7 +108,7 @@ public class CountPostProcessor {
                     contextSharding.stop();
                 }
             });
-            LOG.debug("Updating instance setNumber successful for {} tasks", jobs.size());
+            LOG.debug("Updating instance count successful for {} tasks", jobs.size());
         } catch(Exception e) {
             LOG.error("Could not terminate task", e);
             throw e;
@@ -163,6 +163,6 @@ public class CountPostProcessor {
     }
 
     private static String getLockingKey(Keyspace keyspace, ConceptId conceptId){
-        return "/updating-instance-setNumber-lock/" + keyspace + "/" + conceptId.getValue();
+        return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
     }
 }

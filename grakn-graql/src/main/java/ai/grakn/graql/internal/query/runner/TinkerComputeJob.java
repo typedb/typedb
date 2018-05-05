@@ -160,7 +160,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      * @return a Answer object containing a Number that represents the answer
      */
     private NewComputeQuery.Answer runComputeMinMaxMedianOrSum() {
-        return new NewComputeQueryImpl.AnswerImpl().setNumber(runComputeStatistics());
+        return new NewComputeQueryImpl.AnswerImpl().count(runComputeStatistics());
     }
 
     /**
@@ -176,7 +176,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
 
-        return answer.setNumber(mean);
+        return answer.count(mean);
     }
 
     /**
@@ -195,7 +195,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return answer.setNumber(std);
+        return answer.count(std);
     }
 
     /**
@@ -293,16 +293,16 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
     }
 
     /**
-     * Run Graql compute setNumber query
+     * Run Graql compute count query
      *
-     * @return a Answer object containing the setNumber value
+     * @return a Answer object containing the count value
      */
     private NewComputeQuery.Answer runComputeCount() {
         NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
 
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return answer.setNumber(0L);
+            return answer.count(0L);
         }
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
@@ -325,7 +325,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return answer.setNumber(finalCount);
+        return answer.count(finalCount);
     }
 
     /**

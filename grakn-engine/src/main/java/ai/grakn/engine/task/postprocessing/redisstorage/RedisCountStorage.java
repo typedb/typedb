@@ -66,7 +66,7 @@ public class RedisCountStorage implements CountStorage {
     }
 
     /**
-     * Adjusts the setNumber for a specific key.
+     * Adjusts the count for a specific key.
      *
      * @param key the key of the value to adjust
      * @param incrementBy the number to adjust the key by
@@ -75,7 +75,7 @@ public class RedisCountStorage implements CountStorage {
     public long incrementCount(String key, long incrementBy){
         return redisStorage.contactRedis(jedis -> {
             if(incrementBy != 0) {
-                return jedis.incrBy(key, incrementBy); //Number is decremented when setNumber is negative
+                return jedis.incrBy(key, incrementBy); //Number is decremented when count is negative
             } else {
                 return getCount(key);
             }
@@ -83,10 +83,10 @@ public class RedisCountStorage implements CountStorage {
     }
 
     /**
-     * Gets the setNumber for the specified key. A setNumber of 0 is returned if the key is not in redis
+     * Gets the count for the specified key. A count of 0 is returned if the key is not in redis
      *
      * @param key the key stored in redis
-     * @return the current setNumber.
+     * @return the current count.
      */
     public long getCount(String key){
         return redisStorage.contactRedis(jedis -> {

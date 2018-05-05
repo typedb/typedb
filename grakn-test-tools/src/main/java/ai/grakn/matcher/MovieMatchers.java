@@ -43,7 +43,7 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> realName = GraknMatchers.type("real-name");
     public static final Matcher<MatchableConcept> name = GraknMatchers.type("name");
     public static final Matcher<MatchableConcept> provenance = GraknMatchers.type("provenance");
-    public static final Matcher<MatchableConcept> tmdbVoteCount = GraknMatchers.type("tmdb-vote-setNumber");
+    public static final Matcher<MatchableConcept> tmdbVoteCount = GraknMatchers.type("tmdb-vote-count");
     public static final Matcher<MatchableConcept> releaseDate = GraknMatchers.type("release-date");
     public static final Matcher<MatchableConcept> runtime = GraknMatchers.type("runtime");
     public static final Matcher<MatchableConcept> tmdbVoteAverage = GraknMatchers.type("tmdb-vote-average");

@@ -20,36 +20,18 @@ package ai.grakn.remote;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.QueryExecutor;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.NewComputeQuery;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.grpc.GrpcClient;
 import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -57,7 +39,7 @@ import java.util.stream.StreamSupport;
  * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
  *
  * <p>
- *     Like {@link RemoteGraknTx}, this class is an adapter that uses the {@link GrpcClient} for gRPC calls.
+ * Like {@link RemoteGraknTx}, this class is an adapter that uses the {@link GrpcClient} for gRPC calls.
  * </p>
  *
  * @author Felix Chapman
@@ -115,7 +97,8 @@ final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     private void runVoid(Query<?> query) {
-        run(query).forEachRemaining(empty -> {});
+        run(query).forEachRemaining(empty -> {
+        });
     }
 
     private Stream<ai.grakn.graql.admin.Answer> runAnswerStream(Query<?> query) {
@@ -128,9 +111,9 @@ final class RemoteQueryExecutor implements QueryExecutor {
         return RemoteComputeJob.of(runSingle(query, NewComputeQuery.Answer.class));
     }
 
-    private ComputeJob<NewComputeQuery.Answer> runComputeUnchecked(NewComputeQuery query) {
-        return RemoteComputeJob.of(runSingleUnchecked(query));
-    }
+//    private ComputeJob<NewComputeQuery.Answer> runComputeUnchecked(NewComputeQuery query) {
+//        return RemoteComputeJob.of(runSingleUnchecked(query));
+//    }
 
     private <T> T runSingle(Query<? extends T> query, Class<? extends T> clazz) {
         return clazz.cast(Iterators.getOnlyElement(run(query)));

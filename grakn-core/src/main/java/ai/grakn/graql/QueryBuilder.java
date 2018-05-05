@@ -24,6 +24,8 @@ import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
+
 /**
  * Starting point for creating queries
  *
@@ -92,6 +94,12 @@ public interface QueryBuilder {
      */
     @CheckReturnValue
     ComputeQueryBuilder compute();
+
+    /**
+     * @return a compute query builder for building analytics query
+     */
+    @CheckReturnValue
+    NewComputeQuery compute(Method method);
 
     /**
      * Get a {@link QueryParser} for parsing queries from strings

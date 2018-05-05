@@ -50,6 +50,7 @@ import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_MISSING_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_MISSING_CONDITION;
@@ -360,6 +361,10 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidComputeMethod() {
         return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage());
+    }
+
+    public static GraqlQueryException invalidComputeCondition() {
+        return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage());
     }
 
     public static GraqlQueryException invalidComputeCountCondition() {

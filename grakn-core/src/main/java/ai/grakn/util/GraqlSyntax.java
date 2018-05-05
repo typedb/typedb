@@ -19,12 +19,23 @@
 package ai.grakn.util;
 
 import ai.grakn.concept.ConceptId;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.grakn.util.GraqlSyntax.Char.EQUAL;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
@@ -35,6 +46,11 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 
 /**
  * Graql syntax keywords
@@ -43,12 +59,28 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
  */
 public class GraqlSyntax {
 
-    public static final String MATCH = "match";
+    /**
+     * Graql commands to determine the type of query
+     */
+    public enum Command {
+        MATCH("match"),
+        COMPUTE("compute");
 
+        private final String command;
 
-    // Graql Queries
-    public static final String COMPUTE = "compute";
+        Command(String command) {
+            this.command = command;
+        }
 
+        @Override
+        public String toString() {
+            return this.command;
+        }
+    }
+
+    /**
+     * Characters available for use in the Graql syntax
+     */
     public enum Char {
         EQUAL("="),
         SEMICOLON(";"),
@@ -58,7 +90,7 @@ public class GraqlSyntax {
         SQUARE_OPEN("["),
         SQUARE_CLOSE("]"),
         QUOTE("\"");
-        
+
         private final String character;
 
         Char(String character) {
@@ -70,14 +102,91 @@ public class GraqlSyntax {
             return this.character;
         }
     }
+
     /**
-     * Graql Compute syntax keyword
+     * Graql Compute keywords to determine the compute method and conditions
      */
     public static class Compute {
 
+        public final static Map<Method, Collection<Condition>> CONDITIONS_REQUIRED = conditionsRequired();
+        public final static Map<Method, Collection<Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
+        public final static Map<Method, Collection<Condition>> CONDITIONS_ACCEPTED = conditionsAccepted();
 
+        public final static Map<Method, Collection<Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
+        public final static Map<Method, Map<Algorithm, Collection<Parameter>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
+
+        private static Map<Method, Collection<Condition>> conditionsRequired() {
+            Map<Method, Collection<Condition>> required = new HashMap<>();
+            required.put(MIN, ImmutableSet.of(OF));
+            required.put(MAX, ImmutableSet.of(OF));
+            required.put(MEDIAN, ImmutableSet.of(OF));
+            required.put(MEAN, ImmutableSet.of(OF));
+            required.put(STD, ImmutableSet.of(OF));
+            required.put(SUM, ImmutableSet.of(OF));
+            required.put(PATH, ImmutableSet.of(FROM, TO));
+            required.put(CENTRALITY, ImmutableSet.of(USING));
+            ;
+            required.put(CLUSTER, ImmutableSet.of(USING));
+
+            return ImmutableMap.copyOf(required);
+        }
+
+        private static Map<Method, Collection<Condition>> conditionsOptional() {
+            Map<Method, Collection<Condition>> optional = new HashMap<>();
+            optional.put(COUNT, ImmutableSet.of(IN));
+            optional.put(MIN, ImmutableSet.of(IN));
+            optional.put(MAX, ImmutableSet.of(IN));
+            optional.put(MEDIAN, ImmutableSet.of(IN));
+            optional.put(MEAN, ImmutableSet.of(IN));
+            optional.put(STD, ImmutableSet.of(IN));
+            optional.put(SUM, ImmutableSet.of(IN));
+            optional.put(PATH, ImmutableSet.of(IN));
+            optional.put(CENTRALITY, ImmutableSet.of(OF, IN, WHERE));
+            optional.put(CLUSTER, ImmutableSet.of(IN, WHERE));
+
+            return ImmutableMap.copyOf(optional);
+        }
+
+        private static Map<Method, Collection<Condition>> conditionsAccepted() {
+            Map<Method, Collection<Condition>> accepted = new HashMap<>(CONDITIONS_REQUIRED);
+
+            for (Map.Entry<Method, Collection<Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
+                Method method = entry.getKey();
+                Collection<Condition> conditions = entry.getValue();
+
+                if (accepted.containsKey(method)) accepted.get(method).addAll(conditions);
+                else accepted.put(method, conditions);
+            }
+
+            return ImmutableMap.copyOf(accepted);
+        }
+
+        private static Map<Method, Collection<Algorithm>> algorithmsAccepted() {
+            Map<Method, Collection<Algorithm>> accepted = new HashMap<>();
+
+            accepted.put(CENTRALITY, ImmutableSet.of(DEGREE, K_CORE));
+            accepted.put(CLUSTER, ImmutableSet.of(CONNECTED_COMPONENT, K_CORE));
+
+            return ImmutableMap.copyOf(accepted);
+        }
+
+        private static Map<Method, Map<Algorithm, Collection<Parameter>>> argumentsAccepted() {
+            Map<Method, Map<Algorithm, Collection<Parameter>>> accepted = new HashMap<>();
+
+            accepted.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableSet.of(MIN_K)));
+            accepted.put(CLUSTER, ImmutableMap.of(
+                    K_CORE, ImmutableSet.of(K),
+                    CONNECTED_COMPONENT, ImmutableSet.of(SIZE, MEMBERS, CONTAINS)
+            ));
+
+            return ImmutableMap.copyOf(accepted);
+        }
+
+        /**
+         * Graql compute method types to determine the type of calculation to execute
+         */
         public enum Method {
-            COUNT("setNumber"),
+            COUNT("count"),
             MIN("min"),
             MAX("max"),
             MEDIAN("median"),
@@ -90,8 +199,8 @@ public class GraqlSyntax {
 
             private final String method;
 
-            Method(String algorithm) {
-                this.method = algorithm;
+            Method(String method) {
+                this.method = method;
             }
 
             @Override
@@ -165,7 +274,12 @@ public class GraqlSyntax {
             }
         }
 
-        //TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
+        /**
+         * Graql Compute argument objects to be passed into the query
+         * TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
+         *
+         * @param <T>
+         */
         public static class Argument<T> {
 
             public final static long DEFAULT_MIN_K = 2L;
@@ -207,28 +321,23 @@ public class GraqlSyntax {
             }
 
             public static Argument<Long> min_k(long minK) {
-                return new Argument<>(Parameter.MIN_K, minK);
+                return new Argument<>(MIN_K, minK);
             }
 
             public static Argument<Long> k(long k) {
-                return new Argument<>(Parameter.K, k);
+                return new Argument<>(K, k);
             }
 
             public static Argument<Long> size(long size) {
-                return new Argument<>(Parameter.SIZE, size);
+                return new Argument<>(SIZE, size);
             }
 
             public static Argument<Boolean> members(boolean members) {
-                return new Argument<>(Parameter.MEMBERS, members);
+                return new Argument<>(MEMBERS, members);
             }
 
             public static Argument<ConceptId> contains(ConceptId conceptId) {
-                return new Argument<>(Parameter.CONTAINS, conceptId);
-            }
-
-            @Override
-            public String toString() {
-                return param + EQUAL.toString() + arg.toString();
+                return new Argument<>(CONTAINS, conceptId);
             }
         }
     }

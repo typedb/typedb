@@ -236,12 +236,12 @@ public class QueryParserTest {
         GetQuery expected = match(
                 var("x")
                         .has("release-date", lt(LocalDate.of(1986, 3, 3).atStartOfDay()))
-                        .has("tmdb-vote-setNumber", 100)
+                        .has("tmdb-vote-count", 100)
                         .has("tmdb-vote-average", lte(9.0))
         ).get();
 
         GetQuery parsed = parse(
-                "match $x has release-date < 1986-03-03, has tmdb-vote-setNumber 100 has tmdb-vote-average<=9.0; get;"
+                "match $x has release-date < 1986-03-03, has tmdb-vote-count 100 has tmdb-vote-average<=9.0; get;"
         );
 
         assertEquals(expected, parsed);
@@ -285,10 +285,10 @@ public class QueryParserTest {
     @Test
     public void testLongComparatorQuery() throws ParseException {
         GetQuery expected = match(
-                var("x").isa("movie").has("tmdb-vote-setNumber", lte(400))
+                var("x").isa("movie").has("tmdb-vote-count", lte(400))
         ).get();
 
-        GetQuery parsed = parse("match $x isa movie, has tmdb-vote-setNumber <= 400; get;");
+        GetQuery parsed = parse("match $x isa movie, has tmdb-vote-count <= 400; get;");
 
         assertEquals(expected, parsed);
     }
@@ -619,7 +619,7 @@ public class QueryParserTest {
                 .aggregate(select(count().as("c"), group("x").as("g")));
 
         AggregateQuery<Map<String, Object>> parsed =
-                parse("match $x isa movie; aggregate (setNumber as c, group $x as g);");
+                parse("match $x isa movie; aggregate (count as c, group $x as g);");
 
         assertEquals(expected, parsed);
     }
@@ -636,7 +636,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x (setNumber as c);";
+        String query = "match $x isa movie; aggregate group $x (count as c);";
         assertEquals(query, parse(query).toString());
     }
 
@@ -659,12 +659,12 @@ public class QueryParserTest {
     // ===============================================================================================================//
     @Test
     public void testParseComputeCount() {
-        assertParseEquivalence("compute setNumber;");
+        assertParseEquivalence("compute count;");
     }
 
     @Test
     public void testParseComputeCountWithSubgraph() {
-        assertParseEquivalence("compute setNumber in [movie, person];");
+        assertParseEquivalence("compute count in [movie, person];");
     }
 
     @Test
@@ -815,8 +815,8 @@ public class QueryParserTest {
 
     @Test
     public void testHasVariable() {
-        GetQuery expected = match(var().has("title", "Godfather").has("tmdb-vote-setNumber", var("x"))).get();
-        GetQuery parsed = parse("match has title 'Godfather' has tmdb-vote-setNumber $x; get;");
+        GetQuery expected = match(var().has("title", "Godfather").has("tmdb-vote-count", var("x"))).get();
+        GetQuery parsed = parse("match has title 'Godfather' has tmdb-vote-count $x; get;");
         assertEquals(expected, parsed);
     }
 
@@ -1090,9 +1090,9 @@ public class QueryParserTest {
     @Test
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("setNumber", 0, 1));
+        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
         //noinspection ResultOfMethodCallIgnored
-        parse("match $x isa name; aggregate setNumber $x;");
+        parse("match $x isa name; aggregate count $x;");
     }
 
     @Test

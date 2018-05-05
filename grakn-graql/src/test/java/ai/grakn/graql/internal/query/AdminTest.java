@@ -61,13 +61,13 @@ public class AdminTest {
     @Test
     public void testGetTypesInQuery() {
         Match match = qb.match(
-                var("x").isa(label("movie").sub("production")).has("tmdb-vote-setNumber", 400),
+                var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );
 
         Set<SchemaConcept> types = Stream.of(
-                "movie", "production", "tmdb-vote-setNumber", "character", "production-with-cast", "has-cast"
+                "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
         ).map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
         assertEquals(types, match.admin().getSchemaConcepts());

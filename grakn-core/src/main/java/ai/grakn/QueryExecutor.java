@@ -18,7 +18,6 @@
 
 package ai.grakn;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -26,23 +25,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -50,8 +33,8 @@ import java.util.stream.Stream;
  * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
  *
  * <p>
- *     This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
- *     (here in {@link QueryExecutor}).
+ * This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
+ * (here in {@link QueryExecutor}).
  * </p>
  *
  * @author Felix Chapman

@@ -38,7 +38,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 public class StringConverter {
 
     private static final ImmutableSet<String> ALLOWED_ID_KEYWORDS = ImmutableSet.of(
-            "min", "max", "median", "mean", "std", "sum", "setNumber", "path", "cluster", "degrees", "members", "persist"
+            "min", "max", "median", "mean", "std", "sum", "count", "path", "cluster", "degrees", "members", "persist"
     );
 
     public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());

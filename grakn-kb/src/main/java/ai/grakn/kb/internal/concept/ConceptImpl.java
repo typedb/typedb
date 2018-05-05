@@ -211,7 +211,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
 
-        //Updated the cached shard setNumber if needed
+        //Updated the cached shard count if needed
         if(shardCount.isPresent()){
             shardCount.set(shardCount() + 1);
         }

@@ -205,13 +205,17 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     INVALID_COMPUTE_METHOD("Invalid compute method. " +
-            "The available compute methods are: setNumber, min, max, median, mean, std, sum, path, centrality, and cluster. " +
+            "The available compute methods are: count, min, max, median, mean, std, sum, path, centrality, and cluster. " +
             "A valid compute method contains 'compute <method> <conditions>', such as: 'compute min of age, in person;"),
 
-    // Graql compute setNumber errors ------------------
+    INVALID_COMPUTE_CONDITION("Invalid compute condition. " +
+            "The available compute conditions are: 'from <id>', 'to <id>', 'of <types>', 'in <types>', 'using <algorithm>' " +
+            "and 'where <args>'."),
 
-    INVALID_COMPUTE_COUNT_CONDITION("Invalid 'compute setNumber' condition. " +
-            "Only 'in <types>' is accepted, such as: 'compute setNumber in [person, movie];'."),
+    // Graql compute count errors ------------------
+
+    INVALID_COMPUTE_COUNT_CONDITION("Invalid 'compute count' condition. " +
+            "Only 'in <types>' is accepted, such as: 'compute count in [person, movie];'."),
 
     // Graql compute statistics errors -------------
 

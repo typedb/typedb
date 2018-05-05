@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
@@ -37,6 +38,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.util.GraqlSyntax;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -143,6 +145,10 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public ComputeQueryBuilder compute(){
         return new ComputeQueryBuilderImpl(tx);
+    }
+
+    public NewComputeQuery compute(GraqlSyntax.Compute.Method method) {
+        return new NewComputeQueryImpl(tx, method);
     }
 
     @Override

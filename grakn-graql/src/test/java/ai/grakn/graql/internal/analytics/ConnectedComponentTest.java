@@ -266,7 +266,7 @@ public class ConnectedComponentTest {
                     .stream().map(Label::of).collect(Collectors.toSet());
             sizeMap = graph.graql().compute().cluster().using(CONNECTED_COMPONENT).in(subTypes).execute()
                         .getClusterSizes().get();
-            assertEquals(17, sizeMap.size()); // No relationships, so this is the entity setNumber;
+            assertEquals(17, sizeMap.size()); // No relationships, so this is the entity count;
             memberMap = graph.graql().compute().cluster().using(CONNECTED_COMPONENT).where(members(true)).in(subTypes).execute()
                         .getClusterMembers().get();
             assertEquals(17, memberMap.size());

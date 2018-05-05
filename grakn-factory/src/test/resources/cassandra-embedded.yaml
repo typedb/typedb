@@ -457,7 +457,7 @@ column_index_size_in_kb: 64
 
 # Throttles compaction to the given total throughput across the entire
 # system. The faster you insert data, the faster you need to compact in
-# order to keep the sstable setNumber down, but in general, setting this to
+# order to keep the sstable count down, but in general, setting this to
 # 16 to 32 times the rate you are inserting data is more than sufficient.
 # Setting this to 0 disables throttling. Note that this account for all types
 # of compaction, including validation compaction.

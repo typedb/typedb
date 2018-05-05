@@ -250,7 +250,7 @@ public class GraqlShellIT {
     @Test
     public void testAggregateQuery() throws Exception {
         assertShellMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate setNumber;",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
                 is(Integer.toString(NUM_METATYPES))
         );
     }
@@ -336,7 +336,7 @@ public class GraqlShellIT {
                 anything(),
                 anything(),
                 "commit",
-                "compute setNumber;",
+                "compute count;",
                 is("3")
         );
     }
@@ -547,7 +547,7 @@ public class GraqlShellIT {
     @Test
     public void testExecuteMultipleQueries() throws Exception {
         assertShellMatches(
-                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate setNumber;",
+                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate count;",
                 // Make sure we see results from all four queries
                 containsString("{}"),
                 containsString("$x"),
@@ -570,7 +570,7 @@ public class GraqlShellIT {
     @Test
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
         ShellResponse response = runShell(
-                "match $x sub concet; aggregate setNumber;\n" +
+                "match $x sub concet; aggregate count;\n" +
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
         );
 

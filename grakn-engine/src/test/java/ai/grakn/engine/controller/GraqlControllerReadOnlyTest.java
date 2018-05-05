@@ -197,7 +197,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlAggregate_ResponseStatusIs200() {
-        String query = "match $x isa movie; aggregate setNumber;";
+        String query = "match $x isa movie; aggregate count;";
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
@@ -205,7 +205,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlAggregate_ResponseIsCorrect() {
-        String query = "match $x isa movie; aggregate setNumber;";
+        String query = "match $x isa movie; aggregate count;";
         long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
         when(printer.graqlString(any())).thenReturn(String.valueOf(numberPeople));
 
@@ -219,7 +219,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlCompute_ResponseStatusIs200() {
-        String query = "compute setNumber in movie;";
+        String query = "compute count in movie;";
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
@@ -228,7 +228,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore // TODO: Fix this. Probably related to mocks and analytics
     public void GETGraqlCompute_ResponseIsCorrect() {
-        String query = "compute setNumber in movie;";
+        String query = "compute count in movie;";
         Response response = sendRequest(query);
 
         Long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();

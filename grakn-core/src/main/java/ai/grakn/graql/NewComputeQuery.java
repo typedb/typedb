@@ -36,7 +36,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Argument;
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
- * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn.
+ * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  *
  * @author Haikal Pribadi
  */
@@ -53,7 +53,6 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @param fromID is the Concept ID of in which compute path query will start from
      * @return A NewComputeQuery with the fromID set
      */
-    @CheckReturnValue
     NewComputeQuery from(ConceptId fromID);
 
     /**
@@ -71,7 +70,6 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @param toID is the Concept ID in which compute query will stop at
      * @return A NewComputeQuery with the toID set
      */
-    @CheckReturnValue
     NewComputeQuery to(ConceptId toID);
 
     /**
@@ -84,14 +82,12 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @param types is an array of concept types in which the compute query would apply to
      * @return a NewComputeQuery with the of set
      */
-    @CheckReturnValue
     NewComputeQuery of(String type, String... types);
 
     /**
      * @param types is an array of concept types in which the compute query would apply to
      * @return a NewComputeQuery with the of set
      */
-    @CheckReturnValue
     NewComputeQuery of(Collection<Label> types);
 
     /**
@@ -104,14 +100,12 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @param types is an array of concept types that determines the scope of graph for the compute query
      * @return a NewComputeQuery with the inTypes set
      */
-    @CheckReturnValue
     NewComputeQuery in(String type, String... types);
 
     /**
      * @param types is an array of concept types that determines the scope of graph for the compute query
      * @return a NewComputeQuery with the inTypes set
      */
-    @CheckReturnValue
     NewComputeQuery in(Collection<Label> types);
 
     /**
@@ -121,18 +115,33 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     Optional<Set<Label>> in();
 
     /**
-     * @param algorithm name as an argument for the compute query
-     * @return a NewComputeQuery with algorithm argument set
+     * @param algorithm name as an condition for the compute query
+     * @return a NewComputeQuery with algorithm condition set
      */
     NewComputeQuery using(Algorithm algorithm);
 
     /**
-     * @return the algorithm argument for the compute query
+     * @return the algorithm type for the compute query
      */
+    @CheckReturnValue
     Optional<Algorithm> using();
 
+    /**
+     * @param arg is an argument that could provided to modify the compute query parameters
+     * @param args is an array of arguments
+     * @return a NewComputeQuery with the arguments set
+     */
     NewComputeQuery where(Argument arg, Argument... args);
 
+    /**
+     * @param args is a list of arguments that could be provided to modify the compute query parameters
+     * @return
+     */
+    NewComputeQuery where(Collection<Argument> args);
+    /**
+     * @return an Arguments object containing all the provided individual arguments combined
+     */
+    @CheckReturnValue
     Optional<Arguments> where();
 
     /**
@@ -140,12 +149,12 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      *
      * @return a ComputeQuery with the inTypes set
      */
-    @CheckReturnValue
     NewComputeQuery includeAttributes(boolean include);
 
     /**
      * Get if this query will include attributes and their relationships
      */
+    @CheckReturnValue
     boolean includesAttributes();
 
     /**
@@ -173,30 +182,50 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      */
     void kill();
 
+
+    /**
+     * Argument inner interface to provide access Compute Query arguments
+     *
+     * @author Haikal Pribadi
+     */
     interface Arguments {
 
+        @CheckReturnValue
         Optional<Long> minK();
 
+        @CheckReturnValue
         Optional<Long> k();
 
+        @CheckReturnValue
         Optional<Long> size();
 
+        @CheckReturnValue
         Optional<Boolean> members();
 
+        @CheckReturnValue
         Optional<ConceptId> contains();
     }
 
-
+    /**
+     * Answer inner interface to provide access to Compute Query computation results
+     *
+     * @author Haikal Pribadi
+     */
     interface Answer {
 
+        @CheckReturnValue
         Optional<Number> getNumber();
 
+        @CheckReturnValue
         Optional<List<List<Concept>>> getPaths();
 
+        @CheckReturnValue
         Optional<Map<Long, Set<String>>> getCentralityCount();
 
+        @CheckReturnValue
         Optional<Map<String, Set<String>>> getClusterMembers();
 
+        @CheckReturnValue
         Optional<Map<String, Long>> getClusterSizes();
     }
 }

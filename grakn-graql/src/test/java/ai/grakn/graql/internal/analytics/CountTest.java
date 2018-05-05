@@ -91,7 +91,7 @@ public class CountTest {
         }
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            // assert computer returns the correct setNumber of instances
+            // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
                     Graql.compute().withTx(graph).count().in(nameThing).includeAttributes(true).execute().getNumber().get().longValue());
             Assert.assertEquals(3L, graph.graql().compute().count().execute().getNumber().get().longValue());

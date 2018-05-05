@@ -24,7 +24,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -32,6 +31,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -42,6 +42,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -65,6 +66,9 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument;
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -80,7 +84,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
     private final boolean defineAllVars;
-    private final GraqlComputeConstructor computeVisitor;
 
     GraqlConstructor(
             ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder,
@@ -89,7 +92,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
         this.defineAllVars = defineAllVars;
-        this.computeVisitor = new GraqlComputeConstructor(this, queryBuilder);
     }
 
     @Override
@@ -631,12 +633,43 @@ class GraqlConstructor extends GraqlBaseVisitor {
     /**
      * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
      *
-     * @param ctx
-     * @return A subtype of ComputeQuery object
+     * @param context for compute query parsed syntax
+     * @return A ComputeQuery object
      */
-    @Override
-    public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
-        return computeVisitor.constructComputeQuery(ctx);
+
+    public NewComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext context) {
+        GraqlParser.ComputeMethodContext method = context.computeMethod();
+        GraqlParser.ComputeConditionsContext conditions = context.computeConditions();
+
+        NewComputeQuery query = queryBuilder.compute(Method.valueOf(method.getText()));
+        if (conditions == null) return query;
+
+        for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
+            switch (((ParserRuleContext) condition.getChild(1)).getRuleIndex()) {
+                case GraqlParser.RULE_computeFromID:
+                    query = query.from(visitId(condition.computeFromID().id()));
+                    break;
+                case GraqlParser.RULE_computeToID:
+                    query = query.to(visitId(condition.computeToID().id()));
+                    break;
+                case GraqlParser.RULE_computeOfLabels:
+                    query.of(visitLabels(condition.computeOfLabels().labels()));
+                    break;
+                case GraqlParser.RULE_computeInLabels:
+                    query.in(visitLabels(condition.computeInLabels().labels()));
+                    break;
+                case GraqlParser.RULE_computeAlgorithm:
+                    query.using(Algorithm.valueOf(condition.computeAlgorithm().getText()));
+                    break;
+                case GraqlParser.RULE_computeArgs:
+                    query.where(visitComputeArgs(condition.computeArgs()));
+                    break;
+                default:
+                    throw GraqlQueryException.invalidComputeCondition();
+            }
+        }
+
+        return query;
     }
 
     /**
@@ -646,16 +679,35 @@ class GraqlConstructor extends GraqlBaseVisitor {
      * @return
      */
     @Override
-    public List<GraqlParser.ComputeArgContext> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
+    public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
 
-        List<GraqlParser.ComputeArgContext> argsList = new ArrayList<>();
+        List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
+        List<GraqlSyntax.Compute.Argument> argList = new ArrayList<>();
 
         if (computeArgs.computeArg() != null) {
-            argsList.add(computeArgs.computeArg());
+            argContextList.add(computeArgs.computeArg());
         } else if (computeArgs.computeArgsArray() != null) {
-            argsList.addAll(computeArgs.computeArgsArray().computeArg());
+            argContextList.addAll(computeArgs.computeArgsArray().computeArg());
         }
 
-        return argsList;
+        for (GraqlParser.ComputeArgContext argContext : argContextList) {
+            if (argContext instanceof GraqlParser.ComputeArgMinKContext) {
+                argList.add(Argument.min_k(getInteger(((GraqlParser.ComputeArgMinKContext) argContext).INTEGER())));
+
+            } else if (argContext instanceof GraqlParser.ComputeArgKContext) {
+                argList.add(Argument.k(getInteger(((GraqlParser.ComputeArgKContext) argContext).INTEGER())));
+
+            } else if (argContext instanceof GraqlParser.ComputeArgMembersContext) {
+                argList.add(Argument.members(visitBool(((GraqlParser.ComputeArgMembersContext) argContext).bool())));
+
+            } else if (argContext instanceof GraqlParser.ComputeArgSizeContext) {
+                argList.add(Argument.size(getInteger(((GraqlParser.ComputeArgSizeContext) argContext).INTEGER())));
+
+            } else if (argContext instanceof GraqlParser.ComputeArgContainsContext) {
+                argList.add(Argument.contains(visitId(((GraqlParser.ComputeArgContainsContext) argContext).id())));
+            }
+        }
+
+        return argList;
     }
 }

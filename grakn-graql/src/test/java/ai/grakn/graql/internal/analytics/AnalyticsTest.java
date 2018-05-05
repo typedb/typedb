@@ -130,7 +130,7 @@ public class AnalyticsTest {
         addSchemaAndEntities();
 
         List<String> queryList = new ArrayList<>();
-        queryList.add("compute setNumber;");
+        queryList.add("compute count;");
         queryList.add("compute cluster using connected-component;");
         queryList.add("compute cluster using k-core;");
         queryList.add("compute centrality using degree;");

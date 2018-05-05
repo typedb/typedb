@@ -193,7 +193,7 @@ row_cache_save_period: 0
 # In case of RF = 1 a counter cache hit will cause Cassandra to skip the read before
 # write entirely. With RF > 1 a counter cache hit will still help to reduce the duration
 # of the lock hold, helping with hot counter cell updates, but will not allow skipping
-# the read entirely. Only the local (clock, setNumber) tuple of a counter cell is kept
+# the read entirely. Only the local (clock, count) tuple of a counter cell is kept
 # in memory, not the whole counter, so it's relatively cheap.
 #
 # NOTE: if you reduce the size, you may not get you hottest keys loaded on startup.
@@ -579,7 +579,7 @@ unlogged_batch_across_partitions_warn_threshold: 10
 
 # Throttles compaction to the given total throughput across the entire
 # system. The faster you insert data, the faster you need to compact in
-# order to keep the sstable setNumber down, but in general, setting this to
+# order to keep the sstable count down, but in general, setting this to
 # 16 to 32 times the rate you are inserting data is more than sufficient.
 # Setting this to 0 disables throttling. Note that this account for all types
 # of compaction, including validation compaction.

@@ -25,7 +25,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import org.junit.Before;
@@ -40,7 +39,6 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
-
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
@@ -82,7 +80,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertSameResults(qb.match(var("x").has("tmdb-vote-setNumber", lte(400))).get());
+        assertSameResults(qb.match(var("x").has("tmdb-vote-count", lte(400))).get());
     }
 
     @Test
@@ -159,7 +157,7 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute setNumber;", qb.compute().count().toString());
+        assertEquals("compute count;", qb.compute().count().toString());
     }
 
     @Test

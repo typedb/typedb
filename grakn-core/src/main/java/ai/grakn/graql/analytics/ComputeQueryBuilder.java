@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.NewComputeQuery;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 
 /**
  * Starting point for creating compute queries.
@@ -39,7 +38,7 @@ public interface ComputeQueryBuilder {
     ComputeQueryBuilder withTx(GraknTx tx);
 
     /**
-     * @return a setNumber query that will setNumber the number of instances
+     * @return a count query that will count the number of instances
      */
     @CheckReturnValue
     NewComputeQuery count();

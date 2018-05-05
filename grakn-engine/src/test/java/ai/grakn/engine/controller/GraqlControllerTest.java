@@ -195,7 +195,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseMatchesExpectedObject("match $x isa movie; aggregate setNumber;");
+        assertResponseMatchesExpectedObject("match $x isa movie; aggregate count;");
     }
 
     @Test

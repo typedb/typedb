@@ -136,7 +136,7 @@ public class QueryParserImpl implements QueryParser {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
         //
         // e.g.
-        // >> AggregateQuery<Boolean> q = qp.parseQuery("match $x isa movie; aggregate setNumber;");
+        // >> AggregateQuery<Boolean> q = qp.parseQuery("match $x isa movie; aggregate count;");
         // The above will work at compile time AND runtime - it will only fail when the query is executed:
         // >> Boolean bool = q.execute();
         // java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Boolean
@@ -251,7 +251,7 @@ public class QueryParserImpl implements QueryParser {
     // This is unavoidable in the parser.
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
-        registerAggregate("setNumber", 0, args -> Graql.count());
+        registerAggregate("count", 0, args -> Graql.count());
         registerAggregate("ask", 0, args -> Graql.ask());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));

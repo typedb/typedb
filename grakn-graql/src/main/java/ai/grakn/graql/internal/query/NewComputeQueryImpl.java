@@ -42,7 +42,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static ai.grakn.util.GraqlSyntax.COMPUTE;
 import static ai.grakn.util.GraqlSyntax.Char.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.Char.EQUAL;
 import static ai.grakn.util.GraqlSyntax.Char.QUOTE;
@@ -50,6 +49,7 @@ import static ai.grakn.util.GraqlSyntax.Char.SEMICOLON;
 import static ai.grakn.util.GraqlSyntax.Char.SPACE;
 import static ai.grakn.util.GraqlSyntax.Char.SQUARE_CLOSE;
 import static ai.grakn.util.GraqlSyntax.Char.SQUARE_OPEN;
+import static ai.grakn.util.GraqlSyntax.Command.COMPUTE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
@@ -58,7 +58,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_INCLUDE_ATTRIBU
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MIN_K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
@@ -69,12 +68,19 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 import static java.util.stream.Collectors.joining;
 
+
+/**
+ * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
+ *
+ * @author Haikal Pribadi
+ */
 public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, NewComputeQuery.Answer> implements NewComputeQuery {
 
     private Optional<GraknTx> tx;
@@ -218,28 +224,33 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
     @Override
     public final NewComputeQuery where(Argument arg, Argument... args) {
-        if (this.arguments == null) this.arguments = new ArgumentsImpl();
-
         ArrayList<Argument> argList = new ArrayList(args.length + 1);
         argList.add(arg);
         argList.addAll(Arrays.asList(args));
 
-        for (Argument a : argList) {
-            switch (a.type()) {
+        return this.where(argList);
+    }
+
+    @Override
+    public final NewComputeQuery where(Collection<Argument> args) {
+        if (this.arguments == null) this.arguments = new ArgumentsImpl();
+
+        for (Argument arg : args) {
+            switch (arg.type()) {
                 case MIN_K:
-                    this.arguments.minK((Long) a.get());
+                    this.arguments.minK((Long) arg.get());
                     break;
                 case K:
-                    this.arguments.k((Long) a.get());
+                    this.arguments.k((Long) arg.get());
                     break;
                 case SIZE:
-                    this.arguments.size((Long) a.get());
+                    this.arguments.size((Long) arg.get());
                     break;
                 case MEMBERS:
-                    this.arguments.members((Boolean) a.get());
+                    this.arguments.members((Boolean) arg.get());
                     break;
                 case CONTAINS:
-                    this.arguments.contains((ConceptId) a.get());
+                    this.arguments.contains((ConceptId) arg.get());
                     break;
             }
         }
@@ -289,8 +300,8 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     public final String toString() {
         StringBuilder query = new StringBuilder();
 
-        query.append(COMPUTE + SPACE + method);
-        if (!conditionsSyntax().isEmpty()) query.append(SPACE + conditionsSyntax());
+        query.append(str(COMPUTE, SPACE, method));
+        if (!conditionsSyntax().isEmpty()) query.append(str(SPACE, conditionsSyntax()));
         query.append(SEMICOLON);
 
         return query.toString();
@@ -403,7 +414,11 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         return result;
     }
 
-
+    /**
+     * Argument inner class to provide access Compute Query arguments
+     *
+     * @author Haikal Pribadi
+     */
     public class ArgumentsImpl implements Arguments {
 
         private LinkedHashMap<Parameter, Object> orderedArguments = new LinkedHashMap<>();
@@ -494,6 +509,11 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         }
     }
 
+    /**
+     * Answer inner class to provide access to Compute Query computation results
+     *
+     * @author Haikal Pribadi
+     */
     public static class AnswerImpl implements Answer {
 
         private Number number = null;
@@ -509,7 +529,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
             return Optional.ofNullable(number);
         }
 
-        public Answer setNumber(Number number) {
+        public Answer count(Number number) {
             this.number = number;
             return this;
         }
