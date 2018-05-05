@@ -20,14 +20,12 @@ package ai.grakn;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -60,41 +58,17 @@ import java.util.stream.Stream;
  */
 public interface QueryExecutor {
 
-    Stream<Answer> run(GetQuery query);
+    Stream<ai.grakn.graql.admin.Answer> run(GetQuery query);
 
-    Stream<Answer> run(InsertQuery query);
+    Stream<ai.grakn.graql.admin.Answer> run(InsertQuery query);
 
     void run(DeleteQuery query);
 
-    Answer run(DefineQuery query);
+    ai.grakn.graql.admin.Answer run(DefineQuery query);
 
     void run(UndefineQuery query);
 
     <T> T run(AggregateQuery<T> query);
 
-    ComputeJob<ComputeAnswer> run(NewComputeQuery query);
-
-    <T> ComputeJob<T> run(ConnectedComponentQuery<T> query);
-
-    ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query);
-
-    ComputeJob<Long> run(CountQuery query);
-
-    ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query);
-
-    ComputeJob<Map<String, Set<String>>> run(KCoreQuery query);
-
-    ComputeJob<Optional<Number>> run(MaxQuery query);
-
-    ComputeJob<Optional<Double>> run(MeanQuery query);
-
-    ComputeJob<Optional<Number>> run(MedianQuery query);
-
-    ComputeJob<Optional<Number>> run(MinQuery query);
-
-    ComputeJob<List<List<Concept>>> run(PathQuery query);
-
-    ComputeJob<Optional<Double>> run(StdQuery query);
-
-    ComputeJob<Optional<Number>> run(SumQuery query);
+    ComputeJob<NewComputeQuery.Answer> run(NewComputeQuery query);
 }

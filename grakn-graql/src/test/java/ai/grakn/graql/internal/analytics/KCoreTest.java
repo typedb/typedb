@@ -43,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.k;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -71,14 +73,14 @@ public class KCoreTest {
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingKCore().k(1L).execute();
+            graph.graql().compute().cluster().using(K_CORE).where(k(1L)).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result = graph.graql().compute().cluster().usingKCore().k(2L).execute();
+            Map<String, Set<String>> result = graph.graql().compute().cluster().using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -88,7 +90,7 @@ public class KCoreTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
-            Map<String, Set<String>> result = graph.graql().compute().cluster().usingKCore().k(2L).execute();
+            Map<String, Set<String>> result = graph.graql().compute().cluster().using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -118,7 +120,12 @@ public class KCoreTest {
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, entity2);
 
-            Map<String, Set<String>> result = graph.graql().compute().cluster().usingKCore().k(2L).execute();
+            Map<String, Set<String>> result = graph.graql().compute()
+                                                .cluster()
+                                                .using(K_CORE)
+                                                .where(k(2L))
+                                                .execute()
+                                                .getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -128,17 +135,17 @@ public class KCoreTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result1 = graph.graql().compute().cluster().usingKCore().k(2L).execute();
+            Map<String, Set<String>> result1 = graph.graql().compute().cluster().using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result1.size());
             assertEquals(4, result1.values().iterator().next().size());
 
-            Map<String, Set<String>> result2 = graph.graql().compute().cluster().usingKCore().k(3L).execute();
+            Map<String, Set<String>> result2 = graph.graql().compute().cluster().using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(result1, result2);
 
-            result2 = graph.graql().compute().cluster().usingKCore().k(2L).in(thing, related).execute();
+            result2 = graph.graql().compute().cluster().using(K_CORE).where(k(2L)).in(thing, related).execute().getClusterMembers().get();
             assertEquals(result1, result2);
 
-            result2 = graph.graql().compute().cluster().usingKCore().k(3L).in(thing, related).execute();
+            result2 = graph.graql().compute().cluster().using(K_CORE).where(k(3L)).in(thing, related).execute().getClusterMembers().get();
             assertTrue(result2.isEmpty());
         }
     }
@@ -161,11 +168,11 @@ public class KCoreTest {
 
         Map<String, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().cluster().usingKCore().includeAttribute().k(2L).execute();
+            result = graph.graql().compute().cluster().using(K_CORE).includeAttributes(true).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
-            result = graph.graql().compute().cluster().usingKCore().k(3L).execute();
+            result = graph.graql().compute().cluster().using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
             assertEquals(4, result.values().iterator().next().size());
         }
@@ -197,12 +204,12 @@ public class KCoreTest {
 
         Map<String, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().cluster().usingKCore().includeAttribute().k(4L).execute();
+            result = graph.graql().compute().cluster().using(K_CORE).includeAttributes(true).where(k(4L)).execute().getClusterMembers().get();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
-            result = graph.graql().compute().cluster().usingKCore().k(3L).includeAttribute().execute();
+            result = graph.graql().compute().cluster().using(K_CORE).where(k(3L)).includeAttributes(true).execute().getClusterMembers().get();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
             assertEquals(6, result.values().iterator().next().size());
@@ -288,12 +295,12 @@ public class KCoreTest {
 
         Map<String, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().cluster().usingKCore().k(3L).execute();
+            result = graph.graql().compute().cluster().using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(2, result.size());
             assertEquals(4, result.values().iterator().next().size());
 
             System.out.println("result = " + result);
-            result = graph.graql().compute().cluster().usingKCore().k(2L).execute();
+            result = graph.graql().compute().cluster().using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
             assertEquals(9, result.values().iterator().next().size());
         }
@@ -313,7 +320,7 @@ public class KCoreTest {
 
         Set<Map<String, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).cluster().usingKCore().k(3L).execute();
+                return Graql.compute().withTx(graph).cluster().using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {

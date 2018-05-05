@@ -96,5 +96,5 @@ public interface ComputeQueryBuilder {
      * @return a cluster query builder for creating cluster query
      */
     @CheckReturnValue
-    ClusterQueryBuilder cluster();
+    NewComputeQuery cluster();
 }

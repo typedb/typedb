@@ -445,7 +445,7 @@ public class GraqlComputeConstructor {
     private ConnectedComponentQuery constructComputeClusterUsingConnectedComponentQuery
             (GraqlParser.LabelsContext computeInTypes, GraqlParser.ComputeArgsContext computeArgs) {
 
-        ConnectedComponentQuery computeCluster = queryBuilder.compute().cluster().usingConnectedComponent();
+        ConnectedComponentQuery computeCluster = null; //todo: queryBuilder.compute().cluster().usingConnectedComponent();
 
         // The 'compute cluster using connected-component' query can be given 'in <types>' condition
         if (computeInTypes != null) computeCluster.in(graqlConstructor.visitLabels(computeInTypes));
@@ -481,7 +481,7 @@ public class GraqlComputeConstructor {
      */
     private KCoreQuery constructComputeClusterUsingKCoreQuery
     (GraqlParser.LabelsContext computeInTypes, GraqlParser.ComputeArgsContext computeArgs) {
-        KCoreQuery computeCluster = queryBuilder.compute().cluster().usingKCore();
+        KCoreQuery computeCluster = null; //todo: queryBuilder.compute().cluster().usingKCore();
 
         // The 'compute cluster using connected-component' query can be given 'in <types>' condition
         if (computeInTypes != null) computeCluster.in(graqlConstructor.visitLabels(computeInTypes));

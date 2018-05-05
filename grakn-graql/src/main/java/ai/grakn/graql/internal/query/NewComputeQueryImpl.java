@@ -20,27 +20,36 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static ai.grakn.util.GraqlSyntax.COMMA_SPACE;
 import static ai.grakn.util.GraqlSyntax.COMPUTE;
+import static ai.grakn.util.GraqlSyntax.Char.COMMA_SPACE;
+import static ai.grakn.util.GraqlSyntax.Char.EQUAL;
+import static ai.grakn.util.GraqlSyntax.Char.QUOTE;
+import static ai.grakn.util.GraqlSyntax.Char.SEMICOLON;
+import static ai.grakn.util.GraqlSyntax.Char.SPACE;
+import static ai.grakn.util.GraqlSyntax.Char.SQUARE_CLOSE;
+import static ai.grakn.util.GraqlSyntax.Char.SQUARE_OPEN;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
@@ -49,25 +58,27 @@ import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_INCLUDE_ATTRIBU
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static ai.grakn.util.GraqlSyntax.QUOTE;
-import static ai.grakn.util.GraqlSyntax.SEMICOLON;
-import static ai.grakn.util.GraqlSyntax.SPACE;
-import static ai.grakn.util.GraqlSyntax.SQUARE_CLOSE;
-import static ai.grakn.util.GraqlSyntax.SQUARE_OPEN;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 import static java.util.stream.Collectors.joining;
 
-public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAnswer> implements NewComputeQuery {
+public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, NewComputeQuery.Answer> implements NewComputeQuery {
 
     private Optional<GraknTx> tx;
-    private Set<ComputeJob<ComputeAnswer>> runningJobs = ConcurrentHashMap.newKeySet();
+    private Set<ComputeJob<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
     private ConceptId fromID = null;
@@ -89,16 +100,16 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     @Override
-    public final Stream<ComputeAnswer> stream() {
+    public final Stream<Answer> stream() {
         return Stream.of(execute());
     }
 
     @Override
-    public final ComputeAnswer execute() {
+    public final Answer execute() {
         Optional<GraqlQueryException> exception = getException();
         if (exception.isPresent()) throw exception.get();
 
-        ComputeJob<ComputeAnswer> job = executor().run(this);
+        ComputeJob<Answer> job = executor().run(this);
 
         runningJobs.add(job);
 
@@ -288,24 +299,24 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     private String conditionsSyntax() {
         List<String> conditionsList = new ArrayList<>();
 
-        if (fromID != null) conditionsList.add(FROM + SPACE + QUOTE + fromID + QUOTE);
-        if (toID != null) conditionsList.add(TO + SPACE + QUOTE + toID + QUOTE);
+        if (fromID != null) conditionsList.add(str(FROM, SPACE, QUOTE, fromID, QUOTE));
+        if (toID != null) conditionsList.add(str(TO, SPACE, QUOTE, toID, QUOTE));
         if (ofTypes != null) conditionsList.add(ofSyntax());
         if (inTypes != null) conditionsList.add(inSyntax());
         if (algorithm != null) conditionsList.add(algorithmSyntax());
         if (arguments != null) conditionsList.add(argumentsSyntax());
 
-        return conditionsList.stream().collect(joining(COMMA_SPACE));
+        return conditionsList.stream().collect(joining(COMMA_SPACE.toString()));
     }
 
     private String ofSyntax() {
-        if (ofTypes != null) return OF + SPACE + typesSyntax(ofTypes);
+        if (ofTypes != null) return str(OF, SPACE, typesSyntax(ofTypes));
 
         return "";
     }
 
     private String inSyntax() {
-        if (inTypes != null) return IN + SPACE + typesSyntax(inTypes);
+        if (inTypes != null) return str(IN, SPACE, typesSyntax(inTypes));
 
         return "";
     }
@@ -317,7 +328,7 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
             if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
             else {
                 inTypesString.append(SQUARE_OPEN);
-                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE)));
+                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE.toString())));
                 inTypesString.append(SQUARE_CLOSE);
             }
         }
@@ -326,13 +337,37 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
     }
 
     private String algorithmSyntax() {
-        if (algorithm != null) return USING + SPACE + algorithm;
+        if (algorithm != null) return str(USING, SPACE, algorithm);
 
         return "";
     }
 
     private String argumentsSyntax() {
-        return ""; // TODO: write argument syntax algorithm
+        if (arguments == null) return "";
+
+        List<String> argumentsList = new ArrayList<>();
+        StringBuilder argumentsString = new StringBuilder();
+
+        Set<Parameter> parameters = arguments.getOrderedArguments().keySet();
+        for (Parameter param : parameters) argumentsList.add(str(param, EQUAL, arguments.getOrderedArguments().get(param)));
+
+        if (!argumentsList.isEmpty()) {
+            argumentsString.append(str(WHERE, SPACE));
+            if (argumentsList.size() == 1) argumentsString.append(argumentsList.get(0));
+            else {
+                argumentsString.append(SQUARE_OPEN);
+                argumentsString.append(argumentsList.stream().collect(joining(COMMA_SPACE.toString())));
+                argumentsString.append(SQUARE_CLOSE);
+            }
+        }
+
+        return argumentsString.toString();
+    }
+
+    private String str(Object... objects) {
+        StringBuilder builder = new StringBuilder();
+        for (Object obj : objects) builder.append(obj.toString());
+        return builder.toString();
     }
 
     @Override
@@ -370,67 +405,73 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
 
     public class ArgumentsImpl implements Arguments {
-        private Long minK = null;
-        private Long k = null;
-        private Long size = null;
-        private Boolean members = null;
-        private ConceptId contains = null;
+
+        private LinkedHashMap<Parameter, Object> orderedArguments = new LinkedHashMap<>();
 
         @Override
         public Optional<Long> minK() {
-            if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && minK == null) {
+            if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !orderedArguments.containsKey(MIN_K)) {
                 return Optional.of(DEFAULT_MIN_K);
             }
 
-            return Optional.ofNullable(minK);
+            return Optional.ofNullable((Long) orderedArguments.get(MIN_K));
         }
 
         private void minK(long minK) {
-            this.minK = minK;
+            orderedArguments.remove(MIN_K);
+            orderedArguments.put(MIN_K, minK);
         }
 
         @Override
         public Optional<Long> k() {
-            if (method.equals(CLUSTER) && algorithm.equals(K_CORE) && k == null) {
+            if (method.equals(CLUSTER) && algorithm.equals(K_CORE) && !orderedArguments.containsKey(K)) {
                 return Optional.of(DEFAULT_K);
             }
 
-            return Optional.ofNullable(k);
+            return Optional.ofNullable((Long) orderedArguments.get(K));
         }
 
         private void k(long k) {
-            this.k = k;
+            orderedArguments.remove(K);
+            orderedArguments.put(K, k);
         }
 
         @Override
         public Optional<Long> size() {
-            return Optional.ofNullable(size);
+            return Optional.ofNullable((Long) orderedArguments.get(SIZE));
         }
 
-        private void size(long k) {
-            this.size = size;
+        private void size(long size) {
+            orderedArguments.remove(SIZE);
+            orderedArguments.put(SIZE, size);
         }
 
         @Override
         public Optional<Boolean> members() {
-            if (method.equals(CLUSTER) && algorithm.equals(CONNECTED_COMPONENT) && members == null) {
+            if (method.equals(CLUSTER) && algorithm.equals(CONNECTED_COMPONENT) && !orderedArguments.containsKey(MEMBERS)) {
                 return Optional.of(DEFAULT_MEMBERS);
             }
 
-            return Optional.ofNullable(members);
+            return Optional.ofNullable((Boolean) orderedArguments.get(MEMBERS));
         }
 
         private void members(boolean members) {
-            this.members = members;
+            orderedArguments.remove(MEMBERS);
+            orderedArguments.put(MEMBERS, members);
         }
 
         @Override
         public Optional<ConceptId> contains() {
-            return Optional.ofNullable(contains);
+            return Optional.ofNullable((ConceptId) orderedArguments.get(CONTAINS));
         }
 
         private void contains(ConceptId conceptId) {
-            this.contains = conceptId;
+            orderedArguments.remove(CONTAINS);
+            orderedArguments.put(CONTAINS, conceptId);
+        }
+
+        private LinkedHashMap<Parameter, Object> getOrderedArguments() {
+            return this.orderedArguments;
         }
 
         @Override
@@ -440,21 +481,91 @@ public class NewComputeQueryImpl extends AbstractQuery<ComputeAnswer, ComputeAns
 
             ArgumentsImpl that = (ArgumentsImpl) o;
 
-            return (this.minK().equals(that.minK()) &&
-                    this.k().equals(that.k()) &&
-                    this.size().equals(that.size()) &&
-                    this.members().equals(that.members()) &&
-                    this.contains().equals(that.contains()));
+            return (this.orderedArguments.equals(that.orderedArguments));
         }
+
 
         @Override
         public int hashCode() {
             int result = tx.hashCode();
-            result = 31 * result + minK.hashCode();
-            result = 31 * result + k.hashCode();
-            result = 31 * result + size.hashCode();
-            result = 31 * result + members.hashCode();
-            result = 31 * result + contains.hashCode();
+            result = 31 * result + orderedArguments.hashCode();
+
+            return result;
+        }
+    }
+
+    public static class AnswerImpl implements Answer {
+
+        private Number number = null;
+        private List<List<Concept>> paths = null;
+        private Map<Long, Set<String>> centralityCount = null;
+        private Map<String, Set<String>> clusterMembers = null;
+        private Map<String, Long> clusterSizes = null;
+
+        public AnswerImpl() {
+        }
+
+        public Optional<Number> getNumber() {
+            return Optional.ofNullable(number);
+        }
+
+        public Answer setNumber(Number number) {
+            this.number = number;
+            return this;
+        }
+
+        @Override
+        public Optional<List<List<Concept>>> getPaths() {
+            return Optional.ofNullable(paths);
+        }
+
+        public Answer setPaths(List<List<Concept>> paths) {
+            this.paths = ImmutableList.copyOf(paths);
+            return this;
+        }
+
+        @Override
+        public Optional<Map<Long, Set<String>>> getCentralityCount() {
+            return Optional.ofNullable(centralityCount);
+        }
+
+        public Answer setCentralityCount(Map<Long, Set<String>> countMap) {
+            this.centralityCount = ImmutableMap.copyOf(countMap);
+            return this;
+        }
+
+        public Optional<Map<String, Set<String>>> getClusterMembers() {
+            return Optional.ofNullable(clusterMembers);
+        }
+
+        public Answer setClusterMembers(Map<String, Set<String>> clusterMap) {
+            this.clusterMembers = ImmutableMap.copyOf(clusterMap);
+            return this;
+        }
+
+        public Optional<Map<String, Long>> getClusterSizes() {
+            return Optional.ofNullable(clusterSizes);
+        }
+
+        public Answer setClusterSizes(Map<String, Long> clusterSizes) {
+            this.clusterSizes = ImmutableMap.copyOf(clusterSizes);
+            return this;
+        }
+
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || this.getClass() != o.getClass()) return false;
+
+            Answer that = (Answer) o;
+
+            return (this.getPaths().equals(that.getPaths()) &&
+                    this.getNumber().equals(that.getNumber()));
+        }
+
+        @Override
+        public int hashCode() {
+            int result = number.hashCode();
+            result = 31 * result + paths.hashCode();
 
             return result;
         }

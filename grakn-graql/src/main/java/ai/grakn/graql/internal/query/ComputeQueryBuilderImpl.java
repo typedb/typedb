@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.analytics;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.NewComputeQuery;
@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 
 /**
  * This class implements ComputeQueryBuilder.
@@ -100,7 +101,7 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public ClusterQueryBuilder cluster() {
-        return new ClusterQueryBuilderImpl(tx);
+    public NewComputeQuery cluster() {
+        return new NewComputeQueryImpl(tx, CLUSTER);
     }
 }

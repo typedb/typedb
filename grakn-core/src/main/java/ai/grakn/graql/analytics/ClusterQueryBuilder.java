@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.NewComputeQuery;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
@@ -47,7 +48,7 @@ public interface ClusterQueryBuilder {
      * @return a K-Core Query
      */
     @CheckReturnValue
-    KCoreQuery usingKCore();
+    NewComputeQuery usingKCore();
 
     /**
      * Compute cluster using connected component.
@@ -55,5 +56,5 @@ public interface ClusterQueryBuilder {
      * @return a Degree Query
      */
     @CheckReturnValue
-    ConnectedComponentQuery<Map<String, Long>> usingConnectedComponent();
+    NewComputeQuery usingConnectedComponent();
 }

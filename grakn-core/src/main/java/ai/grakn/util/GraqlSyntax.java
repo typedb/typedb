@@ -20,11 +20,11 @@ package ai.grakn.util;
 
 import ai.grakn.concept.ConceptId;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.grakn.util.GraqlSyntax.Char.EQUAL;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
@@ -49,22 +49,32 @@ public class GraqlSyntax {
     // Graql Queries
     public static final String COMPUTE = "compute";
 
+    public enum Char {
+        EQUAL("="),
+        SEMICOLON(";"),
+        SPACE(" "),
+        COMMA(","),
+        COMMA_SPACE(", "),
+        SQUARE_OPEN("["),
+        SQUARE_CLOSE("]"),
+        QUOTE("\"");
+        
+        private final String character;
 
-    // Miscellaneous
-    public static final String EQUAL = "=";
-    public static final String SEMICOLON = ";";
-    public static final String SPACE = " ";
-    public static final String COMMA = ",";
-    public static final String COMMA_SPACE = ", ";
-    public static final String SQUARE_OPEN = "[";
-    public static final String SQUARE_CLOSE = "]";
-    public static final String QUOTE = "\"";
+        Char(String character) {
+            this.character = character;
+        }
 
+        @Override
+        public String toString() {
+            return this.character;
+        }
+    }
     /**
      * Graql Compute syntax keyword
      */
     public static class Compute {
-        
+
 
         public enum Method {
             COUNT("setNumber"),
@@ -85,10 +95,11 @@ public class GraqlSyntax {
             }
 
             @Override
-            public String toString(){
+            public String toString() {
                 return this.method;
             }
         }
+
         /**
          * Graql Compute conditions keyword
          */
@@ -107,7 +118,7 @@ public class GraqlSyntax {
             }
 
             @Override
-            public String toString(){
+            public String toString() {
                 return this.condition;
             }
         }
@@ -127,42 +138,44 @@ public class GraqlSyntax {
             }
 
             @Override
-            public String toString(){
+            public String toString() {
                 return this.algorithm;
+            }
+        }
+
+        /**
+         * Graql Compute parameter names
+         */
+        public enum Parameter {
+            MIN_K("min-k"),
+            K("k"),
+            CONTAINS("contains"),
+            MEMBERS("members"),
+            SIZE("size");
+
+            private final String arg;
+
+            Parameter(String arg) {
+                this.arg = arg;
+            }
+
+            @Override
+            public String toString() {
+                return this.arg;
             }
         }
 
         //TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
         public static class Argument<T> {
-            /**
-             * Graql Compute argument keywords
-             */
-            public enum Type {
-                MIN_K("min-k"),
-                K("k"),
-                CONTAINS("contains"),
-                MEMBERS("members"),
-                SIZE("size");
-
-                private final String arg;
-
-                Type(String arg) {
-                    this.arg = arg;
-                }
-
-                @Override
-                public String toString(){
-                    return this.arg;
-                }
-            }
 
             public final static long DEFAULT_MIN_K = 2L;
             public final static long DEFAULT_K = 2L;
             public final static boolean DEFAULT_MEMBERS = false;
 
             public final static Map<Method, Boolean> DEFAULT_INCLUDE_ATTRIBUTES = defaultIncludeAttributes();
+
             private static Map<Method, Boolean> defaultIncludeAttributes() {
-                Map<Method,Boolean> map = new HashMap<>();
+                Map<Method, Boolean> map = new HashMap<>();
                 map.put(COUNT, false);
                 map.put(MIN, true);
                 map.put(MAX, true);
@@ -177,35 +190,45 @@ public class GraqlSyntax {
                 return Collections.unmodifiableMap(map);
             }
 
-            private Type type;
+            private Parameter param;
             private T arg;
 
-            private Argument(Type type, T arg) {
-                this.type = type;
+            private Argument(Parameter param, T arg) {
+                this.param = param;
                 this.arg = arg;
             }
 
-            public final Type type() {return this.type;}
-
-            public final T get() {return this.arg;}
-
-            public static Argument<Long> min_k(long minK) { return new Argument<>(Type.MIN_K, minK); }
-
-            public static Argument<Long> k(long k) {
-                return new Argument<>(Type.K, k);
+            public final Parameter type() {
+                return this.param;
             }
 
-            public static Argument<Long> size(long size) { return new Argument<>(Type.SIZE, size); }
+            public final T get() {
+                return this.arg;
+            }
 
-            public static Argument<Boolean> members(boolean members) { return new Argument<>(Type.MEMBERS, members); }
+            public static Argument<Long> min_k(long minK) {
+                return new Argument<>(Parameter.MIN_K, minK);
+            }
+
+            public static Argument<Long> k(long k) {
+                return new Argument<>(Parameter.K, k);
+            }
+
+            public static Argument<Long> size(long size) {
+                return new Argument<>(Parameter.SIZE, size);
+            }
+
+            public static Argument<Boolean> members(boolean members) {
+                return new Argument<>(Parameter.MEMBERS, members);
+            }
 
             public static Argument<ConceptId> contains(ConceptId conceptId) {
-                return new Argument<>(Type.CONTAINS, conceptId);
+                return new Argument<>(Parameter.CONTAINS, conceptId);
             }
 
             @Override
             public String toString() {
-                return type + EQUAL + arg.toString();
+                return param + EQUAL.toString() + arg.toString();
             }
         }
     }

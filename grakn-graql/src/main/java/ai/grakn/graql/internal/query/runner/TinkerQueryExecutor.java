@@ -23,7 +23,6 @@ import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -32,20 +31,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.CorenessQuery;
-import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.StdQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
@@ -53,8 +39,6 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -82,12 +66,12 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
+    public Stream<ai.grakn.graql.admin.Answer> run(GetQuery query) {
         return query.match().stream().map(result -> result.project(query.vars())).distinct();
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
+    public Stream<ai.grakn.graql.admin.Answer> run(InsertQuery query) {
         Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
@@ -97,23 +81,23 @@ public class TinkerQueryExecutor implements QueryExecutor {
                 .orElseGet(() -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx)));
     }
 
-    private Stream<Answer> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
+    private Stream<ai.grakn.graql.admin.Answer> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
         Set<Var> varsInMatch = match.admin().getSelectedNames();
         Set<Var> varsInInsert = varPatterns.stream().map(VarPatternAdmin::var).collect(toImmutableSet());
         Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
-        Stream<Answer> answers = match.get(projectedVars).stream();
+        Stream<ai.grakn.graql.admin.Answer> answers = match.get(projectedVars).stream();
         return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer));
     }
 
     @Override
     public void run(DeleteQuery query) {
-        List<Answer> results = query.admin().match().stream().collect(toList());
+        List<ai.grakn.graql.admin.Answer> results = query.admin().match().stream().collect(toList());
         results.forEach(result -> deleteResult(result, query.admin().vars()));
     }
 
     @Override
-    public Answer run(DefineQuery query) {
+    public ai.grakn.graql.admin.Answer run(DefineQuery query) {
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
@@ -137,68 +121,11 @@ public class TinkerQueryExecutor implements QueryExecutor {
 
 
     @Override
-    public ComputeJob<ComputeAnswer> run(NewComputeQuery query) {return new NewTinkerComputeJob(tx, query);}
-    @Override
-    public ComputeJob<Long> run(CountQuery query) {
-        return new TinkerComputeJob<>(tx, query);
+    public ComputeJob<NewComputeQuery.Answer> run(NewComputeQuery query) {
+        return new TinkerComputeJob(tx, query);
     }
 
-    @Override
-    public ComputeJob<Optional<Number>> run(MinQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MaxQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Double>> run(StdQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(SumQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    @Override
-    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
-        return new TinkerComputeJob<>(tx, query);
-    }
-
-    private void deleteResult(Answer result, Collection<? extends Var> vars) {
+    private void deleteResult(ai.grakn.graql.admin.Answer result, Collection<? extends Var> vars) {
         Collection<? extends Var> toDelete = vars.isEmpty() ? result.vars() : vars;
 
         for (Var var : toDelete) {

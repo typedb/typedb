@@ -22,7 +22,6 @@ import ai.grakn.ComputeJob;
 import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeAnswer;
 import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.analytics.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -31,7 +30,6 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -77,12 +75,12 @@ final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
+    public Stream<ai.grakn.graql.admin.Answer> run(GetQuery query) {
         return runAnswerStream(query);
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
+    public Stream<ai.grakn.graql.admin.Answer> run(InsertQuery query) {
         return runAnswerStream(query);
     }
 
@@ -92,8 +90,8 @@ final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Answer run(DefineQuery query) {
-        return runSingle(query, Answer.class);
+    public ai.grakn.graql.admin.Answer run(DefineQuery query) {
+        return runSingle(query, ai.grakn.graql.admin.Answer.class);
     }
 
     @Override
@@ -106,68 +104,10 @@ final class RemoteQueryExecutor implements QueryExecutor {
         return runSingleUnchecked(query);
     }
 
-    @Override
-    public ComputeJob<ComputeAnswer> run(NewComputeQuery query) {
-        return null; //TODO: implement run(NewComputeQuery) for RemoteQueryExecutor
-    }
-    @Override
-    public <T> ComputeJob<T> run(ConnectedComponentQuery<T> query) {
-        return runComputeUnchecked(query);
-    }
 
     @Override
-    public ComputeJob<Map<Long, Set<String>>> run(CorenessQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Long> run(CountQuery query) {
-        return runCompute(query, Long.class);
-    }
-
-    @Override
-    public ComputeJob<Map<Long, Set<String>>> run(DegreeQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Map<String, Set<String>>> run(KCoreQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MaxQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Double>> run(MeanQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MedianQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(MinQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<List<List<Concept>>> run(PathQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Double>> run(StdQuery query) {
-        return runComputeUnchecked(query);
-    }
-
-    @Override
-    public ComputeJob<Optional<Number>> run(SumQuery query) {
-        return runComputeUnchecked(query);
+    public ComputeJob<NewComputeQuery.Answer> run(NewComputeQuery query) {
+        return runCompute(query);
     }
 
     private Iterator<Object> run(Query<?> query) {
@@ -178,17 +118,17 @@ final class RemoteQueryExecutor implements QueryExecutor {
         run(query).forEachRemaining(empty -> {});
     }
 
-    private Stream<Answer> runAnswerStream(Query<?> query) {
+    private Stream<ai.grakn.graql.admin.Answer> runAnswerStream(Query<?> query) {
         Iterable<Object> iterable = () -> run(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(Answer.class::cast);
+        return stream.map(ai.grakn.graql.admin.Answer.class::cast);
     }
 
-    private <T> ComputeJob<T> runCompute(ComputeQuery<? extends T> query, Class<? extends T> clazz) {
-        return RemoteComputeJob.of(runSingle(query, clazz));
+    private ComputeJob<NewComputeQuery.Answer> runCompute(NewComputeQuery query) {
+        return RemoteComputeJob.of(runSingle(query, NewComputeQuery.Answer.class));
     }
 
-    private <T> ComputeJob<T> runComputeUnchecked(ComputeQuery<? extends T> query) {
+    private ComputeJob<NewComputeQuery.Answer> runComputeUnchecked(NewComputeQuery query) {
         return RemoteComputeJob.of(runSingleUnchecked(query));
     }
 

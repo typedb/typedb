@@ -19,12 +19,15 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,7 +40,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method;
  *
  * @author Haikal Pribadi
  */
-public interface NewComputeQuery extends Query<ComputeAnswer> {
+public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param tx the graph to execute the compute query on
@@ -181,5 +184,19 @@ public interface NewComputeQuery extends Query<ComputeAnswer> {
         Optional<Boolean> members();
 
         Optional<ConceptId> contains();
+    }
+
+
+    interface Answer {
+
+        Optional<Number> getNumber();
+
+        Optional<List<List<Concept>>> getPaths();
+
+        Optional<Map<Long, Set<String>>> getCentralityCount();
+
+        Optional<Map<String, Set<String>>> getClusterMembers();
+
+        Optional<Map<String, Long>> getClusterSizes();
     }
 }

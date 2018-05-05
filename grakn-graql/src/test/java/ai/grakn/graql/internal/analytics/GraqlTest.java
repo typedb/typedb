@@ -57,6 +57,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.contains;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -191,7 +193,7 @@ public class GraqlTest {
 
             Query<?> parsed = graph.graql().parse(
                     "compute cluster using connected-component, where start = V123;");
-            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().start(ConceptId.of("V123"));
+            Query<?> expected = graph.graql().compute().cluster().using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }
