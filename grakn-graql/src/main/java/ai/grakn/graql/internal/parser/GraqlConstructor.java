@@ -669,6 +669,9 @@ class GraqlConstructor extends GraqlBaseVisitor {
             }
         }
 
+        Optional<GraqlQueryException> exception = query.getException();
+        if (exception.isPresent()) throw exception.get();
+
         return query;
     }
 
