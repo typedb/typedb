@@ -13,7 +13,7 @@ For an application to be more intelligent, it needs to know more. To know more, 
 
 *What makes a dataset complex?*
 
-Data models make datasets complex. Real world models are filled with hierarchies and hyper-relationships, but our current modelling techniques are all based on binary relationships. Querying these legacy  datasets is challenging, because query languages are only able to retrieve explicitly stored data, and not implicitly derived information.
+Data models make datasets complex. Real world models are filled with hierarchies and hyper-relationships, but our current modeling techniques are all based on binary relationships. Querying these legacy  datasets is challenging, because query languages are only able to retrieve explicitly stored data, and not implicitly derived information.
 
 GRAKN.AI is the database solution for working with complex data that intelligent applications rely on. Grakn allows an organisation to grow its competitive advantage by uncovering hidden knowledge that is too complex for human cognition. The data model can evolve as a business “learns” all while reducing engineering time, cost and complexity.
 
@@ -29,7 +29,7 @@ Grakn is a knowledge graph, that provides an [Enhanced-Entity-Relational (EER)](
 
 > Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained in it.
 
-Grakn’s schema modelling constructs include, but are not limited to, data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
+Grakn’s schema modeling constructs include, but are not limited to, data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
 
 > Grakn’s schema functions as a data schema constraint that guarantees information consistency.
 
