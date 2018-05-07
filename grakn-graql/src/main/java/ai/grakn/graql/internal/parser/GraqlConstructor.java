@@ -641,7 +641,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
         GraqlParser.ComputeMethodContext method = context.computeMethod();
         GraqlParser.ComputeConditionsContext conditions = context.computeConditions();
 
-        NewComputeQuery query = queryBuilder.compute(Method.valueOf(method.getText()));
+        NewComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
         if (conditions == null) return query;
 
         for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {
@@ -659,13 +659,13 @@ class GraqlConstructor extends GraqlBaseVisitor {
                     query.in(visitLabels(condition.computeInLabels().labels()));
                     break;
                 case GraqlParser.RULE_computeAlgorithm:
-                    query.using(Algorithm.valueOf(condition.computeAlgorithm().getText()));
+                    query.using(Algorithm.of(condition.computeAlgorithm().getText()));
                     break;
                 case GraqlParser.RULE_computeArgs:
                     query.where(visitComputeArgs(condition.computeArgs()));
                     break;
                 default:
-                    throw GraqlQueryException.invalidComputeCondition();
+                    throw GraqlQueryException.invalidComputeQuery_invalidCondition(query.method());
             }
         }
 

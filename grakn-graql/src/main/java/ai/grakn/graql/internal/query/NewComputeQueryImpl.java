@@ -33,12 +33,17 @@ import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -50,20 +55,26 @@ import static ai.grakn.util.GraqlSyntax.Char.SPACE;
 import static ai.grakn.util.GraqlSyntax.Char.SQUARE_CLOSE;
 import static ai.grakn.util.GraqlSyntax.Char.SQUARE_OPEN;
 import static ai.grakn.util.GraqlSyntax.Command.COMPUTE;
+import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_DEFAULT;
+import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_INCLUDE_ATTRIBUTES;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MIN_K;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
+import static ai.grakn.util.GraqlSyntax.Compute.Condition;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
+import static ai.grakn.util.GraqlSyntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
@@ -95,14 +106,28 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     private ArgumentsImpl arguments = null;
     private boolean includeAttributes = false;
 
+    private final Map<Condition, Supplier<Optional<?>>> conditions = conditionsGetters();
+
     public NewComputeQueryImpl(Optional<GraknTx> tx, Method method) {
-        this(tx, method, DEFAULT_INCLUDE_ATTRIBUTES.get(method));
+        this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
     public NewComputeQueryImpl(Optional<GraknTx> tx, Method method, boolean includeAttributes) {
         this.method = method;
         this.tx = tx;
         this.includeAttributes = includeAttributes;
+    }
+
+    private Map<Condition, Supplier<Optional<?>>> conditionsGetters() {
+        Map<Condition, Supplier<Optional<?>>> conditions = new HashMap<>();
+        conditions.put(FROM, this::from);
+        conditions.put(TO, this::to);
+        conditions.put(OF, this::of);
+        conditions.put(IN, this::in);
+        conditions.put(USING, this::using);
+        conditions.put(WHERE, this::where);
+
+        return conditions;
     }
 
     @Override
@@ -219,6 +244,9 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
     @Override
     public final Optional<Algorithm> using() {
+        if (method.equals(CLUSTER) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
+        if (method.equals(CENTRALITY) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
+
         return Optional.ofNullable(algorithm);
     }
 
@@ -234,26 +262,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     @Override
     public final NewComputeQuery where(Collection<Argument> args) {
         if (this.arguments == null) this.arguments = new ArgumentsImpl();
-
-        for (Argument arg : args) {
-            switch (arg.type()) {
-                case MIN_K:
-                    this.arguments.minK((Long) arg.get());
-                    break;
-                case K:
-                    this.arguments.k((Long) arg.get());
-                    break;
-                case SIZE:
-                    this.arguments.size((Long) arg.get());
-                    break;
-                case MEMBERS:
-                    this.arguments.members((Boolean) arg.get());
-                    break;
-                case CONTAINS:
-                    this.arguments.contains((ConceptId) arg.get());
-                    break;
-            }
-        }
+        for (Argument arg : args) this.arguments.setArgument(arg);
 
         return this;
     }
@@ -261,7 +270,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     @Override
     public final Optional<Arguments> where() {
         if ((method.equals(CENTRALITY) || method.equals(CLUSTER)) && arguments == null) arguments = new ArgumentsImpl();
-        return Optional.of(this.arguments);
+        return Optional.ofNullable(this.arguments);
     }
 
     @Override
@@ -287,13 +296,38 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
     @Override
     public Optional<GraqlQueryException> getException() {
-        //TODO
 
-        if (method.equals(Method.PATH) && (!from().isPresent() || !to().isPresent())) {
-            return Optional.of(GraqlQueryException.invalidComputePathMissingCondition());
+        for (Condition condition : collect(CONDITIONS_REQUIRED.get(this.method()))) {
+            if (!this.conditions.get(condition).get().isPresent()) {
+                return Optional.of(GraqlQueryException.invalidComputeQuery_missingCondition(this.method()));
+            }
+        }
+
+        for (Condition condition : this.conditions.keySet().stream()
+                .filter(con -> this.conditions.get(con).get().isPresent())
+                .collect(Collectors.toSet())) {
+            if (!CONDITIONS_ACCEPTED.get(this.method()).contains(condition)) {
+                return Optional.of(GraqlQueryException.invalidComputeQuery_invalidCondition(this.method()));
+            }
+        }
+
+        if (ALGORITHMS_ACCEPTED.containsKey(this.method()) && !ALGORITHMS_ACCEPTED.get(this.method()).contains(this.using().get())) {
+            return Optional.of(GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(this.method()));
+        }
+
+        if (this.where().isPresent()) {
+            for (Parameter param : this.where().get().getArguments().keySet()) {
+                if (!ARGUMENTS_ACCEPTED.get(this.method()).get(this.using().get()).contains(param)) {
+                    return Optional.of(GraqlQueryException.invalidComputeQuery_invalidArgument(this.method(), this.using().get()));
+                }
+            }
         }
 
         return Optional.empty();
+    }
+
+    private <T> Collection<T> collect(Collection<T> collection) {
+        return collection != null ? collection : Collections.emptyList();
     }
 
     @Override
@@ -359,8 +393,8 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         List<String> argumentsList = new ArrayList<>();
         StringBuilder argumentsString = new StringBuilder();
 
-        Set<Parameter> parameters = arguments.getOrderedArguments().keySet();
-        for (Parameter param : parameters) argumentsList.add(str(param, EQUAL, arguments.getOrderedArguments().get(param)));
+        Set<Parameter> parameters = arguments.getArguments().keySet();
+        for (Parameter param : parameters) argumentsList.add(str(param, EQUAL, arguments.getArguments().get(param).get()));
 
         if (!argumentsList.isEmpty()) {
             argumentsString.append(str(WHERE, SPACE));
@@ -393,23 +427,23 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
                 this.from().equals(that.from()) &&
                 this.to().equals(that.to()) &&
                 this.of().equals(that.of()) &&
-                this.in().equals(that.in())) &&
+                this.in().equals(that.in()) &&
                 this.using().equals(that.using()) &&
                 this.where().equals(that.where()) &&
-                this.includesAttributes() == that.includesAttributes();
+                this.includesAttributes() == that.includesAttributes());
     }
 
     @Override
     public int hashCode() {
         int result = tx.hashCode();
-        result = 31 * result + method.hashCode();
-        result = 31 * result + fromID.hashCode();
-        result = 31 * result + toID.hashCode();
-        result = 31 * result + ofTypes.hashCode();
-        result = 31 * result + inTypes.hashCode();
-        result = 31 * result + algorithm.hashCode();
-        result = 31 * result + arguments.hashCode();
-        result = 31 * result + Boolean.hashCode(includeAttributes);
+        result = 31 * result + Objects.hashCode(method);
+        result = 31 * result + Objects.hashCode(fromID);
+        result = 31 * result + Objects.hashCode(toID);
+        result = 31 * result + Objects.hashCode(ofTypes);
+        result = 31 * result + Objects.hashCode(inTypes);
+        result = 31 * result + Objects.hashCode(algorithm);
+        result = 31 * result + Objects.hashCode(arguments);
+        result = 31 * result + Objects.hashCode(includeAttributes);
 
         return result;
     }
@@ -421,7 +455,22 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
      */
     public class ArgumentsImpl implements Arguments {
 
-        private LinkedHashMap<Parameter, Object> orderedArguments = new LinkedHashMap<>();
+        private LinkedHashMap<Parameter, Argument> orderedArguments = new LinkedHashMap<>();
+
+        private void setArgument(Argument arg) {
+            orderedArguments.remove(arg.type());
+            orderedArguments.put(arg.type(), arg);
+        }
+
+        @Override
+        public Optional<Object> getArgument(Parameter param) {
+            return Optional.ofNullable(orderedArguments.get(param));
+        }
+
+        @Override
+        public LinkedHashMap<Parameter, Argument> getArguments() {
+            return this.orderedArguments;
+        }
 
         @Override
         public Optional<Long> minK() {
@@ -429,12 +478,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
                 return Optional.of(DEFAULT_MIN_K);
             }
 
-            return Optional.ofNullable((Long) orderedArguments.get(MIN_K));
-        }
-
-        private void minK(long minK) {
-            orderedArguments.remove(MIN_K);
-            orderedArguments.put(MIN_K, minK);
+            return Optional.ofNullable((Long) getArgumentValue(MIN_K));
         }
 
         @Override
@@ -443,22 +487,12 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
                 return Optional.of(DEFAULT_K);
             }
 
-            return Optional.ofNullable((Long) orderedArguments.get(K));
-        }
-
-        private void k(long k) {
-            orderedArguments.remove(K);
-            orderedArguments.put(K, k);
+            return Optional.ofNullable((Long) getArgumentValue(K));
         }
 
         @Override
         public Optional<Long> size() {
-            return Optional.ofNullable((Long) orderedArguments.get(SIZE));
-        }
-
-        private void size(long size) {
-            orderedArguments.remove(SIZE);
-            orderedArguments.put(SIZE, size);
+            return Optional.ofNullable((Long) getArgumentValue(SIZE));
         }
 
         @Override
@@ -467,26 +501,16 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
                 return Optional.of(DEFAULT_MEMBERS);
             }
 
-            return Optional.ofNullable((Boolean) orderedArguments.get(MEMBERS));
-        }
-
-        private void members(boolean members) {
-            orderedArguments.remove(MEMBERS);
-            orderedArguments.put(MEMBERS, members);
+            return Optional.ofNullable((Boolean) getArgumentValue(MEMBERS));
         }
 
         @Override
         public Optional<ConceptId> contains() {
-            return Optional.ofNullable((ConceptId) orderedArguments.get(CONTAINS));
+            return Optional.ofNullable((ConceptId) getArgumentValue(CONTAINS));
         }
 
-        private void contains(ConceptId conceptId) {
-            orderedArguments.remove(CONTAINS);
-            orderedArguments.put(CONTAINS, conceptId);
-        }
-
-        private LinkedHashMap<Parameter, Object> getOrderedArguments() {
-            return this.orderedArguments;
+        private Object getArgumentValue(Parameter param) {
+            return orderedArguments.get(param) != null ? orderedArguments.get(param).get() : null;
         }
 
         @Override
@@ -496,7 +520,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
             ArgumentsImpl that = (ArgumentsImpl) o;
 
-            return (this.orderedArguments.equals(that.orderedArguments));
+            return (this.getArguments().equals(that.getArguments()));
         }
 
 
@@ -525,11 +549,12 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         public AnswerImpl() {
         }
 
+        @Override
         public Optional<Number> getNumber() {
             return Optional.ofNullable(number);
         }
 
-        public Answer count(Number number) {
+        public Answer setNumber(Number number) {
             this.number = number;
             return this;
         }
@@ -584,8 +609,11 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
         @Override
         public int hashCode() {
-            int result = number.hashCode();
-            result = 31 * result + paths.hashCode();
+            int result = Objects.hashCode(number);
+            result = 31 * result + Objects.hashCode(paths);
+            result = 31 * result + Objects.hashCode(centralityCount);
+            result = 31 * result + Objects.hashCode(clusterMembers);
+            result = 31 * result + Objects.hashCode(clusterSizes);
 
             return result;
         }

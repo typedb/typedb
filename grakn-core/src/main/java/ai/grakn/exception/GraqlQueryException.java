@@ -40,38 +40,22 @@ import java.util.List;
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_ALGORITHM;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_ALGORITHM;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_COUNT_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MAX_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEAN_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEAN_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEDIAN_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MEDIAN_MISSING_CONDITION;
 import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_MIN_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_PATH_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_STD_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_STD_MISSING_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_SUM_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_SUM_MISSING_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
+import static ai.grakn.util.ErrorMessage.MISSING_COMPUTE_CONDITION;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static ai.grakn.util.GraqlSyntax.Compute;
+import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
+import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
 
 /**
  * <p>
@@ -359,111 +343,23 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
     }
 
-    public static GraqlQueryException invalidComputeMethod() {
-        return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage());
+    public static GraqlQueryException invalidComputeQuery_invalidMethod() {
+        return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage(METHODS_ACCEPTED));
     }
 
-    public static GraqlQueryException invalidComputeCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage());
+    public static GraqlQueryException invalidComputeQuery_invalidCondition(Compute.Method method) {
+        return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage(method, CONDITIONS_ACCEPTED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeCountCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_COUNT_CONDITION.getMessage());
+    public static GraqlQueryException invalidComputeQuery_missingCondition(Compute.Method method) {
+        return new GraqlQueryException(MISSING_COMPUTE_CONDITION.getMessage(method, CONDITIONS_REQUIRED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeMinCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MIN_CONDITION.getMessage());
+    public static GraqlQueryException invalidComputeQuery_invalidMethodAlgorithm(Compute.Method method) {
+        return new GraqlQueryException(INVALID_COMPUTE_METHOD_ALGORITHM.getMessage(method, ALGORITHMS_ACCEPTED.get(method)));
     }
 
-    public static GraqlQueryException invalidComputeMinMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MIN_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMaxCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MAX_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMaxMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MAX_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMedianCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MEDIAN_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMedianMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MEDIAN_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMeanCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MEAN_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeMeanMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_MEAN_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeStdCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_STD_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeStdMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_STD_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeSumCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_SUM_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeSumMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_SUM_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputePathCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_PATH_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputePathMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_PATH_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeCentralityCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeCentralityMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeCentralityAlgorithm() {
-        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_ALGORITHM.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeCentralityUsingDegreeCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_USING_DEGREE_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeCentralityUsingKCoreArgs() {
-        return new GraqlQueryException(INVALID_COMPUTE_CENTRALITY_USING_KCORE_ARGUMENTS.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeClusterCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeClusterMissingCondition() {
-        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_MISSING_CONDITION.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeClusterAlgorithm() {
-        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_ALGORITHM.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeClusterUsingConnectedComponentArgument() {
-        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_USING_CONNECTED_COMPONENT_ARGUMENT.getMessage());
-    }
-
-    public static GraqlQueryException invalidComputeClusterUsingKCoreArgument() {
-        return new GraqlQueryException(INVALID_COMPUTE_CLUSTER_USING_KCORE_ARGUMENT.getMessage());
+    public static GraqlQueryException invalidComputeQuery_invalidArgument(Compute.Method method, Compute.Algorithm algorithm) {
+        return new GraqlQueryException(INVALID_COMPUTE_ARGUMENT.getMessage(method, algorithm, ARGUMENTS_ACCEPTED.get(method).get(algorithm)));
     }
 }

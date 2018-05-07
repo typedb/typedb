@@ -26,6 +26,7 @@ import ai.grakn.exception.GraqlQueryException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import java.util.Set;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
@@ -127,7 +129,7 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     Optional<Algorithm> using();
 
     /**
-     * @param arg is an argument that could provided to modify the compute query parameters
+     * @param arg  is an argument that could provided to modify the compute query parameters
      * @param args is an array of arguments
      * @return a NewComputeQuery with the arguments set
      */
@@ -138,6 +140,7 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @return
      */
     NewComputeQuery where(Collection<Argument> args);
+
     /**
      * @return an Arguments object containing all the provided individual arguments combined
      */
@@ -189,6 +192,12 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
      * @author Haikal Pribadi
      */
     interface Arguments {
+
+        @CheckReturnValue
+        Optional<Object> getArgument(Parameter param);
+
+        @CheckReturnValue
+        LinkedHashMap<Parameter, Argument> getArguments();
 
         @CheckReturnValue
         Optional<Long> minK();

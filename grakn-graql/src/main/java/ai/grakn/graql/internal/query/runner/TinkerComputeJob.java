@@ -136,7 +136,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
                 return runComputeCluster();
         }
 
-        throw GraqlQueryException.invalidComputeMethod();
+        throw GraqlQueryException.invalidComputeQuery_invalidMethod();
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
@@ -160,7 +160,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      * @return a Answer object containing a Number that represents the answer
      */
     private NewComputeQuery.Answer runComputeMinMaxMedianOrSum() {
-        return new NewComputeQueryImpl.AnswerImpl().count(runComputeStatistics());
+        return new NewComputeQueryImpl.AnswerImpl().setNumber(runComputeStatistics());
     }
 
     /**
@@ -176,7 +176,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
 
-        return answer.count(mean);
+        return answer.setNumber(mean);
     }
 
     /**
@@ -195,7 +195,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return answer.count(std);
+        return answer.setNumber(std);
     }
 
     /**
@@ -302,7 +302,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
 
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return answer.count(0L);
+            return answer.setNumber(0L);
         }
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
@@ -325,7 +325,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return answer.count(finalCount);
+        return answer.setNumber(finalCount);
     }
 
     /**
@@ -368,7 +368,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         if (query.using().get().equals(DEGREE)) return runComputeDegree();
         if (query.using().get().equals(K_CORE)) return runComputeCoreness();
 
-        throw GraqlQueryException.invalidComputeCentralityAlgorithm();
+        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
     }
 
     /**
@@ -410,7 +410,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
                 subLabelIds);
 
         Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
-        System.out.println("XXXXXXXXXXXXXX -> " + xxx.toString() );
+
         return answer.setCentralityCount(xxx);
     }
 
@@ -423,8 +423,6 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
 
         long k = query.where().get().minK().get();
-
-        System.out.println("OOOOOOOOOOOOOOOOOO -> " + k);
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
@@ -465,7 +463,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         }
 
         Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
-        System.out.println("OOOOOOOOOOOOOOOOOO -> " + xxx.toString() );
+
         return answer.setCentralityCount(xxx);
     }
 
@@ -473,7 +471,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         if (query.using().get().equals(K_CORE)) return runComputeKCore();
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
 
-        throw GraqlQueryException.invalidComputeClusterAlgorithm();
+        throw GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(query.method());
     }
 
 
