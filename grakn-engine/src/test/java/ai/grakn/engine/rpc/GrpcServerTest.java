@@ -35,9 +35,10 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.analytics.CountQuery;
+import ai.grakn.graql.internal.query.NewComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.grpc.ConceptMethod;
 import ai.grakn.grpc.ConceptMethods;
@@ -395,10 +396,10 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryRemotelyThatReturnsOneResult_ReturnOneResult() throws InterruptedException {
         String COUNT_QUERY = "compute count;";
-        CountQuery countQuery = mock(CountQuery.class);
+        NewComputeQuery countQuery = mock(NewComputeQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 
-        when(countQuery.execute()).thenReturn(100L);
+        when(countQuery.execute()).thenReturn(new NewComputeQueryImpl.AnswerImpl().setNumber(100L));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
             tx.send(openRequest(MYKS, GraknTxType.WRITE));

@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.GraqlSyntax;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -46,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>
@@ -147,7 +147,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         return new ComputeQueryBuilderImpl(tx);
     }
 
-    public NewComputeQuery compute(GraqlSyntax.Compute.Method method) {
+    public NewComputeQuery compute(Method method) {
         return new NewComputeQueryImpl(tx, method);
     }
 

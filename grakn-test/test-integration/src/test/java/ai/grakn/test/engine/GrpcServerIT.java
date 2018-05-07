@@ -21,17 +21,38 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.*;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
-import com.google.common.collect.*;
-import org.junit.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Iterator;
@@ -43,10 +64,19 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Felix Chapman
@@ -207,48 +237,48 @@ public class GrpcServerIT {
 
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
             // count
-            assertEquals(1L, tx.graql().compute().count().in("pet").execute().longValue());
+            assertEquals(1L, tx.graql().compute().count().in("pet").execute().getNumber().get());
 
             // statistics
-            assertEquals(10L, tx.graql().compute().min().of("age").in("human").execute().get().longValue());
-            assertEquals(10L, tx.graql().compute().max().of("age").in("human").execute().get().longValue());
-            assertEquals(10L, tx.graql().compute().mean().of("age").in("human").execute().get().longValue());
-            assertEquals(10L, tx.graql().compute().std().of("age").in("human").execute().get().longValue());
-            assertEquals(10L, tx.graql().compute().sum().of("age").in("human").execute().get().longValue());
-            assertEquals(10L, tx.graql().compute().median().of("age").in("human").execute().get().longValue());
+            assertEquals(10L, tx.graql().compute().min().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute().max().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute().mean().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute().std().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute().sum().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute().median().of("age").in("human").execute().getNumber().get());
 
             // degree
-            Map<Long, Set<String>> centrality = tx.graql().compute().centrality().usingDegree()
-                    .of("pet").in("human", "pet", "friend").execute();
+            Map<Long, Set<String>> centrality = tx.graql().compute().centrality().using(DEGREE)
+                    .of("pet").in("human", "pet", "friend").execute().getCentralityCount().get();
             assertEquals(1L, centrality.size());
             assertEquals(idCoco.getValue(), centrality.get(1L).iterator().next());
 
             // coreness
-            assertTrue(tx.graql().compute().centrality().usingKCore().of("pet").execute().isEmpty());
+            assertFalse(tx.graql().compute().centrality().using(K_CORE).of("pet").execute().getCentralityCount().isPresent());
 
             // path
-            List<List<Concept>> paths = tx.graql().compute().path().to(idCoco).from(idMike).execute();
+            List<List<Concept>> paths = tx.graql().compute().path().to(idCoco).from(idMike).execute().getPaths().get();
             assertEquals(1, paths.size());
             assertEquals(idCoco, paths.get(0).get(2).getId());
             assertEquals(idMike, paths.get(0).get(0).getId());
 
             // connected component size
-            Map<String, Long> sizeMap = tx.graql().compute().cluster().usingConnectedComponent()
-                    .in("human", "pet", "friend").execute();
+            Map<String, Long> sizeMap = tx.graql().compute().cluster().using(CONNECTED_COMPONENT)
+                    .in("human", "pet", "friend").execute().getClusterSizes().get();
             assertEquals(1, sizeMap.size());
             assertTrue(sizeMap.containsValue(3L));
 
             // connected component member
-            Map<String, Set<String>> memberMap = tx.graql().compute().cluster().usingConnectedComponent()
-                    .in("human", "pet", "friend").membersOn().execute();
+            Map<String, Set<String>> memberMap = tx.graql().compute().cluster().using(CONNECTED_COMPONENT)
+                    .in("human", "pet", "friend").where(members(true)).execute().getClusterMembers().get();
             assertEquals(1, memberMap.size());
             Set<String> memberSet = memberMap.values().iterator().next();
             assertEquals(3, memberSet.size());
             assertEquals(Sets.newHashSet(idCoco.getValue(), idMike.getValue(), idCocoAndMike.getValue()), memberSet);
 
             // k-core
-            assertEquals(0, tx.graql().compute().cluster().usingKCore()
-                    .in("human", "pet", "friend").execute().size());
+            assertEquals(0, tx.graql().compute().cluster().using(K_CORE)
+                    .in("human", "pet", "friend").execute().getCentralityCount().get().size());
         }
     }
 

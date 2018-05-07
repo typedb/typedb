@@ -45,7 +45,7 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param tx the graph to execute the compute query on
-     * @return a ComputeQuery with the graph set
+     * @return a NewComputeQuery with the graph set
      */
     @Override
     NewComputeQuery withTx(GraknTx tx);
@@ -149,7 +149,7 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     /**
      * Allow analytics query to include attributes and their relationships
      *
-     * @return a ComputeQuery with the inTypes set
+     * @return a NewComputeQuery with the inTypes set
      */
     NewComputeQuery includeAttributes(boolean include);
 

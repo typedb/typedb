@@ -349,7 +349,7 @@ public class GraqlSyntax {
 
         /**
          * Graql Compute argument objects to be passed into the query
-         * TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
+         * TODO: Move this class over into NewComputeQuery (nested) once we replace Graql interfaces with classes
          *
          * @param <T>
          */

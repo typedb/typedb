@@ -634,7 +634,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
      * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
      *
      * @param context for compute query parsed syntax
-     * @return A ComputeQuery object
+     * @return A NewComputeQuery object
      */
 
     public NewComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext context) {
