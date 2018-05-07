@@ -24,7 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -92,7 +92,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @author Haikal Pribadi
  */
-public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, NewComputeQuery.Answer> implements NewComputeQuery {
+public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, ComputeQuery.Answer> implements ComputeQuery {
 
     private Optional<GraknTx> tx;
     private Set<ComputeJob<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
@@ -110,11 +110,11 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public NewComputeQueryImpl(Optional<GraknTx> tx, Method method) {
+    public ComputeQueryImpl(Optional<GraknTx> tx, Method method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public NewComputeQueryImpl(Optional<GraknTx> tx, Method method, boolean includeAttributes) {
+    public ComputeQueryImpl(Optional<GraknTx> tx, Method method, boolean includeAttributes) {
         this.method = method;
         this.tx = tx;
         this.includeAttributes = includeAttributes;
@@ -159,7 +159,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery withTx(GraknTx tx) {
+    public final ComputeQuery withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
         return this;
     }
@@ -175,7 +175,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery from(ConceptId fromID) {
+    public final ComputeQuery from(ConceptId fromID) {
         this.fromID = fromID;
         return this;
     }
@@ -186,7 +186,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery to(ConceptId toID) {
+    public final ComputeQuery to(ConceptId toID) {
         this.toID = toID;
         return this;
     }
@@ -197,7 +197,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery of(String type, String... types) {
+    public final ComputeQuery of(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
@@ -206,7 +206,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery of(Collection<Label> types) {
+    public final ComputeQuery of(Collection<Label> types) {
         this.ofTypes = ImmutableSet.copyOf(types);
 
         return this;
@@ -218,7 +218,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery in(String type, String... types) {
+    public final ComputeQuery in(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
@@ -227,7 +227,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery in(Collection<Label> types) {
+    public final ComputeQuery in(Collection<Label> types) {
         this.inTypes = ImmutableSet.copyOf(types);
         return this;
     }
@@ -239,7 +239,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery using(Algorithm algorithm) {
+    public final ComputeQuery using(Algorithm algorithm) {
         this.algorithm = algorithm;
         return this;
     }
@@ -253,7 +253,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery where(Argument arg, Argument... args) {
+    public final ComputeQuery where(Argument arg, Argument... args) {
         ArrayList<Argument> argList = new ArrayList(args.length + 1);
         argList.add(arg);
         argList.addAll(Arrays.asList(args));
@@ -262,7 +262,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQuery where(Collection<Argument> args) {
+    public final ComputeQuery where(Collection<Argument> args) {
         if (this.arguments == null) this.arguments = new ArgumentsImpl();
         for (Argument arg : args) this.arguments.setArgument(arg);
 
@@ -276,7 +276,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     }
 
     @Override
-    public final NewComputeQueryImpl includeAttributes(boolean include) {
+    public final ComputeQueryImpl includeAttributes(boolean include) {
         this.includeAttributes = include;
         return this;
     }
@@ -430,7 +430,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        NewComputeQuery that = (NewComputeQuery) o;
+        ComputeQuery that = (ComputeQuery) o;
 
         return (this.tx().equals(that.tx()) &&
                 this.method().equals(that.method()) &&

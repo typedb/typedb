@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
@@ -31,7 +32,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -634,14 +634,14 @@ class GraqlConstructor extends GraqlBaseVisitor {
      * Visits the compute query node in the parsed syntax tree and builds the appropriate compute query
      *
      * @param context for compute query parsed syntax
-     * @return A NewComputeQuery object
+     * @return A ComputeQuery object
      */
 
-    public NewComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext context) {
+    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext context) {
         GraqlParser.ComputeMethodContext method = context.computeMethod();
         GraqlParser.ComputeConditionsContext conditions = context.computeConditions();
 
-        NewComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
+        ComputeQuery query = queryBuilder.compute(Method.of(method.getText()));
         if (conditions == null) return query;
 
         for (GraqlParser.ComputeConditionContext condition : conditions.computeCondition()) {

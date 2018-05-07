@@ -32,7 +32,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -57,7 +57,7 @@ import ai.grakn.graql.internal.analytics.StatisticsMapReduce;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import ai.grakn.graql.internal.analytics.Utility;
-import ai.grakn.graql.internal.query.NewComputeQueryImpl;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -97,14 +97,14 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
  *
  * @author Haikal Pribadi
  */
-class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
+class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
-    private final NewComputeQuery query;
+    private final ComputeQuery query;
 
     private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeJob.class);
     private final EmbeddedGraknTx<?> tx;
 
-    public TinkerComputeJob(EmbeddedGraknTx<?> tx, NewComputeQuery query) {
+    public TinkerComputeJob(EmbeddedGraknTx<?> tx, ComputeQuery query) {
         this.tx = tx;
         this.query = query;
     }
@@ -115,7 +115,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
     }
 
     @Override
-    public NewComputeQuery.Answer get() {
+    public ComputeQuery.Answer get() {
         switch (query.method()) {
             case MIN:
             case MAX:
@@ -159,8 +159,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private NewComputeQuery.Answer runComputeMinMaxMedianOrSum() {
-        return new NewComputeQueryImpl.AnswerImpl().setNumber(runComputeStatistics());
+    private ComputeQuery.Answer runComputeMinMaxMedianOrSum() {
+        return new ComputeQueryImpl.AnswerImpl().setNumber(runComputeStatistics());
     }
 
     /**
@@ -168,8 +168,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private NewComputeQuery.Answer runComputeMean() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeMean() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         Map<String, Double> meanPair = runComputeStatistics();
         if (meanPair == null) return answer;
@@ -184,8 +184,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private NewComputeQuery.Answer runComputeStd() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeStd() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         Map<String, Double> stdTuple = runComputeStatistics();
         if (stdTuple == null) return answer;
@@ -263,7 +263,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      * @param targetDataType representing the data type of the target attribute types
      * @return an object which is a subclass of VertexProgram
      */
-    private VertexProgram initStatisticsVertexProgram(NewComputeQuery query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
+    private VertexProgram initStatisticsVertexProgram(ComputeQuery query, Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
         if (query.method().equals(MEDIAN)) return new MedianVertexProgram(targetTypes, targetDataType);
         else return new DegreeStatisticsVertexProgram(targetTypes);
     }
@@ -297,8 +297,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer object containing the count value
      */
-    private NewComputeQuery.Answer runComputeCount() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeCount() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
@@ -333,8 +333,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer containing the list of shortest paths
      */
-    private NewComputeQuery.Answer runComputePath() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputePath() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         ConceptId fromID = query.from().get();
         ConceptId toID = query.to().get();
@@ -364,7 +364,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private NewComputeQuery.Answer runComputeCentrality() {
+    private ComputeQuery.Answer runComputeCentrality() {
         if (query.using().get().equals(DEGREE)) return runComputeDegree();
         if (query.using().get().equals(K_CORE)) return runComputeCoreness();
 
@@ -376,8 +376,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private NewComputeQuery.Answer runComputeDegree() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeDegree() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         Set<Label> targetTypeLabels;
 
@@ -419,8 +419,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private NewComputeQuery.Answer runComputeCoreness() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeCoreness() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         long k = query.where().get().minK().get();
 
@@ -467,7 +467,7 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         return answer.setCentralityCount(xxx);
     }
 
-    private NewComputeQuery.Answer runComputeCluster() {
+    private ComputeQuery.Answer runComputeCluster() {
         if (query.using().get().equals(K_CORE)) return runComputeKCore();
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
 
@@ -475,8 +475,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
     }
 
 
-    private NewComputeQuery.Answer runComputeConnectedComponent() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeConnectedComponent() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         boolean restrictSize = query.where().get().size().isPresent();
         boolean getMembers = query.where().get().members().get();
@@ -520,8 +520,8 @@ class TinkerComputeJob implements ComputeJob<NewComputeQuery.Answer> {
         return answer;
     }
 
-    private NewComputeQuery.Answer runComputeKCore() {
-        NewComputeQueryImpl.AnswerImpl answer = new NewComputeQueryImpl.AnswerImpl();
+    private ComputeQuery.Answer runComputeKCore() {
+        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
 
         long k = query.where().get().k().get();
 

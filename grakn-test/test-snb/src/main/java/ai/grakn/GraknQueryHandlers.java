@@ -21,8 +21,8 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -86,6 +86,7 @@ import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
 
 /**
  * Implementations of the LDBC SNB complex queries.
@@ -94,7 +95,8 @@ import static ai.grakn.graql.Graql.var;
  */
 public class GraknQueryHandlers {
 
-    private GraknQueryHandlers(){}
+    private GraknQueryHandlers() {
+    }
 
     /**
      * Complex Query 2
@@ -349,13 +351,13 @@ public class GraknQueryHandlers {
                 match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));
                 Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get($person);
 
-                NewComputeQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
+                ComputeQuery pathQuery = compute(PATH).from(person1.getId()).to(person2.getId())
                         .in("knows", "person");
 
                 List<List<Concept>> paths = pathQuery.withTx(graknTx).execute().getPaths().get();
 
                 List<Concept> path = Collections.emptyList();
-                if(!paths.isEmpty()) path = paths.get(0);
+                if (!paths.isEmpty()) path = paths.get(0);
 
                 // our path is either:
                 //     empty if there is none

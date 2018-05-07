@@ -57,6 +57,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 
 /**
  * Graql syntax keywords
+ * TODO: the content of this class (the enums) should be moved to inside Graql class, once we move it to this package.
  *
  * @author Haikal Pribadi
  */
@@ -349,7 +350,7 @@ public class GraqlSyntax {
 
         /**
          * Graql Compute argument objects to be passed into the query
-         * TODO: Move this class over into NewComputeQuery (nested) once we replace Graql interfaces with classes
+         * TODO: Move this class over into ComputeQuery (nested) once we replace Graql interfaces with classes
          *
          * @param <T>
          */

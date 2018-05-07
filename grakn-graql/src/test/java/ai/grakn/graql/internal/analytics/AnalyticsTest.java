@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -98,7 +100,7 @@ public class AnalyticsTest {
 
         // the null role-player caused analytics to fail at some stage
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().centrality().using(DEGREE).execute();
+            graph.graql().compute(CENTRALITY).using(DEGREE).execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -110,7 +112,7 @@ public class AnalyticsTest {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().count().in("rule", "thing").execute();
+            graph.graql().compute(COUNT).in("rule", "thing").execute();
         }
     }
 
@@ -119,7 +121,7 @@ public class AnalyticsTest {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().count().in("role").execute();
+            graph.graql().compute(COUNT).in("role").execute();
         }
     }
 

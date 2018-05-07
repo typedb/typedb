@@ -21,11 +21,11 @@ package ai.grakn.remote;
 import ai.grakn.ComputeJob;
 import ai.grakn.QueryExecutor;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.grpc.GrpcClient;
@@ -88,7 +88,7 @@ final class RemoteQueryExecutor implements QueryExecutor {
 
 
     @Override
-    public ComputeJob<NewComputeQuery.Answer> run(NewComputeQuery query) {
+    public ComputeJob<ComputeQuery.Answer> run(ComputeQuery query) {
         return runCompute(query);
     }
 
@@ -107,11 +107,11 @@ final class RemoteQueryExecutor implements QueryExecutor {
         return stream.map(ai.grakn.graql.admin.Answer.class::cast);
     }
 
-    private ComputeJob<NewComputeQuery.Answer> runCompute(NewComputeQuery query) {
-        return RemoteComputeJob.of(runSingle(query, NewComputeQuery.Answer.class));
+    private ComputeJob<ComputeQuery.Answer> runCompute(ComputeQuery query) {
+        return RemoteComputeJob.of(runSingle(query, ComputeQuery.Answer.class));
     }
 
-//    private ComputeJob<NewComputeQuery.Answer> runComputeUnchecked(NewComputeQuery query) {
+//    private ComputeJob<ComputeQuery.Answer> runComputeUnchecked(ComputeQuery query) {
 //        return RemoteComputeJob.of(runSingleUnchecked(query));
 //    }
 

@@ -23,7 +23,7 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.UndefineQuery;
 
 import java.util.stream.Stream;
@@ -53,5 +53,5 @@ public interface QueryExecutor {
 
     <T> T run(AggregateQuery<T> query);
 
-    ComputeJob<NewComputeQuery.Answer> run(NewComputeQuery query);
+    ComputeJob<ComputeQuery.Answer> run(ComputeQuery query);
 }

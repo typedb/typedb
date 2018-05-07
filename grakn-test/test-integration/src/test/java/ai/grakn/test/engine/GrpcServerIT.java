@@ -64,10 +64,20 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -237,39 +247,39 @@ public class GrpcServerIT {
 
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
             // count
-            assertEquals(1L, tx.graql().compute().count().in("pet").execute().getNumber().get());
+            assertEquals(1L, tx.graql().compute(COUNT).in("pet").execute().getNumber().get());
 
             // statistics
-            assertEquals(10L, tx.graql().compute().min().of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute().max().of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute().mean().of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute().std().of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute().sum().of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute().median().of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(MIN).of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(MAX).of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(MEAN).of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(STD).of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(SUM).of("age").in("human").execute().getNumber().get());
+            assertEquals(10L, tx.graql().compute(MEDIAN).of("age").in("human").execute().getNumber().get());
 
             // degree
-            Map<Long, Set<String>> centrality = tx.graql().compute().centrality().using(DEGREE)
+            Map<Long, Set<String>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
                     .of("pet").in("human", "pet", "friend").execute().getCentralityCount().get();
             assertEquals(1L, centrality.size());
             assertEquals(idCoco.getValue(), centrality.get(1L).iterator().next());
 
             // coreness
-            assertFalse(tx.graql().compute().centrality().using(K_CORE).of("pet").execute().getCentralityCount().isPresent());
+            assertFalse(tx.graql().compute(CENTRALITY).using(K_CORE).of("pet").execute().getCentralityCount().isPresent());
 
             // path
-            List<List<Concept>> paths = tx.graql().compute().path().to(idCoco).from(idMike).execute().getPaths().get();
+            List<List<Concept>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().getPaths().get();
             assertEquals(1, paths.size());
             assertEquals(idCoco, paths.get(0).get(2).getId());
             assertEquals(idMike, paths.get(0).get(0).getId());
 
             // connected component size
-            Map<String, Long> sizeMap = tx.graql().compute().cluster().using(CONNECTED_COMPONENT)
+            Map<String, Long> sizeMap = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in("human", "pet", "friend").execute().getClusterSizes().get();
             assertEquals(1, sizeMap.size());
             assertTrue(sizeMap.containsValue(3L));
 
             // connected component member
-            Map<String, Set<String>> memberMap = tx.graql().compute().cluster().using(CONNECTED_COMPONENT)
+            Map<String, Set<String>> memberMap = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in("human", "pet", "friend").where(members(true)).execute().getClusterMembers().get();
             assertEquals(1, memberMap.size());
             Set<String> memberSet = memberMap.values().iterator().next();
@@ -277,7 +287,7 @@ public class GrpcServerIT {
             assertEquals(Sets.newHashSet(idCoco.getValue(), idMike.getValue(), idCocoAndMike.getValue()), memberSet);
 
             // k-core
-            assertEquals(0, tx.graql().compute().cluster().using(K_CORE)
+            assertEquals(0, tx.graql().compute(CLUSTER).using(K_CORE)
                     .in("human", "pet", "friend").execute().getCentralityCount().get().size());
         }
     }

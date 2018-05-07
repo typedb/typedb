@@ -41,20 +41,20 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
  *
  * @author Haikal Pribadi
  */
-public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
+public interface ComputeQuery extends Query<ComputeQuery.Answer> {
 
     /**
      * @param tx the graph to execute the compute query on
-     * @return a NewComputeQuery with the graph set
+     * @return a ComputeQuery with the graph set
      */
     @Override
-    NewComputeQuery withTx(GraknTx tx);
+    ComputeQuery withTx(GraknTx tx);
 
     /**
      * @param fromID is the Concept ID of in which compute path query will start from
-     * @return A NewComputeQuery with the fromID set
+     * @return A ComputeQuery with the fromID set
      */
-    NewComputeQuery from(ConceptId fromID);
+    ComputeQuery from(ConceptId fromID);
 
     /**
      * @return a String representing the name of the compute query method
@@ -69,9 +69,9 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param toID is the Concept ID in which compute query will stop at
-     * @return A NewComputeQuery with the toID set
+     * @return A ComputeQuery with the toID set
      */
-    NewComputeQuery to(ConceptId toID);
+    ComputeQuery to(ConceptId toID);
 
     /**
      * @return a Concept ID in which which compute query will stop at
@@ -81,15 +81,15 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param types is an array of concept types in which the compute query would apply to
-     * @return a NewComputeQuery with the of set
+     * @return a ComputeQuery with the of set
      */
-    NewComputeQuery of(String type, String... types);
+    ComputeQuery of(String type, String... types);
 
     /**
      * @param types is an array of concept types in which the compute query would apply to
-     * @return a NewComputeQuery with the of set
+     * @return a ComputeQuery with the of set
      */
-    NewComputeQuery of(Collection<Label> types);
+    ComputeQuery of(Collection<Label> types);
 
     /**
      * @return the collection of concept types in which the compute query would apply to
@@ -99,15 +99,15 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param types is an array of concept types that determines the scope of graph for the compute query
-     * @return a NewComputeQuery with the inTypes set
+     * @return a ComputeQuery with the inTypes set
      */
-    NewComputeQuery in(String type, String... types);
+    ComputeQuery in(String type, String... types);
 
     /**
      * @param types is an array of concept types that determines the scope of graph for the compute query
-     * @return a NewComputeQuery with the inTypes set
+     * @return a ComputeQuery with the inTypes set
      */
-    NewComputeQuery in(Collection<Label> types);
+    ComputeQuery in(Collection<Label> types);
 
     /**
      * @return the collection of concept types that determines the scope of graph for the compute query
@@ -117,9 +117,9 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
 
     /**
      * @param algorithm name as an condition for the compute query
-     * @return a NewComputeQuery with algorithm condition set
+     * @return a ComputeQuery with algorithm condition set
      */
-    NewComputeQuery using(Algorithm algorithm);
+    ComputeQuery using(Algorithm algorithm);
 
     /**
      * @return the algorithm type for the compute query
@@ -130,15 +130,15 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     /**
      * @param arg  is an argument that could provided to modify the compute query parameters
      * @param args is an array of arguments
-     * @return a NewComputeQuery with the arguments set
+     * @return a ComputeQuery with the arguments set
      */
-    NewComputeQuery where(Argument arg, Argument... args);
+    ComputeQuery where(Argument arg, Argument... args);
 
     /**
      * @param args is a list of arguments that could be provided to modify the compute query parameters
      * @return
      */
-    NewComputeQuery where(Collection<Argument> args);
+    ComputeQuery where(Collection<Argument> args);
 
     /**
      * @return an Arguments object containing all the provided individual arguments combined
@@ -149,9 +149,9 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     /**
      * Allow analytics query to include attributes and their relationships
      *
-     * @return a NewComputeQuery with the inTypes set
+     * @return a ComputeQuery with the inTypes set
      */
-    NewComputeQuery includeAttributes(boolean include);
+    ComputeQuery includeAttributes(boolean include);
 
     /**
      * Get if this query will include attributes and their relationships

@@ -19,8 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.NewComputeQuery;
-import ai.grakn.graql.analytics.ComputeQueryBuilder;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -139,16 +138,8 @@ public class QueryBuilderImpl implements QueryBuilder {
         return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
 
-    /**
-     * @return a compute query builder for building analytics query
-     */
-    @Override
-    public ComputeQueryBuilder compute(){
-        return new ComputeQueryBuilderImpl(tx);
-    }
-
-    public NewComputeQuery compute(Method method) {
-        return new NewComputeQueryImpl(tx, method);
+    public ComputeQuery compute(Method method) {
+        return new ComputeQueryImpl(tx, method);
     }
 
     @Override

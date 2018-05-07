@@ -18,10 +18,10 @@
 
 package ai.grakn;
 
-import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.ComputeQuery;
 
 /**
- * Class representing a job executing a {@link NewComputeQuery} against a knowledge base.
+ * Class representing a job executing a {@link ComputeQuery} against a knowledge base.
  *
  * @author Felix Chapman
  *

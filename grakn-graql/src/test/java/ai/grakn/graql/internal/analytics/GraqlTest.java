@@ -31,7 +31,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.NewComputeQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.contains;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -84,9 +85,9 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             assertEquals(6L,
-                    ((NewComputeQuery.Answer) (graph.graql().parse("compute count;").execute())).getNumber().get());
+                    ((ComputeQuery.Answer) (graph.graql().parse("compute count;").execute())).getNumber().get());
             assertEquals(3L,
-                    ((NewComputeQuery.Answer) graph.graql().parse("compute count in [thingy, thingy];").execute()).getNumber().get());
+                    ((ComputeQuery.Answer) graph.graql().parse("compute count in [thingy, thingy];").execute()).getNumber().get());
         }
     }
 
@@ -95,7 +96,7 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees =
-                    graph.graql().<NewComputeQuery>parse("compute centrality using degree;").execute().getCentralityCount().get();
+                    graph.graql().<ComputeQuery>parse("compute centrality using degree;").execute().getCentralityCount().get();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -160,16 +161,16 @@ public class GraqlTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // use graql to compute various statistics
             Optional<? extends Number> result =
-                    graph.graql().<NewComputeQuery>parse("compute sum of my-resource;").execute().getNumber();
+                    graph.graql().<ComputeQuery>parse("compute sum of my-resource;").execute().getNumber();
             assertEquals(Optional.of(6L), result);
-            result = graph.graql().<NewComputeQuery>parse("compute min of my-resource;").execute().getNumber();
+            result = graph.graql().<ComputeQuery>parse("compute min of my-resource;").execute().getNumber();
             assertEquals(Optional.of(1L), result);
-            result = graph.graql().<NewComputeQuery>parse("compute max of my-resource;").execute().getNumber();
+            result = graph.graql().<ComputeQuery>parse("compute max of my-resource;").execute().getNumber();
             assertEquals(Optional.of(3L), result);
-            result = graph.graql().<NewComputeQuery>parse("compute mean of my-resource;").execute().getNumber();
+            result = graph.graql().<ComputeQuery>parse("compute mean of my-resource;").execute().getNumber();
             assert result.isPresent();
             assertEquals(2.0, (Double) result.get(), 0.1);
-            result = graph.graql().<NewComputeQuery>parse("compute median of my-resource;").execute().getNumber();
+            result = graph.graql().<ComputeQuery>parse("compute median of my-resource;").execute().getNumber();
             assertEquals(Optional.of(2L), result);
         }
     }
@@ -178,15 +179,15 @@ public class GraqlTest {
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
-                    graph.graql().<NewComputeQuery>parse("compute cluster using connected-component;").execute().getClusterSizes().get();
+                    graph.graql().<ComputeQuery>parse("compute cluster using connected-component;").execute().getClusterSizes().get();
             assertTrue(sizeMap.isEmpty());
-            Map<String, Set<String>> memberMap = graph.graql().<NewComputeQuery>parse(
+            Map<String, Set<String>> memberMap = graph.graql().<ComputeQuery>parse(
                     "compute cluster using connected-component, where members = true;").execute().getClusterMembers().get();
             assertTrue(memberMap.isEmpty());
 
             Query<?> parsed = graph.graql().parse(
                     "compute cluster using connected-component, where contains = V123;");
-            Query<?> expected = graph.graql().compute().cluster().using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
+            Query<?> expected = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }
@@ -196,7 +197,7 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            NewComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
             List<List<Concept>> paths = query.execute().getPaths().get();
 
             List<Concept> path = Collections.emptyList();
@@ -214,7 +215,7 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            NewComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
 
             List<List<Concept>> path = query.execute().getPaths().get();
             assertEquals(1, path.size());

@@ -24,12 +24,12 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -98,6 +98,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.k;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.size;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertFalse;
@@ -679,8 +680,8 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithMembersThenSize() {
-        NewComputeQuery expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(members(true), size(10));
-        NewComputeQuery parsed = Graql.parse(
+        ComputeQuery expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(members(true), size(10));
+        ComputeQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [members = true, size = 10];");
 
         assertEquals(expected, parsed);
@@ -688,8 +689,8 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembers() {
-        NewComputeQuery expected = Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true));
-        NewComputeQuery parsed = Graql.parse(
+        ComputeQuery expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true));
+        ComputeQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [size = 10, members = true];");
 
         assertEquals(expected, parsed);
@@ -697,10 +698,10 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
-        NewComputeQuery expected =
-                Graql.compute().cluster().using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true), size(15));
+        ComputeQuery expected =
+                Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true), size(15));
 
-        NewComputeQuery parsed = Graql.parse(
+        ComputeQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using connected-component, where [size = 10, members = true, size = 15];");
 
         assertEquals(expected, parsed);
@@ -713,8 +714,8 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithK() {
-        NewComputeQuery expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
-        NewComputeQuery parsed = Graql.parse(
+        ComputeQuery expected = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
+        ComputeQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using k-core, where k = 10;");
 
         assertEquals(expected, parsed);
@@ -722,8 +723,8 @@ public class QueryParserTest {
 
     @Test
     public void testParseComputeClusterUsingKCoreWithKTwice() {
-        NewComputeQuery expected = Graql.compute().cluster().using(K_CORE).in("movie", "person").where(k(10));
-        NewComputeQuery parsed = Graql.parse(
+        ComputeQuery expected = Graql.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
+        ComputeQuery parsed = Graql.parse(
                 "compute cluster in [movie, person], using k-core, where [k = 5, k = 10];");
 
         assertEquals(expected, parsed);
