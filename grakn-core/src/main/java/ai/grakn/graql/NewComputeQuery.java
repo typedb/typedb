@@ -26,7 +26,6 @@ import ai.grakn.exception.GraqlQueryException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -194,10 +193,10 @@ public interface NewComputeQuery extends Query<NewComputeQuery.Answer> {
     interface Arguments {
 
         @CheckReturnValue
-        Optional<Object> getArgument(Parameter param);
+        Optional<?> getArgument(Parameter param);
 
         @CheckReturnValue
-        LinkedHashMap<Parameter, Argument> getArguments();
+        Collection<Parameter> getParameters();
 
         @CheckReturnValue
         Optional<Long> minK();

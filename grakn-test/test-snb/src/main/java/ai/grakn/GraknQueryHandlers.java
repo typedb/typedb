@@ -22,10 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.NewComputeQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.analytics.PathQuery;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
@@ -349,10 +349,10 @@ public class GraknQueryHandlers {
                 match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));
                 Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get($person);
 
-                PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
+                NewComputeQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
                         .in("knows", "person");
 
-                List<List<Concept>> paths = pathQuery.withTx(graknTx).execute();
+                List<List<Concept>> paths = pathQuery.withTx(graknTx).execute().getPaths().get();
 
                 List<Concept> path = Collections.emptyList();
                 if(!paths.isEmpty()) path = paths.get(0);

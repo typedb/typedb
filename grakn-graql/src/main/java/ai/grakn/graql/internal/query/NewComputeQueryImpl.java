@@ -98,15 +98,17 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     private Set<ComputeJob<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
+    private boolean includeAttributes;
+
+    // All these condition properties need to start off as NULL, they will be initialised when the user provides input
     private ConceptId fromID = null;
     private ConceptId toID = null;
     private Set<Label> ofTypes = null;
     private Set<Label> inTypes = null;
     private Algorithm algorithm = null;
-    private ArgumentsImpl arguments = null;
-    private boolean includeAttributes = false;
+    private ArgumentsImpl arguments = null; // But arguments will also be set when where() is called for cluster/centrality
 
-    private final Map<Condition, Supplier<Optional<?>>> conditions = conditionsGetters();
+    private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
     public NewComputeQueryImpl(Optional<GraknTx> tx, Method method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
@@ -118,7 +120,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         this.includeAttributes = includeAttributes;
     }
 
-    private Map<Condition, Supplier<Optional<?>>> conditionsGetters() {
+    private Map<Condition, Supplier<Optional<?>>> setConditionsMap() {
         Map<Condition, Supplier<Optional<?>>> conditions = new HashMap<>();
         conditions.put(FROM, this::from);
         conditions.put(TO, this::to);
@@ -296,27 +298,30 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
     @Override
     public Optional<GraqlQueryException> getException() {
-
+        // Check that all required conditions for the current query method are provided
         for (Condition condition : collect(CONDITIONS_REQUIRED.get(this.method()))) {
-            if (!this.conditions.get(condition).get().isPresent()) {
+            if (!this.conditionsMap.get(condition).get().isPresent()) {
                 return Optional.of(GraqlQueryException.invalidComputeQuery_missingCondition(this.method()));
             }
         }
 
-        for (Condition condition : this.conditions.keySet().stream()
-                .filter(con -> this.conditions.get(con).get().isPresent())
+        // Check that all the provided conditions are accepted for the current query method
+        for (Condition condition : this.conditionsMap.keySet().stream()
+                .filter(con -> this.conditionsMap.get(con).get().isPresent())
                 .collect(Collectors.toSet())) {
             if (!CONDITIONS_ACCEPTED.get(this.method()).contains(condition)) {
                 return Optional.of(GraqlQueryException.invalidComputeQuery_invalidCondition(this.method()));
             }
         }
 
+        // Check that the provided algorithm is accepted for the current query method
         if (ALGORITHMS_ACCEPTED.containsKey(this.method()) && !ALGORITHMS_ACCEPTED.get(this.method()).contains(this.using().get())) {
             return Optional.of(GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(this.method()));
         }
 
+        // Check that the provided arguments are accepted for the current query method and algorithm
         if (this.where().isPresent()) {
-            for (Parameter param : this.where().get().getArguments().keySet()) {
+            for (Parameter param : this.where().get().getParameters()) {
                 if (!ARGUMENTS_ACCEPTED.get(this.method()).get(this.using().get()).contains(param)) {
                     return Optional.of(GraqlQueryException.invalidComputeQuery_invalidArgument(this.method(), this.using().get()));
                 }
@@ -344,12 +349,16 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
     private String conditionsSyntax() {
         List<String> conditionsList = new ArrayList<>();
 
+        // It is important that check for whether each condition is NULL, rather than using the getters.
+        // Because, we want to know the user provided conditions, rather than the default conditions from the getters.
+        // The exception is for arguments. It needs to be set internally for the query object to have default argument
+        // values. However, we can query for .getParameters() to get user provided argument parameters.
         if (fromID != null) conditionsList.add(str(FROM, SPACE, QUOTE, fromID, QUOTE));
         if (toID != null) conditionsList.add(str(TO, SPACE, QUOTE, toID, QUOTE));
         if (ofTypes != null) conditionsList.add(ofSyntax());
         if (inTypes != null) conditionsList.add(inSyntax());
         if (algorithm != null) conditionsList.add(algorithmSyntax());
-        if (arguments != null) conditionsList.add(argumentsSyntax());
+        if (arguments != null && !arguments.getParameters().isEmpty()) conditionsList.add(argumentsSyntax());
 
         return conditionsList.stream().collect(joining(COMMA_SPACE.toString()));
     }
@@ -393,8 +402,9 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         List<String> argumentsList = new ArrayList<>();
         StringBuilder argumentsString = new StringBuilder();
 
-        Set<Parameter> parameters = arguments.getArguments().keySet();
-        for (Parameter param : parameters) argumentsList.add(str(param, EQUAL, arguments.getArguments().get(param).get()));
+        for (Parameter param : arguments.getParameters()) {
+            argumentsList.add(str(param, EQUAL, arguments.getArgument(param).get()));
+        }
 
         if (!argumentsList.isEmpty()) {
             argumentsString.append(str(WHERE, SPACE));
@@ -455,26 +465,39 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
      */
     public class ArgumentsImpl implements Arguments {
 
-        private LinkedHashMap<Parameter, Argument> orderedArguments = new LinkedHashMap<>();
+        private LinkedHashMap<Parameter, Argument> argumentsOrdered = new LinkedHashMap<>();
+
+        private final Map<Parameter, Supplier<Optional<?>>> argumentsMap = setArgumentsMap();
+
+        private Map<Parameter, Supplier<Optional<?>>> setArgumentsMap() {
+            Map<Parameter, Supplier<Optional<?>>> arguments = new HashMap<>();
+            arguments.put(MIN_K, this::minK);
+            arguments.put(K, this::k);
+            arguments.put(SIZE, this::size);
+            arguments.put(MEMBERS, this::members);
+            arguments.put(CONTAINS, this::contains);
+
+            return arguments;
+        }
 
         private void setArgument(Argument arg) {
-            orderedArguments.remove(arg.type());
-            orderedArguments.put(arg.type(), arg);
+            argumentsOrdered.remove(arg.type());
+            argumentsOrdered.put(arg.type(), arg);
         }
 
         @Override
-        public Optional<Object> getArgument(Parameter param) {
-            return Optional.ofNullable(orderedArguments.get(param));
+        public Optional<?> getArgument(Parameter param) {
+            return argumentsMap.get(param).get();
         }
 
         @Override
-        public LinkedHashMap<Parameter, Argument> getArguments() {
-            return this.orderedArguments;
+        public Collection<Parameter> getParameters() {
+            return argumentsOrdered.keySet();
         }
 
         @Override
         public Optional<Long> minK() {
-            if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !orderedArguments.containsKey(MIN_K)) {
+            if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !argumentsOrdered.containsKey(MIN_K)) {
                 return Optional.of(DEFAULT_MIN_K);
             }
 
@@ -483,7 +506,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
         @Override
         public Optional<Long> k() {
-            if (method.equals(CLUSTER) && algorithm.equals(K_CORE) && !orderedArguments.containsKey(K)) {
+            if (method.equals(CLUSTER) && algorithm.equals(K_CORE) && !argumentsOrdered.containsKey(K)) {
                 return Optional.of(DEFAULT_K);
             }
 
@@ -497,7 +520,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
         @Override
         public Optional<Boolean> members() {
-            if (method.equals(CLUSTER) && algorithm.equals(CONNECTED_COMPONENT) && !orderedArguments.containsKey(MEMBERS)) {
+            if (method.equals(CLUSTER) && algorithm.equals(CONNECTED_COMPONENT) && !argumentsOrdered.containsKey(MEMBERS)) {
                 return Optional.of(DEFAULT_MEMBERS);
             }
 
@@ -510,7 +533,7 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
         }
 
         private Object getArgumentValue(Parameter param) {
-            return orderedArguments.get(param) != null ? orderedArguments.get(param).get() : null;
+            return argumentsOrdered.get(param) != null ? argumentsOrdered.get(param).get() : null;
         }
 
         @Override
@@ -520,14 +543,18 @@ public class NewComputeQueryImpl extends AbstractQuery<NewComputeQuery.Answer, N
 
             ArgumentsImpl that = (ArgumentsImpl) o;
 
-            return (this.getArguments().equals(that.getArguments()));
+            return (this.minK().equals(that.minK()) &&
+                    this.k().equals(that.k()) &&
+                    this.size().equals(that.size()) &&
+                    this.members().equals(that.members()) &&
+                    this.contains().equals(that.contains()));
         }
 
 
         @Override
         public int hashCode() {
             int result = tx.hashCode();
-            result = 31 * result + orderedArguments.hashCode();
+            result = 31 * result + argumentsOrdered.hashCode();
 
             return result;
         }

@@ -19,6 +19,7 @@
 package ai.grakn.util;
 
 import ai.grakn.concept.ConceptId;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -80,7 +81,10 @@ public class GraqlSyntax {
         }
 
         public static Command of(String value) {
-            for (Command c : Command.values()) if (c.command.equals(value)) return c;
+            for (Command c : Command.values())
+                if (c.command.equals(value)) {
+                    return c;
+                }
             return null;
         }
     }
@@ -115,7 +119,7 @@ public class GraqlSyntax {
      */
     public static class Compute {
 
-        public final static Collection<Method> METHODS_ACCEPTED = Arrays.asList(Method.values());
+        public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Arrays.asList(Method.values()));
 
         public final static Map<Method, Collection<Condition>> CONDITIONS_REQUIRED = conditionsRequired();
         public final static Map<Method, Collection<Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
@@ -129,49 +133,49 @@ public class GraqlSyntax {
 
 
         private static Map<Method, Collection<Condition>> conditionsRequired() {
-            Map<Method, Collection<Condition>> methodConditions = new HashMap<>();
-            methodConditions.put(MIN, ImmutableSet.of(OF));
-            methodConditions.put(MAX, ImmutableSet.of(OF));
-            methodConditions.put(MEDIAN, ImmutableSet.of(OF));
-            methodConditions.put(MEAN, ImmutableSet.of(OF));
-            methodConditions.put(STD, ImmutableSet.of(OF));
-            methodConditions.put(SUM, ImmutableSet.of(OF));
-            methodConditions.put(PATH, ImmutableSet.of(FROM, TO));
-            methodConditions.put(CENTRALITY, ImmutableSet.of(USING));
+            Map<Method, Collection<Condition>> required = new HashMap<>();
+            required.put(MIN, ImmutableSet.of(OF));
+            required.put(MAX, ImmutableSet.of(OF));
+            required.put(MEDIAN, ImmutableSet.of(OF));
+            required.put(MEAN, ImmutableSet.of(OF));
+            required.put(STD, ImmutableSet.of(OF));
+            required.put(SUM, ImmutableSet.of(OF));
+            required.put(PATH, ImmutableSet.of(FROM, TO));
+            required.put(CENTRALITY, ImmutableSet.of(USING));
             ;
-            methodConditions.put(CLUSTER, ImmutableSet.of(USING));
+            required.put(CLUSTER, ImmutableSet.of(USING));
 
-            return ImmutableMap.copyOf(methodConditions);
+            return ImmutableMap.copyOf(required);
         }
 
         private static Map<Method, Collection<Condition>> conditionsOptional() {
-            Map<Method, Collection<Condition>> methodConditions = new HashMap<>();
-            methodConditions.put(COUNT, ImmutableSet.of(IN));
-            methodConditions.put(MIN, ImmutableSet.of(IN));
-            methodConditions.put(MAX, ImmutableSet.of(IN));
-            methodConditions.put(MEDIAN, ImmutableSet.of(IN));
-            methodConditions.put(MEAN, ImmutableSet.of(IN));
-            methodConditions.put(STD, ImmutableSet.of(IN));
-            methodConditions.put(SUM, ImmutableSet.of(IN));
-            methodConditions.put(PATH, ImmutableSet.of(IN));
-            methodConditions.put(CENTRALITY, ImmutableSet.of(OF, IN, WHERE));
-            methodConditions.put(CLUSTER, ImmutableSet.of(IN, WHERE));
+            Map<Method, Collection<Condition>> optional = new HashMap<>();
+            optional.put(COUNT, ImmutableSet.of(IN));
+            optional.put(MIN, ImmutableSet.of(IN));
+            optional.put(MAX, ImmutableSet.of(IN));
+            optional.put(MEDIAN, ImmutableSet.of(IN));
+            optional.put(MEAN, ImmutableSet.of(IN));
+            optional.put(STD, ImmutableSet.of(IN));
+            optional.put(SUM, ImmutableSet.of(IN));
+            optional.put(PATH, ImmutableSet.of(IN));
+            optional.put(CENTRALITY, ImmutableSet.of(OF, IN, WHERE));
+            optional.put(CLUSTER, ImmutableSet.of(IN, WHERE));
 
-            return ImmutableMap.copyOf(methodConditions);
+            return ImmutableMap.copyOf(optional);
         }
 
         private static Map<Method, Collection<Condition>> conditionsAccepted() {
-            Map<Method, Collection<Condition>> methodConditions = new HashMap<>();
+            Map<Method, Collection<Condition>> accepted = new HashMap<>();
 
             for (Map.Entry<Method, Collection<Condition>> entry : CONDITIONS_REQUIRED.entrySet()) {
-                methodConditions.put(entry.getKey(), new HashSet<>(entry.getValue()));
+                accepted.put(entry.getKey(), new HashSet<>(entry.getValue()));
             }
             for (Map.Entry<Method, Collection<Condition>> entry : CONDITIONS_OPTIONAL.entrySet()) {
-                if (methodConditions.containsKey(entry.getKey())) methodConditions.get(entry.getKey()).addAll(entry.getValue());
-                else methodConditions.put(entry.getKey(), entry.getValue());
+                if (accepted.containsKey(entry.getKey())) accepted.get(entry.getKey()).addAll(entry.getValue());
+                else accepted.put(entry.getKey(), entry.getValue());
             }
 
-            return ImmutableMap.copyOf(methodConditions);
+            return ImmutableMap.copyOf(accepted);
         }
 
         private static Map<Method, Collection<Algorithm>> algorithmsAccepted() {
@@ -246,7 +250,10 @@ public class GraqlSyntax {
             }
 
             public static Method of(String value) {
-                for (Method m : Method.values()) if (m.method.equals(value)) return m;
+                for (Method m : Method.values())
+                    if (m.method.equals(value)) {
+                        return m;
+                    }
                 return null;
             }
         }
@@ -274,7 +281,10 @@ public class GraqlSyntax {
             }
 
             public static Condition of(String value) {
-                for (Condition c : Condition.values()) if (c.condition.equals(value)) return c;
+                for (Condition c : Condition.values())
+                    if (c.condition.equals(value)) {
+                        return c;
+                    }
                 return null;
             }
         }
@@ -299,7 +309,10 @@ public class GraqlSyntax {
             }
 
             public static Algorithm of(String value) {
-                for (Algorithm a : Algorithm.values()) if (a.algorithm.equals(value)) return a;
+                for (Algorithm a : Algorithm.values())
+                    if (a.algorithm.equals(value)) {
+                        return a;
+                    }
                 return null;
             }
         }
@@ -326,7 +339,10 @@ public class GraqlSyntax {
             }
 
             public static Parameter of(String value) {
-                for (Parameter p : Parameter.values()) if (p.param.equals(value)) return p;
+                for (Parameter p : Parameter.values())
+                    if (p.param.equals(value)) {
+                        return p;
+                    }
                 return null;
             }
         }
