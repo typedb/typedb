@@ -1307,7 +1307,6 @@ img, video {
 #mysidebar {
     background-color: #f3f4fa;
     margin: 30px 0;
-    height: calc(90vh - 60px);
     overflow-y: scroll;
 }
 
@@ -1325,10 +1324,10 @@ img, video {
 #mysidebar > li > a {
     background-color: #f3f4fa !important;
     color: #9685ff;
-    padding: 14px 20px;
+    padding: 7px 14px;
 }
 
-#mysidebar > li, 
+#mysidebar > li,
 #mysidebar > li > ul > li  {
     margin: 0 0 1px 0 !important;
 }
@@ -1370,7 +1369,7 @@ img, video {
 }
 
 .sidebarTitle {
-    padding: 0 0 20px 20px !important;
+    padding: 0 0 20px 14px !important;
     color: #4a4c52;
 }
 
@@ -1446,7 +1445,7 @@ table > tbody > tr:nth-of-type(even) {
 
 #profileTabs > .active > a {
     color: white;
-    background-color: #796de3 !important; 
+    background-color: #796de3 !important;
 }
 
 #profileTabs > li > a {
@@ -1736,7 +1735,7 @@ table > tbody > tr:nth-of-type(even) {
       padding-bottom: 0;
     }
   }
-  
+
   .button-footer {
     display: block;
     padding: 0 1rem;
@@ -1764,7 +1763,7 @@ table > tbody > tr:nth-of-type(even) {
   .button-footer--red:hover {
     background-color: #d30d0c;
   }
-  
+
   .navigation-bar {
     height: 70px;
     line-height: 70px;
@@ -1984,7 +1983,7 @@ table > tbody > tr:nth-of-type(even) {
     color: #4a4c52 !important;
     margin-right: 7px;
   }
-  
+
   .hamburger-inner {
     height: 2px;
     width: 35px;
@@ -1995,7 +1994,7 @@ table > tbody > tr:nth-of-type(even) {
     width: 35px;
     color: #4a4c52;
   }
-  
+
   .animated__link {
     position: relative;
     width: fit-content;
@@ -2038,7 +2037,7 @@ table > tbody > tr:nth-of-type(even) {
     visibility: visible;
     transform: scaleX(1);
   }
-  
+
   #search-demo-container {
       position: relative;
   }
@@ -2046,12 +2045,12 @@ table > tbody > tr:nth-of-type(even) {
   #search-demo-container > input {
       z-index: 10;
       float: none !important;
-      margin: 0 0 30px 0;
+      margin: 0 0 20px 0;
       width: 100%;
       height: 45px;
       border-radius: 5px;
       font-size: 14px;
-      border:1px solid #e5e7f4;
+      border: 1px solid #e5e7f4;
   }
 
   #results-container {

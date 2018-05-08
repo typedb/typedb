@@ -16,7 +16,7 @@ To use the API, add the following to your `pom.xml`:
 <dependency>
   <groupId>ai.grakn</groupId>
   <artifactId>grakn-graql</artifactId>
-  <version>${project.version}</version>
+  <version>1.2.0</version>
 </dependency>
 ```
 
@@ -37,7 +37,7 @@ import static ai.grakn.graql.Graql.*;
 A `QueryBuilder` is constructed from a `GraknTx`:
 
 ```java-test-ignore
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+GraknTx tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 QueryBuilder qb = tx.graql();
 ```
 

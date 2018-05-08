@@ -1,7 +1,7 @@
 ---
 title: Grakn Academy
 keywords: getting started
-last_updated: September 2017
+last_updated: April 2018
 tags: [getting-started]
 sidebar: academy_sidebar
 summary: This is a brief introduction to topics that will be covered in the Grakn Academy.
@@ -13,12 +13,9 @@ KB: academy
 
 Welcome to the Grakn Academy. In this series of tutorials, you will learn all the basics of Grakn - the knowledge graph for knowledge engineering.
 
-The Academy is structured into modules that covers a broad topic. Each module is divided into several lessons, that you are supposed to follow in order.
+The Academy is structured into modules that cover broad Grakn topics. Each module is divided into several lessons, that you are supposed to follow in order.
 
-The Academy lessons are sprinkled with exercises, that you are highly advised to do, as they will help solidify your understanding of the topics covered.
-
-Almost no previous knowledge is required, but a familiarity with your computer. Nonetheless, be advised that Grakn is a database, that is a technical piece of software, so if you are completely devoid of technical skills it might be hard to find value in it.
-
+The Academy lessons are sprinkled with exercises, that you are highly advised to do, as they will help to solidify your understanding of the topics covered.
 
 The module topics are divided as follows:
 
@@ -32,11 +29,11 @@ In the second module you will learn about Graql, Grakn's own high level query la
 
 ## [Grakn Schemas](./schema-elements.html)
 
-In the third module you will be introduced to the innovative Grakn object model and the, that allows you to arrange your data using a very intuitive conceptual schema and guarantees that your data is consistent.
+In the third module you will be introduced to the innovative Grakn object model, that allows you to arrange your data using a very intuitive conceptual schema and guarantees that your data is consistent.
 
 ## [Data loading](./loading-files.html)
 
-The fourth module will guide you through the topic of data loading and migration. It will introduce to the Graql templating language extensions, that allow to easily migrate data from the most common file formats.
+The fourth module will guide you through the topic of data loading and migration. It will introduce you to the Graql templating language extensions, that allow to easily migrate data from the most common file formats.
 
 ## [Grakn Reasoner](./reasoner-intro.html)
 
@@ -44,4 +41,4 @@ The fith module will introduce you to the topic of logic inference and Grakn rul
 
 ## [Grakn Analytics](./analytics-intro.html)
 
-The sixth and final module will be about Graql OLAP queries and the distributed analytics component, that allows to perform distributed computation at scale.
+The sixth and final module will be about Graql OLAP queries and the distributed analytics component, that allows you to perform distributed computation at scale.
