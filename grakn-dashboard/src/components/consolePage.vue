@@ -130,6 +130,12 @@ export default {
          * EngineClient callbacks
          */
     shellResponse(resp, err) {
+
+      // Remove unwanted characters from ask query response
+      if((resp.startsWith('[32m') && resp.endsWith('[0m')) || (resp.startsWith('[31') && resp.endsWith('[0m'))){
+        resp = resp.slice(5,-4);
+      }
+
       if (resp.length === 0) {
         this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
       } else {
