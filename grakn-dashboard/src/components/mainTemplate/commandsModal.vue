@@ -30,7 +30,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 <tbody>
                     <tr>
                         <td style="text-align:center;">
-                            <i class="fa fa-star-o"> Starred Queries</i>
+                            <i class="fa fa-star-o"></i>
+                            Starred Queries
                         </td>  
                         <td>
                             Will list all the saved queries
@@ -38,7 +39,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Types <i class="pe-7s-angle-down-circle"></i>
+                            Types 
+                            <i class="pe-7s-angle-down-circle"></i>
                         </td>  
                         <td>
                             Drop down list to show what is in the schema
@@ -46,7 +48,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            <i class="pe-7s-angle-right-circle"> OR "ENTER"</i>
+                            <i class="pe-7s-angle-right-circle"></i>
+                            OR "ENTER"
                         </td>  
                         <td>
                             To visualize knowlege graph
@@ -62,7 +65,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            "SHIFT" + <i class="pe-7s-close-circle"></i>
+                            "SHIFT" + 
+                            <i class="pe-7s-close-circle"></i>
                         </td>  
                         <td>
                             To clear the entire knowlege graph
@@ -89,7 +93,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             Activate inference
                         </td>  
                         <td>
-                            It is off by default per query, but turn this on when you need to run queries that use inference
+                            It is on by default per query, but turn this off when you need to run queries that use inference
                         </td>                             
                     </tr>
                     <tr>

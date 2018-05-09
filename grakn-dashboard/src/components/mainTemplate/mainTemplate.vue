@@ -136,11 +136,6 @@ export default {
         modal.style.display = 'block';
         User.setModalShown(true);
       }
-      if (!User.getCmdModalShown()) {
-        const cmdModal = document.getElementById('cmdModal');
-        cmdModal.style.display = 'block';
-        User.setCmdModalShown(true);
-      }
     });
   },
   watch: {
