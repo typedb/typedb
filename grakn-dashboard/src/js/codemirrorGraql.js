@@ -5,13 +5,13 @@ CodeMirror.defineSimpleMode('graql', {
   start: [
     { regex: /#.*/, token: 'comment' },
     { regex: /".*?"/, token: 'string' },
-    { regex: /(match|insert|delete|select|isa|sub|plays|relates|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|from|to|in|aggregate|label|get)(?![-a-zA-Z_0-9])/, // eslint-disable-line max-len
+    { regex: /(match|insert|delete|select|isa|sub|plays|relates|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|from|to|in|aggregate|label|get|using|where)(?![-a-zA-Z_0-9])/, // eslint-disable-line max-len
       token: 'keyword' },
     { regex: /true|false/, token: 'number' },
     { regex: /\$[-a-zA-Z_0-9]+/, token: 'variable' },
     { regex: /[-a-zA-Z_][-a-zA-Z_0-9]*/, token: 'identifier' },
     { regex: /[0-9]+(\.[0-9][0-9]*)?/, token: 'number' },
-    { regex: /=|!=|>|<|>=|<=|contains|regex/, token: 'operator' },
+    { regex: /=|!=|>|<|>=|<=|\[|\]|contains|regex/, token: 'operator' },
   ],
   comment: [],
   // The meta property contains global information about the mode. It
