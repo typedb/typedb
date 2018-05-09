@@ -132,7 +132,7 @@ export default {
     shellResponse(resp, err) {
 
       // Remove unwanted characters from ask query response
-      if((resp.startsWith('[32m') && resp.endsWith('[0m')) || (resp.startsWith('[31') && resp.endsWith('[0m'))){
+      if( (resp.startsWith('[32m') || resp.startsWith('[31m')) && resp.endsWith('[0m')){
         resp = resp.slice(5,-4);
       }
 
