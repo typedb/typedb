@@ -113,32 +113,32 @@ public class TemplateParserTest {
 
     @Test
     public void templateDataContainsInt_ReplacedIntNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val 40;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == 40;";
 
         assertParseEquals(template, ImmutableMap.of("value", 40), expected);
     }
 
     @Test
     public void templateDataContainsString_ReplacedStringIsQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val \"string\";";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == \"string\";";
 
         assertParseEquals(template, ImmutableMap.of("value", "string"), expected);
     }
 
     @Test
     public void templateDataContainsDouble_ReplacedDoubleNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val 0.001;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == 0.001;";
 
         assertParseEquals(template, ImmutableMap.of("value", 0.001), expected);
     }
 
     @Test
     public void templateDataContainsBoolean_ReplacedBooleanNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val true;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == true;";
 
         assertParseEquals(template, ImmutableMap.of("value", true), expected);
     }

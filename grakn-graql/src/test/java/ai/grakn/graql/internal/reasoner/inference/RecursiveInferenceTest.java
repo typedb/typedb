@@ -92,7 +92,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = transitivityContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa R;$x has index 'i'; get $y;";
         String explicitQuery = "match $y has index $ind;" +
-                "{$ind val 'j';} or {$ind val 's';} or {$ind val 'v';}; get $y;";
+                "{$ind == 'j';} or {$ind == 's';} or {$ind == 'v';}; get $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -107,7 +107,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
                 "$Y has name $name;get $Y, $name;";
         String explicitQuery = "match $Y isa person, has name $name;" +
-                "{$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y, $name;";
+                "{$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y, $name;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -120,7 +120,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match ($X, $Y) isa Ancestor;$X has name 'aa'; get $Y;";
         String explicitQuery = "match $Y isa person, has name $name;" +
-                "{$name val 'a';} or {$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y;";
+                "{$name == 'a';} or {$name == 'aaa';} or {$name == 'aab';} or {$name == 'aaaa';};get $Y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -132,11 +132,11 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor; get;";
         String explicitQuery = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
-                "{$nameX val 'a';$nameY val 'aa';} or {$nameX val 'a';$nameY val 'ab';} or" +
-                "{$nameX val 'a';$nameY val 'aaa';} or {$nameX val 'a';$nameY val 'aab';} or" +
-                "{$nameX val 'a';$nameY val 'aaaa';} or {$nameX val 'aa';$nameY val 'aaa';} or" +
-                "{$nameX val 'aa';$nameY val 'aab';} or {$nameX val 'aa';$nameY val 'aaaa';} or " +
-                "{$nameX val 'aaa';$nameY val 'aaaa';} or {$nameX val 'c';$nameY val 'ca';}; get $X, $Y;";
+                "{$nameX == 'a';$nameY == 'aa';} or {$nameX == 'a';$nameY == 'ab';} or" +
+                "{$nameX == 'a';$nameY == 'aaa';} or {$nameX == 'a';$nameY == 'aab';} or" +
+                "{$nameX == 'a';$nameY == 'aaaa';} or {$nameX == 'aa';$nameY == 'aaa';} or" +
+                "{$nameX == 'aa';$nameY == 'aab';} or {$nameX == 'aa';$nameY == 'aaaa';} or " +
+                "{$nameX == 'aaa';$nameY == 'aaaa';} or {$nameX == 'c';$nameY == 'ca';}; get $X, $Y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -147,23 +147,23 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor; get;";
         String explicitQuery = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
-                "{$nameX val 'a';$nameY val 'aa';} or " +
-                "{$nameX val 'a';$nameY val 'ab';} or {$nameX val 'a';$nameY val 'aaa';} or" +
-                "{$nameX val 'a';$nameY val 'aab';} or {$nameX val 'a';$nameY val 'aaaa';} or " +
-                "{$nameY val 'a';$nameX val 'aa';} or" +
-                "{$nameY val 'a';$nameX val 'ab';} or {$nameY val 'a';$nameX val 'aaa';} or" +
-                "{$nameY val 'a';$nameX val 'aab';} or {$nameY val 'a';$nameX val 'aaaa';} or "
+                "{$nameX == 'a';$nameY == 'aa';} or " +
+                "{$nameX == 'a';$nameY == 'ab';} or {$nameX == 'a';$nameY == 'aaa';} or" +
+                "{$nameX == 'a';$nameY == 'aab';} or {$nameX == 'a';$nameY == 'aaaa';} or " +
+                "{$nameY == 'a';$nameX == 'aa';} or" +
+                "{$nameY == 'a';$nameX == 'ab';} or {$nameY == 'a';$nameX == 'aaa';} or" +
+                "{$nameY == 'a';$nameX == 'aab';} or {$nameY == 'a';$nameX == 'aaaa';} or "
                 +
-                "{$nameX val 'aa';$nameY val 'aaa';} or {$nameX val 'aa';$nameY val 'aab';} or" +
-                "{$nameX val 'aa';$nameY val 'aaaa';} or " +
-                "{$nameY val 'aa';$nameX val 'aaa';} or {$nameY val 'aa';$nameX val 'aab';} or" +
-                "{$nameY val 'aa';$nameX val 'aaaa';} or "
+                "{$nameX == 'aa';$nameY == 'aaa';} or {$nameX == 'aa';$nameY == 'aab';} or" +
+                "{$nameX == 'aa';$nameY == 'aaaa';} or " +
+                "{$nameY == 'aa';$nameX == 'aaa';} or {$nameY == 'aa';$nameX == 'aab';} or" +
+                "{$nameY == 'aa';$nameX == 'aaaa';} or "
                 +
-                "{$nameX val 'aaa';$nameY val 'aaaa';} or " +
-                "{$nameY val 'aaa';$nameX val 'aaaa';} or "
+                "{$nameX == 'aaa';$nameY == 'aaaa';} or " +
+                "{$nameY == 'aaa';$nameX == 'aaaa';} or "
                 +
-                "{$nameX val 'c';$nameY val 'ca';} or " +
-                "{$nameY val 'c';$nameX val 'ca';}; get $X, $Y;";
+                "{$nameX == 'c';$nameY == 'ca';} or " +
+                "{$nameY == 'c';$nameX == 'ca';}; get $X, $Y;";
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
@@ -174,7 +174,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
         String queryString = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y, $name;";
-        String explicitQuery = "match $Y has name $name;{$name val 'd';} or {$name val 'g';}; get;";
+        String explicitQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -186,7 +186,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
-        String explicitQuery = "match $Y has name $name;{$name val 'd';} or {$name val 'g';}; get $Y;";
+        String explicitQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -199,7 +199,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
         String explicitQuery = "match $X has name $name;" +
-                "{$name val 'a';} or {$name val 'b';} or {$name val 'c';}; get $X;";
+                "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -212,7 +212,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
         String explicitQuery = "match $X has name $name;" +
-                "{$name val 'a';} or {$name val 'b';} or {$name val 'c';}; get $X;";
+                "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -224,7 +224,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = recursivitySGContext.tx().graql().infer(true);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; get $y;";
-        String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'a';};get $y;";
+        String explicitQuery = "match $y has name $name;{$name == 'f';} or {$name == 'a';};get $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -248,13 +248,13 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (reach-from: $x, reach-to: $y) isa reachable; get;";
         String explicitQuery = "match $x has index $indX;$y has index $indY;" +
-                "{$indX val 'a';$indY val 'b';} or" +
-                "{$indX val 'b';$indY val 'c';} or" +
-                "{$indX val 'c';$indY val 'c';} or" +
-                "{$indX val 'c';$indY val 'd';} or" +
-                "{$indX val 'a';$indY val 'c';} or" +
-                "{$indX val 'b';$indY val 'd';} or" +
-                "{$indX val 'a';$indY val 'd';};get $x, $y;";
+                "{$indX == 'a';$indY == 'b';} or" +
+                "{$indX == 'b';$indY == 'c';} or" +
+                "{$indX == 'c';$indY == 'c';} or" +
+                "{$indX == 'c';$indY == 'd';} or" +
+                "{$indX == 'a';$indY == 'c';} or" +
+                "{$indX == 'b';$indY == 'd';} or" +
+                "{$indX == 'a';$indY == 'd';};get $x, $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -266,7 +266,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match ($x, $y) isa reachable;$x has index 'a';get $y;";
         String explicitQuery = "match $y has index $indY;" +
-                "{$indY val 'a';} or {$indY val 'b';} or {$indY val 'c';} or {$indY val 'd';};get $y;";
+                "{$indY == 'a';} or {$indY == 'b';} or {$indY == 'c';} or {$indY == 'd';};get $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -343,7 +343,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';get $y;";
         String explicitQuery = "match $y has name $name;" +
-                "{$name val 'ann';} or {$name val 'bill';} or {$name val 'peter';};get $y;";
+                "{$name == 'ann';} or {$name == 'bill';} or {$name == 'peter';};get $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -448,7 +448,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; get $y;";
         String explicitQuery = "match $y isa person, has name $name;" +
-                "{$name val 'b';} or {$name val 'c';} or {$name val 'd';};get $y;";
+                "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -459,12 +459,12 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG; get;";
         String explicitQuery = "match $x has name $nameX;$y has name $nameY;" +
-                "{$nameX val 'a';$nameY val 'b';} or {$nameX val 'a';$nameY val 'c';} or" +
-                "{$nameX val 'a';$nameY val 'd';} or {$nameX val 'm';$nameY val 'n';} or" +
-                "{$nameX val 'm';$nameY val 'o';} or {$nameX val 'p';$nameY val 'm';} or" +
-                "{$nameX val 'g';$nameY val 'f';} or {$nameX val 'h';$nameY val 'f';} or" +
-                "{$nameX val 'i';$nameY val 'f';} or {$nameX val 'j';$nameY val 'f';} or" +
-                "{$nameX val 'f';$nameY val 'k';};get $x, $y;";
+                "{$nameX == 'a';$nameY == 'b';} or {$nameX == 'a';$nameY == 'c';} or" +
+                "{$nameX == 'a';$nameY == 'd';} or {$nameX == 'm';$nameY == 'n';} or" +
+                "{$nameX == 'm';$nameY == 'o';} or {$nameX == 'p';$nameY == 'm';} or" +
+                "{$nameX == 'g';$nameY == 'f';} or {$nameX == 'h';$nameY == 'f';} or" +
+                "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
+                "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
