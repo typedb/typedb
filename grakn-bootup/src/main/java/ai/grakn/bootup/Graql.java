@@ -29,6 +29,7 @@ import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.cli.ParseException;
@@ -103,7 +104,7 @@ public class Graql {
                 JsonMigrator.main(valuesFrom(args, 1));
                 break;
             case "owl":
-                System.out.println("Owl migration not supported anymore");
+                System.err.println(ErrorMessage.OWL_NOT_SUPPORTED.getMessage());
                 break;
             case "export":
                 Main.main(valuesFrom(args, 1));
