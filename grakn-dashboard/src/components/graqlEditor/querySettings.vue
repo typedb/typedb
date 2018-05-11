@@ -46,7 +46,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <div class="dd-item">
                   <div class="left rp-settings"><input type="checkbox" v-model="loadRolePlayers"></div><div class="right">Autoload role players</div>
                 </div>
-                <div class="dd-item" v-if="this.loadRolePlayers">
+                <div class="dd-item">
                   <div class="left rp-settings">Limit role players:</div><input v-model="rolePlayersLimit" type="text" class="form-control" maxlength="3" size="4">
                 </div>
               </div>
