@@ -32,7 +32,6 @@ import java.io.Serializable;
  * @author Haikal Pribadi
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
-    private static final long serialVersionUID = -1723590529071614152L;
 
     private final String value;
 
@@ -95,7 +94,9 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public int hashCode() {
-        int result = this.value.hashCode();
+        int result = 31 * this.value.hashCode();
         return result;
     }
+
+    private static final long serialVersionUID = -1723590529071614152L;
 }
