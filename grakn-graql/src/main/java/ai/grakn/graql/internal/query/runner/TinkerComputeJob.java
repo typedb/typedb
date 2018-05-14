@@ -80,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -350,8 +351,8 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
             return answer.setPaths(Collections.emptyList());
         }
 
-        Multimap<Concept, Concept> resultGraph = getComputePathResultGraph(result);
-        List<List<Concept>> allPaths = getComputePathResultList(resultGraph, fromID);
+        Multimap<ConceptId, ConceptId> resultGraph = getComputePathResultGraph(result);
+        List<List<ConceptId>> allPaths = getComputePathResultList(resultGraph, fromID);
         if (scopeIncludesAttributes()) allPaths = getComputePathResultListIncludingImplicitRelations(allPaths); // SLOW
 
         LOG.info("Number of path: " + allPaths.size());
@@ -401,17 +402,14 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
             return answer;
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(targetTypeLabels);
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels);
+        Set<LabelId> targetTypeLabelIDs = convertLabelsToIds(targetTypeLabels);
 
-        ComputerResult result = compute(
-                new DegreeVertexProgram(ofLabelIds),
-                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                subLabelIds);
+        ComputerResult computerResult = compute(new DegreeVertexProgram(targetTypeLabelIDs),
+                                                new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
+                                                scopeTypeLabelIDs);
 
-        Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
-
-        return answer.setCentralityCount(xxx);
+        return answer.setCentralityCount(computerResult.memory().get(DegreeDistributionMapReduce.class.getName()));
     }
 
     /**
@@ -443,28 +441,25 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
                     .collect(Collectors.toSet());
         }
 
-        Set<Label> subLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
+        Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
 
         if (!scopeContainsInstance()) {
             return answer.setCentralityCount(Collections.emptyMap());
         }
 
         ComputerResult result;
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-        Set<LabelId> ofLabelIds = convertLabelsToIds(targetTypeLabels);
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels);
+        Set<LabelId> targetTypeLabelIDs = convertLabelsToIds(targetTypeLabels);
 
         try {
-            result = compute(
-                    new CorenessVertexProgram(k),
-                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
-                    subLabelIds);
+            result = compute(new CorenessVertexProgram(k),
+                             new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
+                             scopeTypeLabelIDs);
         } catch (NoResultException e) {
             return answer.setCentralityCount(Collections.emptyMap());
         }
 
-        Map<Long, Set<String>> xxx = result.memory().get(DegreeDistributionMapReduce.class.getName());
-
-        return answer.setCentralityCount(xxx);
+        return answer.setCentralityCount(result.memory().get(DegreeDistributionMapReduce.class.getName()));
     }
 
     private ComputeQuery.Answer runComputeCluster() {
@@ -483,11 +478,11 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
         if (!scopeContainsInstance()) {
             LOG.info("Selected types don't have instances");
-            if (getMembers) return answer.setClusterMembers(Collections.emptyMap());
-            return answer.setClusterSizes(Collections.emptyMap());
+            if (getMembers) return answer.setClusterMembers(Collections.emptySet());
+            return answer.setClusterSizes(Collections.emptySet());
         }
 
-        Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels());
+        Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels());
 
         GraknVertexProgram<?> vertexProgram;
         if (query.where().get().contains().isPresent()) {
@@ -502,8 +497,6 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
         GraknMapReduce<?> mapReduce;
 
-
-
         if (restrictSize) {
             if (getMembers) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
             else mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
@@ -512,10 +505,15 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
             else mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
         }
 
-        Memory memory = compute(vertexProgram, mapReduce, subLabelIds).memory();
+        Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
 
-        if (getMembers) answer.setClusterMembers(memory.get(mapReduce.getClass().getName()));
-        else answer.setClusterSizes(memory.get(mapReduce.getClass().getName()));
+        if (getMembers) {
+            Map<String, Set<ConceptId>> result = memory.get(mapReduce.getClass().getName());
+            answer.setClusterMembers(result.values());
+        } else {
+            Map<String, Long> result = memory.get(mapReduce.getClass().getName());
+            answer.setClusterSizes(result.values());
+        }
 
         return answer;
     }
@@ -528,21 +526,22 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         if (!scopeContainsInstance()) {
-            return answer.setClusterMembers(Collections.emptyMap());
+            return answer.setClusterMembers(Collections.emptySet());
         }
 
-        ComputerResult result;
+        ComputerResult computerResult;
         Set<LabelId> subLabelIds = convertLabelsToIds(scopeTypeLabels());
         try {
-            result = compute(
+            computerResult = compute(
                     new KCoreVertexProgram(k),
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
-            return answer.setClusterMembers(Collections.emptyMap());
+            return answer.setClusterMembers(Collections.emptySet());
         }
 
-        return answer.setClusterMembers(result.memory().get(ClusterMemberMapReduce.class.getName()));
+        Map<String, Set<ConceptId>> result = computerResult.memory().get(ClusterMemberMapReduce.class.getName());
+        return answer.setClusterMembers(result.values());
     }
     /**
      * Helper methed to get the graph of concepts that contains all the shortest path as a result of compute path query.
@@ -550,7 +549,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
      * @param result
      * @return a multimap of Concept to Concepts, representing a graph
      */
-    private Multimap<Concept, Concept> getComputePathResultGraph(ComputerResult result) {
+    private Multimap<ConceptId, ConceptId> getComputePathResultGraph(ComputerResult result) {
         // The result is contained in 2 halves:
         // The first half of the result are the half-way paths from the source concept
         // The second half o the result are the half-way paths from the destination concept
@@ -560,12 +559,12 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
 
         // Stitching the two halves provides us the full graph that contains all the shortest path
-        Multimap<Concept, Concept> resultGraph = HashMultimap.create();
+        Multimap<ConceptId, ConceptId> resultGraph = HashMultimap.create();
         predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            resultGraph.put(getConcept(id), getConcept(id2));
+            resultGraph.put(ConceptId.of(id), ConceptId.of(id2));
         }));
         predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            resultGraph.put(getConcept(id2), getConcept(id));
+            resultGraph.put(ConceptId.of(id2), ConceptId.of(id));
         }));
         return resultGraph;
     }
@@ -577,20 +576,20 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
      * @param fromID
      * @return
      */
-    private List<List<Concept>> getComputePathResultList(Multimap<Concept, Concept> resultGraph, ConceptId fromID) {
-        List<List<Concept>> allPaths = new ArrayList<>();
-        List<Concept> firstPath = new ArrayList<>();
-        firstPath.add(getConcept(fromID.getValue()));
+    private List<List<ConceptId>> getComputePathResultList(Multimap<ConceptId, ConceptId> resultGraph, ConceptId fromID) {
+        List<List<ConceptId>> allPaths = new ArrayList<>();
+        List<ConceptId> firstPath = new ArrayList<>();
+        firstPath.add(fromID);
 
-        Deque<List<Concept>> queue = new ArrayDeque<>();
+        Deque<List<ConceptId>> queue = new ArrayDeque<>();
         queue.addLast(firstPath);
         while (!queue.isEmpty()) {
-            List<Concept> currentPath = queue.pollFirst();
+            List<ConceptId> currentPath = queue.pollFirst();
             if (resultGraph.containsKey(currentPath.get(currentPath.size() - 1))) {
-                Collection<Concept> successors = resultGraph.get(currentPath.get(currentPath.size() - 1));
-                Iterator<Concept> iterator = successors.iterator();
+                Collection<ConceptId> successors = resultGraph.get(currentPath.get(currentPath.size() - 1));
+                Iterator<ConceptId> iterator = successors.iterator();
                 for (int i = 0; i < successors.size() - 1; i++) {
-                    List<Concept> extendedPath = new ArrayList<>(currentPath);
+                    List<ConceptId> extendedPath = new ArrayList<>(currentPath);
                     extendedPath.add(iterator.next());
                     queue.addLast(extendedPath);
                 }
@@ -610,10 +609,10 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
      * @param allPaths
      * @return
      */
-    private List<List<Concept>> getComputePathResultListIncludingImplicitRelations(List<List<Concept>> allPaths) {
-        List<List<Concept>> extendedPaths = new ArrayList<>();
-        for (List<Concept> currentPath : allPaths) {
-            boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
+    private List<List<ConceptId>> getComputePathResultListIncludingImplicitRelations(List<List<ConceptId>> allPaths) {
+        List<List<ConceptId>> extendedPaths = new ArrayList<>();
+        for (List<ConceptId> currentPath : allPaths) {
+            boolean hasAttribute = currentPath.stream().anyMatch(conceptID -> tx.getConcept(conceptID).isAttribute());
             if (!hasAttribute) {
                 extendedPaths.add(currentPath);
             }
@@ -622,17 +621,16 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         // If there exist a path without attributes, we don't need to expand any path
         // as paths contain attributes would be longer after implicit relations are added
         int numExtensionAllowed = extendedPaths.isEmpty() ? Integer.MAX_VALUE : 0;
-        for (List<Concept> currentPath : allPaths) {
-            List<Concept> extendedPath = new ArrayList<>();
+        for (List<ConceptId> currentPath : allPaths) {
+            List<ConceptId> extendedPath = new ArrayList<>();
             int numExtension = 0; // record the number of extensions needed for the current path
             for (int j = 0; j < currentPath.size() - 1; j++) {
                 extendedPath.add(currentPath.get(j));
-                ConceptId resourceRelationId = Utility.getResourceEdgeId(tx,
-                        currentPath.get(j).getId(), currentPath.get(j + 1).getId());
+                ConceptId resourceRelationId = Utility.getResourceEdgeId(tx, currentPath.get(j), currentPath.get(j + 1));
                 if (resourceRelationId != null) {
                     numExtension++;
                     if (numExtension > numExtensionAllowed) break;
-                    extendedPath.add(tx.getConcept(resourceRelationId));
+                    extendedPath.add(resourceRelationId);
                 }
             }
             if (numExtension == numExtensionAllowed) {
@@ -647,17 +645,6 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
             }
         }
         return extendedPaths;
-    }
-
-    /**
-     * Helper method to get Concept from the database
-     *
-     * @param conceptId
-     * @return the concept instance (of class Thing)
-     */
-    @Nullable
-    private Thing getConcept(String conceptId) {
-        return tx.getConcept(ConceptId.of(conceptId));
     }
 
     /**

@@ -118,9 +118,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static final @Nullable Constructor<?> queryConstructor = getQueryConstructor();
+    private static final @Nullable Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
 
-    private static final @Nullable Method queryRunnerFactory = getQueryRunnerFactory();
+    private static final @Nullable Method queryExecutorFactory = getQueryExecutorFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -334,11 +334,11 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public QueryBuilder graql() {
-        if (queryConstructor == null) {
+        if (queryBuilderConstructor == null) {
             throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_EXECUTOR_CLASS_NAME));
         }
         try {
-            return (QueryBuilder) queryConstructor.newInstance(this);
+            return (QueryBuilder) queryBuilderConstructor.newInstance(this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -951,17 +951,17 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public final QueryExecutor queryExecutor() {
-        if (queryRunnerFactory == null) {
+        if (queryExecutorFactory == null) {
             throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
         }
         try {
-            return (QueryExecutor) queryRunnerFactory.invoke(null, this);
+            return (QueryExecutor) queryExecutorFactory.invoke(null, this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static @Nullable Constructor<?> getQueryConstructor() {
+    private static @Nullable Constructor<?> getQueryBuilderConstructor() {
         try {
             return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
@@ -969,7 +969,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private static @Nullable Method getQueryRunnerFactory() {
+    private static @Nullable Method getQueryExecutorFactory() {
         try {
             return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {

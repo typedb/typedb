@@ -47,32 +47,6 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 
-/* uncover the secret
-
-\u002a\u002f\u0069\u006d\u0070\u006f\u0072\u0074
-\u0073\u0074\u0061\u0074\u0069\u0063
-\u0061\u0069
-\u002e
-\u0067\u0072\u0061\u006b\u006e
-\u002e
-\u0067\u0072\u0061\u0071\u006c
-\u002e
-\u0069\u006e\u0074\u0065\u0072\u006e\u0061\u006c           /*        ,_,                   \u002a\u002f
-\u002e                                                     /*       (0_0)_----------_      \u002a\u002f
-\u0073\u0068\u0065\u006c\u006c                             /*      (_____)           |~'   \u002a\u002f
-\u002e                                                     /*      `-'-'-'           /     \u002a\u002f
-\u0061\u006e\u0069\u006d\u0061\u006c\u0069\u0061           /*        `|__|~-----~|__|      \u002a\u002f
-\u002e
-\u0063\u0068\u006f\u0072\u0064\u0061\u0074\u0061
-\u002e
-\u006d\u0061\u006d\u006d\u0061\u006c\u0069\u0061
-\u002e
-\u0061\u0072\u0074\u0069\u006f\u0064\u0061\u0063\u0074\u0079\u006c\u0061
-\u002e
-\u0068\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0069\u0064\u0061\u0065
-\u002e
-\u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079
-\u002e \u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070 \u003b\u002f\u002a */
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -205,15 +179,6 @@ public class GraqlShell implements AutoCloseable {
                     case "":
                         // Ignore empty command
                         continue;
-                    /*
-                    \u002a\u002f\u0063\u0061\u0073\u0065\u0020
-
-                    "HIPPO"
-
-                    \u003a\u0020\u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070\u0028
-                    \u0063\u006f\u006e\u0073\u006f\u006c\u0065\u0029\u003b
-                    \u0020\u0063\u006f\u006e\u0074\u0069\u006e\u0075\u0065\u003b\u002f\u002a
-                    */
                 }
             }
 
@@ -253,9 +218,15 @@ public class GraqlShell implements AutoCloseable {
         GraqlConverter<?, String> converter = outputFormat.getConverter(displayAttributes);
 
         handleGraknExceptions(() -> {
-            Stream<Query<?>> queries = tx.graql().infer(infer).parser().parseList(queryString);
+            Stream<Query<?>> queries = tx
+                    .graql()
+                    .infer(infer)
+                    .parser()
+                    .parseList(queryString);
 
-            Iterable<String> results = () -> queries.flatMap(query -> query.results(converter)).iterator();
+            Iterable<String> results = () -> queries
+                    .flatMap(query -> query.results(converter))
+                    .iterator();
 
             for (String result : results) {
                 console.println(result);

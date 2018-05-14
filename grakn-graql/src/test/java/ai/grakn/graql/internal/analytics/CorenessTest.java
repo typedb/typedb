@@ -81,7 +81,7 @@ public class CorenessTest {
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -91,7 +91,7 @@ public class CorenessTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
-            Map<Long, Set<String>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -121,7 +121,7 @@ public class CorenessTest {
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, entity2);
 
-            Map<Long, Set<String>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -131,7 +131,7 @@ public class CorenessTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             assertEquals(1, result.size());
             assertEquals(4, result.get(3L).size());
 
@@ -170,7 +170,7 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Long, Set<String>> result;
+        Map<Long, Set<ConceptId>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             System.out.println("result = " + result);
@@ -261,7 +261,7 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Long, Set<String>> result;
+        Map<Long, Set<ConceptId>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentralityCount().get();
             assertEquals(2, result.size());
@@ -286,7 +286,7 @@ public class CorenessTest {
             list.add(i);
         }
 
-        Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
+        Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return Graql.compute(CENTRALITY).withTx(graph).using(K_CORE).where(min_k(3L)).execute().getCentralityCount().get();
             }

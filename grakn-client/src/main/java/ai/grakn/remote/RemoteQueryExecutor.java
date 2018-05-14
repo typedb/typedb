@@ -115,8 +115,8 @@ final class RemoteQueryExecutor implements QueryExecutor {
 //        return RemoteComputeJob.of(runSingleUnchecked(query));
 //    }
 
-    private <T> T runSingle(Query<? extends T> query, Class<? extends T> clazz) {
-        return clazz.cast(Iterators.getOnlyElement(run(query)));
+    private <T> T runSingle(Query<? extends T> query, Class<? extends T> returnType) {
+        return returnType.cast(Iterators.getOnlyElement(run(query)));
     }
 
     private <T> T runSingleUnchecked(Query<? extends T> query) {

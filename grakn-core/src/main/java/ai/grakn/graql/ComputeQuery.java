@@ -19,7 +19,6 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
@@ -225,15 +224,15 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
         Optional<Number> getNumber();
 
         @CheckReturnValue
-        Optional<List<List<Concept>>> getPaths();
+        Optional<List<List<ConceptId>>> getPaths();
 
         @CheckReturnValue
-        Optional<Map<Long, Set<String>>> getCentralityCount();
+        Optional<Map<Long, Set<ConceptId>>> getCentralityCount();
 
         @CheckReturnValue
-        Optional<Map<String, Set<String>>> getClusterMembers();
+        Optional<List<Set<ConceptId>>> getClusterMembers();
 
         @CheckReturnValue
-        Optional<Map<String, Long>> getClusterSizes();
+        Optional<List<Long>> getClusterSizes();
     }
 }

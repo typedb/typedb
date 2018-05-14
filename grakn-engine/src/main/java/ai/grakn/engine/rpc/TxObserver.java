@@ -55,6 +55,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -79,7 +81,7 @@ import static ai.grakn.engine.rpc.GrpcGraknService.nonNull;
  * @author Felix Chapman
  */
 class TxObserver implements StreamObserver<TxRequest> {
-
+    final Logger LOG = LoggerFactory.getLogger(TxObserver.class);
     private final StreamObserver<TxResponse> responseObserver;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService threadExecutor;
@@ -183,6 +185,7 @@ class TxObserver implements StreamObserver<TxRequest> {
 
         if (!terminated.getAndSet(true)) {
             if (error != null) {
+                LOG.error("Runtime Exception in TxObserver: ", error);
                 responseObserver.onError(error);
             } else {
                 responseObserver.onCompleted();

@@ -258,7 +258,7 @@ public class GrpcServerIT {
             assertEquals(10L, tx.graql().compute(MEDIAN).of("age").in("human").execute().getNumber().get());
 
             // degree
-            Map<Long, Set<String>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
+            Map<Long, Set<ConceptId>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
                     .of("pet").in("human", "pet", "friend").execute().getCentralityCount().get();
             assertEquals(1L, centrality.size());
             assertEquals(idCoco.getValue(), centrality.get(1L).iterator().next());
@@ -267,22 +267,22 @@ public class GrpcServerIT {
             assertFalse(tx.graql().compute(CENTRALITY).using(K_CORE).of("pet").execute().getCentralityCount().isPresent());
 
             // path
-            List<List<Concept>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().getPaths().get();
+            List<List<ConceptId>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().getPaths().get();
             assertEquals(1, paths.size());
-            assertEquals(idCoco, paths.get(0).get(2).getId());
-            assertEquals(idMike, paths.get(0).get(0).getId());
+            assertEquals(idCoco, paths.get(0).get(2));
+            assertEquals(idMike, paths.get(0).get(0));
 
             // connected component size
-            Map<String, Long> sizeMap = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+            List<Long> sizeList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in("human", "pet", "friend").execute().getClusterSizes().get();
-            assertEquals(1, sizeMap.size());
-            assertTrue(sizeMap.containsValue(3L));
+            assertEquals(1, sizeList.size());
+            assertTrue(sizeList.contains(3L));
 
             // connected component member
-            Map<String, Set<String>> memberMap = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+            List<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in("human", "pet", "friend").where(members(true)).execute().getClusterMembers().get();
-            assertEquals(1, memberMap.size());
-            Set<String> memberSet = memberMap.values().iterator().next();
+            assertEquals(1, membersList.size());
+            Set<ConceptId> memberSet = membersList.iterator().next();
             assertEquals(3, memberSet.size());
             assertEquals(Sets.newHashSet(idCoco.getValue(), idMike.getValue(), idCocoAndMike.getValue()), memberSet);
 

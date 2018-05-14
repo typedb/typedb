@@ -21,34 +21,39 @@ package ai.grakn.concept;
 import ai.grakn.GraknTx;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * <p>
- *     A Concept Id
- * </p>
+ * A class which represents an id of any {@link Concept} in the {@link GraknTx}.
+ * Also contains a static method for producing concept IDs from Strings.
  *
- * <p>
- *     A class which represents an id of any {@link Concept} in the {@link GraknTx}.
- *     Also contains a static method for producing concept IDs from Strings.
- * </p>
- *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Haikal Pribadi
  */
-@AutoValue
-public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
+public class ConceptId implements Comparable<ConceptId>, Serializable {
     private static final long serialVersionUID = -1723590529071614152L;
 
+    private final String value;
+
+    ConceptId() {
+        this.value = null;
+    }
+
+    ConceptId(String value) {
+        if(value == null) throw new NullPointerException("Provided ConceptId is NULL");
+
+        this.value = value;
+    }
     /**
      *
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
     @JsonValue
-    public abstract String getValue();
+    public String getValue() {
+        return value;
+    }
 
     @Override
     public int compareTo(ConceptId o) {
@@ -63,12 +68,27 @@ public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
     @CheckReturnValue
     @JsonCreator
     public static ConceptId of(String value){
-        return new AutoValue_ConceptId(value);
+        return new ConceptId(value);
     }
 
     @Override
     public final String toString() {
         // TODO: Consider using @AutoValue toString
         return getValue();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        ConceptId that = (ConceptId) o;
+        return (this.value.equals(that.getValue()));
+    }
+
+    @Override
+    public int hashCode() {
+        int result = this.value.hashCode();
+        return result;
     }
 }

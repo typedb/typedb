@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.ComputeJob;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
@@ -568,10 +567,10 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     public static class AnswerImpl implements Answer {
 
         private Number number = null;
-        private List<List<Concept>> paths = null;
-        private Map<Long, Set<String>> centralityCount = null;
-        private Map<String, Set<String>> clusterMembers = null;
-        private Map<String, Long> clusterSizes = null;
+        private List<List<ConceptId>> paths = null;
+        private Map<Long, Set<ConceptId>> centralityCount = null;
+        private List<Set<ConceptId>> clusterMembers = null;
+        private List<Long> clusterSizes = null;
 
         public AnswerImpl() {
         }
@@ -587,40 +586,40 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         }
 
         @Override
-        public Optional<List<List<Concept>>> getPaths() {
+        public Optional<List<List<ConceptId>>> getPaths() {
             return Optional.ofNullable(paths);
         }
 
-        public Answer setPaths(List<List<Concept>> paths) {
+        public Answer setPaths(List<List<ConceptId>> paths) {
             this.paths = ImmutableList.copyOf(paths);
             return this;
         }
 
         @Override
-        public Optional<Map<Long, Set<String>>> getCentralityCount() {
+        public Optional<Map<Long, Set<ConceptId>>> getCentralityCount() {
             return Optional.ofNullable(centralityCount);
         }
 
-        public Answer setCentralityCount(Map<Long, Set<String>> countMap) {
+        public Answer setCentralityCount(Map<Long, Set<ConceptId>> countMap) {
             this.centralityCount = ImmutableMap.copyOf(countMap);
             return this;
         }
 
-        public Optional<Map<String, Set<String>>> getClusterMembers() {
+        public Optional<List<Set<ConceptId>>> getClusterMembers() {
             return Optional.ofNullable(clusterMembers);
         }
 
-        public Answer setClusterMembers(Map<String, Set<String>> clusterMap) {
-            this.clusterMembers = ImmutableMap.copyOf(clusterMap);
+        public Answer setClusterMembers(Collection<Set<ConceptId>> clusterMap) {
+            this.clusterMembers = ImmutableList.copyOf(clusterMap);
             return this;
         }
 
-        public Optional<Map<String, Long>> getClusterSizes() {
+        public Optional<List<Long>> getClusterSizes() {
             return Optional.ofNullable(clusterSizes);
         }
 
-        public Answer setClusterSizes(Map<String, Long> clusterSizes) {
-            this.clusterSizes = ImmutableMap.copyOf(clusterSizes);
+        public Answer setClusterSizes(Collection<Long> clusterSizes) {
+            this.clusterSizes = ImmutableList.copyOf(clusterSizes);
             return this;
         }
 

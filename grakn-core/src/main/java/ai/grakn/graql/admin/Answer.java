@@ -21,7 +21,6 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
-import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -67,7 +66,7 @@ public interface Answer {
     Concept get(Var var);
 
     @CheckReturnValue
-    ImmutableMap<Var, Concept> map();
+    Map<Var, Concept> map();
 
     @CheckReturnValue
     boolean containsVar(Var var);

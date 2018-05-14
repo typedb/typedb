@@ -60,7 +60,7 @@ import java.util.stream.Stream;
  */
 public class QueryAnswer implements Answer {
 
-    private final ImmutableMap<Var, Concept> map;
+    private final Map<Var, Concept> map;
     private final AnswerExplanation explanation;
 
     public QueryAnswer(){
@@ -106,7 +106,7 @@ public class QueryAnswer implements Answer {
     public int hashCode(){ return map.hashCode();}
 
     @Override
-    public ImmutableMap<Var, Concept> map() { return map;}
+    public Map<Var, Concept> map() { return map;}
 
     @Override
     public Set<Var> vars(){ return map.keySet();}

@@ -81,7 +81,7 @@ public class KCoreTest {
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
+            List<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -91,7 +91,7 @@ public class KCoreTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
-            Map<String, Set<String>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
+            List<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -121,7 +121,7 @@ public class KCoreTest {
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, entity2);
 
-            Map<String, Set<String>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
+            List<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertTrue(result.isEmpty());
         }
     }
@@ -131,11 +131,11 @@ public class KCoreTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result1 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
+            List<Set<ConceptId>> result1 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result1.size());
-            assertEquals(4, result1.values().iterator().next().size());
+            assertEquals(4, result1.iterator().next().size());
 
-            Map<String, Set<String>> result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
+            List<Set<ConceptId>> result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(result1, result2);
 
             result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).in(thing, related).execute().getClusterMembers().get();
@@ -162,15 +162,15 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Map<String, Set<String>> result;
+        List<Set<ConceptId>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(5, result.iterator().next().size());
 
             result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
-            assertEquals(4, result.values().iterator().next().size());
+            assertEquals(4, result.iterator().next().size());
         }
     }
 
@@ -198,17 +198,17 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Map<String, Set<String>> result;
+        List<Set<ConceptId>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(4L)).execute().getClusterMembers().get();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(5, result.iterator().next().size());
 
             result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).includeAttributes(true).execute().getClusterMembers().get();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
-            assertEquals(6, result.values().iterator().next().size());
+            assertEquals(6, result.iterator().next().size());
         }
     }
 
@@ -289,16 +289,16 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Map<String, Set<String>> result;
+        List<Set<ConceptId>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             assertEquals(2, result.size());
-            assertEquals(4, result.values().iterator().next().size());
+            assertEquals(4, result.iterator().next().size());
 
             System.out.println("result = " + result);
             result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusterMembers().get();
             assertEquals(1, result.size());
-            assertEquals(9, result.values().iterator().next().size());
+            assertEquals(9, result.iterator().next().size());
         }
     }
 
@@ -314,14 +314,14 @@ public class KCoreTest {
             list.add(i);
         }
 
-        Set<Map<String, Set<String>>> result = list.parallelStream().map(i -> {
+        Set<List<Set<ConceptId>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return Graql.compute(CLUSTER).withTx(graph).using(K_CORE).where(k(3L)).execute().getClusterMembers().get();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.values().iterator().next().size());
+            assertEquals(4, map.iterator().next().size());
         });
     }
 
