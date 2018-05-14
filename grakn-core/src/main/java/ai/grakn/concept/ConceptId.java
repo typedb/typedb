@@ -36,10 +36,17 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     private final String value;
 
+    /**
+     * A non-argument constructor for ConceptID, for serialisation of OLAP queries dependencies
+     */
     ConceptId() {
         this.value = null;
     }
 
+    /**
+     * The default constructor for ConceptID, which requires String value provided
+     * @param value String representation of the Concept ID
+     */
     ConceptId(String value) {
         if(value == null) throw new NullPointerException("Provided ConceptId is NULL");
 
