@@ -39,7 +39,7 @@ OPTIONS
 
 ## JSON Migration Basics
 
-The steps to migrate the CSV to GRAKN.AI are:
+The steps to migrate JSON to GRAKN.AI are:
 
 * define a schema for the data to derive the full benefit of a knowledge graph
 * create templated Graql to map the data to the schema. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template.
