@@ -79,8 +79,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public final String toString() {
-        // TODO: Consider using @AutoValue toString
-        return getValue();
+        return value;
     }
 
     @Override
