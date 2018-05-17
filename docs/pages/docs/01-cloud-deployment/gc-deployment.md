@@ -70,7 +70,7 @@ The Grakn console can be accessed similarly to graql console by typing `grakn co
 
 ![](/images/gc-grakn-console.png)
 
-Provided you log in as user with`admin` privileges, Grakn console allows to perform the following actions:
+Provided you log in as user with `admin` privileges, Grakn console allows to perform the following actions:
 
 * create a new user:
 
@@ -97,5 +97,5 @@ Provided you log in as user with`admin` privileges, Grakn console allows to perf
 
 If you want to learn more about Grakn KGMS, the [Grakn Academy](https://dev.grakn.ai/academy/) is a good place to start.
 
-To learn more about running Grakn KGMS on GCP take a look at the [best practices guide](https://dev.grakn.ai/docs/cloud-deployment/best-practices)
+To learn more about running Grakn KGMS in the cloud, take a look at the [best practices guide](https://dev.grakn.ai/docs/cloud-deployment/best-practices)
 and [post deployment steps](https://dev.grakn.ai/docs/cloud-deployment/post-deployment).
