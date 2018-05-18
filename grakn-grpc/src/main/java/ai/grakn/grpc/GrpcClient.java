@@ -85,8 +85,8 @@ public class GrpcClient implements AutoCloseable {
         TxResponse txResponse = responseOrThrow();
 
         switch (txResponse.getResponseCase()) {
-            case QUERYRESULT:
-                return Collections.singleton(convert(txResponse.getQueryResult())).iterator();
+            case ANSWER:
+                return Collections.singleton(convert(txResponse.getAnswer())).iterator();
             case DONE:
                 return Collections.emptyIterator();
             case ITERATORID:
@@ -95,7 +95,7 @@ public class GrpcClient implements AutoCloseable {
                 return new GraknGrpcIterator<Object>(this, iteratorId) {
                     @Override
                     protected Object getNextFromResponse(TxResponse response) {
-                        return convert(response.getQueryResult());
+                        return convert(response.getAnswer());
                     }
                 };
             default:
@@ -215,22 +215,22 @@ public class GrpcClient implements AutoCloseable {
         }
     }
 
-    private Object convert(GrpcGrakn.QueryResult queryResult) {
-        switch (queryResult.getQueryResultCase()) {
-            case ANSWER:
-                return convert(queryResult.getAnswer());
+    private Object convert(GrpcGrakn.Answer answer) {
+        switch (answer.getAnswerCase()) {
+            case QUERYANSWER:
+                return convert(answer.getQueryAnswer());
             case OTHERRESULT:
-                return Json.read(queryResult.getOtherResult()).getValue();
+                return Json.read(answer.getOtherResult()).getValue();
             default:
-            case QUERYRESULT_NOT_SET:
-                throw new IllegalArgumentException("Unexpected " + queryResult);
+            case ANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + answer);
         }
     }
 
-    private Answer convert(GrpcGrakn.Answer answer) {
+    private Answer convert(GrpcGrakn.QueryAnswer queryAnswer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
-        answer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
+        queryAnswer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
             map.put(Graql.var(grpcVar), conceptConverter.convert(grpcConcept));
         });
 

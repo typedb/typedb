@@ -25,7 +25,6 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 
 import java.util.Collection;
 import java.util.Map;
@@ -36,7 +35,7 @@ import java.util.Optional;
  *
  * @author Felix Chapman
  */
-class GrpcConverter implements GraqlConverter<Object, QueryResult> {
+class GrpcConverter implements GraqlConverter<Object, GrpcGrakn.Answer> {
 
     private GrpcConverter() {
 
@@ -47,12 +46,12 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     @Override
-    public QueryResult complete(Object builder) {
-        if (builder instanceof GrpcGrakn.Answer) {
-            return QueryResult.newBuilder().setAnswer((GrpcGrakn.Answer) builder).build();
+    public GrpcGrakn.Answer complete(Object builder) {
+        if (builder instanceof GrpcGrakn.QueryAnswer) {
+            return GrpcGrakn.Answer.newBuilder().setQueryAnswer((GrpcGrakn.QueryAnswer) builder).build();
         } else {
             // If not an answer, convert to JSON
-            return QueryResult.newBuilder().setOtherResult(Printers.json().convert(builder)).build();
+            return GrpcGrakn.Answer.newBuilder().setOtherResult(Printers.json().convert(builder)).build();
         }
     }
 
@@ -82,13 +81,14 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     @Override
-    public GrpcGrakn.Answer build(Answer answer) {
-        GrpcGrakn.Answer.Builder answerRps = GrpcGrakn.Answer.newBuilder();
+    public GrpcGrakn.QueryAnswer build(Answer answer) {
+        GrpcGrakn.QueryAnswer.Builder queryAnswerRPC = GrpcGrakn.QueryAnswer.newBuilder();
         answer.forEach((var, concept) -> {
             GrpcConcept.Concept conceptRps = GrpcUtil.convert(concept);
-            answerRps.putAnswer(var.getValue(), conceptRps);
+            queryAnswerRPC.putAnswer(var.getValue(), conceptRps);
         });
-        return answerRps.build();
+
+        return queryAnswerRPC.build();
     }
 
     @Override

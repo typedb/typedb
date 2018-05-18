@@ -27,7 +27,7 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.GrpcGraknService;
+import ai.grakn.engine.rpc.GraknRPCService;
 import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
@@ -214,7 +214,7 @@ public class GraknEngineServerTest {
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
+        Server server = ServerBuilder.forPort(grpcPort).addService(new GraknRPCService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,

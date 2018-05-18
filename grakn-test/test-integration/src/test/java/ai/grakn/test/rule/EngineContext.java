@@ -35,7 +35,7 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.GrpcGraknService;
+import ai.grakn.engine.rpc.GraknRPCService;
 import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
@@ -309,7 +309,7 @@ public class EngineContext extends CompositeTestRule {
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
 
-        Server server = ServerBuilder.forPort(0).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
+        Server server = ServerBuilder.forPort(0).addService(new GraknRPCService(requestExecutor, postProcessor)).build();
         GrpcServer grpcServer = GrpcServer.create(server);
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);

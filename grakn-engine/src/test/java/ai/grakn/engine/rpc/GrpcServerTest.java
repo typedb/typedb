@@ -32,10 +32,10 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
@@ -58,7 +58,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.BaseType;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
-import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxType;
@@ -147,7 +146,7 @@ public class GrpcServerTest {
         doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
 
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(txFactory);
-        Server server = ServerBuilder.forPort(PORT).addService(new GrpcGraknService(requestExecutor, mockedPostProcessor)).build();
+        Server server = ServerBuilder.forPort(PORT).addService(new GraknRPCService(requestExecutor, mockedPostProcessor)).build();
         grpcServer = GrpcServer.create(server);
         grpcServer.start();
 
@@ -330,18 +329,18 @@ public class GrpcServerTest {
 
             GrpcConcept.Concept rpcX =
                     GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
-            GrpcGrakn.Answer.Builder answerX = GrpcGrakn.Answer.newBuilder().putAnswer("x", rpcX);
-            QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
-            assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
+            GrpcGrakn.QueryAnswer.Builder answerX = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", rpcX);
+            GrpcGrakn.Answer.Builder resultX = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerX);
+            assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(nextRequest(iterator));
             TxResponse response2 = tx.receive().ok();
 
             GrpcConcept.Concept rpcY =
                     GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
-            GrpcGrakn.Answer.Builder answerY = GrpcGrakn.Answer.newBuilder().putAnswer("y", rpcY);
-            QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
-            assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
+            GrpcGrakn.QueryAnswer.Builder answerY = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("y", rpcY);
+            GrpcGrakn.Answer.Builder resultY = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerY);
+            assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(nextRequest(iterator));
             TxResponse response3 = tx.receive().ok();
@@ -410,7 +409,7 @@ public class GrpcServerTest {
             tx.send(execQueryRequest(COUNT_QUERY, null));
 
             TxResponse expected =
-                    TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("100")).build();
+                    TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }

@@ -43,7 +43,6 @@ import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.QueryResult;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
@@ -169,9 +168,9 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
-        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
 
@@ -206,7 +205,7 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         TxResponse response =
-                TxResponse.newBuilder().setQueryResult(QueryResult.newBuilder().setOtherResult("true")).build();
+                TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("true")).build();
 
         server.setResponse(GrpcUtil.execQueryRequest(query), response);
 
@@ -222,9 +221,9 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
-        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
 
@@ -245,9 +244,9 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.Answer grpcAnswer = GrpcGrakn.Answer.newBuilder().putAnswer("x", v123).build();
-        QueryResult queryResult = QueryResult.newBuilder().setAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponse(GrpcUtil.execQueryRequest(query), GrpcUtil.iteratorResponse(ITERATOR));
         server.setResponse(GrpcUtil.nextRequest(ITERATOR), response);

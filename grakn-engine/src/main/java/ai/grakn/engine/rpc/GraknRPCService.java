@@ -51,34 +51,34 @@ import javax.annotation.Nullable;
  */
 
 
-public class GrpcGraknService extends GraknGrpc.GraknImplBase {
+public class GraknRPCService extends GraknGrpc.GraknImplBase {
 
     private final GrpcOpenRequestExecutor executor;
     private PostProcessor postProcessor;
 
-    public GrpcGraknService(GrpcOpenRequestExecutor executor, PostProcessor postProcessor) {
+    public GraknRPCService(GrpcOpenRequestExecutor executor, PostProcessor postProcessor) {
         this.executor = executor;
         this.postProcessor = postProcessor;
     }
 
     @Override
-    public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
-        return TxObserver.create(responseObserver, executor, postProcessor);
+    public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseSender) {
+        return TxRequestListener.create(responseSender, executor, postProcessor);
     }
 
     @Override
-    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseSender) {
         try {
             runAndConvertGraknExceptions(() -> {
                 try (GraknTx tx = executor.execute(request.getOpen())) {
                     tx.admin().delete();
                 }
 
-                responseObserver.onNext(GrpcUtil.deleteResponse());
-                responseObserver.onCompleted();
+                responseSender.onNext(GrpcUtil.deleteResponse());
+                responseSender.onCompleted();
             });
         } catch (StatusRuntimeException e) {
-            responseObserver.onError(e);
+            responseSender.onError(e);
         }
     }
 
@@ -119,7 +119,7 @@ public class GrpcGraknService extends GraknGrpc.GraknImplBase {
 
     static <T> T nonNull(@Nullable T item) {
         if (item == null) {
-            throw GrpcGraknService.error(Status.FAILED_PRECONDITION);
+            throw GraknRPCService.error(Status.FAILED_PRECONDITION);
         } else {
             return item;
         }
