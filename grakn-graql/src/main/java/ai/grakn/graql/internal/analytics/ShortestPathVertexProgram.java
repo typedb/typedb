@@ -68,6 +68,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     public static final String SHORTEST_PATH = "result";
     private final String atLeastOneVertexActive = "at-least-one-vertex-active";
     private final String shortestPathLength = "shortest-path-length";
+    private final String allShortestPathFound = "all-shortest-path-found";
 
     private final MessageScope inEdge = MessageScope.Local.of(__::inE);
     private final MessageScope outEdge = MessageScope.Local.of(__::outE);
@@ -102,6 +103,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
         return new HashSet<>(Arrays.asList(
                 MemoryComputeKey.of(atLeastOneVertexActive, Operator.or, false, true),
                 MemoryComputeKey.of(shortestPathLength, Operator.assign, true, true),
+                MemoryComputeKey.of(allShortestPathFound, Operator.assign, false, true),
                 MemoryComputeKey.of(SHORTEST_PATH, Operator.addAll, false, false)
         ));
     }
@@ -110,6 +112,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     public void setup(final Memory memory) {
         memory.set(atLeastOneVertexActive, false);
         memory.set(shortestPathLength, SHORTEST_PATH_LENGTH_NOT_YET_SET);
+        memory.set(allShortestPathFound, false);
         memory.set(SHORTEST_PATH, new HashMap<String, Set<String>>());
     }
 
@@ -236,9 +239,12 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     @Override
     public boolean terminate(final Memory memory) {
-        boolean terminate = !memory.<Boolean>get(atLeastOneVertexActive);
-        if (terminate) {
-            LOG.debug("Terminating compute new-path.");
+        boolean terminate = !memory.<Boolean>get(atLeastOneVertexActive) || memory.<Boolean>get(allShortestPathFound);
+        if (!memory.<Boolean>get(atLeastOneVertexActive)) {
+            LOG.debug("No vertex is active. Terminating compute path.");
+        }
+        if (memory.<Boolean>get(allShortestPathFound)) {
+            LOG.debug("All shortest paths have been found. Terminating compute path.");
         }
         memory.set(atLeastOneVertexActive, false); // set for next iteration
         return terminate;
@@ -260,6 +266,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
         // memory.add(SHORTEST_PATH, msg); do not record
         memory.add(shortestPathLength, pathLength);
         set(vertex, shortestPathRecordedAndBroadcasted, true);
+        memory.add(allShortestPathFound, true);
         LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + msg + ". 'compute new-path' finished. Terminating...");
     }
 
@@ -276,19 +283,21 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     }
 
     private void broadcastDestinationMessages(Messenger<VertexMessage> messenger, Memory memory, String vertexId, List<MessageFromDestination> incomingDestMsg) {
-        incomingDestMsg.forEach(msg -> {
+        if (!incomingDestMsg.isEmpty()) {
+            MessageFromDestination msg = incomingDestMsg.get(0);
             MessageFromDestination outgoingDstMsg = new MessageFromDestination(vertexId, msg.pathLength() + 1);
             broadcastToNeighbors(messenger, outgoingDstMsg);
             LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingDstMsg + ".");
-        });
+        }
     }
 
     private void broadcastSourceMessages(Messenger<VertexMessage> messenger, Memory memory, String vertexId, List<MessageFromSource> incomingSourceMsg) {
-        incomingSourceMsg.forEach(msg -> {
+        if (!incomingSourceMsg.isEmpty()) {
+            MessageFromSource msg = incomingSourceMsg.get(0);
             MessageFromSource outgoingSrcMsg = new MessageFromSource(vertexId, msg.pathLength() + 1);
             broadcastToNeighbors(messenger, outgoingSrcMsg);
             LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingSrcMsg + ".");
-        });
+        }
     }
 
     private boolean source(Vertex vertex) {
