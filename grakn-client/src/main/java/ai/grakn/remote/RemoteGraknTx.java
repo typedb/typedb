@@ -37,15 +37,15 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.grpc.ConceptMethods;
-import ai.grakn.grpc.GrpcClient;
-import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.util.RequestBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -58,8 +58,8 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
  *
  * <p>
- *     Most of the gRPC legwork is handled in the embedded {@link GrpcClient}. This class is an adapter to that,
- *     translating Java calls into gRPC messages.
+ * Most of the gRPC legwork is handled in the embedded {@link GrpcClient}. This class is an adapter to that,
+ * translating Java calls into gRPC messages.
  * </p>
  *
  * @author Felix Chapman
@@ -80,7 +80,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
     public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
         GraknStub stub = session.stub();
-        return new RemoteGraknTx(session, GrpcUtil.convert(openRequest.getOpen().getTxType()), openRequest, stub);
+        return new RemoteGraknTx(session, GraknTxType.of(openRequest.getOpen().getTxType().getNumber()), openRequest, stub);
     }
 
     public GrpcClient client() {
@@ -209,7 +209,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void delete() {
-        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
+        DeleteRequest request = RequestBuilder.delete(RequestBuilder.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
         session.blockingStub().delete(request);
         close();
     }

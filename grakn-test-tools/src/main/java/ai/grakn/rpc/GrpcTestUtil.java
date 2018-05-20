@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
 import io.grpc.Metadata;
 import io.grpc.Status;

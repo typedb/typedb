@@ -76,6 +76,8 @@ public interface GraqlConverter<Builder, T> {
             return build((Collection<?>) object);
         } else if (object instanceof Answer) {
             return build((Answer) object);
+        } else if (object instanceof ComputeQuery.Answer) {
+            return build((ComputeQuery.Answer) object);
         } else if (object instanceof Map) {
             return build((Map<?, ?>) object);
         } else {
@@ -140,6 +142,14 @@ public interface GraqlConverter<Builder, T> {
     default Builder build(Answer answer) {
         return build(answer.map());
     }
+
+    /**
+     * Convert any {@link ComputeQuery.Answer} into a builder
+     * @param computeAnswer is the answer result of a Graql Compute queries
+     * @return the computeAnswer as an output builder
+     */
+    @CheckReturnValue
+    Builder build(ComputeQuery.Answer computeAnswer);
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used

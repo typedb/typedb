@@ -29,8 +29,8 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.grpc.GrpcOpenRequestExecutor;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
@@ -74,7 +74,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
                     tx.admin().delete();
                 }
 
-                responseSender.onNext(GrpcUtil.deleteResponse());
+                responseSender.onNext(ResponseBuilder.delete());
                 responseSender.onCompleted();
             });
         } catch (StatusRuntimeException e) {
@@ -86,30 +86,30 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
         try {
             runnable.run();
         } catch (TemporaryWriteException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.TEMPORARY_WRITE_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.TEMPORARY_WRITE_EXCEPTION);
         } catch (GraknServerException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_SERVER_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_SERVER_EXCEPTION);
         } catch (GraknBackendException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_BACKEND_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION);
         } catch (PropertyNotUniqueException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
         } catch (GraknTxOperationException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.GRAKN_TX_OPERATION_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_TX_OPERATION_EXCEPTION);
         } catch (GraqlQueryException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.GRAQL_QUERY_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION);
         } catch (GraqlSyntaxException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.GRAQL_SYNTAX_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION);
         } catch (InvalidKBException e) {
-            throw convertGraknException(e, GrpcUtil.ErrorType.INVALID_KB_EXCEPTION);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.INVALID_KB_EXCEPTION);
         } catch (GraknException e) {
             // We shouldn't normally encounter this case unless someone adds a new exception class
-            throw convertGraknException(e, GrpcUtil.ErrorType.UNKNOWN);
+            throw convertGraknException(e, ResponseBuilder.ErrorType.UNKNOWN);
         }
     }
 
-    private static StatusRuntimeException convertGraknException(GraknException exception, GrpcUtil.ErrorType errorType) {
+    private static StatusRuntimeException convertGraknException(GraknException exception, ResponseBuilder.ErrorType errorType) {
         Metadata trailers = new Metadata();
-        trailers.put(GrpcUtil.ErrorType.KEY, errorType);
+        trailers.put(ResponseBuilder.ErrorType.KEY, errorType);
         return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
     }
 

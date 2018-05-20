@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;

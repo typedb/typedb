@@ -18,9 +18,11 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.grpc.GrpcIterators;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.GrpcIterators;
+import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -57,7 +59,7 @@ import static org.mockito.Mockito.when;
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
- *     By default, the server will return a {@link GrpcUtil#doneResponse()} to every message. And will respond
+ *     By default, the server will return a {@link ResponseBuilder#done()} to every message. And will respond
  *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
  * </p>
  * <p>
@@ -151,10 +153,10 @@ public final class GrpcServerMock extends CompositeTestRule {
 
             return streamObserver -> {
                 List<TxResponse> responsesList =
-                        ImmutableList.<TxResponse>builder().add(responses).add(GrpcUtil.doneResponse()).build();
+                        ImmutableList.<TxResponse>builder().add(responses).add(ResponseBuilder.done()).build();
 
-                server.setResponse(GrpcUtil.nextRequest(iteratorId), responsesList);
-                streamObserver.onNext(GrpcUtil.iteratorResponse(iteratorId));
+                server.setResponse(RequestBuilder.nextRequest(iteratorId), responsesList);
+                streamObserver.onNext(GrpcGrakn.TxResponse.newBuilder().setIteratorId(iteratorId).build());
             };
         }
 
@@ -175,7 +177,7 @@ public final class GrpcServerMock extends CompositeTestRule {
 
         doAnswer(args -> {
             StreamObserver<DeleteResponse> deleteResponses = args.getArgument(1);
-            deleteResponses.onNext(GrpcUtil.deleteResponse());
+            deleteResponses.onNext(ResponseBuilder.delete());
             deleteResponses.onCompleted();
             return null;
         }).when(service).delete(any(), any());
@@ -189,7 +191,7 @@ public final class GrpcServerMock extends CompositeTestRule {
             TxRequest request = args.getArgument(0);
 
             Optional<TxResponse> next = grpcIterators.next(request.getNext().getIteratorId());
-            serverResponses.onNext(next.orElse(GrpcUtil.doneResponse()));
+            serverResponses.onNext(next.orElse(ResponseBuilder.done()));
             return null;
         }).when(serverRequests).onNext(any());
 

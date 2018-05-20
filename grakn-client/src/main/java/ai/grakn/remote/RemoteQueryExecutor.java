@@ -28,7 +28,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.grpc.GrpcClient;
+import ai.grakn.rpc.GrpcClient;
 import com.google.common.collect.Iterators;
 
 import java.util.Iterator;

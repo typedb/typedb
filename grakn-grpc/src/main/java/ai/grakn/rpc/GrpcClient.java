@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -28,13 +28,15 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.grpc.GrpcUtil.ErrorType;
-import ai.grakn.grpc.TxGrpcCommunicator.Response;
+import ai.grakn.rpc.util.ResponseBuilder;
+import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
+import ai.grakn.rpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.Metadata;
@@ -80,7 +82,7 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public Iterator<Object> execQuery(Query<?> query) {
-        communicator.send(GrpcUtil.execQueryRequest(query.toString(), query.inferring()));
+        communicator.send(RequestBuilder.execQueryRequest(query.toString(), query.inferring()));
 
         TxResponse txResponse = responseOrThrow();
 
@@ -104,33 +106,33 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public void commit() {
-        communicator.send(GrpcUtil.commitRequest());
+        communicator.send(RequestBuilder.commitRequest());
         responseOrThrow();
     }
 
     public TxResponse next(IteratorId iteratorId) {
-        communicator.send(GrpcUtil.nextRequest(iteratorId));
+        communicator.send(RequestBuilder.nextRequest(iteratorId));
         return responseOrThrow();
     }
 
     @Nullable
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
-        communicator.send(GrpcUtil.runConceptMethodRequest(id, conceptMethod));
+        communicator.send(RequestBuilder.runConceptMethodRequest(id, conceptMethod));
         return conceptMethod.get(conceptConverter, this, responseOrThrow());
     }
 
     public Optional<Concept> getConcept(ConceptId id) {
-        communicator.send(GrpcUtil.getConceptRequest(id));
+        communicator.send(RequestBuilder.getConceptRequest(id));
         return conceptConverter.convert(responseOrThrow().getOptionalConcept());
     }
 
     public Optional<Concept> getSchemaConcept(Label label) {
-        communicator.send(GrpcUtil.getSchemaConceptRequest(label));
+        communicator.send(RequestBuilder.getSchemaConceptRequest(label));
         return conceptConverter.convert(responseOrThrow().getOptionalConcept());
     }
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
-        communicator.send(GrpcUtil.getAttributesByValueRequest(value));
+        communicator.send(RequestBuilder.getAttributesByValueRequest(value));
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
@@ -145,27 +147,27 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public Concept putEntityType(Label label) {
-        communicator.send(GrpcUtil.putEntityTypeRequest(label));
+        communicator.send(RequestBuilder.putEntityTypeRequest(label));
         return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     public Concept putRelationshipType(Label label) {
-        communicator.send(GrpcUtil.putRelationshipTypeRequest(label));
+        communicator.send(RequestBuilder.putRelationshipTypeRequest(label));
         return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-        communicator.send(GrpcUtil.putAttributeTypeRequest(label, dataType));
+        communicator.send(RequestBuilder.putAttributeTypeRequest(label, dataType));
         return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     public Concept putRole(Label label) {
-        communicator.send(GrpcUtil.putRoleRequest(label));
+        communicator.send(RequestBuilder.putRoleRequest(label));
         return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
     public Concept putRule(Label label, Pattern when, Pattern then) {
-        communicator.send(GrpcUtil.putRuleRequest(label, when, then));
+        communicator.send(RequestBuilder.putRuleRequest(label, when, then));
         return conceptConverter.convert(responseOrThrow().getConcept());
     }
 
@@ -205,7 +207,7 @@ public class GrpcClient implements AutoCloseable {
         Status status = error.getStatus();
         Metadata trailers = error.getTrailers();
 
-        ErrorType errorType = trailers.get(ErrorType.KEY);
+        ErrorType errorType = trailers.get(ResponseBuilder.ErrorType.KEY);
 
         if (errorType != null) {
             String message = status.getDescription();
@@ -230,7 +232,7 @@ public class GrpcClient implements AutoCloseable {
     private Answer convert(GrpcGrakn.QueryAnswer queryAnswer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
-        queryAnswer.getAnswerMap().forEach((grpcVar, grpcConcept) -> {
+        queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
             map.put(Graql.var(grpcVar), conceptConverter.convert(grpcConcept));
         });
 

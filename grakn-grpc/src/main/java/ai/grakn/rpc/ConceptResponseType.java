@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -26,6 +26,9 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.util.ConceptBuilder;
+import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.util.ResponseBuilder;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
@@ -42,57 +45,57 @@ import java.util.stream.StreamSupport;
  *
  * @author Felix Chapman
  */
-abstract class ConceptResponseType<T> {
+public abstract class ConceptResponseType<T> {
 
     public static final ConceptResponseType<Boolean> BOOL =
             ConceptResponseType.create(ConceptResponse::getBool, ConceptResponse.Builder::setBool);
 
     public static final ConceptResponseType<Optional<Pattern>> OPTIONAL_PATTERN = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getOptionalPattern()),
-            (builder, val) -> builder.setOptionalPattern(GrpcUtil.convert(val))
+            response -> ConceptReader.optionalPattern(response.getOptionalPattern()),
+            (builder, val) -> builder.setOptionalPattern(ConceptBuilder.optionalPattern(val))
     );
 
     public static final ConceptResponseType<Concept> CONCEPT = ConceptResponseType.create(
             (converter, response) -> converter.convert(response.getConcept()),
-            (builder, val) -> builder.setConcept(GrpcUtil.convert(val))
+            (builder, val) -> builder.setConcept(ConceptBuilder.concept(val))
     );
 
     public static final ConceptResponseType<Optional<Concept>> OPTIONAL_CONCEPT = ConceptResponseType.create(
             (converter, response) -> converter.convert(response.getOptionalConcept()),
-            (builder, val) -> builder.setOptionalConcept(GrpcUtil.convertOptionalConcept(val))
+            (builder, val) -> builder.setOptionalConcept(ConceptBuilder.optionalConcept(val))
     );
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS =
             ConceptResponseType.createStreamable(
                     (converter, response) -> converter.convert(response.getConcept()),
-                    GrpcUtil::conceptResponse
+                    ResponseBuilder::concept
             );
 
     public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS =
             ConceptResponseType.createStreamable(
                     (converter, response) -> converter.convert(response.getRolePlayer()),
-                    GrpcUtil::rolePlayerResponse
+                    ResponseBuilder::rolePlayer
             );
 
     public static final ConceptResponseType<AttributeType.DataType<?>> DATA_TYPE = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getDataType()),
-            (builder, val) -> builder.setDataType(GrpcUtil.convert(val))
+            response -> ConceptReader.dataType(response.getDataType()),
+            (builder, val) -> builder.setDataType(ConceptBuilder.dataType(val))
     );
 
     public static final ConceptResponseType<Optional<AttributeType.DataType<?>>> OPTIONAL_DATA_TYPE =
             ConceptResponseType.create(
-                    response -> GrpcUtil.convert(response.getOptionalDataType()),
-                    (builder, val) -> builder.setOptionalDataType(GrpcUtil.convertOptionalDataType(val))
+                    response -> ConceptReader.optionalDataType(response.getOptionalDataType()),
+                    (builder, val) -> builder.setOptionalDataType(ResponseBuilder.optionalDataType(val))
             );
 
     public static final ConceptResponseType<Object> ATTRIBUTE_VALUE = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getAttributeValue()),
-            (builder, val) -> builder.setAttributeValue(GrpcUtil.convertValue(val))
+            response -> ConceptReader.attributeValue(response.getAttributeValue()),
+            (builder, val) -> builder.setAttributeValue(ConceptBuilder.attributeValue(val))
     );
 
     public static final ConceptResponseType<Label> LABEL = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getLabel()),
-            (builder, val) -> builder.setLabel(GrpcUtil.convert(val))
+            response -> ConceptReader.label(response.getLabel()),
+            (builder, val) -> builder.setLabel(ConceptBuilder.label(val))
     );
 
     public static final ConceptResponseType<String> STRING =
@@ -104,8 +107,8 @@ abstract class ConceptResponseType<T> {
     );
 
     public static final ConceptResponseType<Optional<String>> OPTIONAL_REGEX = ConceptResponseType.create(
-            response -> GrpcUtil.convert(response.getOptionalRegex()),
-            (builder, val) -> builder.setOptionalRegex(GrpcUtil.convertRegex(val))
+            response -> ConceptReader.optionalRegex(response.getOptionalRegex()),
+            (builder, val) -> builder.setOptionalRegex(ConceptBuilder.optionalRegex(val))
     );
 
     @Nullable

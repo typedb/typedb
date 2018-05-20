@@ -39,7 +39,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.grpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknVersion;

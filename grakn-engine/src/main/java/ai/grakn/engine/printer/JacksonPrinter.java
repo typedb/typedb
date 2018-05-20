@@ -21,6 +21,7 @@ package ai.grakn.engine.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -63,6 +64,12 @@ public class JacksonPrinter implements Printer<Object>{
     @Override
     public Object build(ai.grakn.graql.admin.Answer answer) {
         return Answer.create(answer);
+    }
+
+    //TODO: implement JacksonPrinter for ComputeAnswer properly!
+    @Override
+    public Object build(ComputeQuery.Answer computeAnswer) {
+        return buildDefault(computeAnswer);
     }
 
     @Override

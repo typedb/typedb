@@ -24,6 +24,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
@@ -162,6 +163,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             }
             return sb;
         };
+    }
+
+    //TODO: implement GraqlPrinter for ComputeAnswer properly!
+    @Override
+    public Function<StringBuilder, StringBuilder> build(ComputeQuery.Answer computeAnswer) {
+        return buildDefault(computeAnswer);
     }
 
     @Override

@@ -22,7 +22,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.grpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 

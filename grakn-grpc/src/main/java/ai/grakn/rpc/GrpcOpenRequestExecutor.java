@@ -16,22 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import com.google.auto.value.AutoValue;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
- * @author Felix Chapman
+ * Interface implemented by classes that handle gRPC Open requests
+ *
+ * @author marcoscoppetta
  */
-@AutoValue
-public abstract class RolePlayer {
 
-    public abstract Role role();
-    public abstract Thing player();
+public interface GrpcOpenRequestExecutor {
 
-    public static RolePlayer create(Role role, Thing player) {
-        return new AutoValue_RolePlayer(role, player);
-    }
+    EmbeddedGraknTx<?> execute(Open open);
 }

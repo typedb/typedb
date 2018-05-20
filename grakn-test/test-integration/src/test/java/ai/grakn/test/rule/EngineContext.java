@@ -47,7 +47,7 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.grpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;

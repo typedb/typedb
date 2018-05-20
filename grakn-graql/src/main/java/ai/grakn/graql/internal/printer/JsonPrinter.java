@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
@@ -97,6 +98,12 @@ class JsonPrinter implements Printer<Json> {
         });
 
         return json;
+    }
+
+    //TODO: Implement JsonPrinter for ComputeAnswer properly!
+    @Override
+    public Json build(ComputeQuery.Answer computeAnswer) {
+        return buildDefault(computeAnswer);
     }
 
     @Override

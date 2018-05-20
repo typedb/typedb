@@ -16,11 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.grpc;
+package ai.grakn.rpc;
 
 import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.util.ResponseBuilder;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class GrpcIterators {
             if (iterator.hasNext()) {
                 response = iterator.next();
             } else {
-                response = GrpcUtil.doneResponse();
+                response = ResponseBuilder.done();
                 stop(iteratorId);
             }
 

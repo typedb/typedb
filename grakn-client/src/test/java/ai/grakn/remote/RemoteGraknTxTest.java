@@ -36,8 +36,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.grpc.GrpcUtil;
-import ai.grakn.grpc.GrpcUtil.ErrorType;
+import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -106,28 +107,28 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.service()).tx(any());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
-            verify(server.requests()).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
+        try (GraknTx ignored = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+            verify(server.requests()).onNext(RequestBuilder.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
         }
     }
 
     @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.BATCH))) {
-            verify(server.requests()).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
+        try (GraknTx ignored = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.BATCH))) {
+            verify(server.requests()).onNext(RequestBuilder.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
-        try (GraknTx ignored = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx ignored = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests(), never()).onCompleted(); // Make sure transaction is still open here
         }
 
@@ -136,14 +137,14 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetKeyspaceOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             assertEquals(session, tx.session());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.BATCH))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.BATCH))) {
             assertEquals(GraknTxType.BATCH, tx.txType());
         }
     }
@@ -153,13 +154,13 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x").isa("person")).get();
         String queryString = query.toString();
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             tx.graql().parse(queryString).execute();
         }
 
-        verify(server.requests()).onNext(GrpcUtil.execQueryRequest(query));
+        verify(server.requests()).onNext(RequestBuilder.execQueryRequest(query));
     }
 
     @Test
@@ -168,15 +169,15 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
+        server.setResponseSequence(RequestBuilder.execQueryRequest(query), response);
 
         List<Answer> results;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             results = tx.graql().<GetQuery>parse(queryString).execute();
         }
@@ -191,9 +192,9 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x").isa("person")).delete("x");
         String queryString = query.toString();
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), GrpcUtil.doneResponse());
+        server.setResponse(RequestBuilder.execQueryRequest(query), ResponseBuilder.done());
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             assertNull(tx.graql().parse(queryString).execute());
         }
@@ -207,9 +208,9 @@ public class RemoteGraknTxTest {
         TxResponse response =
                 TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("true")).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), response);
+        server.setResponse(RequestBuilder.execQueryRequest(query), response);
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             assertTrue(tx.graql().<Query<Boolean>>parse(queryString).execute());
         }
@@ -221,15 +222,15 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponseSequence(GrpcUtil.execQueryRequest(query), response);
+        server.setResponseSequence(RequestBuilder.execQueryRequest(query), response);
 
         Answer answer;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             answer = tx.graql().<DefineQuery>parse(queryString).execute();
         }
@@ -244,17 +245,18 @@ public class RemoteGraknTxTest {
         String queryString = query.toString();
 
         GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
-        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putAnswer("x", v123).build();
+        GrpcGrakn.QueryAnswer grpcAnswer = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponse(GrpcUtil.execQueryRequest(query), GrpcUtil.iteratorResponse(ITERATOR));
-        server.setResponse(GrpcUtil.nextRequest(ITERATOR), response);
+        server.setResponse(RequestBuilder.execQueryRequest(query),
+                           GrpcGrakn.TxResponse.newBuilder().setIteratorId(ITERATOR).build());
+        server.setResponse(RequestBuilder.nextRequest(ITERATOR), response);
 
         List<Answer> answers;
         int numAnswers = 10;
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
             answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
         }
@@ -271,41 +273,41 @@ public class RemoteGraknTxTest {
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
         String queryString = "match $x isa person; get $x;";
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             QueryBuilder graql = tx.graql();
 
             graql.infer(true).parse(queryString).execute();
-            verify(server.requests()).onNext(GrpcUtil.execQueryRequest(queryString, true));
+            verify(server.requests()).onNext(RequestBuilder.execQueryRequest(queryString, true));
 
             graql.infer(false).parse(queryString).execute();
-            verify(server.requests()).onNext(GrpcUtil.execQueryRequest(queryString, false));
+            verify(server.requests()).onNext(RequestBuilder.execQueryRequest(queryString, false));
         }
     }
 
     @Test
     public void whenCommitting_SendACommitMessageToGrpc() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
 
             tx.commit();
         }
 
-        verify(server.requests()).onNext(GrpcUtil.commitRequest());
+        verify(server.requests()).onNext(RequestBuilder.commitRequest());
     }
 
     @Test
     public void whenCreatingAGraknRemoteTxWithKeyspace_SetsKeyspaceOnTx() {
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             assertEquals(KEYSPACE, tx.keyspace());
         }
     }
 
     @Test
     public void whenOpeningATxFails_Throw() {
-        TxRequest openRequest = GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE);
-        throwOn(openRequest, ErrorType.GRAKN_BACKEND_EXCEPTION, "well something went wrong");
+        TxRequest openRequest = RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE);
+        throwOn(openRequest, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION, "well something went wrong");
 
         exception.expect(GraknBackendException.class);
         exception.expectMessage("well something went wrong");
@@ -316,9 +318,9 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCommittingATxFails_Throw() {
-        throwOn(GrpcUtil.commitRequest(), ErrorType.INVALID_KB_EXCEPTION, "do it better next time");
+        throwOn(RequestBuilder.commitRequest(), ResponseBuilder.ErrorType.INVALID_KB_EXCEPTION, "do it better next time");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
 
             exception.expect(InvalidKBException.class);
             exception.expectMessage("do it better next time");
@@ -331,10 +333,10 @@ public class RemoteGraknTxTest {
     public void whenAnErrorOccurs_TheTxCloses() {
         Query<?> query = match(var("x")).get();
 
-        TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
-        throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+        TxRequest execQueryRequest = RequestBuilder.execQueryRequest(query);
+        throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
@@ -349,10 +351,10 @@ public class RemoteGraknTxTest {
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
         Query<?> query = match(var("x")).get();
 
-        TxRequest execQueryRequest = GrpcUtil.execQueryRequest(query);
-        throwOn(execQueryRequest, ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+        TxRequest execQueryRequest = RequestBuilder.execQueryRequest(query);
+        throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
             } catch (GraqlQueryException e) {
@@ -373,11 +375,11 @@ public class RemoteGraknTxTest {
         ConceptId id = ConceptId.of(V123.getValue());
         Label label = Label.of("foo");
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createEntityType(tx, id);
-            server.setResponse(GrpcUtil.putEntityTypeRequest(label), GrpcUtil.conceptResponse(concept));
+            server.setResponse(RequestBuilder.putEntityTypeRequest(label), ResponseBuilder.concept(concept));
 
             assertEquals(concept, tx.putEntityType(label));
         }
@@ -388,11 +390,11 @@ public class RemoteGraknTxTest {
         ConceptId id = ConceptId.of(V123.getValue());
         Label label = Label.of("foo");
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRelationshipType(tx, id);
-            server.setResponse(GrpcUtil.putRelationshipTypeRequest(label), GrpcUtil.conceptResponse(concept));
+            server.setResponse(RequestBuilder.putRelationshipTypeRequest(label), ResponseBuilder.concept(concept));
 
             assertEquals(concept, tx.putRelationshipType(label));
         }
@@ -404,11 +406,11 @@ public class RemoteGraknTxTest {
         Label label = Label.of("foo");
         AttributeType.DataType<?> dataType = AttributeType.DataType.STRING;
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
-            server.setResponse(GrpcUtil.putAttributeTypeRequest(label, dataType), GrpcUtil.conceptResponse(concept));
+            server.setResponse(RequestBuilder.putAttributeTypeRequest(label, dataType), ResponseBuilder.concept(concept));
 
             assertEquals(concept, tx.putAttributeType(label, dataType));
         }
@@ -419,11 +421,11 @@ public class RemoteGraknTxTest {
         ConceptId id = ConceptId.of(V123.getValue());
         Label label = Label.of("foo");
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRole(tx, id);
-            server.setResponse(GrpcUtil.putRoleRequest(label), GrpcUtil.conceptResponse(concept));
+            server.setResponse(RequestBuilder.putRoleRequest(label), ResponseBuilder.concept(concept));
 
             assertEquals(concept, tx.putRole(label));
         }
@@ -436,11 +438,11 @@ public class RemoteGraknTxTest {
         Pattern when = var("x").isa("person");
         Pattern then = var("y").isa("person");
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRule(tx, id);
-            server.setResponse(GrpcUtil.putRuleRequest(label, when, then), GrpcUtil.conceptResponse(concept));
+            server.setResponse(RequestBuilder.putRuleRequest(label, when, then), ResponseBuilder.concept(concept));
 
             assertEquals(concept, tx.putRule(label, when, then));
         }
@@ -450,11 +452,11 @@ public class RemoteGraknTxTest {
     public void whenGettingConceptViaID_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123.getValue());
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createEntity(tx, id);
-            server.setResponse(GrpcUtil.getConceptRequest(id), GrpcUtil.optionalConceptResponse(Optional.of(concept)));
+            server.setResponse(RequestBuilder.getConceptRequest(id), ResponseBuilder.optionalConcept(Optional.of(concept)));
 
             assertEquals(concept, tx.getConcept(id));
         }
@@ -464,10 +466,10 @@ public class RemoteGraknTxTest {
     public void whenGettingNonExistentConceptViaID_ReturnNull(){
         ConceptId id = ConceptId.of(V123.getValue());
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            server.setResponse(GrpcUtil.getConceptRequest(id), GrpcUtil.optionalConceptResponse(Optional.empty()));
+            server.setResponse(RequestBuilder.getConceptRequest(id), ResponseBuilder.optionalConcept(Optional.empty()));
 
             assertNull(tx.getConcept(id));
         }
@@ -478,12 +480,12 @@ public class RemoteGraknTxTest {
         Label label = Label.of("foo");
         ConceptId id = ConceptId.of(V123.getValue());
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
             server.setResponse(
-                    GrpcUtil.getSchemaConceptRequest(label), GrpcUtil.optionalConceptResponse(Optional.of(concept))
+                    RequestBuilder.getSchemaConceptRequest(label), ResponseBuilder.optionalConcept(Optional.of(concept))
             );
 
             assertEquals(concept, tx.getSchemaConcept(label));
@@ -494,11 +496,11 @@ public class RemoteGraknTxTest {
     public void whenGettingNonExistentSchemaConceptViaLabel_ReturnNull(){
         Label label = Label.of("foo");
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             server.setResponse(
-                    GrpcUtil.getSchemaConceptRequest(label), GrpcUtil.optionalConceptResponse(Optional.empty())
+                    RequestBuilder.getSchemaConceptRequest(label), ResponseBuilder.optionalConcept(Optional.empty())
             );
 
             assertNull(tx.getSchemaConcept(label));
@@ -509,16 +511,16 @@ public class RemoteGraknTxTest {
     public void whenGettingAttributesViaID_EnsureCorrectRequestIsSent(){
         String value = "Hello Oli";
 
-        try (RemoteGraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.READ))) {
+        try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
             Attribute<?> attribute1 = RemoteConcepts.createAttribute(tx, ConceptId.of("A"));
             Attribute<?> attribute2 = RemoteConcepts.createAttribute(tx, ConceptId.of("B"));
 
             server.setResponseSequence(
-                    GrpcUtil.getAttributesByValueRequest(value),
-                    GrpcUtil.conceptResponse(attribute1),
-                    GrpcUtil.conceptResponse(attribute2)
+                    RequestBuilder.getAttributesByValueRequest(value),
+                    ResponseBuilder.concept(attribute1),
+                    ResponseBuilder.concept(attribute2)
             );
 
             assertThat(tx.getAttributesByValue(value), containsInAnyOrder(attribute1, attribute2));
@@ -542,9 +544,9 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
-        DeleteRequest request = GrpcUtil.deleteRequest(GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE).getOpen());
+        DeleteRequest request = RequestBuilder.delete(RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE).getOpen());
 
-        try (GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE))) {
+        try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE))) {
             tx.admin().delete();
         }
 
@@ -552,7 +554,7 @@ public class RemoteGraknTxTest {
     }
 
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){
-        GraknTx tx = RemoteGraknTx.create(session, GrpcUtil.openRequest(KEYSPACE, GraknTxType.WRITE));
+        GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.openRequest(KEYSPACE, GraknTxType.WRITE));
         assertFalse(tx.isClosed());
         action.accept(tx);
         assertTrue(tx.isClosed());
@@ -560,7 +562,7 @@ public class RemoteGraknTxTest {
 
     private void throwOn(TxRequest request, ErrorType errorType, String message) {
         Metadata trailers = new Metadata();
-        trailers.put(ErrorType.KEY, errorType);
+        trailers.put(ResponseBuilder.ErrorType.KEY, errorType);
         StatusRuntimeException exception = Status.UNKNOWN.withDescription(message).asRuntimeException(trailers);
 
         server.setResponse(request, exception);

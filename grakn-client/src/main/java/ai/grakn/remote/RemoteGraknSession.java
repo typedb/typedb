@@ -22,7 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -73,7 +73,7 @@ public class RemoteGraknSession implements GraknSession {
 
     @Override
     public RemoteGraknTx open(GraknTxType transactionType) {
-        return RemoteGraknTx.create(this, GrpcUtil.openRequest(keyspace, transactionType));
+        return RemoteGraknTx.create(this, RequestBuilder.openRequest(keyspace, transactionType));
     }
 
     @Override

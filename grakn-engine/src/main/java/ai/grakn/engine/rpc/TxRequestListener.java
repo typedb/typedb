@@ -21,6 +21,7 @@ package ai.grakn.engine.rpc;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
@@ -31,12 +32,14 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
-import ai.grakn.grpc.ConceptMethod;
-import ai.grakn.grpc.ConceptMethods;
-import ai.grakn.grpc.GrpcConceptConverter;
-import ai.grakn.grpc.GrpcIterators;
-import ai.grakn.grpc.GrpcOpenRequestExecutor;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.util.ConceptBuilder;
+import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.GrpcConceptConverter;
+import ai.grakn.rpc.GrpcIterators;
+import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
@@ -212,18 +215,18 @@ class TxRequestListener implements StreamObserver<TxRequest> {
             throw GraknRPCService.error(Status.FAILED_PRECONDITION);
         }
         tx = requestExecutor.execute(request);
-        reponseSender.onNext(GrpcUtil.doneResponse());
+        reponseSender.onNext(ResponseBuilder.done());
     }
 
     private void commit() {
         tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
-        reponseSender.onNext(GrpcUtil.doneResponse());
+        reponseSender.onNext(ResponseBuilder.done());
     }
 
     private void execQuery(ExecQuery request) {
         String queryString = request.getQuery().getValue();
-
         QueryBuilder graql = tx().graql();
+        TxResponse response;
 
         if (request.hasInfer()) {
             graql = graql.infer(request.getInfer().getValue());
@@ -231,32 +234,19 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
         Query<?> query = graql.parse(queryString);
 
-        GrpcConverter grpcConverter = GrpcConverter.get();
-
         if (query instanceof Streamable) {
-            Stream<GrpcGrakn.Answer> queryResultStream = ((Streamable<?>) query).stream().map(grpcConverter::convert);
+            Stream<GrpcGrakn.TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder::answer);
+            IteratorId iteratorId = grpcIterators.add(responseStream.iterator());
 
-            Stream<TxResponse> txResponseStream =
-                    queryResultStream.map(this::txResponse);
-
-            Iterator<TxResponse> iterator = txResponseStream.iterator();
-
-            IteratorId iteratorId = grpcIterators.add(iterator);
-
-            reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+            response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
         } else {
             Object result = query.execute();
 
-            if (result == null) {
-                reponseSender.onNext(GrpcUtil.doneResponse());
-            } else {
-                reponseSender.onNext(txResponse(grpcConverter.convert(result)));
-            }
+            if (result == null) response = ResponseBuilder.done();
+            else response = ResponseBuilder.answer(result);
         }
-    }
 
-    private TxResponse txResponse(GrpcGrakn.Answer answer) {
-        return TxResponse.newBuilder().setAnswer(answer).build();
+        reponseSender.onNext(response);
     }
 
     private void next(Next next) {
@@ -271,16 +261,16 @@ class TxRequestListener implements StreamObserver<TxRequest> {
     private void stop(Stop stop) {
         IteratorId iteratorId = stop.getIteratorId();
         grpcIterators.stop(iteratorId);
-        reponseSender.onNext(GrpcUtil.doneResponse());
+        reponseSender.onNext(ResponseBuilder.done());
     }
 
     private void runConceptMethod(RunConceptMethod runConceptMethod) {
-        Concept concept = nonNull(tx().getConcept(GrpcUtil.getConceptId(runConceptMethod)));
+        Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
 
         GrpcConceptConverter converter = new GrpcConceptConverter() {
             @Override
             public Concept convert(GrpcConcept.Concept grpcConcept) {
-                return tx().getConcept(GrpcUtil.convert(grpcConcept.getId()));
+                return tx().getConcept(ConceptId.of(grpcConcept.getId().getValue()));
             }
         };
 
@@ -292,62 +282,62 @@ class TxRequestListener implements StreamObserver<TxRequest> {
     }
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
-        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(GrpcUtil.convert(conceptId)));
+        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(ConceptId.of(conceptId.getValue())));
 
         TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+                TxResponse.newBuilder().setOptionalConcept(ConceptBuilder.optionalConcept(concept)).build();
 
         reponseSender.onNext(response);
     }
 
     private void getSchemaConcept(GrpcConcept.Label label) {
-        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(GrpcUtil.convert(label)));
+        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(ConceptReader.label(label)));
 
         TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(GrpcUtil.convertOptionalConcept(concept)).build();
+                TxResponse.newBuilder().setOptionalConcept(ConceptBuilder.optionalConcept(concept)).build();
 
         reponseSender.onNext(response);
     }
 
     private void getAttributesByValue(AttributeValue attributeValue) {
-        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(GrpcUtil.convert(attributeValue));
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(ConceptReader.attributeValue(attributeValue));
 
-        Iterator<TxResponse> iterator = attributes.stream().map(GrpcUtil::conceptResponse).iterator();
+        Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
         IteratorId iteratorId = grpcIterators.add(iterator);
 
         reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
     private void putEntityType(GrpcConcept.Label label) {
-        EntityType entityType = tx().putEntityType(GrpcUtil.convert(label));
-        reponseSender.onNext(GrpcUtil.conceptResponse(entityType));
+        EntityType entityType = tx().putEntityType(ConceptReader.label(label));
+        reponseSender.onNext(ResponseBuilder.concept(entityType));
     }
 
     private void putRelationshipType(GrpcConcept.Label label) {
-        RelationshipType relationshipType = tx().putRelationshipType(GrpcUtil.convert(label));
-        reponseSender.onNext(GrpcUtil.conceptResponse(relationshipType));
+        RelationshipType relationshipType = tx().putRelationshipType(ConceptReader.label(label));
+        reponseSender.onNext(ResponseBuilder.concept(relationshipType));
     }
 
     private void putAttributeType(PutAttributeType putAttributeType) {
-        Label label = GrpcUtil.convert(putAttributeType.getLabel());
-        AttributeType.DataType<?> dataType = GrpcUtil.convert(putAttributeType.getDataType());
+        Label label = ConceptReader.label(putAttributeType.getLabel());
+        AttributeType.DataType<?> dataType = ConceptReader.dataType(putAttributeType.getDataType());
 
         AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
-        reponseSender.onNext(GrpcUtil.conceptResponse(attributeType));
+        reponseSender.onNext(ResponseBuilder.concept(attributeType));
     }
 
     private void putRole(GrpcConcept.Label label) {
-        Role role = tx().putRole(GrpcUtil.convert(label));
-        reponseSender.onNext(GrpcUtil.conceptResponse(role));
+        Role role = tx().putRole(ConceptReader.label(label));
+        reponseSender.onNext(ResponseBuilder.concept(role));
     }
 
     private void putRule(PutRule putRule) {
-        Label label = GrpcUtil.convert(putRule.getLabel());
-        Pattern when = GrpcUtil.convert(putRule.getWhen());
-        Pattern then = GrpcUtil.convert(putRule.getThen());
+        Label label = ConceptReader.label(putRule.getLabel());
+        Pattern when = ConceptReader.pattern(putRule.getWhen());
+        Pattern then = ConceptReader.pattern(putRule.getThen());
 
         Rule rule = tx().putRule(label, when, then);
-        reponseSender.onNext(GrpcUtil.conceptResponse(rule));
+        reponseSender.onNext(ResponseBuilder.concept(rule));
     }
 
     private EmbeddedGraknTx<?> tx() {
