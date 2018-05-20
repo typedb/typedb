@@ -43,7 +43,9 @@ import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import javax.annotation.Nullable;
 
 /**
- * @author Felix Chapman
+ * A utility class to build RPC Requests from a provided set of Grakn concepts.
+ *
+ * @author Haikal Pribadi
  */
 public class RequestBuilder {
 

@@ -43,6 +43,7 @@ import java.util.stream.StreamSupport;
 /**
  * Wrapper around the different types of responses to {@link ConceptMethod}s applied on {@link Concept}s.
  *
+ * @param <T> return type of responses
  * @author Felix Chapman
  */
 public abstract class ConceptResponseType<T> {

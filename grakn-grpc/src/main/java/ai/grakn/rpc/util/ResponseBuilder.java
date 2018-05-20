@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Converts to GRPC result format. This is a special format for {@link Answer}s, but JSON strings for everything else.
+ * A utility class to build RPC Responses from a provided set of Grakn concepts.
  *
  * @author Haikal Pribadi
  */
