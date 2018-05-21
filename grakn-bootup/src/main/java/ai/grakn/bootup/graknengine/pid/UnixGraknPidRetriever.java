@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
  */
 
 public class UnixGraknPidRetriever implements GraknPidRetriever {
-    public static final String psEfCommand = "ps -ef | ps -ef | grep \"ai.grakn.bootup.graknengine.Grakn\" | grep -v grep | awk '{print $2}'";
+    public static final String psEfCommand = "ps -ef | grep \"ai.grakn.bootup.graknengine.Grakn\" | grep -v grep | awk '{print $2}'";
     public long getPid() {
         StringBuilder outputS = new StringBuilder();
         int exitValue = 1;
