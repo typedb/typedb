@@ -72,8 +72,8 @@ public class StringMacroTest {
 
     @Test
     public void whenUsingSplitMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $this val @string(<value>);";
-        String expected = "insert $this0 val \"1000\";";
+        String template = "insert $this == @string(<value>);";
+        String expected = "insert $this0 == \"1000\";";
 
         Map<String, Object> data = Collections.singletonMap("value", 1000);
 

@@ -430,7 +430,7 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             assertShellMatches(
-                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert isa X val '" + value + "';",
+                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert isa X == '" + value + "';",
                     anything(),
                     anything(),
                     "match $x isa X; get;",

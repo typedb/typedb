@@ -1,8 +1,8 @@
 ---
 title: Get Queries
 keywords: setup, getting started
-last_updated: September 2017
-summary: In this lesson you will learn about the get queries, the fundamental queries used to explore Grakn Knowledge bases
+last_updated: April 2018
+summary: In this lesson you will learn about get queries, the fundamental query type used to explore Grakn Knowledge bases
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/get-queries.html
@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Graql, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge graph.
+Graql, the language used to query and manipulate data in a Grakn knowledge graph (and much more, as you will discover if you follow the whole Grakn Academy), has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and at the end of it you will be able to query data in your knowledge graph.
 
 
 ## Basic get queries
@@ -36,7 +36,7 @@ $x has name "ENI";
 get $x;
 ```
 
-Since, as you have learned in the [last lesson](/academy/graql-intro.html) the order of patterns in a Graql query does not matter, the query above is no different from
+Since, as you have learned in the [last lesson](/academy/graql-intro.html), the order of patterns in a Graql query does not matter, the query above is no different from
 
 ```graql
 match
@@ -61,7 +61,7 @@ $x isa country has name "USA";
 ($x, $y) isa located-in; get;
 ```
 
-Did you answer, by any chance, answer "return everything that is in a(ny) country named ‘USA’"? If so, you are almost right.
+Did you answer, by any chance, "return everything that is in a(ny) country named ‘USA’"? If so, you are almost right.
 
 Try it now in the dashboard
 
@@ -71,13 +71,13 @@ You see "North America" right there? Can you guess what is happening?
 
 Let’s break the query into small pieces
 
-`$x isa country has name "USA";`, as you should know by know, retrieves all the countries with a name "USA" and store them (actually there happens to be only one) in a variable accessed with the name `$x`.
+`$x isa country has name "USA";`, as you should know by now, retrieves all the countries with the name "USA" and store them (actually there happens to be only one) in a variable accessed with the name `$x`.
 
 The bit `($x, $y)` tells Graql to create a new variable `$y` and store into it anything that is attached to `$x` via a relationship (that is what the parenthesis are for).
 
-Finally the `isa located-in` just say that the relation that links `$x` and `$y` must be of type "located-in". The `get` part just says to return all the variables created.
+Finally the `isa located-in` says that the relation that links `$x` and `$y` must be of type "located-in". The `get` part just says to return all the variables created.
 
-Notice that we have specified nowhere who should be located into whom, and, as I said before, in Graql the order does not matter. In fact you will obtain the same results if you run the following query:
+Notice that we never specified that a thing should be located in a country, only that they need to have this kind of relationship. The order, as I said before, does not matter in Graql. In fact you will obtain the same results if you run the following query (flipping the position of `$x` and `$y`):
 
 ```graql
 match
@@ -89,7 +89,7 @@ Go ahead, try it.
 
 
 ## Introduction to Roles
-So what if you want to actually specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In Graql every component of a relation plays a role in it, which specifies what the is the function of that role player in that specific relation. The syntax for it looks like this:
+So what if you want to specify that we want to retrieve all the things that are actually contained in the USA? That is what roles are for. In Graql every component of a relation plays a role in it, which specifies the function of that role-player in that specific relation. The syntax for it looks like this:
 
 ```graql
 match
@@ -99,7 +99,7 @@ $x isa country has name "USA";
 
 Try it in the dashboard.
 
-The name of the roles (in this case `location` and `located`) are user specified, I have assigned the label `location` to the container in the located-in relation and `located` for the thing which is contained. It is just then a matter of adding the role names followed by `:`.
+The name of the roles (in this case `location` and `located`) are user specified, I have assigned the label `location` to the container in the located-in relation and `located` for the thing which is contained. It is just a matter of adding the role names followed by `:`.
 
 ### Exercise
 What is the query that finds all the things that _contain_ the country "USA"?
@@ -118,7 +118,7 @@ The `limit` modifier, followed by an integer, restricts the number of results th
 ## The _get_ action
 The `get` action, followed by one or more variables, limits the results to the variables specified. If no variables are specified, each result will contain an instance for each of the variables used in the match part of the query.
 
-See it for yourself running this query and noticing the difference in results with the same query without the `$y` variable at the end.
+See it for yourself! Run this query and notice the different results with the same query without the `$y` variable at the end.
 
 ```graql
 match

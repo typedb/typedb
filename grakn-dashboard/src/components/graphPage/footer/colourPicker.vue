@@ -19,7 +19,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
     <div class="picker-column">
-      <div class="selector-square default" @click="setColourOnType()">x</div>
         <div class="selector-square red" @click="setColourOnType('#C84343')"></div>
         <div class="selector-square blue" @click="setColourOnType('#0CA1CF')"></div>
         <div class="selector-square green" @click="setColourOnType('#279d5d')"></div>

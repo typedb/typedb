@@ -73,8 +73,8 @@ public class EqualsMacroTest {
 
     @Test
     public void whenUsingEqualsMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @equals(<this>, <that>);";
-        String expected = "insert $x0 val true;";
+        String template = "insert $x == @equals(<this>, <that>);";
+        String expected = "insert $x0 == true;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
@@ -82,8 +82,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -91,8 +91,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -100,8 +100,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <that>, <those>);";
-        expected = "insert $x0 val true;";
+        template = "insert $x == @equals(<this>, <that>, <those>);";
+        expected = "insert $x0 == true;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -110,8 +110,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <that>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <that>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", 50);
