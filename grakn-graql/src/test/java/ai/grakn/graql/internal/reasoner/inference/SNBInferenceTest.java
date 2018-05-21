@@ -154,10 +154,10 @@ public class SNBInferenceTest {
                 "$y isa person;$t isa tag;($y, $t) isa recommendation; get $y, $t;";
         
         String explicitQuery = "match $y isa person, has name $yName;$t isa tag, has name $tName;" +
-                "{$yName val 'Charlie';" +
-                "{$tName val 'Yngwie Malmsteen';} or {$tName val 'Cacophony';} or" +
-                "{$tName val 'Steve Vai';} or {$tName val 'Black Sabbath';};} or " +
-                "{$yName val 'Gary';$tName val 'Pink Floyd';};get $y, $t;";
+                "{$yName == 'Charlie';" +
+                "{$tName == 'Yngwie Malmsteen';} or {$tName == 'Cacophony';} or" +
+                "{$tName == 'Steve Vai';} or {$tName == 'Black Sabbath';};} or " +
+                "{$yName == 'Gary';$tName == 'Pink Floyd';};get $y, $t;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -173,13 +173,13 @@ public class SNBInferenceTest {
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation; get;";
         
         String explicitQuery = "match $y isa person, has name $ny; $yy isa product, has name $nyy;" +
-                "{$ny val 'Alice';$nyy val 'War of the Worlds';} or" +
-                "{$ny val 'Bob';{$nyy val 'Ducatti 1299';} or {$nyy val 'The Good the Bad the Ugly';};} or" +
-                "{$ny val 'Charlie';{$nyy val 'Blizzard of Ozz';} or {$nyy val 'Stratocaster';};} or " +
-                "{$ny val 'Denis';{$nyy val 'Colour of Magic';} or {$nyy val 'Dorian Gray';};} or"+
-                "{$ny val 'Frank';$nyy val 'Nocturnes';} or" +
-                "{$ny val 'Karl Fischer';{$nyy val 'Faust';} or {$nyy val 'Nocturnes';};} or " +
-                "{$ny val 'Gary';$nyy val 'The Wall';};get $y, $yy;";
+                "{$ny == 'Alice';$nyy == 'War of the Worlds';} or" +
+                "{$ny == 'Bob';{$nyy == 'Ducatti 1299';} or {$nyy == 'The Good the Bad the Ugly';};} or" +
+                "{$ny == 'Charlie';{$nyy == 'Blizzard of Ozz';} or {$nyy == 'Stratocaster';};} or " +
+                "{$ny == 'Denis';{$nyy == 'Colour of Magic';} or {$nyy == 'Dorian Gray';};} or"+
+                "{$ny == 'Frank';$nyy == 'Nocturnes';} or" +
+                "{$ny == 'Karl Fischer';{$nyy == 'Faust';} or {$nyy == 'Nocturnes';};} or " +
+                "{$ny == 'Gary';$nyy == 'The Wall';};get $y, $yy;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
@@ -218,9 +218,9 @@ public class SNBInferenceTest {
                 "get $x, $y;";
         
         String explicitQuery = "match $x isa person, has name $nx;$y isa product, has name $ny;" +
-                "{$nx val 'Alice';$ny val 'War of the Worlds';} or" +
-                "{$nx val 'Karl Fischer';$ny val 'Faust';} or " +
-                "{$nx val 'Denis';{$ny val 'Colour of Magic';} or {$ny val 'Dorian Gray';};};get $x, $y;";
+                "{$nx == 'Alice';$ny == 'War of the Worlds';} or" +
+                "{$nx == 'Karl Fischer';$ny == 'Faust';} or " +
+                "{$nx == 'Denis';{$ny == 'Colour of Magic';} or {$ny == 'Dorian Gray';};};get $x, $y;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }

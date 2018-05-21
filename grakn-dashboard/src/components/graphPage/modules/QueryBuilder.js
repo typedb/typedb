@@ -35,7 +35,7 @@ export default {
   },
 
   shortestPathBuilder(nodeIds) {
-    return `compute path from "${nodeIds[0]}" to "${nodeIds[1]}";`;
+    return `compute path from "${nodeIds[0]}", to "${nodeIds[1]}";`;
   },
 
   exploreRelationshipsBuilder(nodeIds) {

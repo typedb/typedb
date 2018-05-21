@@ -75,8 +75,8 @@ public class ConcatMacroTest {
 
     @Test
     public void whenUsingConcatMacroInTemplate_ResultIsAsExpected(){
-        String template = "insert $x val @concat(<value1>, <value2>);";
-        String expected = "insert $x0 val \"thing5\";";
+        String template = "insert $x == @concat(<value1>, <value2>);";
+        String expected = "insert $x0 == \"thing5\";";
 
         ImmutableMap<String, Object> data = ImmutableMap.of(
                 "value1", "thing",

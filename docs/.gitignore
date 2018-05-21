@@ -6,3 +6,4 @@ _pdf
 Gemfile.lock
 *.geany
 node_modules
+.ruby-version

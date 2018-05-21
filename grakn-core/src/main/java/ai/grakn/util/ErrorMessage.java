@@ -31,6 +31,7 @@ import javax.annotation.CheckReturnValue;
 public enum ErrorMessage {
     //--------------------------------------------- Bootup Errors -----------------------------------------------
     GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
+    UNSUPPORTED_JAVA_VERSION("Unsupported Java version [%s] found. Grakn needs Java 1.8 in order to run."),
     UNABLE_TO_START_GRAKN("Unable to start Grakn"),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
@@ -142,6 +143,9 @@ public enum ErrorMessage {
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['knowledge-base.mode'] missing from provided config. " +
             "Cannot produce graph"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
+
+    //--------------------------------------------- Migration Errors -----------------------------------------------
+    OWL_NOT_SUPPORTED("Owl migration is not supported anymore"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TX("no graph provided"),

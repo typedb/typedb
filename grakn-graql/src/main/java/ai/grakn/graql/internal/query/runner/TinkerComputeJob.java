@@ -340,23 +340,28 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         ConceptId toID = query.to().get();
 
         if (!scopeContainsInstances(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
-        if (fromID.equals(toID)) return answer.setPaths(ImmutableList.of(ImmutableList.of(tx.getConcept(fromID))));
+        if (fromID.equals(toID)) return answer.setPaths(ImmutableList.of(ImmutableList.of(fromID)));
 
-        ComputerResult result;
-        Set<LabelId> scopedLabelIDs = convertLabelsToIds(scopeTypeLabels());
-        try {
-            result = compute(new ShortestPathVertexProgram(fromID, toID), null, scopedLabelIDs);
-        } catch (NoResultException e) {
-            return answer.setPaths(Collections.emptyList());
+        Set<LabelId> scopedLabelIds = convertLabelsToIds(scopeTypeLabels());
+
+        ComputerResult result = compute(new ShortestPathVertexProgram(fromID, toID), null, scopedLabelIds);
+
+        Multimap<ConceptId, ConceptId> pathsAsEdgeList = HashMultimap.create();
+        Map<String, Set<String>> resultFromMemory = result.memory().get(ShortestPathVertexProgram.SHORTEST_PATH);
+        resultFromMemory.forEach((id, idSet) -> idSet.forEach(id2 -> {
+            pathsAsEdgeList.put(ConceptId.of(id), ConceptId.of(id2));
+        }));
+
+        List<List<ConceptId>> shortestPathAsList;
+        if (!resultFromMemory.isEmpty()) {
+            if (!scopeIncludesAttributes()) shortestPathAsList = getComputePathResultList(pathsAsEdgeList, fromID);
+            else shortestPathAsList = getComputePathResultListIncludingImplicitRelations(getComputePathResultList(pathsAsEdgeList, fromID));
+        }
+        else {
+            shortestPathAsList = Collections.emptyList();
         }
 
-        Multimap<ConceptId, ConceptId> resultGraph = getComputePathResultGraph(result);
-        List<List<ConceptId>> allPaths = getComputePathResultList(resultGraph, fromID);
-        if (scopeIncludesAttributes()) allPaths = getComputePathResultListIncludingImplicitRelations(allPaths); // SLOW
-
-        LOG.info("Number of path: " + allPaths.size());
-
-        return answer.setPaths(allPaths);
+        return answer.setPaths(shortestPathAsList);
     }
 
     /**
@@ -541,31 +546,6 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
         Map<String, Set<ConceptId>> result = computerResult.memory().get(ClusterMemberMapReduce.class.getName());
         return answer.setClusterMembers(result.values());
-    }
-    /**
-     * Helper methed to get the graph of concepts that contains all the shortest path as a result of compute path query.
-     *
-     * @param result
-     * @return a multimap of Concept to Concepts, representing a graph
-     */
-    private Multimap<ConceptId, ConceptId> getComputePathResultGraph(ComputerResult result) {
-        // The result is contained in 2 halves:
-        // The first half of the result are the half-way paths from the source concept
-        // The second half o the result are the half-way paths from the destination concept
-        Map<String, Set<String>> predecessorMapFromSource =
-                result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
-        Map<String, Set<String>> predecessorMapFromDestination =
-                result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
-
-        // Stitching the two halves provides us the full graph that contains all the shortest path
-        Multimap<ConceptId, ConceptId> resultGraph = HashMultimap.create();
-        predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            resultGraph.put(ConceptId.of(id), ConceptId.of(id2));
-        }));
-        predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            resultGraph.put(ConceptId.of(id2), ConceptId.of(id));
-        }));
-        return resultGraph;
     }
 
     /**

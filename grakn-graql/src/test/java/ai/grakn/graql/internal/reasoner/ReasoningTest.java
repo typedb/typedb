@@ -512,12 +512,12 @@ public class ReasoningTest {
     public void resourcesAsRolePlayers() {
         QueryBuilder qb = test17.tx().graql().infer(true);
 
-        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
-        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
-        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
-        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString3 = "match $x isa resource 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString4 = "match $x isa resource 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
-        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
 
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
@@ -545,12 +545,12 @@ public class ReasoningTest {
     public void resourcesAsRolePlayers_vpPropagationTest() {
         QueryBuilder qb = test17.tx().graql().infer(true);
 
-        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
-        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
-        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
-        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString3 = "match $x isa resource 'bad flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString4 = "match $x isa resource 'no flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
         String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
-        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x contains 'bad flag';($x, resource-owner: $y) isa another-resource-relation; get;";
 
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
@@ -1072,7 +1072,7 @@ public class ReasoningTest {
                 "(role1: $x, role2: $y) isa binary-base;" +
                 "$x has name $n;" +
                 "$y has name $n;" +
-                "$n val 'a';" +
+                "$n == 'a';" +
                 "get;";
 
         String queryString3 = "match " +

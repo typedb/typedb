@@ -26,16 +26,16 @@ entries:
   - title: Cloud Deployment
     output: web
     folderitems:
-      - title: Google Cloud deployment
+      - title: Google Cloud Deployment
         output: web
         url: /docs/cloud-deployment/gc-deployment
       - title: Best Practices
         output: web
         url: /docs/cloud-deployment/best-practices
-      - title: Post deployment steps
+      - title: Post Deployment Steps
         output: web
         url: /docs/cloud-deployment/post-deployment
-      - title: Terms of service
+      - title: Terms of Service
         output: web
         url: /docs/cloud-deployment/terms-of-service
   - title: Knowledge Model

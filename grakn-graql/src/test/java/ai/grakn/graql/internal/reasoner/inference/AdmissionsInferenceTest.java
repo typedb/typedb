@@ -90,7 +90,7 @@ public class AdmissionsInferenceTest {
         QueryBuilder iqb = admissionsKB.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'; get;";
-        String explicitQuery = "match $x isa applicant, has name $name;{$name val 'Charlie';} or {$name val 'Eva';};get $x;";
+        String explicitQuery = "match $x isa applicant, has name $name;{$name == 'Charlie';} or {$name == 'Eva';};get $x;";
 
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }

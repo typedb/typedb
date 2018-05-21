@@ -1,3 +1,0 @@
-[submodule "grakn-spec"]
-	path = grakn-spec
-	url = https://github.com/graknlabs/grakn-spec

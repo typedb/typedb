@@ -1,8 +1,8 @@
 ---
 title: Getting ready
 keywords: setup, getting started
-last_updated: September 2017
-summary: In this lesson you find out what are the prerequisites for the rest of the Academy and you will have the first taste of Grakn
+last_updated: April 2018
+summary: In this lesson you will find out what the prerequisites for the rest of the Academy are and you will have a first taste of Grakn
 tags: [getting-started]
 sidebar: academy_sidebar
 permalink: ./academy/setup.html

@@ -76,13 +76,13 @@ public class BooleanMacroTest {
 
     @Test
     public void whenUsingBooleanMacroInTemplate_ResultIsAsExpected(){
-        String template = "insert $x val @boolean(<value>);";
-        String expected = "insert $x0 val true;";
+        String template = "insert $x == @boolean(<value>);";
+        String expected = "insert $x0 == true;";
 
         assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
         assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
 
-        expected = "insert $x0 val false;";
+        expected = "insert $x0 == false;";
 
         assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
         assertParseEquals(template, Collections.singletonMap("value", "False"), expected);

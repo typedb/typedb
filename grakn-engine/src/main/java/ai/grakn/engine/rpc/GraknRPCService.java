@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
 
 
 public class GraknRPCService extends GraknGrpc.GraknImplBase {
-
     private final GrpcOpenRequestExecutor executor;
     private PostProcessor postProcessor;
 

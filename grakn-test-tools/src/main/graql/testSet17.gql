@@ -22,7 +22,7 @@ another-resource-relation sub relationship
 no-flag sub rule
 when{
     $x has detailed-resource >= 400;
-    $y isa resource val "no flag";
+    $y isa resource "no flag";
 }
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -31,7 +31,7 @@ then{
 flag-bad-1 sub rule
 when{
     $x has detailed-resource < 400;
-    $y isa resource val "partial bad flag";
+    $y isa resource "partial bad flag";
 }
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -40,7 +40,7 @@ then{
 flag-bad-2 sub rule
 when{
     $x has detailed-resource < 200;
-    $y isa resource val "partial bad flag 2";
+    $y isa resource "partial bad flag 2";
 }
 then{
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -49,10 +49,10 @@ then{
 flag-bad sub rule
 when{
     (resource-owner: $x, resource-value: $y1) isa resource-relation;
-    $y1 isa resource val "partial bad flag";
+    $y1 isa resource "partial bad flag";
     (resource-owner: $x, resource-value: $y2) isa resource-relation;
-    $y2 isa resource val "partial bad flag 2";
-    $y isa resource val "bad flag";
+    $y2 isa resource "partial bad flag 2";
+    $y isa resource "bad flag";
 }
 then{ 
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -73,7 +73,7 @@ $x isa generic-entity, has detailed-resource 300;
 $y isa generic-entity, has detailed-resource 500;
 $z isa generic-entity, has detailed-resource 100;
 
-$r isa resource val "bad flag";
-$r2 isa resource val "partial bad flag";
-$r3 isa resource val "partial bad flag 2";
-$r4 isa resource val "no flag";
+$r isa resource "bad flag";
+$r2 isa resource "partial bad flag";
+$r3 isa resource "partial bad flag 2";
+$r4 isa resource "no flag";

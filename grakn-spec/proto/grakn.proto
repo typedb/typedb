@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package ai.grakn.rpc.generated;
+option java_outer_classname = "GrpcGrakn";
+
+import "concept.proto";
+import "iterator.proto";
+
+service Grakn {
+    /*
+        Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+        When the call is completed, the transaction will always be closed, with or without a `Commit` message.
+    */
+    rpc Tx (stream TxRequest) returns (stream TxResponse);
+
+    /*
+        Delete a keyspace.
+    */
+    rpc Delete (DeleteRequest) returns (DeleteResponse);
+}
+
+message TxRequest {
+    oneof request {
+        Open open = 1; // returns Done
+        Commit commit = 2; // returns Done
+        ExecQuery execQuery = 3; // returns QueryResult, Done, or IteratorId of QueryResult
+        Next next = 4; // returns QueryResult or Done
+        Stop stop = 5; // returns Done
+        RunConceptMethod runConceptMethod = 6; // returns ConceptResponse
+        ConceptId getConcept = 7; // returns OptionalConcept
+        Label getSchemaConcept = 8; // returns OptionalConcept
+        AttributeValue getAttributesByValue = 9; // returns IteratorId of Concept
+        Label putEntityType = 10; // returns Concept
+        Label putRelationshipType = 11; // returns Concept
+        PutAttributeType putAttributeType = 12; // returns Concept
+        Label putRole = 13; // returns Concept
+        PutRule putRule = 14; // returns Concept
+    }
+}
+
+message DeleteRequest {
+    Open open = 1; // This open request describes how to open the transaction in order to delete the keyspace
+}
+
+message DeleteResponse {}
+
+/*
+    Open a transaction on a keyspace. This must be the first message sent.
+    After this message, the server will send a `Done` message and then accept a command message.
+*/
+message Open {
+    Keyspace keyspace = 1;
+    TxType txType = 2;
+    /* Fields ignored in the open-source version. */
+    string username = 3;
+    string password = 4;
+}
+
+/*
+    Command to commit a transaction.
+    After this message, the server will send a `Done` message and then accept a command message.
+*/
+message Commit {}
+
+/*
+    Command to start executing a query.
+    After this message, the server will send an `Iterator` message and then accept a command message.
+*/
+message ExecQuery {
+    Query query = 1;
+    Infer infer = 2; // If this is not present, leave at server default.
+}
+
+/*
+    Run a concept method on a concept.
+    After this message, the server will send a `ConceptResponse` message and then accept a command message.
+*/
+message RunConceptMethod {
+    ConceptId id = 1;
+    ConceptMethod conceptMethod = 2;
+}
+
+message PutAttributeType {
+    Label label = 1;
+    DataType dataType = 2;
+}
+
+message PutRule {
+    Label label = 1;
+    Pattern when = 2;
+    Pattern then = 3;
+}
+
+/*
+    Toggle inference for this query.
+*/
+message Infer {
+    bool value = 1;
+}
+
+message TxResponse {
+    oneof response {
+        Answer answer = 1;
+        Done done = 2;
+        ConceptResponse conceptResponse = 3;
+        IteratorId iteratorId = 4;
+        Concept concept = 5;
+        OptionalConcept optionalConcept = 6;
+        RolePlayer rolePlayer = 7;
+    }
+}
+
+message Answer {
+    oneof answer {
+        QueryAnswer queryAnswer = 1;
+        ComputeAnswer computeAnswer = 2;
+        // This is used to represent `aggregate` query results.
+        // These come in many different formats, so they are just returned
+        // as JSON strings.
+        string otherResult = 3;
+    }
+}
+
+/*
+    Tells the client we have completed their command.
+*/
+message Done {}
+
+/*
+    Represents an answer to a `get`, `insert` or `define` query. e.g.
+
+    ```
+    $x id V123; $y id V456;
+    ```
+    is represented as:
+    ```
+    Answer {
+        "x": Concept { id: "V123" }
+        "y": Concept { id: "V456" }
+    }
+    ```
+*/
+message QueryAnswer {
+    map<string, Concept> queryAnswer = 1;
+}
+
+message ComputeAnswer {
+    oneof computeAnswer {
+        Number number = 1;
+        Paths paths = 2;
+        CentralityCounts centralityCounts = 3;
+        ClusterMembers clusterMembers = 4;
+        ClusterCounts clusterCounts = 5;
+    }
+}
+
+message Number {
+    string number = 1;
+}
+
+message Paths {
+    repeated ConceptIds paths = 1;
+}
+
+message CentralityCounts {
+    map<int64, ConceptIds> centralityCounts = 1;
+}
+
+message ClusterMembers {
+    repeated ConceptIds clusters = 1;
+}
+
+message ClusterCounts {
+    repeated int64 counts = 1;
+}
+
+enum TxType {
+    Read = 0;
+    Write = 1;
+    Batch = 2;
+}
+
+message Keyspace {
+    string value = 1;
+}
+
+message Query {
+    string value = 1;
+}
