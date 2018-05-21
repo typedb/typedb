@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package ai.grakn.rpc.generated;
+option java_outer_classname = "GrpcConcept";
+
+import "iterator.proto";
+
+message Concept {
+    ConceptId id = 1;
+    BaseType baseType = 2;
+}
+
+message ConceptId {
+    string value = 1;
+}
+
+enum BaseType {
+    Entity = 0;
+    Relationship = 1;
+    Attribute = 2;
+    EntityType = 3;
+    RelationshipType = 4;
+    AttributeType = 5;
+    Role = 6;
+    Rule = 7;
+    MetaType = 8; // This represents the top-level meta type only
+}
+
+message ConceptMethod {
+    oneof conceptMethod {
+        // The types here are the arguments for the methods. Most are `Unit`, which indicates no arguments.
+        // The return types of these methods are described in `ConceptResponse`.
+
+        // The `returns` indicates what each `ConceptMethod` will return.
+
+        // Concept
+        Unit delete = 16; // returns Unit
+
+        // Schema concept
+        Unit getLabel = 3; // returns Label
+        Label setLabel = 18; // returns Unit
+        Unit isImplicit = 4; // returns bool
+        Unit getSubConcepts = 19; // returns IteratorId of Concept
+        Unit getSuperConcepts = 53; // returns IteratorId of Concept
+        Unit getDirectSuperConcept = 14; // returns OptionalConcept
+        Concept setDirectSuperConcept = 17; // returns Unit
+
+        // Rule
+        Unit getWhen = 7; // returns OptionalPattern
+        Unit getThen = 8; // returns OptionalPattern
+
+        // Role
+        Unit getRelationshipTypesThatRelateRole = 20; // returns IteratorId of Concept
+        Unit getTypesThatPlayRole = 21; // returns IteratorId of Concept
+
+        // Type
+        Unit getInstances = 30; // returns IteratorId of Concept
+        Unit getAttributeTypes = 11; // returns IteratorId of Concept
+        Concept setAttributeType = 25;
+        Concept unsetAttributeType = 26;
+        Unit getKeyTypes = 12; // returns IteratorId of Concept
+        Concept setKeyType = 27; // returns Unit
+        Concept unsetKeyType = 28; // returns Unit
+        Unit isAbstract = 6; // returns bool
+        bool setAbstract = 22; // returns Unit
+        Unit getRolesPlayedByType = 29; // returns IteratorId of Concept
+        Concept setRolePlayedByType = 23; // returns Unit
+        Concept unsetRolePlayedByType = 24; // returns Unit
+
+        // Entity type
+        Unit addEntity = 34; // returns Concept
+
+        // Relationship type
+        Unit getRelatedRoles = 36; // returns IteratorId of Concept
+        Concept setRelatedRole = 37; // returns Unit
+        Concept unsetRelatedRole = 38; // returns Unit
+
+        // Attribute type
+        AttributeValue putAttribute = 32; // returns Concept
+        AttributeValue getAttribute = 33; // returns OptionalConcept
+        Unit getDataTypeOfType = 2; // returns OptionalDataType
+        Unit getDataTypeOfAttribute = 54; // returns DataType
+        Unit getRegex = 9; // returns OptionalRegex
+        OptionalRegex setRegex = 31; // returns Unit
+
+        // Thing
+        Unit isInferred = 5; // returns bool
+        Unit getDirectType = 13; // returns Concept
+        Unit getRelationships = 39; // returns IteratorId of Concept
+        Concepts getRelationshipsByRoles = 48; // returns IteratorId of Concept
+        Unit getRolesPlayedByThing = 40; // returns IteratorId of Concept
+        Unit getAttributes = 41; // returns IteratorId of Concept
+        Concepts getAttributesByTypes = 49; // returns IteratorId of Concept
+        Unit getKeys = 42; // returns IteratorId of Concept
+        Concepts getKeysByTypes = 50; // returns IteratorId of Concept
+        Concept setAttribute = 43; // returns Unit
+        Concept unsetAttribute = 44; // returns Unit
+
+        // Relationship
+        Unit addRelationship = 35; // returns Concept
+        Unit getRolePlayers = 10; // returns IteratorId of RolePlayer
+        Concepts getRolePlayersByRoles = 51; // returns IteratorId of Concept
+        RolePlayer setRolePlayer = 46; // returns Unit
+        RolePlayer unsetRolePlayer = 15; // returns Unit
+
+        // Attribute
+        Unit getValue = 1; // returns AttributeValue
+        Unit getOwners = 47; // returns IteratorId of Concept
+    }
+}
+
+// Represents a message with no information
+message Unit {}
+
+message ConceptResponse {
+    oneof value {
+        AttributeValue attributeValue = 1;
+        DataType dataType = 2;
+        Label label = 3;
+        bool bool = 4;
+        OptionalPattern optionalPattern = 5;
+        string string = 6;
+        Concept concept = 9;
+        Unit unit = 10;
+        OptionalRegex optionalRegex = 11;
+        OptionalConcept optionalConcept = 12;
+        OptionalDataType optionalDataType = 13;
+        IteratorId iteratorId = 14;
+    }
+}
+
+message AttributeValue {
+    oneof value {
+        string string = 1;
+        bool boolean = 2;
+        int32 integer = 3;
+        int64 long = 4;
+        float float = 5;
+        double double = 6;
+        int64 date = 7; // time since epoch in milliseconds
+    }
+}
+
+enum DataType {
+    String = 0;
+    Boolean = 1;
+    Integer = 2;
+    Long = 3;
+    Float = 4;
+    Double = 5;
+    Date = 6;
+}
+
+message Label {
+    string value = 1;
+}
+
+message RolePlayers {
+    repeated RolePlayer rolePlayer = 1;
+}
+
+message RolePlayer {
+    Concept role = 1;
+    Concept player = 2;
+}
+
+message Concepts {
+    repeated Concept concept = 1;
+}
+
+message ConceptIds {
+    repeated ConceptId conceptId= 1;
+}
+
+message OptionalConcept {
+    oneof value {
+        Concept present = 1;
+        Unit absent = 2;
+    }
+}
+
+message OptionalRegex {
+    oneof value {
+        string present = 1;
+        Unit absent = 2;
+    }
+}
+
+message Pattern {
+    string value = 1;
+}
+
+message OptionalPattern {
+    oneof value {
+        Pattern present = 1;
+        Unit absent = 2;
+    }
+}
+
+message OptionalDataType {
+    oneof value {
+        DataType present = 1;
+        Unit absent = 2;
+    }
+}
