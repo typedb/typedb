@@ -21,6 +21,7 @@ import static ai.grakn.bootup.BootupITConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * A suite to put tests which needs a running Grakn.
@@ -79,6 +80,41 @@ public class BootupWithARunningGraknIT {
         String output = commandExecutor.command("./graql", "console", "-k", randomKeyspace, "-e", graql).execute().outputUTF8();
 
         assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
+    }
+
+    /**
+     * test aggregate queries on marriage data
+     */
+    @Test
+    public void graql_testAggregateQueries_onMarriageData() throws IOException, InterruptedException, TimeoutException {
+        String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
+        String insert = "define person sub entity, has identifier; identifier sub attribute, datatype string;\n" +
+                "define spouse1 sub role; spouse2 sub role; person plays spouse1; person plays spouse2;\n" +
+                "define marriage sub relationship, relates spouse1, relates spouse2, has \"date\"; \"date\" sub attribute datatype string;\n" +
+                "commit;\n" +
+                "\n" +
+                "insert isa person, has identifier \"Andrew Smith\";\n" +
+                "insert isa person, has identifier \"Catherine Shaw\";\n" +
+                "insert isa person, has identifier \"Paula Carter\";\n" +
+                "insert isa person, has identifier \"Scott Jones\";\n" +
+                "commit;\n" +
+                "match $s1 has identifier \"Andrew Smith\"; $s2 has identifier \"Catherine Shaw\"; insert (spouse1: $s1, spouse2: $s2) isa marriage has \"date\" \"01-01-1980\";\n" +
+                "commit;\n";
+        String countPerson = "match $p isa person, has identifier $i; aggregate count;\n";
+        String countMarriage = "match (spouse1: $x, spouse2: $y) isa marriage, has \"date\" $d; $x has identifier $xi; $y has identifier $yi; aggregate count;\n";
+
+        String queries = insert + countPerson + countMarriage;
+
+        String output = commandExecutor
+                .redirectInput(new ByteArrayInputStream(queries.getBytes(StandardCharsets.UTF_8)))
+                .command("./graql", "console", "-k", randomKeyspace).execute().outputUTF8();
+
+        String[] split = output.split("\n");
+        Long aggregateCountPerson = Long.parseLong(split[split.length-4]);
+        Long aggregateCountMarriage = Long.parseLong(split[split.length-2]);
+
+        assertThat(aggregateCountPerson, equalTo(4L));
+        assertThat(aggregateCountMarriage, equalTo(1L));
     }
 
     /**
