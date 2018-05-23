@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 
 /**
  * An interface for print objects in Graql responses (e.g. {@link Integer}s and {@link Answer}s into a String).
- *
  * The intermediate {@link Builder} type is used when the final type is different to the "in-progress" type when
  * creating it. For example, you may want to use a {@link StringBuilder} for {@link Builder} (for efficiency).
  *
@@ -47,7 +46,7 @@ public abstract class Printer<Builder> {
     /**
      * Constructs a special type of Printer: StringPrinter
      *
-     * @param colorize boolean parameter to determine if the String output should be colorized
+     * @param colorize       boolean parameter to determine if the String output should be colorized
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
@@ -97,14 +96,30 @@ public abstract class Printer<Builder> {
      */
     @CheckReturnValue
     protected Builder build(Object object) {
-        if (object instanceof Concept) return concept((Concept) object);
-        else if (object instanceof Boolean) return bool((boolean) object);
-        else if (object instanceof Optional) return optional((Optional<?>) object);
-        else if (object instanceof Collection) return collection((Collection<?>) object);
-        else if (object instanceof Answer) return queryAnswer((Answer) object);
-        else if (object instanceof ComputeQuery.Answer) return computeAnswer((ComputeQuery.Answer) object);
-        else if (object instanceof Map) return map((Map<?, ?>) object);
-        else return object(object);
+        if (object instanceof Concept) {
+            return concept((Concept) object);
+        }
+        else if (object instanceof Boolean) {
+            return bool((boolean) object);
+        }
+        else if (object instanceof Optional) {
+            return optional((Optional<?>) object);
+        }
+        else if (object instanceof Collection) {
+            return collection((Collection<?>) object);
+        }
+        else if (object instanceof Answer) {
+            return queryAnswer((Answer) object);
+        }
+        else if (object instanceof ComputeQuery.Answer) {
+            return computeAnswer((ComputeQuery.Answer) object);
+        }
+        else if (object instanceof Map) {
+            return map((Map<?, ?>) object);
+        }
+        else {
+            return object(object);
+        }
     }
 
     /**
