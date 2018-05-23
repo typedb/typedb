@@ -1,4 +1,4 @@
-package ai.grakn.bootup;
+package ai.grakn.distribution;
 
 import ai.grakn.util.GraknVersion;
 import org.junit.Assert;
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class BootupITConstants {
+public class DistributionITConstants {
     // path of grakn zip files
     public static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     public static final Path GRAKN_BASE_DIRECTORY = Paths.get(System.getProperty("main.basedir"));

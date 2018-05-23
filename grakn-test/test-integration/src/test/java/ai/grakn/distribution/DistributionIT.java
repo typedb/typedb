@@ -1,4 +1,4 @@
-package ai.grakn.bootup;
+package ai.grakn.distribution;
 
 import ai.grakn.util.GraknVersion;
 import org.apache.commons.io.FileUtils;
@@ -13,11 +13,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.bootup.BootupITConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.bootup.BootupITConstants.assertGraknRunning;
-import static ai.grakn.bootup.BootupITConstants.assertGraknStopped;
-import static ai.grakn.bootup.BootupITConstants.assertZipExists;
-import static ai.grakn.bootup.BootupITConstants.unzipGrakn;
+import static ai.grakn.distribution.DistributionITConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static ai.grakn.distribution.DistributionITConstants.assertGraknRunning;
+import static ai.grakn.distribution.DistributionITConstants.assertGraknStopped;
+import static ai.grakn.distribution.DistributionITConstants.assertZipExists;
+import static ai.grakn.distribution.DistributionITConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -27,11 +27,11 @@ import static org.hamcrest.Matchers.equalTo;
  * Grakn end to end test suite which verifies bootup functionalities, including:
  * - 'grakn server start, stop, and clean'
  * - 'graql console'
- * If you are testing functionalities which needs a running Grakn, add it in {@link BootupWithARunningGraknIT} instead.
+ * If you are testing functionalities which needs a running Grakn, add it in {@link DistributionWithARunningGraknIT} instead.
  * @author Ganeshwara Herawan Hananda
  */
 
-public class BootupIT {
+public class DistributionIT {
     private ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
             .redirectOutput(System.out)
