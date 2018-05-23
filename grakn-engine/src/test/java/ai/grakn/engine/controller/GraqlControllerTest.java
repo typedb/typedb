@@ -190,6 +190,9 @@ public class GraqlControllerTest {
         String id = resp.jsonPath().getList("x.id").get(0).toString();
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
+
+        System.out.println(Json.nil());
+        System.out.println(resp.asString());
         assertEquals(Json.nil(), Json.read(resp.asString()));
     }
 

@@ -82,8 +82,6 @@ public abstract class Printer<Builder> {
      */
     @CheckReturnValue
     public String toString(Object object) {
-        if (object == null) return "";
-
         Builder builder = build(object);
         return complete(builder);
     }

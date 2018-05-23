@@ -179,7 +179,7 @@ class StringPrinter extends Printer<StringBuilder> {
             builder.append(build(entry.getKey()));
             builder.append(": ");
             builder.append(build(entry.getValue()));
-        } else {
+        } else if (object != null) {
             builder.append(Objects.toString(object));
         }
 
