@@ -190,7 +190,7 @@ public enum ErrorMessage {
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
-    PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
+    PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
