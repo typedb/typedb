@@ -22,11 +22,13 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
@@ -45,6 +47,8 @@ import io.grpc.StatusRuntimeException;
 import mjson.Json;
 
 import javax.annotation.Nullable;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
@@ -204,23 +208,18 @@ public class GrpcClient implements AutoCloseable {
     }
 
     private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
-        Status status = error.getStatus();
-        Metadata trailers = error.getTrailers();
+        ErrorType errorType = error.getTrailers().get(ResponseBuilder.ErrorType.KEY);
 
-        ErrorType errorType = trailers.get(ResponseBuilder.ErrorType.KEY);
-
-        if (errorType != null) {
-            String message = status.getDescription();
-            return errorType.toException(message);
-        } else {
-            return error;
-        }
+        if (errorType != null) return errorType.toException(error.getStatus().getDescription());
+        else return error;
     }
 
     private Object convert(GrpcGrakn.Answer answer) {
         switch (answer.getAnswerCase()) {
             case QUERYANSWER:
                 return convert(answer.getQueryAnswer());
+            case COMPUTEANSWER:
+                return convert(answer.getComputeAnswer());
             case OTHERRESULT:
                 return Json.read(answer.getOtherResult()).getValue();
             default:
@@ -237,6 +236,21 @@ public class GrpcClient implements AutoCloseable {
         });
 
         return new QueryAnswer(map.build());
+    }
+
+    private ComputeQuery.Answer convert(GrpcGrakn.ComputeAnswer computeAnswer) {
+        switch (computeAnswer.getComputeAnswerCase()) {
+            case NUMBER:
+                try {
+                    Number result = NumberFormat.getInstance().parse(computeAnswer.getNumber().getNumber());
+                    return new ComputeQueryImpl.AnswerImpl().setNumber(result);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            default:
+            case COMPUTEANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + computeAnswer);
+        }
     }
 
 }

@@ -78,7 +78,7 @@ import static ai.grakn.engine.rpc.GraknRPCService.nonNull;
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
  * <p>
  * <p>
- * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
+ * Receives a output of {@link TxRequest}s and returning a output of {@link TxResponse}s.
  * </p>
  *
  * @author Felix Chapman

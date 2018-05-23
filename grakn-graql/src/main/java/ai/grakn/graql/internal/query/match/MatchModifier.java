@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * This class behaves like a singly-linked list, referencing another {@link Match} until it reaches a {@link MatchBase}.
  *
- * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
+ * Query modifiers should extend this class and implement a output() method that modifies the inner query.
  */
 abstract class MatchModifier extends AbstractMatch {
 

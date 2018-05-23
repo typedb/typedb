@@ -92,7 +92,7 @@ public class JsonMigrator implements AutoCloseable {
 
     /**
      * Migrate each of the given json objects as an insert query
-     * @return stream of parsed insert queries
+     * @return output of parsed insert queries
      */
     public Stream<Map<String, Object>> convert(){
         return readers.stream()

@@ -88,7 +88,7 @@ public class MatchBase extends AbstractMatch {
      * @param commonVars set of variables of interest
      * @param tx the graph to get results from
      * @param graqlTraversal gral traversal corresponding to the provided pattern
-     * @return resulting answer stream
+     * @return resulting answer output
      */
     public static Stream<Answer> streamWithTraversal(
             Set<Var> commonVars, EmbeddedGraknTx<?> tx, GraqlTraversal graqlTraversal

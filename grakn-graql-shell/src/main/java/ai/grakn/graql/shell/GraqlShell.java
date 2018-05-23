@@ -23,8 +23,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknException;
-import ai.grakn.graql.GraqlConverter;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.Streamable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import jline.console.ConsoleReader;
@@ -215,7 +216,7 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
-        GraqlConverter<?, String> converter = outputFormat.getConverter(displayAttributes);
+        Printer<?> printer = outputFormat.getConverter(displayAttributes);
 
         handleGraknExceptions(() -> {
             Stream<Query<?>> queries = tx
@@ -225,8 +226,14 @@ public class GraqlShell implements AutoCloseable {
                     .parseList(queryString);
 
             Iterable<String> results = () -> queries
-                    .flatMap(query -> query.results(converter))
-                    .iterator();
+                    .flatMap(query -> {
+                        //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
+                        if (query instanceof Streamable) {
+                            return printer.toStream(((Streamable<?>) query).stream());
+                        } else {
+                            return Stream.of(printer.toString(query.execute()));
+                        }
+                    }).iterator();
 
             for (String result : results) {
                 console.println(result);

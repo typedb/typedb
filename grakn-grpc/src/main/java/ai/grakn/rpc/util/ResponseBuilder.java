@@ -31,7 +31,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -73,7 +73,7 @@ public class ResponseBuilder {
             answer = GrpcGrakn.Answer.newBuilder().setComputeAnswer(computeAnswer((ComputeQuery.Answer) object)).build();
         } else {
             // If not an QueryAnswer or ComputeAnswer, convert to JSON
-            answer = GrpcGrakn.Answer.newBuilder().setOtherResult(Printers.json().convert(buildDefault(object))).build();
+            answer = GrpcGrakn.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(buildDefault(object))).build();
         }
 
         return GrpcGrakn.TxResponse.newBuilder().setAnswer(answer).build();
@@ -109,7 +109,7 @@ public class ResponseBuilder {
 //        for (List<ConceptId> path : paths) {
 //            GrpcConcept.ConceptIds.Builder pathRPC = GrpcConcept.ConceptIds.newBuilder();
 //
-//            pathRPC.addAllConceptId(path.stream().map());
+//            pathRPC.addAllConceptId(path.output().map());
 //        }
 //    }
 

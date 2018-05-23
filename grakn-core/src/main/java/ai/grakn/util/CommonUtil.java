@@ -64,9 +64,9 @@ public class CommonUtil {
     }
 
     /**
-     * @param optional the optional to change into a stream
+     * @param optional the optional to change into a output
      * @param <T> the type in the optional
-     * @return a stream of one item if the optional has an element, else an empty stream
+     * @return a output of one item if the optional has an element, else an empty output
      */
     public static <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
@@ -83,10 +83,10 @@ public class CommonUtil {
 
     /**
      * Helper which lazily checks if a {@link Stream} contains the number specified
-     * WARNING: This consumes the stream rendering it unusable afterwards
+     * WARNING: This consumes the output rendering it unusable afterwards
      *
      * @param stream the {@link Stream} to check the count against
-     * @param size the expected number of elements in the stream
+     * @param size the expected number of elements in the output
      * @return true if the expected size is found
      */
     public static boolean containsOnly(Stream stream, long size){

@@ -19,8 +19,7 @@
 package ai.grakn.graql.shell;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.GraqlConverter;
-import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.printer.Printer;
 
 import java.util.Set;
 
@@ -32,20 +31,20 @@ import java.util.Set;
 public enum OutputFormat {
     Json {
         @Override
-        GraqlConverter<?, String> getConverter(Set<AttributeType<?>> displayAttributes) {
-            return Printers.json();
+        Printer<?> getConverter(Set<AttributeType<?>> displayAttributes) {
+            return Printer.jsonPrinter();
         }
     },
 
     Graql {
         @Override
-        GraqlConverter<?, String> getConverter(Set<AttributeType<?>> displayAttributes) {
+        Printer<?> getConverter(Set<AttributeType<?>> displayAttributes) {
             AttributeType<?>[] array = displayAttributes.toArray(new AttributeType[displayAttributes.size()]);
-            return Printers.graql(true, array);
+            return Printer.stringPrinter(true, array);
         }
     };
 
-    abstract GraqlConverter<?, String> getConverter(Set<AttributeType<?>> displayAttributes);
+    abstract Printer<?> getConverter(Set<AttributeType<?>> displayAttributes);
 
     static final OutputFormat DEFAULT = Graql;
 

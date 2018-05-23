@@ -63,7 +63,7 @@ abstract class AbstractMatch implements MatchAdmin {
     /**
      * Execute the query using the given graph.
      * @param graph the graph to use to execute the query
-     * @return a stream of results
+     * @return a output of results
      */
     public abstract Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph);
 

@@ -351,7 +351,7 @@ public class GrpcServerTest {
         }
     }
 
-    @Test(timeout = 1000) // This tests uses an endless stream, so a failure may cause it to never terminate
+    @Test(timeout = 1000) // This tests uses an endless output, so a failure may cause it to never terminate
     public void whenExecutingAQueryRemotelyAndAskingForOneResult_OnlyOneResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
@@ -368,7 +368,7 @@ public class GrpcServerTest {
                 new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
-        // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
+        // Produce an endless output of results - this means if the behaviour is not lazy this will never terminate
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {

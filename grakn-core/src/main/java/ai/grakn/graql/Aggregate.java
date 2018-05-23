@@ -30,8 +30,8 @@ import java.util.stream.Stream;
  */
 public interface Aggregate<T, S> {
     /**
-     * The function to apply to the stream of results to produce the aggregate result.
-     * @param stream a stream of query results
+     * The function to apply to the output of results to produce the aggregate result.
+     * @param stream a output of query results
      * @return the result of the aggregate operation
      */
     @CheckReturnValue

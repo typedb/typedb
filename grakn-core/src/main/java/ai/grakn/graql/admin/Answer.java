@@ -127,14 +127,14 @@ public interface Answer {
 
     /**
      * @param multiUnifier set of unifiers defining variable mappings
-     * @return stream of unified answers
+     * @return output of unified answers
      */
     @CheckReturnValue
     Stream<Answer> unify(MultiUnifier multiUnifier);
 
     /**
      * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
-     * @return stream of answers with expanded role hierarchy
+     * @return output of answers with expanded role hierarchy
      */
     @CheckReturnValue
     Stream<Answer> expandHierarchies(Set<Var> toExpand);

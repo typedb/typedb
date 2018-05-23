@@ -488,7 +488,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
+     * @return output of queries obtained by inserting all inferred possible types (if ambiguous)
      */
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         return Stream.of(this);

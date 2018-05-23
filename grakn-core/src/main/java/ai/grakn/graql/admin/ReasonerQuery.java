@@ -72,7 +72,7 @@ public interface ReasonerQuery{
     /**
      * @param type the class of {@link Atomic} to return
      * @param <T> the type of {@link Atomic} to return
-     * @return stream of atoms of specified type defined in this query
+     * @return output of atoms of specified type defined in this query
      */
     @CheckReturnValue
     <T extends Atomic> Stream<T> getAtoms(Class<T> type);
@@ -105,7 +105,7 @@ public interface ReasonerQuery{
 
     /**
      * resolves the query
-     * @return stream of answers
+     * @return output of answers
      */
     @CheckReturnValue
     Stream<Answer> resolve();

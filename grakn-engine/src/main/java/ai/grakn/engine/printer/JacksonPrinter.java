@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -33,14 +33,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     This class is used to convert the responses from graql queries into objects which can be Jacksonised into their
- *     correct Json representation.
- * </p>
+ * This class is used to convert the responses from graql queries into objects which can be Jacksonised into their
+ * correct Json representation.
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class JacksonPrinter implements Printer<Object>{
+public class JacksonPrinter extends Printer<Object> {
     private static ObjectMapper mapper = new ObjectMapper();
 
     public static JacksonPrinter create(){
@@ -57,33 +55,33 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object build(Concept concept) {
+    public Object concept(Concept concept) {
         return ConceptBuilder.build(concept);
     }
 
     @Override
-    public Object build(ai.grakn.graql.admin.Answer answer) {
+    public Object queryAnswer(ai.grakn.graql.admin.Answer answer) {
         return Answer.create(answer);
     }
 
     //TODO: implement JacksonPrinter for ComputeAnswer properly!
     @Override
-    public Object build(ComputeQuery.Answer computeAnswer) {
-        return buildDefault(computeAnswer);
+    public Object computeAnswer(ComputeQuery.Answer computeAnswer) {
+        return object(computeAnswer);
     }
 
     @Override
-    public Object build(boolean bool) {
+    public Object bool(boolean bool) {
         return bool;
     }
 
     @Override
-    public Object buildDefault(Object object) {
+    public Object object(Object object) {
         return object;
     }
 
     @Override
-    public Object build(Map map) {
+    public Object map(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
                 entry -> build(entry.getKey()),
@@ -92,12 +90,12 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object build(Collection collection) {
+    public Object collection(Collection collection) {
         return collection.stream().map(object -> build(object)).collect(Collectors.toList());
     }
 
     @Override
-    public Object build(Optional optional) {
+    public Object optional(Optional optional) {
         if(optional.isPresent()){
             return build(optional.get());
         } else {

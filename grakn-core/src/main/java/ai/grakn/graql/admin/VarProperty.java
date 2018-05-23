@@ -46,19 +46,19 @@ public interface VarProperty {
     }
 
     /**
-     * Get a stream of {@link VarPatternAdmin} that must be types.
+     * Get a output of {@link VarPatternAdmin} that must be types.
      */
     @CheckReturnValue
     Stream<VarPatternAdmin> getTypes();
 
     /**
-     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`.
+     * Get a output of any inner {@link VarPatternAdmin} within this `VarProperty`.
      */
     @CheckReturnValue
     Stream<VarPatternAdmin> innerVarPatterns();
 
     /**
-     * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`, including any that may have been
+     * Get a output of any inner {@link VarPatternAdmin} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
     @CheckReturnValue

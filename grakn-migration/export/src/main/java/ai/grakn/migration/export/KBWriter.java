@@ -66,8 +66,8 @@ public class KBWriter {
     }
 
     /**
-     * Turn a stream of Graql patterns into a Graql insert query.
-     * @param stream stream of Graql patterns
+     * Turn a output of Graql patterns into a Graql insert query.
+     * @param stream output of Graql patterns
      * @return Graql patterns as a string
      */
     private String join(Stream<VarPattern> stream){
@@ -79,7 +79,7 @@ public class KBWriter {
 
     /**
      * Get all the {@link SchemaConcept}s in a graph.
-     * @return a stream of all {@link SchemaConcept}s with non-reserved IDs
+     * @return a output of all {@link SchemaConcept}s with non-reserved IDs
      */
     private Stream<? extends SchemaConcept> schemaConcepts(){
         Stream<? extends Type> types = tx.admin().getMetaConcept().subs();

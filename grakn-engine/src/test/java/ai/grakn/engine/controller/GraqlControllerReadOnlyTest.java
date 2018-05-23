@@ -24,7 +24,7 @@ import ai.grakn.engine.GraknKeyspaceStore;
 import ai.grakn.engine.GraknKeyspaceStoreImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -93,7 +93,7 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
 
-        when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(printer.toString(any())).thenReturn(Json.object().toString());
 
         QueryParser mockParser = mock(QueryParser.class);
 
@@ -189,7 +189,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject() {
-        when(printer.graqlString(any())).thenReturn(Json.array().toString());
+        when(printer.toString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("match $x isa \"runtime\"; get;");
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
@@ -207,7 +207,7 @@ public class GraqlControllerReadOnlyTest {
     public void GETGraqlAggregate_ResponseIsCorrect() {
         String query = "match $x isa movie; aggregate count;";
         long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
-        when(printer.graqlString(any())).thenReturn(String.valueOf(numberPeople));
+        when(printer.toString(any())).thenReturn(String.valueOf(numberPeople));
 
         Response response = sendRequest(query);
 
@@ -287,7 +287,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
-        when(printer.graqlString(any())).thenReturn("null");
+        when(printer.toString(any())).thenReturn("null");
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));

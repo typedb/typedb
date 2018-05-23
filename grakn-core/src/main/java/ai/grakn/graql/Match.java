@@ -42,14 +42,14 @@ public interface Match extends Streamable<Answer> {
 
     /**
      * @param var a variable to get
-     * @return a stream of concepts
+     * @return a output of concepts
      */
     @CheckReturnValue
     Stream<Concept> get(String var);
 
     /**
      * @param var a variable to get
-     * @return a stream of concepts
+     * @return a output of concepts
      */
     @CheckReturnValue
     Stream<Concept> get(Var var);

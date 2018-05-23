@@ -19,16 +19,15 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
@@ -41,21 +40,21 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class GraqlPrinterTest {
+public class StringPrinterTest {
 
     @ClassRule
     public static final SampleKBContext rule = MovieKB.context();
 
     @Test
     public void testRelationOutput() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Match match = rule.tx().graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
                 .rel(var().has("name", "Michael Corleone"))
                 .rel(var().has("title", "Godfather")));
 
-        String relationString = printer.graqlString(match.get("r").iterator().next());
+        String relationString = printer.toString(match.get("r").iterator().next());
 
         assertThat(relationString, containsString("has-cast"));
         assertThat(relationString, containsString("actor"));
@@ -65,7 +64,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void whenGettingOutputForRelation_TheResultShouldHaveCommasBetweenRolePlayers() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Match match = rule.tx().graql().match(var("r").isa("has-cluster"));
 
@@ -73,7 +72,7 @@ public class GraqlPrinterTest {
         long numRolePlayers = relationship.rolePlayers().count();
         long numCommas = numRolePlayers - 1;
 
-        String relationString = printer.graqlString(relationship);
+        String relationString = printer.toString(relationship);
 
         assertEquals(
                 relationString + " should have " + numCommas + " commas separating role-players",
@@ -83,22 +82,22 @@ public class GraqlPrinterTest {
 
     @Test
     public void whenGettingOutputForResource_IncludesValueOfResource() {
-        Printer printer = Printers.graql(false);
+        Printer<?> printer = Printer.stringPrinter(false);
 
         Match match = rule.tx().graql().match(var("x").isa("title").val("Godfather"));
 
-        String result = printer.graqlString(match.iterator().next());
+        String result = printer.toString(match.iterator().next());
 
         assertEquals("$x val \"Godfather\" isa title;", result.trim());
     }
 
     @Test
     public void testResourceOutputNoResources() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
 
-        String repr = printer.graqlString(godfather);
+        String repr = printer.toString(godfather);
 
         assertThat(
                 repr,
@@ -110,13 +109,13 @@ public class GraqlPrinterTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testResourceOutputWithResource() {
-        Printer printer = Printers.graql(
+        Printer<?> printer = Printer.stringPrinter(
                 true, rule.tx().getAttributeType("title"), rule.tx().getAttributeType("tmdb-vote-count"), rule.tx().getAttributeType("name")
         );
 
         Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
 
-        String repr = printer.graqlString(godfather);
+        String repr = printer.toString(godfather);
 
         assertThat(repr, allOf(
                 containsString("movie"), containsString("has"), containsString("title"), containsString("\"Godfather\""),
@@ -126,20 +125,20 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEmptyResult() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Answer emptyResult = new QueryAnswer();
 
-        assertEquals("{}", printer.graqlString(emptyResult));
+        assertEquals("{}", printer.toString(emptyResult));
     }
 
     @Test
     public void testType() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Type production = rule.tx().getEntityType("production");
 
-        String productionString = printer.graqlString(production);
+        String productionString = printer.toString(production);
 
         assertThat(productionString, containsString("label"));
         assertThat(productionString, containsString("production"));
@@ -151,11 +150,11 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEntityType() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Type entity = rule.tx().admin().getMetaEntityType();
 
-        String entityString = printer.graqlString(entity);
+        String entityString = printer.toString(entity);
 
         assertThat(entityString, containsString("label"));
         assertThat(entityString, containsString("entity"));
@@ -166,11 +165,11 @@ public class GraqlPrinterTest {
 
     @Test
     public void testConcept() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         SchemaConcept concept = rule.tx().admin().getMetaConcept();
 
-        String conceptString = printer.graqlString(concept);
+        String conceptString = printer.toString(concept);
 
         assertThat(conceptString, containsString("label"));
         assertThat(conceptString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
@@ -180,39 +179,39 @@ public class GraqlPrinterTest {
 
     @Test
     public void whenPrintingRole_ShowLabel() {
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Role role = rule.tx().admin().getMetaRole();
 
-        String roleString = printer.graqlString(role);
+        String roleString = printer.toString(role);
 
         assertThat(roleString, containsString("role"));
     }
 
     @Test
     public void whenPrintingWithColorizeTrue_ResultIsColored(){
-        Printer printer = Printers.graql(true);
+        Printer<?> printer = Printer.stringPrinter(true);
 
         Type production = rule.tx().getEntityType("production");
 
-        String productionString = printer.graqlString(production);
+        String productionString = printer.toString(production);
         assertThat(productionString, containsString("\u001B"));
     }
 
     @Test
     public void whenPrintingWitholorizeFalse_ResultIsNotColored(){
-        Printer printer = Printers.graql(false);
+        Printer<?> printer = Printer.stringPrinter(false);
 
         Type production = rule.tx().getEntityType("production");
 
-        String productionString = printer.graqlString(production);
+        String productionString = printer.toString(production);
         assertThat(productionString, not(containsString("\u001B")));
     }
 
     @Test
     public void whenPrintingNull_ResultIsNullString() {
-        Printer printer = Printers.graql(false);
+        Printer<?> printer = Printer.stringPrinter(false);
 
-        assertEquals("null", printer.graqlString(null));
+        assertEquals("", printer.toString(null));
     }
 }

@@ -137,8 +137,8 @@ public class CSVMigrator implements AutoCloseable {
     }
 
     /**
-     * Each String in the stream is a CSV file
-     * @return stream of parsed insert queries
+     * Each String in the output is a CSV file
+     * @return output of parsed insert queries
      */
     public Stream<Map<String, Object>> convert() {
         try{
@@ -184,7 +184,7 @@ public class CSVMigrator implements AutoCloseable {
     }
 
     /**
-     * Partition a stream into a stream of collections, each with batchSize elements.
+     * Partition a output into a output of collections, each with batchSize elements.
      * @param iterator Iterator to partition
      * @param <T> Type of values of iterator
      * @return Stream over a collection that are each of batchSize

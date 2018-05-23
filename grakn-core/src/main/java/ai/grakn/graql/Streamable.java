@@ -38,13 +38,13 @@ public interface Streamable<T> extends Iterable<T> {
     }
 
     /**
-     * @return a stream of elements
+     * @return a output of elements
      */
     @CheckReturnValue
     Stream<T> stream();
 
     /**
-     * @return a parallel stream of elements
+     * @return a parallel output of elements
      */
     @CheckReturnValue
     default Stream<T> parallelStream() {

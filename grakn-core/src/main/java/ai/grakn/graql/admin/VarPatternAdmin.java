@@ -51,13 +51,13 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     Var var();
 
     /**
-     * Get a stream of all properties on this variable
+     * Get a output of all properties on this variable
      */
     @CheckReturnValue
     Stream<VarProperty> getProperties();
 
     /**
-     * Get a stream of all properties of a particular type on this variable
+     * Get a output of all properties of a particular type on this variable
      * @param type the class of {@link VarProperty} to return
      * @param <T> the type of {@link VarProperty} to return
      */

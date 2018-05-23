@@ -706,9 +706,9 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         }
         return false;
         //TODO: should use the following ask query when ask query is even lazier
-//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
+//        List<Pattern> checkResourceTypes = statisticsResourceTypes.output()
 //                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-//        List<Pattern> checkSubtypes = inTypes.stream()
+//        List<Pattern> checkSubtypes = inTypes.output()
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
 //        return tx.get().graql().infer(false)
@@ -731,7 +731,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
     /**
      * Helper method to get the types to be included in the query scope
      *
-     * @return stream of Concept Types
+     * @return output of Concept Types
      */
     private Stream<Type> scopeTypes() {
         // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
