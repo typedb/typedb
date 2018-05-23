@@ -1,4 +1,4 @@
-package ai.grakn.bootup;
+package ai.grakn.distribution;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -7,17 +7,16 @@ import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.bootup.BootupITConstants.assertGraknRunning;
-import static ai.grakn.bootup.BootupITConstants.assertGraknStopped;
-import static ai.grakn.bootup.BootupITConstants.assertZipExists;
-import static ai.grakn.bootup.BootupITConstants.unzipGrakn;
-import static ai.grakn.bootup.BootupITConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static ai.grakn.distribution.DistributionITConstants.assertGraknRunning;
+import static ai.grakn.distribution.DistributionITConstants.assertGraknStopped;
+import static ai.grakn.distribution.DistributionITConstants.assertZipExists;
+import static ai.grakn.distribution.DistributionITConstants.unzipGrakn;
+import static ai.grakn.distribution.DistributionITConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -28,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class BootupWithARunningGraknIT {
+public class DistributionWithARunningGraknIT {
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
