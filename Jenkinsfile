@@ -37,7 +37,9 @@ pipeline {
                 stage('Unit Tests') {
                     agent any
 
-                    echo 'unit tests'
+                    steps {
+                        echo 'unit tests'
+                    }
                 }
 
                 stage('End-to-end tests') {
