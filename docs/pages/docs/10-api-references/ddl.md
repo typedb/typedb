@@ -54,7 +54,7 @@ one will be created.
 
 `$A relates $B` define the _relationship type_ `$A` to directly relate the _role_ `$B`.
 
-In the case where `$B` does not have a defined `sub`, this will also implicit define `$B sub role`.
+In the case where `$B` does not have a defined `sub`, this will also implicitly define `$B sub role`.
 
 ### plays
 

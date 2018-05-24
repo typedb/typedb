@@ -19,6 +19,8 @@
 package ai.grakn.bootup.graknengine.pid;
 
 import ai.grakn.util.ErrorMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +35,8 @@ import java.nio.file.Path;
  *
  */
 public class GraknPidFileStore implements GraknPidStore {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknPidFileStore.class);
+
     private final Path pidFilePath;
 
     public GraknPidFileStore(Path pidFilePath) {
@@ -50,15 +54,14 @@ public class GraknPidFileStore implements GraknPidStore {
     }
 
     private void attemptToWritePidFile(long pid, Path pidFilePath) {
-        if (!pidFilePath.toFile().exists()) {
-            String pidString = Long.toString(pid);
-            try {
-                Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            throw new GraknPidException(ErrorMessage.PID_ALREADY_EXISTS.getMessage(pidFilePath.toString()));
+        if (pidFilePath.toFile().exists()) {
+            LOG.warn(ErrorMessage.PID_ALREADY_EXISTS.getMessage(pidFilePath.toString()));
+        }
+        String pidString = Long.toString(pid);
+        try {
+            Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

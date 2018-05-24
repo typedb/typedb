@@ -18,10 +18,7 @@
 
 package ai.grakn.bootup.graknengine.pid;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.lang.management.ManagementFactory;
 
 /**
  *
@@ -32,36 +29,13 @@ import java.nio.charset.StandardCharsets;
  */
 
 public class UnixGraknPidRetriever implements GraknPidRetriever {
-    public static final String psEfCommand = "ps -ef | grep \"ai.grakn.bootup.graknengine.Grakn\" | grep -v grep | awk '{print $2}'";
     public long getPid() {
-        StringBuilder outputS = new StringBuilder();
-        int exitValue = 1;
-
-        Process p;
-        try {
-            p = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", psEfCommand }, null, null);
-            p.waitFor();
-            exitValue = p.exitValue();
-
-            if (exitValue == 0) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))){
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        outputS.append(line).append("\n");
-                    }
-                }
-            } else {
-                throw new RuntimeException("a non-zero exit code '" + exitValue + "'returned by the command '" + psEfCommand + "'");
-            }
-        } catch (InterruptedException | IOException e) {
-            // DO NOTHING
-        }
-
-        String pidString = outputS.toString().trim();
+        String[] pidAndHostnameString = ManagementFactory.getRuntimeMXBean().getName().split("@");
+        String pidString = pidAndHostnameString[0];
         try {
             return Long.parseLong(pidString);
         } catch (NumberFormatException e) {
-            throw new RuntimeException("Couldn't get PID of Grakn. Received '" + pidString);
+            throw new RuntimeException("Couldn't get the PID of Grakn Engine. Received '" + pidString + "'");
         }
     }
 }
