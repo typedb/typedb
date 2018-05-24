@@ -15,12 +15,12 @@ folder: docs
 TBC
 
 ### Stack parameters
-The following parameters allow to define the stack details:
+The following parameters are used to define the stack:
 
 * General:
     - **StackName**
     
-        The name for you Grakn KGMS stack. This must be a valid system name, specifically, it must consist of only lowercase letters, numbers, and hyphens, and cannot exceed 50 characters. 
+        The name of your Grakn KGMS stack. This must be a valid system name, specifically, it must consist of only lowercase letters, numbers, and hyphens, and cannot exceed 50 characters. 
       
     - **KeyPairName**
         
@@ -47,13 +47,13 @@ The following parameters allow to define the stack details:
 * Cluster:
     - **GraknInstanceType**
     
-        EC2 instance type of a Grakn instances.
+        EC2 instance type of Grakn instances.
     - **GraknGroupSize**
     
         Number of Grakn instances in the cluster.
     - **EbsVolumeSize**
     
-        Size in GB of each of EBS volumes that are attached to Grakn instances.
+        Size in GB of each of the EBS volumes that are attached to Grakn instances.
     - **OptimiseForEbs**
     
         Specifies whether to optimise Grakn Launch Configuration for EBS I/O.
@@ -62,7 +62,7 @@ The following parameters allow to define the stack details:
 
 There are various ways to access Grakn on AWS. Here we will address the most common usage patterns.
 
-### Using gRPC
+### Using Grakn gRPC client
 
 The most common access pattern is to use the Grakn gRPC client to connect to a Grakn cluster. The connection happens via TCP port 48555 and the `gRPCLocation` stack parameter defines
 the range of IP addresses that can schedule gRPC requests.
@@ -73,7 +73,7 @@ To log in into one of the cluster nodes, simply use the ssh command:
 `ssh -i <private key file> ubuntu@<grakn instance DNS name or IP address>`
 
 #### Cluster health check
-To verify cluster state, execute the following command:
+To verify the state of the cluster, execute the following command:
     
 `grakn cluster status`
      
@@ -107,11 +107,11 @@ Provided you log in as user with `admin` privileges, Grakn console allows to per
 
 `CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
 
-* update existing user's password
+* update an existing user's password
 
 `UPDATE username WITH PASSWORD newpassword`
 
-* retrieve all the users present:
+* retrieve all of the users present:
 
 `LIST USERS`
 

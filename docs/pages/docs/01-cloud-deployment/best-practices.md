@@ -8,15 +8,15 @@ permalink: /docs/cloud-deployment/best-practices
 folder: docs
 ---
 
-# GC Deployment Best Practices
+# Deployment Best Practices
 
-In this section we shall describe the recommendations for comput and storage aspects of GC deployments
+In this section we shall describe the recommendations for compute and storage aspects of cloud deployments.
 
 ## Compute
 
 The optimum machine choice offering a good balance between CPU and memory should be equipped with at least 4 vCPUs and 8 GB of RAM.
-Using machines with extra RAM amount above a 25 GB threshold is not expected to yield significant performance improvements.
-Having these bounds in mind the following machines are recommended because they offer a balanced system resources for a range of workloads:
+Using machines with additional RAM above a 25 GB threshold is not expected to yield significant performance improvements.
+Having these bounds in mind the following machines are recommended because they offer a balanced set of system resources for a range of workloads:
 
 On Google cloud:
 

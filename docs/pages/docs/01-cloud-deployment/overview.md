@@ -26,7 +26,7 @@ Deploying Grakn on Google Cloud is a straight-forward process, for a guide on ho
 
 ## Amazon Web Services
 
-Amazon Web Services provide on-demand cloud computing platforms on a paid subscription basis. The technology allows subscribers to have at their disposal a full-fledged virtual cluster of computers, 
+Amazon Web Services provide on-demand cloud computing platforms on a paid subscription basis. The technology allows subscribers to have at their disposal a fully-fledged virtual cluster of computers, 
 available all the time, through the Internet. The offered modular services include computing, data storage, data analytics and machine learning.
 
 AWS Marketplace is a digital catalog with thousands of software listings from independent software vendors that make it easy to find, test, buy, and deploy software that runs on AWS. It abstracts the low-level infrastructure

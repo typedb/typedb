@@ -35,7 +35,7 @@ Once the vms are deployed, please allow some time for cluster to fully bootup an
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
 
-### Using gRPC
+### Using Grakn gRPC client
 
 To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is enabled by default. If you chose otherwise for your deployment, a suitable firewall rule can be created if needed by executing the command in red circle in your terminal:
 
@@ -70,17 +70,17 @@ The Grakn console can be accessed similarly to Graql console by typing `grakn co
 
 ![](/images/gc-grakn-console.png)
 
-Provided you log in as user with `admin` privileges, Grakn console allows to perform the following actions:
+Provided you log in as user with `admin` privileges, Grakn console allows you to perform the following actions:
 
 * create a new user:
 
 `CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
 
-* update existing user's password
+* update an existing user's password
 
 `UPDATE username WITH PASSWORD newpassword`
 
-* retrieve all the users present:
+* retrieve all of the users present:
 
 `LIST USERS`
 
