@@ -34,12 +34,13 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh "mvn --batch-mode install -T 2.5C -DskipTests=true" // clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+                sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
             }
         }
 //        stage('Unit And Integration Test') {
 //            steps {
 //                sh "mvn --batch-mode verify"
+//                mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 //            }
 //        }
 //        stage('SNB End-to-end Test') {
@@ -56,8 +57,8 @@ pipeline {
                 sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
-//                sh "./grakn-test/test-biomed/load.sh"
-//                sh "./grakn-test/test-biomed/validate.sh"
+                sh "./grakn-test/test-biomed/load.sh"
+                sh "./grakn-test/test-biomed/validate.sh"
 
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
                 sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
