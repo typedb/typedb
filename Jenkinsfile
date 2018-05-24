@@ -32,45 +32,47 @@ pipeline {
     agent none
 
     stages {
-        parallel {
-            stage('Unit And Integration Test') {
-                agent any
-                
-                steps {
-                    sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
-                    sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+        stage('Grakn Tests') {
+            parallel {
+                stage('Unit And Integration Test') {
+                    agent any
+
+                    steps {
+                        sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
+                        sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+                    }
                 }
-            }
 
-            stage('SNB') {
-                agent any
+                stage('SNB') {
+                    agent any
 
-                steps {
-                    sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
-                    sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
-                    sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
+                    steps {
+                        sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
+                        sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
+                        sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
-                    sh 'PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh'
-                    sh 'PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/validate.sh'
+                        sh 'PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh'
+                        sh 'PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/validate.sh'
 
-                    sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
-                    sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
+                        sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
+                        sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
+                    }
                 }
-            }
 
-            stage('Biomed') {
-                agent any
+                stage('Biomed') {
+                    agent any
 
-                steps {
-                    sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
-                    sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
-                    sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
+                    steps {
+                        sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
+                        sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
+                        sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
-                    sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/load.sh'
-                    sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/validate.sh'
+                        sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/load.sh'
+                        sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/validate.sh'
 
-                    sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
-                    sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
+                        sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
+                        sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
+                    }
                 }
             }
         }
