@@ -45,17 +45,11 @@ pipeline {
                 stage('End-to-end tests') {
                     agent any
 
-                    stage('biomed') {
+
                         steps {
                             echo 'biomed tests'
                         }
-                    }
 
-                    stage('snb') {
-                        steps {
-                            echo 'snb tests'
-                        }
-                    }
                 }
             }
         }
