@@ -23,7 +23,7 @@ def slackGithub(String message, String color = null) {
     slackSend channel: "#github", color: color, message: formatted
 }
 
-echo 'Terminating existing running builds...'
+echo 'Terminating existing running builds (only for non master / stable branch)...'
 if (!(env.BRANCH_NAME in ['master', 'stable'])) {
     stopAllRunningBuildsForThisJob()
 }
@@ -37,11 +37,11 @@ pipeline {
                 sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
             }
         }
-        stage('Unit And Integration Test') {
-            steps {
-                sh "mvn --batch-mode verify"
-            }
-        }
+//        stage('Unit And Integration Test') {
+//            steps {
+//                sh "mvn --batch-mode verify"
+//            }
+//        }
 //        stage('SNB End-to-end Test') {
 //            steps {
 //                sh "cd ./grakn-test/test-integration/src/test/bash && ./init-grakn.sh ${env.BRANCH_NAME}"
@@ -52,7 +52,7 @@ pipeline {
 //        }
         stage('Biomed End-to-end Test') {
             steps {
-                sh "cd ./grakn-test/test-integration/src/test/bash && ./init-grakn.sh ${env.BRANCH_NAME}"
+                sh "cd ./grakn-test/test-integration/src/test/bash && PATH=PATH:${pwd()}./scripts ./init-grakn.sh ${env.BRANCH_NAME}"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./load.sh"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./validate.sh"
                 sh "cd ./grakn-test/test-integration/src/test/bash && ./stop-grakn.sh"
