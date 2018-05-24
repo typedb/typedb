@@ -45,11 +45,15 @@ pipeline {
 
                     steps {
                         stage('biomed') {
-                            echo 'biomed tests'
+                            steps {
+                                echo 'biomed tests'
+                            }
                         }
 
                         stage('snb') {
-                            echo 'snb tests'
+                            steps {
+                                echo 'snb tests'
+                            }
                         }
                     }
                 }
