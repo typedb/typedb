@@ -52,7 +52,7 @@ pipeline {
 //        }
         stage('Biomed End-to-end Test') {
             steps {
-                sh "cd ./grakn-test/test-integration/src/test/bash && PATH=PATH:${pwd()}./scripts ./init-grakn.sh ${env.BRANCH_NAME}"
+                sh "cd ${pwd()}./grakn-test/test-integration/src/test/bash && PATH=PATH:${pwd()}./scripts ./init-grakn.sh ${env.BRANCH_NAME}"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./load.sh"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./validate.sh"
                 sh "cd ./grakn-test/test-integration/src/test/bash && ./stop-grakn.sh"
