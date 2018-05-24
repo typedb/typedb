@@ -52,13 +52,25 @@ pipeline {
 //                sh "cd ./grakn-test/test-integration/src/test/bash && ./stop-grakn.sh"
 //            }
 //        }
+//        stage('SNB End-to-end Test') {
+//            steps {
+//                sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
+//                sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
+//
+//                sh "PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh"
+//                sh ""
+//
+//                sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
+//                sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
+//            }
+//        }
         stage('Biomed End-to-end Test') {
             steps {
                 sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
-                sh "./grakn-test/test-biomed/load.sh"
-                sh "./grakn-test/test-biomed/validate.sh"
+                sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/load.sh'
+                sh 'PATH=$PATH:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT ./grakn-test/test-biomed/validate.sh'
 
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
                 sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
