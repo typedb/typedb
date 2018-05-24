@@ -41,7 +41,7 @@ To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It 
 
 ![](/images/gc-grpc-firewall-command.png)
 
-### Logging into a node
+### Logging in into a node
 You may require a more direct interaction with the database. You need to log into a node to achieve that.
 To do so go back to the Google console and follow the red arrow as shown below to start an ssh session using the `Open in browser window` option.
 
@@ -59,14 +59,14 @@ To access the Graql console, a user password is required. You can see it in the 
 
 ![](/images/gc-user-password.png)
 
-To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from Google console) you are free to interact with Grakn via the Graql terminal. Succesful login attempt shall look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from the Google console) you are free to interact with Grakn via the Graql terminal. Successful login attempt shall look like this:
 
 ![](/images/gc-graql-console.png)
 
 A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/graql-console).
 
 #### Accessing the Grakn console
-The Grakn console can be accessed similarly to graql console by typing `grakn console start` and providing the user credentials. Successful login will look like this:
+The Grakn console can be accessed similarly to Graql console by typing `grakn console start` and providing the user credentials. Successful login will look like this:
 
 ![](/images/gc-grakn-console.png)
 

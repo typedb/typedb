@@ -20,7 +20,7 @@ The following parameters allow to define the stack details:
 * General:
     - **StackName**
     
-        Name for you Grakn KGMS stack. This must be a valid system name, specifically, it must consist of only lowercase letters, numbers, and hyphens and cannot exceed 50 characters. 
+        The name for you Grakn KGMS stack. This must be a valid system name, specifically, it must consist of only lowercase letters, numbers, and hyphens, and cannot exceed 50 characters. 
       
     - **KeyPairName**
         
@@ -32,7 +32,7 @@ The following parameters allow to define the stack details:
         The id of the VPC the stack should be deployed into.
     - **InternetFacingRouteTable**
       
-        The id of a internet-facing Route Table in the VPC.
+        The id of an internet-facing Route Table in the VPC.
     - **GraknSubnetCidrBlock**
    
         The Grakn cluster will be deployed in a separate subnet and this setting specifies its IP CIDR range.
@@ -47,7 +47,7 @@ The following parameters allow to define the stack details:
 * Cluster:
     - **GraknInstanceType**
     
-        EC2 instance type of a single Grakn instance.
+        EC2 instance type of a Grakn instances.
     - **GraknGroupSize**
     
         Number of Grakn instances in the cluster.
@@ -56,7 +56,7 @@ The following parameters allow to define the stack details:
         Size in GB of each of EBS volumes that are attached to Grakn instances.
     - **OptimiseForEbs**
     
-        Specifies whether the Grakn launch configuration should optimised for EBS I/O.
+        Specifies whether to optimise Grakn Launch Configuration for EBS I/O.
         
 ## Accessing Grakn
 
@@ -64,10 +64,10 @@ There are various ways to access Grakn on AWS. Here we will address the most com
 
 ### Using gRPC
 
-The most common access pattern is to use a gRPC client to connect to a Grakn cluster. The connection happens via TCP port 48555 and the `gRPCLocation` stack parameter defines
+The most common access pattern is to use the Grakn gRPC client to connect to a Grakn cluster. The connection happens via TCP port 48555 and the `gRPCLocation` stack parameter defines
 the range of IP addresses that can schedule gRPC requests.
         
-### Logging into a node
+### Logging in into a node
 To log in into one of the cluster nodes, simply use the ssh command:
 
 `ssh -i <private key file> ubuntu@<grakn instance DNS name or IP address>`
@@ -85,19 +85,19 @@ A sample output of the command executed on a node of a healthy 3-node cluster sh
 
 To access the Graql console, a user password is required. The default user password is specified in the `GraknUserPassword` output.
 
-To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from Google console), you are free to interact with Grakn via the Graql terminal. 
-A succesful login attempt shall look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one specified in the `GraknUserPassword` output), you are free to interact with Grakn via the Graql terminal. 
+A successful login attempt shall look like this:
 
 ![](/images/aws-graql-console.png)
 
 A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/graql-console).
 
 #### Accessing the Grakn console
-The Grakn console can be accessed similarly to graql console by typing:
+The Grakn console can be accessed similarly to the Graql console by typing:
 
 `grakn console start`
   
-and providing the user credentials (user: grakn, password: the one from Google console). A successful login attempt will look like this:
+and providing the user credentials (user: grakn, password: the one specified in the `GraknUserPassword` output). A successful login attempt will look like this:
 
 ![](/images/aws-grakn-console.png)
 
