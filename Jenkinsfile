@@ -37,35 +37,27 @@ pipeline {
                 sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
             }
         }
-//        stage('Unit And Integration Test') {
-//            steps {
-//                sh "mvn --batch-mode verify"
-//                mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
-//            }
-//        }
-//        stage('SNB End-to-end Test') {
-//            steps {
-//                PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/main/bash PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh
-//                sh "cd ./grakn-test/test-integration/src/test/bash && ./init-grakn.sh ${env.BRANCH_NAME}"
-//                sh "cd ./grakn-test/test-snb/src/main/bash && ./load.sh"
-//                sh "cd ./grakn-test/test-snb/src/main/bash && ./validate.sh"
-//                sh "cd ./grakn-test/test-integration/src/test/bash && ./stop-grakn.sh"
-//            }
-//        }
 
-        stage('End-to-end - grakn server start') {
+        stage('Unit And Integration Test') {
+            steps {
+                sh "mvn --batch-mode verify"
+                mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+            }
+        }
+
+        stage('End-to-end Tests - grakn server start') {
             steps {
                 sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
             }
         }
-        stage('End-to-end run tests') {
+        stage('End-to-end Tests - run tests') {
             parallel {
                 stage('SNB') {
                     steps {
-//                        sh "PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh"
-                        sh "echo hai"
+                        sh "PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/load.sh"
+                        sh "PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT PACKAGE=grakn-package WORKSPACE=`pwd` ./grakn-test/test-snb/src/main/bash/validate.sh"
                     }
                 }
                 stage('Biomed') {
@@ -76,7 +68,7 @@ pipeline {
                 }
             }
         }
-        stage('End-to-end - grakn server stop') {
+        stage('End-to-end Tests - grakn server stop') {
             steps {
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
                 sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
