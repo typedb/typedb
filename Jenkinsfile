@@ -52,14 +52,14 @@ pipeline {
 //        }
         stage('Biomed End-to-end Test') {
             steps {
-                sh "cd grakn-dist/target && tar -xf grakn-dist-1.2.0.tar.gz"
-                sh "cd grakn-dist/target/grakn-dist-1.2.0/ && ./grakn server start"
+                sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
+                sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
 //                sh "cd ./grakn-test/test-snb/src/main/bash && ./load.sh"
 //                sh "cd ./grakn-test/test-snb/src/main/bash && ./validate.sh"
 
                 sh "cd grakn-dist/target/grakn-dist-1.2.0/ && ./grakn server stop"
-                sh "cd grakn-dist/target/ && rm -r grakn-dist-1.2.0"
+                sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
             }
         }
 
