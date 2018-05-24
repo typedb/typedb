@@ -34,7 +34,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
+                sh "mvn --batch-mode install -T 2.5C -DskipTests=true" // clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
             }
         }
 //        stage('Unit And Integration Test') {
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 sh "ls ."
                 sh "ls ${pwd()}"
-                sh "cd ${pwd()}/grakn-test/test-integration/src/test/bash && ls ."
+                sh "cd ${pwd()}/grakn-test/test-integration/src/test/bash && PATH=PATH:${pwd()}/scripts ./init-grakn.sh ${env.BRANCH_NAME}"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./load.sh"
                 sh "cd ./grakn-test/test-snb/src/main/bash && ./validate.sh"
                 sh "cd ./grakn-test/test-integration/src/test/bash && ./stop-grakn.sh"
