@@ -53,14 +53,14 @@ pipeline {
 //            }
 //        }
 
-        stage('End-to-end setup') {
+        stage('End-to-end - grakn server start') {
             steps {
                 sh "cd grakn-dist/target && tar -xf grakn-dist-1.3.0-SNAPSHOT.tar.gz"
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server start"
 
             }
         }
-        stage('End-to-end Tests') {
+        stage('End-to-end run tests') {
             parallel {
                 stage('SNB') {
                     steps {
@@ -76,7 +76,7 @@ pipeline {
                 }
             }
         }
-        stage('End-to-end teardown') {
+        stage('End-to-end - grakn server stop') {
             steps {
                 sh "cd grakn-dist/target/grakn-dist-1.3.0-SNAPSHOT/ && ./grakn server stop"
                 sh "cd grakn-dist/target/ && rm -r grakn-dist-1.3.0-SNAPSHOT"
