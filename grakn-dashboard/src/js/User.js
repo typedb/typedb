@@ -95,7 +95,7 @@ export default {
     }
     return (modalShown === 'true');
   },
-
+  
   // ------------ Limit number of results ---------------- //
   getQueryLimit() {
     const queryLimit = localStorage.getItem('query_limit');
