@@ -143,7 +143,7 @@ public abstract class AbstractProcessHandler {
         return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
-    public boolean processIsRunning(Path pidFile) {
+    public boolean isProcessRunning(Path pidFile) {
         boolean isRunning = false;
         String processPid;
         if (pidFile.toFile().exists()) {
@@ -168,7 +168,7 @@ public abstract class AbstractProcessHandler {
     public void stopProgram(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
-        boolean programIsRunning = processIsRunning(pidFile);
+        boolean programIsRunning = isProcessRunning(pidFile);
         if(!programIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
@@ -185,7 +185,7 @@ public abstract class AbstractProcessHandler {
     }
 
     public void processStatus(Path storagePid, String name) {
-        if (processIsRunning(storagePid)) {
+        if (isProcessRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {
             System.out.println(name+": NOT RUNNING");

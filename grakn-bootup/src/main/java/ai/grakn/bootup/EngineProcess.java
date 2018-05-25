@@ -69,7 +69,7 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean graknIsRunning = processIsRunning(ENGINE_PID);
+        boolean graknIsRunning = isProcessRunning(ENGINE_PID);
         if(graknIsRunning) {
             System.out.println(COMPONENT_NAME + " is already running");
         } else {
@@ -115,7 +115,7 @@ public class EngineProcess extends AbstractProcessHandler {
             String host = graknConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknConfig.getProperty(GraknConfigKey.SERVER_PORT);
 
-            if(processIsRunning(ENGINE_PID) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
+            if(isProcessRunning(ENGINE_PID) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -182,6 +182,6 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return processIsRunning(ENGINE_PID);
+        return isProcessRunning(ENGINE_PID);
     }
 }
