@@ -45,7 +45,7 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean queueRunning = processIsRunning(QUEUE_PID);
+        boolean queueRunning = isProcessRunning(QUEUE_PID);
         if(queueRunning) {
             System.out.println(COMPONENT_NAME +" is already running");
         } else {
@@ -73,7 +73,7 @@ public class QueueProcess extends AbstractProcessHandler {
             System.out.print(".");
             System.out.flush();
 
-            if(processIsRunning(QUEUE_PID)) {
+            if(isProcessRunning(QUEUE_PID)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -92,7 +92,7 @@ public class QueueProcess extends AbstractProcessHandler {
     public void stop() {
         System.out.print("Stopping "+ COMPONENT_NAME +"...");
         System.out.flush();
-        boolean queueIsRunning = processIsRunning(QUEUE_PID);
+        boolean queueIsRunning = isProcessRunning(QUEUE_PID);
         if(!queueIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
@@ -144,6 +144,6 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return processIsRunning(QUEUE_PID);
+        return isProcessRunning(QUEUE_PID);
     }
 }

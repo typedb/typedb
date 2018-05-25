@@ -52,7 +52,7 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean storageIsRunning = processIsRunning(STORAGE_PID);
+        boolean storageIsRunning = isProcessRunning(STORAGE_PID);
         if(storageIsRunning) {
             System.out.println(COMPONENT_NAME +" is already running");
         } else {
@@ -142,6 +142,6 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return processIsRunning(STORAGE_PID);
+        return isProcessRunning(STORAGE_PID);
     }
 }
