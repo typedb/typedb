@@ -35,13 +35,13 @@ Once the vms are deployed, please allow some time for cluster to fully bootup an
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
 
-### Using gRPC
+### Using Grakn gRPC client
 
 To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is enabled by default. If you chose otherwise for your deployment, a suitable firewall rule can be created if needed by executing the command in red circle in your terminal:
 
 ![](/images/gc-grpc-firewall-command.png)
 
-### Logging into a node
+### Logging in into a node
 You may require a more direct interaction with the database. You need to log into a node to achieve that.
 To do so go back to the Google console and follow the red arrow as shown below to start an ssh session using the `Open in browser window` option.
 
@@ -59,28 +59,28 @@ To access the Graql console, a user password is required. You can see it in the 
 
 ![](/images/gc-user-password.png)
 
-To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from Google console) you are free to interact with Grakn via the Graql terminal. Succesful login attempt shall look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from the Google console) you are free to interact with Grakn via the Graql terminal. Successful login attempt shall look like this:
 
 ![](/images/gc-graql-console.png)
 
 A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/graql-console).
 
 #### Accessing the Grakn console
-The Grakn console can be accessed similarly to graql console by typing `grakn console start` and providing the user credentials. Successful login will look like this:
+The Grakn console can be accessed similarly to Graql console by typing `grakn console start` and providing the user credentials. Successful login will look like this:
 
 ![](/images/gc-grakn-console.png)
 
-Provided you log in as user with`admin` privileges, Grakn console allows to perform the following actions:
+Provided you log in as user with `admin` privileges, Grakn console allows you to perform the following actions:
 
 * create a new user:
 
 `CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
 
-* update existing user's password
+* update an existing user's password
 
 `UPDATE username WITH PASSWORD newpassword`
 
-* retrieve all the users present:
+* retrieve all of the users present:
 
 `LIST USERS`
 
@@ -97,5 +97,5 @@ Provided you log in as user with`admin` privileges, Grakn console allows to perf
 
 If you want to learn more about Grakn KGMS, the [Grakn Academy](https://dev.grakn.ai/academy/) is a good place to start.
 
-To learn more about running Grakn KGMS on GCP take a look at the [best practices guide](https://dev.grakn.ai/docs/cloud-deployment/best-practices)
+To learn more about running Grakn KGMS in the cloud, take a look at the [best practices guide](https://dev.grakn.ai/docs/cloud-deployment/best-practices)
 and [post deployment steps](https://dev.grakn.ai/docs/cloud-deployment/post-deployment).
