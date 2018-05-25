@@ -47,15 +47,15 @@ public class QueueProcess extends AbstractProcessHandler {
         this.graknHome = graknHome;
     }
 
-    public void start() {
+    public void startIfNotRunning() {
         boolean queueRunning = isProcessRunning(QUEUE_PIDFILE);
         if(queueRunning) {
             System.out.println(DISPLAY_NAME +" is already running");
         } else {
-            queueStartProcess();
+            start();
         }
     }
-    private void queueStartProcess() {
+    private void start() {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
 
@@ -124,7 +124,7 @@ public class QueueProcess extends AbstractProcessHandler {
     public void clean() {
         System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
-        start();
+        startIfNotRunning();
 
         executeAndWait(new String[]{
                 SH,
