@@ -77,7 +77,7 @@ public class QueueProcess extends AbstractProcessHandler {
                 return;
             }
             try {
-                Thread.sleep(WAIT_INTERVAL_S * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
