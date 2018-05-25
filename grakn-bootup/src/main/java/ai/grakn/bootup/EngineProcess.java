@@ -71,12 +71,12 @@ public class EngineProcess extends AbstractProcessHandler {
         return Grakn.class;
     }
 
-    public void start() {
+    public void startIfNotRunning() {
         boolean graknIsRunning = isProcessRunning(ENGINE_PID);
         if(graknIsRunning) {
             System.out.println(COMPONENT_NAME + " is already running");
         } else {
-            graknStartProcess();
+            start();
         }
     }
 
@@ -97,7 +97,7 @@ public class EngineProcess extends AbstractProcessHandler {
                 .collect(Collectors.joining(":"));
     }
 
-    private void graknStartProcess() {
+    private void start() {
         System.out.print("Starting " + COMPONENT_NAME + "...");
         System.out.flush();
 
