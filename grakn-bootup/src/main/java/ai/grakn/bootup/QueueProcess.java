@@ -34,12 +34,12 @@ import java.time.LocalDateTime;
  * @author Michele Orsi
  */
 public class QueueProcess extends AbstractProcessHandler {
+    private static final String DISPLAY_NAME = "Queue";
     private static final String QUEUE_PROCESS_NAME = "redis-server";
-    private static final String CONFIG_LOCATION = "/services/redis/redis.conf";
-    private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
-    private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
-
-    private static final String COMPONENT_NAME = "Queue";
+    private static final long QUEUE_STARTUP_TIMEOUT_SECOND = 10;
+    private static final Path CONFIG_LOCATION = Paths.get("services", "redis", "redis.conf");
+    private static final Path QUEUE_PIDFILE = Paths.get(File.separator,"tmp", "grakn-queue.pid");
+    private final Path QUEUE_BIN = Paths.get("services", "redis", selectCommand("redis-cli-osx", "redis-cli-linux"));
 
     private final Path graknHome;
 
@@ -48,35 +48,30 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean queueRunning = isProcessRunning(QUEUE_PID);
+        boolean queueRunning = isProcessRunning(QUEUE_PIDFILE);
         if(queueRunning) {
-            System.out.println(COMPONENT_NAME +" is already running");
+            System.out.println(DISPLAY_NAME +" is already running");
         } else {
             queueStartProcess();
         }
     }
     private void queueStartProcess() {
-        System.out.print("Starting "+ COMPONENT_NAME +"...");
+        System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
-        String queueBin = selectCommand("redis-server-osx","redis-server-linux");
 
         // run queue
         // queue needs to be ran with $GRAKN_HOME as the working directory
         // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-        executeAndWait(new String[]{
-                SH,
-                "-c",
-                graknHome +"/services/redis/"+queueBin+" "+ graknHome + CONFIG_LOCATION
-        },null, graknHome.toFile());
-
+        executeAndWait(new String[]{SH, "-c", graknHome.resolve(QUEUE_BIN) + " " + graknHome.resolve(CONFIG_LOCATION) },
+                null, graknHome.toFile());
         LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_S);
+        LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
 
         while(LocalDateTime.now().isBefore(timeout)) {
             System.out.print(".");
             System.out.flush();
 
-            if(isProcessRunning(QUEUE_PID)) {
+            if(isProcessRunning(QUEUE_PIDFILE)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -88,14 +83,14 @@ public class QueueProcess extends AbstractProcessHandler {
         }
 
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+ COMPONENT_NAME);
+        System.out.println("Unable to start "+ DISPLAY_NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        System.out.print("Stopping "+ COMPONENT_NAME +"...");
+        System.out.print("Stopping "+ DISPLAY_NAME +"...");
         System.out.flush();
-        boolean queueIsRunning = isProcessRunning(QUEUE_PID);
+        boolean queueIsRunning = isProcessRunning(QUEUE_PIDFILE);
         if(!queueIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
@@ -104,49 +99,43 @@ public class QueueProcess extends AbstractProcessHandler {
     }
 
     private void queueStopProcess() {
-        int pid = retrievePid(QUEUE_PID);
+        int pid = retrievePid(QUEUE_PIDFILE);
         if (pid <0 ) return;
 
         String host = getHostFromConfig();
-        String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
-        executeAndWait(new String[]{
-                SH,
-                "-c",
-                graknHome + "/services/redis/" + queueBin + " -h " + host + " shutdown"
-        }, null, null);
-
-        waitUntilStopped(QUEUE_PID,pid);
+        executeAndWait(new String[] { SH, "-c", graknHome.resolve(QUEUE_BIN) + " -h " + host + " shutdown" }, null, null);
+        waitUntilStopped(QUEUE_PIDFILE,pid);
     }
 
     private String getHostFromConfig() {
-        Path fileLocation = Paths.get(graknHome.toString(), CONFIG_LOCATION);
+        Path fileLocation = graknHome.resolve(CONFIG_LOCATION);
         return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
 
     public void status() {
-        processStatus(QUEUE_PID, COMPONENT_NAME);
+        processStatus(QUEUE_PIDFILE, DISPLAY_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(COMPONENT_NAME +" pid = '"+ getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME +" pid = '" + getPidFromFile(QUEUE_PIDFILE).orElse("") +
+                "' (from "+ QUEUE_PIDFILE +"), '" + getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+ COMPONENT_NAME +"...");
+        System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
         start();
-        String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
 
         executeAndWait(new String[]{
                 SH,
                 "-c",
-                graknHome.resolve(Paths.get("services", "redis", queueBin))+" flushall"
+                graknHome.resolve(QUEUE_BIN)+" flushall"
         },null,null);
         stop();
         System.out.println("SUCCESS");
     }
 
     public boolean isRunning() {
-        return isProcessRunning(QUEUE_PID);
+        return isProcessRunning(QUEUE_PIDFILE);
     }
 }
