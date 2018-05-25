@@ -62,11 +62,8 @@ public class StorageProcess extends AbstractProcessHandler {
         }
     }
 
-    private Path getStorageLogPath(){
-        //make the path absolute to avoid cassandra confusion
-        String logDirString = graknProperties.getProperty(GraknConfigKey.LOG_DIR);
-        Path logDirPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
-        return logDirPath.isAbsolute() ? logDirPath : Paths.get(graknHome.toString(), logDirString);
+    private Path getStorageLogPathFromGraknProperties(){
+        return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
     }
 
     private void start() {
@@ -84,7 +81,7 @@ public class StorageProcess extends AbstractProcessHandler {
                 "-c",
                 graknHome.resolve(STORAGE_BIN)
                         + " -p " + STORAGE_PIDFILE
-                        + " -l " + getStorageLogPath()
+                        + " -l " + getStorageLogPathFromGraknProperties().toAbsolutePath()
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
@@ -122,7 +119,8 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME +" pid = '"+ getPidFromFile(STORAGE_PIDFILE).orElse("")+"' (from "+ STORAGE_PIDFILE +"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME +" pid = '"+ getPidFromFile(STORAGE_PIDFILE).orElse("") +
+                "' (from "+ STORAGE_PIDFILE +"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
