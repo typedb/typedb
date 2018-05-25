@@ -42,6 +42,7 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
+    private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
 
     private final Path graknHome;
@@ -95,7 +96,7 @@ public class StorageProcess extends AbstractProcessHandler {
             OutputCommand storageStatus = executeAndWait(new String[]{
                     SH,
                     "-c",
-                    graknHome + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
+                    graknHome.resolve(NODETOOL_BIN) + " statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);
             if(storageStatus.output.trim().equals("running")) {
                 System.out.println("SUCCESS");
