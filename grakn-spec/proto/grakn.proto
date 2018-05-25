@@ -148,9 +148,9 @@ message ComputeAnswer {
     oneof computeAnswer {
         Number number = 1;
         Paths paths = 2;
-        CentralityCounts centralityCounts = 3;
-        ClusterMembers clusterMembers = 4;
-        ClusterCounts clusterCounts = 5;
+        Centrality centrality = 3;
+        Clusters clusters = 4;
+        ClusterSizes clusterSizes = 5;
     }
 }
 
@@ -162,16 +162,16 @@ message Paths {
     repeated ConceptIds paths = 1;
 }
 
-message CentralityCounts {
-    map<int64, ConceptIds> centralityCounts = 1;
+message Centrality {
+    map<int64, ConceptIds> centrality = 1;
 }
 
-message ClusterMembers {
+message Clusters {
     repeated ConceptIds clusters = 1;
 }
 
-message ClusterCounts {
-    repeated int64 counts = 1;
+message ClusterSizes {
+    repeated int64 clusterSizes = 1;
 }
 
 enum TxType {

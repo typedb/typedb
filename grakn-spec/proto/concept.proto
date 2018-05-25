@@ -169,7 +169,7 @@ message Concepts {
 }
 
 message ConceptIds {
-    repeated ConceptId conceptId= 1;
+    repeated ConceptId conceptIds = 1;
 }
 
 message OptionalConcept {

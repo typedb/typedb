@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -65,8 +66,12 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<ConceptId>> {
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<ConceptId>> emitter) {
         if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
-            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
-                    Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
+            String clusterPropertyKey = (String) persistentProperties.get(CLUSTER_LABEL);
+            String clusterId = vertex.value(clusterPropertyKey);
+            ConceptId conceptId = ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()));
+            Set<ConceptId> cluster = Collections.singleton(conceptId);
+
+            emitter.emit(clusterId, cluster);
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }

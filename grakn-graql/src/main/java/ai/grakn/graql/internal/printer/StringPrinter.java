@@ -54,12 +54,12 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public String complete(StringBuilder output) {
+    protected String complete(StringBuilder output) {
         return output.toString();
     }
 
     @Override
-    public StringBuilder concept(Concept concept) {
+    protected StringBuilder concept(Concept concept) {
         StringBuilder output = new StringBuilder();
 
         // Display values for resources and ids for everything else
@@ -116,7 +116,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder bool(boolean bool) {
+    protected StringBuilder bool(boolean bool) {
         StringBuilder builder = new StringBuilder();
 
         if (bool) {
@@ -127,7 +127,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder optional(Optional<?> optional) {
+    protected StringBuilder optional(Optional<?> optional) {
         StringBuilder builder = new StringBuilder();
         if (optional.isPresent()) {
             return build(optional.get());
@@ -137,7 +137,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder collection(Collection<?> collection) {
+    protected StringBuilder collection(Collection<?> collection) {
         StringBuilder builder = new StringBuilder();
 
         builder.append("{");
@@ -149,7 +149,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder map(Map<?, ?> map) {
+    protected StringBuilder map(Map<?, ?> map) {
         return collection(map.entrySet());
     }
 
@@ -165,12 +165,32 @@ class StringPrinter extends Printer<StringBuilder> {
 
     //TODO: implement StringPrinter for ComputeAnswer properly!
     @Override
-    public StringBuilder computeAnswer(ComputeQuery.Answer computeAnswer) {
-        return object(computeAnswer);
+    protected StringBuilder computeAnswer(ComputeQuery.Answer computeAnswer) {
+        StringBuilder builder = new StringBuilder();
+
+        if (computeAnswer.getNumber().isPresent()) {
+            builder.append(computeAnswer.getNumber().get());
+        }
+        else if (computeAnswer.getCentrality().isPresent()) {
+            builder.append(map(computeAnswer.getCentrality().get()));
+        }
+        else if (computeAnswer.getClusters().isPresent()) {
+            builder.append(collection(computeAnswer.getClusters().get()));
+        }
+        else if (computeAnswer.getClusterSizes().isPresent()) {
+            builder.append(collection(computeAnswer.getClusterSizes().get()));
+        }
+        else if (computeAnswer.getPaths().isPresent()) {
+            builder.append(collection(computeAnswer.getPaths().get()));
+        }
+        //TODO: remove
+        System.out.println("BUILDER: " + builder.toString());
+
+        return builder;
     }
 
     @Override
-    public StringBuilder object(Object object) {
+    protected StringBuilder object(Object object) {
         StringBuilder builder = new StringBuilder();
 
         if (object instanceof Map.Entry<?, ?>) {

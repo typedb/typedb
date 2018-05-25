@@ -114,8 +114,8 @@ public class ConnectedComponentTest {
                     Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
                             .includeAttributes(true).execute().getClusterSizes().get();
             assertTrue(sizeList.isEmpty());
-            List<Set<ConceptId>> membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .where(members(true)).execute().getClusterMembers().get();
+            Set<Set<ConceptId>> membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true)).execute().getClusters().get();
             assertTrue(membersList.isEmpty());
             assertEquals(0L, graph.graql().compute(COUNT).execute().getNumber().get().longValue());
         }
@@ -124,7 +124,7 @@ public class ConnectedComponentTest {
     @Test
     public void testConnectedComponentSize() {
         List<Long> sizeList;
-        List<Set<ConceptId>> membersList;
+        Set<Set<ConceptId>> membersSet;
 
         addSchemaAndEntities();
 
@@ -133,9 +133,9 @@ public class ConnectedComponentTest {
                     .includeAttributes(true).where(size(1L)).execute().getClusterSizes().get();
             assertEquals(0, sizeList.size());
 
-            membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .where(members(true)).where(size(1L)).execute().getClusterMembers().get();
-            assertEquals(0, membersList.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true)).where(size(1L)).execute().getClusters().get();
+            assertEquals(0, membersSet.size());
         }
 
         addResourceRelations();
@@ -149,14 +149,14 @@ public class ConnectedComponentTest {
                     .includeAttributes(true).where(size(1L), contains(entityId1)).execute().getClusterSizes().get();
             assertEquals(0, sizeList.size());
 
-            membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .where(members(true), size(1L)).execute().getClusterMembers().get();
-            assertEquals(0, membersList.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true), size(1L)).execute().getClusters().get();
+            assertEquals(0, membersSet.size());
 
-            membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .where(contains(entityId4), members(true), size(1L)).execute()
-                    .getClusterMembers().get();
-            assertEquals(0, membersList.size());
+                    .getClusters().get();
+            assertEquals(0, membersSet.size());
         }
     }
 
@@ -179,31 +179,31 @@ public class ConnectedComponentTest {
         }
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            List<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+            Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
                     .where(members(true)).execute()
-                    .getClusterMembers().get();
+                    .getClusters().get();
             assertEquals(1, result.size());
             assertEquals(5, result.iterator().next().size());
 
             result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
                     .where(members(true), contains(entityId2)).execute()
-                    .getClusterMembers().get();
+                    .getClusters().get();
             assertEquals(1, result.size());
             assertEquals(5, result.iterator().next().size());
 
             assertEquals(1, graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
                     .includeAttributes(true).where(members(true)).execute()
-                    .getClusterMembers().get().size());
+                    .getClusters().get().size());
         }
     }
 
     @Test
     public void testConnectedComponent() {
         List<Long> sizeList;
-        List<Set<ConceptId>> membersList;
+        Set<Set<ConceptId>> membersSet;
 
         addSchemaAndEntities();
 
@@ -219,16 +219,16 @@ public class ConnectedComponentTest {
             assertEquals(1, sizeList.size());
             assertEquals(7L, sizeList.iterator().next().longValue());
 
-            membersList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).where(members(true)).execute()
-                    .getClusterMembers().get();
-            assertEquals(1, membersList.size());
-            assertEquals(7, membersList.iterator().next().size());
+            membersSet = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).where(members(true)).execute()
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
+            assertEquals(7, membersSet.iterator().next().size());
 
-            membersList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
+            membersSet = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
                     .where(contains(entityId4), members(true)).execute()
-                    .getClusterMembers().get();
-            assertEquals(1, membersList.size());
-            assertEquals(7, membersList.iterator().next().size());
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
+            assertEquals(7, membersSet.iterator().next().size());
         }
 
         // add different resources. This may change existing cluster labels.
@@ -249,11 +249,11 @@ public class ConnectedComponentTest {
                     .getClusterSizes().get();
             assertEquals(1, sizeList.size());
 
-            membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).execute()
-                    .getClusterMembers().get();
-            assertEquals(1, membersList.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).execute()
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
             Map<Integer, Integer> populationCount1 = new HashMap<>();
-            membersList.forEach(value -> populationCount1.put(value.size(),
+            membersSet.forEach(value -> populationCount1.put(value.size(),
                     populationCount1.containsKey(value.size()) ? populationCount1.get(value.size()) + 1 : 1));
             assertEquals(1, populationCount1.get(7).intValue());
 
@@ -264,9 +264,9 @@ public class ConnectedComponentTest {
             sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(subTypes).execute()
                     .getClusterSizes().get();
             assertEquals(17, sizeList.size()); // No relationships, so this is the entity count;
-            membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).in(subTypes).execute()
-                    .getClusterMembers().get();
-            assertEquals(17, membersList.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).in(subTypes).execute()
+                    .getClusters().get();
+            assertEquals(17, membersSet.size());
         }
     }
 

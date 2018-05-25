@@ -22,7 +22,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -96,7 +95,7 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<ConceptId>> degrees =
-                    graph.graql().<ComputeQuery>parse("compute centrality using degree;").execute().getCentralityCount().get();
+                    graph.graql().<ComputeQuery>parse("compute centrality using degree;").execute().getCentrality().get();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -181,8 +180,8 @@ public class GraqlTest {
             List<Long> sizeList =
                     graph.graql().<ComputeQuery>parse("compute cluster using connected-component;").execute().getClusterSizes().get();
             assertTrue(sizeList.isEmpty());
-            List<Set<ConceptId>> membersList = graph.graql().<ComputeQuery>parse(
-                    "compute cluster using connected-component, where members = true;").execute().getClusterMembers().get();
+            Set<Set<ConceptId>> membersList = graph.graql().<ComputeQuery>parse(
+                    "compute cluster using connected-component, where members = true;").execute().getClusters().get();
             assertTrue(membersList.isEmpty());
 
             Query<?> parsed = graph.graql().parse(

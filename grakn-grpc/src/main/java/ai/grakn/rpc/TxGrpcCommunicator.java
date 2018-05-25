@@ -55,16 +55,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class TxGrpcCommunicator implements AutoCloseable {
 
-    private final StreamObserver<TxRequest> requests;
-    private final QueueingObserver responses;
+    private final StreamObserver<TxRequest> requestSender;
+    private final ResponseListener responseListener;
 
-    private TxGrpcCommunicator(StreamObserver<TxRequest> requests, QueueingObserver responses) {
-        this.requests = requests;
-        this.responses = responses;
+    private TxGrpcCommunicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
+        this.requestSender = requestSender;
+        this.responseListener = responseListener;
     }
 
     public static TxGrpcCommunicator create(GraknGrpc.GraknStub stub) {
-        QueueingObserver responseListener = new QueueingObserver();
+        ResponseListener responseListener = new ResponseListener();
         StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
         return new TxGrpcCommunicator(requestSender, responseListener);
     }
@@ -75,17 +75,17 @@ public class TxGrpcCommunicator implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(TxRequest request) {
-        if (responses.terminated.get()) {
+        if (responseListener.terminated.get()) {
             throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
         }
-        requests.onNext(request);
+        requestSender.onNext(request);
     }
 
     /**
      * Block until a response is returned.
      */
     public Response receive() throws InterruptedException {
-        Response response = responses.poll();
+        Response response = responseListener.poll();
         if (response.type() != Response.Type.OK) {
             close();
         }
@@ -95,7 +95,7 @@ public class TxGrpcCommunicator implements AutoCloseable {
     @Override
     public void close() {
         try{
-            requests.onCompleted();
+            requestSender.onCompleted();
         } catch (IllegalStateException e) {
             //IGNORED
             //This is needed to handle the fact that:
@@ -103,11 +103,11 @@ public class TxGrpcCommunicator implements AutoCloseable {
             //2. Error can lead to connection closures but the transaction may stay open
             //When this occurs a "half-closed" state is thrown which we can safely ignore
         }
-        responses.close();
+        responseListener.close();
     }
 
     public boolean isClosed(){
-        return responses.terminated.get();
+        return responseListener.terminated.get();
     }
 
     /**
@@ -115,7 +115,7 @@ public class TxGrpcCommunicator implements AutoCloseable {
      *
      * A response can be polled with the {@link #poll()} method.
      */
-    private static class QueueingObserver implements StreamObserver<TxResponse>, AutoCloseable {
+    private static class ResponseListener implements StreamObserver<TxResponse>, AutoCloseable {
 
         private final BlockingQueue<Response> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);

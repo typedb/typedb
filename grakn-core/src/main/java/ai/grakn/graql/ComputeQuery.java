@@ -227,10 +227,10 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
         Optional<List<List<ConceptId>>> getPaths();
 
         @CheckReturnValue
-        Optional<Map<Long, Set<ConceptId>>> getCentralityCount();
+        Optional<Map<Long, Set<ConceptId>>> getCentrality();
 
         @CheckReturnValue
-        Optional<List<Set<ConceptId>>> getClusterMembers();
+        Optional<Set<Set<ConceptId>>> getClusters();
 
         @CheckReturnValue
         Optional<List<Long>> getClusterSizes();

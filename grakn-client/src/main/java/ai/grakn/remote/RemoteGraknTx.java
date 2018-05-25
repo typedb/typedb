@@ -71,7 +71,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.client = GrpcClient.create(this::convert, stub);
+        this.client = GrpcClient.create(this::concept, stub);
         client.open(openRequest);
     }
 
@@ -217,7 +217,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return RemoteQueryExecutor.create(client);
     }
 
-    private Concept convert(GrpcConcept.Concept concept) {
+    private Concept concept(GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId().getValue());
 
         switch (concept.getBaseType()) {

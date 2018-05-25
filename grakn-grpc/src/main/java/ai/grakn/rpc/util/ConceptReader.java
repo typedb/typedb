@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  */
 public class ConceptReader {
     public static Stream<? extends Concept> concepts(GrpcConceptConverter conceptConverter, GrpcConcept.Concepts concepts) {
-        return concepts.getConceptList().stream().map(conceptConverter::convert);
+        return concepts.getConceptList().stream().map(conceptConverter::concept);
     }
 
     public static Label label(GrpcConcept.Label label) {

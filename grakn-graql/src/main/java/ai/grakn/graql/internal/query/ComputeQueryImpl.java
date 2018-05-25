@@ -568,8 +568,8 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         private Number number = null;
         private List<List<ConceptId>> paths = null;
-        private Map<Long, Set<ConceptId>> centralityCount = null;
-        private List<Set<ConceptId>> clusterMembers = null;
+        private Map<Long, Set<ConceptId>> centrality = null;
+        private Set<Set<ConceptId>> clusters = null;
         private List<Long> clusterSizes = null;
 
         public AnswerImpl() {
@@ -596,21 +596,21 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         }
 
         @Override
-        public Optional<Map<Long, Set<ConceptId>>> getCentralityCount() {
-            return Optional.ofNullable(centralityCount);
+        public Optional<Map<Long, Set<ConceptId>>> getCentrality() {
+            return Optional.ofNullable(centrality);
         }
 
-        public Answer setCentralityCount(Map<Long, Set<ConceptId>> countMap) {
-            this.centralityCount = ImmutableMap.copyOf(countMap);
+        public Answer setCentrality(Map<Long, Set<ConceptId>> countMap) {
+            this.centrality = ImmutableMap.copyOf(countMap);
             return this;
         }
 
-        public Optional<List<Set<ConceptId>>> getClusterMembers() {
-            return Optional.ofNullable(clusterMembers);
+        public Optional<Set<Set<ConceptId>>> getClusters() {
+            return Optional.ofNullable(clusters);
         }
 
-        public Answer setClusterMembers(Collection<Set<ConceptId>> clusterMap) {
-            this.clusterMembers = ImmutableList.copyOf(clusterMap);
+        public Answer setClusters(Set<Set<ConceptId>> clusters) {
+            this.clusters = ImmutableSet.copyOf(clusters);
             return this;
         }
 
@@ -637,8 +637,8 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         public int hashCode() {
             int result = Objects.hashCode(number);
             result = 31 * result + Objects.hashCode(paths);
-            result = 31 * result + Objects.hashCode(centralityCount);
-            result = 31 * result + Objects.hashCode(clusterMembers);
+            result = 31 * result + Objects.hashCode(centrality);
+            result = 31 * result + Objects.hashCode(clusters);
             result = 31 * result + Objects.hashCode(clusterSizes);
 
             return result;

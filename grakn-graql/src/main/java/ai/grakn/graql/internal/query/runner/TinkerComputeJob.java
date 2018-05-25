@@ -80,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -413,7 +414,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
                                                 new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
                                                 scopeTypeLabelIDs);
 
-        return answer.setCentralityCount(computerResult.memory().get(DegreeDistributionMapReduce.class.getName()));
+        return answer.setCentrality(computerResult.memory().get(DegreeDistributionMapReduce.class.getName()));
     }
 
     /**
@@ -448,7 +449,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
 
         if (!scopeContainsInstance()) {
-            return answer.setCentralityCount(Collections.emptyMap());
+            return answer.setCentrality(Collections.emptyMap());
         }
 
         ComputerResult result;
@@ -460,10 +461,10 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
                              new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
                              scopeTypeLabelIDs);
         } catch (NoResultException e) {
-            return answer.setCentralityCount(Collections.emptyMap());
+            return answer.setCentrality(Collections.emptyMap());
         }
 
-        return answer.setCentralityCount(result.memory().get(DegreeDistributionMapReduce.class.getName()));
+        return answer.setCentrality(result.memory().get(DegreeDistributionMapReduce.class.getName()));
     }
 
     private ComputeQuery.Answer runComputeCluster() {
@@ -482,7 +483,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
         if (!scopeContainsInstance()) {
             LOG.info("Selected types don't have instances");
-            if (getMembers) return answer.setClusterMembers(Collections.emptySet());
+            if (getMembers) return answer.setClusters(Collections.emptySet());
             return answer.setClusterSizes(Collections.emptySet());
         }
 
@@ -513,7 +514,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
         if (getMembers) {
             Map<String, Set<ConceptId>> result = memory.get(mapReduce.getClass().getName());
-            answer.setClusterMembers(result.values());
+            answer.setClusters(new HashSet<>(result.values()));
         } else {
             Map<String, Long> result = memory.get(mapReduce.getClass().getName());
             answer.setClusterSizes(result.values());
@@ -530,7 +531,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         if (!scopeContainsInstance()) {
-            return answer.setClusterMembers(Collections.emptySet());
+            return answer.setClusters(Collections.emptySet());
         }
 
         ComputerResult computerResult;
@@ -541,11 +542,11 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
-            return answer.setClusterMembers(Collections.emptySet());
+            return answer.setClusters(Collections.emptySet());
         }
 
         Map<String, Set<ConceptId>> result = computerResult.memory().get(ClusterMemberMapReduce.class.getName());
-        return answer.setClusterMembers(result.values());
+        return answer.setClusters(new HashSet<>(result.values()));
     }
 
     /**

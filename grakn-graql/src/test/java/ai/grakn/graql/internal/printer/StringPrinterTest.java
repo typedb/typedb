@@ -209,7 +209,7 @@ public class StringPrinterTest {
     }
 
     @Test
-    public void whenPrintingNull_ResultIsNullString() {
+    public void whenPrintingNull_ResultIsEmptyString() {
         Printer<?> printer = Printer.stringPrinter(false);
 
         assertEquals("", printer.toString(null));

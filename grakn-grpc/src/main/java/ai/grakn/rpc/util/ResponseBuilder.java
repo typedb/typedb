@@ -20,6 +20,7 @@ package ai.grakn.rpc.util;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -37,8 +38,13 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import io.grpc.Metadata;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
@@ -95,6 +101,18 @@ public class ResponseBuilder {
         if (computeAnswer.getNumber().isPresent()) {
             computeAnswerRPC.setNumber(number(computeAnswer.getNumber().get()));
         }
+        else if (computeAnswer.getPaths().isPresent()) {
+             computeAnswerRPC.setPaths(paths(computeAnswer.getPaths().get()));
+        }
+        else if (computeAnswer.getCentrality().isPresent()) {
+            computeAnswerRPC.setCentrality(centralityCounts(computeAnswer.getCentrality().get()));
+        }
+        else if (computeAnswer.getClusters().isPresent()) {
+            computeAnswerRPC.setClusters(clusters(computeAnswer.getClusters().get()));
+        }
+        else if (computeAnswer.getClusterSizes().isPresent()) {
+            computeAnswerRPC.setClusterSizes(clusterSizes(computeAnswer.getClusterSizes().get()));
+        }
 
         return computeAnswerRPC.build();
     }
@@ -103,15 +121,52 @@ public class ResponseBuilder {
         return GrpcGrakn.Number.newBuilder().setNumber(number.toString()).build();
     }
 
-//    private static GrpcGrakn.Paths paths(List<List<ConceptId>> paths) {
-//        GrpcGrakn.Paths.Builder pathsRPC = GrpcGrakn.Paths.newBuilder();
-//
-//        for (List<ConceptId> path : paths) {
-//            GrpcConcept.ConceptIds.Builder pathRPC = GrpcConcept.ConceptIds.newBuilder();
-//
-//            pathRPC.addAllConceptId(path.output().map());
-//        }
-//    }
+    private static GrpcGrakn.Paths paths(List<List<ConceptId>> paths) {
+        GrpcGrakn.Paths.Builder pathsRPC = GrpcGrakn.Paths.newBuilder();
+        for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
+
+        return pathsRPC.build();
+    }
+
+    private static GrpcGrakn.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
+        GrpcGrakn.Centrality.Builder centralityCountsRPC = GrpcGrakn.Centrality.newBuilder();
+
+        for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
+            centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
+        }
+
+        return centralityCountsRPC.build();
+    }
+
+    private static GrpcGrakn.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
+        GrpcGrakn.ClusterSizes.Builder clusterSizesRPC = GrpcGrakn.ClusterSizes.newBuilder();
+        clusterSizesRPC.addAllClusterSizes(clusterSizes);
+
+        return clusterSizesRPC.build();
+    }
+
+    private static GrpcGrakn.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
+        GrpcGrakn.Clusters.Builder clustersRPC = GrpcGrakn.Clusters.newBuilder();
+        for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
+
+        return clustersRPC.build();
+    }
+
+    private static GrpcConcept.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
+        GrpcConcept.ConceptIds.Builder conceptIdsRPC = GrpcConcept.ConceptIds.newBuilder();
+        conceptIdsRPC.addAllConceptIds(conceptIds.stream()
+                .map(ResponseBuilder::conceptId)
+                .collect(Collectors.toList()));
+
+        return conceptIdsRPC.build();
+    }
+
+    private static GrpcConcept.ConceptId conceptId(ConceptId conceptId) {
+        GrpcConcept.ConceptId.Builder conceptIdRPC = GrpcConcept.ConceptId.newBuilder();
+        conceptIdRPC.setValue(conceptId.getValue());
+
+        return conceptIdRPC.build();
+    }
 
     public static Object buildDefault(Object object) {
         return object;

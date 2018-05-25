@@ -28,12 +28,12 @@ import java.util.Optional;
  * @author Felix Chapman
  */
 public interface GrpcConceptConverter {
-    Concept convert(GrpcConcept.Concept concept);
+    Concept concept(GrpcConcept.Concept concept);
 
-    default Optional<Concept> convert(OptionalConcept concept) {
+    default Optional<Concept> optionalConcept(OptionalConcept concept) {
         switch (concept.getValueCase()) {
             case PRESENT:
-                return Optional.of(convert(concept.getPresent()));
+                return Optional.of(concept(concept.getPresent()));
             case ABSENT:
                 return Optional.empty();
             default:
@@ -42,7 +42,9 @@ public interface GrpcConceptConverter {
         }
     }
 
-    default RolePlayer convert(GrpcConcept.RolePlayer rolePlayer) {
-        return RolePlayer.create(convert(rolePlayer.getRole()).asRole(), convert(rolePlayer.getPlayer()).asThing());
+    default RolePlayer rolePlayer(GrpcConcept.RolePlayer rolePlayer) {
+        return RolePlayer.create(concept(rolePlayer.getRole()).asRole(), concept(rolePlayer.getPlayer()).asThing());
     }
+
+
 }

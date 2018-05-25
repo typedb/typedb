@@ -114,7 +114,7 @@ public class DegreeTest {
 
         Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+                return graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
@@ -129,7 +129,7 @@ public class DegreeTest {
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees1 =
-                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute().getCentralityCount().get();
+                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute().getCentrality().get();
 
             assertEquals(2, degrees1.size());
             assertEquals(2, degrees1.get(1L).size());
@@ -142,18 +142,18 @@ public class DegreeTest {
             ));
 
             Map<Long, Set<ConceptId>> degrees2 =
-                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy", "related").execute().getCentralityCount().get();
+                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy", "related").execute().getCentrality().get();
             assertEquals(degrees1, degrees2);
 
-            degrees2 = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            degrees2 = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(degrees0, degrees2);
 
             // compute degrees on subgraph
             Map<Long, Set<ConceptId>> degrees3 = graph.graql().compute(CENTRALITY).using(DEGREE)
-                    .in("thingy", "related").execute().getCentralityCount().get();
+                    .in("thingy", "related").execute().getCentrality().get();
             assertEquals(degrees1, degrees3);
 
-            degrees3 = graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").in("related").execute().getCentralityCount().get();
+            degrees3 = graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").in("related").execute().getCentrality().get();
             assertEquals(degrees1, degrees3);
         }
     }
@@ -180,7 +180,7 @@ public class DegreeTest {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(ct).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(ct).execute().getCentrality().get();
             // check that dog has a degree to confirm sub has been inferred
             assertEquals(correctDegrees, degrees);
         }
@@ -231,17 +231,17 @@ public class DegreeTest {
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"));
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE)
-                    .in(subGraphTypes).execute().getCentralityCount().get();
+                    .in(subGraphTypes).execute().getCentrality().get();
             assertEquals(subgraphReferenceDegrees, degrees);
 
             // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
-            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(almostFullTypes).execute().getCentralityCount().get();
+            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(almostFullTypes).execute().getCentrality().get();
             assertEquals(almostFullReferenceDegrees, degrees);
 
             // full graph
-            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(fullReferenceDegrees, degrees);
         }
     }
@@ -268,7 +268,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -307,7 +307,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -343,7 +343,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -375,7 +375,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentralityCount().get();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }

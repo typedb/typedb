@@ -57,24 +57,24 @@ public abstract class ConceptResponseType<T> {
     );
 
     public static final ConceptResponseType<Concept> CONCEPT = ConceptResponseType.create(
-            (converter, response) -> converter.convert(response.getConcept()),
+            (converter, response) -> converter.concept(response.getConcept()),
             (builder, val) -> builder.setConcept(ConceptBuilder.concept(val))
     );
 
     public static final ConceptResponseType<Optional<Concept>> OPTIONAL_CONCEPT = ConceptResponseType.create(
-            (converter, response) -> converter.convert(response.getOptionalConcept()),
+            (converter, response) -> converter.optionalConcept(response.getOptionalConcept()),
             (builder, val) -> builder.setOptionalConcept(ConceptBuilder.optionalConcept(val))
     );
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS =
             ConceptResponseType.createStreamable(
-                    (converter, response) -> converter.convert(response.getConcept()),
+                    (converter, response) -> converter.concept(response.getConcept()),
                     ResponseBuilder::concept
             );
 
     public static final ConceptResponseType<Stream<? extends RolePlayer>> ROLE_PLAYERS =
             ConceptResponseType.createStreamable(
-                    (converter, response) -> converter.convert(response.getRolePlayer()),
+                    (converter, response) -> converter.rolePlayer(response.getRolePlayer()),
                     ResponseBuilder::rolePlayer
             );
 

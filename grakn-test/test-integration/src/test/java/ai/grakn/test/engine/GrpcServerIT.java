@@ -36,6 +36,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
@@ -225,17 +226,17 @@ public class GrpcServerIT {
     public void whenExecutingComputeQueryies_ResultsAreCorrect() {
         ConceptId idCoco, idMike, idCocoAndMike;
         try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
-            EntityType pet = tx.putEntityType("pet").plays(role1);
-            EntityType human = tx.putEntityType("human").plays(role2);
-            RelationshipType friend = tx.putRelationshipType("friend").relates(role1).relates(role2);
+            Role pet = tx.putRole("pet");
+            Role owner = tx.putRole("owner");
+            EntityType animal = tx.putEntityType("animal").plays(pet);
+            EntityType human = tx.putEntityType("human").plays(owner);
+            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
             human.attribute(age);
 
-            Entity coco = pet.addEntity();
+            Entity coco = animal.addEntity();
             Entity mike = human.addEntity();
-            Relationship cocoAndMike = friend.addRelationship().addRolePlayer(role1, coco).addRolePlayer(role2, mike);
+            Relationship cocoAndMike = petOwnership.addRelationship().addRolePlayer(pet, coco).addRolePlayer(owner, mike);
             mike.attribute(age.putAttribute(10L));
 
             idCoco = coco.getId();
@@ -247,24 +248,29 @@ public class GrpcServerIT {
 
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
             // count
-            assertEquals(1L, tx.graql().compute(COUNT).in("pet").execute().getNumber().get());
+            assertEquals(1L, tx.graql().compute(COUNT).in("animal").execute().getNumber().get());
 
             // statistics
             assertEquals(10L, tx.graql().compute(MIN).of("age").in("human").execute().getNumber().get());
             assertEquals(10L, tx.graql().compute(MAX).of("age").in("human").execute().getNumber().get());
             assertEquals(10L, tx.graql().compute(MEAN).of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute(STD).of("age").in("human").execute().getNumber().get());
+
+
+            ComputeQuery.Answer answer = tx.graql().compute(STD).of("age").in("human").execute();
+            assertEquals(0L, answer.getNumber().get());
+
+
             assertEquals(10L, tx.graql().compute(SUM).of("age").in("human").execute().getNumber().get());
             assertEquals(10L, tx.graql().compute(MEDIAN).of("age").in("human").execute().getNumber().get());
 
             // degree
             Map<Long, Set<ConceptId>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
-                    .of("pet").in("human", "pet", "friend").execute().getCentralityCount().get();
+                    .of("animal").in("human", "animal", "pet-ownership").execute().getCentrality().get();
             assertEquals(1L, centrality.size());
-            assertEquals(idCoco.getValue(), centrality.get(1L).iterator().next());
+            assertEquals(idCoco, centrality.get(1L).iterator().next());
 
             // coreness
-            assertFalse(tx.graql().compute(CENTRALITY).using(K_CORE).of("pet").execute().getCentralityCount().isPresent());
+            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().getCentrality().get().isEmpty());
 
             // path
             List<List<ConceptId>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().getPaths().get();
@@ -274,21 +280,23 @@ public class GrpcServerIT {
 
             // connected component size
             List<Long> sizeList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "pet", "friend").execute().getClusterSizes().get();
+                    .in("human", "animal", "pet-ownership").execute().getClusterSizes().get();
             assertEquals(1, sizeList.size());
             assertTrue(sizeList.contains(3L));
 
             // connected component member
-            List<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "pet", "friend").where(members(true)).execute().getClusterMembers().get();
+            Set<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in("human", "animal", "pet-ownership").where(members(true)).execute().getClusters().get();
             assertEquals(1, membersList.size());
             Set<ConceptId> memberSet = membersList.iterator().next();
             assertEquals(3, memberSet.size());
-            assertEquals(Sets.newHashSet(idCoco.getValue(), idMike.getValue(), idCocoAndMike.getValue()), memberSet);
+            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), memberSet);
 
             // k-core
-            assertEquals(0, tx.graql().compute(CLUSTER).using(K_CORE)
-                    .in("human", "pet", "friend").execute().getCentralityCount().get().size());
+            assertEquals(
+                    0,
+                    tx.graql().compute(CLUSTER).using(K_CORE)
+                    .in("human", "animal", "pet-ownership").execute().getClusters().get().size());
         }
     }
 

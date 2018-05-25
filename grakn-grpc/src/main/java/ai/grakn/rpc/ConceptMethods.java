@@ -381,9 +381,9 @@ public class ConceptMethods {
             case GETATTRIBUTETYPES:
                 return GET_ATTRIBUTE_TYPES;
             case SETATTRIBUTETYPE:
-                return setAttributeType(converter.convert(conceptMethod.getSetAttributeType()).asAttributeType());
+                return setAttributeType(converter.concept(conceptMethod.getSetAttributeType()).asAttributeType());
             case UNSETATTRIBUTETYPE:
-                return unsetAttributeType(converter.convert(conceptMethod.getUnsetAttributeType()).asAttributeType());
+                return unsetAttributeType(converter.concept(conceptMethod.getUnsetAttributeType()).asAttributeType());
             case GETKEYTYPES:
                 return GET_KEY_TYPES;
             case GETDIRECTTYPE:
@@ -392,10 +392,10 @@ public class ConceptMethods {
                 return GET_DIRECT_SUPER;
             case SETDIRECTSUPERCONCEPT:
                 GrpcConcept.Concept setDirectSuperConcept = conceptMethod.getSetDirectSuperConcept();
-                SchemaConcept schemaConcept = converter.convert(setDirectSuperConcept).asSchemaConcept();
+                SchemaConcept schemaConcept = converter.concept(setDirectSuperConcept).asSchemaConcept();
                 return setDirectSuperConcept(schemaConcept);
             case UNSETROLEPLAYER:
-                return removeRolePlayer(converter.convert(conceptMethod.getUnsetRolePlayer()));
+                return removeRolePlayer(converter.rolePlayer(conceptMethod.getUnsetRolePlayer()));
             case DELETE:
                 return DELETE;
             case GETATTRIBUTE:
@@ -439,33 +439,33 @@ public class ConceptMethods {
                 roles = ConceptReader.concepts(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
                 return getRolePlayersByRoles(roles);
             case SETKEYTYPE:
-                return setKeyType(converter.convert(conceptMethod.getSetKeyType()).asAttributeType());
+                return setKeyType(converter.concept(conceptMethod.getSetKeyType()).asAttributeType());
             case UNSETKEYTYPE:
-                return unsetKeyType(converter.convert(conceptMethod.getUnsetKeyType()).asAttributeType());
+                return unsetKeyType(converter.concept(conceptMethod.getUnsetKeyType()).asAttributeType());
             case SETABSTRACT:
                 return setAbstract(conceptMethod.getSetAbstract());
             case SETROLEPLAYEDBYTYPE:
-                return setRolePlayedByType(converter.convert(conceptMethod.getSetRolePlayedByType()).asRole());
+                return setRolePlayedByType(converter.concept(conceptMethod.getSetRolePlayedByType()).asRole());
             case UNSETROLEPLAYEDBYTYPE:
-                return unsetRolePlayedByType(converter.convert(conceptMethod.getUnsetRolePlayedByType()).asRole());
+                return unsetRolePlayedByType(converter.concept(conceptMethod.getUnsetRolePlayedByType()).asRole());
             case ADDENTITY:
                 return ADD_ENTITY;
             case SETRELATEDROLE:
-                return setRelatedRole(converter.convert(conceptMethod.getSetRelatedRole()).asRole());
+                return setRelatedRole(converter.concept(conceptMethod.getSetRelatedRole()).asRole());
             case UNSETRELATEDROLE:
-                return unsetRelatedRole(converter.convert(conceptMethod.getUnsetRelatedRole()).asRole());
+                return unsetRelatedRole(converter.concept(conceptMethod.getUnsetRelatedRole()).asRole());
             case PUTATTRIBUTE:
                 return putAttribute(ConceptReader.attributeValue(conceptMethod.getPutAttribute()));
             case SETREGEX:
                 return setRegex(ConceptReader.optionalRegex(conceptMethod.getSetRegex()));
             case SETATTRIBUTE:
-                return setAttribute(converter.convert(conceptMethod.getSetAttribute()).asAttribute());
+                return setAttribute(converter.concept(conceptMethod.getSetAttribute()).asAttribute());
             case UNSETATTRIBUTE:
-                return unsetAttribute(converter.convert(conceptMethod.getUnsetAttribute()).asAttribute());
+                return unsetAttribute(converter.concept(conceptMethod.getUnsetAttribute()).asAttribute());
             case ADDRELATIONSHIP:
                 return ADD_RELATIONSHIP;
             case SETROLEPLAYER:
-                return setRolePlayer(converter.convert(conceptMethod.getSetRolePlayer()));
+                return setRolePlayer(converter.rolePlayer(conceptMethod.getSetRolePlayer()));
             default:
             case CONCEPTMETHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + conceptMethod);

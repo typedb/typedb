@@ -269,7 +269,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
         GrpcConceptConverter converter = new GrpcConceptConverter() {
             @Override
-            public Concept convert(GrpcConcept.Concept grpcConcept) {
+            public Concept concept(GrpcConcept.Concept grpcConcept) {
                 return tx().getConcept(ConceptId.of(grpcConcept.getId().getValue()));
             }
         };

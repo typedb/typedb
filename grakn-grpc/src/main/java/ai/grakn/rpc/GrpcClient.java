@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.TxGrpcCommunicator.Response;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -47,9 +48,16 @@ import mjson.Json;
 import javax.annotation.Nullable;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -90,7 +98,7 @@ public class GrpcClient implements AutoCloseable {
 
         switch (txResponse.getResponseCase()) {
             case ANSWER:
-                return Collections.singleton(convert(txResponse.getAnswer())).iterator();
+                return Collections.singleton(answer(txResponse.getAnswer())).iterator();
             case DONE:
                 return Collections.emptyIterator();
             case ITERATORID:
@@ -99,7 +107,7 @@ public class GrpcClient implements AutoCloseable {
                 return new GraknGrpcIterator<Object>(this, iteratorId) {
                     @Override
                     protected Object getNextFromResponse(TxResponse response) {
-                        return convert(response.getAnswer());
+                        return answer(response.getAnswer());
                     }
                 };
             default:
@@ -125,12 +133,12 @@ public class GrpcClient implements AutoCloseable {
 
     public Optional<Concept> getConcept(ConceptId id) {
         communicator.send(RequestBuilder.getConceptRequest(id));
-        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+        return conceptConverter.optionalConcept(responseOrThrow().getOptionalConcept());
     }
 
     public Optional<Concept> getSchemaConcept(Label label) {
         communicator.send(RequestBuilder.getSchemaConceptRequest(label));
-        return conceptConverter.convert(responseOrThrow().getOptionalConcept());
+        return conceptConverter.optionalConcept(responseOrThrow().getOptionalConcept());
     }
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
@@ -141,7 +149,7 @@ public class GrpcClient implements AutoCloseable {
         Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(this, iteratorId) {
             @Override
             protected Concept getNextFromResponse(TxResponse response) {
-                return conceptConverter.convert(response.getConcept());
+                return conceptConverter.concept(response.getConcept());
             }
         };
 
@@ -150,27 +158,27 @@ public class GrpcClient implements AutoCloseable {
 
     public Concept putEntityType(Label label) {
         communicator.send(RequestBuilder.putEntityTypeRequest(label));
-        return conceptConverter.convert(responseOrThrow().getConcept());
+        return conceptConverter.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRelationshipType(Label label) {
         communicator.send(RequestBuilder.putRelationshipTypeRequest(label));
-        return conceptConverter.convert(responseOrThrow().getConcept());
+        return conceptConverter.concept(responseOrThrow().getConcept());
     }
 
     public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
         communicator.send(RequestBuilder.putAttributeTypeRequest(label, dataType));
-        return conceptConverter.convert(responseOrThrow().getConcept());
+        return conceptConverter.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRole(Label label) {
         communicator.send(RequestBuilder.putRoleRequest(label));
-        return conceptConverter.convert(responseOrThrow().getConcept());
+        return conceptConverter.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRule(Label label, Pattern when, Pattern then) {
         communicator.send(RequestBuilder.putRuleRequest(label, when, then));
-        return conceptConverter.convert(responseOrThrow().getConcept());
+        return conceptConverter.concept(responseOrThrow().getConcept());
     }
 
     @Override
@@ -212,12 +220,12 @@ public class GrpcClient implements AutoCloseable {
         else return error;
     }
 
-    private Object convert(GrpcGrakn.Answer answer) {
+    private Object answer(GrpcGrakn.Answer answer) {
         switch (answer.getAnswerCase()) {
             case QUERYANSWER:
-                return convert(answer.getQueryAnswer());
+                return queryAnswer(answer.getQueryAnswer());
             case COMPUTEANSWER:
-                return convert(answer.getComputeAnswer());
+                return computeAnswer(answer.getComputeAnswer());
             case OTHERRESULT:
                 return Json.read(answer.getOtherResult()).getValue();
             default:
@@ -226,29 +234,84 @@ public class GrpcClient implements AutoCloseable {
         }
     }
 
-    private Answer convert(GrpcGrakn.QueryAnswer queryAnswer) {
+    private Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            map.put(Graql.var(grpcVar), conceptConverter.convert(grpcConcept));
+            map.put(Graql.var(grpcVar), conceptConverter.concept(grpcConcept));
         });
 
         return new QueryAnswer(map.build());
     }
 
-    private ComputeQuery.Answer convert(GrpcGrakn.ComputeAnswer computeAnswer) {
-        switch (computeAnswer.getComputeAnswerCase()) {
+    private ComputeQuery.Answer computeAnswer(GrpcGrakn.ComputeAnswer computeAnswerRPC) {
+        switch (computeAnswerRPC.getComputeAnswerCase()) {
             case NUMBER:
                 try {
-                    Number result = NumberFormat.getInstance().parse(computeAnswer.getNumber().getNumber());
+                    Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber().getNumber());
                     return new ComputeQueryImpl.AnswerImpl().setNumber(result);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
+            case PATHS:
+                return new ComputeQueryImpl.AnswerImpl().setPaths(paths(computeAnswerRPC.getPaths()));
+            case CENTRALITY:
+                return new ComputeQueryImpl.AnswerImpl().setCentrality(centrality(computeAnswerRPC.getCentrality()));
+            case CLUSTERS:
+                return new ComputeQueryImpl.AnswerImpl().setClusters(clusters(computeAnswerRPC.getClusters()));
+            case CLUSTERSIZES:
+                return new ComputeQueryImpl.AnswerImpl().setClusterSizes(clusterSizes(computeAnswerRPC.getClusterSizes()));
             default:
             case COMPUTEANSWER_NOT_SET:
-                throw new IllegalArgumentException("Unexpected " + computeAnswer);
+                throw new IllegalArgumentException("Unexpected " + computeAnswerRPC);
         }
+    }
+
+    private List<List<ConceptId>> paths(GrpcGrakn.Paths pathsRPC) {
+        List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
+
+        for (GrpcConcept.ConceptIds conceptIds : pathsRPC.getPathsList()) {
+            paths.add(
+                    conceptIds.getConceptIdsList().stream()
+                    .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                    .collect(Collectors.toList())
+            );
+        }
+
+        return paths;
+    }
+
+    private Map<Long, Set<ConceptId>> centrality(GrpcGrakn.Centrality centralityRPC) {
+        Map<Long, Set<ConceptId>> centrality = new HashMap<>();
+
+        for (Map.Entry<Long, GrpcConcept.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
+            centrality.put(
+                    entry.getKey(),
+                    entry.getValue().getConceptIdsList().stream()
+                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        return centrality;
+    }
+
+    private Set<Set<ConceptId>> clusters(GrpcGrakn.Clusters clustersRPC) {
+        Set<Set<ConceptId>> clusters = new HashSet<>();
+
+        for (GrpcConcept.ConceptIds conceptIds : clustersRPC.getClustersList()) {
+            clusters.add(
+                    conceptIds.getConceptIdsList().stream()
+                    .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                    .collect(Collectors.toSet())
+            );
+        }
+
+        return clusters;
+    }
+
+    private Set<Long> clusterSizes(GrpcGrakn.ClusterSizes clusterSizesRPC) {
+        return new HashSet<>(clusterSizesRPC.getClusterSizesList());
     }
 
 }
