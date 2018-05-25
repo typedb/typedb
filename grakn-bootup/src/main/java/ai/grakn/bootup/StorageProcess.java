@@ -34,15 +34,13 @@ import java.util.stream.Stream;
  * @author Michele Orsi
  */
 public class StorageProcess extends AbstractProcessHandler {
-
+    private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
-    private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
-    private static final long STORAGE_STARTUP_TIMEOUT_S=60;
-
-
-    private static final String CASSANDRA = "cassandra";
-    private static final String COMPONENT_NAME = "Storage";
-
+    private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
+    private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
+    private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
+    private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
+    
     private final Path homePath;
     private final GraknConfig graknConfig;
 
@@ -52,9 +50,9 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     public void start() {
-        boolean storageIsRunning = isProcessRunning(STORAGE_PID);
+        boolean storageIsRunning = isProcessRunning(STORAGE_PIDFILE);
         if(storageIsRunning) {
-            System.out.println(COMPONENT_NAME +" is already running");
+            System.out.println(DISPLAY_NAME +" is already running");
         } else {
             storageStartProcess();
         }
@@ -68,11 +66,11 @@ public class StorageProcess extends AbstractProcessHandler {
     }
 
     private void storageStartProcess() {
-        System.out.print("Starting "+ COMPONENT_NAME +"...");
+        System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
-        if(STORAGE_PID.toFile().exists()) {
+        if(STORAGE_PIDFILE.toFile().exists()) {
             try {
-                Files.delete(STORAGE_PID);
+                Files.delete(STORAGE_PIDFILE);
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -80,12 +78,12 @@ public class StorageProcess extends AbstractProcessHandler {
         OutputCommand outputCommand = executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath.resolve(Paths.get("services", CASSANDRA, CASSANDRA))
-                        + " -p " + STORAGE_PID
+                homePath.resolve(STORAGE_BIN)
+                        + " -p " + STORAGE_PIDFILE
                         + " -l " + getStorageLogPath()
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);
+        LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
         while(LocalDateTime.now().isBefore(timeout) && outputCommand.exitStatus<1) {
             System.out.print(".");
@@ -107,41 +105,40 @@ public class StorageProcess extends AbstractProcessHandler {
             }
         }
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+ COMPONENT_NAME);
+        System.out.println("Unable to start "+ DISPLAY_NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        stopProgram(STORAGE_PID, COMPONENT_NAME);
+        stopProgram(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
-        processStatus(STORAGE_PID, COMPONENT_NAME);
+        processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(COMPONENT_NAME +" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME +" pid = '"+ getPidFromFile(STORAGE_PIDFILE).orElse("")+"' (from "+ STORAGE_PIDFILE +"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+ COMPONENT_NAME +"...");
+        System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
-        Path dirPath = Paths.get("db", CASSANDRA);
-        try (Stream<Path> files = Files.walk(dirPath)) {
+        try (Stream<Path> files = Files.walk(STORAGE_DATA)) {
             files.map(Path::toFile)
                     .sorted(Comparator.comparing(File::isDirectory))
                     .forEach(File::delete);
-            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"data")));
-            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"commitlog")));
-            Files.createDirectories(homePath.resolve(Paths.get("db", CASSANDRA,"saved_caches")));
+            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("data"));
+            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("commitlog"));
+            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("saved_caches"));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+ COMPONENT_NAME);
+            System.out.println("Unable to clean "+ DISPLAY_NAME);
         }
     }
 
     public boolean isRunning() {
-        return isProcessRunning(STORAGE_PID);
+        return isProcessRunning(STORAGE_PIDFILE);
     }
 }
