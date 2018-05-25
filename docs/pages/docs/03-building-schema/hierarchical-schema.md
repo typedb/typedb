@@ -147,17 +147,12 @@ relatives sub relationship
 
 marriage sub relatives
   relates spouse
-  relates spouse1
-  relates spouse2
-  relates husband
-  relates wife
+  relates spouse1 as spouse
+  relates spouse2 as spouse
+  relates husband as spouse
+  relates wife as spouse
   has event-date;
 
-spouse sub role;
-spouse1 sub spouse;
-spouse2 sub spouse;
-husband sub spouse;
-wife sub spouse;
 ```
 
 
@@ -172,18 +167,12 @@ define
 
 parentship sub relatives
   relates parent
-  relates mother
-  relates father
+  relates mother as parent
+  relates father as parent
   relates child
-  relates son
-  relates daughter;
+  relates son as child
+  relates daughter as child;
 
-parent sub role;
-mother sub parent;
-father sub parent;
-child sub role;
-son sub child;
-daughter sub child;
 ```
 
 Now we have provided more detail about being a parent.
@@ -257,34 +246,21 @@ define
 
   marriage sub relatives
     relates spouse
-    relates spouse1
-    relates spouse2
-    relates husband
-    relates wife
+    relates spouse1 as spouse
+    relates spouse2 as spouse
+    relates husband as spouse
+    relates wife as spouse
     has event-date;
-
-  spouse sub role;
-  spouse1 sub spouse;
-  spouse2 sub spouse;
-  husband sub spouse;   
-  wife sub spouse;
 
   parentship sub relatives
     relates parent
-    relates mother
-    relates father
+    relates mother as parent
+    relates father as parent
     relates child
-    relates son
-    relates daughter;
+    relates son as child
+    relates daughter as child;
 
-  parent sub role;
-  mother sub parent;
-  father sub parent;
-  child sub role;
-  son sub child;
-  daughter sub child;
-
-## Resources
+## Attributes
   event-date sub attribute datatype date;
   notes sub attribute datatype string;
   happening sub attribute datatype string;

@@ -101,9 +101,6 @@ define
 "located-in" sub relationship
     relates location
     relates located;
-"owner" sub role; "owned" sub role;
-"location" sub role; "located" sub role;
-"issued" sub role; "issuer" sub role;
 
 "name" sub attribute datatype string;
 "subject" sub attribute datatype string;

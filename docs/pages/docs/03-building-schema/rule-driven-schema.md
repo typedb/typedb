@@ -41,19 +41,12 @@ In the [Hierarchical Schema](./hierarchical-schema.html) section, we have define
 ```graql-test-ignore
 parentship sub relatives
   relates parent
-  relates mother
-  relates father
+  relates mother as parent
+  relates father as parent
   relates child
-  relates son
-  relates daughter;
+  relates son as child
+  relates daughter as child;
 
-parent sub role;
-mother sub parent;
-father sub parent;
-
-child sub role;
-son sub child;
-daughter sub child;
 ````
 
 Now instead of specifying all relationship combinations for a given parentship pair. We can define a basic `(parent, child)` relationship and let rules do the genderisation for us. One way to accomplish that is to define the following rules:
