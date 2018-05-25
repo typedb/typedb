@@ -27,7 +27,10 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 /**
+ * A class responsible for managing the Queue process,
+ * including starting, stopping, status checks, and cleaning the Queue data
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
 public class QueueProcess extends AbstractProcessHandler {
@@ -38,10 +41,10 @@ public class QueueProcess extends AbstractProcessHandler {
 
     private static final String COMPONENT_NAME = "Queue";
 
-    private final Path homePath;
+    private final Path graknHome;
 
-    public QueueProcess(Path homePath) {
-        this.homePath = homePath;
+    public QueueProcess(Path graknHome) {
+        this.graknHome = graknHome;
     }
 
     public void start() {
@@ -63,8 +66,8 @@ public class QueueProcess extends AbstractProcessHandler {
         executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath +"/services/redis/"+queueBin+" "+ homePath + CONFIG_LOCATION
-        },null,homePath.toFile());
+                graknHome +"/services/redis/"+queueBin+" "+ graknHome + CONFIG_LOCATION
+        },null, graknHome.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_S);
@@ -109,14 +112,14 @@ public class QueueProcess extends AbstractProcessHandler {
         executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath + "/services/redis/" + queueBin + " -h " + host + " shutdown"
+                graknHome + "/services/redis/" + queueBin + " -h " + host + " shutdown"
         }, null, null);
 
         waitUntilStopped(QUEUE_PID,pid);
     }
 
     private String getHostFromConfig() {
-        Path fileLocation = Paths.get(homePath.toString(), CONFIG_LOCATION);
+        Path fileLocation = Paths.get(graknHome.toString(), CONFIG_LOCATION);
         return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
 
@@ -137,7 +140,7 @@ public class QueueProcess extends AbstractProcessHandler {
         executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath.resolve(Paths.get("services", "redis", queueBin))+" flushall"
+                graknHome.resolve(Paths.get("services", "redis", queueBin))+" flushall"
         },null,null);
         stop();
         System.out.println("SUCCESS");

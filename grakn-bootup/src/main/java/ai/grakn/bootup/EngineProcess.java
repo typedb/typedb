@@ -41,7 +41,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * A class responsible for managing the Engine process,
+ * including starting, stopping, and performing status checks
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
 public class EngineProcess extends AbstractProcessHandler {
@@ -51,14 +54,14 @@ public class EngineProcess extends AbstractProcessHandler {
     public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
     public static final String javaOpts = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
 
-    protected final Path homePath;
-    protected final Path configPath;
-    private final GraknConfig graknConfig;
+    protected final Path graknHome;
+    protected final Path graknPropertiesPath;
+    private final GraknConfig graknProperties;
 
-    public EngineProcess(Path homePath, Path configPath) {
-        this.homePath = homePath;
-        this.configPath = configPath;
-        this.graknConfig = GraknConfig.read(configPath.toFile());
+    public EngineProcess(Path graknHome, Path graknPropertiesPath) {
+        this.graknHome = graknHome;
+        this.graknPropertiesPath = graknPropertiesPath;
+        this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
 
     protected Class graknClass() {
@@ -108,8 +111,8 @@ public class EngineProcess extends AbstractProcessHandler {
             System.out.print(".");
             System.out.flush();
 
-            String host = graknConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME);
-            int port = graknConfig.getProperty(GraknConfigKey.SERVER_PORT);
+            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
+            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
 
             if(isProcessRunning(ENGINE_PID) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
@@ -128,8 +131,8 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     protected String commandToRun() {
-        String cmd = "java " + javaOpts + " -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath +
-                " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+        String cmd = "java " + javaOpts + " -cp " + getClassPathFrom(graknHome) + " -Dgrakn.dir=" + graknHome +
+                " -Dgrakn.conf="+ graknPropertiesPath + " -Dgrakn.pidfile=" + ENGINE_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
 
         return cmd;
     }
@@ -164,12 +167,12 @@ public class EngineProcess extends AbstractProcessHandler {
     public void clean() {
         System.out.print("Cleaning "+GRAKN_NAME+"...");
         System.out.flush();
-        Path rootPath = homePath.resolve("logs");
+        Path rootPath = graknHome.resolve("logs");
         try (Stream<Path> files = Files.walk(rootPath)) {
             files.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
-            Files.createDirectories(homePath.resolve("logs"));
+            Files.createDirectories(graknHome.resolve("logs"));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
