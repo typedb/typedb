@@ -96,11 +96,11 @@ public class GraknBootup {
         }
     }
 
-    private static GraknBootup newGraknBootup(Path homePathFolder, Path configPath) {
+    private static GraknBootup newGraknBootup(Path graknHome, Path configPath) {
         return new GraknBootup(
-                new StorageProcess(homePathFolder, configPath),
-                new QueueProcess(homePathFolder),
-                new EngineProcess(homePathFolder, configPath));
+                new StorageProcess(graknHome, configPath),
+                new QueueProcess(graknHome),
+                new EngineProcess(graknHome, configPath));
     }
 
     private static void printAscii() {

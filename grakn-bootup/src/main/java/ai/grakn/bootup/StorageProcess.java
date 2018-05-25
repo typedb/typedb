@@ -30,7 +30,10 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 /**
+ * A class responsible for managing the Storage process,
+ * including starting, stopping, status checks, and cleaning the Storage data
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
 public class StorageProcess extends AbstractProcessHandler {
@@ -40,13 +43,13 @@ public class StorageProcess extends AbstractProcessHandler {
     private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
-    
-    private final Path homePath;
-    private final GraknConfig graknConfig;
 
-    public StorageProcess(Path homePath, Path configPath) {
-        this.homePath = homePath;
-        this.graknConfig = GraknConfig.read(configPath.toFile());
+    private final Path graknHome;
+    private final GraknConfig graknProperties;
+
+    public StorageProcess(Path graknHome, Path graknPropertiesPath) {
+        this.graknHome = graknHome;
+        this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
 
     public void start() {
@@ -60,9 +63,9 @@ public class StorageProcess extends AbstractProcessHandler {
 
     private Path getStorageLogPath(){
         //make the path absolute to avoid cassandra confusion
-        String logDirString = graknConfig.getProperty(GraknConfigKey.LOG_DIR);
-        Path logDirPath = Paths.get(graknConfig.getProperty(GraknConfigKey.LOG_DIR));
-        return logDirPath.isAbsolute() ? logDirPath : Paths.get(homePath.toString(), logDirString);
+        String logDirString = graknProperties.getProperty(GraknConfigKey.LOG_DIR);
+        Path logDirPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+        return logDirPath.isAbsolute() ? logDirPath : Paths.get(graknHome.toString(), logDirString);
     }
 
     private void storageStartProcess() {
@@ -78,7 +81,7 @@ public class StorageProcess extends AbstractProcessHandler {
         OutputCommand outputCommand = executeAndWait(new String[]{
                 SH,
                 "-c",
-                homePath.resolve(STORAGE_BIN)
+                graknHome.resolve(STORAGE_BIN)
                         + " -p " + STORAGE_PIDFILE
                         + " -l " + getStorageLogPath()
         }, null, null);
@@ -92,7 +95,7 @@ public class StorageProcess extends AbstractProcessHandler {
             OutputCommand storageStatus = executeAndWait(new String[]{
                     SH,
                     "-c",
-                    homePath + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
+                    graknHome + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);
             if(storageStatus.output.trim().equals("running")) {
                 System.out.println("SUCCESS");
@@ -128,9 +131,9 @@ public class StorageProcess extends AbstractProcessHandler {
             files.map(Path::toFile)
                     .sorted(Comparator.comparing(File::isDirectory))
                     .forEach(File::delete);
-            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("data"));
-            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("commitlog"));
-            Files.createDirectories(homePath.resolve(STORAGE_DATA).resolve("saved_caches"));
+            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("data"));
+            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("commitlog"));
+            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("saved_caches"));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
