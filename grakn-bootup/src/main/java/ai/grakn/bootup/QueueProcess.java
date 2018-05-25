@@ -37,9 +37,10 @@ public class QueueProcess extends AbstractProcessHandler {
     private static final String DISPLAY_NAME = "Queue";
     private static final String QUEUE_PROCESS_NAME = "redis-server";
     private static final long QUEUE_STARTUP_TIMEOUT_SECOND = 10;
-    private static final Path CONFIG_LOCATION = Paths.get("services", "redis", "redis.conf");
+    private static final Path QUEUE_CONFIG_PATH = Paths.get("services", "redis", "redis.conf");
     private static final Path QUEUE_PIDFILE = Paths.get(File.separator,"tmp", "grakn-queue.pid");
-    private final Path QUEUE_BIN = Paths.get("services", "redis", selectCommand("redis-cli-osx", "redis-cli-linux"));
+    private final Path QUEUE_SERVER_BIN = Paths.get("services", "redis", selectCommand("redis-server-osx", "redis-server-linux"));
+    private final Path QUEUE_CLI_BIN = Paths.get("services", "redis", selectCommand("redis-cli-osx", "redis-cli-linux"));
 
     private final Path graknHome;
 
@@ -62,7 +63,7 @@ public class QueueProcess extends AbstractProcessHandler {
         // run queue
         // queue needs to be ran with $GRAKN_HOME as the working directory
         // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-        executeAndWait(new String[]{SH, "-c", graknHome.resolve(QUEUE_BIN) + " " + graknHome.resolve(CONFIG_LOCATION) },
+        executeAndWait(new String[]{SH, "-c", graknHome.resolve(QUEUE_SERVER_BIN) + " " + graknHome.resolve(QUEUE_CONFIG_PATH) },
                 null, graknHome.toFile());
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
@@ -103,12 +104,12 @@ public class QueueProcess extends AbstractProcessHandler {
         if (pid <0 ) return;
 
         String host = getHostFromConfig();
-        executeAndWait(new String[] { SH, "-c", graknHome.resolve(QUEUE_BIN) + " -h " + host + " shutdown" }, null, null);
+        executeAndWait(new String[] { SH, "-c", graknHome.resolve(QUEUE_CLI_BIN) + " -h " + host + " shutdown" }, null, null);
         waitUntilStopped(QUEUE_PIDFILE,pid);
     }
 
     private String getHostFromConfig() {
-        Path fileLocation = graknHome.resolve(CONFIG_LOCATION);
+        Path fileLocation = graknHome.resolve(QUEUE_CONFIG_PATH);
         return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
 
@@ -125,12 +126,7 @@ public class QueueProcess extends AbstractProcessHandler {
         System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
         startIfNotRunning();
-
-        executeAndWait(new String[]{
-                SH,
-                "-c",
-                graknHome.resolve(QUEUE_BIN)+" flushall"
-        },null,null);
+        executeAndWait(new String[]{ SH, "-c", graknHome.resolve(QUEUE_CLI_BIN) + " flushall" },null,null);
         stop();
         System.out.println("SUCCESS");
     }
