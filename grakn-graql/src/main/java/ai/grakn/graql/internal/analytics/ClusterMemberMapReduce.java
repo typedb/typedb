@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;

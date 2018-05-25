@@ -221,8 +221,7 @@ public class GrpcServerIT {
         }
     }
 
-    @Ignore
-    @Test //TODO: FIX THIS TEST
+    @Test
     public void whenExecutingComputeQueryies_ResultsAreCorrect() {
         ConceptId idCoco, idMike, idCocoAndMike;
         try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
