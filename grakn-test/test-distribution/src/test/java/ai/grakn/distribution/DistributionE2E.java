@@ -114,7 +114,7 @@ public class DistributionE2E {
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
                 .command("./grakn", "server", "clean").execute().outputUTF8();
-        assertThat(output, allOf(containsString("Cleaning Storage...SUCCESS"), containsString("Cleaning Grakn...SUCCESS")));
+        assertThat(output, allOf(containsString("Cleaning Storage...SUCCESS"), containsString("Cleaning Engine...SUCCESS")));
     }
 
     /**

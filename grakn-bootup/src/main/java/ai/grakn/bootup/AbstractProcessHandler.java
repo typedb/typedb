@@ -33,7 +33,7 @@ import java.util.Optional;
  */
 public abstract class AbstractProcessHandler {
 
-    public static final long WAIT_INTERVAL_S=2;
+    public static final long WAIT_INTERVAL_SECOND = 2;
     public static final String SH = "/bin/sh";
 
     public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
@@ -118,7 +118,7 @@ public abstract class AbstractProcessHandler {
             outputCommand = kill(pid,"0");
 
             try {
-                Thread.sleep(WAIT_INTERVAL_S * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
