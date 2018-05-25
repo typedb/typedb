@@ -53,12 +53,12 @@ public class StorageProcess extends AbstractProcessHandler {
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
 
-    public void start() {
+    public void startIfNotRunning() {
         boolean storageIsRunning = isProcessRunning(STORAGE_PIDFILE);
         if(storageIsRunning) {
             System.out.println(DISPLAY_NAME +" is already running");
         } else {
-            storageStartProcess();
+            start();
         }
     }
 
@@ -69,7 +69,7 @@ public class StorageProcess extends AbstractProcessHandler {
         return logDirPath.isAbsolute() ? logDirPath : Paths.get(graknHome.toString(), logDirString);
     }
 
-    private void storageStartProcess() {
+    private void start() {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
         if(STORAGE_PIDFILE.toFile().exists()) {
