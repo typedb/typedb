@@ -24,7 +24,7 @@ class Constants {
 
     // In order to add a new end-to-end test, create a new sub-folder under `grakn-test` with two executable scripts,
     // `load.sh` and `validate.sh`. Add the name of the folder to the list `E2E_TESTS` below.
-    static final E2E_TESTS = ["test-snb", "test-biomed"]
+    static final E2E_TESTS = []
 
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
