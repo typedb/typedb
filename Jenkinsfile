@@ -47,6 +47,12 @@ pipeline {
             }
         }
 
+        stage('Distribution E2E Tests') {
+            steps {
+                sh 'mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"'
+            }
+        }
+
         stage('Unit + IT Tests') {
             steps {
                 script {
