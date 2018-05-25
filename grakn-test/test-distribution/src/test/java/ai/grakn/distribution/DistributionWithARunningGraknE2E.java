@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class DistributionWithARunningGraknIT {
+public class DistributionWithARunningGraknE2E {
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
