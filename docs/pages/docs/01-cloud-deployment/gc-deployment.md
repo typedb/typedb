@@ -95,8 +95,7 @@ Provided you log in as user with `admin` privileges, Grakn console allows you to
 
 ## Next Steps
 
-Deploying Grakn KGMS on Google Cloud comes with our Enterprise Support. Please contact <a href="mailto:support@grakn.ai">support@grakn.ai</a> with your Support ID so we can create your account 
-on our <a href="https://work.grakn.ai/helpdesk">Support Platform</a>. 
+Deploying Grakn KGMS on Google Cloud comes with our Enterprise Support. Please contact [Support](support@grakn.ai) with your Support ID so we can create your account on our [Support Platform](https://work.grakn.ai/helpdesk). 
 
 If you want to learn more about Grakn KGMS, the [Grakn Academy](https://dev.grakn.ai/academy/) is a good place to start.
 

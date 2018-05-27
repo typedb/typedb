@@ -12,8 +12,7 @@ folder: docs
 
 
 ## Support
-Deploying Grakn KGMS on Google Cloud comes with our Enterprise Support. Please contact <a href="mailto:support@grakn.ai">support@grakn.ai</a> with your Support ID so we can create your account 
-on our <a href="https://work.grakn.ai/helpdesk">Support Platform</a>. 
+Deploying Grakn KGMS on Google Cloud comes with our Enterprise Support. Please contact [Support](support@grakn.ai) with your Support ID so we can create your account on our [Support Platform](https://work.grakn.ai/helpdesk). 
 
 ## Security
 
