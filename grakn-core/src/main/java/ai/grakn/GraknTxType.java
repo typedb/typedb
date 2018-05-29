@@ -27,7 +27,7 @@ package ai.grakn;
  * WRITE - A transaction which allows you to mutate the graph.
  * BATCH - A transaction which allows mutations to be performed more quickly but disables some consitency checks.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public enum GraknTxType {
     READ(0),  //Read only transaction where mutations to the graph are prohibited

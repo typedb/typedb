@@ -89,7 +89,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, ComputeQuery.Answer> implements ComputeQuery {
 
@@ -460,7 +460,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     /**
      * Argument inner class to provide access Compute Query arguments
      *
-     * @author Haikal Pribadi
+     * @author Grakn Warriors
      */
     public class ArgumentsImpl implements Arguments {
 
@@ -562,7 +562,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     /**
      * Answer inner class to provide access to Compute Query computation results
      *
-     * @author Haikal Pribadi
+     * @author Grakn Warriors
      */
     public static class AnswerImpl implements Answer {
 

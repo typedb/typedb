@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * {@link #complete(Builder)} to just return its argument.
  *
  * @param <Builder> An intermediate builder type that can be changed into a String
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public abstract class Printer<Builder> {
 

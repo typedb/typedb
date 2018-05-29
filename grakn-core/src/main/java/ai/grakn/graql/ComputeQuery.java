@@ -38,7 +38,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public interface ComputeQuery extends Query<ComputeQuery.Answer> {
 
@@ -187,7 +187,7 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
     /**
      * Argument inner interface to provide access Compute Query arguments
      *
-     * @author Haikal Pribadi
+     * @author Grakn Warriors
      */
     interface Arguments {
 
@@ -216,7 +216,7 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
     /**
      * Answer inner interface to provide access to Compute Query computation results
      *
-     * @author Haikal Pribadi
+     * @author Grakn Warriors
      */
     interface Answer {
 

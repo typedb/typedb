@@ -75,7 +75,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * ANTLR visitor class for parsing a query
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")

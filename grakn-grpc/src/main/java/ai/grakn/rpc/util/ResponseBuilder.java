@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public class ResponseBuilder {
 

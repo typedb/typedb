@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * A utility class to build RPC Concepts by converting them from Grakn Concepts.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public class ConceptBuilder {
     public static GrpcConcept.Concept concept(Concept concept) {

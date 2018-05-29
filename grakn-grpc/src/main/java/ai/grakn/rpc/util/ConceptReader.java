@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 /**
  * A utility class to read RPC Concepts and convert them into Grakn Concepts.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public class ConceptReader {
     public static Stream<? extends Concept> concepts(GrpcConceptConverter conceptConverter, GrpcConcept.Concepts concepts) {

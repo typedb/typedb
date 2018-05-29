@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 public class RequestBuilder {
 

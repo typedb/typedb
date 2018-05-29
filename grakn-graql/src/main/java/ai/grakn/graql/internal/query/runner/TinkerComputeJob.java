@@ -96,7 +96,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
  *
- * @author Haikal Pribadi
+ * @author Grakn Warriors
  */
 class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
 
