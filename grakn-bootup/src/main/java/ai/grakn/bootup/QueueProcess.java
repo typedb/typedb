@@ -126,7 +126,7 @@ public class QueueProcess extends AbstractProcessHandler {
         System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
         startIfNotRunning();
-        executeAndWait(new String[]{ SH, "-c", graknHome.resolve(QUEUE_CLI_BIN) + " flushall" },null,null);
+        redisCliClean();
         stop();
         System.out.println("SUCCESS");
     }
@@ -169,5 +169,20 @@ public class QueueProcess extends AbstractProcessHandler {
         }
     }
 
-    // TODO: redis clean
+    /**
+     * Executes the following command:
+     * ./services/redis/redis-cli-osx flushall
+     */
+    private void redisCliClean() {
+        try {
+            new ProcessExecutor()
+                    .readOutput(true)
+                    .directory(graknHome.toFile())
+                    .command(QUEUE_CLI_BIN.toString(), "flushall")
+                    .execute();
+        }
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
