@@ -93,7 +93,7 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     public void clean() {
-        System.out.print("Cleaning "+DISPLAY_NAME+"...");
+        System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
         Path rootPath = graknHome.resolve("logs");
         try (Stream<Path> files = Files.walk(rootPath)) {
@@ -110,6 +110,53 @@ public class EngineProcess extends AbstractProcessHandler {
 
     public boolean isRunning() {
         return isProcessRunning(ENGINE_PIDFILE);
+    }
+
+    private void start() {
+        System.out.print("Starting " + DISPLAY_NAME + "...");
+        System.out.flush();
+
+        startEngineAsABackgroundProcess();
+
+        LocalDateTime init = LocalDateTime.now();
+        LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
+
+        while(LocalDateTime.now().isBefore(timeout)) {
+            System.out.print(".");
+            System.out.flush();
+
+            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
+            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
+
+            if(isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host,port, REST.WebPath.STATUS)) {
+                System.out.println("SUCCESS");
+                return;
+            }
+            try {
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("FAILED!");
+        System.out.println("Unable to start " + DISPLAY_NAME);
+        throw new ProcessNotStartedException();
+    }
+
+    private boolean isEngineReady(String host, int port, String path) {
+        try {
+            URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
+            HttpURLConnection connection = (HttpURLConnection) siteURL
+                    .openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+
+            int code = connection.getResponseCode();
+            return code == 200;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private String getEngineJavaClassPath() {
@@ -130,57 +177,12 @@ public class EngineProcess extends AbstractProcessHandler {
         return classPath;
     }
 
-    private void start() {
-        System.out.print("Starting " + DISPLAY_NAME + "...");
-        System.out.flush();
-
-        startEngineAsABackgroundProcess();
-
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
-
-        while(LocalDateTime.now().isBefore(timeout)) {
-            System.out.print(".");
-            System.out.flush();
-
-            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
-            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
-
-            if(isProcessRunning(ENGINE_PIDFILE) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
-                System.out.println("SUCCESS");
-                return;
-            }
-            try {
-                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME);
-        throw new ProcessNotStartedException();
-    }
-
-    private boolean graknCheckIfReady(String host, int port, String path) {
-        try {
-            URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
-            HttpURLConnection connection = (HttpURLConnection) siteURL
-                    .openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            int code = connection.getResponseCode();
-            return code == 200;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
     /**
-     * Executes /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home> -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
+     * Executes the following command in the background:
+     *   /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
+     *       -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
      */
-    private void startEngineAsABackgroundProcess() {
+    private CompletableFuture<OutputCommand> startEngineAsABackgroundProcess() {
         String startEngineCmd_EscapeWhitespace = "java " + JAVA_OPTS +
                 " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
                 " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
@@ -188,19 +190,20 @@ public class EngineProcess extends AbstractProcessHandler {
                 " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
                 " " + ENGINE_MAIN_CLASS.getName();
 
-        CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<OutputCommand> startEngineBackground = CompletableFuture.supplyAsync(() -> {
             try {
                 Future<ProcessResult> resultFuture = new ProcessExecutor()
                         .directory(graknHome.toFile())
                         .command("/bin/sh", "-c", startEngineCmd_EscapeWhitespace)
                         .start().getFuture();
                 ProcessResult result = resultFuture.get();
-
-                return null;
+                return new OutputCommand(result.outputUTF8(), result.getExitValue());
             }
             catch (InterruptedException | ExecutionException | IOException e) {
                 throw new RuntimeException(e);
             }
         });
+
+        return startEngineBackground;
     }
 }
