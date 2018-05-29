@@ -32,7 +32,7 @@ package ai.grakn;
 public enum GraknTxType {
     READ(0),  //Read only transaction where mutations to the graph are prohibited
     WRITE(1), //Write transaction where the graph can be mutated
-    BATCH(2); //Batch transaction which enables faster writes by switching off some consitency checks
+    BATCH(2); //Batch transaction which enables faster writes by switching off some consistency checks
 
     private final int type;
 
