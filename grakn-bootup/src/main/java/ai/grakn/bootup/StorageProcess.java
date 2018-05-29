@@ -146,6 +146,10 @@ public class StorageProcess extends AbstractProcessHandler {
         return isProcessRunning(STORAGE_PIDFILE);
     }
 
+    /**
+     * Executes the following command:
+     *   services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
+     */
     private OutputCommand startStorage() {
         try {
             List<String> storageCmd_EscapeWhitespace = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
@@ -168,6 +172,10 @@ public class StorageProcess extends AbstractProcessHandler {
         }
     }
 
+    /**
+     * Executes the following command:
+     *   services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
+     */
     private OutputCommand nodetoolCheckIfStorageIsStarted() {
         try {
             String nodetoolCmd_EscapeWhitespace = NODETOOL_BIN.toString().replace(" ", "\\ ");
