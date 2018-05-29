@@ -111,10 +111,6 @@ final class RemoteQueryExecutor implements QueryExecutor {
         return RemoteComputeJob.of(runSingle(query, ComputeQuery.Answer.class));
     }
 
-//    private ComputeJob<ComputeQuery.Answer> runComputeUnchecked(ComputeQuery query) {
-//        return RemoteComputeJob.of(runSingleUnchecked(query));
-//    }
-
     private <T> T runSingle(Query<? extends T> query, Class<? extends T> returnType) {
         return returnType.cast(Iterators.getOnlyElement(run(query)));
     }
