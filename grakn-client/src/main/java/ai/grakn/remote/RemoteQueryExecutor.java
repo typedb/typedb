@@ -97,6 +97,6 @@ final class RemoteQueryExecutor implements QueryExecutor {
     private Stream<Answer> runAnswerStream(Query<?> query) {
         Iterable<Object> iterable = () -> client.execQuery(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(ai.grakn.graql.admin.Answer.class::cast);
+        return stream.map(Answer.class::cast);
     }
 }
