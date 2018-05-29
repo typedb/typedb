@@ -24,8 +24,8 @@ import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -39,6 +39,9 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,7 +57,8 @@ public class EngineProcess extends AbstractProcessHandler {
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
     private static final String JAVA_OPTS = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
-    private static Class ENGINE_MAIN_CLASS = Grakn.class;
+
+    protected static Class ENGINE_MAIN_CLASS = Grakn.class; // this needs to be overridable as KGMS needs to supply a different class name
 
     protected final Path graknHome;
     protected final Path graknPropertiesPath;
@@ -72,79 +76,6 @@ public class EngineProcess extends AbstractProcessHandler {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start();
-        }
-    }
-
-    protected String getClassPathFrom(Path home){
-        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
-        File[] values = folder.listFiles(jarFiles);
-        if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run " + DISPLAY_NAME);
-        }
-        Stream<File> jars = Stream.of(values);
-        File conf = home.resolve("conf").toFile(); // $GRAKN_HOME/conf
-        File graknLogback = Paths.get(home.toAbsolutePath().toString(), "services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
-        String classPath = ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
-                .filter(f -> !f.getName().contains("slf4j-log4j12"))
-                .map(File::getAbsolutePath)
-                .sorted() // we need to sort otherwise it doesn't load logback configuration properly
-                .collect(Collectors.joining(":"));
-        return classPath;
-    }
-
-    private void start() {
-        System.out.print("Starting " + DISPLAY_NAME + "...");
-        System.out.flush();
-
-        String command = commandToRun();
-        executeAndWait(new String[]{ "/bin/sh", "-c", command }, null, null);
-
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
-
-        while(LocalDateTime.now().isBefore(timeout)) {
-            System.out.print(".");
-            System.out.flush();
-
-            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
-            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
-
-            if(isProcessRunning(ENGINE_PIDFILE) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
-                System.out.println("SUCCESS");
-                return;
-            }
-            try {
-                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME);
-        throw new ProcessNotStartedException();
-    }
-
-    protected String commandToRun() {
-        String cmd = "java " + JAVA_OPTS + " -cp " + getClassPathFrom(graknHome) + " -Dgrakn.dir=" + graknHome +
-                " -Dgrakn.conf="+ graknPropertiesPath + " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString() + " " + ENGINE_MAIN_CLASS.getName() + " > /dev/null 2>&1 &";
-
-        return cmd;
-    }
-
-    private boolean graknCheckIfReady(String host, int port, String path) {
-        try {
-            URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
-            HttpURLConnection connection = (HttpURLConnection) siteURL
-                    .openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            int code = connection.getResponseCode();
-            return code == 200;
-        } catch (IOException e) {
-            return false;
         }
     }
 
@@ -178,5 +109,99 @@ public class EngineProcess extends AbstractProcessHandler {
 
     public boolean isRunning() {
         return isProcessRunning(ENGINE_PIDFILE);
+    }
+
+    private String getClassPath(){
+        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
+        File folder = new File("services"+File.separator+"lib"); // ./services/lib folder
+        File[] values = folder.listFiles(jarFiles);
+        if(values==null) {
+            throw new RuntimeException("No libraries found: cannot run " + DISPLAY_NAME);
+        }
+        Stream<File> jars = Stream.of(values);
+        File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
+        File graknLogback = Paths.get("services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
+        String classPath = ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
+                .filter(f -> !f.getName().contains("slf4j-log4j12"))
+                .map(f -> f.toPath().toString())
+                .sorted() // we need to sort otherwise it doesn't load logback configuration properly
+                .collect(Collectors.joining(":"));
+        return classPath;
+    }
+
+    private void start() {
+        System.out.print("Starting " + DISPLAY_NAME + "...");
+        System.out.flush();
+
+        startEngineInTheBackground();
+
+        LocalDateTime init = LocalDateTime.now();
+        LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
+
+        while(LocalDateTime.now().isBefore(timeout)) {
+            System.out.print(".");
+            System.out.flush();
+
+            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
+            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
+
+            if(isProcessRunning(ENGINE_PIDFILE) && graknCheckIfReady(host,port, REST.WebPath.STATUS)) {
+                System.out.println("SUCCESS");
+                return;
+            }
+            try {
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("FAILED!");
+        System.out.println("Unable to start " + DISPLAY_NAME);
+        throw new ProcessNotStartedException();
+    }
+
+    private boolean graknCheckIfReady(String host, int port, String path) {
+        try {
+            URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
+            HttpURLConnection connection = (HttpURLConnection) siteURL
+                    .openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+
+            int code = connection.getResponseCode();
+            return code == 200;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Executes java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home> -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>
+     */
+    private void startEngineInTheBackground() {
+        String startEngineCmd_EscapeWhitespace = "java " + JAVA_OPTS +
+                " -cp " + getClassPath() +
+                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") + "" +
+                " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
+                " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
+                " " + ENGINE_MAIN_CLASS.getName();
+
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                System.out.println("Start engine: '" + startEngineCmd_EscapeWhitespace + "'");
+                Future<ProcessResult> resultFuture = new ProcessExecutor()
+                        .directory(graknHome.toFile())
+                        .command("/bin/sh", "-c", startEngineCmd_EscapeWhitespace)
+                        .start().getFuture();
+                ProcessResult result = resultFuture.get();
+                System.out.println("Start engine: exited with status " + result.getExitValue() + ", message: " + result.output());
+                
+                return null;
+            }
+            catch (InterruptedException | ExecutionException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
