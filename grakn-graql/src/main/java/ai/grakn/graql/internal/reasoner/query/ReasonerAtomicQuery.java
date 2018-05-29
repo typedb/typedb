@@ -157,7 +157,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * materialise  this query with the accompanying answer - persist to kb
      * @param answer to be materialised
-     * @return output of materialised answers
+     * @return stream of materialised answers
      */
     public Stream<Answer> materialise(Answer answer) {
         return this.withSubstitution(answer)
@@ -206,7 +206,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @return output of all rules applicable to this atomic query including permuted cases when the role types are meta roles
+     * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
     private Stream<Pair<InferenceRule, Unifier>> getRuleStream(){
         return getAtom().getApplicableRules()

@@ -124,7 +124,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * record answer output for a specific query and retrieve the updated output
      * @param query to be recorded
      * @param answers answer output of the query
-     * @return updated answer output
+     * @return updated answer stream
      */
     public abstract Stream<Answer> record(Q query, Stream<Answer> answers);
 

@@ -64,7 +64,7 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
 
     /**
      * @param query to be retrieved
-     * @return answer output of provided query
+     * @return answer stream of provided query
      */
     public Stream<Answer> get(Q query){
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);

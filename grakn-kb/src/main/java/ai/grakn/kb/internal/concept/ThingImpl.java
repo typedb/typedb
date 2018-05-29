@@ -169,7 +169,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @param conceptStream The {@link Stream} to filter
      * @param attributeTypesIds The {@link AttributeType} {@link ConceptId}s to filter to.
-     * @return the filtered output
+     * @return the filtered stream
      */
     private <X extends Concept> Stream<Attribute<?>> attributes(Stream<X> conceptStream, Set<ConceptId> attributeTypesIds){
         Stream<Attribute<?>> attributeStream = conceptStream.

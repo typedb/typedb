@@ -732,7 +732,7 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
     /**
      * Helper method to get the types to be included in the query scope
      *
-     * @return output of Concept Types
+     * @return stream of Concept Types
      */
     private Stream<Type> scopeTypes() {
         // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.

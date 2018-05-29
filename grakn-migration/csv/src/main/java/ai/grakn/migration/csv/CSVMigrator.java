@@ -138,7 +138,7 @@ public class CSVMigrator implements AutoCloseable {
 
     /**
      * Each String in the output is a CSV file
-     * @return output of parsed insert queries
+     * @return stream of parsed insert queries
      */
     public Stream<Map<String, Object>> convert() {
         try{

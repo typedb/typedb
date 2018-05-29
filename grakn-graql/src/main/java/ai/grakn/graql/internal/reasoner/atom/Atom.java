@@ -206,7 +206,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @param type the class of {@link Predicate} to return
      * @param <T> the type of {@link Predicate} to return
-     * @return output of predicates relevant to this atom
+     * @return stream of predicates relevant to this atom
      */
     public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
         return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
@@ -237,7 +237,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @param type the class of {@link Predicate} to return
      * @param <T> the type of {@link Predicate} to return
-     * @return output of predicates relevant to this atom
+     * @return stream of predicates relevant to this atom
      */
     public <T extends Predicate> Stream<T> getInnerPredicates(Class<T> type){
         return getInnerPredicates().filter(type::isInstance).map(type::cast);

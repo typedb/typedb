@@ -89,7 +89,7 @@ public class SQLMigrator {
 
     /**
      * Migrate the results of the SQL statement with the provided template
-     * @return output of parsed insert queries
+     * @return stream of parsed insert queries
      */
     public Stream<Map<String, Object>> convert() {
         return records.map(Record::intoMap).map(this::convertToValidValues);

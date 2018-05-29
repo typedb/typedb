@@ -79,7 +79,7 @@ public class KBWriter {
 
     /**
      * Get all the {@link SchemaConcept}s in a graph.
-     * @return a output of all {@link SchemaConcept}s with non-reserved IDs
+     * @return a stream of all {@link SchemaConcept}s with non-reserved IDs
      */
     private Stream<? extends SchemaConcept> schemaConcepts(){
         Stream<? extends Type> types = tx.admin().getMetaConcept().subs();

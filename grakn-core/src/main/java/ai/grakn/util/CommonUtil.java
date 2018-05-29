@@ -66,7 +66,7 @@ public class CommonUtil {
     /**
      * @param optional the optional to change into a output
      * @param <T> the type in the optional
-     * @return a output of one item if the optional has an element, else an empty output
+     * @return a stream of one item if the optional has an element, else an empty stream
      */
     public static <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
