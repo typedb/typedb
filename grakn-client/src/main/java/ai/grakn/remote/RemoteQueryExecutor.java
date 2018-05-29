@@ -28,21 +28,18 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.rpc.GrpcClient;
 import com.google.common.collect.Iterators;
 
-import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
- *
- * <p>
  * Like {@link RemoteGraknTx}, this class is an adapter that uses the {@link GrpcClient} for gRPC calls.
- * </p>
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 final class RemoteQueryExecutor implements QueryExecutor {
 
@@ -57,12 +54,12 @@ final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<ai.grakn.graql.admin.Answer> run(GetQuery query) {
+    public Stream<Answer> run(GetQuery query) {
         return runAnswerStream(query);
     }
 
     @Override
-    public Stream<ai.grakn.graql.admin.Answer> run(InsertQuery query) {
+    public Stream<Answer> run(InsertQuery query) {
         return runAnswerStream(query);
     }
 
@@ -72,8 +69,8 @@ final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public ai.grakn.graql.admin.Answer run(DefineQuery query) {
-        return runSingle(query, ai.grakn.graql.admin.Answer.class);
+    public Answer run(DefineQuery query) {
+        return (Answer) Iterators.getOnlyElement(client.execQuery(query));
     }
 
     @Override
@@ -83,39 +80,23 @@ final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public <T> T run(AggregateQuery<T> query) {
-        return runSingleUnchecked(query);
+        return (T) Iterators.getOnlyElement(client.execQuery(query));
     }
 
 
     @Override
     public ComputeJob<ComputeQuery.Answer> run(ComputeQuery query) {
-        return runCompute(query);
-    }
-
-    private Iterator<Object> run(Query<?> query) {
-        return client.execQuery(query);
+        ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(client.execQuery(query));
+        return RemoteComputeJob.of(answer);
     }
 
     private void runVoid(Query<?> query) {
-        run(query).forEachRemaining(empty -> {
-        });
+        client.execQuery(query).forEachRemaining(empty -> {});
     }
 
-    private Stream<ai.grakn.graql.admin.Answer> runAnswerStream(Query<?> query) {
-        Iterable<Object> iterable = () -> run(query);
+    private Stream<Answer> runAnswerStream(Query<?> query) {
+        Iterable<Object> iterable = () -> client.execQuery(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
         return stream.map(ai.grakn.graql.admin.Answer.class::cast);
-    }
-
-    private ComputeJob<ComputeQuery.Answer> runCompute(ComputeQuery query) {
-        return RemoteComputeJob.of(runSingle(query, ComputeQuery.Answer.class));
-    }
-
-    private <T> T runSingle(Query<? extends T> query, Class<? extends T> returnType) {
-        return returnType.cast(Iterators.getOnlyElement(run(query)));
-    }
-
-    private <T> T runSingleUnchecked(Query<? extends T> query) {
-        return (T) Iterators.getOnlyElement(run(query));
     }
 }
