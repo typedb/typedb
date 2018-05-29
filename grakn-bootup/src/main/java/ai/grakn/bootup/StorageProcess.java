@@ -33,7 +33,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -146,12 +148,20 @@ public class StorageProcess extends AbstractProcessHandler {
 
     private OutputCommand startStorage() {
         try {
-            ProcessExecutor startStorage = new ProcessExecutor()
+            List<String> storageCmd_EscapeWhitespace = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
+                    "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString())
+                    .stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
+
+            ByteArrayOutputStream error = new ByteArrayOutputStream();
+
+            ProcessResult startStorage = new ProcessExecutor()
                     .readOutput(true)
                     .directory(graknHome.toFile())
-                    .command(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
-            ProcessResult startStorageResult = startStorage.execute();
-            return new OutputCommand(startStorageResult.outputUTF8(), startStorageResult.getExitValue());
+                    .redirectError(error)
+                    .command(storageCmd_EscapeWhitespace)
+                    .execute();
+
+            return new OutputCommand(startStorage.outputUTF8(), startStorage.getExitValue());
         }
         catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -160,12 +170,14 @@ public class StorageProcess extends AbstractProcessHandler {
 
     private OutputCommand nodetoolCheckIfStorageIsStarted() {
         try {
+            String nodetoolCmd_EscapeWhitespace = NODETOOL_BIN.toString().replace(" ", "\\ ");
+
             ByteArrayOutputStream nodetoolOutputStream = new ByteArrayOutputStream();
 
             new ProcessExecutor()
                     .readOutput(true)
                     .directory(graknHome.toFile())
-                    .command(NODETOOL_BIN.toString(), "statusthrift")
+                    .command(nodetoolCmd_EscapeWhitespace, "statusthrift")
                     .redirectOutput(nodetoolOutputStream)
                     .execute();
 
