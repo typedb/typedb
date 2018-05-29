@@ -155,8 +155,9 @@ message Label {
     string value = 1;
 }
 
+//TODO: remove this once we clean up the Grakn Proto definitions
 message RolePlayers {
-    repeated RolePlayer rolePlayer = 1;
+    repeated RolePlayer rolePlayers = 1;
 }
 
 message RolePlayer {
@@ -165,7 +166,7 @@ message RolePlayer {
 }
 
 message Concepts {
-    repeated Concept concept = 1;
+    repeated Concept concepts = 1;
 }
 
 message ConceptIds {

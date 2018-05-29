@@ -91,7 +91,7 @@ public class ConceptBuilder {
 
     public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
         GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
-        grpcConcepts.addAllConcept(concepts.map(ConceptBuilder::concept).collect(toList()));
+        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
         return grpcConcepts.build();
     }
 
