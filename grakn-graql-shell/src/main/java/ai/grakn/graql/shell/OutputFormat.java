@@ -26,35 +26,36 @@ import java.util.Set;
 /**
  * Valid output formats for the Graql shell
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
-public enum OutputFormat {
-    Json {
-        @Override
-        Printer<?> getConverter(Set<AttributeType<?>> displayAttributes) {
-            return Printer.jsonPrinter();
-        }
-    },
+public abstract class OutputFormat {
 
-    Graql {
-        @Override
-        Printer<?> getConverter(Set<AttributeType<?>> displayAttributes) {
-            AttributeType<?>[] array = displayAttributes.toArray(new AttributeType[displayAttributes.size()]);
-            return Printer.stringPrinter(true, array);
-        }
-    };
+    abstract Printer<?> getPrinter(Set<AttributeType<?>> displayAttributes);
 
-    abstract Printer<?> getConverter(Set<AttributeType<?>> displayAttributes);
-
-    static final OutputFormat DEFAULT = Graql;
-
+    static final OutputFormat DEFAULT = new OutputFormat.Graql();
+    
     public static OutputFormat get(String name) {
         switch (name) {
             case "json":
-                return Json;
+                return new OutputFormat.JSON();
             case "graql":
             default:
-                return Graql;
+                return new OutputFormat.Graql();
+        }
+    }
+
+    static class JSON extends OutputFormat {
+        @Override
+        Printer<?> getPrinter(Set<AttributeType<?>> displayAttributes) {
+            return Printer.jsonPrinter();
+        }
+    }
+
+    static class Graql extends OutputFormat {
+        @Override
+        Printer<?> getPrinter(Set<AttributeType<?>> displayAttributes) {
+            AttributeType<?>[] array = displayAttributes.toArray(new AttributeType[displayAttributes.size()]);
+            return Printer.stringPrinter(true, array);
         }
     }
 }

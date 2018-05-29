@@ -216,7 +216,7 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
-        Printer<?> printer = outputFormat.getConverter(displayAttributes);
+        Printer<?> printer = outputFormat.getPrinter(displayAttributes);
 
         handleGraknExceptions(() -> {
             Stream<Query<?>> queries = tx
