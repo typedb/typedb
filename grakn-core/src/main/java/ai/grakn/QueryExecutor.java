@@ -19,12 +19,13 @@
 package ai.grakn;
 
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.UndefineQuery;
+import ai.grakn.graql.admin.Answer;
 
 import java.util.stream.Stream;
 
@@ -41,13 +42,13 @@ import java.util.stream.Stream;
  */
 public interface QueryExecutor {
 
-    Stream<ai.grakn.graql.admin.Answer> run(GetQuery query);
+    Stream<Answer> run(GetQuery query);
 
-    Stream<ai.grakn.graql.admin.Answer> run(InsertQuery query);
+    Stream<Answer> run(InsertQuery query);
 
     void run(DeleteQuery query);
 
-    ai.grakn.graql.admin.Answer run(DefineQuery query);
+    Answer run(DefineQuery query);
 
     void run(UndefineQuery query);
 
