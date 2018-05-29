@@ -33,6 +33,7 @@ public enum ErrorMessage {
     GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
     UNSUPPORTED_JAVA_VERSION("Unsupported Java version [%s] found. Grakn needs Java 1.8 in order to run."),
     UNABLE_TO_START_GRAKN("Unable to start Grakn"),
+    UNABLE_TO_START_ENGINE_JAR_NOT_FOUND("Unable to start Engine, No JAR files found! Please re-download the Grakn distribution."),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
