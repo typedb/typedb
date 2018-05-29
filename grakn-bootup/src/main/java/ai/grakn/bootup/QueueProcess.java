@@ -20,11 +20,14 @@ package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A class responsible for managing the Queue process,
@@ -60,11 +63,8 @@ public class QueueProcess extends AbstractProcessHandler {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
 
-        // run queue
-        // queue needs to be ran with $GRAKN_HOME as the working directory
-        // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-        executeAndWait(new String[]{SH, "-c", graknHome.resolve(QUEUE_SERVER_BIN) + " " + graknHome.resolve(QUEUE_CONFIG_PATH) },
-                null, graknHome.toFile());
+        startRedisServer();
+
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
 
@@ -104,7 +104,7 @@ public class QueueProcess extends AbstractProcessHandler {
         if (pid <0 ) return;
 
         String host = getHostFromConfig();
-        executeAndWait(new String[] { SH, "-c", graknHome.resolve(QUEUE_CLI_BIN) + " -h " + host + " shutdown" }, null, null);
+        redisCliCheckIfRedisServerIsStarted(host);
         waitUntilStopped(QUEUE_PIDFILE,pid);
     }
 
@@ -134,4 +134,40 @@ public class QueueProcess extends AbstractProcessHandler {
     public boolean isRunning() {
         return isProcessRunning(QUEUE_PIDFILE);
     }
+
+    /**
+     * Executes the following command:
+     * ./services/redis/redis-server-osx ./services/redis/redis.conf
+     */
+    private void startRedisServer() {
+        try {
+            new ProcessExecutor()
+                    .readOutput(true)
+                    .directory(graknHome.toFile())
+                    .command(QUEUE_SERVER_BIN.toString(), QUEUE_CONFIG_PATH.toString())
+                    .execute();
+        }
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Executes the following command:
+     * ./services/redis/redis-cli-osx -h <host> shutdown
+     */
+    private void redisCliCheckIfRedisServerIsStarted(String host) {
+        try {
+            new ProcessExecutor()
+                    .readOutput(true)
+                    .directory(graknHome.toFile())
+                    .command(QUEUE_CLI_BIN.toString(), "-h", host, "shutdown")
+                    .execute();
+        }
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // TODO: redis clean
 }
