@@ -66,8 +66,8 @@ public class KBWriter {
     }
 
     /**
-     * Turn a output of Graql patterns into a Graql insert query.
-     * @param stream output of Graql patterns
+     * Turn a stream of Graql patterns into a Graql insert query.
+     * @param stream stream of Graql patterns
      * @return Graql patterns as a string
      */
     private String join(Stream<VarPattern> stream){

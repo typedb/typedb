@@ -162,7 +162,7 @@ public class QueryParserImpl implements QueryParser {
         */
         lexer.setTokenFactory(new CommonTokenFactory(true));
 
-        // Use an unbuffered token output so we can handle extremely large input strings
+        // Use an unbuffered token stream so we can handle extremely large input strings
         UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
 
         GraqlParser parser = createParser(tokenStream, errorListener);
@@ -198,7 +198,7 @@ public class QueryParserImpl implements QueryParser {
                     return null;
                 } else {
                     // This will parse and consume a single query, even if it doesn't reach an EOF
-                    // When we next run it, it will start where it left off in the output
+                    // When we next run it, it will start where it left off in the stream
                     return (T) QUERY.parse(parser, errorListener);
                 }
             }

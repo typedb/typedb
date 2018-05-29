@@ -149,7 +149,7 @@ public class QueryCacheTest {
         QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
         QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
 
-        //NB: not expecting the update in the output
+        //NB: not expecting the update in the stream
         assertTrue(recordAnswers.contains(answer));
         assertTrue(retrieveAnswers.contains(retrieveAnswer));
         assertFalse(recordAnswers.contains(singleAnswer));

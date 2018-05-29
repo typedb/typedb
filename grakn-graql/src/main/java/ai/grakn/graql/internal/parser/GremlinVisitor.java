@@ -204,7 +204,7 @@ public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.P
     }
 
     /**
-     * Helper method that intersperses elements of a output with an additional element:
+     * Helper method that intersperses elements of a stream with an additional element:
      * <pre>
      *     intersperse(Stream.of(1, 2, 3), 42) == Stream.of(1, 42, 2, 42, 3);
      *

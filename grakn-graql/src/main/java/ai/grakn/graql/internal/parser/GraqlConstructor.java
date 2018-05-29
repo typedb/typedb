@@ -592,7 +592,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     /**
-     * Chain a output of functions into a single function, which applies each one after the other
+     * Chain a stream of functions into a single function, which applies each one after the other
      */
     private <T> UnaryOperator<T> chainOperators(Stream<UnaryOperator<T>> operators) {
         return operators.reduce(UnaryOperator.identity(), this::compose);

@@ -33,8 +33,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Wrapper for making Tx calls to a gRPC server - handles sending a output of {@link TxRequest}s and receiving a
- * output of {@link TxResponse}s.
+ * Wrapper for making Tx calls to a gRPC server - handles sending a stream of {@link TxRequest}s and receiving a
+ * stream of {@link TxResponse}s.
  *
  * A request is sent with the {@link #send(TxRequest)}} method, and you can block for a response with the
  * {@link #receive()} method.

@@ -64,7 +64,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
 
     @Override
     public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
-        //NB: output collection!
+        //NB: stream collection!
         QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         return record(query, newAnswers).stream();
     }
@@ -136,7 +136,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
 
             //NB: this is not lazy
-            //lazy version would be answers.output().flatMap(ans -> ans.unify(multiUnifier))
+            //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
             return new Pair<>(answers.unify(multiUnifier).stream(), multiUnifier);
         }
         return new Pair<>(

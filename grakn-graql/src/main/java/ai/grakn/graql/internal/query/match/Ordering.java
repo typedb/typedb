@@ -43,8 +43,8 @@ abstract class Ordering {
     }
 
     /**
-     * Order the output
-     * @param stream the output to order
+     * Order the stream
+     * @param stream the stream to order
      */
     Stream<Answer> orderStream(Stream<Answer> stream) {
         return stream.sorted(comparator());

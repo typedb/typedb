@@ -66,9 +66,9 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
     }
 
     /**
-     * record answer output for a specific query and retrieve the updated output in a lazy iterator
+     * record answer stream for a specific query and retrieve the updated stream in a lazy iterator
      * @param query to be recorded
-     * @param answers answer output of the query
+     * @param answers answer stream of the query
      * @return lazy iterator of updated answers
      */
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){

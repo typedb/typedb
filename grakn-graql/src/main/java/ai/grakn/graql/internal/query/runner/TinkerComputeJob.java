@@ -707,9 +707,9 @@ class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
         }
         return false;
         //TODO: should use the following ask query when ask query is even lazier
-//        List<Pattern> checkResourceTypes = statisticsResourceTypes.output()
+//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
 //                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-//        List<Pattern> checkSubtypes = inTypes.output()
+//        List<Pattern> checkSubtypes = inTypes.stream()
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
 //        return tx.get().graql().infer(false)

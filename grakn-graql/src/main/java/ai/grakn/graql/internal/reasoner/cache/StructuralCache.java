@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * On cache hit a concept map between provided query and the one contained in the cache is constructed. Based on that mapping,
  * id predicates of the cached query are transformed.
  *
- * The returned output is a output of the transformed cached query unified with the provided query.
+ * The returned stream is a stream of the transformed cached query unified with the provided query.
  * </p>
  *
  * @param <Q> the type of query that is being cached
