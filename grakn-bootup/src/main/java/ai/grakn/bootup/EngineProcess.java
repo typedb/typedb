@@ -22,6 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -111,14 +112,14 @@ public class EngineProcess extends AbstractProcessHandler {
         return isProcessRunning(ENGINE_PIDFILE);
     }
 
-    private String getClassPath(){
-        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        File folder = new File("services"+File.separator+"lib"); // ./services/lib folder
-        File[] values = folder.listFiles(jarFiles);
-        if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run " + DISPLAY_NAME);
+    private String getEngineJavaClassPath() {
+        FilenameFilter filterForJarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
+        File servicesLibDir = Paths.get("services", "lib").toFile();
+        File[] jarFiles = servicesLibDir.listFiles(filterForJarFiles);
+        if(jarFiles == null) {
+            throw new RuntimeException(ErrorMessage.UNABLE_TO_START_ENGINE_JAR_NOT_FOUND.getMessage());
         }
-        Stream<File> jars = Stream.of(values);
+        Stream<File> jars = Stream.of(jarFiles);
         File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
         File graknLogback = Paths.get("services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
         String classPath = ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
@@ -133,7 +134,7 @@ public class EngineProcess extends AbstractProcessHandler {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        startEngineInTheBackground();
+        startEngineAsABackgroundProcess();
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
@@ -177,26 +178,24 @@ public class EngineProcess extends AbstractProcessHandler {
     }
 
     /**
-     * Executes java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home> -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>
+     * Executes /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home> -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
      */
-    private void startEngineInTheBackground() {
+    private void startEngineAsABackgroundProcess() {
         String startEngineCmd_EscapeWhitespace = "java " + JAVA_OPTS +
-                " -cp " + getClassPath() +
-                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") + "" +
+                " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
+                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
                 " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
                 " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
                 " " + ENGINE_MAIN_CLASS.getName();
 
         CompletableFuture.supplyAsync(() -> {
             try {
-                System.out.println("Start engine: '" + startEngineCmd_EscapeWhitespace + "'");
                 Future<ProcessResult> resultFuture = new ProcessExecutor()
                         .directory(graknHome.toFile())
                         .command("/bin/sh", "-c", startEngineCmd_EscapeWhitespace)
                         .start().getFuture();
                 ProcessResult result = resultFuture.get();
-                System.out.println("Start engine: exited with status " + result.getExitValue() + ", message: " + result.output());
-                
+
                 return null;
             }
             catch (InterruptedException | ExecutionException | IOException e) {
