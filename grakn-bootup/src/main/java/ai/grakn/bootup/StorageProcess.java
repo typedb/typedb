@@ -20,6 +20,9 @@ package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +30,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -62,7 +67,7 @@ public class StorageProcess extends AbstractProcessHandler {
         }
     }
 
-    private Path getStorageLogPathFromGraknProperties(){
+    private Path getStorageLogPathFromGraknProperties() {
         return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
     }
 
@@ -76,13 +81,26 @@ public class StorageProcess extends AbstractProcessHandler {
                 // DO NOTHING
             }
         }
-        OutputCommand outputCommand = executeAndWait(new String[]{
-                SH,
-                "-c",
-                graknHome.resolve(STORAGE_BIN)
-                        + " -p " + STORAGE_PIDFILE
-                        + " -l " + getStorageLogPathFromGraknProperties().toAbsolutePath()
-        }, null, null);
+        OutputCommand outputCommand;
+        try {
+            ProcessExecutor startStorage = new ProcessExecutor()
+                    .directory(graknHome.toFile())
+                    .command(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString())
+                    .readOutput(true);
+            System.out.println("start storage command = " + startStorage.getCommand().stream().collect(Collectors.joining("', '")));
+            ProcessResult startStorageResult = startStorage.execute();
+            outputCommand = new OutputCommand(startStorageResult.outputUTF8(), startStorageResult.getExitValue());
+        }
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+//        OutputCommand outputCommand = executeAndWait(new String[]{
+//                SH,
+//                "-c",
+//                graknHome.resolve(STORAGE_BIN)
+//                        + " -p " + STORAGE_PIDFILE
+//                        + " -l " + getStorageLogPathFromGraknProperties().toAbsolutePath()
+//        }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
@@ -90,6 +108,19 @@ public class StorageProcess extends AbstractProcessHandler {
             System.out.print(".");
             System.out.flush();
 
+//            OutputCommand storageStatus;
+//            try {
+//                ProcessExecutor nodetool = new ProcessExecutor()
+//                        .directory(graknHome.toFile())
+//                        .command(NODETOOL_BIN.toString(), "statusthrift", "2>", "/dev/null", "|", "tr", "-d", "'\n\r'")
+//                        .readOutput(true);
+//                ProcessResult nodetoolResult = nodetool.execute();
+//                System.out.println("start storage command = " + nodetool.toString());
+//                storageStatus = new OutputCommand(nodetoolResult.outputUTF8(), nodetoolResult.getExitValue());
+//            }
+//            catch (IOException | InterruptedException | TimeoutException e) {
+//                throw new RuntimeException(e);
+//            }
             OutputCommand storageStatus = executeAndWait(new String[]{
                     SH,
                     "-c",
