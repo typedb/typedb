@@ -36,7 +36,7 @@ import java.util.concurrent.TimeoutException;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class QueueProcess extends AbstractProcessHandler {
+public class QueueBootup extends AbstractProcessHandler {
     private static final String DISPLAY_NAME = "Queue";
     private static final String QUEUE_PROCESS_NAME = "redis-server";
     private static final long QUEUE_STARTUP_TIMEOUT_SECOND = 10;
@@ -47,7 +47,7 @@ public class QueueProcess extends AbstractProcessHandler {
 
     private final Path graknHome;
 
-    public QueueProcess(Path graknHome) {
+    public QueueBootup(Path graknHome) {
         this.graknHome = graknHome;
     }
 
