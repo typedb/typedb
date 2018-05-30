@@ -25,8 +25,6 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -38,11 +36,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,7 +81,7 @@ public class EngineBootup {
     }
 
     public void stop() {
-        bootupProcessExecutor.stopProgram(ENGINE_PIDFILE, DISPLAY_NAME);
+        bootupProcessExecutor.stopProcessIfRunning(ENGINE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
@@ -116,10 +113,19 @@ public class EngineBootup {
     }
 
     private void start() {
+        //  /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
+        //    -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
+        List<String> startEngineCmd_EscapeWhitespace = Arrays.asList("/bin/sh", "-c", "java " + JAVA_OPTS +
+                " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
+                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
+                " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
+                " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
+                " " + ENGINE_MAIN_CLASS.getName());
+
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        startEngineAsABackgroundProcess();
+        bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
@@ -149,9 +155,8 @@ public class EngineBootup {
 
     private boolean isEngineReady(String host, int port, String path) {
         try {
-            URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
-            HttpURLConnection connection = (HttpURLConnection) siteURL
-                    .openConnection();
+            URL engineUrl = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
+            HttpURLConnection connection = (HttpURLConnection) engineUrl.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 
@@ -162,6 +167,14 @@ public class EngineBootup {
         }
     }
 
+    /**
+     * Build the classpath from the following folders:
+     * - services/lib/*.jar
+     * - conf/
+     * - services/grakn/server/
+     * Any slf4J-log4j12 Jars are excluded.
+     * @return a classpath to be supplied to Java, ie., java -cp <classpath>
+     */
     private String getEngineJavaClassPath() {
         FilenameFilter filterForJarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
         File servicesLibDir = Paths.get("services", "lib").toFile();
@@ -178,35 +191,5 @@ public class EngineBootup {
                 .sorted() // we need to sort otherwise it doesn't load logback configuration properly
                 .collect(Collectors.joining(":"));
         return classPath;
-    }
-
-    /**
-     * Executes the following command in the background:
-     *   /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
-     *       -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
-     */
-    private CompletableFuture<OutputCommand> startEngineAsABackgroundProcess() {
-        String startEngineCmd_EscapeWhitespace = "java " + JAVA_OPTS +
-                " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
-                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
-                " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
-                " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
-                " " + ENGINE_MAIN_CLASS.getName();
-
-        CompletableFuture<OutputCommand> startEngineBackground = CompletableFuture.supplyAsync(() -> {
-            try {
-                Future<ProcessResult> resultFuture = new ProcessExecutor()
-                        .directory(graknHome.toFile())
-                        .command("/bin/sh", "-c", startEngineCmd_EscapeWhitespace)
-                        .start().getFuture();
-                ProcessResult result = resultFuture.get();
-                return new OutputCommand(result.outputUTF8(), result.getExitValue());
-            }
-            catch (InterruptedException | ExecutionException | IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        return startEngineBackground;
     }
 }
