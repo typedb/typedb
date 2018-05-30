@@ -126,10 +126,10 @@ public class EngineBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        CompletableFuture<OutputCommand> startEngine = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
+        CompletableFuture<BootupProcessResult> startEngine = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
                 .whenComplete((result, ex) -> {
-                    if (result.exitStatus != 0) {
-                        throw new RuntimeException(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage() + ". Engine exited with status " + result.exitStatus);
+                    if (result.exitCode() != 0) {
+                        throw new RuntimeException(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage() + ". Engine exited with status " + result.exitCode());
                     }
                 });
 
