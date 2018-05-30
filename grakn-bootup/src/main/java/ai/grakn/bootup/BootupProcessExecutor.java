@@ -18,6 +18,9 @@
 
 package ai.grakn.bootup;
 
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +28,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 /**
+ * This class is responsible for spawning process.
  *
  * @author Michele Orsi
  */
@@ -36,28 +43,14 @@ public class BootupProcessExecutor {
     public final long WAIT_INTERVAL_SECOND = 2;
     public final String SH = "/bin/sh";
 
-    public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
-
-        StringBuilder outputS = new StringBuilder();
-        int exitValue = 1;
-
-        Process p;
+    public OutputCommand executeAndWait(List<String> command, File workingDirectory) {
         try {
-            p = Runtime.getRuntime().exec(cmdarray, envp, dir);
-            p.waitFor();
-            exitValue = p.exitValue();
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))){
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    outputS.append(line).append("\n");
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (IOException e) {
-            // DO NOTHING
+            ProcessResult result = new ProcessExecutor().readOutput(true).directory(workingDirectory).command(command).execute();
+            return new OutputCommand(result.outputUTF8(), result.getExitValue());
         }
-        return new OutputCommand(outputS.toString().trim(), exitValue);
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Optional<String> getPidFromFile(Path fileName) {
@@ -73,27 +66,16 @@ public class BootupProcessExecutor {
     }
 
     public String getPidFromPsOf(String processName) {
-        return executeAndWait(new String[]{
-                SH,
-                    "-c",
-                    "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "
-            }, null, null).output;
+        return executeAndWait(
+                Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).output;
     }
 
     private void kill(int pid) {
-        executeAndWait(new String[]{
-                SH,
-                "-c",
-                "kill " + pid
-        }, null, null);
+        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
     }
 
     private OutputCommand kill(int pid, String signal) {
-        return executeAndWait(new String[]{
-                SH,
-                "-c",
-                "kill -"+signal+" " + pid
-        }, null, null);
+        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
     }
 
     public int retrievePid(Path pidFile) {
@@ -135,11 +117,7 @@ public class BootupProcessExecutor {
     }
 
     public String selectCommand(String osx, String linux) {
-        OutputCommand operatingSystem = executeAndWait(new String[]{
-                SH,
-                "-c",
-                "uname"
-        },null,null);
+        OutputCommand operatingSystem = executeAndWait(Arrays.asList(SH, "-c", "uname"), null);
         return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
@@ -152,11 +130,8 @@ public class BootupProcessExecutor {
                 if(processPid.trim().isEmpty()) {
                     return false;
                 }
-                OutputCommand command = executeAndWait(new String[]{
-                        SH,
-                        "-c",
-                        "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"
-                },null,null);
+                OutputCommand command =
+                        executeAndWait(Arrays.asList(SH, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
                 return Integer.parseInt(command.output.trim())>0;
             } catch (NumberFormatException | IOException e) {
                 return false;
