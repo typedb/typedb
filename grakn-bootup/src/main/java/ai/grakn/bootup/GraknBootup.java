@@ -49,17 +49,11 @@ public class GraknBootup {
     private final QueueBootup queueBootup;
     private final EngineBootup engineBootup;
 
-    private GraknBootup(StorageBootup storageBootup, QueueBootup queueBootup, EngineBootup engineBootup) {
-        this.storageBootup = storageBootup;
-        this.queueBootup = queueBootup;
-        this.engineBootup = engineBootup;
-    }
-
     /**
-     * Main function of the {@link GraknBootup}. It is meant to be invoked by the 'grakn' bash script
-     * You should have 'grakn.dir' and 'grakn.conf' Java properties set
+     * Main function of the {@link GraknBootup}. It is meant to be invoked by the 'grakn' bash script.
+     * You should have 'grakn.dir' and 'grakn.conf' Java properties set.
      *
-     * @param args
+     * @param args arguments such as 'server start', 'server stop', 'clean', and so on
      */
     public static void main(String[] args) {
         try {
@@ -68,8 +62,14 @@ public class GraknBootup {
 
             assertEnvironment(graknHome, graknProperties);
 
-            printAscii();
-            newGraknBootup(graknHome, graknProperties).run(args);
+            printGraknLogo();
+
+            BootupProcessExecutor bootupProcessExecutor = new BootupProcessExecutor();
+            GraknBootup graknBootup = new GraknBootup(new StorageBootup(bootupProcessExecutor, graknHome, graknProperties),
+                    new QueueBootup(bootupProcessExecutor, graknHome), new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
+
+            graknBootup.run(args);
+
         } catch (RuntimeException ex) {
             LOG.error("An error has occurred during boot-up.", ex);
             System.err.println(ex.getMessage());
@@ -77,10 +77,16 @@ public class GraknBootup {
         }
     }
 
+    private GraknBootup(StorageBootup storageBootup, QueueBootup queueBootup, EngineBootup engineBootup) {
+        this.storageBootup = storageBootup;
+        this.queueBootup = queueBootup;
+        this.engineBootup = engineBootup;
+    }
+
     /**
      * Basic environment checks. Grakn should only be ran if users are running Java 8,
      * home folder can be detected, and the configuration file 'grakn.properties' exists.
-     * @param graknHome path to GRAKN_HOME
+     * @param graknHome path to $GRAKN_HOME
      * @param graknProperties path to the 'grakn.properties' file
      */
     private static void assertEnvironment(Path graknHome, Path graknProperties) {
@@ -96,14 +102,7 @@ public class GraknBootup {
         }
     }
 
-    private static GraknBootup newGraknBootup(Path graknHome, Path configPath) {
-        return new GraknBootup(
-                new StorageBootup(graknHome, configPath),
-                new QueueBootup(graknHome),
-                new EngineBootup(graknHome, configPath));
-    }
-
-    private static void printAscii() {
+    private static void printGraknLogo() {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
         if(ascii.toFile().exists()) {
             try {

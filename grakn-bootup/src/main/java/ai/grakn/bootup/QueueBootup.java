@@ -36,23 +36,29 @@ import java.util.concurrent.TimeoutException;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class QueueBootup extends AbstractProcessHandler {
+public class QueueBootup {
     private static final String DISPLAY_NAME = "Queue";
     private static final String QUEUE_PROCESS_NAME = "redis-server";
     private static final long QUEUE_STARTUP_TIMEOUT_SECOND = 10;
     private static final Path QUEUE_CONFIG_PATH = Paths.get("services", "redis", "redis.conf");
     private static final Path QUEUE_PIDFILE = Paths.get(File.separator,"tmp", "grakn-queue.pid");
-    private final Path QUEUE_SERVER_BIN = Paths.get("services", "redis", selectCommand("redis-server-osx", "redis-server-linux"));
-    private final Path QUEUE_CLI_BIN = Paths.get("services", "redis", selectCommand("redis-cli-osx", "redis-cli-linux"));
+    private final Path QUEUE_SERVER_BIN;
+    private final Path QUEUE_CLI_BIN;
 
+    private BootupProcessExecutor bootupProcessExecutor;
     private final Path graknHome;
 
-    public QueueBootup(Path graknHome) {
+
+    public QueueBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome) {
         this.graknHome = graknHome;
+        this.bootupProcessExecutor = bootupProcessExecutor;
+
+        QUEUE_SERVER_BIN = Paths.get("services", "redis", bootupProcessExecutor.selectCommand("redis-server-osx", "redis-server-linux"));
+        QUEUE_CLI_BIN = Paths.get("services", "redis", bootupProcessExecutor.selectCommand("redis-cli-osx", "redis-cli-linux"));
     }
 
     public void startIfNotRunning() {
-        boolean queueRunning = isProcessRunning(QUEUE_PIDFILE);
+        boolean queueRunning = bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
         if(queueRunning) {
             System.out.println(DISPLAY_NAME +" is already running");
         } else {
@@ -72,12 +78,12 @@ public class QueueBootup extends AbstractProcessHandler {
             System.out.print(".");
             System.out.flush();
 
-            if(isProcessRunning(QUEUE_PIDFILE)) {
+            if(bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE)) {
                 System.out.println("SUCCESS");
                 return;
             }
             try {
-                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -91,7 +97,7 @@ public class QueueBootup extends AbstractProcessHandler {
     public void stop() {
         System.out.print("Stopping "+ DISPLAY_NAME +"...");
         System.out.flush();
-        boolean queueIsRunning = isProcessRunning(QUEUE_PIDFILE);
+        boolean queueIsRunning = bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
         if(!queueIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
@@ -100,12 +106,12 @@ public class QueueBootup extends AbstractProcessHandler {
     }
 
     private void queueStopProcess() {
-        int pid = retrievePid(QUEUE_PIDFILE);
+        int pid = bootupProcessExecutor.retrievePid(QUEUE_PIDFILE);
         if (pid <0 ) return;
 
         String host = getHostFromConfig();
         redisCliCheckIfRedisServerIsStarted(host);
-        waitUntilStopped(QUEUE_PIDFILE,pid);
+        bootupProcessExecutor.waitUntilStopped(QUEUE_PIDFILE,pid);
     }
 
     private String getHostFromConfig() {
@@ -114,12 +120,12 @@ public class QueueBootup extends AbstractProcessHandler {
     }
 
     public void status() {
-        processStatus(QUEUE_PIDFILE, DISPLAY_NAME);
+        bootupProcessExecutor.processStatus(QUEUE_PIDFILE, DISPLAY_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME +" pid = '" + getPidFromFile(QUEUE_PIDFILE).orElse("") +
-                "' (from "+ QUEUE_PIDFILE +"), '" + getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME +" pid = '" + bootupProcessExecutor.getPidFromFile(QUEUE_PIDFILE).orElse("") +
+                "' (from "+ QUEUE_PIDFILE +"), '" + bootupProcessExecutor.getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
@@ -132,7 +138,7 @@ public class QueueBootup extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return isProcessRunning(QUEUE_PIDFILE);
+        return bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
     }
 
     /**
