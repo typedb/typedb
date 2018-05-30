@@ -154,7 +154,7 @@ public class BootupProcessExecutor {
 
     void stopProcess(Path pidFile) {
         int pid = retrievePid(pidFile);
-        if (pid <0 ) return;
+        if (pid < 0 ) return;
         kill(pid);
         waitUntilStopped(pidFile, pid);
     }
