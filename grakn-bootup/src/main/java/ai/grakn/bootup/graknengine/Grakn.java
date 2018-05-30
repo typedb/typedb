@@ -34,10 +34,11 @@ import java.util.Optional;
 
 /**
  *
- * Main class invoked by bash scripting.
+ * Main class invoked by the 'grakn' bash script.
  *
- * NOTE: The class name is shown when a user is running the 'jps' command. Therefore please keep the class name "Grakn".
+ * NOTE: Please keep the class name "Grakn" as it is shown when a user is running the 'ps' or 'jps' command.
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  *
  */
@@ -47,7 +48,7 @@ public class Grakn {
 
     /**
      *
-     * Invocation from class 'GraknProcess' in grakn-dist project
+     * Invocation from class '{@link ai.grakn.bootup.GraknBootup}'
      *
      * @param args
      */
