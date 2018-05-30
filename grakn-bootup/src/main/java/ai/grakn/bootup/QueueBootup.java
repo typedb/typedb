@@ -66,6 +66,39 @@ public class QueueBootup {
         }
     }
 
+    public void stop() {
+        System.out.print("Stopping "+ DISPLAY_NAME +"...");
+        System.out.flush();
+        boolean queueIsRunning = bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
+        if(!queueIsRunning) {
+            System.out.println("NOT RUNNING");
+        } else {
+            queueStopProcess();
+        }
+    }
+
+    public void status() {
+        bootupProcessExecutor.processStatus(QUEUE_PIDFILE, DISPLAY_NAME);
+    }
+
+    public void statusVerbose() {
+        System.out.println(DISPLAY_NAME +" pid = '" + bootupProcessExecutor.getPidFromFile(QUEUE_PIDFILE).orElse("") +
+                "' (from "+ QUEUE_PIDFILE +"), '" + bootupProcessExecutor.getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
+    }
+
+    public void clean() {
+        System.out.print("Cleaning "+ DISPLAY_NAME +"...");
+        System.out.flush();
+        startIfNotRunning();
+        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_CLI_BIN.toString(), "flushall"), graknHome.toFile());
+        stop();
+        System.out.println("SUCCESS");
+    }
+
+    public boolean isRunning() {
+        return bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
+    }
+
     private void start() {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
@@ -94,50 +127,17 @@ public class QueueBootup {
         throw new ProcessNotStartedException();
     }
 
-    public void stop() {
-        System.out.print("Stopping "+ DISPLAY_NAME +"...");
-        System.out.flush();
-        boolean queueIsRunning = bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
-        if(!queueIsRunning) {
-            System.out.println("NOT RUNNING");
-        } else {
-            queueStopProcess();
-        }
-    }
-
     private void queueStopProcess() {
         int pid = bootupProcessExecutor.retrievePid(QUEUE_PIDFILE);
-        if (pid <0 ) return;
+        if (pid < 0 ) return;
 
         String host = getHostFromConfig();
         bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_CLI_BIN.toString(), "-h", host, "shutdown"), graknHome.toFile());
-        bootupProcessExecutor.waitUntilStopped(QUEUE_PIDFILE,pid);
+        bootupProcessExecutor.waitUntilStopped(QUEUE_PIDFILE,pid); // TODO: this might be uneeded. verify and remove.
     }
 
     private String getHostFromConfig() {
         Path fileLocation = graknHome.resolve(QUEUE_CONFIG_PATH);
         return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
-    }
-
-    public void status() {
-        bootupProcessExecutor.processStatus(QUEUE_PIDFILE, DISPLAY_NAME);
-    }
-
-    public void statusVerbose() {
-        System.out.println(DISPLAY_NAME +" pid = '" + bootupProcessExecutor.getPidFromFile(QUEUE_PIDFILE).orElse("") +
-                "' (from "+ QUEUE_PIDFILE +"), '" + bootupProcessExecutor.getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
-    }
-
-    public void clean() {
-        System.out.print("Cleaning "+ DISPLAY_NAME +"...");
-        System.out.flush();
-        startIfNotRunning();
-        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_CLI_BIN.toString(), "flushall"), graknHome.toFile());
-        stop();
-        System.out.println("SUCCESS");
-    }
-
-    public boolean isRunning() {
-        return bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
     }
 }
