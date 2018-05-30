@@ -130,26 +130,26 @@ public class StorageBootup {
         List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-        List<String> nodetoolCmd_EscapeWhitespace = Arrays.asList(bootupProcessExecutor.SH, "-c",
+        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(bootupProcessExecutor.SH, "-c",
                 NODETOOL_BIN.toString().replace(" ", "\\ ") + " statusthrift | tr -d '\n\r'");
 
-        System.out.print("Starting " + DISPLAY_NAME +"...");
+        System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
         OutputCommand startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
 
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
-
-        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus < 1) {
+        LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
+        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus == 0) {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand storageStatus = bootupProcessExecutor.executeAndWait(nodetoolCmd_EscapeWhitespace, graknHome.toFile());
-            if(storageStatus.output.trim().equals("running")) {
+            OutputCommand isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
+
+            if(isStorageRunning.output.trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
+            
             try {
                 Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
