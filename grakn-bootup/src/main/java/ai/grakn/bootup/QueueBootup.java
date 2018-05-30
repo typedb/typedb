@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -48,7 +49,6 @@ public class QueueBootup {
     private BootupProcessExecutor bootupProcessExecutor;
     private final Path graknHome;
 
-
     public QueueBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome) {
         this.graknHome = graknHome;
         this.bootupProcessExecutor = bootupProcessExecutor;
@@ -65,14 +65,14 @@ public class QueueBootup {
             start();
         }
     }
+
     private void start() {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
 
-        startRedisServer();
+        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_SERVER_BIN.toString(), QUEUE_CONFIG_PATH.toString()), graknHome.toFile());
 
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
+        LocalDateTime timeout = LocalDateTime.now().plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
 
         while(LocalDateTime.now().isBefore(timeout)) {
             System.out.print(".");
@@ -110,7 +110,7 @@ public class QueueBootup {
         if (pid <0 ) return;
 
         String host = getHostFromConfig();
-        redisCliCheckIfRedisServerIsStarted(host);
+        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_CLI_BIN.toString(), "-h", host, "shutdown"), graknHome.toFile());
         bootupProcessExecutor.waitUntilStopped(QUEUE_PIDFILE,pid);
     }
 
@@ -132,63 +132,12 @@ public class QueueBootup {
         System.out.print("Cleaning "+ DISPLAY_NAME +"...");
         System.out.flush();
         startIfNotRunning();
-        redisCliClean();
+        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_CLI_BIN.toString(), "flushall"), graknHome.toFile());
         stop();
         System.out.println("SUCCESS");
     }
 
     public boolean isRunning() {
         return bootupProcessExecutor.isProcessRunning(QUEUE_PIDFILE);
-    }
-
-    /**
-     * Executes the following command:
-     * ./services/redis/redis-server-osx ./services/redis/redis.conf
-     */
-    private void startRedisServer() {
-        try {
-            new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .command(QUEUE_SERVER_BIN.toString(), QUEUE_CONFIG_PATH.toString())
-                    .execute();
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Executes the following command:
-     * ./services/redis/redis-cli-osx -h <host> shutdown
-     */
-    private void redisCliCheckIfRedisServerIsStarted(String host) {
-        try {
-            new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .command(QUEUE_CLI_BIN.toString(), "-h", host, "shutdown")
-                    .execute();
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Executes the following command:
-     * ./services/redis/redis-cli-osx flushall
-     */
-    private void redisCliClean() {
-        try {
-            new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .command(QUEUE_CLI_BIN.toString(), "flushall")
-                    .execute();
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
