@@ -149,7 +149,7 @@ public class StorageBootup {
                 System.out.println("SUCCESS");
                 return;
             }
-            
+
             try {
                 Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
