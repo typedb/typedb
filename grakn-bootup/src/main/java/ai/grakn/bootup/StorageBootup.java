@@ -152,9 +152,10 @@ public class StorageBootup {
             }
         }
 
-        String errorMessage = "Process exited with code " + startStorage.exitCode() + ". Error message: " + startStorage.stderr();
+        String errorMessage = "Process exited with code " + startStorage.exitCode() + ": '" + startStorage.stderr() + "'";
         System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME + ": " + errorMessage);
+        System.err.println("Unable to start " + DISPLAY_NAME + ". ");
+        System.err.println(errorMessage);
         throw new ProcessNotStartedException();
     }
 
