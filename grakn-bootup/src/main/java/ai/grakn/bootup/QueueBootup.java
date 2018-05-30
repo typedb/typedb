@@ -31,8 +31,11 @@ import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
 /**
- * A class responsible for managing the Queue process,
- * including starting, stopping, status checks, and cleaning the Queue data
+ * A class responsible for managing the bootup-related process for the Queue component, including
+ * starting and stopping, performing status checks, and cleaning the data.
+ *
+ * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
+ * you will not find any code which creates or deletes the PID file for the Storage component.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
