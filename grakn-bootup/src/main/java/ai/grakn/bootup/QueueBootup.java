@@ -56,8 +56,8 @@ public class QueueBootup {
         this.graknHome = graknHome;
         this.bootupProcessExecutor = bootupProcessExecutor;
 
-        QUEUE_SERVER_BIN = Paths.get("services", "redis", bootupProcessExecutor.selectCommand("redis-server-osx", "redis-server-linux"));
-        QUEUE_CLI_BIN = Paths.get("services", "redis", bootupProcessExecutor.selectCommand("redis-cli-osx", "redis-cli-linux"));
+        QUEUE_SERVER_BIN = Paths.get("services", "redis", selectCommand("redis-server-osx", "redis-server-linux"));
+        QUEUE_CLI_BIN = Paths.get("services", "redis", selectCommand("redis-cli-osx", "redis-cli-linux"));
     }
 
     public void startIfNotRunning() {
@@ -143,4 +143,11 @@ public class QueueBootup {
         Path fileLocation = graknHome.resolve(QUEUE_CONFIG_PATH);
         return GraknConfig.read(fileLocation.toFile()).getProperty(GraknConfigKey.REDIS_BIND);
     }
+
+    private String selectCommand(String osx, String linux) {
+        OutputCommand operatingSystem = bootupProcessExecutor.executeAndWait(Arrays.asList(bootupProcessExecutor.SH, "-c", "uname"), null);
+        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
+    }
+
+
 }

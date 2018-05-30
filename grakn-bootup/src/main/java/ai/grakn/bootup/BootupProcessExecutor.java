@@ -18,6 +18,7 @@
 
 package ai.grakn.bootup;
 
+import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
@@ -31,6 +32,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -42,6 +46,10 @@ public class BootupProcessExecutor {
 
     public final long WAIT_INTERVAL_SECOND = 2;
     public final String SH = "/bin/sh";
+
+    public CompletableFuture<OutputCommand> executeAsync(List<String> command, File workingDirectory) {
+        return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
+    }
 
     public OutputCommand executeAndWait(List<String> command, File workingDirectory) {
         try {
@@ -70,14 +78,6 @@ public class BootupProcessExecutor {
                 Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).output;
     }
 
-    private void kill(int pid) {
-        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
-    }
-
-    private OutputCommand kill(int pid, String signal) {
-        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
-    }
-
     public int retrievePid(Path pidFile) {
         if(!pidFile.toFile().exists()) {
             return -1;
@@ -97,7 +97,7 @@ public class BootupProcessExecutor {
             System.out.print(".");
             System.out.flush();
 
-            outputCommand = kill(pid,"0");
+            outputCommand = kill(pid,"0"); // kill -0 <pid> does not kill the process. it simply checks if the process is still running.
 
             try {
                 Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
@@ -106,19 +106,7 @@ public class BootupProcessExecutor {
             }
         } while (outputCommand.succes());
         System.out.println("SUCCESS");
-        File file = pidFile.toFile();
-        if(file.exists()) {
-            try {
-                Files.delete(pidFile);
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
-    }
-
-    public String selectCommand(String osx, String linux) {
-        OutputCommand operatingSystem = executeAndWait(Arrays.asList(SH, "-c", "uname"), null);
-        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
+        FileUtils.deleteQuietly(pidFile.toFile());
     }
 
     public boolean isProcessRunning(Path pidFile) {
@@ -140,7 +128,7 @@ public class BootupProcessExecutor {
         return isRunning;
     }
 
-    public void stopProgram(Path pidFile, String programName) {
+    public void stopProcessIfRunning(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
         boolean programIsRunning = isProcessRunning(pidFile);
@@ -152,18 +140,26 @@ public class BootupProcessExecutor {
 
     }
 
-    void stopProcess(Path pidFile) {
-        int pid = retrievePid(pidFile);
-        if (pid < 0 ) return;
-        kill(pid);
-        waitUntilStopped(pidFile, pid);
-    }
-
     public void processStatus(Path storagePid, String name) {
         if (isProcessRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {
             System.out.println(name+": NOT RUNNING");
         }
+    }
+
+    private void stopProcess(Path pidFile) {
+        int pid = retrievePid(pidFile);
+        if (pid < 0 ) return;
+        kill(pid);
+        waitUntilStopped(pidFile, pid);
+    }
+
+    private void kill(int pid) {
+        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
+    }
+
+    private OutputCommand kill(int pid, String signal) {
+        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
     }
 }
