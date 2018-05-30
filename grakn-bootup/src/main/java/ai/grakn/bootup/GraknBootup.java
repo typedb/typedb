@@ -45,12 +45,12 @@ public class GraknBootup {
     private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
-    private final StorageProcess storageProcess;
+    private final StorageBootup storageBootup;
     private final QueueProcess queueProcess;
     private final EngineProcess engineProcess;
 
-    private GraknBootup(StorageProcess storageProcess, QueueProcess queueProcess, EngineProcess engineProcess) {
-        this.storageProcess = storageProcess;
+    private GraknBootup(StorageBootup storageBootup, QueueProcess queueProcess, EngineProcess engineProcess) {
+        this.storageBootup = storageBootup;
         this.queueProcess = queueProcess;
         this.engineProcess = engineProcess;
     }
@@ -98,7 +98,7 @@ public class GraknBootup {
 
     private static GraknBootup newGraknBootup(Path graknHome, Path configPath) {
         return new GraknBootup(
-                new StorageProcess(graknHome, configPath),
+                new StorageBootup(graknHome, configPath),
                 new QueueProcess(graknHome),
                 new EngineProcess(graknHome, configPath));
     }
@@ -163,12 +163,12 @@ public class GraknBootup {
                 queueProcess.stop();
                 break;
             case STORAGE:
-                storageProcess.stop();
+                storageBootup.stop();
                 break;
             default:
                 engineProcess.stop();
                 queueProcess.stop();
-                storageProcess.stop();
+                storageBootup.stop();
         }
     }
 
@@ -190,7 +190,7 @@ public class GraknBootup {
                 break;
             case STORAGE:
                 try {
-                    storageProcess.startIfNotRunning();
+                    storageBootup.startIfNotRunning();
                 } catch (ProcessNotStartedException e) {
                     // DO NOTHING
                 }
@@ -198,7 +198,7 @@ public class GraknBootup {
             default:
                 try {
                     ConfigProcessor.updateProcessConfigs();
-                    storageProcess.startIfNotRunning();
+                    storageBootup.startIfNotRunning();
                     queueProcess.startIfNotRunning();
                     engineProcess.startIfNotRunning();
                 } catch (ProcessNotStartedException e) {
@@ -222,13 +222,13 @@ public class GraknBootup {
     }
 
     private void serverStatus(String verboseFlag) {
-        storageProcess.status();
+        storageBootup.status();
         queueProcess.status();
         engineProcess.status();
 
         if(verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
-            storageProcess.statusVerbose();
+            storageBootup.statusVerbose();
             queueProcess.statusVerbose();
             engineProcess.statusVerbose();
         }
@@ -252,7 +252,7 @@ public class GraknBootup {
     }
 
     private void clean() {
-        boolean storage = storageProcess.isRunning();
+        boolean storage = storageBootup.isRunning();
         boolean queue = queueProcess.isRunning();
         boolean grakn = engineProcess.isRunning();
         if(storage || queue || grakn) {
@@ -266,7 +266,7 @@ public class GraknBootup {
             System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
             return;
         }
-        storageProcess.clean();
+        storageBootup.clean();
         queueProcess.clean();
         engineProcess.clean();
     }
