@@ -122,9 +122,9 @@ public class QueueBootup {
             }
         }
 
-        String errorMessage = "Process exited with code " + startQueue.exitCode() + ". Error message: " + startQueue.stderr();
+        String errorMessage = "Process exited with code " + startQueue.exitCode() + ": '" + startQueue.stderr() + "'";
         System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME + ": " + errorMessage);
+        System.err.println("Unable to start " + DISPLAY_NAME + ". " + errorMessage);
         throw new ProcessNotStartedException();
     }
 
