@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -49,8 +50,9 @@ public class BootupProcessExecutor {
 
     public BootupProcessResult executeAndWait(List<String> command, File workingDirectory) {
         try {
-            ProcessResult result = new ProcessExecutor().readOutput(true).directory(workingDirectory).command(command).execute();
-            return BootupProcessResult.create(result.outputUTF8(), "", result.getExitValue());
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+            ProcessResult result = new ProcessExecutor().readOutput(true).redirectError(stderr).directory(workingDirectory).command(command).execute();
+            return BootupProcessResult.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
         }
         catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);

@@ -25,6 +25,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
+import sun.rmi.runtime.Log;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -41,6 +42,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,7 +128,7 @@ public class EngineBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        CompletableFuture<BootupProcessResult> startEngine = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
+        CompletableFuture<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
                 .whenComplete((result, ex) -> {
                     if (result.exitCode() != 0) {
                         throw new RuntimeException(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage() + ". Engine exited with status " + result.exitCode());
@@ -136,7 +138,7 @@ public class EngineBootup {
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
-        while(LocalDateTime.now().isBefore(timeout) && !startEngine.isCompletedExceptionally()) {
+        while(LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isCompletedExceptionally()) {
             System.out.print(".");
             System.out.flush();
 
@@ -154,9 +156,17 @@ public class EngineBootup {
             }
         }
 
+        String errorMessage = "";
+        try {
+            errorMessage = "Process exited with code " + startEngineAsync.get().exitCode() + ". Error message: " + startEngineAsync.get().stderr();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            // Do nothing
+        }
         System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME);
+        System.out.println("Unable to start " + DISPLAY_NAME + ". Reasons: " + errorMessage);
         throw new ProcessNotStartedException();
+
     }
 
     private boolean isEngineReady(String host, int port, String path) {

@@ -151,8 +151,10 @@ public class StorageBootup {
                 Thread.currentThread().interrupt();
             }
         }
+
+        String errorMessage = "Process exited with code " + startStorage.exitCode() + ". Error message: " + startStorage.stderr();
         System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME);
+        System.out.println("Unable to start " + DISPLAY_NAME + ": " + errorMessage);
         throw new ProcessNotStartedException();
     }
 

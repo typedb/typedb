@@ -103,7 +103,7 @@ public class QueueBootup {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
 
-        bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_SERVER_BIN.toString(), QUEUE_CONFIG_PATH.toString()), graknHome.toFile());
+        BootupProcessResult startQueue = bootupProcessExecutor.executeAndWait(Arrays.asList(QUEUE_SERVER_BIN.toString(), QUEUE_CONFIG_PATH.toString()), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(QUEUE_STARTUP_TIMEOUT_SECOND);
 
@@ -122,8 +122,9 @@ public class QueueBootup {
             }
         }
 
+        String errorMessage = "Process exited with code " + startQueue.exitCode() + ". Error message: " + startQueue.stderr();
         System.out.println("FAILED!");
-        System.out.println("Unable to start "+ DISPLAY_NAME);
+        System.out.println("Unable to start " + DISPLAY_NAME + ": " + errorMessage);
         throw new ProcessNotStartedException();
     }
 
