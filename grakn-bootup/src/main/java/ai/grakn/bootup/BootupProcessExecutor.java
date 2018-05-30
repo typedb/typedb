@@ -31,10 +31,10 @@ import java.util.Optional;
  *
  * @author Michele Orsi
  */
-public abstract class AbstractProcessHandler {
+public class BootupProcessExecutor {
 
-    public static final long WAIT_INTERVAL_SECOND = 2;
-    public static final String SH = "/bin/sh";
+    public final long WAIT_INTERVAL_SECOND = 2;
+    public final String SH = "/bin/sh";
 
     public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
 

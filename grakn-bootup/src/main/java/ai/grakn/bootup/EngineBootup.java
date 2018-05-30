@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class EngineBootup extends AbstractProcessHandler {
+public class EngineBootup {
     private static final String DISPLAY_NAME = "Engine";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
@@ -65,15 +65,18 @@ public class EngineBootup extends AbstractProcessHandler {
     protected final Path graknPropertiesPath;
     private final GraknConfig graknProperties;
 
-    public EngineBootup(Path graknHome, Path graknPropertiesPath) {
+    private BootupProcessExecutor bootupProcessExecutor;
+
+    public EngineBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
+        this.bootupProcessExecutor = bootupProcessExecutor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
 
     public void startIfNotRunning() {
-        boolean graknIsRunning = isProcessRunning(ENGINE_PIDFILE);
-        if(graknIsRunning) {
+        boolean isEngineRunning = bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
+        if(isEngineRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start();
@@ -81,15 +84,15 @@ public class EngineBootup extends AbstractProcessHandler {
     }
 
     public void stop() {
-        stopProgram(ENGINE_PIDFILE, DISPLAY_NAME);
+        bootupProcessExecutor.stopProgram(ENGINE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
-        processStatus(ENGINE_PIDFILE, DISPLAY_NAME);
+        bootupProcessExecutor.processStatus(ENGINE_PIDFILE, DISPLAY_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '"+ getPidFromFile(ENGINE_PIDFILE).orElse("")+"' (from "+ ENGINE_PIDFILE +"), '"+ getPidFromPsOf(ENGINE_MAIN_CLASS.getName()) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME + " pid = '"+ bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("")+"' (from "+ ENGINE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(ENGINE_MAIN_CLASS.getName()) +"' (from ps -ef)");
     }
 
     public void clean() {
@@ -109,7 +112,7 @@ public class EngineBootup extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return isProcessRunning(ENGINE_PIDFILE);
+        return bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
     }
 
     private void start() {
@@ -128,12 +131,12 @@ public class EngineBootup extends AbstractProcessHandler {
             String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
 
-            if(isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host,port, REST.WebPath.STATUS)) {
+            if(bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host,port, REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
                 return;
             }
             try {
-                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

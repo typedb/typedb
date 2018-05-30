@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class StorageBootup extends AbstractProcessHandler {
+public class StorageBootup {
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
@@ -54,19 +54,21 @@ public class StorageBootup extends AbstractProcessHandler {
     private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
 
+    private BootupProcessExecutor bootupProcessExecutor;
     private final Path graknHome;
     private final GraknConfig graknProperties;
 
-    public StorageBootup(Path graknHome, Path graknPropertiesPath) {
+    public StorageBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
+        this.bootupProcessExecutor = bootupProcessExecutor;
     }
 
     /**
      * Start Storage, but only if it is not already running
      */
     public void startIfNotRunning() {
-        boolean isStorageRunning = isProcessRunning(STORAGE_PIDFILE);
+        boolean isStorageRunning = bootupProcessExecutor.isProcessRunning(STORAGE_PIDFILE);
         if (isStorageRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
@@ -75,16 +77,16 @@ public class StorageBootup extends AbstractProcessHandler {
     }
 
    public void stop() {
-        stopProgram(STORAGE_PIDFILE, DISPLAY_NAME);
+       bootupProcessExecutor.stopProgram(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
-        processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
+        bootupProcessExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME +" pid = '"+ getPidFromFile(STORAGE_PIDFILE).orElse("") +
-                "' (from "+ STORAGE_PIDFILE +"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME +" pid = '"+ bootupProcessExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
+                "' (from "+ STORAGE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
@@ -105,7 +107,7 @@ public class StorageBootup extends AbstractProcessHandler {
     }
 
     public boolean isRunning() {
-        return isProcessRunning(STORAGE_PIDFILE);
+        return bootupProcessExecutor.isProcessRunning(STORAGE_PIDFILE);
     }
 
     /**
@@ -141,7 +143,7 @@ public class StorageBootup extends AbstractProcessHandler {
                 return;
             }
             try {
-                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
