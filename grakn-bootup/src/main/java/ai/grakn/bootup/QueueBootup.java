@@ -20,15 +20,12 @@ package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
-import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.concurrent.TimeoutException;
 
 /**
  * A class responsible for managing the bootup-related process for the Queue component, including
@@ -145,8 +142,8 @@ public class QueueBootup {
     }
 
     private String selectCommand(String osx, String linux) {
-        OutputCommand operatingSystem = bootupProcessExecutor.executeAndWait(Arrays.asList(bootupProcessExecutor.SH, "-c", "uname"), null);
-        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
+        BootupProcessResult operatingSystem = bootupProcessExecutor.executeAndWait(Arrays.asList(bootupProcessExecutor.SH, "-c", "uname"), null);
+        return operatingSystem.stdout().trim().equals("Darwin") ? osx : linux;
     }
 
 
