@@ -27,8 +27,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,19 +62,26 @@ public class StorageProcess extends AbstractProcessHandler {
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
 
+    /**
+     * Start Storage, but only if it is not already running
+     */
     public void startIfNotRunning() {
-        boolean storageIsRunning = isProcessRunning(STORAGE_PIDFILE);
-        if(storageIsRunning) {
-            System.out.println(DISPLAY_NAME +" is already running");
+        boolean isStorageRunning = isProcessRunning(STORAGE_PIDFILE);
+        if (isStorageRunning) {
+            System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start();
         }
     }
 
-    private Path getStorageLogPathFromGraknProperties() {
-        return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
-    }
-
+    /**
+     * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
+     *
+     * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
+     * in the 'WAIT_INTERVAL_SECOND' field.
+     *
+     * @throws ProcessNotStartedException
+     */
     private void start() {
         System.out.print("Starting "+ DISPLAY_NAME +"...");
         System.out.flush();
@@ -96,7 +101,7 @@ public class StorageProcess extends AbstractProcessHandler {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand storageStatus = nodetoolCheckIfStorageIsStarted();
+            OutputCommand storageStatus = checkIfStorageIsStarted_withNodetool();
             if(storageStatus.output.trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
@@ -176,7 +181,7 @@ public class StorageProcess extends AbstractProcessHandler {
      * Executes the following command:
      *   services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
      */
-    private OutputCommand nodetoolCheckIfStorageIsStarted() {
+    private OutputCommand checkIfStorageIsStarted_withNodetool() {
         try {
             String nodetoolCmd_EscapeWhitespace = NODETOOL_BIN.toString().replace(" ", "\\ ");
 
@@ -200,5 +205,9 @@ public class StorageProcess extends AbstractProcessHandler {
         catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Path getStorageLogPathFromGraknProperties() {
+        return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
     }
 }
