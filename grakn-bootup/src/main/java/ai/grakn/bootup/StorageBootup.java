@@ -113,6 +113,8 @@ public class StorageBootup {
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      *
+     * Storage is started with 'services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>'
+     *
      * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
@@ -128,7 +130,12 @@ public class StorageBootup {
                 // DO NOTHING
             }
         }
-        OutputCommand startStorage = startStorage();
+
+        List<String> storageCmd_EscapeWhitespace = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
+                "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString())
+                .stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
+
+        OutputCommand startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
@@ -151,32 +158,6 @@ public class StorageBootup {
         System.out.println("FAILED!");
         System.out.println("Unable to start " + DISPLAY_NAME);
         throw new ProcessNotStartedException();
-    }
-
-    /**
-     * Executes the following command:
-     *   services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
-     */
-    private OutputCommand startStorage() {
-        try {
-            List<String> storageCmd_EscapeWhitespace = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
-                    "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString())
-                    .stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
-
-            ByteArrayOutputStream error = new ByteArrayOutputStream();
-
-            ProcessResult startStorage = new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .redirectError(error)
-                    .command(storageCmd_EscapeWhitespace)
-                    .execute();
-
-            return new OutputCommand(startStorage.outputUTF8(), startStorage.getExitValue());
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**
