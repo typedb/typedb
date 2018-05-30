@@ -47,6 +47,12 @@ pipeline {
             }
         }
 
+        stage('Distribution E2E Tests') {
+            steps {
+                sh 'mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"'
+            }
+        }
+
         stage('Unit + IT Tests') {
             steps {
                 sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
