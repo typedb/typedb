@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,12 +126,17 @@ public class EngineBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile());
+        CompletableFuture<OutputCommand> startEngine = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
+                .whenComplete((result, ex) -> {
+                    if (result.exitStatus != 0) {
+                        throw new RuntimeException(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage() + ". Engine exited with status " + result.exitStatus);
+                    }
+                });
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
-        while(LocalDateTime.now().isBefore(timeout)) {
+        while(LocalDateTime.now().isBefore(timeout) && !startEngine.isCompletedExceptionally()) {
             System.out.print(".");
             System.out.flush();
 
