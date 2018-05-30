@@ -20,6 +20,7 @@ package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
@@ -39,13 +40,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A class responsible for managing the Storage process,
- * including starting, stopping, status checks, and cleaning the Storage data
+ * A class responsible for managing the bootup-related process for the Storage component, including
+ * starting and stopping, performing status checks, and cleaning the data.
+ *
+ * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
+ * you will not find any code which creates or deletes the PID file for the Storage component.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
 public class StorageBootup {
+
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
@@ -65,13 +70,14 @@ public class StorageBootup {
     }
 
     /**
-     * Start Storage, but only if it is not already running
+     * Attempt to start Storage if it is not already running
      */
     public void startIfNotRunning() {
         boolean isStorageRunning = bootupProcessExecutor.isProcessRunning(STORAGE_PIDFILE);
         if (isStorageRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
+            FileUtils.deleteQuietly(STORAGE_PIDFILE.toFile()); // delete dangling STORAGE_PIDFILE, if any
             start();
         }
     }
@@ -113,38 +119,33 @@ public class StorageBootup {
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      *
-     * Storage is started with 'services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>'
-     *
      * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
      * @throws ProcessNotStartedException
      */
     private void start() {
+        // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
+        List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
+        List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
+
+        // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
+        List<String> nodetoolCmd_EscapeWhitespace = Arrays.asList(bootupProcessExecutor.SH, "-c",
+                NODETOOL_BIN.toString().replace(" ", "\\ ") + " statusthrift | tr -d '\n\r'");
+
         System.out.print("Starting " + DISPLAY_NAME +"...");
         System.out.flush();
-        if(STORAGE_PIDFILE.toFile().exists()) {
-            try {
-                Files.delete(STORAGE_PIDFILE);
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
-
-        List<String> storageCmd_EscapeWhitespace = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
-                "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString())
-                .stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         OutputCommand startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
-        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus<1) {
+        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus < 1) {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand storageStatus = checkIfStorageIsStarted_withNodetool();
+            OutputCommand storageStatus = bootupProcessExecutor.executeAndWait(nodetoolCmd_EscapeWhitespace, graknHome.toFile());
             if(storageStatus.output.trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
@@ -158,36 +159,6 @@ public class StorageBootup {
         System.out.println("FAILED!");
         System.out.println("Unable to start " + DISPLAY_NAME);
         throw new ProcessNotStartedException();
-    }
-
-    /**
-     * Executes the following command:
-     *   services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-     */
-    private OutputCommand checkIfStorageIsStarted_withNodetool() {
-        try {
-            String nodetoolCmd_EscapeWhitespace = NODETOOL_BIN.toString().replace(" ", "\\ ");
-
-            ByteArrayOutputStream nodetoolOutputStream = new ByteArrayOutputStream();
-
-            new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .command(nodetoolCmd_EscapeWhitespace, "statusthrift")
-                    .redirectOutput(nodetoolOutputStream)
-                    .execute();
-
-            ProcessResult tr = new ProcessExecutor()
-                    .readOutput(true)
-                    .redirectInput(new ByteArrayInputStream(nodetoolOutputStream.toByteArray()))
-                    .command("tr", "-d", "'\n\r'")
-                    .execute();
-            
-            return new OutputCommand(tr.outputUTF8(), tr.getExitValue());
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private Path getStorageLogPathFromGraknProperties() {
