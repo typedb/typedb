@@ -27,6 +27,9 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
+import static ai.grakn.bootup.BootupProcessExecutor.SH;
+import static ai.grakn.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+
 /**
  * A class responsible for managing the bootup-related process for the Queue component, including
  * starting and stopping, performing status checks, and cleaning the data.
@@ -116,7 +119,7 @@ public class QueueBootup {
                 return;
             }
             try {
-                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -143,7 +146,7 @@ public class QueueBootup {
     }
 
     private String selectCommand(String osx, String linux) {
-        BootupProcessResult operatingSystem = bootupProcessExecutor.executeAndWait(Arrays.asList(bootupProcessExecutor.SH, "-c", "uname"), null);
+        BootupProcessResult operatingSystem = bootupProcessExecutor.executeAndWait(Arrays.asList(SH, "-c", "uname"), null);
         return operatingSystem.stdout().trim().equals("Darwin") ? osx : linux;
     }
 
