@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class StorageProcess extends AbstractProcessHandler {
+public class StorageBootup extends AbstractProcessHandler {
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
@@ -57,7 +57,7 @@ public class StorageProcess extends AbstractProcessHandler {
     private final Path graknHome;
     private final GraknConfig graknProperties;
 
-    public StorageProcess(Path graknHome, Path graknPropertiesPath) {
+    public StorageBootup(Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
     }
@@ -74,50 +74,7 @@ public class StorageProcess extends AbstractProcessHandler {
         }
     }
 
-    /**
-     * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
-     *
-     * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
-     * in the 'WAIT_INTERVAL_SECOND' field.
-     *
-     * @throws ProcessNotStartedException
-     */
-    private void start() {
-        System.out.print("Starting "+ DISPLAY_NAME +"...");
-        System.out.flush();
-        if(STORAGE_PIDFILE.toFile().exists()) {
-            try {
-                Files.delete(STORAGE_PIDFILE);
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
-        OutputCommand startStorage = startStorage();
-
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
-
-        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus<1) {
-            System.out.print(".");
-            System.out.flush();
-
-            OutputCommand storageStatus = checkIfStorageIsStarted_withNodetool();
-            if(storageStatus.output.trim().equals("running")) {
-                System.out.println("SUCCESS");
-                return;
-            }
-            try {
-                Thread.sleep(WAIT_INTERVAL_SECOND *1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        System.out.println("FAILED!");
-        System.out.println("Unable to start "+ DISPLAY_NAME);
-        throw new ProcessNotStartedException();
-    }
-
-    public void stop() {
+   public void stop() {
         stopProgram(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
@@ -149,6 +106,49 @@ public class StorageProcess extends AbstractProcessHandler {
 
     public boolean isRunning() {
         return isProcessRunning(STORAGE_PIDFILE);
+    }
+
+    /**
+     * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
+     *
+     * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
+     * in the 'WAIT_INTERVAL_SECOND' field.
+     *
+     * @throws ProcessNotStartedException
+     */
+    private void start() {
+        System.out.print("Starting " + DISPLAY_NAME +"...");
+        System.out.flush();
+        if(STORAGE_PIDFILE.toFile().exists()) {
+            try {
+                Files.delete(STORAGE_PIDFILE);
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
+        OutputCommand startStorage = startStorage();
+
+        LocalDateTime init = LocalDateTime.now();
+        LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
+
+        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus<1) {
+            System.out.print(".");
+            System.out.flush();
+
+            OutputCommand storageStatus = checkIfStorageIsStarted_withNodetool();
+            if(storageStatus.output.trim().equals("running")) {
+                System.out.println("SUCCESS");
+                return;
+            }
+            try {
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        System.out.println("FAILED!");
+        System.out.println("Unable to start " + DISPLAY_NAME);
+        throw new ProcessNotStartedException();
     }
 
     /**
