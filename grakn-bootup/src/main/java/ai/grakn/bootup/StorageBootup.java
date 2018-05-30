@@ -21,11 +21,7 @@ package ai.grakn.bootup;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
 import org.apache.commons.io.FileUtils;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,7 +78,7 @@ public class StorageBootup {
     }
 
    public void stop() {
-       bootupProcessExecutor.stopProgram(STORAGE_PIDFILE, DISPLAY_NAME);
+       bootupProcessExecutor.stopProcessIfRunning(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
