@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class EngineProcess extends AbstractProcessHandler {
+public class EngineBootup extends AbstractProcessHandler {
     private static final String DISPLAY_NAME = "Engine";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
@@ -65,7 +65,7 @@ public class EngineProcess extends AbstractProcessHandler {
     protected final Path graknPropertiesPath;
     private final GraknConfig graknProperties;
 
-    public EngineProcess(Path graknHome, Path graknPropertiesPath) {
+    public EngineBootup(Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
