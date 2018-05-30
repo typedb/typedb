@@ -59,8 +59,6 @@ public class EngineBootup {
     private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
     private static final String JAVA_OPTS = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
 
-    protected static Class ENGINE_MAIN_CLASS = Grakn.class; // this needs to be overridable as KGMS needs to supply a different class name
-
     protected final Path graknHome;
     protected final Path graknPropertiesPath;
     private final GraknConfig graknProperties;
@@ -72,6 +70,13 @@ public class EngineBootup {
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
+    }
+
+    /**
+     * @return the main class of Engine. In KGMS, this method will be overriden to return a different class.
+     */
+    public Class getEngineMainClass() {
+        return Grakn.class;
     }
 
     public void startIfNotRunning() {
@@ -92,7 +97,7 @@ public class EngineBootup {
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '"+ bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("")+"' (from "+ ENGINE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(ENGINE_MAIN_CLASS.getName()) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME + " pid = '"+ bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("")+"' (from "+ ENGINE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(getEngineMainClass().getName()) +"' (from ps -ef)");
     }
 
     public void clean() {
@@ -123,7 +128,7 @@ public class EngineBootup {
                 " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
                 " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
                 " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
-                " " + ENGINE_MAIN_CLASS.getName());
+                " " + getEngineMainClass().getName());
 
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
