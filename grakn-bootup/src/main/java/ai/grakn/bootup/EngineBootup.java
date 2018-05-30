@@ -25,7 +25,6 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import sun.rmi.runtime.Log;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -45,6 +44,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Engine process,
@@ -150,7 +151,7 @@ public class EngineBootup {
                 return;
             }
             try {
-                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

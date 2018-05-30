@@ -34,6 +34,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.bootup.BootupProcessExecutor.SH;
+import static ai.grakn.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
  * starting and stopping, performing status checks, and cleaning the data.
@@ -125,7 +128,7 @@ public class StorageBootup {
         List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(bootupProcessExecutor.SH, "-c",
+        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(SH, "-c",
                 NODETOOL_BIN.toString().replace(" ", "\\ ") + " statusthrift | tr -d '\n\r'");
 
         System.out.print("Starting " + DISPLAY_NAME + "...");
@@ -146,7 +149,7 @@ public class StorageBootup {
             }
 
             try {
-                Thread.sleep(bootupProcessExecutor.WAIT_INTERVAL_SECOND * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
