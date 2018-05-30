@@ -18,20 +18,25 @@
 
 package ai.grakn.bootup;
 
+import com.google.auto.value.AutoValue;
+
 /**
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class OutputCommand {
-    public final String output;
-    public final int exitStatus;
 
-    public OutputCommand(String output, int exitStatus) {
-        this.output = output;
-        this.exitStatus = exitStatus;
+@AutoValue
+public abstract class BootupProcessResult {
+    public static BootupProcessResult create(String stdout, String stderr, int exitCode) {
+        return new AutoValue_BootupProcessResult(stdout, stderr, exitCode);
     }
 
-    public boolean succes() {
-        return exitStatus==0;
+    public boolean success() {
+        return exitCode() == 0;
     }
+
+    public abstract String stdout();
+    public abstract String stderr();
+    public abstract int exitCode();
 }

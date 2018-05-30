@@ -131,16 +131,16 @@ public class StorageBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        OutputCommand startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
+        BootupProcessResult startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
-        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitStatus == 0) {
+        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitCode() == 0) {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
+            BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
-            if(isStorageRunning.output.trim().equals("running")) {
+            if(isStorageRunning.stdout().trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }

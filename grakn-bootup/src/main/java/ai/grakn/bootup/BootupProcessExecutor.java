@@ -22,10 +22,8 @@ import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,8 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -47,14 +43,14 @@ public class BootupProcessExecutor {
     public final long WAIT_INTERVAL_SECOND = 2;
     public final String SH = "/bin/sh";
 
-    public CompletableFuture<OutputCommand> executeAsync(List<String> command, File workingDirectory) {
+    public CompletableFuture<BootupProcessResult> executeAsync(List<String> command, File workingDirectory) {
         return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
     }
 
-    public OutputCommand executeAndWait(List<String> command, File workingDirectory) {
+    public BootupProcessResult executeAndWait(List<String> command, File workingDirectory) {
         try {
             ProcessResult result = new ProcessExecutor().readOutput(true).directory(workingDirectory).command(command).execute();
-            return new OutputCommand(result.outputUTF8(), result.getExitValue());
+            return BootupProcessResult.create(result.outputUTF8(), "", result.getExitValue());
         }
         catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -75,7 +71,7 @@ public class BootupProcessExecutor {
 
     public String getPidFromPsOf(String processName) {
         return executeAndWait(
-                Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).output;
+                Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).stdout();
     }
 
     public int retrievePid(Path pidFile) {
@@ -92,19 +88,19 @@ public class BootupProcessExecutor {
     }
 
     public void waitUntilStopped(Path pidFile, int pid) {
-        OutputCommand outputCommand;
+        BootupProcessResult bootupProcessResult;
         do {
             System.out.print(".");
             System.out.flush();
 
-            outputCommand = kill(pid,"0"); // kill -0 <pid> does not kill the process. it simply checks if the process is still running.
+            bootupProcessResult = kill(pid,"0"); // kill -0 <pid> does not kill the process. it simply checks if the process is still running.
 
             try {
                 Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
-        } while (outputCommand.succes());
+        } while (bootupProcessResult.success());
         System.out.println("SUCCESS");
         FileUtils.deleteQuietly(pidFile.toFile());
     }
@@ -118,9 +114,9 @@ public class BootupProcessExecutor {
                 if(processPid.trim().isEmpty()) {
                     return false;
                 }
-                OutputCommand command =
+                BootupProcessResult command =
                         executeAndWait(Arrays.asList(SH, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
-                return Integer.parseInt(command.output.trim())>0;
+                return Integer.parseInt(command.stdout().trim())>0;
             } catch (NumberFormatException | IOException e) {
                 return false;
             }
@@ -159,7 +155,7 @@ public class BootupProcessExecutor {
         executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
     }
 
-    private OutputCommand kill(int pid, String signal) {
+    private BootupProcessResult kill(int pid, String signal) {
         return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
     }
 }
