@@ -128,17 +128,12 @@ public class EngineBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        CompletableFuture<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile())
-                .whenComplete((result, ex) -> {
-                    if (result.exitCode() != 0) {
-                        throw new RuntimeException(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage() + ". Engine exited with status " + result.exitCode());
-                    }
-                });
+        CompletableFuture<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
-        while(LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isCompletedExceptionally()) {
+        while(LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isDone()) {
             System.out.print(".");
             System.out.flush();
 
@@ -158,13 +153,14 @@ public class EngineBootup {
 
         String errorMessage = "";
         try {
-            errorMessage = "Process exited with code " + startEngineAsync.get().exitCode() + ". Error message: " + startEngineAsync.get().stderr();
+            errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
         }
         catch (InterruptedException | ExecutionException e) {
             // Do nothing
         }
         System.out.println("FAILED!");
-        System.out.println("Unable to start " + DISPLAY_NAME + ". Reasons: " + errorMessage);
+        System.err.println("Unable to start " + DISPLAY_NAME + ".");
+        System.err.println(errorMessage);
         throw new ProcessNotStartedException();
 
     }
