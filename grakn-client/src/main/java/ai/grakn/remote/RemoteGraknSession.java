@@ -22,7 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.grpc.GrpcUtil;
+import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -31,7 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 
-import static ai.grakn.grpc.GrpcUtil.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
+import static ai.grakn.rpc.util.GrpcConfig.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
 
 /**
  * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
@@ -75,7 +75,7 @@ public class RemoteGraknSession implements GraknSession {
 
     @Override
     public RemoteGraknTx open(GraknTxType transactionType) {
-        return RemoteGraknTx.create(this, GrpcUtil.openRequest(keyspace, transactionType));
+        return RemoteGraknTx.create(this, RequestBuilder.openRequest(keyspace, transactionType));
     }
 
     @Override

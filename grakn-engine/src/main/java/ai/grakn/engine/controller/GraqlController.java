@@ -31,12 +31,12 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.Streamable;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
@@ -101,14 +101,14 @@ public class GraqlController implements HttpController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
-    private final Printer<?> printer;
+    private final Printer printer;
     private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
@@ -259,7 +259,7 @@ public class GraqlController implements HttpController {
         // By default use Jackson printer
         Printer<?> printer = this.printer;
 
-        if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
+        if (APPLICATION_TEXT.equals(acceptType)) printer = Printer.stringPrinter(false);
 
         String formatted;
         boolean commitQuery = true;
@@ -269,7 +269,7 @@ public class GraqlController implements HttpController {
             if (skipSerialisation) {
                 formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
             } else {
-                formatted = printer.graqlString(collectedResults);
+                formatted = printer.toString(collectedResults);
             }
         } else {
             Query<?> query = parser.parseQuery(queryString);
@@ -278,10 +278,15 @@ public class GraqlController implements HttpController {
             } else {
                 // If acceptType is 'application/text' add new line after every result
                 if (APPLICATION_TEXT.equals(acceptType)) {
-                    formatted = query.results(printer).collect(Collectors.joining("\n"));
+                    //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
+                    if (query instanceof Streamable) {
+                        formatted = printer.toStream(((Streamable<?>) query).stream()).collect(Collectors.joining("\n"));
+                    } else {
+                        formatted = printer.toString(query.execute());
+                    }
                 } else {
                     // If acceptType is 'application/json' map results to JSON representation
-                    formatted = printer.graqlString(executeAndMonitor(query));
+                    formatted = printer.toString(executeAndMonitor(query));
                 }
 
             }

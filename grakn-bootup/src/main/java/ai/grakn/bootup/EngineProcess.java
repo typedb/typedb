@@ -24,6 +24,8 @@ import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -50,6 +52,7 @@ public class EngineProcess extends AbstractProcessHandler {
     private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
     public static final Path ENGINE_PID = Paths.get(File.separator,"tmp","grakn-engine.pid");
     public static final String javaOpts = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
+    private static final Logger LOG = LoggerFactory.getLogger(EngineProcess.class);
 
     protected final Path homePath;
     protected final Path configPath;
@@ -96,6 +99,7 @@ public class EngineProcess extends AbstractProcessHandler {
         System.out.flush();
 
         String command = commandToRun();
+        LOG.debug(command);
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",

@@ -19,239 +19,208 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraqlQueryException;
-import com.google.common.collect.Sets;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-
-import static ai.grakn.graql.internal.analytics.ShortestPathVertexProgram.Direction.FROM_DESTINATION;
-import static ai.grakn.graql.internal.analytics.ShortestPathVertexProgram.Direction.FROM_MIDDLE;
-import static ai.grakn.graql.internal.analytics.ShortestPathVertexProgram.Direction.FROM_SOURCE;
-import static ai.grakn.graql.internal.analytics.Utility.getVertexId;
+import java.util.stream.Collectors;
 
 /**
  * The vertex program for computing the shortest path between two instances.
- * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
+ @author Ganeshwara Herawan Hananda
+ @author Jason Liu
+ @author Sheldon Hall
  */
 
-public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVertexProgram.PathMessage> {
+public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVertexProgram.VertexMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(ShortestPathVertexProgram.class);
 
-    private static final int MAX_ITERATION = 50;
+    // persistent properties
+    private final String sourceId = "source-id";
+    private final String destinationId = "destination-id";
 
-    private static final String PATH_HAS_MIDDLE_POINT = "shortestPathVertexProgram.pathHasMiddlePoint";
+    // vertex property names
+    private final String srcMsgFromPrevIterations = "message-from-source";
+    private final String destMsgFromPrevIterations = "message-from-destination";
+    private final String shortestPathRecordedAndBroadcasted = "shortest-path-found-and-relayed";
+    private final String pathFoundButIsNotTheShortest = "not-the-shortest";
 
-    private static final String PREDECESSOR = "shortestPathVertexProgram.fromVertex";
-    private static final String VISITED_IN_ITERATION = "shortestPathVertexProgram.visitedInIteration";
-    private static final String VOTE_TO_HALT_SOURCE = "shortestPathVertexProgram.voteToHalt.source";
-    private static final String VOTE_TO_HALT_DESTINATION = "shortestPathVertexProgram.voteToHalt.destination";
-    private static final String FOUND_PATH = "shortestPathVertexProgram.foundDestination";
-    public static final String PREDECESSORS_FROM_SOURCE = "shortestPathVertexProgram.predecessors.fromSource";
-    public static final String PREDECESSORS_FROM_DESTINATION = "shortestPathVertexProgram.predecessors.fromDestination";
-    private static final String ITERATIONS_LEFT = "shortestPathVertexProgram.iterationsLeft";
+    // memory key names
+    public static final String SHORTEST_PATH = "result";
+    private final String atLeastOneVertexActive = "at-least-one-vertex-active";
+    private final String shortestPathLength = "length";
+    private final String allShortestPathsFound_TerminateAtTheEndOfThisIteration = "terminate";
 
-    private static final String SOURCE = "shortestPathVertexProgram.source";
-    private static final String DESTINATION = "shortestPathVertexProgram.destination";
+    private final MessageScope inEdge = MessageScope.Local.of(__::inE);
+    private final MessageScope outEdge = MessageScope.Local.of(__::outE);
+    private final long SHORTEST_PATH_LENGTH_NOT_YET_SET = -1L;
 
-    private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS = Sets.newHashSet(
-            MemoryComputeKey.of(VOTE_TO_HALT_SOURCE, Operator.and, false, true),
-            MemoryComputeKey.of(VOTE_TO_HALT_DESTINATION, Operator.and, false, true),
-            MemoryComputeKey.of(FOUND_PATH, Operator.or, true, true),
-            MemoryComputeKey.of(PREDECESSORS_FROM_SOURCE, Operator.addAll, false, false),
-            MemoryComputeKey.of(PREDECESSORS_FROM_DESTINATION, Operator.addAll, false, false),
-            MemoryComputeKey.of(ITERATIONS_LEFT, Operator.assign, true, true),
-            MemoryComputeKey.of(PATH_HAS_MIDDLE_POINT, Operator.and, false, true)
-    );
-
-    @SuppressWarnings("unused") //Needed internally for OLAP tasks
+    // needed for OLAP
     public ShortestPathVertexProgram() {
     }
 
-    public ShortestPathVertexProgram(ConceptId sourceId, ConceptId destinationId) {
-        this.persistentProperties.put(SOURCE, sourceId.getValue());
-        this.persistentProperties.put(DESTINATION, destinationId.getValue());
-    }
-
-    @Override
-    public Set<VertexComputeKey> getVertexComputeKeys() {
-        return Sets.newHashSet(
-                VertexComputeKey.of(PREDECESSOR, true),
-                VertexComputeKey.of(VISITED_IN_ITERATION, true));
-    }
-
-    @Override
-    public Set<MemoryComputeKey> getMemoryComputeKeys() {
-        return MEMORY_COMPUTE_KEYS;
+    public ShortestPathVertexProgram(ConceptId source, ConceptId destination) {
+        persistentProperties.put(sourceId, source.getValue());
+        persistentProperties.put(destinationId, destination.getValue());
     }
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return messageScopeSetInAndOut;
+        return new HashSet<>(Arrays.asList(inEdge, outEdge));
+    }
+
+    @Override
+    public Set<VertexComputeKey> getVertexComputeKeys() {
+        return new HashSet<>(Arrays.asList(
+                VertexComputeKey.of(shortestPathRecordedAndBroadcasted, true),
+                VertexComputeKey.of(pathFoundButIsNotTheShortest, true),
+                VertexComputeKey.of(srcMsgFromPrevIterations, true),
+                VertexComputeKey.of(destMsgFromPrevIterations, true)
+        ));
+    }
+
+    @Override
+    public Set<MemoryComputeKey> getMemoryComputeKeys() {
+        return new HashSet<>(Arrays.asList(
+                MemoryComputeKey.of(atLeastOneVertexActive, Operator.or, false, true),
+                MemoryComputeKey.of(shortestPathLength, Operator.assign, true, true),
+                MemoryComputeKey.of(allShortestPathsFound_TerminateAtTheEndOfThisIteration, Operator.assign, false, true),
+                MemoryComputeKey.of(SHORTEST_PATH, Operator.addAll, false, false)
+        ));
     }
 
     @Override
     public void setup(final Memory memory) {
-        LOGGER.debug("ShortestPathVertexProgram Started !!!!!!!!");
-
-        memory.set(VOTE_TO_HALT_SOURCE, true);
-        memory.set(VOTE_TO_HALT_DESTINATION, true);
-        memory.set(FOUND_PATH, false);
-        memory.set(PATH_HAS_MIDDLE_POINT, true);
-        memory.set(ITERATIONS_LEFT, -1);
-        memory.set(PREDECESSORS_FROM_SOURCE, new HashMap<String, Set<String>>());
-        memory.set(PREDECESSORS_FROM_DESTINATION, new HashMap<String, Set<String>>());
+        memory.set(atLeastOneVertexActive, false);
+        memory.set(shortestPathLength, SHORTEST_PATH_LENGTH_NOT_YET_SET);
+        memory.set(allShortestPathsFound_TerminateAtTheEndOfThisIteration, false);
+        memory.set(SHORTEST_PATH, new HashMap<String, Set<String>>());
     }
 
     @Override
-    public void safeExecute(final Vertex vertex, Messenger<PathMessage> messenger, final Memory memory) {
-        if (memory.isInitialIteration()) {
-            // The type of id will likely have to change as we support more and more vendors
-            String id = getVertexId(vertex);
-            if (persistentProperties.get(SOURCE).equals(id)) {
-                LOGGER.debug("Found source vertex");
-                vertex.property(VISITED_IN_ITERATION, 1);
-                sendMessage(messenger, PathMessage.of(FROM_SOURCE, id));
-            } else if (persistentProperties.get(DESTINATION).equals(id)) {
-                LOGGER.debug("Found destination vertex");
-                vertex.property(VISITED_IN_ITERATION, -1);
-                sendMessage(messenger, PathMessage.of(FROM_DESTINATION, id));
+    public void safeExecute(Vertex vertex, Messenger<VertexMessage> messenger, final Memory memory) {
+        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+
+        if (source(vertex)) {
+            if (memory.isInitialIteration()) {
+                broadcastInitialSourceMessage(messenger, memory, vertexId);
+                memory.add(atLeastOneVertexActive, true);
             }
-        } else {
-            if (memory.<Boolean>get(FOUND_PATH)) {
-                if (messenger.receiveMessages().hasNext() && vertex.property(VISITED_IN_ITERATION).isPresent()) {
-                    recordPredecessors(vertex, messenger, memory);
-                }
-            } else if (messenger.receiveMessages().hasNext()) {
-                updateInstance(vertex, messenger, memory);
-            }
-        }
-    }
-
-    private static void sendMessage(Messenger<PathMessage> messenger, PathMessage message) {
-        messenger.sendMessage(messageScopeIn, message);
-        messenger.sendMessage(messageScopeOut, message);
-    }
-
-    private static void recordPredecessors(Vertex vertex, Messenger<PathMessage> messenger, Memory memory) {
-        int visitedInIteration = vertex.value(VISITED_IN_ITERATION);
-        int iterationLeft = memory.<Integer>get(ITERATIONS_LEFT);
-        if (visitedInIteration == iterationLeft) {
-            Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
-            if (!predecessorsMap.isEmpty()) {
-                memory.add(PREDECESSORS_FROM_SOURCE, predecessorsMap);
-                sendMessage(messenger, PathMessage.of(FROM_MIDDLE, getVertexId(vertex)));
-            }
-        } else if (-visitedInIteration == iterationLeft) {
-            Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
-            if (!predecessorsMap.isEmpty()) {
-                memory.add(PREDECESSORS_FROM_DESTINATION, predecessorsMap);
-                sendMessage(messenger, PathMessage.of(FROM_MIDDLE, getVertexId(vertex)));
-            }
-        }
-    }
-
-    private static Map<String, Set<String>> getPredecessors(Vertex vertex, Messenger<PathMessage> messenger) {
-        Set<String> predecessors = new HashSet<>();
-        Iterator<PathMessage> iterator = messenger.receiveMessages();
-        while (iterator.hasNext()) {
-            PathMessage message = iterator.next();
-            if (message.direction() == FROM_MIDDLE) {
-                predecessors.add(message.id());
-            }
-        }
-        if (predecessors.isEmpty()) return Collections.emptyMap();
-
-        Map<String, Set<String>> predecessorMap = new HashMap<>();
-        predecessorMap.put(getVertexId(vertex), predecessors);
-        return predecessorMap;
-    }
-
-    private void updateInstance(Vertex vertex, Messenger<PathMessage> messenger, Memory memory) {
-        if (!vertex.property(VISITED_IN_ITERATION).isPresent()) {
-            String id = getVertexId(vertex);
-            LOGGER.trace("Checking instance " + id);
-
-            boolean hasMessageSource = false;
-            boolean hasMessageDestination = false;
-            Iterator<PathMessage> iterator = messenger.receiveMessages();
-            while (iterator.hasNext()) {
-                Direction messageDirection = iterator.next().direction();
-                if (messageDirection == FROM_SOURCE) {
-                    if (!hasMessageSource) { // make sure this is the first msg from source
-                        LOGGER.trace("Received a message from source vertex");
-                        hasMessageSource = true;
-                        vertex.property(VISITED_IN_ITERATION, memory.getIteration() + 1);
-                        memory.add(VOTE_TO_HALT_SOURCE, false);
-                        if (hasMessageDestination) {
-                            LOGGER.trace("Found path(s)");
-                            memory.add(FOUND_PATH, true);
+            else {
+                List<VertexMessage> messages = messages(messenger);
+                List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
+                List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
+                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+                if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
+                    if (!incomingDestMsg.isEmpty()) {
+                        long pathLength = incomingDestMsg.get(0).pathLength();
+                        if (memory.<Long>get(shortestPathLength) == SHORTEST_PATH_LENGTH_NOT_YET_SET || pathLength == memory.<Long>get(shortestPathLength)) {
+                            recordShortestPath_AndMarkBroadcasted(vertex, memory, vertexId, incomingDestMsg, pathLength);
+                        }
+                        else {
+                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + incomingDestMsg + " of length " +
+                                    pathLength + ". This isn't the shortest path, which is of length " + memory.<Long>get(shortestPathLength) + ". Do nothing.");
                         }
                     }
-                } else {
-                    if (!hasMessageDestination) { // make sure this is the first msg from destination
-                        LOGGER.trace("Received a message from destination vertex");
-                        hasMessageDestination = true;
-                        vertex.property(VISITED_IN_ITERATION, -memory.getIteration() - 1);
-                        memory.add(VOTE_TO_HALT_DESTINATION, false);
-                        if (hasMessageSource) {
-                            LOGGER.trace("Found path(s)");
-                            memory.add(FOUND_PATH, true);
+                    else {
+                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": no message from destination yet. Do nothing");
+                    }
+                }
+            }
+        }
+        else if (destination(vertex)) {
+            if (memory.isInitialIteration()) {
+                broadcastInitialDestinationMessage(messenger, memory, vertexId);
+                memory.add(atLeastOneVertexActive, true);
+            }
+            else {
+                List<VertexMessage> messages = messages(messenger);
+                List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
+                List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
+                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+                if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
+                    if (!incomingSourceMsg.isEmpty()) {
+                        long pathLength = incomingSourceMsg.get(0).pathLength();
+                        if (memory.<Long>get(shortestPathLength) == SHORTEST_PATH_LENGTH_NOT_YET_SET || pathLength == memory.<Long>get(shortestPathLength)) {
+                            markBroadcasted_TerminateAtTheEndOfThisIeration(vertex, memory, vertexId, incomingSourceMsg, pathLength);
+                        }
+                        else {
+                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + incomingSourceMsg + " of length " +
+                                    pathLength + ". This isn't the shortest path, which is of length " + memory.<Long>get(shortestPathLength) + ". Do nothing.");
                         }
                     }
-                }
-            }
-
-            PathMessage message;
-            if (hasMessageSource && hasMessageDestination) {
-                message = PathMessage.of(FROM_MIDDLE, id);
-            } else {
-                message = PathMessage.of(hasMessageSource ? FROM_SOURCE : FROM_DESTINATION, id);
-            }
-            sendMessage(messenger, message);
-
-        } else {
-            if ((int) vertex.value(VISITED_IN_ITERATION) > 0) { // if received msg from source before
-                Iterator<PathMessage> iterator = messenger.receiveMessages();
-                Set<String> middleLinkSet = new HashSet<>();
-                while (iterator.hasNext()) {
-                    PathMessage message = iterator.next();
-                    if (message.direction() == FROM_DESTINATION) { // received msg from destination
-                        middleLinkSet.add(message.id());
+                    else {
+                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": no message from source yet. Do nothing");
                     }
                 }
-                if (!middleLinkSet.isEmpty()) {
-                    LOGGER.trace("Found path");
-                    memory.add(FOUND_PATH, true);
-                    memory.add(PATH_HAS_MIDDLE_POINT, false);
+            }
+        }
+        else { // if neither source nor destination vertex
+            if (memory.isInitialIteration()) {
+                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": neither a source nor destination vertex. Do nothing.");
+            }
+            else {
+                boolean shortestPathProcessed = this.<Boolean>get(vertex, shortestPathRecordedAndBroadcasted).orElse(false);
 
-                    String id = getVertexId(vertex);
-                    Map<String, Set<String>> middleLinkMap = new HashMap<>();
-                    middleLinkMap.put(id, middleLinkSet);
-                    memory.add(PREDECESSORS_FROM_SOURCE, middleLinkMap);
-                    sendMessage(messenger, PathMessage.of(FROM_MIDDLE, id));
+                if (shortestPathProcessed) {
+                    LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": shortest path have been relayed. Do nothing.");
+                    return;
                 }
-            } else { // if received msg from destination before
-                Iterator<PathMessage> iterator = messenger.receiveMessages();
-                while (iterator.hasNext()) {
-                    PathMessage message = iterator.next();
-                    if (message.direction() == FROM_SOURCE) {
-                        sendMessage(messenger, PathMessage.of(FROM_MIDDLE, getVertexId(vertex)));
-                        break;
+
+                List<VertexMessage> messages = messages(messenger);
+                List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
+                List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
+                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+
+                if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
+                    boolean hasNewMessageToProcess = false;
+                    if (!get(vertex, srcMsgFromPrevIterations).isPresent() && !incomingSourceMsg.isEmpty()) {
+                        set(vertex, srcMsgFromPrevIterations, incomingSourceMsg);
+                        broadcastSourceMessages(messenger, memory, vertexId, incomingSourceMsg);
+                        hasNewMessageToProcess = true;
                     }
+                    if (!get(vertex, destMsgFromPrevIterations).isPresent() && !incomingDestMsg.isEmpty()) {
+                        set(vertex, destMsgFromPrevIterations, incomingDestMsg);
+                        broadcastDestinationMessages(messenger, memory, vertexId, incomingDestMsg);
+                        hasNewMessageToProcess = true;
+                    }
+                    if (get(vertex, srcMsgFromPrevIterations).isPresent() && get(vertex, destMsgFromPrevIterations).isPresent()) {
+                        List<MessageFromSource> srcMsgs = this.<List<MessageFromSource>>get(vertex, srcMsgFromPrevIterations).get();
+                        List<MessageFromDestination> destMsgs = this.<List<MessageFromDestination>>get(vertex, destMsgFromPrevIterations).get();
+                        long pathLength = srcMsgs.get(0).pathLength() + destMsgs.get(0).pathLength();
+                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Path between source and destination with length " + pathLength + " found here.");
+
+                        if (memory.<Long>get(shortestPathLength) == SHORTEST_PATH_LENGTH_NOT_YET_SET || pathLength == memory.<Long>get(shortestPathLength)) {
+                            recordShortestPath_AndMarkBroadcasted(vertex, memory, vertexId, destMsgs, pathLength);
+                        }
+                        else {
+                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": is not the shortest path. Do nothing.");
+                            set(vertex, pathFoundButIsNotTheShortest, true);
+                        }
+                    }
+                    memory.add(atLeastOneVertexActive, hasNewMessageToProcess);
+                }
+                else {
+                    LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": receives no message. Do nothing.");
                 }
             }
         }
@@ -259,69 +228,156 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     @Override
     public boolean terminate(final Memory memory) {
-        //Be careful in Tinkergraph as things set here cannot be got!!!
-        LOGGER.debug("Finished Iteration " + memory.getIteration());
-
-        if (memory.getIteration() == 0) {
-            return false;
+        boolean terminate = !memory.<Boolean>get(atLeastOneVertexActive) || memory.<Boolean>get(allShortestPathsFound_TerminateAtTheEndOfThisIteration);
+        if (!memory.<Boolean>get(atLeastOneVertexActive)) {
+            LOG.debug("No vertex is active. Terminating compute path.");
         }
-
-        if (memory.<Boolean>get(FOUND_PATH)) {
-            if (memory.<Integer>get(ITERATIONS_LEFT) == -1) {
-                if (!memory.<Boolean>get(PATH_HAS_MIDDLE_POINT)) {
-                    if (memory.getIteration() == 1) return true;
-                    else memory.set(ITERATIONS_LEFT, memory.getIteration() - 1);
-                } else {
-                    memory.set(ITERATIONS_LEFT, memory.getIteration());
-                }
-                return false;
-            } else if (memory.<Integer>get(ITERATIONS_LEFT) == 1) {
-                return true;
-            } else {
-                memory.set(ITERATIONS_LEFT, memory.<Integer>get(ITERATIONS_LEFT) - 1);
-                return false;
-            }
+        if (memory.<Boolean>get(allShortestPathsFound_TerminateAtTheEndOfThisIteration)) {
+            LOG.debug("All shortest paths have been found. Terminating compute path.");
         }
-
-        if (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION)) {
-            LOGGER.debug("There is no path between the given instances");
-            throw new NoResultException();
-        }
-
-        if (memory.getIteration() == MAX_ITERATION) {
-            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw GraqlQueryException.maxIterationsReached(this.getClass());
-        }
-
-        memory.set(VOTE_TO_HALT_SOURCE, true);
-        memory.set(VOTE_TO_HALT_DESTINATION, true);
-        return false;
+        memory.set(atLeastOneVertexActive, false); // set for next iteration
+        return terminate;
     }
 
-    static class PathMessage {
+    private Map<String, Set<String>> recordShortestPath_AndMarkBroadcasted(Vertex vertex, Memory memory, String vertexId, List<MessageFromDestination> destMsgs, long pathLength) {
+        Map<String, Set<String>> msg = new HashMap<>(Collections.singletonMap(vertexId,
+                destMsgs.stream().map(e -> e.vertexId()).collect(Collectors.toSet())));
+        memory.add(SHORTEST_PATH, msg);
+        memory.add(shortestPathLength, pathLength);
+        set(vertex, shortestPathRecordedAndBroadcasted, true);
+        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": is the shortest path. Record(" + msg + ")");
+        return msg;
+    }
 
-        private Direction direction;
-        private String id;
+    private void markBroadcasted_TerminateAtTheEndOfThisIeration(Vertex vertex, Memory memory, String vertexId, List<MessageFromSource> incomingSourceMsg, long pathLength) {
+        Map<String, Set<String>> msg = new HashMap<>(Collections.singletonMap(vertexId,
+                incomingSourceMsg.stream().map(e -> e.vertexId()).collect(Collectors.toSet())));
+        // memory.add(SHORTEST_PATH, msg); do not record
+        memory.add(shortestPathLength, pathLength);
+        set(vertex, shortestPathRecordedAndBroadcasted, true);
+        memory.add(allShortestPathsFound_TerminateAtTheEndOfThisIteration, true);
+        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + msg + ". 'compute new-path' finished. Terminating...");
+    }
 
-        private PathMessage(Direction direction, String id) {
-            this.direction = direction;
-            this.id = id;
-        }
+    private void broadcastInitialDestinationMessage(Messenger<VertexMessage> messenger, Memory memory, String vertexId) {
+        MessageFromDestination initialOutgoingDestMsg = new MessageFromDestination(vertexId,1L);
+        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": I am the destination vertex [" + vertexId + "]. Sending message " + initialOutgoingDestMsg + " to neighbors");
+        broadcastToNeighbors(messenger, initialOutgoingDestMsg);
+    }
 
-        static PathMessage of(Direction direction, String id) {
-            return new PathMessage(direction, id);
-        }
+    private void broadcastInitialSourceMessage(Messenger<VertexMessage> messenger, Memory memory, String vertexId) {
+        MessageFromSource initialOutgoingSrcMsg = new MessageFromSource(vertexId,1L);
+        broadcastToNeighbors(messenger, initialOutgoingSrcMsg);
+        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": I am the source vertex [" + vertexId + "]. Sending message " + initialOutgoingSrcMsg + " to neighbors");
+    }
 
-        Direction direction() {
-            return direction;
-        }
-
-        String id() {
-            return id;
+    private void broadcastDestinationMessages(Messenger<VertexMessage> messenger, Memory memory, String vertexId, List<MessageFromDestination> incomingDestMsg) {
+        if (!incomingDestMsg.isEmpty()) {
+            MessageFromDestination msg = incomingDestMsg.get(0);
+            MessageFromDestination outgoingDstMsg = new MessageFromDestination(vertexId, msg.pathLength() + 1);
+            broadcastToNeighbors(messenger, outgoingDstMsg);
+            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingDstMsg + ".");
         }
     }
 
-    enum Direction {
-        FROM_SOURCE, FROM_DESTINATION, FROM_MIDDLE;
+    private void broadcastSourceMessages(Messenger<VertexMessage> messenger, Memory memory, String vertexId, List<MessageFromSource> incomingSourceMsg) {
+        if (!incomingSourceMsg.isEmpty()) {
+            MessageFromSource msg = incomingSourceMsg.get(0);
+            MessageFromSource outgoingSrcMsg = new MessageFromSource(vertexId, msg.pathLength() + 1);
+            broadcastToNeighbors(messenger, outgoingSrcMsg);
+            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingSrcMsg + ".");
+        }
+    }
+
+    private boolean source(Vertex vertex) {
+        String source = (String) persistentProperties.get(sourceId);
+        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        return source.equals(vertexId);
+    }
+
+    private boolean destination(Vertex vertex) {
+        String source = (String) persistentProperties.get(destinationId);
+        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        return source.equals(vertexId);
+    }
+
+    private List<VertexMessage> messages(Messenger<VertexMessage> messenger) {
+        return IteratorUtils.asList(messenger.receiveMessages());
+    }
+
+    private List<MessageFromSource> messageFromSource(List<VertexMessage> messages) {
+        return IteratorUtils.asList(Iterators.filter(messages.iterator(), e -> e instanceof MessageFromSource));
+    }
+
+    private List<MessageFromDestination> messageFromDestination(List<VertexMessage> messages) {
+        return IteratorUtils.asList(Iterators.filter(messages.iterator(), e -> e instanceof MessageFromDestination));
+    }
+
+    private <T> Optional<T> get(Vertex vertex, String key) {
+        return Optional.ofNullable(vertex.property(key).orElse(null)).map(e -> (T) e);
+    }
+
+    private void set(Vertex vertex, String key, Object value) {
+        vertex.property(key, value);
+    }
+
+    private void broadcastToNeighbors(Messenger<VertexMessage> messenger, VertexMessage message) {
+        messenger.sendMessage(inEdge, message);
+        messenger.sendMessage(outEdge, message);
+    }
+
+    interface VertexMessage {
+        String vertexId();
+        long pathLength();
+    }
+
+    static class MessageFromSource implements VertexMessage {
+        private final String vertexId;
+        private final long pathLength;
+
+        MessageFromSource(String vertexId, long pathLength) {
+            this.vertexId = vertexId;
+            this.pathLength = pathLength;
+        }
+
+        @Override
+        public String vertexId() {
+            return vertexId;
+        }
+
+        @Override
+        public long pathLength() {
+            return pathLength;
+        }
+
+        @Override
+        public String toString() {
+            return "FromSourceMessage(vertexId=" + vertexId + ", pathLength=" + pathLength + ")";
+        }
+    }
+
+    static class MessageFromDestination implements VertexMessage {
+        private final String vertexId;
+        private final long pathLength;
+
+        MessageFromDestination(String vertexId, long pathLength) {
+            this.vertexId = vertexId;
+            this.pathLength = pathLength;
+        }
+
+        @Override
+        public String vertexId() {
+            return vertexId;
+        }
+
+        @Override
+        public long pathLength() {
+            return pathLength;
+        }
+
+        @Override
+        public String toString() {
+            return "FromDestinationMessage(vertexId=" + vertexId + ", pathLength=" + pathLength + ")";
+        }
     }
 }

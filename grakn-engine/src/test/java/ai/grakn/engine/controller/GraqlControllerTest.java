@@ -176,7 +176,7 @@ public class GraqlControllerTest {
         Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
         resp.then().statusCode(200);
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
-        String graqlResult = printer.graqlString(query.map(Query::execute).collect(
+        String graqlResult = printer.toString(query.map(Query::execute).collect(
                 Collectors.toList()));
         Json expected = Json.read(graqlResult);
         assertEquals(expected, Json.read(resp.body().asString()));
@@ -190,6 +190,9 @@ public class GraqlControllerTest {
         String id = resp.jsonPath().getList("x.id").get(0).toString();
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
+
+        System.out.println(Json.nil());
+        System.out.println(resp.asString());
         assertEquals(Json.nil(), Json.read(resp.asString()));
     }
 
@@ -227,7 +230,7 @@ public class GraqlControllerTest {
         sampleKB.rollback();
         Query<?> query = sampleKB.tx().graql().parse(queryString);
 
-        String expectedObject = printer.graqlString(query.execute());
+        String expectedObject = printer.toString(query.execute());
 
         Object expected = Json.read(expectedObject);
 

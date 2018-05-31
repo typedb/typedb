@@ -22,7 +22,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -31,15 +30,8 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.analytics.ConnectedComponentQuery;
-import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -48,7 +40,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +49,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.contains;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -90,9 +84,9 @@ public class GraqlTest {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             assertEquals(6L,
-                    ((Long) graph.graql().parse("compute count;").execute()).longValue());
+                    ((ComputeQuery.Answer) (graph.graql().parse("compute count;").execute())).getNumber().get());
             assertEquals(3L,
-                    ((Long) graph.graql().parse("compute count in [thingy, thingy];").execute()).longValue());
+                    ((ComputeQuery.Answer) graph.graql().parse("compute count in [thingy, thingy];").execute()).getNumber().get());
         }
     }
 
@@ -100,8 +94,8 @@ public class GraqlTest {
     public void testDegrees() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Map<Long, Set<String>> degrees =
-                    graph.graql().<DegreeQuery>parse("compute centrality using degree;").execute();
+            Map<Long, Set<ConceptId>> degrees =
+                    graph.graql().<ComputeQuery>parse("compute centrality using degree;").execute().getCentrality().get();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -114,8 +108,8 @@ public class GraqlTest {
             assertTrue(!degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {
-                        assertTrue(correctDegrees.containsKey(id));
-                        assertEquals(correctDegrees.get(id), key);
+                        assertTrue(correctDegrees.containsKey(id.getValue()));
+                        assertEquals(correctDegrees.get(id.getValue()), key);
                     }
             ));
         }
@@ -166,16 +160,16 @@ public class GraqlTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // use graql to compute various statistics
             Optional<? extends Number> result =
-                    graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
+                    graph.graql().<ComputeQuery>parse("compute sum of my-resource;").execute().getNumber();
             assertEquals(Optional.of(6L), result);
-            result = graph.graql().<MinQuery>parse("compute min of my-resource;").execute();
+            result = graph.graql().<ComputeQuery>parse("compute min of my-resource;").execute().getNumber();
             assertEquals(Optional.of(1L), result);
-            result = graph.graql().<MaxQuery>parse("compute max of my-resource;").execute();
+            result = graph.graql().<ComputeQuery>parse("compute max of my-resource;").execute().getNumber();
             assertEquals(Optional.of(3L), result);
-            result = graph.graql().<MeanQuery>parse("compute mean of my-resource;").execute();
+            result = graph.graql().<ComputeQuery>parse("compute mean of my-resource;").execute().getNumber();
             assert result.isPresent();
             assertEquals(2.0, (Double) result.get(), 0.1);
-            result = graph.graql().<MedianQuery>parse("compute median of my-resource;").execute();
+            result = graph.graql().<ComputeQuery>parse("compute median of my-resource;").execute().getNumber();
             assertEquals(Optional.of(2L), result);
         }
     }
@@ -183,16 +177,16 @@ public class GraqlTest {
     @Test
     public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Map<String, Long> sizeMap =
-                    graph.graql().<ConnectedComponentQuery<Map<String, Long>>>parse("compute cluster using connected-component;").execute();
-            assertTrue(sizeMap.isEmpty());
-            Map<String, Set<String>> memberMap = graph.graql().<ConnectedComponentQuery<Map<String, Set<String>>>>parse(
-                    "compute cluster using connected-component, where members = true;").execute();
-            assertTrue(memberMap.isEmpty());
+            List<Long> sizeList =
+                    graph.graql().<ComputeQuery>parse("compute cluster using connected-component;").execute().getClusterSizes().get();
+            assertTrue(sizeList.isEmpty());
+            Set<Set<ConceptId>> membersList = graph.graql().<ComputeQuery>parse(
+                    "compute cluster using connected-component, where members = true;").execute().getClusters().get();
+            assertTrue(membersList.isEmpty());
 
             Query<?> parsed = graph.graql().parse(
-                    "compute cluster using connected-component, where start = V123;");
-            Query<?> expected = graph.graql().compute().cluster().usingConnectedComponent().start(ConceptId.of("V123"));
+                    "compute cluster using connected-component, where contains = V123;");
+            Query<?> expected = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(ConceptId.of("V123")));
             assertEquals(expected, parsed);
         }
     }
@@ -202,13 +196,12 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
-            List<List<Concept>> paths = query.execute();
+            ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            List<List<ConceptId>> paths = query.execute().getPaths().get();
 
-            List<Concept> path = Collections.emptyList();
+            List<ConceptId> path = Collections.emptyList();
             if (!paths.isEmpty()) path = paths.get(0);
-            List<String> result = path.stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-
+            List<String> result = path.stream().map(ConceptId::getValue).collect(Collectors.toList());
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
             assertEquals(expected, result);
@@ -220,13 +213,11 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
+            ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
 
-            List<List<Concept>> path = query.execute();
+            List<List<ConceptId>> path = query.execute().getPaths().get();
             assertEquals(1, path.size());
-            List<String> result =
-                    path.get(0).stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
-
+            List<String> result = path.get(0).stream().map(ConceptId::getValue).collect(Collectors.toList());
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
             assertEquals(expected, result);

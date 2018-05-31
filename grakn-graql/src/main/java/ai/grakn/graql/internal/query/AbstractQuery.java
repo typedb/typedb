@@ -20,8 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.QueryExecutor;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GraqlConverter;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 
 import javax.annotation.CheckReturnValue;
@@ -40,17 +38,7 @@ abstract class AbstractQuery<T, S> implements Query<T> {
     @CheckReturnValue
     protected abstract Stream<S> stream();
 
-    @Override
-    public final Stream<String> resultsString(Printer<?> printer) {
-        return results(printer);
-    }
-
-    @Override
-    public final <U> Stream<U> results(GraqlConverter<?, U> converter) {
-        return stream().map(converter::convert);
-    }
-
-    protected final QueryExecutor queryComputer() {
+    protected final QueryExecutor executor() {
         return tx().orElseThrow(GraqlQueryException::noTx).admin().queryExecutor();
     }
 }

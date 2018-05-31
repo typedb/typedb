@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.analytics.ComputeQueryBuilder;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -45,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>
@@ -138,12 +138,8 @@ public class QueryBuilderImpl implements QueryBuilder {
         return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
 
-    /**
-     * @return a compute query builder for building analytics query
-     */
-    @Override
-    public ComputeQueryBuilder compute(){
-        return new ComputeQueryBuilderImpl(tx);
+    public ComputeQuery compute(Method method) {
+        return new ComputeQueryImpl(tx, method);
     }
 
     @Override

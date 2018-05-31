@@ -35,10 +35,10 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.grpc.ConceptMethod;
-import ai.grakn.grpc.ConceptMethods;
-import ai.grakn.grpc.GrpcUtil;
-import ai.grakn.grpc.RolePlayer;
+import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.rpc.RolePlayer;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
@@ -57,21 +57,21 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.grpc.ConceptMethods.GET_ATTRIBUTE_TYPES;
-import static ai.grakn.grpc.ConceptMethods.GET_DATA_TYPE_OF_ATTRIBUTE;
-import static ai.grakn.grpc.ConceptMethods.GET_DATA_TYPE_OF_TYPE;
-import static ai.grakn.grpc.ConceptMethods.GET_DIRECT_SUPER;
-import static ai.grakn.grpc.ConceptMethods.GET_DIRECT_TYPE;
-import static ai.grakn.grpc.ConceptMethods.GET_KEY_TYPES;
-import static ai.grakn.grpc.ConceptMethods.GET_REGEX;
-import static ai.grakn.grpc.ConceptMethods.GET_ROLE_PLAYERS;
-import static ai.grakn.grpc.ConceptMethods.GET_THEN;
-import static ai.grakn.grpc.ConceptMethods.GET_VALUE;
-import static ai.grakn.grpc.ConceptMethods.GET_WHEN;
-import static ai.grakn.grpc.ConceptMethods.IS_ABSTRACT;
-import static ai.grakn.grpc.ConceptMethods.IS_IMPLICIT;
-import static ai.grakn.grpc.ConceptMethods.IS_INFERRED;
-import static ai.grakn.grpc.GrpcUtil.convertOptionalConcept;
+import static ai.grakn.rpc.ConceptMethods.GET_ATTRIBUTE_TYPES;
+import static ai.grakn.rpc.ConceptMethods.GET_DATA_TYPE_OF_ATTRIBUTE;
+import static ai.grakn.rpc.ConceptMethods.GET_DATA_TYPE_OF_TYPE;
+import static ai.grakn.rpc.ConceptMethods.GET_DIRECT_SUPER;
+import static ai.grakn.rpc.ConceptMethods.GET_DIRECT_TYPE;
+import static ai.grakn.rpc.ConceptMethods.GET_KEY_TYPES;
+import static ai.grakn.rpc.ConceptMethods.GET_REGEX;
+import static ai.grakn.rpc.ConceptMethods.GET_ROLE_PLAYERS;
+import static ai.grakn.rpc.ConceptMethods.GET_THEN;
+import static ai.grakn.rpc.ConceptMethods.GET_VALUE;
+import static ai.grakn.rpc.ConceptMethods.GET_WHEN;
+import static ai.grakn.rpc.ConceptMethods.IS_ABSTRACT;
+import static ai.grakn.rpc.ConceptMethods.IS_IMPLICIT;
+import static ai.grakn.rpc.ConceptMethods.IS_INFERRED;
+import static ai.grakn.rpc.util.ConceptBuilder.optionalConcept;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -237,16 +237,16 @@ public class RemoteConceptsTest {
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
         TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(Optional.of(concept))).build();
+                TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.of(concept))).build();
 
-        server.setResponse(GrpcUtil.getConceptRequest(ID), response);
+        server.setResponse(RequestBuilder.getConceptRequest(ID), response);
 
         assertFalse(entity.isDeleted());
 
         TxResponse nullResponse =
-                TxResponse.newBuilder().setOptionalConcept(convertOptionalConcept(Optional.empty())).build();
+                TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.empty())).build();
 
-        server.setResponse(GrpcUtil.getConceptRequest(ID), nullResponse);
+        server.setResponse(RequestBuilder.getConceptRequest(ID), nullResponse);
 
         assertTrue(entity.isDeleted());
     }
@@ -459,7 +459,7 @@ public class RemoteConceptsTest {
 
         TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), mockedResponse);
 
-        server.setResponse(GrpcUtil.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
+        server.setResponse(RequestBuilder.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
 
@@ -716,12 +716,12 @@ public class RemoteConceptsTest {
     }
 
     private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
-        verify(server.requests()).onNext(GrpcUtil.runConceptMethodRequest(ID, conceptMethod));
+        verify(server.requests()).onNext(RequestBuilder.runConceptMethodRequest(ID, conceptMethod));
     }
 
     private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
         server.setResponse(
-                GrpcUtil.runConceptMethodRequest(ID, property),
+                RequestBuilder.runConceptMethodRequest(ID, property),
                 property.createTxResponse(server.grpcIterators(), value)
         );
     }

@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -110,48 +112,48 @@ public class DegreeTest {
         }
         tx.close();
 
-        Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
+        Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().compute().centrality().usingDegree().execute();
+                return graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
-        Map<Long, Set<String>> degrees0 = result.iterator().next();
+        Map<Long, Set<ConceptId>> degrees0 = result.iterator().next();
         assertEquals(2, degrees0.size());
         degrees0.forEach((key, value) -> value.forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), key);
                 }
         ));
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees1 =
-                    graph.graql().compute().centrality().usingDegree().of("thingy").execute();
+            Map<Long, Set<ConceptId>> degrees1 =
+                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute().getCentrality().get();
 
             assertEquals(2, degrees1.size());
             assertEquals(2, degrees1.get(1L).size());
             assertEquals(1, degrees1.get(3L).size());
             degrees1.forEach((key, value) -> value.forEach(
                     id -> {
-                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                        assertEquals(correctDegrees.get(ConceptId.of(id)), key);
+                        assertTrue(correctDegrees.containsKey(id));
+                        assertEquals(correctDegrees.get(id), key);
                     }
             ));
 
-            Map<Long, Set<String>> degrees2 =
-                    graph.graql().compute().centrality().usingDegree().of("thingy", "related").execute();
+            Map<Long, Set<ConceptId>> degrees2 =
+                    graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy", "related").execute().getCentrality().get();
             assertEquals(degrees1, degrees2);
 
-            degrees2 = graph.graql().compute().centrality().usingDegree().of().execute();
+            degrees2 = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(degrees0, degrees2);
 
             // compute degrees on subgraph
-            Map<Long, Set<String>> degrees3 = graph.graql().compute().centrality().usingDegree()
-                    .in("thingy", "related").execute();
+            Map<Long, Set<ConceptId>> degrees3 = graph.graql().compute(CENTRALITY).using(DEGREE)
+                    .in("thingy", "related").execute().getCentrality().get();
             assertEquals(degrees1, degrees3);
 
-            degrees3 = graph.graql().compute().centrality().usingDegree().of("thingy").in("related").execute();
+            degrees3 = graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").in("related").execute().getCentrality().get();
             assertEquals(degrees1, degrees3);
         }
     }
@@ -169,8 +171,8 @@ public class DegreeTest {
         tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner)
                 .addRelationship().addRolePlayer(pet, dog).addRolePlayer(owner, person);
 
-        Map<Long, Set<String>> correctDegrees = new HashMap<>();
-        correctDegrees.put(1L, Sets.newHashSet(person.getId().getValue(), dog.getId().getValue()));
+        Map<Long, Set<ConceptId>> correctDegrees = new HashMap<>();
+        correctDegrees.put(1L, Sets.newHashSet(person.getId(), dog.getId()));
 
         tx.commit();
 
@@ -178,7 +180,7 @@ public class DegreeTest {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(ct).execute().getCentrality().get();
             // check that dog has a degree to confirm sub has been inferred
             assertEquals(correctDegrees, degrees);
         }
@@ -208,19 +210,18 @@ public class DegreeTest {
         coco.attribute(coconut).attribute(stinky);
 
         // manually compute the degree for small graph
-        Map<Long, Set<String>> subgraphReferenceDegrees = new HashMap<>();
-        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.getId().getValue(), dave.getId().getValue()));
+        Map<Long, Set<ConceptId>> subgraphReferenceDegrees = new HashMap<>();
+        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
 
         // manually compute degree for almost full graph
-        Map<Long, Set<String>> almostFullReferenceDegrees = new HashMap<>();
-        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.getId().getValue()));
-        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId().getValue(), coconut.getId().getValue()));
+        Map<Long, Set<ConceptId>> almostFullReferenceDegrees = new HashMap<>();
+        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.getId()));
+        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId()));
 
         // manually compute degrees
-        Map<Long, Set<String>> fullReferenceDegrees = new HashMap<>();
-        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.getId().getValue()));
-        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId().getValue(),
-                coconut.getId().getValue(), stinky.getId().getValue()));
+        Map<Long, Set<ConceptId>> fullReferenceDegrees = new HashMap<>();
+        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.getId()));
+        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId(), stinky.getId()));
 
         tx.commit();
 
@@ -229,18 +230,18 @@ public class DegreeTest {
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree()
-                    .in(subGraphTypes).execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE)
+                    .in(subGraphTypes).execute().getCentrality().get();
             assertEquals(subgraphReferenceDegrees, degrees);
 
             // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
-            degrees = graph.graql().compute().centrality().usingDegree().in(almostFullTypes).execute();
+            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).in(almostFullTypes).execute().getCentrality().get();
             assertEquals(almostFullReferenceDegrees, degrees);
 
             // full graph
-            degrees = graph.graql().compute().centrality().usingDegree().of().execute();
+            degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(fullReferenceDegrees, degrees);
         }
     }
@@ -261,13 +262,13 @@ public class DegreeTest {
         mansBestFriend.addRelationship().addRolePlayer(pet, coco).addRolePlayer(owner, dave);
 
         // manual degrees
-        Map<Long, Set<String>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId().getValue(), dave.getId().getValue()));
+        Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
 
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -300,14 +301,13 @@ public class DegreeTest {
         hasOwnershipResource.addRelationship()
                 .addRolePlayer(ownershipResource, aStartDate).addRolePlayer(ownership, daveOwnsCoco);
 
-        Map<Long, Set<String>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId().getValue(), dave.getId().getValue(),
-                aStartDate.getId().getValue(), daveOwnsCoco.getId().getValue()));
+        Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId(), aStartDate.getId(), daveOwnsCoco.getId()));
 
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -336,14 +336,14 @@ public class DegreeTest {
                 .addRolePlayer(actor, marlonBrando)
                 .addRolePlayer(characterBeingPlayed, donVitoCorleone);
 
-        Map<Long, Set<String>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(godfather.getId().getValue(), marlonBrando.getId().getValue(),
-                donVitoCorleone.getId().getValue()));
+        Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(1L, Sets.newHashSet(godfather.getId(), marlonBrando.getId(),
+                donVitoCorleone.getId()));
 
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }
@@ -368,14 +368,14 @@ public class DegreeTest {
                 .addRolePlayer(owner, dave)
                 .addRolePlayer(breeder, dave);
 
-        Map<Long, Set<String>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId().getValue()));
-        referenceDegrees.put(2L, Collections.singleton(dave.getId().getValue()));
+        Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(1L, Sets.newHashSet(coco.getId()));
+        referenceDegrees.put(2L, Collections.singleton(dave.getId()));
 
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
+            Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
     }

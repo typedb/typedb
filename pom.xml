@@ -27,8 +27,8 @@
     <packaging>pom</packaging>
     <version>1.3.0-SNAPSHOT</version>
     <name>Grakn</name>
-    <description>A distributed semantic graph database.</description>
-    <url>https://grakn.ai/pages/platform/index.html</url>
+    <description>The Knowledge Graph</description>
+    <url>https://grakn.ai</url>
     <modules>
         <module>grakn-kb</module>
         <module>grakn-graql</module>
@@ -115,7 +115,7 @@
     </properties>
 
     <organization>
-      <name>Grakn Labs Ltd</name>
+      <name>GRAKN.AI</name>
       <url>https://grakn.ai</url>
     </organization>
 
@@ -137,38 +137,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Borislav Iordanov</name>
-            <email>borislav@grakn.ai</email>
+            <name>Tomas Sabat</name>
+            <email>tomas@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Filipe Teixeira</name>
-            <email>filipe@grakn.ai</email>
-            <organization>Grakn Labs</organization>
-            <organizationUrl>http://grakn.ai</organizationUrl>
-        </developer>
-        <developer>
-            <name>Felix Chapman</name>
-            <email>felix@grakn.ai</email>
-            <organization>Grakn Labs</organization>
-            <organizationUrl>http://grakn.ai</organizationUrl>
-        </developer>
-        <developer>
-            <name>Sheldon Hall</name>
-            <email>sheldon@grakn.ai</email>
-            <organization>Grakn Labs</organization>
-            <organizationUrl>http://grakn.ai</organizationUrl>
-        </developer>
-        <developer>
-            <name>Alexandra Orth</name>
-            <email>alexandra@grakn.ai</email>
-            <organization>Grakn Labs</organization>
-            <organizationUrl>http://grakn.ai</organizationUrl>
-        </developer>
-        <developer>
-            <name>Jason Liu</name>
-            <email>jason@grakn.ai</email>
+            <name>Ganeshwara Hewaran Hananda</name>
+            <email>ganesh@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -185,14 +161,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Denis Igorevich Lobanov</name>
-            <email>denis@grakn.ai</email>
+            <name>James Fletcher</name>
+            <email>james@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Domenico Corapi</name>
-            <email>domenico@grakn.ai</email>
+            <name>Syed Irtaza Raza</name>
+            <email>syed@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>

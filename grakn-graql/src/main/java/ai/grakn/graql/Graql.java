@@ -23,7 +23,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.analytics.ComputeQueryBuilder;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
@@ -42,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
  * Main class containing static methods for creating Graql queries.
  *
@@ -135,12 +135,9 @@ public class Graql {
         return withoutGraph().undefine(varPatterns);
     }
 
-    /**
-     * @return a compute query builder without a specified graph
-     */
     @CheckReturnValue
-    public static ComputeQueryBuilder compute() {
-        return withoutGraph().compute();
+    public static ComputeQuery compute(Method method) {
+        return withoutGraph().compute(method);
     }
 
     /**

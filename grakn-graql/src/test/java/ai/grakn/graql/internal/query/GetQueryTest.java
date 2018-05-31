@@ -22,7 +22,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.Before;
@@ -66,7 +66,7 @@ public class GetQueryTest {
     @Test
     public void whenGettingResultsString_StringHasExpectedContents() {
         GetQuery query = qb.match(x.isa("movie")).get();
-        List<String> resultsString = query.resultsString(Printers.graql(false)).collect(toList());
+        List<String> resultsString = Printer.stringPrinter(false).toStream(query.stream()).collect(toList());
         assertThat(resultsString, everyItem(allOf(containsString("$x"), containsString("movie"), containsString(";"))));
     }
 

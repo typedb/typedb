@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
@@ -46,21 +45,6 @@ public interface Query<T> {
      * @return the result of the query
      */
     T execute();
-
-    /**
-     * Execute the query and return a human-readable stream of results
-     *
-     * @deprecated use {@link #results(GraqlConverter)}}
-     */
-    @Deprecated
-    @CheckReturnValue
-    Stream<String> resultsString(Printer<?> printer);
-
-    /**
-     * Execute the query and return a converted stream of results
-     */
-    @CheckReturnValue
-    <S> Stream<S> results(GraqlConverter<?, S> converter);
 
     /**
      * Whether this query will modify the graph
