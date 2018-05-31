@@ -51,16 +51,16 @@ pipeline {
             steps {
                 script {
                     def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
-                    def additionalParams = ""
+                    def inclusionExclusion = ""
                     splits.eachWithIndex { split, i ->
                         if (split.includes) {
                             writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                            additionalParams += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+                            inclusionExclusion += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
                         } else {
                             writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                            additionalParams += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+                            inclusionExclusion += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
                         }
-                        sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1 ' + additionalParams
+                        sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1 ' + inclusionExclusion
                     }
                 }
             }
