@@ -55,7 +55,7 @@ public interface Query<T> {
     /**
      * Get the transaction associated with this query
      */
-    Optional<? extends GraknTx> tx();
+    GraknTx tx();
 
     @Nullable
     Boolean inferring();

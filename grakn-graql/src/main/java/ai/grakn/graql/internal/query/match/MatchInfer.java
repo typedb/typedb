@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
@@ -47,10 +48,9 @@ class MatchInfer extends MatchModifier {
     public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
         // If the tx is not embedded, treat it like there is no transaction
         // TODO: this is dodgy - when queries don't contain transactions this can be fixed
-        EmbeddedGraknTx<?> tx = optionalOr(optionalGraph, inner.tx()
-                .filter(t -> t instanceof EmbeddedGraknTx)
-                .map(t -> (EmbeddedGraknTx<?>) t))
-                .orElseThrow(GraqlQueryException::noTx);
+
+        if (!(inner.tx() instanceof EmbeddedGraknTx)) throw GraqlQueryException.noTx();
+        EmbeddedGraknTx<?> tx = (EmbeddedGraknTx) inner.tx();
 
         if (!RuleUtils.hasRules(tx)) return inner.stream(optionalGraph);
 

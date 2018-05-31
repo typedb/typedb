@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {
 
     static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_UndefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
+        return new AutoValue_UndefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override

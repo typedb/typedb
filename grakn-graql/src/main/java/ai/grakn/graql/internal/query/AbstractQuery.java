@@ -39,6 +39,7 @@ abstract class AbstractQuery<T, S> implements Query<T> {
     protected abstract Stream<S> stream();
 
     protected final QueryExecutor executor() {
-        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryExecutor();
+        if (tx() == null) throw GraqlQueryException.noTx();
+        return tx().admin().queryExecutor();
     }
 }

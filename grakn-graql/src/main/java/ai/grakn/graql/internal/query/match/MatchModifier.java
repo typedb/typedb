@@ -55,7 +55,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
+    public GraknTx tx() {
         return inner.tx();
     }
 

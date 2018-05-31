@@ -58,7 +58,7 @@ public interface MatchAdmin extends Match {
      * @return the graph the query operates on, if one was provided
      */
     @CheckReturnValue
-    Optional<GraknTx> tx();
+    GraknTx tx();
 
     /**
      * @return all selected variable names in the query

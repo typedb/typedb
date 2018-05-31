@@ -58,7 +58,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 

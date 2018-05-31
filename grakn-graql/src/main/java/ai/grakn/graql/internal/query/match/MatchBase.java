@@ -157,8 +157,8 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.empty();
+    public GraknTx tx() {
+        return null;
     }
 
     @Override

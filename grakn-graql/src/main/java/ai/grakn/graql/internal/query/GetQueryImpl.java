@@ -55,7 +55,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 

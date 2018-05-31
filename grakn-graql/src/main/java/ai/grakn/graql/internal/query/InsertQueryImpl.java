@@ -54,7 +54,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
      * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
+    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, GraknTx tx) {
         match.ifPresent(answers -> Preconditions.checkArgument(answers.tx().equals(tx)));
 
         if (vars.isEmpty()) {
@@ -69,7 +69,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
         return match().map(
                 m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
         ).orElseGet(
-                () -> Queries.insert(varPatterns(), Optional.of(tx))
+                () -> Queries.insert(varPatterns(), tx)
         );
     }
 
@@ -90,7 +90,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
+        if (getTx() == null) throw GraqlQueryException.noTx();
+        GraknTx theGraph = getTx();
 
         Set<SchemaConcept> types = allVarPatterns()
                 .map(VarPatternAdmin::getTypeLabel)
@@ -107,9 +108,9 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
         return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
     }
 
-    private Optional<? extends GraknTx> getTx() {
-        Optional<Optional<? extends GraknTx>> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
-        return matchTx.orElse(tx());
+    private GraknTx getTx() {
+        Optional<? extends GraknTx> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
+        return matchTx.orElse(null);
     }
 
     @Override

@@ -40,9 +40,9 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
@@ -57,17 +57,18 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method;
  */
 public class QueryBuilderImpl implements QueryBuilder {
 
-    private final Optional<GraknTx> tx;
+    @Nullable
+    private final GraknTx tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
     private boolean infer = true;
 
     public QueryBuilderImpl() {
-        this.tx = Optional.empty();
+        this.tx = null;
     }
 
     @SuppressWarnings("unused") /** used by {@link EmbeddedGraknTx#graql()}*/
     public QueryBuilderImpl(GraknTx tx) {
-        this.tx = Optional.of(tx);
+        this.tx = tx;
     }
 
     @Override
@@ -94,7 +95,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
         Match match = infer ? base.infer().admin() : base;
-        return tx.map(match::withTx).orElse(match);
+        return (tx != null) ? match.withTx(tx) : match;
     }
 
     /**
@@ -124,7 +125,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return DefineQueryImpl.of(admins, tx.orElse(null));
+        return DefineQueryImpl.of(admins, tx);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return UndefineQueryImpl.of(admins, tx.orElse(null));
+        return UndefineQueryImpl.of(admins, tx);
     }
 
     public ComputeQuery compute(Method method) {

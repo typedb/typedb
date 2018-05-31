@@ -56,7 +56,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final Optional<GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 

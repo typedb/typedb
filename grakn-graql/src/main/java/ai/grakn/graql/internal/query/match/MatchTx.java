@@ -51,8 +51,8 @@ class MatchTx extends MatchModifier {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.of(tx);
+    public GraknTx tx() {
+        return tx;
     }
 
     @Override

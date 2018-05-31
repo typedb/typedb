@@ -58,7 +58,7 @@ public class Queries {
         return GetQueryImpl.of(match, vars);
     }
 
-    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, Optional<GraknTx> tx) {
+    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, GraknTx tx) {
         return InsertQueryImpl.create(vars, Optional.empty(), tx);
     }
 

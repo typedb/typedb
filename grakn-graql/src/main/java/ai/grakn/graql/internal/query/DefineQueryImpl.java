@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
 
     static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_DefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
+        return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
