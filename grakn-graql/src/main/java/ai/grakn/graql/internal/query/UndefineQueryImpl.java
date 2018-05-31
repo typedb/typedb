@@ -66,9 +66,8 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
         return Stream.empty();
     }
 
-    @Nullable
     @Override
     public Boolean inferring() {
-        return null;
+        return false;
     }
 }

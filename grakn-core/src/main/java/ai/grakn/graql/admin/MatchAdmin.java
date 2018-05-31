@@ -65,6 +65,8 @@ public interface MatchAdmin extends Match {
     @CheckReturnValue
     Set<Var> getSelectedNames();
 
-    @Nullable
+    /**
+     * @return true if query will involve / set to performing inference
+     */
     Boolean inferring();
 }

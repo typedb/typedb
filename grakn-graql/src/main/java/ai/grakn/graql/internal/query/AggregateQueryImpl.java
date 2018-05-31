@@ -25,7 +25,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * Implementation of AggregateQuery
@@ -64,7 +64,6 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
         return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

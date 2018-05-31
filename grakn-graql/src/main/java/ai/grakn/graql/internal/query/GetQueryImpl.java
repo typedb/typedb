@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,7 +77,6 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
         return stream().collect(Collectors.toList());
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();
