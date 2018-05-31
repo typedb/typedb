@@ -45,6 +45,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 public class AdminTest {
 
@@ -104,16 +105,16 @@ public class AdminTest {
     @Test
     public void testInsertQueryMatchPatternEmpty() {
         InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertFalse(query.admin().match().isPresent());
+        assertNull(query.admin().match());
     }
 
     @Test
     public void testInsertQueryWithMatch() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertEquals(Optional.of("match $x isa movie;"), query.admin().match().map(Object::toString));
+        assertEquals(Optional.of("match $x isa movie;"), query.admin().match().toString());
 
         query = qb.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertEquals(Optional.of("match $x isa! movie;"), query.admin().match().map(Object::toString));
+        assertEquals(Optional.of("match $x isa! movie;"), query.admin().match().toString());
     }
 
     @Test

@@ -36,8 +36,8 @@ import static org.mockito.Mockito.mock;
 
 public class InsertQueryImplTest {
 
-    private final Optional<MatchAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
-    private final Optional<MatchAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
+    private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
+    private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
     private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
     private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
@@ -55,8 +55,8 @@ public class InsertQueryImplTest {
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
         GraknTx graph = mock(GraknTx.class);
 
-        InsertQuery query1 = InsertQueryImpl.create(vars1, Optional.empty(), graph);
-        InsertQuery query2 = InsertQueryImpl.create(vars1, Optional.empty(), graph);
+        InsertQuery query1 = InsertQueryImpl.create(vars1, null, graph);
+        InsertQuery query2 = InsertQueryImpl.create(vars1, null, graph);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -75,8 +75,8 @@ public class InsertQueryImplTest {
         GraknTx graph1 = mock(GraknTx.class);
         GraknTx graph2 = mock(GraknTx.class);
 
-        InsertQuery query1 = InsertQueryImpl.create(vars1, Optional.empty(), graph1);
-        InsertQuery query2 = InsertQueryImpl.create(vars2, Optional.empty(), graph2);
+        InsertQuery query1 = InsertQueryImpl.create(vars1, null, graph1);
+        InsertQuery query2 = InsertQueryImpl.create(vars2, null, graph2);
 
         assertNotEquals(query1, query2);
     }
