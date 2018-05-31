@@ -24,7 +24,6 @@ import ai.grakn.graql.Match;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -38,7 +37,7 @@ public interface InsertQueryAdmin extends InsertQuery {
      * @return the {@link Match} that this insert query is using, if it was provided one
      */
     @CheckReturnValue
-    Optional<? extends Match> match();
+    Match match();
 
     /**
      * @return all concept types referred to explicitly in the query

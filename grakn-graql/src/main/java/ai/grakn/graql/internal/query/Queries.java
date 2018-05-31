@@ -59,7 +59,7 @@ public class Queries {
     }
 
     public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, GraknTx tx) {
-        return InsertQueryImpl.create(vars, Optional.empty(), tx);
+        return InsertQueryImpl.create(vars, null, tx);
     }
 
     /**
@@ -67,7 +67,7 @@ public class Queries {
      * @param match the {@link Match} to insert for each result
      */
     public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, MatchAdmin match) {
-        return InsertQueryImpl.create(vars, Optional.of(match), match.tx());
+        return InsertQueryImpl.create(vars, match, match.tx());
     }
 
     public static DeleteQueryAdmin delete(Collection<? extends Var> vars, Match match) {

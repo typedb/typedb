@@ -36,7 +36,6 @@ import com.google.common.collect.ImmutableList;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,8 +53,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
      * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, GraknTx tx) {
-        match.ifPresent(answers -> Preconditions.checkArgument(answers.tx().equals(tx)));
+    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, MatchAdmin match, GraknTx tx) {
+        if (match != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
@@ -66,11 +65,11 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public final InsertQuery withTx(GraknTx tx) {
-        return match().map(
-                m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
-        ).orElseGet(
-                () -> Queries.insert(varPatterns(), tx)
-        );
+        if (match() != null) {
+            return Queries.insert(varPatterns(), match().withTx(tx).admin());
+        } else {
+            return Queries.insert(varPatterns(), tx);
+        }
     }
 
     @Override
@@ -99,7 +98,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        match().ifPresent(mq -> types.addAll(mq.admin().getSchemaConcepts()));
+        if (match() != null) types.addAll(match().admin().getSchemaConcepts());
 
         return types;
     }
@@ -109,14 +108,19 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     private GraknTx getTx() {
-        Optional<? extends GraknTx> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
-        return matchTx.orElse(null);
+        if (match() != null && match().admin().tx() != null) return match().admin().tx();
+        else return tx();
     }
 
     @Override
     public final String toString() {
-        String mq = match().map(match -> match + "\n").orElse("");
-        return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder builder = new StringBuilder();
+
+        if (match() != null) builder.append(match()).append("\n");
+        builder.append("insert ");
+        builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+
+        return builder.toString();
     }
 
     @Override
@@ -127,6 +131,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     @Nullable
     @Override
     public final Boolean inferring() {
-        return match().map(match -> match.admin().inferring()).orElse(null);
+        if (match() != null) return match().admin().inferring();
+        else return false;
     }
 }

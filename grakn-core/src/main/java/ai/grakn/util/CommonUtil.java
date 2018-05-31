@@ -76,11 +76,6 @@ public class CommonUtil {
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
     }
 
-    @SafeVarargs
-    public static <T> Optional<T> optionalOr(Optional<T>... options) {
-        return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
-    }
-
     /**
      * Helper which lazily checks if a {@link Stream} contains the number specified
      * WARNING: This consumes the stream rendering it unusable afterwards
