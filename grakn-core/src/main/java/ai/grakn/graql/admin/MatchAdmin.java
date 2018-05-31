@@ -25,7 +25,6 @@ import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.Set;
 
 /**

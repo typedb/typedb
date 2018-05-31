@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 
 /**
  * Implementation of AggregateQuery

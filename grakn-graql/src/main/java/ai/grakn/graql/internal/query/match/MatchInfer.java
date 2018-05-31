@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
@@ -32,8 +31,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.

@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.Set;
 
 /**

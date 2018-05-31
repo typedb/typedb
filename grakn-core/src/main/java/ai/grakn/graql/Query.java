@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Optional;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
