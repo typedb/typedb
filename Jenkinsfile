@@ -51,16 +51,44 @@ pipeline {
             steps {
                 script {
                     def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
-                    def inclusionExclusion = ""
+                    def numSplits = splits.size()
+                    def testTimeout = 30 + 90 / numSplits // change timeout based on how many splits we have. e.g. 1 split = 120min, 3 splits = 60min
+
                     splits.eachWithIndex { split, i ->
-                        if (split.includes) {
-                            writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                            inclusionExclusion += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
-                        } else {
-                            writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                            inclusionExclusion += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+                        node {
+                            String workspace = pwd()
+                            try {
+                                checkout scm
+
+                                def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+
+                                /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+                                /* Tell Maven to read the appropriate file. */
+                                if (split.includes) {
+                                    writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                                    mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+                                } else {
+                                    writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                                    mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+                                }
+
+                                try {
+                                    /* Call the Maven build with tests. */
+                                    timeout(testTimeout) {
+                                        stage('Run Janus test profile') {
+                                            mvn mavenVerify
+                                        }
+                                    }
+                                } finally {
+                                    /* Archive the test results */
+                                    junit "**/TEST*.xml"
+                                }
+                            } finally {
+                                stage('Tear Down') {
+                                    sh './grakn-test/test-integration/src/test/bash/tear-down.sh'
+                                }
+                            }
                         }
-                        sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1 ' + inclusionExclusion
                     }
                 }
             }
