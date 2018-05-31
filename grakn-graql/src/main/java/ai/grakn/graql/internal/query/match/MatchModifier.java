@@ -74,7 +74,6 @@ abstract class MatchModifier extends AbstractMatch {
      */
     protected abstract String modifierString();
 
-    @Nullable
     @Override
     public Boolean inferring() {
         return inner.inferring();

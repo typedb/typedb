@@ -33,7 +33,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -123,9 +122,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
         return stream().collect(Collectors.toList());
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
-        return match().map(match -> match.admin().inferring()).orElse(null);
+        return match().map(match -> match.admin().inferring()).orElse(false);
     }
 }
