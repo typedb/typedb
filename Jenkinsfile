@@ -76,7 +76,7 @@ pipeline {
                                     /* Call the Maven build with tests. */
                                     timeout(testTimeout) {
                                         stage('Run Janus test profile') {
-                                            mvn mavenVerify
+                                            sh 'mvn ' + mavenVerify
                                         }
                                     }
                                 } finally {
