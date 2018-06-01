@@ -91,10 +91,15 @@ pipeline {
 //                        }
 //                    }
 //                }
-
-                node {
-                    checkout scm
-                    sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+                script {
+                    node {
+                        try {
+                            checkout scm
+                            sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+                        } finally {
+                            junit '**/TEST*.xml'
+                        }
+                    }
                 }
             }
         }
