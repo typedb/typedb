@@ -49,13 +49,13 @@ pipeline {
 
         stage('Unit + IT Tests') {
             steps {
-                script {
+//                script {
                     node {
                         checkout scm
 //                    sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
                         sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dtest=ai.grakn.graql.internal.analytics.GraqlTest -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1'
                     }
-                }
+//                }
             }
         }
 
@@ -115,7 +115,7 @@ pipeline {
         failure {
             slackGithub "Build Failure", "danger"
         }
-        post {
+        always {
             junit '**/TEST*.xml'
         }
     }
