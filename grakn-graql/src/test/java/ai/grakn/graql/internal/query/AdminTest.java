@@ -111,10 +111,10 @@ public class AdminTest {
     @Test
     public void testInsertQueryWithMatch() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertEquals(Optional.of("match $x isa movie;"), query.admin().match().toString());
+        assertEquals("match $x isa movie;", query.admin().match().toString());
 
         query = qb.match(var("x").isaExplicit("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertEquals(Optional.of("match $x isa! movie;"), query.admin().match().toString());
+        assertEquals("match $x isa! movie;", query.admin().match().toString());
     }
 
     @Test

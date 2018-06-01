@@ -53,7 +53,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
      * @param tx the graph to execute on
      */
     static InsertQueryImpl create(Collection<VarPatternAdmin> vars, MatchAdmin match, GraknTx tx) {
-        if (match != null) Preconditions.checkArgument(match.tx().equals(tx));
+        if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();

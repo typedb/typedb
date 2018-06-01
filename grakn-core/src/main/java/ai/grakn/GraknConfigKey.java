@@ -128,7 +128,7 @@ public abstract class GraknConfigKey<T> {
      * @throws RuntimeException if the value is not present and there is no default value
      */
     public final T parse(String value, Path configFilePath) {
-        if (value == null || value.isEmpty()) {
+        if (value == null) {
             throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath));
         }
 

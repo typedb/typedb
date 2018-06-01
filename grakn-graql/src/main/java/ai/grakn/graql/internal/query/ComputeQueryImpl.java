@@ -431,7 +431,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         ComputeQuery that = (ComputeQuery) o;
 
-        return (this.tx().equals(that.tx()) &&
+        return (Objects.equals(this.tx(), that.tx()) &&
                 this.method().equals(that.method()) &&
                 this.from().equals(that.from()) &&
                 this.to().equals(that.to()) &&
