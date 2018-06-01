@@ -21,7 +21,6 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
@@ -57,6 +56,5 @@ public interface Query<T> {
      */
     Optional<? extends GraknTx> tx();
 
-    @Nullable
     Boolean inferring();
 }

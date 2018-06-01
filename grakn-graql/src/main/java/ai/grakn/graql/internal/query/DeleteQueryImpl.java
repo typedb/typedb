@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -83,7 +82,6 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
         return Stream.empty();
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();
