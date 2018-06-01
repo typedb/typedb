@@ -25,8 +25,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
-import java.util.Optional;
-
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result

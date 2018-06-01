@@ -23,6 +23,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the {@link Match} that this insert query is using, if it was provided one
      */
+    @Nullable
     @CheckReturnValue
     Match match();
 

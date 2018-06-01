@@ -21,6 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
@@ -53,6 +54,7 @@ public interface Query<T> {
     /**
      * Get the transaction associated with this query
      */
+    @Nullable
     GraknTx tx();
 
     Boolean inferring();

@@ -46,10 +46,19 @@ class MatchInfer extends MatchModifier {
         // If the tx is not embedded, treat it like there is no transaction
         // TODO: this is dodgy - when queries don't contain transactions this can be fixed
 
-        if (!(inner.tx() instanceof EmbeddedGraknTx)) throw GraqlQueryException.noTx();
-        EmbeddedGraknTx<?> tx = (EmbeddedGraknTx) inner.tx();
+        EmbeddedGraknTx<?> tx;
 
-        if (!RuleUtils.hasRules(tx)) return inner.stream(optionalGraph);
+        if (optionalGraph.isPresent()) {
+            tx = optionalGraph.get();
+        }
+        else if (inner.tx() instanceof EmbeddedGraknTx) {
+            tx = (EmbeddedGraknTx) inner.tx();
+        }
+        else {
+            throw GraqlQueryException.noTx();
+        }
+
+        if (!RuleUtils.hasRules(tx)) return inner.stream(Optional.of(tx));
 
         validatePattern(tx);
 

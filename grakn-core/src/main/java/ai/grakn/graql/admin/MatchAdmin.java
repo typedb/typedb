@@ -24,7 +24,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
