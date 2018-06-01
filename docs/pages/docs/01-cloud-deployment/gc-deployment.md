@@ -78,7 +78,7 @@ Provided you log in as user with `admin` privileges, Grakn console allows you to
 
 * update an existing user's password
 
-`UPDATE username WITH PASSWORD newpassword`
+`UPDATE USER username WITH PASSWORD newpassword`
 
 * retrieve all of the users present:
 
