@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * Default implementation of {@link GetQuery}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {

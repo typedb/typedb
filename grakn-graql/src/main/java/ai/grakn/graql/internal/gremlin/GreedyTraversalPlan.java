@@ -73,8 +73,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 /**
  * Class for generating greedy traversal plans
  *
- * @author Felix Chapman
- * @author Jason Liu
+ * @author Grakn Warriors
  */
 public class GreedyTraversalPlan {
 

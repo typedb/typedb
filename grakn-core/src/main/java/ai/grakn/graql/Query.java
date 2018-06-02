@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> The result type after executing the query
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public interface Query<T> {
 

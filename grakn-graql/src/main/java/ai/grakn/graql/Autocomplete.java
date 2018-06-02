@@ -37,7 +37,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class Autocomplete {
 

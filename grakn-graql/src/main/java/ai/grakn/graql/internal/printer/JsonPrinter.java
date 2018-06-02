@@ -31,6 +31,11 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * Class to print Graql Responses in to JSON Formatted Strings
+ *
+ * @author Grakn Warriors
+ */
 class JsonPrinter extends Printer<Json> {
     @Override
     public final String complete(Json builder) {

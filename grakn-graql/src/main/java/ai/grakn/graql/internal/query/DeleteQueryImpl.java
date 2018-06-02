@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {

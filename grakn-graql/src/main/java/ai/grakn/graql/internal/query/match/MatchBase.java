@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base {@link Match} implementation that executes the gremlin traversal
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class MatchBase extends AbstractMatch {
 

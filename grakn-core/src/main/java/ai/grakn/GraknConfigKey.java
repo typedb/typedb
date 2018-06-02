@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * Class for keys of properties in the file {@code grakn.properties}.
  *
  * @param <T> the type of the values of the key
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GraknConfigKey<T> {

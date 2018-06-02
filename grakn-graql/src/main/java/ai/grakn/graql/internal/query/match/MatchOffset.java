@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 
 /**
  * "Offset" modifier for {@link Match} that offsets (skips) some number of results.
+ *
+ * @author Grakn Warriors
  */
 class MatchOffset extends MatchModifier {
 

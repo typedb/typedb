@@ -45,7 +45,7 @@ import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighte
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
- * <p>
+ *
  * A fragment is composed of four things:
  * <ul>
  * <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
@@ -53,17 +53,17 @@ import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighte
  * <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
  * <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
  * </ul>
- * <p>
+ *
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
- * <p>
+ *
  * A {@code Fragment} is usually contained in a {@code EquivalentFragmentSet}, which contains multiple fragments describing
  * the different directions the traversal can be followed in, with different starts and ends.
- * <p>
+ *
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public abstract class Fragment {
 

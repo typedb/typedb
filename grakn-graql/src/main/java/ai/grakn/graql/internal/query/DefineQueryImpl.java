@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  * Implementation for {@link DefineQuery}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {

@@ -38,7 +38,7 @@ import java.util.Set;
 /**
  * Internal query factory
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class Queries {
 

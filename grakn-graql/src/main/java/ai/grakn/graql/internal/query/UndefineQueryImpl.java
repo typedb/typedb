@@ -30,7 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Implementation for {@link UndefineQuery}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {

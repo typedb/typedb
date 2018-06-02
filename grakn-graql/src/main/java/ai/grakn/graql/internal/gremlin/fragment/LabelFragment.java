@@ -41,7 +41,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A fragment representing traversing a label.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 
 @AutoValue
