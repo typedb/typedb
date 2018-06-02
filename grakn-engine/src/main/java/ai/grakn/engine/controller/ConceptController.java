@@ -243,7 +243,7 @@ public class ConceptController implements HttpController {
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
             ai.grakn.concept.Concept concept = getter.apply(tx);
 
-            if(concept == null){
+            if(concept != null){
                 response.status(SC_OK);
                 return objectMapper.writeValueAsString(ConceptBuilder.build(concept));
             } else {
