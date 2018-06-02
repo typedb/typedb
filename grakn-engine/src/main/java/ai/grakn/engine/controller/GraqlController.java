@@ -31,12 +31,12 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
@@ -64,7 +64,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -153,20 +152,20 @@ public class GraqlController implements HttpController {
         String queryString = mandatoryBody(request);
 
         //Run the query with reasoning on or off
-        Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
+        Boolean infer = parseBoolean(queryParameter(request, EXECUTE_WITH_INFERENCE));
 
         //Allow multiple queries to be executed
-        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES).orElse("false"));
+        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES));
 
         //Define all anonymous variables in the query
-        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
+        Boolean defineAllVars = parseBoolean(queryParameter(request, DEFINE_ALL_VARS));
 
         //Used to check if serialisation of results is needed. When loading we skip this for the sake of speed
-        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
+        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA));
 
         //Check the transaction type to use
-        GraknTxType txType = queryParameter(request, TX_TYPE)
-                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+        String txStr = queryParameter(request, TX_TYPE);
+        GraknTxType txType = txStr != null ? GraknTxType.valueOf(txStr.toUpperCase()) : GraknTxType.WRITE;
 
         //This is used to determine the response format
         //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
@@ -186,11 +185,10 @@ public class GraqlController implements HttpController {
             try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
-
-                infer.ifPresent(builder::infer);
+                if (infer != null) builder.infer(infer);
 
                 QueryParser parser = builder.parser();
-                defineAllVars.ifPresent(parser::defineAllVars);
+                if (defineAllVars != null) parser.defineAllVars(defineAllVars);
 
                 response.status(SC_OK);
 

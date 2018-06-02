@@ -24,7 +24,6 @@ import mjson.Json;
 import spark.Request;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -50,9 +49,11 @@ public class Requests {
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    public static <T> T mandatoryQueryParameter(Function<String, Optional<T>> extractParameterFunction, String parameter) {
-        return extractParameterFunction.apply(parameter).orElseThrow(() ->
-                GraknServerException.requestMissingParameters(parameter));
+    public static String mandatoryQueryParameter(Function<String, String> extractParameterFunction, String parameter) {
+        String result = extractParameterFunction.apply(parameter);
+        if (result == null) throw  GraknServerException.requestMissingParameters(parameter);
+
+        return result;
     }
 
     /**
@@ -61,8 +62,8 @@ public class Requests {
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    public static Optional<String> queryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter));
+    public static String queryParameter(Request request, String parameter){
+        return request.queryParams(parameter);
     }
 
 
@@ -74,8 +75,9 @@ public class Requests {
      * @return value of the request body as a string
      */
     public static String mandatoryBody(Request request){
-        return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(
-                GraknServerException::requestMissingBody);
+        if (request.body() == null || request.body().isEmpty()) throw GraknServerException.requestMissingBody();
+
+        return request.body();
     }
 
     public static Link selfLink(Request request) {
@@ -90,8 +92,8 @@ public class Requests {
 
     public static String mandatoryPathParameter(Request request, String parameter) {
         // TODO: add new method GraknServerException.requestMissingPathParameters
-        String parameterValue = Optional.ofNullable(request.params(parameter)).orElseThrow(() ->
-            GraknServerException.requestMissingParameters(parameter));
+        String parameterValue = request.params(parameter);
+        if (parameterValue == null) throw GraknServerException.requestMissingParameters(parameter);
 
         return parameterValue;
     }
