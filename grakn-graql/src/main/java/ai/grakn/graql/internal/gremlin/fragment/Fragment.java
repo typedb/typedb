@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
@@ -101,7 +100,7 @@ public abstract class Fragment {
     // By default we assume the latest shard is 25% full
     public static final double SHARD_LOAD_FACTOR = 0.25;
 
-    private Optional<Double> accurateFragmentCost = Optional.empty();
+    private Double accurateFragmentCost = null;
 
     /*
      * This is the memoized result of {@link #vars()}
@@ -231,11 +230,13 @@ public abstract class Fragment {
      * Get the cost for executing the fragment.
      */
     public double fragmentCost() {
-        return accurateFragmentCost.orElse(internalFragmentCost());
+        if (accurateFragmentCost != null) return accurateFragmentCost;
+
+        return internalFragmentCost();
     }
 
     public void setAccurateFragmentCost(double fragmentCost) {
-        accurateFragmentCost = Optional.of(fragmentCost);
+        accurateFragmentCost = fragmentCost;
     }
 
     public abstract double internalFragmentCost();
@@ -252,8 +253,8 @@ public abstract class Fragment {
         return this;
     }
 
-    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
-        return Optional.empty();
+    public Long getShardCount(EmbeddedGraknTx<?> tx) {
+        return 0L;
     }
 
     /**
@@ -281,7 +282,10 @@ public abstract class Fragment {
 
     @Override
     public final String toString() {
-        return start() + name() + Optional.ofNullable(end()).map(Object::toString).orElse("");
+        String str = start() + name();
+        if (end() != null) str += end().toString();
+
+        return str;
     }
 
     final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,
