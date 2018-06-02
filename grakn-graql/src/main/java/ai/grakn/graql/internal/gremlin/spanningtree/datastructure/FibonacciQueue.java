@@ -23,7 +23,6 @@ import com.google.common.collect.Iterators;
 import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -57,18 +56,17 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
 
     @Override
     public E peek() {
-        Optional<FibonacciHeap<E, E>.Entry> first = heap.peekOption();
-        return first.map(entry -> entry.value).orElse(null);
+        return heap.peek().value;
     }
 
     @Override
     public boolean offer(E e) {
-        return heap.add(e, e).isPresent();
+        return heap.add(e, e) != null;
     }
 
     @Override
     public E poll() {
-        return heap.pollOption().orElse(null);
+        return heap.poll();
     }
 
     @Override
