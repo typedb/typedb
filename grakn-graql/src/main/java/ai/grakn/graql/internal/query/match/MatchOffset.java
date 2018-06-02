@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -41,8 +41,8 @@ class MatchOffset extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
-        return inner.stream(graph).skip(offset);
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+        return inner.stream(tx).skip(offset);
     }
 
     @Override

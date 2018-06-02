@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -62,14 +61,14 @@ abstract class AbstractMatch implements MatchAdmin {
 
     /**
      * Execute the query using the given graph.
-     * @param graph the graph to use to execute the query
+     * @param tx the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph);
+    public abstract Stream<Answer> stream(EmbeddedGraknTx<?> tx);
 
     @Override
     public final Stream<Answer> stream() {
-        return stream(Optional.empty());
+        return stream(null);
     }
 
     /**
