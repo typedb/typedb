@@ -28,10 +28,8 @@ import mjson.Json;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
-import static mjson.Json.nil;
 
 class JsonPrinter extends Printer<Json> {
     @Override
@@ -74,11 +72,6 @@ class JsonPrinter extends Printer<Json> {
     @Override
     public final Json bool(boolean bool) {
         return Json.make(bool);
-    }
-
-    @Override
-    public final Json optional(Optional<?> optional) {
-        return optional.map(item -> build(item)).orElse(nil());
     }
 
     @Override

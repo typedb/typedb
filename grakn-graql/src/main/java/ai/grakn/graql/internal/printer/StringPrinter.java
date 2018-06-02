@@ -27,13 +27,13 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +42,8 @@ import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 
 /**
  * Default printer that prints results in Graql syntax
+ *
+ * @author Grakn Warriors
  */
 class StringPrinter extends Printer<StringBuilder> {
 
@@ -79,15 +81,17 @@ class StringPrinter extends Printer<StringBuilder> {
         }
 
         if (concept.isRelationship()) {
-            String relationString = concept.asRelationship().allRolePlayers().entrySet().stream().flatMap(entry -> {
-                Role role = entry.getKey();
-                Set<Thing> things = entry.getValue();
+            List<String> rolePlayerList = new LinkedList<>();
+            for (Map.Entry<Role, Set<Thing>> rolePlayers : concept.asRelationship().allRolePlayers().entrySet()) {
+                Role role = rolePlayers.getKey();
+                Set<Thing> things = rolePlayers.getValue();
 
-                return things.stream().map(instance ->
-                                                   Optional.of(colorType(role) + ": id " + idToString(instance.getId()))
-                );
-            }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
+                for (Thing thing : things) {
+                    rolePlayerList.add(colorType(role) + ": id " + idToString(thing.getId()));
+                }
+            }
 
+            String relationString = rolePlayerList.stream().collect(Collectors.joining(", "));
             output.append(" (").append(relationString).append(")");
         }
 
@@ -123,16 +127,6 @@ class StringPrinter extends Printer<StringBuilder> {
             return builder.append(ANSI.color("True", ANSI.GREEN));
         } else {
             return builder.append(ANSI.color("False", ANSI.RED));
-        }
-    }
-
-    @Override
-    protected StringBuilder optional(Optional<?> optional) {
-        StringBuilder builder = new StringBuilder();
-        if (optional.isPresent()) {
-            return build(optional.get());
-        } else {
-            return builder.append("Nothing");
         }
     }
 
