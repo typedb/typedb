@@ -64,6 +64,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -165,7 +166,7 @@ public class GraqlController implements HttpController {
 
         //Check the transaction type to use
         String txStr = queryParameter(request, TX_TYPE);
-        GraknTxType txType = txStr != null ? GraknTxType.valueOf(txStr.toUpperCase()) : GraknTxType.WRITE;
+        GraknTxType txType = txStr != null ? GraknTxType.valueOf(txStr.toUpperCase(Locale.getDefault())) : GraknTxType.WRITE;
 
         //This is used to determine the response format
         //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
