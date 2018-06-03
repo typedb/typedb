@@ -58,14 +58,14 @@ public class EngineCommunicator {
      * @param body The body to attach to the request
      * @return The result of the request
      */
-    public static String contactEngine(Optional<URI> engineUri, String restType, @Nullable String body){
-        if(!engineUri.isPresent()) {
+    public static String contactEngine(URI engineUri, String restType, @Nullable String body){
+        if(engineUri == null) {
             return "Engine not contacted due to in memory graph being used";
         }
 
         for(int i = 0; i < MAX_RETRY; i++) {
             try {
-                URL url = engineUri.get().toURL();
+                URL url = engineUri.toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestMethod(restType);
@@ -94,7 +94,7 @@ public class EngineCommunicator {
                 LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUri), e);
             }
         }
-        throw GraknBackendException.cannotReach(engineUri.get());
+        throw GraknBackendException.cannotReach(engineUri);
     }
 
     private static boolean statusCodeIsSuccessful(int statusCode) {
@@ -107,7 +107,7 @@ public class EngineCommunicator {
      * @param restType The type of resquest to make to engine.
      * @return The result of the request
      */
-    public static String contactEngine(Optional<URI> engineUrl, String restType){
+    public static String contactEngine(URI engineUrl, String restType){
         return contactEngine(engineUrl, restType, null);
     }
 
