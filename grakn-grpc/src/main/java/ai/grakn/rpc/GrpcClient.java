@@ -138,9 +138,7 @@ public class GrpcClient implements AutoCloseable {
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
         communicator.send(RequestBuilder.getAttributesByValueRequest(value));
-
         IteratorId iteratorId = responseOrThrow().getIteratorId();
-
         Iterable<Concept> iterable = () -> new ResponseIterator<>(this, iteratorId, response -> conceptReader.concept(response.getConcept()));
 
         return StreamSupport.stream(iterable.spliterator(), false);

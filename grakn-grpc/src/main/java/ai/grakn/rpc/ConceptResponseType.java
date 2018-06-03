@@ -54,6 +54,7 @@ public abstract class ConceptResponseType<T> {
         public Stream<? extends Concept> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             IteratorId iteratorId = conceptResponse.getIteratorId();
             Iterable<? extends Concept> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.concept(response.getConcept()));
+
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
@@ -70,6 +71,7 @@ public abstract class ConceptResponseType<T> {
         public Stream<RolePlayer> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             IteratorId iteratorId = conceptResponse.getIteratorId();
             Iterable<RolePlayer> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.rolePlayer(response.getRolePlayer()));
+
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 

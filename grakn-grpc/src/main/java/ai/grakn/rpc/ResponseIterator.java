@@ -54,11 +54,7 @@ public class ResponseIterator<T> extends AbstractIterator<T> {
             case RESPONSE_NOT_SET:
                 throw CommonUtil.unreachableStatement("Unexpected " + response);
             default:
-                return getNextFromResponse(response);
+                return responseReader.apply(response);
         }
-    }
-
-    protected T getNextFromResponse(GrpcGrakn.TxResponse response) {
-        return responseReader.apply(response);
     }
 }
