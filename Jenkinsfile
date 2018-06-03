@@ -40,7 +40,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Build + Configure') {
+        stage('Build') {
             steps {
                 sh 'mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false'
                 sh "mvn --batch-mode install -T 2.5C -DskipTests=true"
@@ -49,7 +49,17 @@ pipeline {
 
         stage('Unit + IT Tests') {
             steps {
-                sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+                script {
+                    node {
+                        checkout scm
+                        try {
+                            sh 'mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+                        }
+                        finally {
+                            junit "**/TEST*.xml"
+                        }
+                    }
+                }
             }
         }
 
@@ -108,9 +118,6 @@ pipeline {
         }
         failure {
             slackGithub "Build Failure", "danger"
-        }
-        always {
-            junit '**/TEST*.xml'
         }
     }
 }
