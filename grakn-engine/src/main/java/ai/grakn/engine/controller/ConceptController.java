@@ -64,11 +64,9 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 
 /**
- * <p>
- *     Endpoints used to query for {@link ai.grakn.concept.Concept}s
- * </p>
+ * Endpoints used to query for {@link ai.grakn.concept.Concept}s
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class ConceptController implements HttpController {
     private static final ObjectMapper objectMapper = new ObjectMapper();

@@ -28,7 +28,8 @@ import java.util.function.Function;
 
 /**
  * Utility class for handling http requests
- * @author Domenico Corapi
+ *
+ * @author Grakn Warriors
  */
 public class Requests {
     /**

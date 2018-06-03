@@ -90,11 +90,9 @@ import static org.apache.http.HttpStatus.SC_OK;
 
 
 /**
- * <p>
  * Endpoints used to query the graph using Graql and build a HAL, Graql or Json response.
- * </p>
  *
- * @author Marco Scoppetta, alexandraorth
+ * @author Marco Scoppetta
  */
 public class GraqlController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();

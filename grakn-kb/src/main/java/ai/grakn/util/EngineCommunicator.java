@@ -31,21 +31,14 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 
 /**
- * <p>
- *     Establishes communication between the graph and engine
- * </p>
+ * Establishes communication between the graph and engine. Class dedicated to talking with Grakn Engine.
+ * Currently used to retrieve factory config and submit commit logs.
+ * The communication with engine is bypassed whenever the engineURL provided is a in-memory location.
  *
- * <p>
- *     Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs.
- *
- *     The communication with engine is bypassed whenever the engineURL provided is a in-memory location.
- * </p>
- *
- * @author fppt
+ * @author Grakn Warriors
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
