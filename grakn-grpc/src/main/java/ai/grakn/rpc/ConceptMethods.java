@@ -86,7 +86,7 @@ public class ConceptMethods {
             .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRegex)
             .function(concept -> Optional.ofNullable(concept.asAttributeType().getRegex()))
             .build();
-    public static final ConceptMethod<Stream<? extends RolePlayer>> GET_ROLE_PLAYERS =
+    public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS =
             ConceptMethod.builder(ConceptResponseType.ROLE_PLAYERS)
                     .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
                     .function(concept -> {

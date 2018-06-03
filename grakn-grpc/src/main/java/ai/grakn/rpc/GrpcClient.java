@@ -104,13 +104,7 @@ public class GrpcClient implements AutoCloseable {
                 return Collections.emptyIterator();
             case ITERATORID:
                 IteratorId iteratorId = txResponse.getIteratorId();
-
-                return new GraknGrpcIterator<Object>(this, iteratorId) {
-                    @Override
-                    protected Object getNextFromResponse(TxResponse response) {
-                        return answer(response.getAnswer());
-                    }
-                };
+                return new ResponseIterator<>(this, iteratorId, response -> answer(response.getAnswer()));
             default:
                 throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
         }
@@ -147,12 +141,7 @@ public class GrpcClient implements AutoCloseable {
 
         IteratorId iteratorId = responseOrThrow().getIteratorId();
 
-        Iterable<Concept> iterable = () -> new GraknGrpcIterator<Concept>(this, iteratorId) {
-            @Override
-            protected Concept getNextFromResponse(TxResponse response) {
-                return conceptReader.concept(response.getConcept());
-            }
-        };
+        Iterable<Concept> iterable = () -> new ResponseIterator<>(this, iteratorId, response -> conceptReader.concept(response.getConcept()));
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }

@@ -23,21 +23,25 @@ import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
 
+import java.util.function.Function;
+
 import static ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import static ai.grakn.rpc.generated.GrpcIterator.Next;
 
 /**
  * A client-side iterator over gRPC messages. Will send {@link Next} messages until it receives a {@link Done} message.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
-abstract class GraknGrpcIterator<T> extends AbstractIterator<T> {
+public class ResponseIterator<T> extends AbstractIterator<T> {
     private final IteratorId iteratorId;
     private GrpcClient grpcClient;
+    private Function<GrpcGrakn.TxResponse, T> responseReader;
 
-    public GraknGrpcIterator(GrpcClient grpcClient, IteratorId iteratorId) {
+    public ResponseIterator(GrpcClient grpcClient, IteratorId iteratorId, Function<GrpcGrakn.TxResponse, T> responseReader) {
         this.iteratorId = iteratorId;
         this.grpcClient = grpcClient;
+        this.responseReader = responseReader;
     }
 
     @Override
@@ -54,5 +58,7 @@ abstract class GraknGrpcIterator<T> extends AbstractIterator<T> {
         }
     }
 
-    protected abstract T getNextFromResponse(GrpcGrakn.TxResponse response);
+    protected T getNextFromResponse(GrpcGrakn.TxResponse response) {
+        return responseReader.apply(response);
+    }
 }
