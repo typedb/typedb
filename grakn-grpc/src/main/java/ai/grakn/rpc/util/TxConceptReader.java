@@ -16,21 +16,22 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc;
+package ai.grakn.rpc.util;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
 
 import java.util.Optional;
 
 /**
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
-public interface GrpcConceptConverter {
-    Concept concept(GrpcConcept.Concept concept);
+public abstract class TxConceptReader {
+    public abstract Concept concept(GrpcConcept.Concept concept);
 
-    default Optional<Concept> optionalConcept(OptionalConcept concept) {
+    public Optional<Concept> optionalConcept(OptionalConcept concept) {
         switch (concept.getValueCase()) {
             case PRESENT:
                 return Optional.of(concept(concept.getPresent()));
@@ -42,7 +43,7 @@ public interface GrpcConceptConverter {
         }
     }
 
-    default RolePlayer rolePlayer(GrpcConcept.RolePlayer rolePlayer) {
+    public RolePlayer rolePlayer(GrpcConcept.RolePlayer rolePlayer) {
         return RolePlayer.create(concept(rolePlayer.getRole()).asRole(), concept(rolePlayer.getPlayer()).asThing());
     }
 

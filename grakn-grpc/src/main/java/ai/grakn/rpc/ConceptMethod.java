@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.util.TxConceptReader;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nullable;
@@ -76,7 +77,7 @@ public final class ConceptMethod<T> {
     }
 
     @Nullable
-    public T get(GrpcConceptConverter conceptConverter, GrpcClient client, TxResponse txResponse) {
+    public T get(TxConceptReader conceptConverter, GrpcClient client, TxResponse txResponse) {
         ConceptResponse conceptResponse = txResponse.getConceptResponse();
         return responseType.get(conceptConverter, client, conceptResponse);
     }

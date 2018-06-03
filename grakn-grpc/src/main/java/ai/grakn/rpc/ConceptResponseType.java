@@ -29,6 +29,7 @@ import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
+import ai.grakn.rpc.util.TxConceptReader;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
@@ -113,7 +114,7 @@ public abstract class ConceptResponseType<T> {
     );
 
     @Nullable
-    public abstract T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse);
+    public abstract T get(TxConceptReader converter, GrpcClient client, ConceptResponse conceptResponse);
 
     public abstract void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value);
 
@@ -125,7 +126,7 @@ public abstract class ConceptResponseType<T> {
     }
 
     public static <T> ConceptResponseType<T> create(
-            BiFunction<GrpcConceptConverter, ConceptResponse, T> getter,
+            BiFunction<TxConceptReader, ConceptResponse, T> getter,
             BiConsumer<ConceptResponse.Builder, T> setter
     ) {
         return create(
@@ -135,7 +136,7 @@ public abstract class ConceptResponseType<T> {
     }
 
     public static <T> ConceptResponseType<Stream<? extends T>> createStreamable(
-            BiFunction<GrpcConceptConverter, TxResponse, T> getter,
+            BiFunction<TxConceptReader, TxResponse, T> getter,
             Function<T, TxResponse> setter
     ) {
         return create(
@@ -160,12 +161,12 @@ public abstract class ConceptResponseType<T> {
     }
 
     public static <T> ConceptResponseType<T> create(
-            TriFunction<GrpcConceptConverter, GrpcClient, ConceptResponse, T> getter,
+            TriFunction<TxConceptReader, GrpcClient, ConceptResponse, T> getter,
             TriConsumer<ConceptResponse.Builder, GrpcIterators, T> setter
     ) {
         return new ConceptResponseType<T>() {
             @Override
-            public T get(GrpcConceptConverter converter, GrpcClient client, ConceptResponse conceptResponse) {
+            public T get(TxConceptReader converter, GrpcClient client, ConceptResponse conceptResponse) {
                 return getter.apply(converter, client, conceptResponse);
             }
 

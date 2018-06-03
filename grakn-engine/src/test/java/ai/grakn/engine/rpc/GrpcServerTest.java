@@ -45,7 +45,7 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.rpc.GrpcClient;
-import ai.grakn.rpc.GrpcConceptConverter;
+import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.TxGrpcCommunicator;
@@ -126,7 +126,7 @@ public class GrpcServerTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final GrpcConceptConverter conceptConverter = mock(GrpcConceptConverter.class);
+    private final TxConceptReader conceptConverter = mock(TxConceptReader.class);
     private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 

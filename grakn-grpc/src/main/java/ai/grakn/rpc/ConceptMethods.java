@@ -29,6 +29,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.util.TxConceptReader;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -350,7 +351,7 @@ public class ConceptMethods {
                 .build();
     }
 
-    public static ConceptMethod<?> fromGrpc(GrpcConceptConverter converter, GrpcConcept.ConceptMethod conceptMethod) {
+    public static ConceptMethod<?> fromGrpc(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
         Role[] roles;
 
         switch (conceptMethod.getConceptMethodCase()) {

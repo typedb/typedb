@@ -51,8 +51,9 @@ public class RequestBuilder {
 
     public static GrpcGrakn.TxRequest openRequest(Keyspace keyspace, GraknTxType txType) {
         GrpcGrakn.Keyspace keyspaceRPC = GrpcGrakn.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
-        Open.Builder open = Open.newBuilder().setKeyspace(keyspaceRPC).setTxType(ConceptBuilder.txType(txType));
-        return TxRequest.newBuilder().setOpen(open).build();
+        GrpcGrakn.Open openRPC = GrpcGrakn.Open.newBuilder().setKeyspace(keyspaceRPC).setTxType(ConceptBuilder.txType(txType)).build();
+
+        return TxRequest.newBuilder().setOpen(openRPC).build();
     }
 
     public static GrpcGrakn.TxRequest commitRequest() {

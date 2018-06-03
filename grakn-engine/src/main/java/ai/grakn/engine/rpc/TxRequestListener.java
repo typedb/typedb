@@ -28,6 +28,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -36,7 +37,7 @@ import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.rpc.util.ConceptReader;
-import ai.grakn.rpc.GrpcConceptConverter;
+import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcIterators;
 import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.rpc.util.ResponseBuilder;
@@ -263,13 +264,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
     private void runConceptMethod(RunConceptMethod runConceptMethod) {
         Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
-
-        GrpcConceptConverter converter = new GrpcConceptConverter() {
-            @Override
-            public Concept concept(GrpcConcept.Concept grpcConcept) {
-                return tx().getConcept(ConceptId.of(grpcConcept.getId().getValue()));
-            }
-        };
+        TxConceptReader converter = new EmbeddedConceptReader(tx());
 
         ConceptMethod<?> conceptMethod = ConceptMethods.fromGrpc(converter, runConceptMethod.getConceptMethod());
 

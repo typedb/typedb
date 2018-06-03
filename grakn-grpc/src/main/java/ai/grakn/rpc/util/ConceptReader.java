@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.GrpcConceptConverter;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
 
@@ -37,7 +36,7 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 public class ConceptReader {
-    public static Stream<? extends Concept> concepts(GrpcConceptConverter conceptConverter, GrpcConcept.Concepts concepts) {
+    public static Stream<? extends Concept> concepts(TxConceptReader conceptConverter, GrpcConcept.Concepts concepts) {
         return concepts.getConceptsList().stream().map(conceptConverter::concept);
     }
 
