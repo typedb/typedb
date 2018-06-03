@@ -57,13 +57,9 @@ import static ai.grakn.util.GraqlSyntax.Command.COMPUTE;
 import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
 import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_DEFAULT;
 import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_DEFAULT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_K;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MEMBERS;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.DEFAULT_MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
 import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition;
@@ -75,8 +71,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
 import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
 import static ai.grakn.util.GraqlSyntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
@@ -245,9 +239,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
     @Override
     public final Optional<Algorithm> using() {
-        if (method.equals(CLUSTER) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
-        if (method.equals(CENTRALITY) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
-
+        if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
         return Optional.ofNullable(algorithm);
     }
 
@@ -270,7 +262,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
     @Override
     public final Optional<Arguments> where() {
-        if ((method.equals(CENTRALITY) || method.equals(CLUSTER)) && arguments == null) arguments = new ArgumentsImpl();
+        if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new ArgumentsImpl();
         return Optional.ofNullable(this.arguments);
     }
 
@@ -496,18 +488,16 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         @Override
         public Optional<Long> minK() {
-            if (method.equals(CENTRALITY) && algorithm.equals(K_CORE) && !argumentsOrdered.containsKey(MIN_K)) {
-                return Optional.of(DEFAULT_MIN_K);
-            }
+            Object defaultArg = getDefaultArgument(MIN_K);
+            if (defaultArg != null) return Optional.of((Long) defaultArg);
 
             return Optional.ofNullable((Long) getArgumentValue(MIN_K));
         }
 
         @Override
         public Optional<Long> k() {
-            if (method.equals(CLUSTER) && algorithm.equals(K_CORE) && !argumentsOrdered.containsKey(K)) {
-                return Optional.of(DEFAULT_K);
-            }
+            Object defaultArg = getDefaultArgument(K);
+            if (defaultArg != null) return Optional.of((Long) defaultArg);
 
             return Optional.ofNullable((Long) getArgumentValue(K));
         }
@@ -519,9 +509,8 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         @Override
         public Optional<Boolean> members() {
-            if (method.equals(CLUSTER) && algorithm.equals(CONNECTED_COMPONENT) && !argumentsOrdered.containsKey(MEMBERS)) {
-                return Optional.of(DEFAULT_MEMBERS);
-            }
+            Object defaultArg = getDefaultArgument(MEMBERS);
+            if (defaultArg != null) return Optional.of((Boolean) defaultArg);
 
             return Optional.ofNullable((Boolean) getArgumentValue(MEMBERS));
         }
@@ -533,6 +522,18 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         private Object getArgumentValue(Parameter param) {
             return argumentsOrdered.get(param) != null ? argumentsOrdered.get(param).get() : null;
+        }
+
+        private Object getDefaultArgument(Parameter param) {
+            if (ARGUMENTS_DEFAULT.containsKey(method) &&
+                    ARGUMENTS_DEFAULT.get(method).containsKey(algorithm) &&
+                    ARGUMENTS_DEFAULT.get(method).get(algorithm).containsKey(param) &&
+                    !argumentsOrdered.containsKey(param))
+            {
+                return ARGUMENTS_DEFAULT.get(method).get(algorithm).get(param);
+            }
+
+            return null;
         }
 
         @Override
