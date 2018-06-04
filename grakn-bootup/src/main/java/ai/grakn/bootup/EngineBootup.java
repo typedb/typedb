@@ -74,7 +74,7 @@ public class EngineBootup {
     }
 
     /**
-     * @return the main class of Engine. In KGMS, this method will be overriden to return a different class.
+     * @return the main class of Engine. In KGMS, this method will be overridden to return a different class.
      */
     public Class getEngineMainClass() {
         return Grakn.class;
