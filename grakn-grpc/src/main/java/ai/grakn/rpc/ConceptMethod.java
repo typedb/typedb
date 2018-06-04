@@ -38,102 +38,20 @@ import java.util.function.Function;
  * @param <T> The type of the concept method return value.
  * @author Felix Chapman
  */
-public final class ConceptMethod<T> {
+public abstract class ConceptMethod<T> {
 
-    // This is the method that is used to create the request on the client-side
-    private final Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder;
-
-    // This method is used to extract the value from a Concept
-    private final Function<Concept, T> function;
-
-    // This describes the type of the response, including information about how to extract it from a gRPC message on the
-    // client side and how to create a gRPC message containing it on the server side
-    private final ConceptResponseType<T> responseType;
-
-    private ConceptMethod(
-            Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder,
-            Function<Concept, T> function,
-            ConceptResponseType<T> responseType
-    ) {
-        this.requestBuilder = requestBuilder;
-        this.function = function;
-        this.responseType = responseType;
-    }
-
-    public TxResponse createTxResponse(GrpcIterators iterators, T value) {
+    public TxResponse createTxResponse(GrpcIterators iterators, T response) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        buildResponse(conceptResponse, iterators, value);
+        buildResponse(conceptResponse, iterators, response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public TxResponse run(GrpcIterators iterators, Concept concept) {
-        return createTxResponse(iterators, function.apply(concept));
-    }
+    public abstract TxResponse run(GrpcIterators iterators, Concept concept);
 
     @Nullable
-    public T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-        ConceptResponse conceptResponse = txResponse.getConceptResponse();
-        return responseType.readResponse(txConceptReader, client, conceptResponse);
-    }
+    public abstract T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse);
 
-    public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, T value) {
-        responseType.buildResponse(builder, iterators, value);
-    }
+    public abstract void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, T value);
 
-    public GrpcConcept.ConceptMethod requestBuilder() {
-        GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-        requestBuilder.accept(builder);
-        return builder.build();
-    }
-
-    static <T> Builder<T> builder(ConceptResponseType<T> responseType) {
-        return new Builder<>(responseType);
-    }
-
-    /**
-     * Builder for {@link ConceptMethod}
-     */
-    static class Builder<T> {
-
-        @Nullable
-        private Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder;
-
-        @Nullable
-        private Function<Concept, T> function;
-
-        private final ConceptResponseType<T> responseType;
-
-        private Builder(ConceptResponseType<T> responseType) {
-            this.responseType = responseType;
-        }
-
-        Builder<T> requestBuilder(Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder) {
-            this.requestBuilder = requestBuilder;
-            return this;
-        }
-
-        Builder<T> requestBuilderUnit(BiConsumer<GrpcConcept.ConceptMethod.Builder, GrpcConcept.Unit> requestBuilder) {
-            this.requestBuilder = builder -> requestBuilder.accept(builder, GrpcConcept.Unit.getDefaultInstance());
-            return this;
-        }
-
-        public Builder<T> function(Function<Concept, T> function) {
-            this.function = function;
-            return this;
-        }
-
-        public Builder<T> functionVoid(Consumer<Concept> function) {
-            this.function = concept -> {
-                function.accept(concept);
-                return null;
-            };
-            return this;
-        }
-
-        public ConceptMethod<T> build() {
-            Preconditions.checkNotNull(requestBuilder);
-            Preconditions.checkNotNull(function);
-            return new ConceptMethod<>(requestBuilder, function, responseType);
-        }
-    }
+    public abstract GrpcConcept.ConceptMethod requestBuilder();
 }

@@ -27,12 +27,17 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Static class providing all possible {@link ConceptMethod}s.
@@ -44,311 +49,925 @@ public class ConceptMethods {
     // These constants are simply ConceptMethods that don't have parameters (e.g. getters).
     // You could make them zero-argument functions if you want!
 
-    public static final ConceptMethod<Object> GET_VALUE = ConceptMethod.builder(ConceptResponseType.ATTRIBUTE_VALUE)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetValue)
-            .function(val -> val.asAttribute().getValue())
-            .build();
-    public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE =
-            ConceptMethod.builder(ConceptResponseType.OPTIONAL_DATA_TYPE)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfType)
-                    .function(val -> Optional.ofNullable(val.asAttributeType().getDataType()))
-                    .build();
-    public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE =
-            ConceptMethod.builder(ConceptResponseType.DATA_TYPE)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfAttribute)
-                    .function(val -> val.asAttribute().dataType())
-                    .build();
-    public static final ConceptMethod<Label> GET_LABEL = ConceptMethod.builder(ConceptResponseType.LABEL)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetLabel)
-            .function(concept -> concept.asSchemaConcept().getLabel())
-            .build();
-    public static final ConceptMethod<Boolean> IS_IMPLICIT = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsImplicit)
-            .function(concept -> concept.asSchemaConcept().isImplicit())
-            .build();
-    public static final ConceptMethod<Boolean> IS_INFERRED = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsInferred)
-            .function(concept -> concept.asThing().isInferred())
-            .build();
-    public static final ConceptMethod<Boolean> IS_ABSTRACT = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsAbstract)
-            .function(concept -> concept.asType().isAbstract())
-            .build();
-    public static final ConceptMethod<Optional<Pattern>> GET_WHEN = ConceptMethod.builder(ConceptResponseType.OPTIONAL_PATTERN)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetWhen)
-            .function(concept -> Optional.ofNullable(concept.asRule().getWhen()))
-            .build();
-    public static final ConceptMethod<Optional<Pattern>> GET_THEN = ConceptMethod.builder(ConceptResponseType.OPTIONAL_PATTERN)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetThen)
-            .function(concept -> Optional.ofNullable(concept.asRule().getThen()))
-            .build();
-    public static final ConceptMethod<Optional<String>> GET_REGEX = ConceptMethod.builder(ConceptResponseType.OPTIONAL_REGEX)
-            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRegex)
-            .function(concept -> Optional.ofNullable(concept.asAttributeType().getRegex()))
-            .build();
-    public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS =
-            ConceptMethod.builder(ConceptResponseType.ROLE_PLAYERS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
-                    .function(concept -> {
-                        Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
-                        concept.asRelationship().allRolePlayers().forEach((role, players) -> {
-                            players.forEach(player -> {
-                                rolePlayers.add(RolePlayer.create(role, player));
-                            });
-                        });
-                        return rolePlayers.build();
-                    })
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributeTypes)
-                    .function(concept -> concept.asType().attributes())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetKeyTypes)
-                    .function(concept -> concept.asType().keys())
-                    .build();
-    public static final ConceptMethod<Concept> GET_DIRECT_TYPE =
-            ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectType)
-                    .function(concept -> concept.asThing().type())
-                    .build();
-    public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER =
-            ConceptMethod.builder(ConceptResponseType.OPTIONAL_CONCEPT)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
-                    .function(concept -> Optional.ofNullable(concept.asSchemaConcept().sup()))
-                    .build();
-    public static final ConceptMethod<Void> DELETE =
-            ConceptMethod.builder(ConceptResponseType.UNIT)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setDelete)
-                    .functionVoid(Concept::delete)
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetSuperConcepts)
-                    .function(concept -> concept.asSchemaConcept().sups())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetSubConcepts)
-                    .function(concept -> concept.asSchemaConcept().subs())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributes)
-                    .function(concept -> concept.asThing().attributes())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetKeys)
-                    .function(concept -> concept.asThing().keys())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByType)
-                    .function(concept -> concept.asType().plays())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetInstances)
-                    .function(concept -> concept.asType().instances())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByThing)
-                    .function(concept -> concept.asThing().plays())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationships)
-                    .function(concept -> concept.asThing().relationships())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationshipTypesThatRelateRole)
-                    .function(concept -> concept.asRole().relationshipTypes())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetTypesThatPlayRole)
-                    .function(concept -> concept.asRole().playedByTypes())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelatedRoles)
-                    .function(concept -> concept.asRelationshipType().relates())
-                    .build();
-    public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS =
-            ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetOwners)
-                    .function(concept -> concept.asAttribute().ownerInstances())
-                    .build();
-    public static final ConceptMethod<Concept> ADD_ENTITY =
-            ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setAddEntity)
-                    .function(concept -> concept.asEntityType().addEntity())
-                    .build();
-    public static final ConceptMethod<Concept> ADD_RELATIONSHIP =
-            ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setAddRelationship)
-                    .function(concept -> concept.asRelationshipType().addRelationship())
-                    .build();
+    static abstract class BooleanMethod extends ConceptMethod<Boolean> {
+        @Override @Nullable
+        public Boolean readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return txResponse.getConceptResponse().getBool();
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Boolean value) {
+            builder.setBool(value);
+        }
+    }
+
+    static abstract class OptionalPatternMethod extends ConceptMethod<Optional<Pattern>> {
+        @Override @Nullable
+        public Optional<Pattern> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.optionalPattern(txResponse.getConceptResponse().getOptionalPattern());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Pattern> value) {
+            builder.setOptionalPattern(ConceptBuilder.optionalPattern(value));
+        }
+    }
+
+    static abstract class ConceptStreamMethod extends ConceptMethod<Stream<? extends Concept>> {
+        @Override @Nullable
+        public Stream<? extends Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            GrpcIterator.IteratorId iteratorId = txResponse.getConceptResponse().getIteratorId();
+            Iterable<? extends Concept> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.concept(response.getConcept()));
+
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Stream<? extends Concept> value) {
+            Stream<GrpcGrakn.TxResponse> responses = value.map(ResponseBuilder::concept);
+            GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
+            builder.setIteratorId(iteratorId);
+        }
+    }
+
+    static abstract class ConceptConceptMethod extends ConceptMethod<Concept> {
+        @Override @Nullable
+        public Concept readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return txConceptReader.concept(txResponse.getConceptResponse().getConcept());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Concept value) {
+            builder.setConcept(ConceptBuilder.concept(value));
+        }
+    }
+
+    static abstract class OptionalConceptMethod extends ConceptMethod<Optional<Concept>> {
+        @Override @Nullable
+        public Optional<Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return txConceptReader.optionalConcept(txResponse.getConceptResponse().getOptionalConcept());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Concept> value) {
+            builder.setOptionalConcept(ConceptBuilder.optionalConcept(value));
+        }
+    }
+
+    static abstract class UnitMethod extends ConceptMethod<Void> {
+        @Override @Nullable
+        public Void readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return null;
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Void value) {
+            builder.setUnit(GrpcConcept.Unit.getDefaultInstance());
+        }
+    }
+
+    public static final ConceptMethod<Object> GET_VALUE = new ConceptMethod<Object>() {
+        @Override @Nullable
+        public Object readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.attributeValue(txResponse.getConceptResponse().getAttributeValue());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Object value) {
+            builder.setAttributeValue(ConceptBuilder.attributeValue(value));
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetValue(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Object response = concept.asAttribute().getValue();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE = new ConceptMethod<Optional<AttributeType.DataType<?>>>() {
+        @Override @Nullable
+        public Optional<AttributeType.DataType<?>> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.optionalDataType(txResponse.getConceptResponse().getOptionalDataType());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Optional<AttributeType.DataType<?>> value) {
+            builder.setOptionalDataType(ResponseBuilder.optionalDataType(value));
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetDataTypeOfType(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Optional<AttributeType.DataType<?>> response = Optional.ofNullable(concept.asAttributeType().getDataType());
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE = new ConceptMethod<AttributeType.DataType<?>>() {
+        @Override @Nullable
+        public AttributeType.DataType<?> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.dataType(txResponse.getConceptResponse().getDataType());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, AttributeType.DataType<?> value) {
+            builder.setDataType(ConceptBuilder.dataType(value));
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            AttributeType.DataType<?> response = concept.asAttribute().dataType();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Label> GET_LABEL = new ConceptMethod<Label>() {
+        @Override @Nullable
+        public Label readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.label(txResponse.getConceptResponse().getLabel());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Label value) {
+            builder.setLabel(ConceptBuilder.label(value));
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetLabel(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Label response = concept.asSchemaConcept().getLabel();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Boolean> IS_IMPLICIT = new BooleanMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setIsImplicit(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Boolean response = concept.asSchemaConcept().isImplicit();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Boolean> IS_INFERRED = new BooleanMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setIsInferred(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Boolean result = concept.asThing().isInferred();
+            return createTxResponse(iterators, result);
+        }
+    };
+
+    public static final ConceptMethod<Boolean> IS_ABSTRACT = new BooleanMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setIsAbstract(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Boolean response = concept.asType().isAbstract();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Optional<Pattern>> GET_WHEN = new OptionalPatternMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetWhen(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Optional<Pattern> result = Optional.ofNullable(concept.asRule().getWhen());
+            return createTxResponse(iterators, result);
+        }
+    };
+
+    public static final ConceptMethod<Optional<Pattern>> GET_THEN = new OptionalPatternMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetThen(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Optional<Pattern> response = Optional.ofNullable(concept.asRule().getThen());
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Optional<String>> GET_REGEX = new ConceptMethod<Optional<String>>() {
+        @Override @Nullable
+        public Optional<String> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            return ConceptReader.optionalRegex(txResponse.getConceptResponse().getOptionalRegex());
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Optional<String> value) {
+            builder.setOptionalRegex(ConceptBuilder.optionalRegex(value));
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRegex(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Optional<String> response = Optional.ofNullable(concept.asAttributeType().getRegex());
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS = new ConceptMethod<Stream<RolePlayer>>() {
+        @Override @Nullable
+        public Stream<RolePlayer> readResponse(TxConceptReader txConceptReader, GrpcClient client, GrpcGrakn.TxResponse txResponse) {
+            GrpcIterator.IteratorId iteratorId = txResponse.getConceptResponse().getIteratorId();
+            Iterable<RolePlayer> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.rolePlayer(response.getRolePlayer()));
+
+            return StreamSupport.stream(iterable.spliterator(), false);
+        }
+
+        @Override
+        public void buildResponse(GrpcConcept.ConceptResponse.Builder builder, GrpcIterators iterators, Stream<RolePlayer> value) {
+            Stream<GrpcGrakn.TxResponse> responses = value.map(ResponseBuilder::rolePlayer);
+            GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
+            builder.setIteratorId(iteratorId);
+        }
+
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
+            concept.asRelationship().allRolePlayers().forEach((role, players) -> {
+                players.forEach(player -> {
+                    rolePlayers.add(RolePlayer.create(role, player));
+                });
+            });
+            Stream<RolePlayer> response = rolePlayers.build();
+
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetAttributeTypes(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asType().attributes();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetKeyTypes(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asType().keys();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asSchemaConcept().sups();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetSubConcepts(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asSchemaConcept().subs();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetAttributes(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asThing().attributes();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetKeys(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asThing().keys();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRolesPlayedByType(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asType().plays();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetInstances(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asType().instances();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRolesPlayedByThing(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asThing().plays();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRelationships(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asThing().relationships();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRelationshipTypesThatRelateRole(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asRole().relationshipTypes();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetTypesThatPlayRole(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asRole().playedByTypes();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetRelatedRoles(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asRelationshipType().relates();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS = new ConceptStreamMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetOwners(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream<? extends Concept> response = concept.asAttribute().ownerInstances();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Concept> GET_DIRECT_TYPE = new ConceptConceptMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetDirectType(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Concept response = concept.asThing().type();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER = new OptionalConceptMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Optional<Concept> response = Optional.ofNullable(concept.asSchemaConcept().sup());
+            return createTxResponse(iterators, response);
+        }
+    };
+
+
+    public static final ConceptMethod<Void> DELETE = new UnitMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setDelete(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            concept.delete();
+            return null;
+        }
+    };
+
+    public static final ConceptMethod<Concept> ADD_ENTITY = new ConceptConceptMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setAddEntity(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Concept response = concept.asEntityType().addEntity();
+            return createTxResponse(iterators, response);
+        }
+    };
+
+    public static final ConceptMethod<Concept> ADD_RELATIONSHIP = new ConceptConceptMethod() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setAddRelationship(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
+        @Override
+        public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+            Concept response = concept.asRelationshipType().addRelationship();
+            return createTxResponse(iterators, response);
+        }
+    };
 
     public static ConceptMethod<Void> setLabel(Label label) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetLabel(ConceptBuilder.label(label)))
-                .functionVoid(concept -> concept.asSchemaConcept().setLabel(label))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetLabel(ConceptBuilder.label(label)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asSchemaConcept().setLabel(label);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> setAbstract(boolean isAbstract) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetAbstract(isAbstract))
-                .functionVoid(concept -> concept.asType().setAbstract(isAbstract))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetAbstract(isAbstract).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().setAbstract(isAbstract);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> setRegex(Optional<String> regex) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetRegex(ConceptBuilder.optionalRegex(regex)))
-                .functionVoid(concept -> concept.asAttributeType().setRegex(regex.orElse(null)))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetRegex(ConceptBuilder.optionalRegex(regex)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asAttributeType().setRegex(regex.orElse(null));
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> setAttributeType(AttributeType<?> attributeType) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetAttributeType(ConceptBuilder.concept(attributeType)))
-                .functionVoid(concept -> concept.asType().attribute(attributeType))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetAttributeType(ConceptBuilder.concept(attributeType)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().attribute(attributeType);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> unsetAttributeType(AttributeType<?> attributeType) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetAttributeType(ConceptBuilder.concept(attributeType)))
-                .functionVoid(concept -> concept.asType().deleteAttribute(attributeType))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetAttributeType(ConceptBuilder.concept(attributeType)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().deleteAttribute(attributeType);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> setKeyType(AttributeType<?> attributeType) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetKeyType(ConceptBuilder.concept(attributeType)))
-                .functionVoid(concept -> concept.asType().key(attributeType))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetKeyType(ConceptBuilder.concept(attributeType)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().key(attributeType);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> unsetKeyType(AttributeType<?> attributeType) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetKeyType(ConceptBuilder.concept(attributeType)))
-                .functionVoid(concept -> concept.asType().deleteKey(attributeType))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().deleteKey(attributeType);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> setDirectSuperConcept(SchemaConcept schemaConcept) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetDirectSuperConcept(ConceptBuilder.concept(schemaConcept)))
-                .functionVoid(concept -> setSuper(concept.asSchemaConcept(), schemaConcept))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetDirectSuperConcept(ConceptBuilder.concept(schemaConcept)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                setSuper(concept.asSchemaConcept(), schemaConcept);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> removeRolePlayer(RolePlayer rolePlayer) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
-                .functionVoid(concept -> {
-                    concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
-                })
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Optional<Concept>> getAttribute(Object value) {
-        return ConceptMethod.builder(ConceptResponseType.OPTIONAL_CONCEPT)
-                .requestBuilder(builder -> builder.setGetAttribute(ConceptBuilder.attributeValue(value)))
-                .function(concept -> Optional.ofNullable(concept.asAttributeType().getAttribute(value)))
-                .build();
-    }
+        return new OptionalConceptMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setGetAttribute(ConceptBuilder.attributeValue(value)).build();
+            }
 
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Optional<Concept> response = Optional.ofNullable(concept.asAttributeType().getAttribute(value));
+                return createTxResponse(iterators, response);
+            }
+        };
+    }
     public static ConceptMethod<Stream<? extends Concept>> getAttributesByTypes(AttributeType<?>... attributeTypes) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestBuilder(builder -> builder.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
-                .function(concept -> concept.asThing().attributes(attributeTypes))
-                .build();
+        return new ConceptStreamMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Stream<? extends Concept> response = concept.asThing().attributes(attributeTypes);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<Concept> setAttribute(Attribute<?> attribute) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                .requestBuilder(builder -> builder.setSetAttribute(ConceptBuilder.concept(attribute)))
-                .function(concept -> concept.asThing().attributeRelationship(attribute))
-                .build();
+        return new ConceptConceptMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetAttribute(ConceptBuilder.concept(attribute)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Concept response = concept.asThing().attributeRelationship(attribute);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<Void> unsetAttribute(Attribute<?> attribute) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetAttribute(ConceptBuilder.concept(attribute)))
-                .functionVoid(concept -> concept.asThing().deleteAttribute(attribute))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetAttribute(ConceptBuilder.concept(attribute)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asThing().deleteAttribute(attribute);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getKeysByTypes(AttributeType<?>... attributeTypes) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestBuilder(builder -> builder.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
-                .function(concept -> concept.asThing().keys(attributeTypes))
-                .build();
+        return new ConceptStreamMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Stream<? extends Concept> response = concept.asThing().keys(attributeTypes);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<Void> setRolePlayedByType(Role role) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetRolePlayedByType(ConceptBuilder.concept(role)))
-                .functionVoid(concept -> concept.asType().plays(role))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetRolePlayedByType(ConceptBuilder.concept(role)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().plays(role);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetRolePlayedByType(ConceptBuilder.concept(role)))
-                .functionVoid(concept -> concept.asType().deletePlays(role))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetRolePlayedByType(ConceptBuilder.concept(role)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asType().deletePlays(role);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getRolePlayersByRoles(Role... roles) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestBuilder(builder -> builder.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles))))
-                .function(concept -> concept.asRelationship().rolePlayers(roles))
-                .build();
+        return new ConceptStreamMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles))).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Stream<? extends Concept> response = concept.asRelationship().rolePlayers(roles);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<Void> setRolePlayer(RolePlayer rolePlayer) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
-                .functionVoid(concept -> concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player()))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player());
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getRelationshipsByRoles(Role... roles) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestBuilder(builder -> builder.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles))))
-                .function(concept -> concept.asThing().relationships(roles))
-                .build();
+        return new ConceptStreamMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles))).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Stream<? extends Concept> response = concept.asThing().relationships(roles);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<Void> setRelatedRole(Role role) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setSetRelatedRole(ConceptBuilder.concept(role)))
-                .functionVoid(concept -> concept.asRelationshipType().relates(role))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setSetRelatedRole(ConceptBuilder.concept(role)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asRelationshipType().relates(role);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Void> unsetRelatedRole(Role role) {
-        return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestBuilder(builder -> builder.setUnsetRelatedRole(ConceptBuilder.concept(role)))
-                .functionVoid(concept -> concept.asRelationshipType().deleteRelates(role))
-                .build();
+        return new UnitMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setUnsetRelatedRole(ConceptBuilder.concept(role)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                concept.asRelationshipType().deleteRelates(role);
+                return null;
+            }
+        };
     }
 
     public static ConceptMethod<Concept> putAttribute(Object value) {
-        return ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                .requestBuilder(builder -> builder.setPutAttribute(ConceptBuilder.attributeValue(value)))
-                .function(concept -> concept.asAttributeType().putAttribute(value))
-                .build();
+        return new ConceptConceptMethod() {
+            @Override
+            public GrpcConcept.ConceptMethod requestBuilder() {
+                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+                return builder.setPutAttribute(ConceptBuilder.attributeValue(value)).build();
+            }
+
+            @Override
+            public GrpcGrakn.TxResponse run(GrpcIterators iterators, Concept concept) {
+                Concept response = concept.asAttributeType().putAttribute(value);
+                return createTxResponse(iterators, response);
+            }
+        };
     }
 
     public static ConceptMethod<?> requestReader(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
