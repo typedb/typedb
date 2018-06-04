@@ -30,12 +30,11 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The abstract MapReduce program for computing statistics.
- * <p>
  *
  * @author Jason Liu
+ * @param <T> Determines the return type of th MapReduce statistics computation
  */
-
-abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
+public abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
     String degreePropertyKey;
 

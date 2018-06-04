@@ -45,7 +45,6 @@ import spark.Response;
 import spark.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,11 +64,9 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 
 /**
- * <p>
- *     Endpoints used to query for {@link ai.grakn.concept.Concept}s
- * </p>
+ * Endpoints used to query for {@link ai.grakn.concept.Concept}s
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class ConceptController implements HttpController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -220,8 +217,8 @@ public class ConceptController implements HttpController {
     }
 
     private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
-        Optional<String> value = queryParameter(request, parameter);
-        return value.map(Integer::parseInt).orElse(defaultValue);
+        String value = queryParameter(request, parameter);
+        return value != null ? Integer.parseInt(value) : defaultValue;
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
@@ -244,10 +241,9 @@ public class ConceptController implements HttpController {
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
             ai.grakn.concept.Concept concept = getter.apply(tx);
 
-            Optional<Concept> conceptWrapper = Optional.ofNullable(concept).map(ConceptBuilder::build);
-            if(conceptWrapper.isPresent()){
+            if(concept != null){
                 response.status(SC_OK);
-                return objectMapper.writeValueAsString(conceptWrapper.get());
+                return objectMapper.writeValueAsString(ConceptBuilder.build(concept));
             } else {
                 response.status(SC_NOT_FOUND);
                 return "";

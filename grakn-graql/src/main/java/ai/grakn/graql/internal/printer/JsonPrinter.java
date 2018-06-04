@@ -20,27 +20,30 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.util.CommonUtil;
 import mjson.Json;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
-import static mjson.Json.nil;
 
-class JsonPrinter implements Printer<Json> {
+/**
+ * Class to print Graql Responses in to JSON Formatted Strings
+ *
+ * @author Grakn Warriors
+ */
+class JsonPrinter extends Printer<Json> {
     @Override
     public final String complete(Json builder) {
         return builder.toString();
     }
 
     @Override
-    public Json build(Concept concept) {
+    public Json concept(Concept concept) {
         Json json = Json.object("id", concept.getId().getValue());
 
         if (concept.isSchemaConcept()) {
@@ -72,22 +75,17 @@ class JsonPrinter implements Printer<Json> {
     }
 
     @Override
-    public final Json build(boolean bool) {
+    public final Json bool(boolean bool) {
         return Json.make(bool);
     }
 
     @Override
-    public final Json build(Optional<?> optional) {
-        return optional.map(item -> build(item)).orElse(nil());
-    }
-
-    @Override
-    public final Json build(Collection<?> collection) {
+    public final Json collection(Collection<?> collection) {
         return Json.make(collection.stream().map(item -> build(item)).collect(toList()));
     }
 
     @Override
-    public final Json build(Map<?, ?> map) {
+    public final Json map(Map<?, ?> map) {
         Json json = Json.object();
 
         map.forEach((Object key, Object value) -> {
@@ -99,8 +97,14 @@ class JsonPrinter implements Printer<Json> {
         return json;
     }
 
+    //TODO: Implement JsonPrinter for ComputeAnswer properly!
     @Override
-    public final Json buildDefault(Object object) {
+    public Json computeAnswer(ComputeQuery.Answer computeAnswer) {
+        return object(computeAnswer);
+    }
+
+    @Override
+    public final Json object(Object object) {
         return Json.make(object);
     }
 }

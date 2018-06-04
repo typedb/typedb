@@ -22,8 +22,8 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.grpc.ConceptMethod;
-import ai.grakn.grpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.remote.RemoteGraknTx;
 
 import javax.annotation.Nullable;

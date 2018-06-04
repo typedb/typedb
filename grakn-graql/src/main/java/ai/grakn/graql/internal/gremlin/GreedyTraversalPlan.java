@@ -53,6 +53,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +63,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,8 +73,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 /**
  * Class for generating greedy traversal plans
  *
- * @author Felix Chapman
- * @author Jason Liu
+ * @author Grakn Warriors
  */
 public class GreedyTraversalPlan {
 
@@ -404,9 +403,9 @@ public class GreedyTraversalPlan {
             // fragments that should be done right away
             plan.add(fragment);
             double logInstanceCount = -1D;
-            Optional<Long> shardCount = fragment.getShardCount(tx);
-            if (shardCount.isPresent() && shardCount.get() > 0) {
-                logInstanceCount = Math.log(shardCount.get() - 1D + SHARD_LOAD_FACTOR) +
+            Long shardCount = fragment.getShardCount(tx);
+            if (shardCount > 0) {
+                logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
                         Math.log(tx.shardingThreshold());
             }
             nodesWithFixedCost.put(start, logInstanceCount);
@@ -513,15 +512,15 @@ public class GreedyTraversalPlan {
         // expanding from the root until all nodes have been visited
         while (!reachableNodes.isEmpty()) {
 
-            Optional<Node> optionalNodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent)));
+            Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
+                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).orElse(null);
 
-            assert optionalNodeWithMinCost.isPresent() : "reachableNodes is never empty, so there is always a minimum";
-
-            Node nodeWithMinCost = optionalNodeWithMinCost.get();
+            assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 
             // add edge fragment first, then node fragments
-            getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
+            Fragment fragment = getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent);
+            if (fragment != null) plan.add(fragment);
+
             addNodeFragmentToPlan(nodeWithMinCost, plan, nodes, true);
 
             reachableNodes.remove(nodeWithMinCost);
@@ -536,27 +535,26 @@ public class GreedyTraversalPlan {
                                        Map<Node, Set<Node>> edgesParentToChild,
                                        Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
 
-        Optional<Double> nodeWeight = node.getNodeWeight();
+        Double nodeWeight = node.getNodeWeight();
 
-        if (!nodeWeight.isPresent()) {
-            nodeWeight = Optional.of(
-                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node));
+        if (nodeWeight == null) {
+            nodeWeight = getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node);
             node.setNodeWeight(nodeWeight);
         }
 
-        Optional<Double> branchWeight = node.getBranchWeight();
+        Double branchWeight = node.getBranchWeight();
 
-        if (!branchWeight.isPresent()) {
-            final double[] weight = {nodeWeight.get()};
+        if (branchWeight == null) {
+            final double[] weight = {nodeWeight};
             if (edgesParentToChild.containsKey(node)) {
                 edgesParentToChild.get(node).forEach(child ->
                         weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent));
             }
-            branchWeight = Optional.of(weight[0]);
+            branchWeight = weight[0];
             node.setBranchWeight(branchWeight);
         }
 
-        return branchWeight.get();
+        return branchWeight;
     }
 
     // compute the total cost of a node
@@ -606,16 +604,20 @@ public class GreedyTraversalPlan {
     // get edge fragment cost in order to get branch cost
     private static double getEdgeFragmentCost(Node node, Arborescence<Node> arborescence,
                                               Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        Optional<Fragment> fragment = getEdgeFragment(node, arborescence, edgeToFragment);
-        return fragment.map(Fragment::fragmentCost).orElse(0D);
+
+        Fragment fragment = getEdgeFragment(node, arborescence, edgeToFragment);
+        if (fragment != null) return fragment.fragmentCost();
+
+        return 0D;
     }
 
-    private static Optional<Fragment> getEdgeFragment(Node node, Arborescence<Node> arborescence,
+    @Nullable
+    private static Fragment getEdgeFragment(Node node, Arborescence<Node> arborescence,
                                                       Map<Node, Map<Node, Fragment>> edgeToFragment) {
         if (edgeToFragment.containsKey(node) &&
                 edgeToFragment.get(node).containsKey(arborescence.getParents().get(node))) {
-            return Optional.of(edgeToFragment.get(node).get(arborescence.getParents().get(node)));
+            return edgeToFragment.get(node).get(arborescence.getParents().get(node));
         }
-        return Optional.empty();
+        return null;
     }
 }

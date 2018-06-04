@@ -26,7 +26,7 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.GrpcGraknService;
+import ai.grakn.engine.rpc.GraknRPCService;
 import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.task.BackgroundTaskRunner;
@@ -40,7 +40,7 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.SystemKeyspaceSession;
-import ai.grakn.grpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -49,7 +49,7 @@ import spark.Service;
 import java.util.Collection;
 import java.util.Collections;
 
-import static ai.grakn.grpc.GrpcUtil.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
+import static ai.grakn.rpc.util.GrpcConfig.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link GraknEngineServer} in different ways.
@@ -134,7 +134,7 @@ public class GraknEngineServerFactory {
     private static GrpcServer configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new GrpcGraknService(requestExecutor, postProcessor)).build();
+        Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new GraknRPCService(requestExecutor, postProcessor)).build();
         return GrpcServer.create(grpcServer);
     }
 

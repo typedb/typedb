@@ -34,7 +34,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -128,7 +127,7 @@ public class GraknConfig {
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
-        return key.parse(Optional.ofNullable(prop.getProperty(key.name())), CONFIG_FILE_PATH);
+        return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
     }
 
     public SimpleURI uri() {

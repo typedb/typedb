@@ -31,7 +31,6 @@ import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -43,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -53,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base {@link Match} implementation that executes the gremlin traversal
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class MatchBase extends AbstractMatch {
 
@@ -73,8 +71,8 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
-        EmbeddedGraknTx<?> tx = optionalGraph.orElseThrow(GraqlQueryException::noTx);
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+        if (tx == null) throw GraqlQueryException.noTx();
 
         validatePattern(tx);
 
@@ -99,7 +97,6 @@ public class MatchBase extends AbstractMatch {
 
         return traversal.toStream()
                 .map(elements -> makeResults(vars, tx, elements))
-                .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
@@ -111,9 +108,9 @@ public class MatchBase extends AbstractMatch {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private static Optional<Map<Var, Concept>> makeResults(
-            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements
-    ) {
+    private static Map<Var, Concept> makeResults(
+            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements) {
+
         Map<Var, Concept> map = new HashMap<>();
         for (Var var : vars) {
             Element element = elements.get(var.name());
@@ -125,7 +122,7 @@ public class MatchBase extends AbstractMatch {
             }
         }
 
-        return Optional.of(map);
+        return map;
     }
 
     private static Concept buildConcept(EmbeddedGraknTx<?> tx, Element element) {
@@ -157,8 +154,8 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.empty();
+    public GraknTx tx() {
+        return null;
     }
 
     @Override

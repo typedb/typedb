@@ -18,14 +18,16 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
  * "Order" modify that orders the underlying {@link Match}
+ *
+ * @author Grakn Warriors
  */
 class MatchOrder extends MatchModifier {
 
@@ -37,8 +39,8 @@ class MatchOrder extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
-        return order.orderStream(inner.stream(graph));
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+        return order.orderStream(inner.stream(tx));
     }
 
     @Override

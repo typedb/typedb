@@ -19,14 +19,16 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
  * "Limit" modifier for {@link Match} that limits the results of a query.
+ *
+ * @author Grakn Warriors
  */
 class MatchLimit extends MatchModifier {
 
@@ -41,8 +43,8 @@ class MatchLimit extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
-        return inner.stream(graph).limit(limit);
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+        return inner.stream(tx).limit(limit);
     }
 
     @Override

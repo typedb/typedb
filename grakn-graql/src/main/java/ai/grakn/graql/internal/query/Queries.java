@@ -33,13 +33,12 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * Internal query factory
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class Queries {
 
@@ -58,8 +57,8 @@ public class Queries {
         return GetQueryImpl.of(match, vars);
     }
 
-    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, Optional<GraknTx> tx) {
-        return InsertQueryImpl.create(vars, Optional.empty(), tx);
+    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, GraknTx tx) {
+        return InsertQueryImpl.create(vars, null, tx);
     }
 
     /**
@@ -67,7 +66,7 @@ public class Queries {
      * @param match the {@link Match} to insert for each result
      */
     public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, MatchAdmin match) {
-        return InsertQueryImpl.create(vars, Optional.of(match), match.tx());
+        return InsertQueryImpl.create(vars, match, match.tx());
     }
 
     public static DeleteQueryAdmin delete(Collection<? extends Var> vars, Match match) {

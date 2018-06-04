@@ -25,34 +25,30 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
-
-import static com.google.common.collect.Iterators.concat;
-import static com.google.common.collect.Iterators.singletonIterator;
-import static com.google.common.collect.Iterators.transform;
 
 /**
  * A Fibonacci heap (due to Fredman and Tarjan).
  *
  * @param <V> the type of the values stored in the heap
  * @param <P> the type of the priorities
- * @author Jason Liu
+ * @author Grakn Warriors
  */
 public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> {
-    public final static int MAX_CAPACITY = Integer.MAX_VALUE;
+    private final static int MAX_CAPACITY = Integer.MAX_VALUE;
     // the largest degree of any root list entry is guaranteed to be <= log_phi(MAX_CAPACITY) = 45
     private final static int MAX_DEGREE = 45;
 
-    private Optional<Entry> oMinEntry = Optional.empty();
+    private Entry oMinEntry = null;
     private int size = 0;
     private final Comparator<? super P> comparator;
 
     class Entry {
         public final V value;
         private P priority;
-        private Optional<Entry> oParent = Optional.empty();
-        private Optional<Entry> oFirstChild = Optional.empty();
+        private Entry oParent = null;
+        private Entry oFirstChild = null;
         private Entry previous;
         private Entry next;
         private int degree = 0;
@@ -96,7 +92,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(1)
      */
     public void clear() {
-        oMinEntry = Optional.empty();
+        oMinEntry = null;
         size = 0;
     }
 
@@ -105,17 +101,22 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(1) (amortized)
      */
     public void decreasePriority(Entry entry, P newPriority) {
-        Preconditions.checkArgument(comparator.compare(newPriority, entry.priority) <= 0,
-                "Cannot increase priority");
+        Preconditions.checkArgument(
+                comparator.compare(newPriority, entry.priority) <= 0,
+                "Cannot increase priority"
+        );
+
+        assert oMinEntry != null;
+
         entry.priority = newPriority;
-        assert oMinEntry.isPresent();
-        final Entry minEntry = oMinEntry.get();
-        Optional<Entry> oParent = entry.oParent;
-        if (oParent.isPresent() && (comparator.compare(newPriority, oParent.get().priority) < 0)) {
+        Entry oParent = entry.oParent;
+
+        if (oParent != null && (comparator.compare(newPriority, oParent.priority) < 0)) {
             cutAndMakeRoot(entry);
         }
-        if (comparator.compare(newPriority, minEntry.priority) < 0) {
-            oMinEntry = Optional.of(entry);
+
+        if (comparator.compare(newPriority, oMinEntry.priority) < 0) {
+            oMinEntry = entry;
         }
     }
 
@@ -126,8 +127,8 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     public void remove(Entry entry) {
         entry.priority = null;
         cutAndMakeRoot(entry);
-        oMinEntry = Optional.of(entry);
-        pollOption();
+        oMinEntry = entry;
+        poll();
     }
 
     /**
@@ -135,7 +136,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(1)
      */
     public boolean isEmpty() {
-        return !oMinEntry.isPresent();
+        return oMinEntry == null;
     }
 
     /**
@@ -143,22 +144,25 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * No heap consolidation is performed.
      * Runtime: O(1)
      */
-    public Optional<Entry> add(V value, P priority) {
+    public Entry add(V value, P priority) {
         Preconditions.checkNotNull(value);
         Preconditions.checkNotNull(priority);
-        if (size >= MAX_CAPACITY) return Optional.empty();
+
+        if (size >= MAX_CAPACITY) return null;
+
         final Entry result = new Entry(value, priority);
         // add as a root
-        oMinEntry = mergeLists(Optional.of(result), oMinEntry);
+        oMinEntry = mergeLists(result, oMinEntry);
         size++;
-        return Optional.of(result);
+
+        return result;
     }
 
     /**
      * Returns the entry with the minimum priority, or absent if empty.
      * Runtime: O(1)
      */
-    public Optional<Entry> peekOption() {
+    public Entry peek() {
         return oMinEntry;
     }
 
@@ -167,27 +171,32 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * the trees in the heap to be consolidated, if necessary.
      * Runtime: O(log n) amortized
      */
-    public Optional<V> pollOption() {
-        if (!oMinEntry.isPresent()) return Optional.empty();
-        final Entry minEntry = oMinEntry.get();
+    public V poll() {
+        if (oMinEntry == null) return null;
+
+        final Entry minEntry = oMinEntry;
+
         // move minEntry's children to the root list
-        Optional<Entry> oFirstChild = minEntry.oFirstChild;
-        if (oFirstChild.isPresent()) {
-            for (Entry childOfMin : getCycle(oFirstChild.get())) {
-                childOfMin.oParent = Optional.empty();
+        Entry oFirstChild = minEntry.oFirstChild;
+        if (oFirstChild != null) {
+            for (Entry childOfMin : getCycle(oFirstChild)) {
+                childOfMin.oParent = null;
             }
             mergeLists(oMinEntry, oFirstChild);
         }
+
         // remove minEntry from root list
         if (size == 1) {
-            oMinEntry = Optional.empty();
-        } else {
+            oMinEntry = null;
+        }
+        else {
             final Entry next = minEntry.next;
             unlinkFromNeighbors(minEntry);
-            oMinEntry = Optional.of(consolidate(next));
+            oMinEntry = consolidate(next);
         }
         size--;
-        return Optional.of(minEntry.value);
+
+        return minEntry.value;
     }
 
     /**
@@ -206,9 +215,11 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     public static <U, P> FibonacciHeap<U, P> merge(FibonacciHeap<U, P> a, FibonacciHeap<U, P> b) {
         Preconditions.checkArgument(a.comparator().equals(b.comparator()),
                 "Heaps that use different comparators can't be merged.");
+
         final FibonacciHeap<U, P> result = FibonacciHeap.create(a.comparator);
         result.oMinEntry = a.mergeLists(a.oMinEntry, b.oMinEntry);
         result.size = a.size + b.size;
+
         return result;
     }
 
@@ -217,27 +228,35 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      */
     @Override
     public Iterator<Entry> iterator() {
-        return siblingsAndBelow(oMinEntry);
+        return siblingsAndBelow(oMinEntry).iterator();
     }
 
     /**
      * Depth-first iteration
      */
-    private Iterator<Entry> siblingsAndBelow(Optional<Entry> oEntry) {
-        return oEntry.map(entry1 -> concat(transform(getCycle(entry1).iterator(),
-                entry -> {
-                    assert entry != null;
-                    return concat(singletonIterator(entry), siblingsAndBelow(entry.oFirstChild));
-                }))).orElse(Collections.emptyIterator());
+    private List<Entry> siblingsAndBelow(Entry oEntry) {
+        if (oEntry == null) return Collections.emptyList();
+
+        List<Entry> output = new LinkedList<>();
+        for (Entry entry : getCycle(oEntry)) {
+            if (entry != null) {
+                output.add(entry);
+                output.addAll(siblingsAndBelow(entry.oFirstChild));
+            }
+        }
+
+        return output;
     }
 
     private List<Entry> getCycle(Entry start) {
         final List<Entry> results = new ArrayList<>();
         Entry current = start;
+
         do {
             results.add(current);
             current = current.next;
         } while (!current.equals(start));
+
         return results;
     }
 
@@ -245,18 +264,18 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Merge two doubly-linked circular lists, given a pointer into each.
      * Return the smaller of the two arguments.
      */
-    private Optional<Entry> mergeLists(Optional<Entry> oA, Optional<Entry> oB) {
-        if (!oA.isPresent()) return oB;
-        if (!oB.isPresent()) return oA;
-        final Entry a = oA.get();
-        final Entry b = oB.get();
+    private Entry mergeLists(Entry a, Entry b) {
+        if (a == null) return b;
+        if (b == null) return a;
+
         // splice the two circular lists together like a Mobius strip
         final Entry aOldNext = a.next;
         a.next = b.next;
         a.next.previous = a;
         b.next = aOldNext;
         b.next.previous = b;
-        return comparator.compare(a.priority, b.priority) < 0 ? oA : oB;
+
+        return comparator.compare(a.priority, b.priority) < 0 ? a : b;
     }
 
     /**
@@ -265,30 +284,36 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      * Runtime: O(log n)
      */
     private void cutAndMakeRoot(Entry entry) {
-        Optional<Entry> oParent = entry.oParent;
-        if (!oParent.isPresent()) return;  // already a root
-        final Entry parent = oParent.get();
-        parent.degree--;
+        Entry oParent = entry.oParent;
+        if (oParent == null) return;  // already a root
+
+        oParent.degree--;
         entry.isMarked = false;
+
         // update parent's `oFirstChild` pointer
-        Optional<Entry> oFirstChild = parent.oFirstChild;
-        assert oFirstChild.isPresent();
-        if (oFirstChild.get().equals(entry)) {
-            if (parent.degree == 0) {
-                parent.oFirstChild = Optional.empty();
-            } else {
-                parent.oFirstChild = Optional.of(entry.next);
+        Entry oFirstChild = oParent.oFirstChild;
+        assert oFirstChild != null;
+
+        if (oFirstChild.equals(entry)) {
+            if (oParent.degree == 0) {
+                oParent.oFirstChild = null;
+            }
+            else {
+                oParent.oFirstChild = entry.next;
             }
         }
-        entry.oParent = Optional.empty();
+
+        entry.oParent = null;
         unlinkFromNeighbors(entry);
+
         // add to root list
-        mergeLists(Optional.of(entry), oMinEntry);
-        if (parent.oParent.isPresent()) {
-            if (parent.isMarked) {
-                cutAndMakeRoot(parent);
-            } else {
-                parent.isMarked = true;
+        mergeLists(entry, oMinEntry);
+        if (oParent.oParent != null) {
+            if (oParent.isMarked) {
+                cutAndMakeRoot(oParent);
+            }
+            else {
+                oParent.isMarked = true;
             }
         }
     }
@@ -298,10 +323,11 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      */
     private Entry setParent(Entry entry, Entry parent) {
         unlinkFromNeighbors(entry);
-        entry.oParent = Optional.of(parent);
-        parent.oFirstChild = mergeLists(Optional.of(entry), parent.oFirstChild);
+        entry.oParent = parent;
+        parent.oFirstChild = mergeLists(entry, parent.oFirstChild);
         parent.degree++;
         entry.isMarked = false;
+
         return parent;
     }
 
@@ -320,8 +346,10 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
      */
     private Entry consolidate(Entry someRoot) {
         Entry minRoot = someRoot;
+
         // `rootsByDegree[d]` will hold the best root we've looked at so far with degree `d`.
         final Object[] rootsByDegree = new Object[MAX_DEGREE];
+
         for (Entry currRoot : getCycle(someRoot)) {
             // Put `currRoot` into `rootsByDegree`. If there's already something in its spot,
             // merge them into a new tree of degree `degree + 1`. Keep merging until we find an
@@ -330,19 +358,24 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
             for (int degree = currRoot.degree; rootsByDegree[degree] != null; degree++) {
                 @SuppressWarnings("unchecked")
                 Entry oldRoot = (Entry) rootsByDegree[degree];
+
                 // move the worse root beneath the better root
                 if (comparator.compare(mergedRoot.priority, oldRoot.priority) < 0) {
                     mergedRoot = setParent(oldRoot, mergedRoot);
-                } else {
+                }
+                else {
                     mergedRoot = setParent(mergedRoot, oldRoot);
                 }
+
                 rootsByDegree[degree] = null;
             }
+
             rootsByDegree[mergedRoot.degree] = mergedRoot;
             if (comparator.compare(mergedRoot.priority, minRoot.priority) <= 0) {
                 minRoot = mergedRoot;
             }
         }
+
         return minRoot;
     }
 }

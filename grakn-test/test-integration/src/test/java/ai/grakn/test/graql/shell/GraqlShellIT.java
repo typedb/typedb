@@ -85,6 +85,10 @@ public class GraqlShellIT {
 
     private final static int NUM_METATYPES = 4;
 
+    private final static String analyticsDataset = "define obj sub entity, plays rel; relation sub relationship, relates rel; " +
+            "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
+            "(rel: $a, rel: $b) isa relation; (rel: $a, rel: $c) isa relation; (rel: $a, rel: $d) isa relation; ";
+
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
@@ -332,12 +336,12 @@ public class GraqlShellIT {
     @Test
     public void testComputeCount() throws Exception {
         assertShellMatches(
-                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
+                analyticsDataset,
                 anything(),
                 anything(),
                 "commit",
                 "compute count;",
-                is("3")
+                is("7")
         );
     }
 

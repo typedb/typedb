@@ -23,13 +23,12 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * An node in a directed graph.
  *
- * @author Jason Liu
+ * @author Grakn Warriors
  */
 public class Node {
 
@@ -37,8 +36,8 @@ public class Node {
     private boolean isValidStartingPoint = true;
     private double fixedFragmentCost = 0;
 
-    private Optional<Double> nodeWeight = Optional.empty();
-    private Optional<Double> branchWeight = Optional.empty();
+    private Double nodeWeight = null;
+    private Double branchWeight = null;
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
@@ -99,19 +98,19 @@ public class Node {
         }
     }
 
-    public Optional<Double> getNodeWeight() {
+    public Double getNodeWeight() {
         return nodeWeight;
     }
 
-    public void setNodeWeight(Optional<Double> nodeWeight) {
+    public void setNodeWeight(Double nodeWeight) {
         this.nodeWeight = nodeWeight;
     }
 
-    public Optional<Double> getBranchWeight() {
+    public Double getBranchWeight() {
         return branchWeight;
     }
 
-    public void setBranchWeight(Optional<Double> branchWeight) {
+    public void setBranchWeight(Double branchWeight) {
         this.branchWeight = branchWeight;
     }
 

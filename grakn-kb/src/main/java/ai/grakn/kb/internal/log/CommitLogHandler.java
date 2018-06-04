@@ -36,12 +36,10 @@ import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * <p>
- *     Wraps a {@link CommitLog} and enables thread safe operations on the commit log.
- *     Speficially it ensure that the log is locked when trying to mutate it.
- * </p>
+ * Wraps a {@link CommitLog} and enables thread safe operations on the commit log.
+ * Speficially it ensure that the log is locked when trying to mutate it.
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class CommitLogHandler {
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -92,7 +90,7 @@ public class CommitLogHandler {
             return Optional.empty();
         }
 
-        Optional<URI> endPoint = getCommitLogEndPoint(engineUri, keyspace);
+        URI endPoint = getCommitLogEndPoint(engineUri, keyspace);
         try{
             lock.writeLock().lock();
             String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, mapper.writeValueAsString(commitLog()));
@@ -105,11 +103,11 @@ public class CommitLogHandler {
         }
     }
 
-    static Optional<URI> getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
+    static URI getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Optional.empty();
+            return null;
         }
         String path = REST.resolveTemplate(REST.WebPath.COMMIT_LOG_URI, keyspace.getValue());
-        return Optional.of(UriBuilder.fromUri(new SimpleURI(engineUri).toURI()).path(path).build());
+        return UriBuilder.fromUri(new SimpleURI(engineUri).toURI()).path(path).build();
     }
 }

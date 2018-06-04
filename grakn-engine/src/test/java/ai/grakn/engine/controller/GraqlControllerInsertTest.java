@@ -26,7 +26,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -84,7 +84,7 @@ public class GraqlControllerInsertTest {
     public void setupMock() {
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
         when(tx.keyspace()).thenReturn(keyspace);
-        when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(printer.toString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
@@ -185,7 +185,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson() {
-        when(printer.graqlString(any())).thenReturn(Json.array().toString());
+        when(printer.toString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("insert $x isa person;");
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }

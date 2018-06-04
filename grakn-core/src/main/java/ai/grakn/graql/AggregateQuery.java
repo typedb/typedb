@@ -21,12 +21,14 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Answer;
 
+import javax.annotation.Nullable;
+
 /**
  * An aggregate query produced from a {@link Match}.
  *
  * @param <T> the type of the result of the aggregate query
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public interface AggregateQuery<T> extends Query<T> {
 
@@ -36,6 +38,7 @@ public interface AggregateQuery<T> extends Query<T> {
     /**
      * Get the {@link Match} that this {@link AggregateQuery} will operate on.
      */
+    @Nullable
     Match match();
 
     /**

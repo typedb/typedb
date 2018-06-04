@@ -21,15 +21,17 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
+ *
+ * @author Grakn Warriors
  */
 class MatchTx extends MatchModifier {
 
@@ -41,18 +43,17 @@ class MatchTx extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
-        if (graph.isPresent()) {
-            throw GraqlQueryException.multipleTxs();
-        }
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+        // TODO: This is dodgy. We need to refactor the code to remove this behavior
+        if (tx != null) throw GraqlQueryException.multipleTxs();
 
         // TODO: This cast is unsafe - this is fixed if queries don't contain transactions
-        return inner.stream(Optional.of((EmbeddedGraknTx<?>) this.tx));
+        return inner.stream((EmbeddedGraknTx<?>) this.tx);
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.of(tx);
+    public GraknTx tx() {
+        return tx;
     }
 
     @Override

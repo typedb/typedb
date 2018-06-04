@@ -25,9 +25,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
-
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result
@@ -46,7 +43,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
 
     @Override
     public final T execute() {
-        return queryComputer().run(this);
+        return executor().run(this);
     }
 
     @Override
@@ -56,7 +53,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final Optional<GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
@@ -65,7 +62,6 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
         return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

@@ -602,8 +602,8 @@ sstable_preemptive_open_interval_in_mb: 50
 # stream_throughput_outbound_megabits_per_sec: 200
 
 # Throttles all streaming file transfer between the datacenters,
-# this setting allows users to throttle inter dc stream throughput in addition
-# to throttling all network stream traffic as configured with
+# this setting allows users to throttle inter dc output throughput in addition
+# to throttling all network output traffic as configured with
 # stream_throughput_outbound_megabits_per_sec
 # When unset, the default is 200 Mbps or 25 MB/s
 # inter_dc_stream_throughput_outbound_megabits_per_sec: 200
@@ -637,11 +637,11 @@ request_timeout_in_ms: 10000
 cross_node_timeout: false
 
 # Set socket timeout for streaming operation.
-# The stream session is failed if no data/ack is received by any of the participants
-# within that period, which means this should also be sufficient to stream a large
+# The output session is failed if no data/ack is received by any of the participants
+# within that period, which means this should also be sufficient to output a large
 # sstable or rebuild table indexes.
 # Default value is 86400000ms, which means stale streams timeout after 24 hours.
-# A value of zero means stream sockets should never time out.
+# A value of zero means output sockets should never time out.
 # streaming_socket_timeout_in_ms: 86400000
 
 # phi value that must be reached for a host to be marked down.
