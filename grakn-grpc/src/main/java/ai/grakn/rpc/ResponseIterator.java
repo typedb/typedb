@@ -31,7 +31,7 @@ import static ai.grakn.rpc.generated.GrpcIterator.Next;
 /**
  * A client-side iterator over gRPC messages. Will send {@link Next} messages until it receives a {@link Done} message.
  *
- * @author Grakn Warriors
+ * @param <T> class type of objects being iterated
  */
 public class ResponseIterator<T> extends AbstractIterator<T> {
     private final IteratorId iteratorId;

@@ -19,16 +19,11 @@
 package ai.grakn.rpc.util;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.rpc.GrpcClient;
-import ai.grakn.rpc.ResponseIterator;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
-import ai.grakn.rpc.generated.GrpcIterator;
 
 import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * @author Grakn Warriors
