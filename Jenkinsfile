@@ -47,11 +47,15 @@ pipeline {
             }
         }
 
-        stage('Distribution E2E Tests') {
-            steps {
-                sh 'mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"'
-            }
-        }
+//        stage('Distribution E2E Tests') {
+//            steps {
+//                sh 'mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"'
+//                sh 'ps -ef | grep Grakn'
+//                sh 'ps -ef | grep redis'
+//                sh 'ps -ef | grep Cassandra'
+//                sh 'ls /tmp/*.pid'
+//            }
+//        }
 
         stage('Unit + IT Tests') {
             steps {
