@@ -51,42 +51,4 @@ public abstract class TxConceptReader {
     public RolePlayer rolePlayer(GrpcConcept.RolePlayer rolePlayer) {
         return RolePlayer.create(concept(rolePlayer.getRole()).asRole(), concept(rolePlayer.getPlayer()).asThing());
     }
-
-    public <T> T conceptResponse(GrpcConcept.ConceptMethod rpcMethod, GrpcConcept.ConceptResponse conceptResponse, GrpcClient client) {
-        switch (rpcMethod.getConceptMethodCase()) {
-            case GETATTRIBUTETYPES:
-            case GETKEYTYPES:
-            case GETSUPERCONCEPTS:
-            case GETSUBCONCEPTS:
-            case GETATTRIBUTES:
-            case GETKEYS:
-            case GETROLESPLAYEDBYTYPE:
-            case GETINSTANCES:
-            case GETROLESPLAYEDBYTHING:
-            case GETRELATIONSHIPS:
-            case GETRELATIONSHIPTYPESTHATRELATEROLE:
-            case GETTYPESTHATPLAYROLE:
-            case GETRELATEDROLES:
-            case GETOWNERS:
-            case GETATTRIBUTESBYTYPES:
-            case GETKEYSBYTYPES:
-            case GETROLEPLAYERSBYROLES:
-            case GETRELATIONSHIPSBYROLES:
-                return (T) conceptsStream(conceptResponse.getIteratorId(), client);
-            case GETROLEPLAYERS:
-                return (T) rolePlayersStream(conceptResponse.getIteratorId(), client);
-        }
-
-        throw new IllegalArgumentException("Unrecognised " + conceptResponse);
-    }
-
-    public Stream<? extends Concept> conceptsStream(GrpcIterator.IteratorId iteratorId, GrpcClient client) {
-        Iterable<? extends Concept> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> concept(response.getConcept()));
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    public Stream<RolePlayer> rolePlayersStream(GrpcIterator.IteratorId iteratorId, GrpcClient client) {
-        Iterable<RolePlayer> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> rolePlayer(response.getRolePlayer()));
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
 }
