@@ -138,10 +138,5 @@
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.zeroturnaround</groupId>
-            <artifactId>zt-exec</artifactId>
-            <version>${zt-exec.version}</version>
-        </dependency>
     </dependencies>
 </project>
