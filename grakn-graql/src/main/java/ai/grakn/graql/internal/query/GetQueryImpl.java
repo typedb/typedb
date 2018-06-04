@@ -27,7 +27,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,7 +35,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * Default implementation of {@link GetQuery}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
@@ -54,7 +53,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 

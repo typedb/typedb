@@ -93,7 +93,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, ComputeQuery.Answer> implements ComputeQuery {
 
-    private Optional<GraknTx> tx;
+    private GraknTx tx;
     private Set<ComputeJob<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
@@ -109,11 +109,11 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQueryImpl(Optional<GraknTx> tx, Method method) {
+    public ComputeQueryImpl(GraknTx tx, Method method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public ComputeQueryImpl(Optional<GraknTx> tx, Method method, boolean includeAttributes) {
+    public ComputeQueryImpl(GraknTx tx, Method method, boolean includeAttributes) {
         this.method = method;
         this.tx = tx;
         this.includeAttributes = includeAttributes;
@@ -159,12 +159,12 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
     @Override
     public final ComputeQuery withTx(GraknTx tx) {
-        this.tx = Optional.of(tx);
+        this.tx = tx;
         return this;
     }
 
     @Override
-    public final Optional<GraknTx> tx() {
+    public final GraknTx tx() {
         return tx;
     }
 
@@ -431,7 +431,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
         ComputeQuery that = (ComputeQuery) o;
 
-        return (this.tx().equals(that.tx()) &&
+        return (Objects.equals(this.tx(), that.tx()) &&
                 this.method().equals(that.method()) &&
                 this.from().equals(that.from()) &&
                 this.to().equals(that.to()) &&

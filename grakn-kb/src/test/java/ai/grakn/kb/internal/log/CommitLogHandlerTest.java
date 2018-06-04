@@ -23,30 +23,29 @@ import ai.grakn.Keyspace;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class CommitLogHandlerTest {
 
     @Test
     public void callingGetCommitLogEndPointWithInMemory_ReturnsEmpty() {
-        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint(Grakn.IN_MEMORY, Keyspace.of("whatever"));
-        assertEquals(Optional.empty(), endpoint);
+        URI endpoint = CommitLogHandler.getCommitLogEndPoint(Grakn.IN_MEMORY, Keyspace.of("whatever"));
+        assertEquals(null, endpoint);
     }
 
     @Test
     public void callingGetCommitLogEndPointWithValidURI_ReturnsCorrectEndpoint() {
-        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint("http://validuri.com:342", Keyspace.of("whatever"));
-        assertEquals(Optional.of(URI.create("http://validuri.com:342/kb/whatever/commit_log")), endpoint);
+        URI endpoint = CommitLogHandler.getCommitLogEndPoint("http://validuri.com:342", Keyspace.of("whatever"));
+        assertEquals(URI.create("http://validuri.com:342/kb/whatever/commit_log"), endpoint);
     }
 
     @Test
     public void callingGetCommitLogEndPointWithURIMissingSchema_ReturnsCorrectEndpoint() {
-        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint("validuri.com:342", Keyspace.of("whatever"));
-        assertEquals(Optional.of(URI.create("http://validuri.com:342/kb/whatever/commit_log")), endpoint);
+        URI endpoint = CommitLogHandler.getCommitLogEndPoint("validuri.com:342", Keyspace.of("whatever"));
+        assertEquals(URI.create("http://validuri.com:342/kb/whatever/commit_log"), endpoint);
     }
 }

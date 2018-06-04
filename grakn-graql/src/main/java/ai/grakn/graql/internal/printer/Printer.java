@@ -27,7 +27,6 @@ import mjson.Json;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -100,9 +99,6 @@ public abstract class Printer<Builder> {
         else if (object instanceof Boolean) {
             return bool((boolean) object);
         }
-        else if (object instanceof Optional) {
-            return optional((Optional<?>) object);
-        }
         else if (object instanceof Collection) {
             return collection((Collection<?>) object);
         }
@@ -146,15 +142,6 @@ public abstract class Printer<Builder> {
      */
     @CheckReturnValue
     protected abstract Builder bool(boolean bool);
-
-    /**
-     * Convert any optional into its print builder
-     *
-     * @param optional the optional to convert into its print builder
-     * @return the optional as a builder
-     */
-    @CheckReturnValue
-    protected abstract Builder optional(Optional<?> optional);
 
     /**
      * Convert any collection into its print builder

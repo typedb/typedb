@@ -95,17 +95,12 @@ import static ai.grakn.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * <p>
- * The {@link GraknTx} Base Implementation
- * </p>
- * <p>
- * <p>
+ * The {@link GraknTx} Base Implementation.
  * This defines how a grakn graph sits on top of a Tinkerpop {@link Graph}.
  * It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
- * </p>
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
- * @author fppt
+ * @author Grakn Warriors
  */
 public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
@@ -788,15 +783,16 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private Optional<URI> getDeleteKeyspaceEndpoint() {
+    @Nullable
+    private URI getDeleteKeyspaceEndpoint() {
         if (Grakn.IN_MEMORY.equals(session().uri())) {
-            return Optional.empty();
+            return null;
         }
 
         URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
                 .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
                 .build();
-        return Optional.of(uri);
+        return uri;
     }
 
     public boolean isValidElement(Element element) {

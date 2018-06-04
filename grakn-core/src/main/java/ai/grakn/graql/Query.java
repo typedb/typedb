@@ -21,14 +21,14 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
  *
  * @param <T> The result type after executing the query
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public interface Query<T> {
 
@@ -54,7 +54,8 @@ public interface Query<T> {
     /**
      * Get the transaction associated with this query
      */
-    Optional<? extends GraknTx> tx();
+    @Nullable
+    GraknTx tx();
 
     Boolean inferring();
 }

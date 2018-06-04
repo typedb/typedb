@@ -27,12 +27,13 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
@@ -57,7 +58,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 

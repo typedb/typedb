@@ -29,13 +29,12 @@ import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
+ *
+ * @author Grakn Warriors
  */
 class MatchInfer extends MatchModifier {
 
@@ -44,29 +43,37 @@ class MatchInfer extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
+    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
         // If the tx is not embedded, treat it like there is no transaction
         // TODO: this is dodgy - when queries don't contain transactions this can be fixed
-        EmbeddedGraknTx<?> tx = optionalOr(optionalGraph, inner.tx()
-                .filter(t -> t instanceof EmbeddedGraknTx)
-                .map(t -> (EmbeddedGraknTx<?>) t))
-                .orElseThrow(GraqlQueryException::noTx);
 
-        if (!RuleUtils.hasRules(tx)) return inner.stream(optionalGraph);
+        EmbeddedGraknTx<?> embeddedTx;
 
-        validatePattern(tx);
+        if (tx != null) {
+            embeddedTx = tx;
+        }
+        else if (inner.tx() instanceof EmbeddedGraknTx) {
+            embeddedTx = (EmbeddedGraknTx) inner.tx();
+        }
+        else {
+            throw GraqlQueryException.noTx();
+        }
+
+        if (!RuleUtils.hasRules(embeddedTx)) return inner.stream(embeddedTx);
+
+        validatePattern(embeddedTx);
 
 
         try {
             Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<VarPatternAdmin> conj = conjIt.next();
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, tx);
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx);
             conjQuery.checkValid();
-            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
+            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, tx);
-                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : tx.graql().infer(false).match(conj).stream();
+                conjQuery = ReasonerQueries.create(conj, embeddedTx);
+                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }
             return answerStream.map(result -> result.project(getSelectedNames()));

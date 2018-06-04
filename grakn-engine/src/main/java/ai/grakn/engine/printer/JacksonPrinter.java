@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,7 +35,7 @@ import java.util.stream.Stream;
  * This class is used to convert the responses from graql queries into objects which can be Jacksonised into their
  * correct Json representation.
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class JacksonPrinter extends Printer<Object> {
     private static ObjectMapper mapper = new ObjectMapper();
@@ -92,14 +91,5 @@ public class JacksonPrinter extends Printer<Object> {
     @Override
     public Object collection(Collection collection) {
         return collection.stream().map(object -> build(object)).collect(Collectors.toList());
-    }
-
-    @Override
-    public Object optional(Optional optional) {
-        if(optional.isPresent()){
-            return build(optional.get());
-        } else {
-            return null;
-        }
     }
 }

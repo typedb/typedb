@@ -25,19 +25,19 @@ import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class Autocomplete {
 
@@ -77,46 +77,44 @@ public class Autocomplete {
      * @param cursorPosition the cursor position in the query
      */
     private Autocomplete(Set<String> types, String query, int cursorPosition) {
-        Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
-        candidates = findCandidates(types, query, optToken);
-        this.cursorPosition = findCursorPosition(cursorPosition, optToken);
+        Token token = getCursorToken(query, cursorPosition);
+        candidates = findCandidates(types, query, token);
+        this.cursorPosition = findCursorPosition(cursorPosition, token);
     }
 
     /**
      * @param types the graph to find types in
      * @param query a graql query
-     * @param optToken the token the cursor is on in the query
+     * @param token the token the cursor is on in the query
      * @return a set of potential autocomplete words
      */
-    private static ImmutableSet<String> findCandidates(Set<String> types, String query, Optional<? extends Token> optToken) {
+    private static ImmutableSet<String> findCandidates(Set<String> types, String query, Token token) {
         ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), types.stream(), getVariables(query))
                 .flatMap(Function.identity()).collect(toImmutableSet());
 
-        return optToken.map(
-                token -> {
-                    ImmutableSet<String> candidates = allCandidates.stream()
-                            .filter(candidate -> candidate.startsWith(token.getText()))
-                            .collect(toImmutableSet());
+        if (token != null) {
+            ImmutableSet<String> candidates = allCandidates.stream()
+                    .filter(candidate -> candidate.startsWith(token.getText()))
+                    .collect(toImmutableSet());
 
-                    if (candidates.size() == 1 && candidates.iterator().next().equals(token.getText())) {
-                        return ImmutableSet.of(" ");
-                    } else {
-                        return candidates;
-                    }
-                }
-        ).orElse(allCandidates);
+            if (candidates.size() == 1 && candidates.iterator().next().equals(token.getText())) {
+                return ImmutableSet.of(" ");
+            } else {
+                return candidates;
+            }
+        } else {
+            return allCandidates;
+        }
     }
 
     /**
      * @param cursorPosition the current cursor position
-     * @param optToken the token the cursor is on in the query
+     * @param token the token the cursor is on in the query
      * @return the new cursor position to start autocompleting from
      */
-    private int findCursorPosition(int cursorPosition, Optional<? extends Token> optToken) {
-        return optToken
-                .filter(token -> !candidates.contains(" "))
-                .map(Token::getStartIndex)
-                .orElse(cursorPosition);
+    private int findCursorPosition(int cursorPosition, Token token) {
+        if (!candidates.contains(" ") && token != null) return token.getStartIndex();
+        else return cursorPosition;
     }
 
     /**
@@ -137,13 +135,14 @@ public class Autocomplete {
      * @param cursorPosition the cursor position in the query
      * @return the token at the cursor position in the given graql query
      */
-    private static Optional<? extends Token> getCursorToken(String query, int cursorPosition) {
-        if (query == null) return Optional.empty();
+    @Nullable
+    private static Token getCursorToken(String query, int cursorPosition) {
+        if (query == null) return null;
 
         return getTokens(query).stream()
                 .filter(t -> t.getChannel() != Token.HIDDEN_CHANNEL)
                 .filter(t -> t.getStartIndex() <= cursorPosition && t.getStopIndex() >= cursorPosition - 1)
-                .findFirst();
+                .findFirst().orElse(null);
     }
 
     /**

@@ -26,18 +26,19 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Implementation for {@link UndefineQuery}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {
 
     static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_UndefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
+        return new AutoValue_UndefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override

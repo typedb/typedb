@@ -25,7 +25,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -34,6 +33,8 @@ import java.util.Set;
  * This class behaves like a singly-linked list, referencing another {@link Match} until it reaches a {@link MatchBase}.
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
+ *
+ * @author Grakn Warriors
  */
 abstract class MatchModifier extends AbstractMatch {
 
@@ -54,7 +55,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
+    public GraknTx tx() {
         return inner.tx();
     }
 

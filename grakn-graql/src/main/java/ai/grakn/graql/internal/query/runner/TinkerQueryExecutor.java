@@ -76,9 +76,11 @@ public class TinkerQueryExecutor implements QueryExecutor {
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
-        return query.admin().match()
-                .map(match -> runMatchInsert(match, varPatterns))
-                .orElseGet(() -> Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx)));
+        if (query.admin().match() != null) {
+            return runMatchInsert(query.admin().match(), varPatterns);
+        } else {
+            return Stream.of(QueryOperationExecutor.insertAll(varPatterns, tx));
+        }
     }
 
     private Stream<Answer> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
