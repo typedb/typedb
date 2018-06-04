@@ -167,7 +167,7 @@ public class EngineBootup {
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ".");
         System.err.println(errorMessage);
-        throw new ProcessNotStartedException();
+        throw new BootupException();
 
     }
 

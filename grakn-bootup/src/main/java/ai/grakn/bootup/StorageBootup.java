@@ -117,10 +117,10 @@ public class StorageBootup {
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      *
-     * A {@link ProcessNotStartedException} will be thrown if Storage does not start after a timeout specified
+     * A {@link BootupException} will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
-     * @throws ProcessNotStartedException
+     * @throws BootupException
      */
     private void start() {
         // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
@@ -159,7 +159,7 @@ public class StorageBootup {
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ". ");
         System.err.println(errorMessage);
-        throw new ProcessNotStartedException();
+        throw new BootupException();
     }
 
     private Path getStorageLogPathFromGraknProperties() {

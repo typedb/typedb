@@ -176,21 +176,21 @@ public class GraknBootup {
             case ENGINE:
                 try {
                     engineBootup.startIfNotRunning();
-                } catch (ProcessNotStartedException e) {
+                } catch (BootupException e) {
                     // DO NOTHING
                 }
                 break;
             case QUEUE:
                 try {
                     queueBootup.startIfNotRunning();
-                } catch (ProcessNotStartedException e) {
+                } catch (BootupException e) {
                     // DO NOTHING
                 }
                 break;
             case STORAGE:
                 try {
                     storageBootup.startIfNotRunning();
-                } catch (ProcessNotStartedException e) {
+                } catch (BootupException e) {
                     // DO NOTHING
                 }
                 break;
@@ -200,7 +200,7 @@ public class GraknBootup {
                     storageBootup.startIfNotRunning();
                     queueBootup.startIfNotRunning();
                     engineBootup.startIfNotRunning();
-                } catch (ProcessNotStartedException e) {
+                } catch (BootupException e) {
                     System.out.println("Please run 'grakn server status' or check the logs located under 'logs' directory.");
                 }
         }
