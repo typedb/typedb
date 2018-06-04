@@ -43,8 +43,6 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql-shell</artifactId>
         </dependency>
-
-        <!--Migrations-->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-sql</artifactId>
@@ -64,6 +62,14 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-export</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.zeroturnaround</groupId>
+            <artifactId>zt-exec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
         </dependency>
     </dependencies>
 </project>

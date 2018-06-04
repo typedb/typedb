@@ -98,8 +98,8 @@ public class QueueConfig extends ProcessConfig<List<Object>>{
         String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
 
         ImmutableMap<String, List<Object>> dirParams = ImmutableMap.of(
-                DB_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
-                LOG_DIR_CONFIG_KEY, Collections.singletonList(getAbsoluteLogPath(config))
+                DB_DIR_CONFIG_KEY, Collections.singletonList("\"" + dbDir + DATA_SUBDIR + "\""),
+                LOG_DIR_CONFIG_KEY, Collections.singletonList("\"" + getAbsoluteLogPath(config) + "\"")
         );
         return new QueueConfig(this.updateParamsFromMap(dirParams));
     }
