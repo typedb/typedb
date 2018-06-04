@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -129,9 +128,10 @@ public class GraqlSyntax {
         public final static Map<Method, Algorithm> ALGORITHMS_DEFAULT = algorithmsDefault();
         public final static Map<Method, Collection<Algorithm>> ALGORITHMS_ACCEPTED = algorithmsAccepted();
 
-        public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
         public final static Map<Method, Map<Algorithm, Collection<Parameter>>> ARGUMENTS_ACCEPTED = argumentsAccepted();
+        public final static Map<Method, Map<Algorithm, Map<Parameter, Object>>> ARGUMENTS_DEFAULT = argumentsDefault();
 
+        public final static Map<Method, Boolean> INCLUDE_ATTRIBUTES_DEFAULT = includeAttributesDefault();
 
         private static Map<Method, Collection<Condition>> conditionsRequired() {
             Map<Method, Collection<Condition>> required = new HashMap<>();
@@ -200,12 +200,24 @@ public class GraqlSyntax {
             return ImmutableMap.copyOf(accepted);
         }
 
+        private static Map<Method, Map<Algorithm, Map<Parameter, Object>>> argumentsDefault() {
+            Map<Method, Map<Algorithm, Map<Parameter, Object>>> defaults = new HashMap<>();
+
+            defaults.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableMap.of(MIN_K, Argument.DEFAULT_MIN_K)));
+            defaults.put(CLUSTER, ImmutableMap.of(
+                    K_CORE, ImmutableMap.of(K, Argument.DEFAULT_K),
+                    CONNECTED_COMPONENT, ImmutableMap.of(MEMBERS, Argument.DEFAULT_MEMBERS)
+            ));
+
+            return ImmutableMap.copyOf(defaults);
+        }
+
         private static Map<Method, Algorithm> algorithmsDefault() {
             Map<Method, Algorithm> methodAlgorithm = new HashMap<>();
             methodAlgorithm.put(CENTRALITY, DEGREE);
             methodAlgorithm.put(CLUSTER, CONNECTED_COMPONENT);
 
-            return methodAlgorithm;
+            return ImmutableMap.copyOf(methodAlgorithm);
         }
 
         private static Map<Method, Boolean> includeAttributesDefault() {
@@ -221,7 +233,7 @@ public class GraqlSyntax {
             map.put(CENTRALITY, true);
             map.put(CLUSTER, false);
 
-            return Collections.unmodifiableMap(map);
+            return ImmutableMap.copyOf(map);
         }
 
         /**
