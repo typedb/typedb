@@ -45,6 +45,7 @@
         <module>grakn-test-tools</module>
         <module>grakn-bootup</module>
         <module>grakn-grpc</module>
+        <module>grakn-benchmark</module>
     </modules>
 
     <properties>
