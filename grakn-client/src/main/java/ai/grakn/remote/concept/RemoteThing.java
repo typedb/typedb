@@ -26,7 +26,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.ConceptMethod;
-import ai.grakn.rpc.ConceptMethods;
 
 import java.util.stream.Stream;
 
@@ -40,23 +39,23 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final MyType type() {
-        return asMyType(runMethod(ConceptMethods.GET_DIRECT_TYPE));
+        return asMyType(runMethod(ConceptMethod.GET_DIRECT_TYPE));
     }
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
         ConceptMethod<Stream<? extends Concept>> method;
         if (roles.length == 0) {
-            method = ConceptMethods.GET_RELATIONSHIPS;
+            method = ConceptMethod.GET_RELATIONSHIPS;
         } else {
-            method = ConceptMethods.getRelationshipsByRoles(roles);
+            method = ConceptMethod.getRelationshipsByRoles(roles);
         }
         return runMethod(method).map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        return runMethod(ConceptMethods.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
     }
 
     @Override
@@ -67,7 +66,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        return runMethod(ConceptMethods.setAttribute(attribute)).asRelationship();
+        return runMethod(ConceptMethod.setAttribute(attribute)).asRelationship();
     }
 
     @Override
@@ -75,9 +74,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         ConceptMethod<Stream<? extends Concept>> method;
 
         if (attributeTypes.length == 0) {
-            method = ConceptMethods.GET_ATTRIBUTES;
+            method = ConceptMethod.GET_ATTRIBUTES;
         } else {
-            method = ConceptMethods.getAttributesByTypes(attributeTypes);
+            method = ConceptMethod.getAttributesByTypes(attributeTypes);
         }
 
         return runMethod(method).map(Concept::asAttribute);
@@ -88,9 +87,9 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         ConceptMethod<Stream<? extends Concept>> method;
 
         if (attributeTypes.length == 0) {
-            method = ConceptMethods.GET_KEYS;
+            method = ConceptMethod.GET_KEYS;
         } else {
-            method = ConceptMethods.getKeysByTypes(attributeTypes);
+            method = ConceptMethod.getKeysByTypes(attributeTypes);
         }
 
         return runMethod(method).map(Concept::asAttribute);
@@ -98,12 +97,12 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        return runVoidMethod(ConceptMethods.unsetAttribute(attribute));
+        return runVoidMethod(ConceptMethod.unsetAttribute(attribute));
     }
 
     @Override
     public final boolean isInferred() {
-        return runMethod(ConceptMethods.IS_INFERRED);
+        return runMethod(ConceptMethod.IS_INFERRED);
     }
 
     abstract MyType asMyType(Concept concept);

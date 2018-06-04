@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.ConceptMethod;
-import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcOpenRequestExecutor;
@@ -487,9 +486,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
-            assertEquals(label, ConceptMethods.GET_LABEL.readResponse(conceptConverter, client, tx.receive().ok()));
+            assertEquals(label, ConceptMethod.GET_LABEL.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -506,9 +505,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethods.IS_IMPLICIT));
+            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
 
-            assertTrue(ConceptMethods.IS_IMPLICIT.readResponse(conceptConverter, client, tx.receive().ok()));
+            assertTrue(ConceptMethod.IS_IMPLICIT.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -525,9 +524,9 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethods.IS_INFERRED));
+            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
 
-            assertFalse(ConceptMethods.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
+            assertFalse(ConceptMethod.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -559,7 +558,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            ConceptMethod<Void> conceptMethod = ConceptMethods.removeRolePlayer(RolePlayer.create(role, player));
+            ConceptMethod<Void> conceptMethod = ConceptMethod.removeRolePlayer(RolePlayer.create(role, player));
             tx.send(RequestBuilder.runConceptMethodRequest(conceptId, conceptMethod));
             tx.receive().ok();
 
@@ -577,7 +576,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -598,7 +597,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethods.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 

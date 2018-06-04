@@ -35,7 +35,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.ConceptMethod;
-import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcIterators;
@@ -266,7 +265,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
         Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
         TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
-        ConceptMethod<?> conceptMethod = ConceptMethods.requestReader(txConceptReader, runConceptMethod.getConceptMethod());
+        ConceptMethod<?> conceptMethod = ConceptMethod.requestReader(txConceptReader, runConceptMethod.getConceptMethod());
 
         TxResponse response = conceptMethod.run(grpcIterators, concept);
 

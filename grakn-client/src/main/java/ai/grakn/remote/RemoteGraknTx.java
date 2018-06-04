@@ -38,7 +38,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
@@ -200,7 +200,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethods.GET_SUPER_CONCEPTS);
+        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethod.GET_SUPER_CONCEPTS);
         return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 

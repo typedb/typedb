@@ -24,7 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
@@ -49,27 +49,27 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        return runMethod(ConceptMethods.GET_ROLE_PLAYERS)
+        return runMethod(ConceptMethod.GET_ROLE_PLAYERS)
                 .collect(groupingBy(RolePlayer::role, mapping(RolePlayer::player, toSet())));
     }
 
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
         if (roles.length == 0) {
-            return runMethod(ConceptMethods.GET_ROLE_PLAYERS).map(rolePlayer -> rolePlayer.player());
+            return runMethod(ConceptMethod.GET_ROLE_PLAYERS).map(rolePlayer -> rolePlayer.player());
         } else {
-            return runMethod(ConceptMethods.getRolePlayersByRoles(roles)).map(Concept::asThing);
+            return runMethod(ConceptMethod.getRolePlayersByRoles(roles)).map(Concept::asThing);
         }
     }
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
-        return runVoidMethod(ConceptMethods.setRolePlayer(RolePlayer.create(role, thing)));
+        return runVoidMethod(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
-        runVoidMethod(ConceptMethods.removeRolePlayer(RolePlayer.create(role, thing)));
+        runVoidMethod(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
     }
 
     @Override

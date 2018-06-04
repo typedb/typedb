@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
@@ -41,22 +41,22 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        return asInstance(runMethod(ConceptMethods.ADD_RELATIONSHIP));
+        return asInstance(runMethod(ConceptMethod.ADD_RELATIONSHIP));
     }
 
     @Override
     public final Stream<Role> relates() {
-        return runMethod(ConceptMethods.GET_RELATED_ROLES).map(Concept::asRole);
+        return runMethod(ConceptMethod.GET_RELATED_ROLES).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
-        return runVoidMethod(ConceptMethods.setRelatedRole(role));
+        return runVoidMethod(ConceptMethod.setRelatedRole(role));
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        return runVoidMethod(ConceptMethods.unsetRelatedRole(role));
+        return runVoidMethod(ConceptMethod.unsetRelatedRole(role));
     }
 
     @Override

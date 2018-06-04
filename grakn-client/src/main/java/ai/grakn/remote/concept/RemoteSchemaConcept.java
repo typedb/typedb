@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.rpc.ConceptMethods;
+import ai.grakn.rpc.ConceptMethod;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -37,33 +37,33 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
 
     public final Self sup(Self type) {
-        return runVoidMethod(ConceptMethods.setDirectSuperConcept(type));
+        return runVoidMethod(ConceptMethod.setDirectSuperConcept(type));
     }
 
     public final Self sub(Self type) {
-        tx().client().runConceptMethod(type.getId(), ConceptMethods.setDirectSuperConcept(this));
+        tx().client().runConceptMethod(type.getId(), ConceptMethod.setDirectSuperConcept(this));
         return asSelf(this);
     }
 
     @Override
     public final Label getLabel() {
-        return runMethod(ConceptMethods.GET_LABEL);
+        return runMethod(ConceptMethod.GET_LABEL);
     }
 
     @Override
     public final Boolean isImplicit() {
-        return runMethod(ConceptMethods.IS_IMPLICIT);
+        return runMethod(ConceptMethod.IS_IMPLICIT);
     }
 
     @Override
     public final Self setLabel(Label label) {
-        return runVoidMethod(ConceptMethods.setLabel(label));
+        return runVoidMethod(ConceptMethod.setLabel(label));
     }
 
     @Nullable
     @Override
     public final Self sup() {
-        Optional<Concept> concept = runMethod(ConceptMethods.GET_DIRECT_SUPER);
+        Optional<Concept> concept = runMethod(ConceptMethod.GET_DIRECT_SUPER);
         return concept.filter(this::isSelf).map(this::asSelf).orElse(null);
     }
 
@@ -74,7 +74,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> subs() {
-        return runMethod(ConceptMethods.GET_SUB_CONCEPTS).map(this::asSelf);
+        return runMethod(ConceptMethod.GET_SUB_CONCEPTS).map(this::asSelf);
     }
 
     @Override
