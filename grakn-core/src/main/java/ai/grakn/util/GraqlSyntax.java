@@ -210,7 +210,7 @@ public class GraqlSyntax {
                     CONNECTED_COMPONENT, ImmutableMap.of(MEMBERS, Argument.DEFAULT_MEMBERS)
             ));
 
-            return defaults;
+            return ImmutableMap.copyOf(defaults);
         }
 
         private static Map<Method, Algorithm> algorithmsDefault() {
@@ -218,7 +218,7 @@ public class GraqlSyntax {
             methodAlgorithm.put(CENTRALITY, DEGREE);
             methodAlgorithm.put(CLUSTER, CONNECTED_COMPONENT);
 
-            return methodAlgorithm;
+            return ImmutableMap.copyOf(methodAlgorithm);
         }
 
         private static Map<Method, Boolean> includeAttributesDefault() {
@@ -234,7 +234,7 @@ public class GraqlSyntax {
             map.put(CENTRALITY, true);
             map.put(CLUSTER, false);
 
-            return Collections.unmodifiableMap(map);
+            return ImmutableMap.copyOf(map);
         }
 
         /**
