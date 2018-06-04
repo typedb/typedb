@@ -25,6 +25,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.ConceptMethods;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.generated.GrpcConcept;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -55,16 +56,12 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
     }
 
     protected final <T> T runMethod(ConceptMethod<T> method) {
-        return Objects.requireNonNull(runNullableMethod(method));
-    }
-
-    @Nullable
-    private <T> T runNullableMethod(ConceptMethod<T> method) {
-        return tx().client().runConceptMethod(getId(), method);
+        T result = tx().client().runConceptMethod(getId(), method);
+        return Objects.requireNonNull(result);
     }
 
     final Self runVoidMethod(ConceptMethod<Void> method) {
-        runNullableMethod(method);
+        tx().client().runConceptMethod(getId(), method);
         return asSelf(this);
     }
 
