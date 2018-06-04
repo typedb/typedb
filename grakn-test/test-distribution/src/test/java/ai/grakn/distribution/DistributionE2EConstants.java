@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class DistributionITConstants {
+public class DistributionE2EConstants {
     // path of grakn zip files
     public static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     public static final Path GRAKN_BASE_DIRECTORY = Paths.get(System.getProperty("main.basedir"));
