@@ -84,7 +84,7 @@ public class RequestBuilder {
     public static GrpcGrakn.TxRequest runConceptMethodRequest(ConceptId id, ConceptMethod<?> conceptMethod) {
         RunConceptMethod runConceptMethod = RunConceptMethod.newBuilder()
                 .setId(ConceptBuilder.conceptId(id))
-                .setConceptMethod(conceptMethod.toGrpc())
+                .setConceptMethod(conceptMethod.requestBuilder())
                 .build();
         return TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
     }

@@ -56,7 +56,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
         if (roles.length == 0) {
-            return runMethod(ConceptMethods.GET_ROLE_PLAYERS).map(RolePlayer::player);
+            return runMethod(ConceptMethods.GET_ROLE_PLAYERS).map(rolePlayer -> rolePlayer.player());
         } else {
             return runMethod(ConceptMethods.getRolePlayersByRoles(roles)).map(Concept::asThing);
         }

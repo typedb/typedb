@@ -45,50 +45,50 @@ public class ConceptMethods {
     // You could make them zero-argument functions if you want!
 
     public static final ConceptMethod<Object> GET_VALUE = ConceptMethod.builder(ConceptResponseType.ATTRIBUTE_VALUE)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetValue)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetValue)
             .function(val -> val.asAttribute().getValue())
             .build();
     public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE =
             ConceptMethod.builder(ConceptResponseType.OPTIONAL_DATA_TYPE)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfType)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfType)
                     .function(val -> Optional.ofNullable(val.asAttributeType().getDataType()))
                     .build();
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE =
             ConceptMethod.builder(ConceptResponseType.DATA_TYPE)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfAttribute)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDataTypeOfAttribute)
                     .function(val -> val.asAttribute().dataType())
                     .build();
     public static final ConceptMethod<Label> GET_LABEL = ConceptMethod.builder(ConceptResponseType.LABEL)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetLabel)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetLabel)
             .function(concept -> concept.asSchemaConcept().getLabel())
             .build();
     public static final ConceptMethod<Boolean> IS_IMPLICIT = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setIsImplicit)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsImplicit)
             .function(concept -> concept.asSchemaConcept().isImplicit())
             .build();
     public static final ConceptMethod<Boolean> IS_INFERRED = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setIsInferred)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsInferred)
             .function(concept -> concept.asThing().isInferred())
             .build();
     public static final ConceptMethod<Boolean> IS_ABSTRACT = ConceptMethod.builder(ConceptResponseType.BOOL)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setIsAbstract)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setIsAbstract)
             .function(concept -> concept.asType().isAbstract())
             .build();
     public static final ConceptMethod<Optional<Pattern>> GET_WHEN = ConceptMethod.builder(ConceptResponseType.OPTIONAL_PATTERN)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetWhen)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetWhen)
             .function(concept -> Optional.ofNullable(concept.asRule().getWhen()))
             .build();
     public static final ConceptMethod<Optional<Pattern>> GET_THEN = ConceptMethod.builder(ConceptResponseType.OPTIONAL_PATTERN)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetThen)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetThen)
             .function(concept -> Optional.ofNullable(concept.asRule().getThen()))
             .build();
     public static final ConceptMethod<Optional<String>> GET_REGEX = ConceptMethod.builder(ConceptResponseType.OPTIONAL_REGEX)
-            .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRegex)
+            .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRegex)
             .function(concept -> Optional.ofNullable(concept.asAttributeType().getRegex()))
             .build();
     public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS =
             ConceptMethod.builder(ConceptResponseType.ROLE_PLAYERS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolePlayers)
                     .function(concept -> {
                         Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
                         concept.asRelationship().allRolePlayers().forEach((role, players) -> {
@@ -101,159 +101,159 @@ public class ConceptMethods {
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributeTypes)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributeTypes)
                     .function(concept -> concept.asType().attributes())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetKeyTypes)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetKeyTypes)
                     .function(concept -> concept.asType().keys())
                     .build();
     public static final ConceptMethod<Concept> GET_DIRECT_TYPE =
             ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectType)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectType)
                     .function(concept -> concept.asThing().type())
                     .build();
     public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER =
             ConceptMethod.builder(ConceptResponseType.OPTIONAL_CONCEPT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetDirectSuperConcept)
                     .function(concept -> Optional.ofNullable(concept.asSchemaConcept().sup()))
                     .build();
     public static final ConceptMethod<Void> DELETE =
             ConceptMethod.builder(ConceptResponseType.UNIT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setDelete)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setDelete)
                     .functionVoid(Concept::delete)
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetSuperConcepts)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetSuperConcepts)
                     .function(concept -> concept.asSchemaConcept().sups())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetSubConcepts)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetSubConcepts)
                     .function(concept -> concept.asSchemaConcept().subs())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributes)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetAttributes)
                     .function(concept -> concept.asThing().attributes())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetKeys)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetKeys)
                     .function(concept -> concept.asThing().keys())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByType)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByType)
                     .function(concept -> concept.asType().plays())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetInstances)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetInstances)
                     .function(concept -> concept.asType().instances())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByThing)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRolesPlayedByThing)
                     .function(concept -> concept.asThing().plays())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationships)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationships)
                     .function(concept -> concept.asThing().relationships())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationshipTypesThatRelateRole)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelationshipTypesThatRelateRole)
                     .function(concept -> concept.asRole().relationshipTypes())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetTypesThatPlayRole)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetTypesThatPlayRole)
                     .function(concept -> concept.asRole().playedByTypes())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetRelatedRoles)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetRelatedRoles)
                     .function(concept -> concept.asRelationshipType().relates())
                     .build();
     public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS =
             ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setGetOwners)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setGetOwners)
                     .function(concept -> concept.asAttribute().ownerInstances())
                     .build();
     public static final ConceptMethod<Concept> ADD_ENTITY =
             ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setAddEntity)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setAddEntity)
                     .function(concept -> concept.asEntityType().addEntity())
                     .build();
     public static final ConceptMethod<Concept> ADD_RELATIONSHIP =
             ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                    .requestSetterUnit(GrpcConcept.ConceptMethod.Builder::setAddRelationship)
+                    .requestBuilderUnit(GrpcConcept.ConceptMethod.Builder::setAddRelationship)
                     .function(concept -> concept.asRelationshipType().addRelationship())
                     .build();
 
     public static ConceptMethod<Void> setLabel(Label label) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetLabel(ConceptBuilder.label(label)))
+                .requestBuilder(builder -> builder.setSetLabel(ConceptBuilder.label(label)))
                 .functionVoid(concept -> concept.asSchemaConcept().setLabel(label))
                 .build();
     }
 
     public static ConceptMethod<Void> setAbstract(boolean isAbstract) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetAbstract(isAbstract))
+                .requestBuilder(builder -> builder.setSetAbstract(isAbstract))
                 .functionVoid(concept -> concept.asType().setAbstract(isAbstract))
                 .build();
     }
 
     public static ConceptMethod<Void> setRegex(Optional<String> regex) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRegex(ConceptBuilder.optionalRegex(regex)))
+                .requestBuilder(builder -> builder.setSetRegex(ConceptBuilder.optionalRegex(regex)))
                 .functionVoid(concept -> concept.asAttributeType().setRegex(regex.orElse(null)))
                 .build();
     }
 
     public static ConceptMethod<Void> setAttributeType(AttributeType<?> attributeType) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetAttributeType(ConceptBuilder.concept(attributeType)))
+                .requestBuilder(builder -> builder.setSetAttributeType(ConceptBuilder.concept(attributeType)))
                 .functionVoid(concept -> concept.asType().attribute(attributeType))
                 .build();
     }
 
     public static ConceptMethod<Void> unsetAttributeType(AttributeType<?> attributeType) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetAttributeType(ConceptBuilder.concept(attributeType)))
+                .requestBuilder(builder -> builder.setUnsetAttributeType(ConceptBuilder.concept(attributeType)))
                 .functionVoid(concept -> concept.asType().deleteAttribute(attributeType))
                 .build();
     }
 
     public static ConceptMethod<Void> setKeyType(AttributeType<?> attributeType) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetKeyType(ConceptBuilder.concept(attributeType)))
+                .requestBuilder(builder -> builder.setSetKeyType(ConceptBuilder.concept(attributeType)))
                 .functionVoid(concept -> concept.asType().key(attributeType))
                 .build();
     }
 
     public static ConceptMethod<Void> unsetKeyType(AttributeType<?> attributeType) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetKeyType(ConceptBuilder.concept(attributeType)))
+                .requestBuilder(builder -> builder.setUnsetKeyType(ConceptBuilder.concept(attributeType)))
                 .functionVoid(concept -> concept.asType().deleteKey(attributeType))
                 .build();
     }
 
     public static ConceptMethod<Void> setDirectSuperConcept(SchemaConcept schemaConcept) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetDirectSuperConcept(ConceptBuilder.concept(schemaConcept)))
+                .requestBuilder(builder -> builder.setSetDirectSuperConcept(ConceptBuilder.concept(schemaConcept)))
                 .functionVoid(concept -> setSuper(concept.asSchemaConcept(), schemaConcept))
                 .build();
     }
 
     public static ConceptMethod<Void> removeRolePlayer(RolePlayer rolePlayer) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
+                .requestBuilder(builder -> builder.setUnsetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
                 .functionVoid(concept -> {
                     concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
                 })
@@ -262,96 +262,96 @@ public class ConceptMethods {
 
     public static ConceptMethod<Optional<Concept>> getAttribute(Object value) {
         return ConceptMethod.builder(ConceptResponseType.OPTIONAL_CONCEPT)
-                .requestSetter(builder -> builder.setGetAttribute(ConceptBuilder.attributeValue(value)))
+                .requestBuilder(builder -> builder.setGetAttribute(ConceptBuilder.attributeValue(value)))
                 .function(concept -> Optional.ofNullable(concept.asAttributeType().getAttribute(value)))
                 .build();
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getAttributesByTypes(AttributeType<?>... attributeTypes) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestSetter(builder -> builder.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
+                .requestBuilder(builder -> builder.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
                 .function(concept -> concept.asThing().attributes(attributeTypes))
                 .build();
     }
 
     public static ConceptMethod<Concept> setAttribute(Attribute<?> attribute) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                .requestSetter(builder -> builder.setSetAttribute(ConceptBuilder.concept(attribute)))
+                .requestBuilder(builder -> builder.setSetAttribute(ConceptBuilder.concept(attribute)))
                 .function(concept -> concept.asThing().attributeRelationship(attribute))
                 .build();
     }
 
     public static ConceptMethod<Void> unsetAttribute(Attribute<?> attribute) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetAttribute(ConceptBuilder.concept(attribute)))
+                .requestBuilder(builder -> builder.setUnsetAttribute(ConceptBuilder.concept(attribute)))
                 .functionVoid(concept -> concept.asThing().deleteAttribute(attribute))
                 .build();
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getKeysByTypes(AttributeType<?>... attributeTypes) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestSetter(builder -> builder.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
+                .requestBuilder(builder -> builder.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))))
                 .function(concept -> concept.asThing().keys(attributeTypes))
                 .build();
     }
 
     public static ConceptMethod<Void> setRolePlayedByType(Role role) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRolePlayedByType(ConceptBuilder.concept(role)))
+                .requestBuilder(builder -> builder.setSetRolePlayedByType(ConceptBuilder.concept(role)))
                 .functionVoid(concept -> concept.asType().plays(role))
                 .build();
     }
 
     public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetRolePlayedByType(ConceptBuilder.concept(role)))
+                .requestBuilder(builder -> builder.setUnsetRolePlayedByType(ConceptBuilder.concept(role)))
                 .functionVoid(concept -> concept.asType().deletePlays(role))
                 .build();
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getRolePlayersByRoles(Role... roles) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestSetter(builder -> builder.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles))))
+                .requestBuilder(builder -> builder.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles))))
                 .function(concept -> concept.asRelationship().rolePlayers(roles))
                 .build();
     }
 
     public static ConceptMethod<Void> setRolePlayer(RolePlayer rolePlayer) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
+                .requestBuilder(builder -> builder.setSetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)))
                 .functionVoid(concept -> concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player()))
                 .build();
     }
 
     public static ConceptMethod<Stream<? extends Concept>> getRelationshipsByRoles(Role... roles) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPTS)
-                .requestSetter(builder -> builder.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles))))
+                .requestBuilder(builder -> builder.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles))))
                 .function(concept -> concept.asThing().relationships(roles))
                 .build();
     }
 
     public static ConceptMethod<Void> setRelatedRole(Role role) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setSetRelatedRole(ConceptBuilder.concept(role)))
+                .requestBuilder(builder -> builder.setSetRelatedRole(ConceptBuilder.concept(role)))
                 .functionVoid(concept -> concept.asRelationshipType().relates(role))
                 .build();
     }
 
     public static ConceptMethod<Void> unsetRelatedRole(Role role) {
         return ConceptMethod.builder(ConceptResponseType.UNIT)
-                .requestSetter(builder -> builder.setUnsetRelatedRole(ConceptBuilder.concept(role)))
+                .requestBuilder(builder -> builder.setUnsetRelatedRole(ConceptBuilder.concept(role)))
                 .functionVoid(concept -> concept.asRelationshipType().deleteRelates(role))
                 .build();
     }
 
     public static ConceptMethod<Concept> putAttribute(Object value) {
         return ConceptMethod.builder(ConceptResponseType.CONCEPT)
-                .requestSetter(builder -> builder.setPutAttribute(ConceptBuilder.attributeValue(value)))
+                .requestBuilder(builder -> builder.setPutAttribute(ConceptBuilder.attributeValue(value)))
                 .function(concept -> concept.asAttributeType().putAttribute(value))
                 .build();
     }
 
-    public static ConceptMethod<?> fromGrpc(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
+    public static ConceptMethod<?> requestReader(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
         Role[] roles;
 
         switch (conceptMethod.getConceptMethodCase()) {

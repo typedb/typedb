@@ -41,7 +41,7 @@ import java.util.function.Function;
 public final class ConceptMethod<T> {
 
     // This is the method that is used to create the request on the client-side
-    private final Consumer<GrpcConcept.ConceptMethod.Builder> responseSetter;
+    private final Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder;
 
     // This method is used to extract the value from a Concept
     private final Function<Concept, T> function;
@@ -51,18 +51,18 @@ public final class ConceptMethod<T> {
     private final ConceptResponseType<T> responseType;
 
     private ConceptMethod(
-            Consumer<GrpcConcept.ConceptMethod.Builder> responseSetter,
+            Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder,
             Function<Concept, T> function,
             ConceptResponseType<T> responseType
     ) {
-        this.responseSetter = responseSetter;
+        this.requestBuilder = requestBuilder;
         this.function = function;
         this.responseType = responseType;
     }
 
     public TxResponse createTxResponse(GrpcIterators iterators, T value) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        set(conceptResponse, iterators, value);
+        buildResponse(conceptResponse, iterators, value);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
@@ -71,18 +71,18 @@ public final class ConceptMethod<T> {
     }
 
     @Nullable
-    public T get(TxConceptReader conceptConverter, GrpcClient client, TxResponse txResponse) {
+    public T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
         ConceptResponse conceptResponse = txResponse.getConceptResponse();
-        return responseType.get(conceptConverter, client, conceptResponse);
+        return responseType.readResponse(txConceptReader, client, conceptResponse);
     }
 
-    public void set(ConceptResponse.Builder builder, GrpcIterators iterators, T value) {
-        responseType.set(builder, iterators, value);
+    public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, T value) {
+        responseType.buildResponse(builder, iterators, value);
     }
 
-    public GrpcConcept.ConceptMethod toGrpc() {
+    public GrpcConcept.ConceptMethod requestBuilder() {
         GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-        responseSetter.accept(builder);
+        requestBuilder.accept(builder);
         return builder.build();
     }
 
@@ -96,7 +96,7 @@ public final class ConceptMethod<T> {
     static class Builder<T> {
 
         @Nullable
-        private Consumer<GrpcConcept.ConceptMethod.Builder> requestSetter;
+        private Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder;
 
         @Nullable
         private Function<Concept, T> function;
@@ -107,13 +107,13 @@ public final class ConceptMethod<T> {
             this.responseType = responseType;
         }
 
-        Builder<T> requestSetter(Consumer<GrpcConcept.ConceptMethod.Builder> requestSetter) {
-            this.requestSetter = requestSetter;
+        Builder<T> requestBuilder(Consumer<GrpcConcept.ConceptMethod.Builder> requestBuilder) {
+            this.requestBuilder = requestBuilder;
             return this;
         }
 
-        Builder<T> requestSetterUnit(BiConsumer<GrpcConcept.ConceptMethod.Builder, GrpcConcept.Unit> requestSetter) {
-            this.requestSetter = builder -> requestSetter.accept(builder, GrpcConcept.Unit.getDefaultInstance());
+        Builder<T> requestBuilderUnit(BiConsumer<GrpcConcept.ConceptMethod.Builder, GrpcConcept.Unit> requestBuilder) {
+            this.requestBuilder = builder -> requestBuilder.accept(builder, GrpcConcept.Unit.getDefaultInstance());
             return this;
         }
 
@@ -131,9 +131,9 @@ public final class ConceptMethod<T> {
         }
 
         public ConceptMethod<T> build() {
-            Preconditions.checkNotNull(requestSetter);
+            Preconditions.checkNotNull(requestBuilder);
             Preconditions.checkNotNull(function);
-            return new ConceptMethod<>(requestSetter, function, responseType);
+            return new ConceptMethod<>(requestBuilder, function, responseType);
         }
     }
 }

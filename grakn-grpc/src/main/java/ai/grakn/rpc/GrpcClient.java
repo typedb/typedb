@@ -123,7 +123,7 @@ public class GrpcClient implements AutoCloseable {
     @Nullable
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
         communicator.send(RequestBuilder.runConceptMethodRequest(id, conceptMethod));
-        return conceptMethod.get(conceptReader, this, responseOrThrow());
+        return conceptMethod.readResponse(conceptReader, this, responseOrThrow());
     }
 
     public Optional<Concept> getConcept(ConceptId id) {

@@ -264,9 +264,9 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
     private void runConceptMethod(RunConceptMethod runConceptMethod) {
         Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
-        TxConceptReader converter = new EmbeddedConceptReader(tx());
+        TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
-        ConceptMethod<?> conceptMethod = ConceptMethods.fromGrpc(converter, runConceptMethod.getConceptMethod());
+        ConceptMethod<?> conceptMethod = ConceptMethods.requestReader(txConceptReader, runConceptMethod.getConceptMethod());
 
         TxResponse response = conceptMethod.run(grpcIterators, concept);
 

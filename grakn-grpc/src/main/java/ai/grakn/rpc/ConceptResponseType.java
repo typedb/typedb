@@ -45,13 +45,13 @@ import java.util.stream.StreamSupport;
 public abstract class ConceptResponseType<T> {
 
     @Nullable
-    public abstract T get(TxConceptReader converter, GrpcClient client, ConceptResponse conceptResponse);
+    public abstract T readResponse(TxConceptReader converter, GrpcClient client, ConceptResponse conceptResponse);
 
-    public abstract void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value);
+    public abstract void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable T value);
 
     public static final ConceptResponseType<Stream<? extends Concept>> CONCEPTS = new ConceptResponseType<Stream<? extends Concept>>() {
         @Override
-        public Stream<? extends Concept> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Stream<? extends Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             IteratorId iteratorId = conceptResponse.getIteratorId();
             Iterable<? extends Concept> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.concept(response.getConcept()));
 
@@ -59,7 +59,7 @@ public abstract class ConceptResponseType<T> {
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Stream<? extends Concept> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Stream<? extends Concept> value) {
             Stream<TxResponse> responses = value.map(ResponseBuilder::concept);
             IteratorId iteratorId = iterators.add(responses.iterator());
             builder.setIteratorId(iteratorId);
@@ -68,7 +68,7 @@ public abstract class ConceptResponseType<T> {
 
     public static final ConceptResponseType<Stream<RolePlayer>> ROLE_PLAYERS = new ConceptResponseType<Stream<RolePlayer>>() {
         @Override
-        public Stream<RolePlayer> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Stream<RolePlayer> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             IteratorId iteratorId = conceptResponse.getIteratorId();
             Iterable<RolePlayer> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.rolePlayer(response.getRolePlayer()));
 
@@ -76,7 +76,7 @@ public abstract class ConceptResponseType<T> {
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Stream<RolePlayer> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Stream<RolePlayer> value) {
             Stream<TxResponse> responses = value.map(ResponseBuilder::rolePlayer);
             IteratorId iteratorId = iterators.add(responses.iterator());
             builder.setIteratorId(iteratorId);
@@ -85,48 +85,48 @@ public abstract class ConceptResponseType<T> {
 
     public static final ConceptResponseType<Boolean> BOOL = new ConceptResponseType<Boolean>() {
         @Override
-        public Boolean get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Boolean readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return conceptResponse.getBool();
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Boolean value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Boolean value) {
             builder.setBool(value);
         }
     };
 
     public static final ConceptResponseType<Optional<Pattern>> OPTIONAL_PATTERN = new ConceptResponseType<Optional<Pattern>>() {
         @Override
-        public Optional<Pattern> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Optional<Pattern> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.optionalPattern(conceptResponse.getOptionalPattern());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<Pattern> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<Pattern> value) {
             builder.setOptionalPattern(ConceptBuilder.optionalPattern(value));
         }
     };
 
     public static final ConceptResponseType<Concept> CONCEPT = new ConceptResponseType<Concept>() {
         @Override
-        public Concept get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Concept readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return txConceptReader.concept(conceptResponse.getConcept());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Concept value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Concept value) {
             builder.setConcept(ConceptBuilder.concept(value));
         }
     };
 
     public static final ConceptResponseType<Optional<Concept>> OPTIONAL_CONCEPT = new ConceptResponseType<Optional<Concept>>() {
         @Override
-        public Optional<Concept> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Optional<Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return txConceptReader.optionalConcept(conceptResponse.getOptionalConcept());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<Concept> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<Concept> value) {
             builder.setOptionalConcept(ConceptBuilder.optionalConcept(value));
         }
     };
@@ -134,84 +134,84 @@ public abstract class ConceptResponseType<T> {
 
     public static final ConceptResponseType<AttributeType.DataType<?>> DATA_TYPE = new ConceptResponseType<AttributeType.DataType<?>>() {
         @Override
-        public AttributeType.DataType<?> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public AttributeType.DataType<?> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.dataType(conceptResponse.getDataType());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable AttributeType.DataType<?> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable AttributeType.DataType<?> value) {
             builder.setDataType(ConceptBuilder.dataType(value));
         }
     };
 
     public static final ConceptResponseType<Optional<AttributeType.DataType<?>>> OPTIONAL_DATA_TYPE = new ConceptResponseType<Optional<AttributeType.DataType<?>>>() {
         @Override
-        public Optional<AttributeType.DataType<?>> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Optional<AttributeType.DataType<?>> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.optionalDataType(conceptResponse.getOptionalDataType());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<AttributeType.DataType<?>> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<AttributeType.DataType<?>> value) {
             builder.setOptionalDataType(ResponseBuilder.optionalDataType(value));
         }
     };
 
     public static final ConceptResponseType<Object> ATTRIBUTE_VALUE = new ConceptResponseType<Object>() {
         @Override
-        public Object get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Object readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.attributeValue(conceptResponse.getAttributeValue());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Object value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Object value) {
             builder.setAttributeValue(ConceptBuilder.attributeValue(value));
         }
     };
 
     public static final ConceptResponseType<Label> LABEL = new ConceptResponseType<Label>() {
         @Override
-        public Label get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Label readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.label(conceptResponse.getLabel());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Label value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Label value) {
             builder.setLabel(ConceptBuilder.label(value));
         }
     };
 
     public static final ConceptResponseType<String> STRING = new ConceptResponseType<String>() {
         @Override
-        public String get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public String readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return conceptResponse.getString();
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable String value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable String value) {
             builder.setString(value);
         }
     };
 
     public static final ConceptResponseType<Void> UNIT = new ConceptResponseType<Void>() {
         @Override
-        public Void get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Void readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return null;
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Void value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Void value) {
             builder.setUnit(GrpcConcept.Unit.getDefaultInstance());
         }
     };
 
     public static final ConceptResponseType<Optional<String>> OPTIONAL_REGEX = new ConceptResponseType<Optional<String>>() {
         @Override
-        public Optional<String> get(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
+        public Optional<String> readResponse(TxConceptReader txConceptReader, GrpcClient client, ConceptResponse conceptResponse) {
             return ConceptReader.optionalRegex(conceptResponse.getOptionalRegex());
         }
 
         @Override
-        public void set(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<String> value) {
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, @Nullable Optional<String> value) {
             builder.setOptionalRegex(ConceptBuilder.optionalRegex(value));
         }
     };
