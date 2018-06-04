@@ -4,11 +4,16 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.*;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
+import generator.EntityGenerator;
+import generator.GeneratorFactory;
 import strategy.DiscreteGaussianPDF;
+import strategy.SchemaStrategy;
+import strategy.TypeStrategy;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -195,9 +200,9 @@ public class DataGenerator {
         try (GraknTx tx = session.open(GraknTxType.READ)) {
             // TODO This works, but now entityTypes Types not EntityTypes
             this.entityTypes = this.getTypes(tx, "entity");
-        }
 
-        String entityTypeLabel;
+
+            String entityTypeLabel;
 
 //        while (it < max_iterations) {
 //            op = this.chooseOperation();
@@ -221,11 +226,21 @@ public class DataGenerator {
 //
 //            it++;
 //        }
-        while (it < max_iterations) {
 
+            SchemaStrategy strategy = new SchemaStrategy(0.0f, new Random(), new HashSet<>());
+
+            while (it < max_iterations) {
+
+                TypeStrategy typeStrategy = strategy.getStrategy();
+                GeneratorFactory
+                        .create(typeStrategy, tx)
+                        .generate()
+                        .forEach(Query::execute);
+                
 //            operationStrategy = schemaStrategy.pickStrategy();
 //            operationStrategy.
-            it++;
+                it++;
+            }
         }
     }
 
