@@ -1,0 +1,12 @@
+image: ubuntu:latest
+
+before_script:
+  - apt-get update
+
+stages:
+  - test
+
+mvn-test:
+  stage: test
+  script: echo 'mvn test'
+
