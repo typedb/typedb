@@ -52,6 +52,7 @@ exit_if_java_not_found() {
 # main routine
 # =============================================
 
+exit_code=0
 
 pushd "$GRAKN_HOME" > /dev/null
 
@@ -63,4 +64,8 @@ GRAKN_CONFIG="conf/grakn.properties"
 
 java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.bootup.GraknBootup $@
 
+exit_code=$?
+
 popd > /dev/null
+
+exit $exit_code

@@ -43,8 +43,14 @@ update_classpath_global_var() {
 # main routine
 # =============================================
 
+exit_code=0
+
 update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
 java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.bootup.Graql "$@"
+
+exit_code=$?
+
+exit $exit_code
