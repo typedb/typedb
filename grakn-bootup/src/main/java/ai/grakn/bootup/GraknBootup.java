@@ -73,8 +73,8 @@ public class GraknBootup {
 
         }
         catch (RuntimeException ex) {
-            LOG.error("An error has occurred during boot-up. Please run 'grakn server status' or check the logs located under 'logs' directory.", ex);
-            System.out.println("An error has occurred during boot-up. Please run 'grakn server status' or check the logs located under 'logs' directory.");
+            LOG.error(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage(), ex);
+            System.out.println(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage());
             System.err.println(ex.getMessage());
             System.exit(1);
         }
