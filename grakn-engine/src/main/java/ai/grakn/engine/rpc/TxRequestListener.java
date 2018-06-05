@@ -34,7 +34,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcIterators;

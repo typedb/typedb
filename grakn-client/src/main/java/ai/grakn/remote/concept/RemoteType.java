@@ -24,7 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
 

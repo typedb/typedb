@@ -37,6 +37,7 @@ import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.ResponseBuilder.ErrorType;

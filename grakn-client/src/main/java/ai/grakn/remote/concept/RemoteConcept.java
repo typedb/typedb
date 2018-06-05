@@ -22,7 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 
 import java.util.Objects;

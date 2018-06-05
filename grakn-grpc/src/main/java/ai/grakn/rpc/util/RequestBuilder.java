@@ -25,7 +25,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.rpc.ConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Commit;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;

@@ -24,7 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;

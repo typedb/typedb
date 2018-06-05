@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc;
+package ai.grakn.rpc.util;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -26,14 +26,14 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.rpc.GrpcClient;
+import ai.grakn.rpc.GrpcIterators;
+import ai.grakn.rpc.ResponseIterator;
+import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
-import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.rpc.util.TxConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.Optional;

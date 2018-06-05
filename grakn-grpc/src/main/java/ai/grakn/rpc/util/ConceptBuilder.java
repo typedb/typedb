@@ -18,7 +18,6 @@
 
 package ai.grakn.rpc.util;
 
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -26,7 +25,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;

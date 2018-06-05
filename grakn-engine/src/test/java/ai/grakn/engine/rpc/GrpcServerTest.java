@@ -42,7 +42,7 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.rpc.ConceptMethod;
+import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.GrpcOpenRequestExecutor;
