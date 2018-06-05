@@ -1,15 +1,13 @@
-package strategy;
+package generator;
 
 import ai.grakn.concept.Type;
 import pdf.PDF;
 
-//public class TypeStrategy<T extends Type, P extends PDF> extends Strategy{
-public class TypeStrategy<T extends Type>{
+public class TypeGenerator<T extends Type>{
     private final T type;
-//    private final P numInstancesPDF;
     private final PDF numInstancesPDF;
 
-    public TypeStrategy(T type, PDF numInstancesPDF){
+    public TypeGenerator(T type, PDF numInstancesPDF){
         this.type = type;
         this.numInstancesPDF = numInstancesPDF;
     }
@@ -21,5 +19,7 @@ public class TypeStrategy<T extends Type>{
     public PDF getNumInstancesPDF() {
         return numInstancesPDF;
     }
+
+    public generate()
 }
 

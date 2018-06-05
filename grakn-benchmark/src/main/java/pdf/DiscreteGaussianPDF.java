@@ -1,9 +1,9 @@
-package strategy;
+package pdf;
 
 import java.util.Random;
 
-//public class strategy.DiscreteGaussianPDF extends PDF {
-public class DiscreteGaussianPDF {
+public class DiscreteGaussianPDF extends PDF {
+//public class DiscreteGaussianPDF {
     private Random rand;
 
     public DiscreteGaussianPDF(Random rand, Double mean, Double variance) {

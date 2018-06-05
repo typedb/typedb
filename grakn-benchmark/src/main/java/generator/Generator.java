@@ -8,15 +8,13 @@ import java.util.stream.Stream;
 
 public abstract class Generator<T extends TypeStrategy> {
 
-    private final T strategy;
-    private final GraknTx tx;
+    protected final T strategy;
+    protected final GraknTx tx;
 
     public Generator(T strategy, GraknTx tx) {
         this.strategy = strategy;
         this.tx = tx;
     }
 
-    public Stream<Query> generate(){
-        return null;
-    }
+    public abstract Stream<Query> generate();
 }
