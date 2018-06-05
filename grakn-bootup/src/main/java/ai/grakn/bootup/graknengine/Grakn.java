@@ -19,8 +19,9 @@
 package ai.grakn.bootup.graknengine;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.graknengine.pid.GraknPidFileStore;
 import ai.grakn.bootup.graknengine.pid.GraknPidManager;
-import ai.grakn.bootup.graknengine.pid.GraknPidManagerFactory;
+import ai.grakn.bootup.graknengine.pid.GraknPidStore;
 import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.ErrorMessage;
@@ -59,8 +60,10 @@ public class Grakn {
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
+
             Path pidfile = Paths.get(graknPidFileProperty);
-            GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
+            GraknPidStore graknPidStore = new GraknPidFileStore(pidfile);
+            GraknPidManager graknPidManager = new GraknPidManager(graknPidStore);
             graknPidManager.trackGraknPid();
 
             // Start Engine
