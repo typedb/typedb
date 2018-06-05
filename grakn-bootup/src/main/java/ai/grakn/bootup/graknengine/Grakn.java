@@ -36,7 +36,7 @@ import java.util.Optional;
  *
  * Main class invoked by the 'grakn' bash script.
  *
- * NOTE: Please keep the class name "Grakn" as it is shown when a user is running the 'ps' or 'jps' command.
+ * NOTE: Please keep the class name "Grakn" as it is what will be displayed to the user.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
@@ -53,7 +53,8 @@ public class Grakn {
      * @param args
      */
     public static void main(String[] args) {
-        Thread.setDefaultUncaughtExceptionHandler(newUncaughtExceptionHandler(LOG));
+        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
+                LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
 
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
@@ -68,10 +69,6 @@ public class Grakn {
         } catch (IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
         }
-    }
-
-    private static Thread.UncaughtExceptionHandler newUncaughtExceptionHandler(Logger logger) {
-        return (Thread t, Throwable e) -> logger.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e);
     }
 }
 

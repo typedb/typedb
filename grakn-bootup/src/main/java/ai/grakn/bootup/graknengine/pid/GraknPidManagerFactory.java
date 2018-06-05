@@ -36,7 +36,6 @@ public class GraknPidManagerFactory {
      */
     public static GraknPidManager newGraknPidManagerForUnixOS(Path pidfilePath) {
         GraknPidStore graknPidStore = new GraknPidFileStore(pidfilePath);
-        GraknPidRetriever graknPidRetriever = new UnixGraknPidRetriever();
-        return new GraknPidManager(graknPidStore, graknPidRetriever);
+        return new GraknPidManager(graknPidStore);
     }
 }

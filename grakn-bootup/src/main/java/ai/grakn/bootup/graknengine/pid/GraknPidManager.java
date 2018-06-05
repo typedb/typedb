@@ -18,6 +18,8 @@
 
 package ai.grakn.bootup.graknengine.pid;
 
+import java.lang.management.ManagementFactory;
+
 /**
  *
  * A class responsible for managing the grakn.pid file of Grakn
@@ -27,14 +29,22 @@ package ai.grakn.bootup.graknengine.pid;
  */
 public class GraknPidManager {
     GraknPidStore graknPidStore;
-    GraknPidRetriever graknPidRetriever;
 
-    public GraknPidManager(GraknPidStore graknPidStore, GraknPidRetriever graknPidRetriever) {
+    public GraknPidManager(GraknPidStore graknPidStore) {
         this.graknPidStore = graknPidStore;
-        this.graknPidRetriever = graknPidRetriever;
     }
     public void trackGraknPid() {
-        long pid = graknPidRetriever.getPid();
+        long pid = getPid();
         graknPidStore.trackGraknPid(pid);
+    }
+
+    private long getPid() {
+        String[] pidAndHostnameString = ManagementFactory.getRuntimeMXBean().getName().split("@");
+        String pidString = pidAndHostnameString[0];
+        try {
+            return Long.parseLong(pidString);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Couldn't get the PID of Grakn Engine. Received '" + pidString + "'");
+        }
     }
 }
