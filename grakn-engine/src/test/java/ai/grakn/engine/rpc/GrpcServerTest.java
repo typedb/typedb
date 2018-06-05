@@ -83,12 +83,12 @@ import java.util.stream.Stream;
 
 import static ai.grakn.rpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
-import static ai.grakn.rpc.util.RequestBuilder.commitRequest;
+import static ai.grakn.rpc.util.RequestBuilder.commit;
 import static ai.grakn.rpc.util.RequestBuilder.delete;
-import static ai.grakn.rpc.util.RequestBuilder.execQueryRequest;
-import static ai.grakn.rpc.util.RequestBuilder.nextRequest;
-import static ai.grakn.rpc.util.RequestBuilder.openRequest;
-import static ai.grakn.rpc.util.RequestBuilder.stopRequest;
+import static ai.grakn.rpc.util.RequestBuilder.execQuery;
+import static ai.grakn.rpc.util.RequestBuilder.next;
+import static ai.grakn.rpc.util.RequestBuilder.open;
+import static ai.grakn.rpc.util.RequestBuilder.stop;
 import static ai.grakn.rpc.util.ResponseBuilder.done;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -167,7 +167,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.READ);
@@ -176,7 +176,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.WRITE);
@@ -185,7 +185,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.BATCH));
+            tx.send(open(MYKS, GraknTxType.BATCH));
         }
 
         verify(txFactory).tx(MYKS, GraknTxType.BATCH);
@@ -194,7 +194,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             TxResponse response = tx.receive().ok();
 
             assertEquals(done(), response);
@@ -204,8 +204,8 @@ public class GrpcServerTest {
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(commitRequest());
+            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(commit());
         }
 
         verify(tx).commitSubmitNoLogs();
@@ -214,10 +214,10 @@ public class GrpcServerTest {
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(commitRequest());
+            tx.send(commit());
             TxResponse response = tx.receive().ok();
 
             assertEquals(done(), response);
@@ -237,8 +237,8 @@ public class GrpcServerTest {
                 TxGrpcCommunicator tx1 = TxGrpcCommunicator.create(stub);
                 TxGrpcCommunicator tx2 = TxGrpcCommunicator.create(stub)
         ) {
-            tx1.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx2.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx1.send(open(MYKS, GraknTxType.WRITE));
+            tx2.send(open(MYKS, GraknTxType.WRITE));
 
             tx1.receive();
             tx2.receive();
@@ -278,7 +278,7 @@ public class GrpcServerTest {
         }).when(tx).close();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
         verify(tx).close();
@@ -288,8 +288,8 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(execQuery(QUERY, null));
         }
 
         GetQuery query = tx.graql().parse(QUERY);
@@ -316,13 +316,13 @@ public class GrpcServerTest {
         when(query.stream()).thenAnswer(params -> answers.stream());
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
             TxResponse response1 = tx.receive().ok();
 
             GrpcConcept.Concept rpcX =
@@ -331,7 +331,7 @@ public class GrpcServerTest {
             GrpcGrakn.Answer.Builder resultX = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
             TxResponse response2 = tx.receive().ok();
 
             GrpcConcept.Concept rpcY =
@@ -340,13 +340,13 @@ public class GrpcServerTest {
             GrpcGrakn.Answer.Builder resultY = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
             TxResponse response3 = tx.receive().ok();
 
             TxResponse expected = done();
             assertEquals(expected, response3);
 
-            tx.send(stopRequest(iterator));
+            tx.send(stop(iterator));
         }
     }
 
@@ -371,19 +371,19 @@ public class GrpcServerTest {
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
             tx.receive().ok();
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
             tx.receive().ok();
 
-            tx.send(stopRequest(iterator));
+            tx.send(stop(iterator));
 
             TxResponse response = tx.receive().ok();
 
@@ -401,10 +401,10 @@ public class GrpcServerTest {
         when(countQuery.execute()).thenReturn(new ComputeQueryImpl.AnswerImpl().setNumber(100L));
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(COUNT_QUERY, null));
+            tx.send(execQuery(COUNT_QUERY, null));
 
             TxResponse expected =
                     TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("100")).build();
@@ -422,10 +422,10 @@ public class GrpcServerTest {
         when(deleteQuery.execute()).thenReturn(null);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(DELETE_QUERY, null));
+            tx.send(execQuery(DELETE_QUERY, null));
             assertEquals(ResponseBuilder.done(), tx.receive().ok());
         }
     }
@@ -433,12 +433,12 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator));
-            tx.send(stopRequest(iterator));
+            tx.send(next(iterator));
+            tx.send(stop(iterator));
         }
 
         verify(tx.graql(), times(0)).infer(anyBoolean());
@@ -447,12 +447,12 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY, false));
+            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(execQuery(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator));
-            tx.send(stopRequest(iterator));
+            tx.send(next(iterator));
+            tx.send(stop(iterator));
         }
 
         verify(tx.graql()).infer(false);
@@ -461,12 +461,12 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
-            tx.send(execQueryRequest(QUERY, true));
+            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(execQuery(QUERY, true));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator));
-            tx.send(stopRequest(iterator));
+            tx.send(next(iterator));
+            tx.send(stop(iterator));
         }
 
         verify(tx.graql()).infer(true);
@@ -483,10 +483,10 @@ public class GrpcServerTest {
         when(concept.asSchemaConcept().getLabel()).thenReturn(label);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
 
             assertEquals(label, ConceptMethod.GET_LABEL.readResponse(conceptConverter, client, tx.receive().ok()));
         }
@@ -502,10 +502,10 @@ public class GrpcServerTest {
         when(concept.asSchemaConcept().isImplicit()).thenReturn(true);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.IS_IMPLICIT));
+            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_IMPLICIT));
 
             assertTrue(ConceptMethod.IS_IMPLICIT.readResponse(conceptConverter, client, tx.receive().ok()));
         }
@@ -521,10 +521,10 @@ public class GrpcServerTest {
         when(concept.asThing().isInferred()).thenReturn(false);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.IS_INFERRED));
+            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_INFERRED));
 
             assertFalse(ConceptMethod.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
         }
@@ -555,11 +555,11 @@ public class GrpcServerTest {
         when(player.getId()).thenReturn(playerId);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
             ConceptMethod<Void> conceptMethod = ConceptMethod.removeRolePlayer(RolePlayer.create(role, player));
-            tx.send(RequestBuilder.runConceptMethodRequest(conceptId, conceptMethod));
+            tx.send(RequestBuilder.runConceptMethod(conceptId, conceptMethod));
             tx.receive().ok();
 
             verify(concept.asRelationship()).removeRolePlayer(role, player);
@@ -573,10 +573,10 @@ public class GrpcServerTest {
         when(tx.getConcept(id)).thenReturn(null);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -594,10 +594,10 @@ public class GrpcServerTest {
         when(concept.asSchemaConcept()).thenThrow(EXCEPTION);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethodRequest(id, ConceptMethod.GET_LABEL));
+            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -616,10 +616,10 @@ public class GrpcServerTest {
         when(tx.getConcept(id)).thenReturn(concept);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.getConceptRequest(id));
+            tx.send(RequestBuilder.getConcept(id));
 
             GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
@@ -635,10 +635,10 @@ public class GrpcServerTest {
         when(tx.getConcept(id)).thenReturn(null);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.getConceptRequest(id));
+            tx.send(RequestBuilder.getConcept(id));
 
             GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
 
@@ -649,7 +649,7 @@ public class GrpcServerTest {
     @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(commitRequest());
+            tx.send(commit());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -660,7 +660,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -671,10 +671,10 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -690,7 +690,7 @@ public class GrpcServerTest {
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION));
@@ -704,10 +704,10 @@ public class GrpcServerTest {
         doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(commitRequest());
+            tx.send(commit());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -723,10 +723,10 @@ public class GrpcServerTest {
         when(tx.graql().parse(QUERY)).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION));
@@ -743,10 +743,10 @@ public class GrpcServerTest {
         when(query.stream()).thenThrow(error);
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION));
@@ -758,10 +758,10 @@ public class GrpcServerTest {
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(nextRequest(IteratorId.getDefaultInstance()));
+            tx.send(next(IteratorId.getDefaultInstance()));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -772,10 +772,10 @@ public class GrpcServerTest {
     @Test
     public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(stopRequest(IteratorId.getDefaultInstance()));
+            tx.send(stop(IteratorId.getDefaultInstance()));
             assertEquals(ResponseBuilder.done(), tx.receive().ok());
         }
     }
@@ -783,16 +783,16 @@ public class GrpcServerTest {
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
-            tx.send(stopRequest(iterator));
+            tx.send(stop(iterator));
             tx.receive();
 
-            tx.send(nextRequest(iterator));
+            tx.send(next(iterator));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -803,25 +803,25 @@ public class GrpcServerTest {
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_ReturnResultsForBothQueries() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator1 = tx.receive().ok().getIteratorId();
 
-            tx.send(execQueryRequest(QUERY, null));
+            tx.send(execQuery(QUERY, null));
             IteratorId iterator2 = tx.receive().ok().getIteratorId();
 
-            tx.send(nextRequest(iterator1));
+            tx.send(next(iterator1));
             tx.receive().ok();
 
-            tx.send(nextRequest(iterator2));
+            tx.send(next(iterator2));
             tx.receive().ok();
 
-            tx.send(stopRequest(iterator1));
+            tx.send(stop(iterator1));
             tx.receive().ok();
 
-            tx.send(stopRequest(iterator2));
+            tx.send(stop(iterator2));
             tx.receive().ok();
         }
     }

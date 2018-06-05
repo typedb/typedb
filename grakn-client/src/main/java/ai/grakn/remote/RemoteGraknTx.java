@@ -44,7 +44,7 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.util.RequestBuilder;
-import ai.grakn.util.RemoteConceptReader;
+import ai.grakn.remote.rpc.RemoteConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -206,7 +206,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void delete() {
-        DeleteRequest request = RequestBuilder.delete(RequestBuilder.openRequest(keyspace(), GraknTxType.WRITE).getOpen());
+        DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(keyspace(), GraknTxType.WRITE).getOpen());
         session.blockingStub().delete(request);
         close();
     }

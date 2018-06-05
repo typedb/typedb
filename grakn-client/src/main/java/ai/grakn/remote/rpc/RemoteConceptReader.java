@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.remote.rpc;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;

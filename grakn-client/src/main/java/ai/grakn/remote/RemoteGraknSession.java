@@ -75,7 +75,7 @@ public class RemoteGraknSession implements GraknSession {
 
     @Override
     public RemoteGraknTx open(GraknTxType transactionType) {
-        return RemoteGraknTx.create(this, RequestBuilder.openRequest(keyspace, transactionType));
+        return RemoteGraknTx.create(this, RequestBuilder.open(keyspace, transactionType));
     }
 
     @Override

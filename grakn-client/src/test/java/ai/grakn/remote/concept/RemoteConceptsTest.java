@@ -238,14 +238,14 @@ public class RemoteConceptsTest {
         TxResponse response =
                 TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.of(concept))).build();
 
-        server.setResponse(RequestBuilder.getConceptRequest(ID), response);
+        server.setResponse(RequestBuilder.getConcept(ID), response);
 
         assertFalse(entity.isDeleted());
 
         TxResponse nullResponse =
                 TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.empty())).build();
 
-        server.setResponse(RequestBuilder.getConceptRequest(ID), nullResponse);
+        server.setResponse(RequestBuilder.getConcept(ID), nullResponse);
 
         assertTrue(entity.isDeleted());
     }
@@ -458,7 +458,7 @@ public class RemoteConceptsTest {
 
         TxResponse response = GET_ROLE_PLAYERS.createTxResponse(server.grpcIterators(), mockedResponse);
 
-        server.setResponse(RequestBuilder.runConceptMethodRequest(ID, GET_ROLE_PLAYERS), response);
+        server.setResponse(RequestBuilder.runConceptMethod(ID, GET_ROLE_PLAYERS), response);
 
         Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
 
@@ -715,12 +715,12 @@ public class RemoteConceptsTest {
     }
 
     private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
-        verify(server.requests()).onNext(RequestBuilder.runConceptMethodRequest(ID, conceptMethod));
+        verify(server.requests()).onNext(RequestBuilder.runConceptMethod(ID, conceptMethod));
     }
 
     private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
         server.setResponse(
-                RequestBuilder.runConceptMethodRequest(ID, property),
+                RequestBuilder.runConceptMethod(ID, property),
                 property.createTxResponse(server.grpcIterators(), value)
         );
     }

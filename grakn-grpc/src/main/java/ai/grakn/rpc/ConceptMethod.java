@@ -49,20 +49,148 @@ import java.util.stream.StreamSupport;
  */
 public abstract class ConceptMethod<T> {
 
+    // Client: RemoteGraknSession, RemoteGraknTx
+    // RPC: RequestBuilder.runConceptMethod()
+    public abstract GrpcConcept.ConceptMethod requestBuilder();
+
+    @Nullable // Client: GrpcClient
+    public abstract T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse);
+
+    // Server: TxQueryListener.runConceptMethod()
+    public abstract TxResponse run(GrpcIterators iterators, Concept concept);
+
+    // ^-- Server: ConceptMethod.run()
     public TxResponse createTxResponse(GrpcIterators iterators, T response) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         buildResponse(conceptResponse, iterators, response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    public abstract TxResponse run(GrpcIterators iterators, Concept concept);
-
-    @Nullable
-    public abstract T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse);
-
+    // ^-- Server: ^ ConceptMethod.createTxResponse()
     public abstract void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, T value);
 
-    public abstract GrpcConcept.ConceptMethod requestBuilder();
+    // Server: TxRequestLister.runConceptMethod()
+    public static ConceptMethod<?> requestReader(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
+        Role[] roles;
+
+        switch (conceptMethod.getConceptMethodCase()) {
+            case GETVALUE:
+                return GET_VALUE;
+            case GETDATATYPEOFTYPE:
+                return GET_DATA_TYPE_OF_TYPE;
+            case GETDATATYPEOFATTRIBUTE:
+                return GET_DATA_TYPE_OF_ATTRIBUTE;
+            case GETLABEL:
+                return GET_LABEL;
+            case SETLABEL:
+                return setLabel(ConceptReader.label(conceptMethod.getSetLabel()));
+            case ISIMPLICIT:
+                return IS_IMPLICIT;
+            case ISINFERRED:
+                return IS_INFERRED;
+            case ISABSTRACT:
+                return IS_ABSTRACT;
+            case GETWHEN:
+                return GET_WHEN;
+            case GETTHEN:
+                return GET_THEN;
+            case GETREGEX:
+                return GET_REGEX;
+            case GETROLEPLAYERS:
+                return GET_ROLE_PLAYERS;
+            case GETATTRIBUTETYPES:
+                return GET_ATTRIBUTE_TYPES;
+            case SETATTRIBUTETYPE:
+                return setAttributeType(converter.concept(conceptMethod.getSetAttributeType()).asAttributeType());
+            case UNSETATTRIBUTETYPE:
+                return unsetAttributeType(converter.concept(conceptMethod.getUnsetAttributeType()).asAttributeType());
+            case GETKEYTYPES:
+                return GET_KEY_TYPES;
+            case GETDIRECTTYPE:
+                return GET_DIRECT_TYPE;
+            case GETDIRECTSUPERCONCEPT:
+                return GET_DIRECT_SUPER;
+            case SETDIRECTSUPERCONCEPT:
+                GrpcConcept.Concept setDirectSuperConcept = conceptMethod.getSetDirectSuperConcept();
+                SchemaConcept schemaConcept = converter.concept(setDirectSuperConcept).asSchemaConcept();
+                return setDirectSuperConcept(schemaConcept);
+            case UNSETROLEPLAYER:
+                return removeRolePlayer(converter.rolePlayer(conceptMethod.getUnsetRolePlayer()));
+            case DELETE:
+                return DELETE;
+            case GETATTRIBUTE:
+                return getAttribute(ConceptReader.attributeValue(conceptMethod.getGetAttribute()));
+            case GETOWNERS:
+                return GET_OWNERS;
+            case GETTYPESTHATPLAYROLE:
+                return GET_TYPES_THAT_PLAY_ROLE;
+            case GETROLESPLAYEDBYTYPE:
+                return GET_ROLES_PLAYED_BY_TYPE;
+            case GETINSTANCES:
+                return GET_INSTANCES;
+            case GETRELATEDROLES:
+                return GET_RELATED_ROLES;
+            case GETATTRIBUTES:
+                return GET_ATTRIBUTES;
+            case GETSUPERCONCEPTS:
+                return GET_SUPER_CONCEPTS;
+            case GETRELATIONSHIPTYPESTHATRELATEROLE:
+                return GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE;
+            case GETATTRIBUTESBYTYPES:
+                GrpcConcept.Concepts getAttributeTypes = conceptMethod.getGetAttributesByTypes();
+                AttributeType<?>[] attributeTypes = ConceptReader.concepts(converter, getAttributeTypes).toArray(AttributeType[]::new);
+                return getAttributesByTypes(attributeTypes);
+            case GETRELATIONSHIPS:
+                return GET_RELATIONSHIPS;
+            case GETSUBCONCEPTS:
+                return GET_SUB_CONCEPTS;
+            case GETRELATIONSHIPSBYROLES:
+                roles = ConceptReader.concepts(converter, conceptMethod.getGetRelationshipsByRoles()).toArray(Role[]::new);
+                return getRelationshipsByRoles(roles);
+            case GETROLESPLAYEDBYTHING:
+                return GET_ROLES_PLAYED_BY_THING;
+            case GETKEYS:
+                return GET_KEYS;
+            case GETKEYSBYTYPES:
+                GrpcConcept.Concepts getKeyTypes = conceptMethod.getGetAttributesByTypes();
+                AttributeType<?>[] keyTypes = ConceptReader.concepts(converter, getKeyTypes).toArray(AttributeType[]::new);
+                return getKeysByTypes(keyTypes);
+            case GETROLEPLAYERSBYROLES:
+                roles = ConceptReader.concepts(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
+                return getRolePlayersByRoles(roles);
+            case SETKEYTYPE:
+                return setKeyType(converter.concept(conceptMethod.getSetKeyType()).asAttributeType());
+            case UNSETKEYTYPE:
+                return unsetKeyType(converter.concept(conceptMethod.getUnsetKeyType()).asAttributeType());
+            case SETABSTRACT:
+                return setAbstract(conceptMethod.getSetAbstract());
+            case SETROLEPLAYEDBYTYPE:
+                return setRolePlayedByType(converter.concept(conceptMethod.getSetRolePlayedByType()).asRole());
+            case UNSETROLEPLAYEDBYTYPE:
+                return unsetRolePlayedByType(converter.concept(conceptMethod.getUnsetRolePlayedByType()).asRole());
+            case ADDENTITY:
+                return ADD_ENTITY;
+            case SETRELATEDROLE:
+                return setRelatedRole(converter.concept(conceptMethod.getSetRelatedRole()).asRole());
+            case UNSETRELATEDROLE:
+                return unsetRelatedRole(converter.concept(conceptMethod.getUnsetRelatedRole()).asRole());
+            case PUTATTRIBUTE:
+                return putAttribute(ConceptReader.attributeValue(conceptMethod.getPutAttribute()));
+            case SETREGEX:
+                return setRegex(ConceptReader.optionalRegex(conceptMethod.getSetRegex()));
+            case SETATTRIBUTE:
+                return setAttribute(converter.concept(conceptMethod.getSetAttribute()).asAttribute());
+            case UNSETATTRIBUTE:
+                return unsetAttribute(converter.concept(conceptMethod.getUnsetAttribute()).asAttribute());
+            case ADDRELATIONSHIP:
+                return ADD_RELATIONSHIP;
+            case SETROLEPLAYER:
+                return setRolePlayer(converter.rolePlayer(conceptMethod.getSetRolePlayer()));
+            default:
+            case CONCEPTMETHOD_NOT_SET:
+                throw new IllegalArgumentException("Unrecognised " + conceptMethod);
+        }
+    }
 
     static abstract class BooleanMethod extends ConceptMethod<Boolean> {
         @Override @Nullable
@@ -977,127 +1105,5 @@ public abstract class ConceptMethod<T> {
                 return createTxResponse(iterators, response);
             }
         };
-    }
-
-    public static ConceptMethod<?> requestReader(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
-        Role[] roles;
-
-        switch (conceptMethod.getConceptMethodCase()) {
-            case GETVALUE:
-                return GET_VALUE;
-            case GETDATATYPEOFTYPE:
-                return GET_DATA_TYPE_OF_TYPE;
-            case GETDATATYPEOFATTRIBUTE:
-                return GET_DATA_TYPE_OF_ATTRIBUTE;
-            case GETLABEL:
-                return GET_LABEL;
-            case SETLABEL:
-                return setLabel(ConceptReader.label(conceptMethod.getSetLabel()));
-            case ISIMPLICIT:
-                return IS_IMPLICIT;
-            case ISINFERRED:
-                return IS_INFERRED;
-            case ISABSTRACT:
-                return IS_ABSTRACT;
-            case GETWHEN:
-                return GET_WHEN;
-            case GETTHEN:
-                return GET_THEN;
-            case GETREGEX:
-                return GET_REGEX;
-            case GETROLEPLAYERS:
-                return GET_ROLE_PLAYERS;
-            case GETATTRIBUTETYPES:
-                return GET_ATTRIBUTE_TYPES;
-            case SETATTRIBUTETYPE:
-                return setAttributeType(converter.concept(conceptMethod.getSetAttributeType()).asAttributeType());
-            case UNSETATTRIBUTETYPE:
-                return unsetAttributeType(converter.concept(conceptMethod.getUnsetAttributeType()).asAttributeType());
-            case GETKEYTYPES:
-                return GET_KEY_TYPES;
-            case GETDIRECTTYPE:
-                return GET_DIRECT_TYPE;
-            case GETDIRECTSUPERCONCEPT:
-                return GET_DIRECT_SUPER;
-            case SETDIRECTSUPERCONCEPT:
-                GrpcConcept.Concept setDirectSuperConcept = conceptMethod.getSetDirectSuperConcept();
-                SchemaConcept schemaConcept = converter.concept(setDirectSuperConcept).asSchemaConcept();
-                return setDirectSuperConcept(schemaConcept);
-            case UNSETROLEPLAYER:
-                return removeRolePlayer(converter.rolePlayer(conceptMethod.getUnsetRolePlayer()));
-            case DELETE:
-                return DELETE;
-            case GETATTRIBUTE:
-                return getAttribute(ConceptReader.attributeValue(conceptMethod.getGetAttribute()));
-            case GETOWNERS:
-                return GET_OWNERS;
-            case GETTYPESTHATPLAYROLE:
-                return GET_TYPES_THAT_PLAY_ROLE;
-            case GETROLESPLAYEDBYTYPE:
-                return GET_ROLES_PLAYED_BY_TYPE;
-            case GETINSTANCES:
-                return GET_INSTANCES;
-            case GETRELATEDROLES:
-                return GET_RELATED_ROLES;
-            case GETATTRIBUTES:
-                return GET_ATTRIBUTES;
-            case GETSUPERCONCEPTS:
-                return GET_SUPER_CONCEPTS;
-            case GETRELATIONSHIPTYPESTHATRELATEROLE:
-                return GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE;
-            case GETATTRIBUTESBYTYPES:
-                GrpcConcept.Concepts getAttributeTypes = conceptMethod.getGetAttributesByTypes();
-                AttributeType<?>[] attributeTypes = ConceptReader.concepts(converter, getAttributeTypes).toArray(AttributeType[]::new);
-                return getAttributesByTypes(attributeTypes);
-            case GETRELATIONSHIPS:
-                return GET_RELATIONSHIPS;
-            case GETSUBCONCEPTS:
-                return GET_SUB_CONCEPTS;
-            case GETRELATIONSHIPSBYROLES:
-                roles = ConceptReader.concepts(converter, conceptMethod.getGetRelationshipsByRoles()).toArray(Role[]::new);
-                return getRelationshipsByRoles(roles);
-            case GETROLESPLAYEDBYTHING:
-                return GET_ROLES_PLAYED_BY_THING;
-            case GETKEYS:
-                return GET_KEYS;
-            case GETKEYSBYTYPES:
-                GrpcConcept.Concepts getKeyTypes = conceptMethod.getGetAttributesByTypes();
-                AttributeType<?>[] keyTypes = ConceptReader.concepts(converter, getKeyTypes).toArray(AttributeType[]::new);
-                return getKeysByTypes(keyTypes);
-            case GETROLEPLAYERSBYROLES:
-                roles = ConceptReader.concepts(converter, conceptMethod.getGetRolePlayersByRoles()).toArray(Role[]::new);
-                return getRolePlayersByRoles(roles);
-            case SETKEYTYPE:
-                return setKeyType(converter.concept(conceptMethod.getSetKeyType()).asAttributeType());
-            case UNSETKEYTYPE:
-                return unsetKeyType(converter.concept(conceptMethod.getUnsetKeyType()).asAttributeType());
-            case SETABSTRACT:
-                return setAbstract(conceptMethod.getSetAbstract());
-            case SETROLEPLAYEDBYTYPE:
-                return setRolePlayedByType(converter.concept(conceptMethod.getSetRolePlayedByType()).asRole());
-            case UNSETROLEPLAYEDBYTYPE:
-                return unsetRolePlayedByType(converter.concept(conceptMethod.getUnsetRolePlayedByType()).asRole());
-            case ADDENTITY:
-                return ADD_ENTITY;
-            case SETRELATEDROLE:
-                return setRelatedRole(converter.concept(conceptMethod.getSetRelatedRole()).asRole());
-            case UNSETRELATEDROLE:
-                return unsetRelatedRole(converter.concept(conceptMethod.getUnsetRelatedRole()).asRole());
-            case PUTATTRIBUTE:
-                return putAttribute(ConceptReader.attributeValue(conceptMethod.getPutAttribute()));
-            case SETREGEX:
-                return setRegex(ConceptReader.optionalRegex(conceptMethod.getSetRegex()));
-            case SETATTRIBUTE:
-                return setAttribute(converter.concept(conceptMethod.getSetAttribute()).asAttribute());
-            case UNSETATTRIBUTE:
-                return unsetAttribute(converter.concept(conceptMethod.getUnsetAttribute()).asAttribute());
-            case ADDRELATIONSHIP:
-                return ADD_RELATIONSHIP;
-            case SETROLEPLAYER:
-                return setRolePlayer(converter.rolePlayer(conceptMethod.getSetRolePlayer()));
-            default:
-            case CONCEPTMETHOD_NOT_SET:
-                throw new IllegalArgumentException("Unrecognised " + conceptMethod);
-        }
     }
 }

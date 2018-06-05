@@ -83,8 +83,8 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public static GrpcClient create(TxConceptReader conceptReader, GraknGrpc.GraknStub stub) {
-        TxGrpcCommunicator observer = TxGrpcCommunicator.create(stub);
-        return new GrpcClient(conceptReader, observer);
+        TxGrpcCommunicator communicator = TxGrpcCommunicator.create(stub);
+        return new GrpcClient(conceptReader, communicator);
     }
 
     public void open(TxRequest openRequest) {
@@ -93,7 +93,7 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public Iterator<Object> execQuery(Query<?> query) {
-        communicator.send(RequestBuilder.execQueryRequest(query.toString(), query.inferring()));
+        communicator.send(RequestBuilder.execQuery(query.toString(), query.inferring()));
 
         TxResponse txResponse = responseOrThrow();
 
@@ -111,33 +111,33 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public void commit() {
-        communicator.send(RequestBuilder.commitRequest());
+        communicator.send(RequestBuilder.commit());
         responseOrThrow();
     }
 
     public TxResponse next(IteratorId iteratorId) {
-        communicator.send(RequestBuilder.nextRequest(iteratorId));
+        communicator.send(RequestBuilder.next(iteratorId));
         return responseOrThrow();
     }
 
     @Nullable
     public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
-        communicator.send(RequestBuilder.runConceptMethodRequest(id, conceptMethod));
+        communicator.send(RequestBuilder.runConceptMethod(id, conceptMethod));
         return conceptMethod.readResponse(conceptReader, this, responseOrThrow());
     }
 
     public Optional<Concept> getConcept(ConceptId id) {
-        communicator.send(RequestBuilder.getConceptRequest(id));
+        communicator.send(RequestBuilder.getConcept(id));
         return conceptReader.optionalConcept(responseOrThrow().getOptionalConcept());
     }
 
     public Optional<Concept> getSchemaConcept(Label label) {
-        communicator.send(RequestBuilder.getSchemaConceptRequest(label));
+        communicator.send(RequestBuilder.getSchemaConcept(label));
         return conceptReader.optionalConcept(responseOrThrow().getOptionalConcept());
     }
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
-        communicator.send(RequestBuilder.getAttributesByValueRequest(value));
+        communicator.send(RequestBuilder.getAttributesByValue(value));
         IteratorId iteratorId = responseOrThrow().getIteratorId();
         Iterable<Concept> iterable = () -> new ResponseIterator<>(this, iteratorId, response -> conceptReader.concept(response.getConcept()));
 
@@ -145,27 +145,27 @@ public class GrpcClient implements AutoCloseable {
     }
 
     public Concept putEntityType(Label label) {
-        communicator.send(RequestBuilder.putEntityTypeRequest(label));
+        communicator.send(RequestBuilder.putEntityType(label));
         return conceptReader.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRelationshipType(Label label) {
-        communicator.send(RequestBuilder.putRelationshipTypeRequest(label));
+        communicator.send(RequestBuilder.putRelationshipType(label));
         return conceptReader.concept(responseOrThrow().getConcept());
     }
 
     public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-        communicator.send(RequestBuilder.putAttributeTypeRequest(label, dataType));
+        communicator.send(RequestBuilder.putAttributeType(label, dataType));
         return conceptReader.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRole(Label label) {
-        communicator.send(RequestBuilder.putRoleRequest(label));
+        communicator.send(RequestBuilder.putRole(label));
         return conceptReader.concept(responseOrThrow().getConcept());
     }
 
     public Concept putRule(Label label, Pattern when, Pattern then) {
-        communicator.send(RequestBuilder.putRuleRequest(label, when, then));
+        communicator.send(RequestBuilder.putRule(label, when, then));
         return conceptReader.concept(responseOrThrow().getConcept());
     }
 

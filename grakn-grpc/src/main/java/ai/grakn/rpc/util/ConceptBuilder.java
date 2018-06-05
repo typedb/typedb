@@ -165,16 +165,4 @@ public class ConceptBuilder {
         return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
     }
 
-    public static GrpcGrakn.TxType txType(GraknTxType txType) {
-        switch (txType) {
-            case READ:
-                return GrpcGrakn.TxType.Read;
-            case WRITE:
-                return GrpcGrakn.TxType.Write;
-            case BATCH:
-                return GrpcGrakn.TxType.Batch;
-            default:
-                throw CommonUtil.unreachableStatement("Unrecognised " + txType);
-        }
-    }
 }

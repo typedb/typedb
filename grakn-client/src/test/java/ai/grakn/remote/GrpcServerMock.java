@@ -155,7 +155,7 @@ public final class GrpcServerMock extends CompositeTestRule {
                 List<TxResponse> responsesList =
                         ImmutableList.<TxResponse>builder().add(responses).add(ResponseBuilder.done()).build();
 
-                server.setResponse(RequestBuilder.nextRequest(iteratorId), responsesList);
+                server.setResponse(RequestBuilder.next(iteratorId), responsesList);
                 streamObserver.onNext(GrpcGrakn.TxResponse.newBuilder().setIteratorId(iteratorId).build());
             };
         }
