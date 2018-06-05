@@ -16,9 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.pid;
+package ai.grakn.bootup.graknengine;
 
+import ai.grakn.bootup.BootupException;
+import ai.grakn.util.ErrorMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  *
@@ -28,14 +37,17 @@ import java.lang.management.ManagementFactory;
  *
  */
 public class GraknPidManager {
-    GraknPidStore graknPidStore;
+    private static final Logger LOG = LoggerFactory.getLogger(GraknPidManager.class);
 
-    public GraknPidManager(GraknPidStore graknPidStore) {
-        this.graknPidStore = graknPidStore;
+    private Path pidFile;
+
+    public GraknPidManager(Path pidFile) {
+        this.pidFile = pidFile;
     }
+
     public void trackGraknPid() {
         long pid = getPid();
-        graknPidStore.trackGraknPid(pid);
+        trackGraknPid(pid);
     }
 
     private long getPid() {
@@ -44,7 +56,28 @@ public class GraknPidManager {
         try {
             return Long.parseLong(pidString);
         } catch (NumberFormatException e) {
-            throw new RuntimeException("Couldn't get the PID of Grakn Engine. Received '" + pidString + "'");
+            throw new BootupException(ErrorMessage.COULD_NOT_GET_PID.getMessage(pidString), e);
+        }
+    }
+
+    private void trackGraknPid(long graknPid) {
+        attemptToWritePidFile(graknPid, this.pidFile);
+        deletePidFileOnExit();
+    }
+
+    private void deletePidFileOnExit() {
+        this.pidFile.toFile().deleteOnExit();
+    }
+
+    private void attemptToWritePidFile(long pid, Path pidFilePath) {
+        if (pidFilePath.toFile().exists()) {
+            LOG.warn(ErrorMessage.PID_ALREADY_EXISTS.getMessage(pidFilePath.toString()));
+        }
+        String pidString = Long.toString(pid);
+        try {
+            Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new BootupException(e);
         }
     }
 }
