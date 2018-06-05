@@ -22,16 +22,5 @@ package ai.grakn.bootup;
  *
  * @author Michele Orsi
  */
-public class OutputCommand {
-    public final String output;
-    public final int exitStatus;
-
-    public OutputCommand(String output, int exitStatus) {
-        this.output = output;
-        this.exitStatus = exitStatus;
-    }
-
-    public boolean succes() {
-        return exitStatus==0;
-    }
+public class BootupException extends RuntimeException {
 }

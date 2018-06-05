@@ -18,9 +18,25 @@
 
 package ai.grakn.bootup;
 
+import com.google.auto.value.AutoValue;
+
 /**
  *
+ * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
  */
-public class ProcessNotStartedException extends RuntimeException {
+
+@AutoValue
+public abstract class BootupProcessResult {
+    public static BootupProcessResult create(String stdout, String stderr, int exitCode) {
+        return new AutoValue_BootupProcessResult(stdout, stderr, exitCode);
+    }
+
+    public boolean success() {
+        return exitCode() == 0;
+    }
+
+    public abstract String stdout();
+    public abstract String stderr();
+    public abstract int exitCode();
 }
