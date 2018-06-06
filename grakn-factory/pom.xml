@@ -88,11 +88,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.cassandraunit</groupId>
             <artifactId>cassandra-unit</artifactId>
             <scope>test</scope>
