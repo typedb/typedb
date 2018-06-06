@@ -21,7 +21,7 @@ package ai.grakn.test.rule;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
-import ai.grakn.bootup.graknengine.Grakn;
+import ai.grakn.bootup.mainclass.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;

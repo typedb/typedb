@@ -16,9 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine;
+package ai.grakn.bootup.mainclass;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.mainclass.pidfile.EnginePidManager;
 import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.ErrorMessage;
@@ -32,7 +33,8 @@ import java.util.Optional;
 
 /**
  *
- * Main class invoked by the 'grakn' command.
+ * The main class of the 'grakn' command. This class is not a class responsible
+ * for booting up the real command, but rather the command itself.
  *
  * Please keep the class name "Grakn" as it is what will be displayed to the user.
  *

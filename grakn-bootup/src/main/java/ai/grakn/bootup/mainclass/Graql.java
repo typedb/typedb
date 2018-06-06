@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.bootup.mainclass;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.shell.GraknSessionProvider;
@@ -38,7 +38,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * The main class of the 'graql' command. This class is not a class responsible for booting up the real command, but rather the command itself.
+ * The main class of the 'graql' command. This class is not a class responsible
+ * for booting up the real command, but rather the command itself.
+ *
+ * Please keep the class name "Graql" as it is what will be displayed to the user.
  *
  * @author Michele Orsi
  */

@@ -20,7 +20,7 @@ package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.bootup.graknengine.Grakn;
+import ai.grakn.bootup.mainclass.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;

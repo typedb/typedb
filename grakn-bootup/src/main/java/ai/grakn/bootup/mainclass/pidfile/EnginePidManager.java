@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine;
+package ai.grakn.bootup.mainclass.pidfile;
 
 import ai.grakn.bootup.BootupException;
 import ai.grakn.util.ErrorMessage;
