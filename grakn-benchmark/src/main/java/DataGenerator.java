@@ -1,7 +1,4 @@
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
+import ai.grakn.*;
 import ai.grakn.concept.*;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
@@ -9,157 +6,130 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
+import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.DiscreteGaussianPDF;
-import strategy.EntityStrategy;
-import strategy.FrequencyOptionCollection;
-import strategy.SchemaStrategy;
-import strategy.TypeStrategy;
+import strategy.*;
 
 import java.util.*;
 
 import static ai.grakn.graql.internal.pattern.Patterns.var;
 
-/*
-Pseudo-code approach:
-    Choose which type of concept is to be added
-    If it's an entity, should this be connected to relationships or attributes upon being inserted?
-        If so, how many connections should be made?
-    If it's a relationship, it needs at least 1 role-player already present in the db (none causes erroneous behaviour)
-        In this case, concepts that can fill the relationship's roles need to be selected
-        (otherwise we'll be testing Grakn's validation the majority of the time, better to build invalid cases later)
-            What procedure do we use to select them? Randomly?
-        How many role-players should be selected?
-    If it's an attribute, which concept should it belong to?
-    ---
+public class DataGenerator2 {
 
-    New approach
+    private static String uri = "localhost:48555";
+    private static String keyspace = "societal_model";
 
-
-
-
-    Joint probability distribution
-    team-membership role-player probability distribution
-    =======
-    team-membership
-    roles
-    ----
-    team        team-name           p(num(t) = n)   {   0.2 when n == 0
-                                                        0.8 when n == 1
-                                                        0 elsewhere }
-
-    member      community-member    p(num(c) = n)   {
-                employee
-
-    =======
-    has-name
-    roles
-    ----
-    value       name                p(num(t) = n)   {   1 when n == 1   }
-    owner       person              p(num(p) = n)   {
-                company
-*/
-
-//public class QuantityGenerator {
-//
-//}
-
-
-public class DataGenerator {
     public static final int RANDOM_SEED = 1;
-    public static final int ADD_ENTITIES_OPERATION = 0;
-    public static final int ADD_RELATIONSHIPS_OPERATION = 1;
-    public static final int ADD_ATTRIBUTES_OPERATION = 2;
-//    public static final int ADD_RELATIONSHIP_ROLEPLAYERS_OPERATION = 3; // Omitting this for now
-
-    public static double ADD_ENTITIES_FREQUENCY = 0.3;
-    public static double ADD_RELATIONSHIPS_FREQUENCY = 0.6;
-    public static double ADD_ATTRIBUTES_FREQUENCY = 0.1;
-//    public static final int ADD_RELATIONSHIP_ROLEPLAYERS_FREQUENCY = 3;
-
-    //    public static HashMap<Integer, Double> freqs = new HashMap<Integer, Double>();
-//    private TreeMap<Double,V> map;
-    private NavigableMap<Double, Integer> frequencyOfConceptChoiceMap = new TreeMap<Double, Integer>();
-    private FrequencyOptionCollection<Integer> frequencyOfOperation;
-//    private strategy.FrequencyOptionCollection<String> frequencyOfEntityType;
 
     private Random rand;
-//    public List<Answer> entityTypes;
-//    public List<EntityType> entityTypes;
-    private ArrayList<Type> entityTypes = new ArrayList<Type>();
-//    private ArrayList<pdf.DiscreteGaussianPDF> entityTypeDistributions = new ArrayList<pdf.DiscreteGaussianPDF>();
-    private Hashtable<String, DiscreteGaussianPDF> entityTypeDistributions = new Hashtable<String, DiscreteGaussianPDF>();
+    private ArrayList<EntityType> entityTypes;
+    private ArrayList<RelationshipType> relationshipTypes;
+    private ArrayList<AttributeType> attributeTypes;
+    private ArrayList<Role> roles;
 
+//    private Set<EntityStrategy> entityStrategies = new HashSet<EntityStrategy>();
+//    private Set<RelationshipStrategy> relationshipStrategies = new HashSet<RelationshipStrategy>();
+//    private Set<OperationStrategy>operationStrategies = new HashSet<OperationStrategy>();
+//    private SchemaStrategy schemaStrategy;
 
-    private Set<EntityStrategy> entityStrategies = new HashSet<EntityStrategy>();
+    private FrequencyOptionCollection<EntityStrategy> entityStrategies;
+    private FrequencyOptionCollection<RelationshipStrategy> relationshipStrategies;
+    private FrequencyOptionCollection<AttributeStrategy> attributeStrategies;
 
+//    private FrequencyOptionCollection<FrequencyOptionCollection<TypeStrategy>> operationStrategies;
+    private FrequencyOptionCollection<FrequencyOptionCollection> operationStrategies;
 
-    public DataGenerator() {
+    private final SchemaStrategy schemaStrategy;
+
+    public DataGenerator2() {
 
         this.rand = new Random(RANDOM_SEED);
-        this.frequencyOfOperation = new FrequencyOptionCollection<>(this.rand);
-//        this.frequencyOfOperation.add(DataGenerator.ADD_ENTITIES_FREQUENCY, DataGenerator.ADD_ENTITIES_OPERATION);
-//        this.frequencyOfOperation.add(DataGenerator.ADD_RELATIONSHIPS_FREQUENCY, DataGenerator.ADD_RELATIONSHIPS_OPERATION);
-//        this.frequencyOfOperation.add(DataGenerator.ADD_ATTRIBUTES_FREQUENCY, DataGenerator.ADD_ATTRIBUTES_OPERATION);
-//
-//        this.frequencyOfEntityType = new strategy.FrequencyOptionCollection<>((this.rand));
-//        this.frequencyOfEntityType.add(0.4, "occupation");
-//        this.frequencyOfEntityType.add(0.6, "person");
-//
-//        this.entityTypeDistributions.put("person", new DiscreteGaussianPDF(this.rand, 5.0, 1.0));
-//        this.entityTypeDistributions.put("company", new DiscreteGaussianPDF(this.rand, 5.0, 1.0));
-//
-//        GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("societal_model"));
-//        try (GraknTx tx = session.open(GraknTxType.READ)) {
-//            QueryBuilder qb = tx.graql();
-//            Match match = qb.match(var("x").isa("person").has("forename", "Natalie")).limit(50);
-//            List<Answer> result = match.get().execute();
-//            Concept concept = result.iterator().next().get("x");
-//            EntityType type = concept.asEntity().type();
-//
-//            List<Answer> plays = qb.match(var("x").isa(type.getLabel().toString()).plays(var("r"))).get().execute();
-//            System.out.print("hey");
-//
-////            Explicit relationships only
-//            List<Label> explicitRelationships = type.plays()
-//                    .filter(p -> !p.isImplicit())
-//                    .map(SchemaConcept::getLabel)
-//                    .collect(Collectors.toList());
-//
-////            All relationships explicit and implicit
-//            List<Label> c = type.plays().map(SchemaConcept::getLabel).collect(Collectors.toList());
-//        }
+        entityStrategies = new FrequencyOptionCollection<EntityStrategy>(this.rand);
+        relationshipStrategies = new FrequencyOptionCollection<RelationshipStrategy>(this.rand);
+        attributeStrategies = new FrequencyOptionCollection<AttributeStrategy>(this.rand);
+//        operationStrategies = new FrequencyOptionCollection<FrequencyOptionCollection<TypeStrategy>>(this.rand);
+        operationStrategies = new FrequencyOptionCollection<FrequencyOptionCollection>(this.rand);
+
+        GraknSession session = this.getSession();
+
+        try (GraknTx tx = session.open(GraknTxType.READ)) {
+            this.entityTypes = this.getTypes(tx, "entity");
+            this.relationshipTypes = this.getTypes(tx, "relationship");
+            this.attributeTypes = this.getTypes(tx, "attribute");
+            this.roles = this.getTypes(tx, "role");
+        }
 
         this.entityStrategies.add(
+                0.8,
                 new EntityStrategy(
-                        this.getTypeFromString("person"),
-                        new DiscreteGaussianPDF(this.rand, 10.0, 2.0),
-                        0.8,
-                        this.rand));
+                        <EntityType> this.getTypeFromString("person", this.entityTypes),
+                        new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
 
         this.entityStrategies.add(
+                0.2,
                 new EntityStrategy(
-                        this.getTypeFromString("company"),
+                        <EntityType> this.getTypeFromString("company", this.entityTypes),
+                        new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
+
+        Set<RelationshipRoleStrategy> employmentRoleStrategies = new HashSet<RelationshipRoleStrategy>();
+
+        employmentRoleStrategies.add(
+                new RelationshipRoleStrategy(
+                        <Role> this.getTypeFromString("employee", this.roles),
+                        new RoleTypeStrategy(
+                                <EntityType> this.getTypeFromString("person", this.entityTypes),
+                                new DiscreteGaussianPDF(this.rand, 20.0, 2.0))
+                )
+        );
+
+         employmentRoleStrategies.add(
+                new RelationshipRoleStrategy(
+                        <Role> this.getTypeFromString("employer", this.roles),
+                        new RoleTypeStrategy(
+                                <EntityType> this.getTypeFromString("company", this.entityTypes),
+                                new DiscreteGaussianPDF(this.rand, 2.0, 1.0))
+                )
+        );
+
+        this.relationshipStrategies.add(
+                0.3,
+                new RelationshipStrategy(
+                        <RelationshipType> this.getTypeFromString("employment", this.relationshipTypes),
                         new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
-                        0.2,
-                        this.rand));
+                        employmentRoleStrategies)
+        );
+
+        this.operationStrategies.add(1.0, this.entityStrategies);
+        this.operationStrategies.add(0.0, this.relationshipStrategies);
+        this.operationStrategies.add(0.0, this.attributeStrategies);
+
+        this.schemaStrategy = new SchemaStrategy(this.operationStrategies);
     }
 
-    private Type getTypeFromString(String typeName) {
+    private GraknSession getSession(){
+        return RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
+    }
+
+    private <T extends SchemaConcept> T getTypeFromString(String typeName, ArrayList<T> typeInstances) {
+        Iterator iter = typeInstances.iterator();
+        String l;
+        T currentType;
+
+        while (iter.hasNext()) {
+            currentType = (T) iter.next();
+            l = currentType.getLabel().toString();
+            if (l.equals(typeName)){
+                return currentType;
+            }
+        }
         return null;
     }
 
-    private int chooseOperation() {
-//        double rnd = this.rand.nextDouble();
-//        return this.frequencyOfConceptChoiceMap.ceilingEntry(rnd).getValue();
-        return this.frequencyOfOperation.next();
-    }
-
-    private <T extends Type> ArrayList<T> getTypes(GraknTx tx, String typeName){
-//    private ArrayList<Type> getTypes(GraknTx tx, String typeName){
+    private <T extends SchemaConcept> ArrayList<T> getTypes(GraknTx tx, String conceptTypeName) {
         ArrayList<T> conceptTypes = new ArrayList<T>();
         QueryBuilder qb = tx.graql();
-        Match match = qb.match(var("x").sub(typeName));
+        Match match = qb.match(var("x").sub(conceptTypeName));
         List<Answer> result = match.get().execute();
         T conceptType;
 
@@ -167,6 +137,7 @@ public class DataGenerator {
         // this.conceptTypes.add(result.iterator().forEachRemaining(get("x").asEntityType()));
         Iterator<Answer> conceptTypeIterator = result.iterator();
         while (conceptTypeIterator.hasNext()) {
+//            conceptType = (T) conceptTypeIterator.next().get("x").asType();
             conceptType = (T) conceptTypeIterator.next().get("x");
             conceptTypes.add(conceptType);
         }
@@ -175,85 +146,32 @@ public class DataGenerator {
         return conceptTypes;
     }
 
-//    private List<Answer> matchConceptTypes(GraknTx tx, String typeName){
-//        QueryBuilder qb = tx.graql();
-//        Match match = qb.match(var("x").sub(typeName));
-//        List<Answer> result = match.get().execute();
-//        return result;
-//    }
-//
-//
-//    private ArrayList<EntityType> getEntityTypes(GraknTx tx, String typeName){
-//        ArrayList<EntityType> conceptTypes = new ArrayList<EntityType>();
-//        EntityType conceptType;
-//
-//
-//        QueryBuilder qb = tx.graql();
-//        Match match = qb.match(var("x").sub(typeName));
-//        List<Answer> result = match.get().execute();
-//
-//        // TODO This instead?
-//        // this.conceptTypes.add(result.iterator().forEachRemaining(get("x").asEntityType()));
-//        Iterator<Answer> conceptTypeIterator = result.iterator();
-//        while (conceptTypeIterator.hasNext()) {
-//            conceptType = conceptTypeIterator.next().get("x").asEntityType();
-//            conceptTypes.add(conceptType);
-//        }
-//        conceptTypes.remove(0);  // Remove type "entity"
-//
-//        return conceptTypes;
-//    }
-
-//    private int numFromDistribution(PDF distribution){
-//        return 5;
-//    }
-
     public void generate() {
-        int max_iterations = 100;
+        int max_iterations = 10;
         int it = 0;
-        int op;
 
-        // Find all entity types
-        GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("societal_model"));
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
-            // TODO This works, but now entityTypes Types not EntityTypes
-            this.entityTypes = this.getTypes(tx, "entity");
+        GraknSession session = this.getSession();
 
-
-            String entityTypeLabel;
-
-//        while (it < max_iterations) {
-//            op = this.chooseOperation();
-//            System.out.print(Integer.toString(op) + "\n");
-//            pdf.DiscreteGaussianPDF entityTypeDistribution;
-//
-//            if (op == ADD_ENTITIES_OPERATION) {
-//                entityTypeLabel = this.frequencyOfEntityType.next();
-//                entityTypeDistribution = this.entityTypeDistributions.get(entityTypeLabel);
-//                int numEntities = entityTypeDistribution.next();
-////                this.spawnEntities(entityTypeLabel, numEntities);
-//
-//
-//            } else if (op == ADD_RELATIONSHIPS_OPERATION) {
-//
-//            } else if (op == ADD_ATTRIBUTES_OPERATION) {
-//
-//            } else {
-//                throw new RuntimeException("Encountered a scenario that should not occur. One operation should always be picked.");
-//            }
-//
-//            it++;
-//        }
-
-            SchemaStrategy strategy = new SchemaStrategy(0.0f, new Random(), new HashSet<>());
-
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
             while (it < max_iterations) {
 
-                TypeStrategy typeStrategy = strategy.getStrategy();
-                GeneratorFactory
-                        .create(typeStrategy, tx)
-                        .generate()
-                        .forEach(Query::execute);
+//                TypeStrategy typeStrategy = this.schemaStrategy.getStrategy();
+//                GeneratorFactory
+//                        .create(typeStrategy, tx)
+//                        .generate()
+//                        .forEach(Query::execute);
+
+                TypeStrategy s = (TypeStrategy) this.operationStrategies.next().next();
+                GeneratorFactory gf = new GeneratorFactory();
+                gf
+//                GeneratorFactory
+//                        .create(s, tx)
+//                        .create(this.schemaStrategy.getStrategy(), tx)
+//                        .build(this.operationStrategies, tx)
+                        .create(this.operationStrategies.next().next(), tx)
+//                        .create(s, tx)
+                        .generate();
+//                        .forEach(Query::execute);
 
                 it++;
             }
@@ -261,8 +179,10 @@ public class DataGenerator {
     }
 
     public static void main(String[] args) {
-        System.out.print("hello grakn");
+        System.out.print("hello grakn\n");
         DataGenerator dg = new DataGenerator();
+        System.out.print("Generating data...\n");
         dg.generate();
+        System.out.print("Done\n");
     }
 }
