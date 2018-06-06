@@ -76,6 +76,7 @@
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
         <cassandra-unit.version>3.5.0.0</cassandra-unit.version>
+        <cassandra-all.version>3.11.2</cassandra-all.version>
         <h2-database.version>1.4.192</h2-database.version>
         <systen-rules.version>1.16.0</systen-rules.version>
         <mockito.version>2.6.4</mockito.version>
@@ -531,6 +532,10 @@
                         <groupId>org.apache.servicemix.bundles</groupId>
                         <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.cassandra</groupId>
+                        <artifactId>cassandra-all</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -588,6 +593,25 @@
                     <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cassandra</groupId>
+                <artifactId>cassandra-all</artifactId>
+                <version>${cassandra-all.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>it.unimi.dsi</groupId>
+                        <artifactId>fastutil</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-classic</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
