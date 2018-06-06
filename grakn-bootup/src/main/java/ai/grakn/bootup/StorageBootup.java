@@ -124,7 +124,9 @@ public class StorageBootup {
      */
     private void start() {
         // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
-        List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
+        List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
+                "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString(),
+                "-Dcassandra.storagedir=" + getStorageDbPathFromGraknProperties().resolve("cassandra") + getStorageLogPathFromGraknProperties());
         List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
@@ -164,5 +166,9 @@ public class StorageBootup {
 
     private Path getStorageLogPathFromGraknProperties() {
         return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+    }
+
+    private Path getStorageDbPathFromGraknProperties() {
+        return Paths.get(graknProperties.getProperty(GraknConfigKey.DATA_DIR));
     }
 }
