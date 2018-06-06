@@ -30,11 +30,9 @@ import java.nio.file.Paths;
  */
 public class Configs {
 
-    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
-    private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
+    private static final String STORAGE_CONFIG_PATH = "services/cassandra/conf/cassandra.yaml";
 
-    private static final String QUEUE_CONFIG_PATH = "services/redis/";
-    private static final String QUEUE_CONFIG_NAME = "redis.conf";
+    private static final String QUEUE_CONFIG_PATH = "services/redis/redis.conf";
 
     public static GraknConfig graknConfig(){
         return GraknConfig.read(graknConfigPath().toFile());
@@ -54,7 +52,7 @@ public class Configs {
 
     /** paths relative to dist dir **/
 
-    public static Path queueConfigPath(){ return Paths.get(QUEUE_CONFIG_PATH, QUEUE_CONFIG_NAME); }
+    public static Path queueConfigPath(){ return Paths.get(QUEUE_CONFIG_PATH); }
 
-    public static Path storageConfigPath(){ return Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME); }
+    public static Path storageConfigPath(){ return Paths.get(STORAGE_CONFIG_PATH); }
 }

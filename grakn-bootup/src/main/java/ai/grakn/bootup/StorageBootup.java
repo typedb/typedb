@@ -53,8 +53,8 @@ public class StorageBootup {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
-    private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
-    private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
+    private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "bin", "cassandra");
+    private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "bin", "nodetool");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
 
     private BootupProcessExecutor bootupProcessExecutor;
@@ -123,10 +123,9 @@ public class StorageBootup {
      * @throws BootupException
      */
     private void start() {
-        // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
+        // services/cassandra/cassandra -p <storage-pidfile> -Dcassandra.logdir <storage-logdir>
         List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(),
-                "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString(),
-                "-Dcassandra.storagedir=" + getStorageDbPathFromGraknProperties().resolve("cassandra") + getStorageLogPathFromGraknProperties());
+                "-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
         List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
