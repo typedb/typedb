@@ -69,9 +69,12 @@ public class GraknBootup {
                     new QueueBootup(bootupProcessExecutor, graknHome), new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
 
             graknBootup.run(args);
+            System.exit(0);
 
-        } catch (RuntimeException ex) {
-            LOG.error("An error has occurred during boot-up.", ex);
+        }
+        catch (RuntimeException ex) {
+            LOG.error(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage(), ex);
+            System.out.println(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage());
             System.err.println(ex.getMessage());
             System.exit(1);
         }
@@ -174,35 +177,19 @@ public class GraknBootup {
     private void serverStart(String arg) {
         switch (arg) {
             case ENGINE:
-                try {
-                    engineBootup.startIfNotRunning();
-                } catch (BootupException e) {
-                    // DO NOTHING
-                }
+                engineBootup.startIfNotRunning();
                 break;
             case QUEUE:
-                try {
-                    queueBootup.startIfNotRunning();
-                } catch (BootupException e) {
-                    // DO NOTHING
-                }
+                queueBootup.startIfNotRunning();
                 break;
             case STORAGE:
-                try {
-                    storageBootup.startIfNotRunning();
-                } catch (BootupException e) {
-                    // DO NOTHING
-                }
+                storageBootup.startIfNotRunning();
                 break;
             default:
-                try {
-                    ConfigProcessor.updateProcessConfigs();
-                    storageBootup.startIfNotRunning();
-                    queueBootup.startIfNotRunning();
-                    engineBootup.startIfNotRunning();
-                } catch (BootupException e) {
-                    System.out.println("Please run 'grakn server status' or check the logs located under 'logs' directory.");
-                }
+                ConfigProcessor.updateProcessConfigs();
+                storageBootup.startIfNotRunning();
+                queueBootup.startIfNotRunning();
+                engineBootup.startIfNotRunning();
         }
     }
 
