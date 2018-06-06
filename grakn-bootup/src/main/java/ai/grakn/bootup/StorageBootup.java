@@ -166,8 +166,4 @@ public class StorageBootup {
     private Path getStorageLogPathFromGraknProperties() {
         return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
     }
-
-    private Path getStorageDbPathFromGraknProperties() {
-        return Paths.get(graknProperties.getProperty(GraknConfigKey.DATA_DIR));
-    }
 }
