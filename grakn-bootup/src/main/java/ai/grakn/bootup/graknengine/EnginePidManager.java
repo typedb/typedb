@@ -31,17 +31,17 @@ import java.nio.file.Path;
 
 /**
  *
- * A class responsible for managing the grakn.pid file of Grakn
+ * A class responsible for managing the PID file of Engine
  *
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class GraknPidManager {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknPidManager.class);
+public class EnginePidManager {
+    private static final Logger LOG = LoggerFactory.getLogger(EnginePidManager.class);
 
     private Path pidFile;
 
-    public GraknPidManager(Path pidFile) {
+    public EnginePidManager(Path pidFile) {
         this.pidFile = pidFile;
     }
 

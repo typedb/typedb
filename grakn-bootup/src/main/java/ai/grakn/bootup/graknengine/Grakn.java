@@ -32,9 +32,9 @@ import java.util.Optional;
 
 /**
  *
- * Main class invoked by the 'grakn' bash script.
+ * Main class invoked by the 'grakn' command.
  *
- * NOTE: Please keep the class name "Grakn" as it is what will be displayed to the user.
+ * Please keep the class name "Grakn" as it is what will be displayed to the user.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
@@ -59,8 +59,8 @@ public class Grakn {
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
 
             Path pidfile = Paths.get(graknPidFileProperty);
-            GraknPidManager graknPidManager = new GraknPidManager(pidfile);
-            graknPidManager.trackGraknPid();
+            EnginePidManager enginePidManager = new EnginePidManager(pidfile);
+            enginePidManager.trackGraknPid();
 
             // Start Engine
             GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
