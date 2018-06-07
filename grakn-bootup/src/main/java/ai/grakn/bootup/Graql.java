@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.mainclass;
+package ai.grakn.bootup;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.shell.GraknSessionProvider;
