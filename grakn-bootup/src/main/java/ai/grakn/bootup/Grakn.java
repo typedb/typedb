@@ -16,11 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine;
+package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.bootup.graknengine.pid.GraknPidManager;
-import ai.grakn.bootup.graknengine.pid.GraknPidManagerFactory;
 import ai.grakn.engine.GraknEngineServerFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.ErrorMessage;
@@ -34,9 +32,10 @@ import java.util.Optional;
 
 /**
  *
- * Main class invoked by the 'grakn' bash script.
+ * The main class of the 'grakn' command. This class is not a class responsible
+ * for booting up the real command, but rather the command itself.
  *
- * NOTE: Please keep the class name "Grakn" as it is shown when a user is running the 'ps' or 'jps' command.
+ * Please keep the class name "Grakn" as it is what will be displayed to the user.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
@@ -53,14 +52,16 @@ public class Grakn {
      * @param args
      */
     public static void main(String[] args) {
-        Thread.setDefaultUncaughtExceptionHandler(newUncaughtExceptionHandler(LOG));
+        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
+                LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
 
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
+
             Path pidfile = Paths.get(graknPidFileProperty);
-            GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
-            graknPidManager.trackGraknPid();
+            EnginePidManager enginePidManager = new EnginePidManager(pidfile);
+            enginePidManager.trackGraknPid();
 
             // Start Engine
             GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
@@ -68,10 +69,6 @@ public class Grakn {
         } catch (IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(), e);
         }
-    }
-
-    private static Thread.UncaughtExceptionHandler newUncaughtExceptionHandler(Logger logger) {
-        return (Thread t, Throwable e) -> logger.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e);
     }
 }
 

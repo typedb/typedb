@@ -37,6 +37,8 @@ public enum ErrorMessage {
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
+    PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
+    COULD_NOT_GET_PID("Couldn't get the PID of Grakn Engine. Received '%s'"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
@@ -194,8 +196,6 @@ public enum ErrorMessage {
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
-
-    PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
