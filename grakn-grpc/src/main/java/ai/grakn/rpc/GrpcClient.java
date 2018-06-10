@@ -83,8 +83,7 @@ public class GrpcClient implements AutoCloseable {
         this.communicator = communicator;
     }
 
-    public static GrpcClient create(TxConceptReader conceptReader, GraknGrpc.GraknStub stub) {
-        TxGrpcCommunicator communicator = TxGrpcCommunicator.create(stub);
+    public static GrpcClient create(TxConceptReader conceptReader, TxGrpcCommunicator communicator) {
         return new GrpcClient(conceptReader, communicator);
     }
 

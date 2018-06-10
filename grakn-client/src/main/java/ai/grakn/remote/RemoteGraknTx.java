@@ -38,6 +38,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.rpc.TxGrpcCommunicator;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -45,6 +46,7 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.remote.rpc.RemoteConceptReader;
+import ai.grakn.rpc.util.TxConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -66,11 +68,15 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private final RemoteGraknSession session;
     private final GraknTxType txType;
     private final GrpcClient client;
+    private final TxGrpcCommunicator communicator;
+    private final TxConceptReader conceptReader;
 
     private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.client = GrpcClient.create(new RemoteConceptReader(this), stub);
+        this.communicator = TxGrpcCommunicator.create(stub);
+        this.conceptReader = new RemoteConceptReader(this);
+        this.client = GrpcClient.create(conceptReader, communicator);
         client.open(openRequest);
     }
 
