@@ -73,7 +73,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Felix Chapman
  */
-public class GrpcClient implements AutoCloseable {
+public class GrpcClient {
 
     private final TxConceptReader conceptReader;
     private final TxGrpcCommunicator communicator;
@@ -167,15 +167,6 @@ public class GrpcClient implements AutoCloseable {
     public Concept putRule(Label label, Pattern when, Pattern then) {
         communicator.send(RequestBuilder.putRule(label, when, then));
         return conceptReader.concept(responseOrThrow().getConcept());
-    }
-
-    @Override
-    public void close() {
-        communicator.close();
-    }
-
-    public boolean isClosed(){
-        return communicator.isClosed();
     }
 
     private TxResponse responseOrThrow() {

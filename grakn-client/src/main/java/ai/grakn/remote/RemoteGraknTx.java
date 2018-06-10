@@ -185,7 +185,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public boolean isClosed() {
-        return client.isClosed();
+        return communicator.isClosed();
     }
 
     @Override
@@ -195,7 +195,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void close() {
-        client.close();
+        communicator.close();
     }
 
     @Override
