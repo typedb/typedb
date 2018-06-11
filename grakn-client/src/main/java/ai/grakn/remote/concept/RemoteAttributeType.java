@@ -22,11 +22,12 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -62,20 +63,34 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        Optional<Concept> concept = runMethod(ConceptMethod.getAttribute(value));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetAttribute(ConceptBuilder.attributeValue(value));
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Optional<Concept> concept = tx().conceptReader().optionalConcept(response.getConceptResponse().getOptionalConcept());
+
         return concept.map(Concept::<D>asAttribute).orElse(null);
     }
 
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE_OF_TYPE).orElse(null);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetDataTypeOfType(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Optional<AttributeType.DataType<?>> concept = ConceptReader.optionalDataType(response.getConceptResponse().getOptionalDataType());
+
+        return (AttributeType.DataType<D>) concept.orElse(null);
     }
 
     @Nullable
     @Override
     public final String getRegex() {
-        return runMethod(ConceptMethod.GET_REGEX).orElse(null);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetRegex(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Optional<String> regex = ConceptReader.optionalRegex(response.getConceptResponse().getOptionalRegex());
+
+        return regex.orElse(null);
     }
 
     @Override

@@ -210,6 +210,20 @@ public abstract class ConceptMethod<T> {
         }
     }
 
+    static abstract class ConceptConceptMethod extends ConceptMethod<Concept> {
+        @Override
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Concept value) {
+            builder.setConcept(ConceptBuilder.concept(value));
+        }
+    }
+
+    static abstract class OptionalConceptMethod extends ConceptMethod<Optional<Concept>> {
+        @Override
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Concept> value) {
+            builder.setOptionalConcept(ConceptBuilder.optionalConcept(value));
+        }
+    }
+
     static abstract class ConceptStreamMethod extends ConceptMethod<Stream<? extends Concept>> {
         @Override @Nullable
         public Stream<? extends Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
@@ -224,25 +238,6 @@ public abstract class ConceptMethod<T> {
             Stream<TxResponse> responses = value.map(ResponseBuilder::concept);
             GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
             builder.setIteratorId(iteratorId);
-        }
-    }
-
-    static abstract class ConceptConceptMethod extends ConceptMethod<Concept> {
-        @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Concept value) {
-            builder.setConcept(ConceptBuilder.concept(value));
-        }
-    }
-
-    static abstract class OptionalConceptMethod extends ConceptMethod<Optional<Concept>> {
-        @Override @Nullable
-        public Optional<Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return txConceptReader.optionalConcept(txResponse.getConceptResponse().getOptionalConcept());
-        }
-
-        @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Concept> value) {
-            builder.setOptionalConcept(ConceptBuilder.optionalConcept(value));
         }
     }
 
@@ -266,20 +261,9 @@ public abstract class ConceptMethod<T> {
         }
     };
     public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE = new ConceptMethod<Optional<AttributeType.DataType<?>>>() {
-        @Override @Nullable
-        public Optional<AttributeType.DataType<?>> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.optionalDataType(txResponse.getConceptResponse().getOptionalDataType());
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<AttributeType.DataType<?>> value) {
             builder.setOptionalDataType(ResponseBuilder.optionalDataType(value));
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetDataTypeOfType(GrpcConcept.Unit.getDefaultInstance()).build();
         }
 
         @Override
@@ -348,20 +332,9 @@ public abstract class ConceptMethod<T> {
         }
     };
     public static final ConceptMethod<Optional<String>> GET_REGEX = new ConceptMethod<Optional<String>>() {
-        @Override @Nullable
-        public Optional<String> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.optionalRegex(txResponse.getConceptResponse().getOptionalRegex());
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<String> value) {
             builder.setOptionalRegex(ConceptBuilder.optionalRegex(value));
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRegex(GrpcConcept.Unit.getDefaultInstance()).build();
         }
 
         @Override
@@ -814,12 +787,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Optional<Concept>> getAttribute(Object value) {
         return new OptionalConceptMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setGetAttribute(ConceptBuilder.attributeValue(value)).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 Optional<Concept> response = Optional.ofNullable(concept.asAttributeType().getAttribute(value));
