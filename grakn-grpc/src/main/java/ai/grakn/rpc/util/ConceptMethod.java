@@ -197,11 +197,6 @@ public abstract class ConceptMethod<T> {
     }
 
     static abstract class BooleanMethod extends ConceptMethod<Boolean> {
-        @Override @Nullable
-        public Boolean readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return txResponse.getConceptResponse().getBool();
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Boolean value) {
             builder.setBool(value);
@@ -336,24 +331,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Boolean> IS_INFERRED = new BooleanMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setIsInferred(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Boolean result = concept.asThing().isInferred();
             return createTxResponse(iterators, result);
         }
     };
     public static final ConceptMethod<Boolean> IS_ABSTRACT = new BooleanMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setIsAbstract(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Boolean response = concept.asType().isAbstract();

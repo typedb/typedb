@@ -25,6 +25,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
@@ -102,7 +104,11 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final boolean isInferred() {
-        return runMethod(ConceptMethod.IS_INFERRED);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setIsInferred(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return response.getConceptResponse().getBool();
     }
 
     abstract MyType asMyType(Concept concept);

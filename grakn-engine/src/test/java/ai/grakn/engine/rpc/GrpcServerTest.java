@@ -91,7 +91,6 @@ import static ai.grakn.rpc.util.RequestBuilder.open;
 import static ai.grakn.rpc.util.RequestBuilder.stop;
 import static ai.grakn.rpc.util.ResponseBuilder.done;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -510,7 +509,7 @@ public class GrpcServerTest {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void whenGettingIsInferredProperty_IsInferredIsReturned() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
 
@@ -523,9 +522,9 @@ public class GrpcServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_INFERRED));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_INFERRED));
 
-            assertFalse(ConceptMethod.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
+            //assertFalse(ConceptMethod.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 

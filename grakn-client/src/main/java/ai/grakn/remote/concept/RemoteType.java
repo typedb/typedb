@@ -24,6 +24,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
@@ -78,7 +80,11 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Boolean isAbstract() {
-        return runMethod(ConceptMethod.IS_ABSTRACT);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setIsAbstract(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return response.getConceptResponse().getBool();
     }
 
     @Override

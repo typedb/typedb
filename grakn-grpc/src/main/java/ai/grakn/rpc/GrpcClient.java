@@ -18,23 +18,18 @@
 
 package ai.grakn.rpc;
 
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.TxGrpcCommunicator.Response;
-import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.util.ConceptMethod;
@@ -57,7 +52,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
