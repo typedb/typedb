@@ -270,20 +270,19 @@ public abstract class ConceptMethod<T> {
     }
 
     public static final ConceptMethod<Object> GET_VALUE = new ConceptMethod<Object>() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            return null;
+        }
+
         @Override @Nullable
         public Object readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.attributeValue(txResponse.getConceptResponse().getAttributeValue());
+            return null;
         }
 
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Object value) {
             builder.setAttributeValue(ConceptBuilder.attributeValue(value));
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetValue(GrpcConcept.Unit.getDefaultInstance()).build();
         }
 
         @Override
@@ -318,13 +317,12 @@ public abstract class ConceptMethod<T> {
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE = new ConceptMethod<AttributeType.DataType<?>>() {
         @Override
         public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance()).build();
+            return null;
         }
 
         @Override @Nullable
         public AttributeType.DataType<?> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.dataType(txResponse.getConceptResponse().getDataType());
+            return null;
         }
 
         @Override
