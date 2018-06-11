@@ -26,6 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
@@ -40,7 +41,11 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setAbstract(isAbstract));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetAbstract(isAbstract);
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
@@ -50,12 +55,20 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self key(AttributeType attributeType) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setKeyType(attributeType));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetKeyType(ConceptBuilder.concept(attributeType));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
     public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setAttributeType(attributeType));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetAttributeType(ConceptBuilder.concept(attributeType));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
@@ -94,12 +107,20 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self deleteAttribute(AttributeType attributeType) {
-        return runVoidMethod(ConceptMethod.unsetAttributeType(attributeType));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
     public final Self deleteKey(AttributeType attributeType) {
-        return runVoidMethod(ConceptMethod.unsetKeyType(attributeType));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     protected abstract Instance asInstance(Concept concept);

@@ -25,6 +25,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 
@@ -40,11 +41,18 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
 
     public final Self sup(Self type) {
-        return runVoidMethod(ConceptMethod.setDirectSuperConcept(type));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     public final Self sub(Self type) {
-        tx().client().runConceptMethod(type.getId(), ConceptMethod.setDirectSuperConcept(this));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
+        runMethod(type.getId(), method.build());
+
         return asSelf(this);
     }
 
@@ -68,7 +76,11 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Self setLabel(Label label) {
-        return runVoidMethod(ConceptMethod.setLabel(label));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetLabel(ConceptBuilder.label(label));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Nullable

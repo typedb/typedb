@@ -26,7 +26,6 @@ import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
@@ -47,7 +46,11 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
     @Override
     public final AttributeType<D> setRegex(@Nullable String regex) {
-        return runVoidMethod(ConceptMethod.setRegex(Optional.ofNullable(regex)));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetRegex(ConceptBuilder.optionalRegex(Optional.ofNullable(regex)));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
