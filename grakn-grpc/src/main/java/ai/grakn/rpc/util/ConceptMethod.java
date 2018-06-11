@@ -51,10 +51,14 @@ public abstract class ConceptMethod<T> {
 
     // Client: RemoteGraknSession, RemoteGraknTx
     // RPC: RequestBuilder.runConceptMethod()
-    public abstract GrpcConcept.ConceptMethod requestBuilder();
+    public GrpcConcept.ConceptMethod requestBuilder() {
+        return null;
+    }
 
     @Nullable // Client: GrpcClient
-    public abstract T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse);
+    public T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse)  {
+        return null;
+    }
 
     // Server: TxQueryListener.runConceptMethod()
     public abstract TxResponse run(GrpcIterators iterators, Concept concept);
@@ -258,11 +262,6 @@ public abstract class ConceptMethod<T> {
     }
 
     static abstract class UnitMethod extends ConceptMethod<Void> {
-        @Override @Nullable
-        public Void readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return null;
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Void value) {
             builder.setUnit(GrpcConcept.Unit.getDefaultInstance());
@@ -270,16 +269,6 @@ public abstract class ConceptMethod<T> {
     }
 
     public static final ConceptMethod<Object> GET_VALUE = new ConceptMethod<Object>() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            return null;
-        }
-
-        @Override @Nullable
-        public Object readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return null;
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Object value) {
             builder.setAttributeValue(ConceptBuilder.attributeValue(value));
@@ -316,16 +305,6 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE = new ConceptMethod<AttributeType.DataType<?>>() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            return null;
-        }
-
-        @Override @Nullable
-        public AttributeType.DataType<?> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return null;
-        }
-
-        @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, AttributeType.DataType<?> value) {
             builder.setDataType(ConceptBuilder.dataType(value));
         }
@@ -337,20 +316,9 @@ public abstract class ConceptMethod<T> {
         }
     };
     public static final ConceptMethod<Label> GET_LABEL = new ConceptMethod<Label>() {
-        @Override @Nullable
-        public Label readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.label(txResponse.getConceptResponse().getLabel());
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Label value) {
             builder.setLabel(ConceptBuilder.label(value));
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetLabel(GrpcConcept.Unit.getDefaultInstance()).build();
         }
 
         @Override
@@ -360,12 +328,6 @@ public abstract class ConceptMethod<T> {
         }
     };
     public static final ConceptMethod<Boolean> IS_IMPLICIT = new BooleanMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setIsImplicit(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Boolean response = concept.asSchemaConcept().isImplicit();
@@ -679,24 +641,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER = new OptionalConceptMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Optional<Concept> response = Optional.ofNullable(concept.asSchemaConcept().sup());
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Void> DELETE = new UnitMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setDelete(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             concept.delete();

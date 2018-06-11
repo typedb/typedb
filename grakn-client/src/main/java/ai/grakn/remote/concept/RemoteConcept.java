@@ -47,7 +47,9 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        runVoidMethod(ConceptMethod.DELETE);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setDelete(GrpcConcept.Unit.getDefaultInstance());
+        runMethod(method.build());
     }
 
     @Override

@@ -122,6 +122,9 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         else return error;
     }
 
+    public TxConceptReader conceptReader() {
+        return conceptReader;
+    }
     public GrpcClient client() {
         return client;
     }

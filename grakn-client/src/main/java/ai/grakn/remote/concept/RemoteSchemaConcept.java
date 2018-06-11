@@ -23,7 +23,10 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
+import ai.grakn.rpc.util.ConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -47,12 +50,20 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Label getLabel() {
-        return runMethod(ConceptMethod.GET_LABEL);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetLabel(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return ConceptReader.label(response.getConceptResponse().getLabel());
     }
 
     @Override
     public final Boolean isImplicit() {
-        return runMethod(ConceptMethod.IS_IMPLICIT);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setIsImplicit(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return response.getConceptResponse().getBool();
     }
 
     @Override
@@ -63,7 +74,11 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     @Nullable
     @Override
     public final Self sup() {
-        Optional<Concept> concept = runMethod(ConceptMethod.GET_DIRECT_SUPER);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Optional<Concept> concept = tx().conceptReader().optionalConcept(response.getConceptResponse().getOptionalConcept());
+
         return concept.filter(this::isSelf).map(this::asSelf).orElse(null);
     }
 
