@@ -23,16 +23,14 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
+import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
-
-import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.ConceptMethodCase.GETDATATYPEOFATTRIBUTE;
 
 /**
  * @author Felix Chapman

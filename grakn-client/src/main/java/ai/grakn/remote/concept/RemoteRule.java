@@ -23,8 +23,11 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -43,13 +46,21 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
     @Nullable
     @Override
     public final Pattern getWhen() {
-        return runMethod(ConceptMethod.GET_WHEN).orElse(null);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetWhen(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return ConceptReader.optionalPattern(response.getConceptResponse().getOptionalPattern()).orElse(null);
     }
 
     @Nullable
     @Override
     public final Pattern getThen() {
-        return runMethod(ConceptMethod.GET_THEN).orElse(null);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetThen(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return ConceptReader.optionalPattern(response.getConceptResponse().getOptionalPattern()).orElse(null);
     }
 
     @Override

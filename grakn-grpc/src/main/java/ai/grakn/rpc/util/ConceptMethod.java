@@ -204,11 +204,6 @@ public abstract class ConceptMethod<T> {
     }
 
     static abstract class OptionalPatternMethod extends ConceptMethod<Optional<Pattern>> {
-        @Override @Nullable
-        public Optional<Pattern> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            return ConceptReader.optionalPattern(txResponse.getConceptResponse().getOptionalPattern());
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Pattern> value) {
             builder.setOptionalPattern(ConceptBuilder.optionalPattern(value));
@@ -345,24 +340,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Optional<Pattern>> GET_WHEN = new OptionalPatternMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetWhen(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Optional<Pattern> result = Optional.ofNullable(concept.asRule().getWhen());
             return createTxResponse(iterators, result);
         }
     };
     public static final ConceptMethod<Optional<Pattern>> GET_THEN = new OptionalPatternMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetThen(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Optional<Pattern> response = Optional.ofNullable(concept.asRule().getThen());
