@@ -23,10 +23,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 

@@ -23,6 +23,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
@@ -41,7 +43,12 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Relationship addRelationship() {
-        return asInstance(runMethod(ConceptMethod.ADD_RELATIONSHIP));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setAddRelationship(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+
+        return asInstance(concept);
     }
 
     @Override

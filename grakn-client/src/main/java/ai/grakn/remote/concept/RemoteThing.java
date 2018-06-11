@@ -27,6 +27,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
@@ -41,7 +42,12 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final MyType type() {
-        return asMyType(runMethod(ConceptMethod.GET_DIRECT_TYPE));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+
+        return asMyType(concept);
     }
 
     @Override
@@ -68,7 +74,11 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        return runMethod(ConceptMethod.setAttribute(attribute)).asRelationship();
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetAttribute(ConceptBuilder.concept(attribute));
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        return concept.asRelationship();
     }
 
     @Override
