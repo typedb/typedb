@@ -23,11 +23,16 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
+
+import static ai.grakn.rpc.generated.GrpcConcept.ConceptMethod.ConceptMethodCase.GETDATATYPEOFATTRIBUTE;
 
 /**
  * @author Felix Chapman
@@ -48,7 +53,11 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        return (AttributeType.DataType<D>) runMethod(ConceptMethod.GET_DATA_TYPE_OF_ATTRIBUTE);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        return (AttributeType.DataType<D>) ConceptReader.dataType(response.getConceptResponse().getDataType());
     }
 
     @Override

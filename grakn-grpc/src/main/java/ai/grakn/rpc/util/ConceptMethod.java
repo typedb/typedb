@@ -316,6 +316,12 @@ public abstract class ConceptMethod<T> {
         }
     };
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE = new ConceptMethod<AttributeType.DataType<?>>() {
+        @Override
+        public GrpcConcept.ConceptMethod requestBuilder() {
+            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
+            return builder.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance()).build();
+        }
+
         @Override @Nullable
         public AttributeType.DataType<?> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
             return ConceptReader.dataType(txResponse.getConceptResponse().getDataType());
@@ -324,12 +330,6 @@ public abstract class ConceptMethod<T> {
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, AttributeType.DataType<?> value) {
             builder.setDataType(ConceptBuilder.dataType(value));
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance()).build();
         }
 
         @Override

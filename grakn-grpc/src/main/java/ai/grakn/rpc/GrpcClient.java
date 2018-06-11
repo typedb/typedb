@@ -87,11 +87,6 @@ public class GrpcClient {
         return new GrpcClient(conceptReader, communicator);
     }
 
-    public void open(TxRequest openRequest) {
-        communicator.send(openRequest);
-        responseOrThrow();
-    }
-
     public Iterator<Object> execQuery(Query<?> query) {
         communicator.send(RequestBuilder.execQuery(query.toString(), query.inferring()));
 
@@ -110,11 +105,6 @@ public class GrpcClient {
         }
     }
 
-    public void commit() {
-        communicator.send(RequestBuilder.commit());
-        responseOrThrow();
-    }
-
     public TxResponse next(IteratorId iteratorId) {
         communicator.send(RequestBuilder.next(iteratorId));
         return responseOrThrow();
@@ -126,47 +116,12 @@ public class GrpcClient {
         return conceptMethod.readResponse(conceptReader, this, responseOrThrow());
     }
 
-    public Optional<Concept> getConcept(ConceptId id) {
-        communicator.send(RequestBuilder.getConcept(id));
-        return conceptReader.optionalConcept(responseOrThrow().getOptionalConcept());
-    }
-
-    public Optional<Concept> getSchemaConcept(Label label) {
-        communicator.send(RequestBuilder.getSchemaConcept(label));
-        return conceptReader.optionalConcept(responseOrThrow().getOptionalConcept());
-    }
-
     public Stream<? extends Concept> getAttributesByValue(Object value) {
         communicator.send(RequestBuilder.getAttributesByValue(value));
         IteratorId iteratorId = responseOrThrow().getIteratorId();
         Iterable<Concept> iterable = () -> new ResponseIterator<>(this, iteratorId, response -> conceptReader.concept(response.getConcept()));
 
         return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    public Concept putEntityType(Label label) {
-        communicator.send(RequestBuilder.putEntityType(label));
-        return conceptReader.concept(responseOrThrow().getConcept());
-    }
-
-    public Concept putRelationshipType(Label label) {
-        communicator.send(RequestBuilder.putRelationshipType(label));
-        return conceptReader.concept(responseOrThrow().getConcept());
-    }
-
-    public Concept putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-        communicator.send(RequestBuilder.putAttributeType(label, dataType));
-        return conceptReader.concept(responseOrThrow().getConcept());
-    }
-
-    public Concept putRole(Label label) {
-        communicator.send(RequestBuilder.putRole(label));
-        return conceptReader.concept(responseOrThrow().getConcept());
-    }
-
-    public Concept putRule(Label label, Pattern when, Pattern then) {
-        communicator.send(RequestBuilder.putRule(label, when, then));
-        return conceptReader.concept(responseOrThrow().getConcept());
     }
 
     private TxResponse responseOrThrow() {

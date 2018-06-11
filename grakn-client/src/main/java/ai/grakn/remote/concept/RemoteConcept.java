@@ -22,6 +22,9 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.remote.RemoteGraknTx;
 
@@ -49,7 +52,17 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     @Override
     public final boolean isDeleted() {
-        return !tx().client().getConcept(getId()).isPresent();
+        return tx().getConcept(getId()) == null;
+    }
+
+    protected final GrpcGrakn.TxResponse runMethod(GrpcConcept.ConceptMethod method) {
+        GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
+        runConceptMethod.setId(ConceptBuilder.conceptId(getId()));
+        runConceptMethod.setConceptMethod(method);
+
+        GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+
+        return tx().runConceptMethod(conceptMethodRequest);
     }
 
     protected final <T> T runMethod(ConceptMethod<T> method) {

@@ -39,6 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.TxGrpcCommunicator;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -46,7 +47,10 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.remote.rpc.RemoteConceptReader;
+import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
+import ai.grakn.util.CommonUtil;
+import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -77,7 +81,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         this.communicator = TxGrpcCommunicator.create(stub);
         this.conceptReader = new RemoteConceptReader(this);
         this.client = GrpcClient.create(conceptReader, communicator);
-        client.open(openRequest);
+        communicator.send(openRequest);
+        responseOrThrow();
     }
 
     // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
@@ -86,45 +91,88 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return new RemoteGraknTx(session, GraknTxType.of(openRequest.getOpen().getTxType().getNumber()), openRequest, stub);
     }
 
+
+    private GrpcGrakn.TxResponse responseOrThrow() {
+        TxGrpcCommunicator.Response response;
+
+        try {
+            response = communicator.receive();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // This is called from classes like RemoteGraknTx, that impl methods which do not throw InterruptedException
+            // Therefore, we have to wrap it in a RuntimeException.
+            throw new RuntimeException(e);
+        }
+
+        switch (response.type()) {
+            case OK:
+                return response.ok();
+            case ERROR:
+                throw convertStatusRuntimeException(response.error());
+            case COMPLETED:
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
+    }
+
+    private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
+        ResponseBuilder.ErrorType errorType = error.getTrailers().get(ResponseBuilder.ErrorType.KEY);
+
+        if (errorType != null) return errorType.toException(error.getStatus().getDescription());
+        else return error;
+    }
+
     public GrpcClient client() {
         return client;
     }
 
+    public GrpcGrakn.TxResponse runConceptMethod(GrpcGrakn.TxRequest conceptMethodRequest) {
+        communicator.send(conceptMethodRequest);
+        return responseOrThrow();
+    }
+
     @Override
     public EntityType putEntityType(Label label) {
-        return client().putEntityType(label).asEntityType();
+        communicator.send(RequestBuilder.putEntityType(label));
+        return conceptReader.concept(responseOrThrow().getConcept()).asEntityType();
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        return client().putAttributeType(label, dataType).asAttributeType();
+        communicator.send(RequestBuilder.putAttributeType(label, dataType));
+        return conceptReader.concept(responseOrThrow().getConcept()).asAttributeType();
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return client().putRule(label, when, then).asRule();
+        communicator.send(RequestBuilder.putRule(label, when, then));
+        return conceptReader.concept(responseOrThrow().getConcept()).asRule();
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return client().putRelationshipType(label).asRelationshipType();
+        communicator.send(RequestBuilder.putRelationshipType(label));
+        return conceptReader.concept(responseOrThrow().getConcept()).asRelationshipType();
     }
 
     @Override
     public Role putRole(Label label) {
-        return client().putRole(label).asRole();
+        communicator.send(RequestBuilder.putRole(label));
+        return conceptReader.concept(responseOrThrow().getConcept()).asRole();
     }
 
     @Nullable
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        return (T) client().getConcept(id).orElse(null);
+        communicator.send(RequestBuilder.getConcept(id));
+        return (T) conceptReader.optionalConcept(responseOrThrow().getOptionalConcept()).orElse(null);
     }
 
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return (T) client().getSchemaConcept(label).orElse(null);
+        communicator.send(RequestBuilder.getSchemaConcept(label));
+        return (T) conceptReader.optionalConcept(responseOrThrow().getOptionalConcept()).orElse(null);
     }
 
     @Nullable
@@ -200,7 +248,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public void commit() throws InvalidKBException {
-        client.commit();
+        communicator.send(RequestBuilder.commit());
+        responseOrThrow();
         close();
     }
 
