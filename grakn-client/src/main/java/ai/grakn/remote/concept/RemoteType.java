@@ -50,7 +50,11 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self plays(Role role) throws GraknTxOperationException {
-        return runVoidMethod(ConceptMethod.setRolePlayedByType(role));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetRolePlayedByType(ConceptBuilder.concept(role));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
@@ -102,7 +106,11 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Self deletePlays(Role role) {
-        return runVoidMethod(ConceptMethod.unsetRolePlayedByType(role));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override

@@ -731,12 +731,6 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> removeRolePlayer(RolePlayer rolePlayer) {
         return new UnitMethod() {
             @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setUnsetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
-            }
-
-            @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
                 return null;
@@ -746,12 +740,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Void> unsetAttribute(Attribute<?> attribute) {
         return new UnitMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setUnsetAttribute(ConceptBuilder.concept(attribute)).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asThing().deleteAttribute(attribute);
@@ -763,12 +751,6 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRolePlayedByType(Role role) {
         return new UnitMethod() {
             @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setSetRolePlayedByType(ConceptBuilder.concept(role)).build();
-            }
-
-            @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asType().plays(role);
                 return null;
@@ -778,12 +760,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
         return new UnitMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setUnsetRolePlayedByType(ConceptBuilder.concept(role)).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asType().deletePlays(role);
@@ -795,12 +771,6 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRolePlayer(RolePlayer rolePlayer) {
         return new UnitMethod() {
             @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setSetRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
-            }
-
-            @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player());
                 return null;
@@ -811,12 +781,6 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRelatedRole(Role role) {
         return new UnitMethod() {
             @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setSetRelatedRole(ConceptBuilder.concept(role)).build();
-            }
-
-            @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asRelationshipType().relates(role);
                 return null;
@@ -826,12 +790,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Void> unsetRelatedRole(Role role) {
         return new UnitMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setUnsetRelatedRole(ConceptBuilder.concept(role)).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 concept.asRelationshipType().deleteRelates(role);

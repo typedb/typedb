@@ -23,10 +23,11 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.remote.RemoteGraknTx;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -58,12 +59,20 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final RelationshipType relates(Role role) {
-        return runVoidMethod(ConceptMethod.setRelatedRole(role));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetRelatedRole(ConceptBuilder.concept(role));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        return runVoidMethod(ConceptMethod.unsetRelatedRole(role));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetRelatedRole(ConceptBuilder.concept(role));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override

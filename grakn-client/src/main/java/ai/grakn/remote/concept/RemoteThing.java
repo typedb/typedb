@@ -109,7 +109,11 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Self deleteAttribute(Attribute attribute) {
-        return runVoidMethod(ConceptMethod.unsetAttribute(attribute));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetAttribute(ConceptBuilder.concept(attribute));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override

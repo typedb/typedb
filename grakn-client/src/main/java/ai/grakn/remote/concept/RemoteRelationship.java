@@ -24,9 +24,11 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.rpc.RolePlayer;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.rpc.RolePlayer;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.util.ConceptBuilder;
+import ai.grakn.rpc.util.ConceptMethod;
 import com.google.auto.value.AutoValue;
 
 import java.util.Map;
@@ -64,12 +66,18 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
-        return runVoidMethod(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setSetRolePlayer(ConceptBuilder.rolePlayer(RolePlayer.create(role, thing)));
+        runMethod(method.build());
+
+        return asSelf(this);
     }
 
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
-        runVoidMethod(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setUnsetRolePlayer(ConceptBuilder.rolePlayer(RolePlayer.create(role, thing)));
+        runMethod(method.build());
     }
 
     @Override
