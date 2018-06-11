@@ -25,12 +25,15 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -83,15 +86,20 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        ConceptMethod<Stream<? extends Concept>> method;
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
 
         if (attributeTypes.length == 0) {
-            method = ConceptMethod.GET_ATTRIBUTES;
+            method.setGetAttributes(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method = ConceptMethod.getAttributesByTypes(attributeTypes);
+            method.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes)));
         }
 
-        return runMethod(method).map(Concept::asAttribute);
+        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false).map(Concept::asAttribute);
     }
 
     @Override

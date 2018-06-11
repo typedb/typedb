@@ -23,15 +23,17 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -101,7 +103,14 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Override
     public final Stream<Self> subs() {
-        return runMethod(ConceptMethod.GET_SUB_CONCEPTS).map(this::asSelf);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetSubConcepts(GrpcConcept.Unit.getDefaultInstance());
+        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false).map(this::asSelf);
     }
 
     @Override

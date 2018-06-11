@@ -25,7 +25,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.Objects;
@@ -62,13 +61,7 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
     }
 
     protected final GrpcGrakn.TxResponse runMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
-        GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
-        runConceptMethod.setId(ConceptBuilder.conceptId(id));
-        runConceptMethod.setConceptMethod(method);
-
-        GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
-
-        return tx().runConceptMethod(conceptMethodRequest);
+        return tx().runConceptMethod(id, method);
     }
 
     protected final <T> T runMethod(ConceptMethod<T> method) {

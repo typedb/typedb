@@ -368,24 +368,12 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetAttributeTypes(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().attributes();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetKeyTypes(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().keys();
@@ -394,12 +382,6 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asSchemaConcept().sups();
             return createTxResponse(iterators, response);
@@ -407,24 +389,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetSubConcepts(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asSchemaConcept().subs();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetAttributes(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().attributes();
@@ -788,12 +758,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Stream<? extends Concept>> getAttributesByTypes(AttributeType<?>... attributeTypes) {
         return new ConceptStreamMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().attributes(attributeTypes);

@@ -24,12 +24,15 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -82,12 +85,26 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<AttributeType> attributes() {
-        return runMethod(ConceptMethod.GET_ATTRIBUTE_TYPES).map(Concept::asAttributeType);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetAttributeTypes(GrpcConcept.Unit.getDefaultInstance());
+        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        return runMethod(ConceptMethod.GET_KEY_TYPES).map(Concept::asAttributeType);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetKeyTypes(GrpcConcept.Unit.getDefaultInstance());
+        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false).map(Concept::asAttributeType);
     }
 
     @Override

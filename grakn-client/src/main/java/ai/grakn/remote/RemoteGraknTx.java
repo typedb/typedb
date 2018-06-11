@@ -38,16 +38,18 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.TxGrpcCommunicator;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptMethod;
+import ai.grakn.remote.rpc.RemoteConceptReader;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.GrpcClient;
+import ai.grakn.rpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
+import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.RequestBuilder;
-import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.util.CommonUtil;
@@ -57,6 +59,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
@@ -135,7 +138,12 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return responseOrThrow();
     }
 
-    public GrpcGrakn.TxResponse runConceptMethod(GrpcGrakn.TxRequest conceptMethodRequest) {
+    public GrpcGrakn.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
+        GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
+        runConceptMethod.setId(ConceptBuilder.conceptId(id));
+        runConceptMethod.setConceptMethod(method);
+        GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+
         communicator.send(conceptMethodRequest);
         return responseOrThrow();
     }
@@ -264,7 +272,14 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Stream<? extends Concept> sups = client.runConceptMethod(schemaConcept.getId(), ConceptMethod.GET_SUPER_CONCEPTS);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
+        GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                this, iteratorId, res -> this.conceptReader().concept(res.getConcept())
+        );
+
+        Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);
         return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
     }
 
