@@ -1,21 +1,24 @@
 import ai.grakn.*;
 import ai.grakn.concept.*;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
 import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.DiscreteGaussianPDF;
+import storage.ConceptIdStore;
+import storage.ConceptPicker;
+import storage.ConceptStore;
+import storage.RandomConceptIdPicker;
 import strategy.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.pattern.Patterns.var;
 
-public class DataGenerator2 {
+public class DataGenerator {
 
     private static String uri = "localhost:48555";
     private static String keyspace = "societal_model";
@@ -40,9 +43,11 @@ public class DataGenerator2 {
 //    private FrequencyOptionCollection<FrequencyOptionCollection<TypeStrategy>> operationStrategies;
     private FrequencyOptionCollection<FrequencyOptionCollection> operationStrategies;
 
-    private final SchemaStrategy schemaStrategy;
+    private boolean doExecution = true;
+    private ConceptStore conceptIdStore;
+    private RandomConceptIdPicker conceptPicker;
 
-    public DataGenerator2() {
+    public DataGenerator() {
 
         this.rand = new Random(RANDOM_SEED);
         entityStrategies = new FrequencyOptionCollection<EntityStrategy>(this.rand);
@@ -58,53 +63,55 @@ public class DataGenerator2 {
             this.relationshipTypes = this.getTypes(tx, "relationship");
             this.attributeTypes = this.getTypes(tx, "attribute");
             this.roles = this.getTypes(tx, "role");
+
+
+            this.entityStrategies.add(
+                    0.5,
+                    new EntityStrategy(
+                            this.getTypeFromString("person", this.entityTypes),
+                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
+
+            this.entityStrategies.add(
+                    0.5,
+                    new EntityStrategy(
+                            this.getTypeFromString("occupation", this.entityTypes),
+                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
+
+            Set<RelationshipRoleStrategy> employmentRoleStrategies = new HashSet<RelationshipRoleStrategy>();
+
+            employmentRoleStrategies.add(
+                    new RelationshipRoleStrategy(
+                            this.getTypeFromString("employee", this.roles),
+                            new RolePlayerTypeStrategy(
+                                    this.getTypeFromString("person", this.entityTypes),
+                                    new DiscreteGaussianPDF(this.rand, 20.0, 2.0),
+                                    new RandomConceptIdPicker(this.rand, false))
+                    )
+            );
+
+//            employmentRoleStrategies.add(
+//                    new RelationshipRoleStrategy(
+//                            this.getTypeFromString("profession", this.roles),
+//                            new RolePlayerTypeStrategy(
+//                                    this.getTypeFromString("occupation", this.entityTypes),
+//                                    new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
+//                                    new RandomConceptIdPicker(this.rand, false))
+//                    )
+//            );
+
+            this.relationshipStrategies.add(
+                    0.3,
+                    new RelationshipStrategy(
+                            this.getTypeFromString("employment", this.relationshipTypes),
+                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
+                            employmentRoleStrategies)
+            );
         }
 
-        this.entityStrategies.add(
-                0.8,
-                new EntityStrategy(
-                        <EntityType> this.getTypeFromString("person", this.entityTypes),
-                        new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
-
-        this.entityStrategies.add(
-                0.2,
-                new EntityStrategy(
-                        <EntityType> this.getTypeFromString("company", this.entityTypes),
-                        new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
-
-        Set<RelationshipRoleStrategy> employmentRoleStrategies = new HashSet<RelationshipRoleStrategy>();
-
-        employmentRoleStrategies.add(
-                new RelationshipRoleStrategy(
-                        <Role> this.getTypeFromString("employee", this.roles),
-                        new RoleTypeStrategy(
-                                <EntityType> this.getTypeFromString("person", this.entityTypes),
-                                new DiscreteGaussianPDF(this.rand, 20.0, 2.0))
-                )
-        );
-
-         employmentRoleStrategies.add(
-                new RelationshipRoleStrategy(
-                        <Role> this.getTypeFromString("employer", this.roles),
-                        new RoleTypeStrategy(
-                                <EntityType> this.getTypeFromString("company", this.entityTypes),
-                                new DiscreteGaussianPDF(this.rand, 2.0, 1.0))
-                )
-        );
-
-        this.relationshipStrategies.add(
-                0.3,
-                new RelationshipStrategy(
-                        <RelationshipType> this.getTypeFromString("employment", this.relationshipTypes),
-                        new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
-                        employmentRoleStrategies)
-        );
-
-        this.operationStrategies.add(1.0, this.entityStrategies);
-        this.operationStrategies.add(0.0, this.relationshipStrategies);
+        this.operationStrategies.add(0.8, this.entityStrategies);
+        this.operationStrategies.add(0.2, this.relationshipStrategies);
         this.operationStrategies.add(0.0, this.attributeStrategies);
 
-        this.schemaStrategy = new SchemaStrategy(this.operationStrategies);
     }
 
     private GraknSession getSession(){
@@ -123,7 +130,7 @@ public class DataGenerator2 {
                 return currentType;
             }
         }
-        return null;
+        throw new RuntimeException("Couldn't find a concept type with name \"" + typeName + "\"");
     }
 
     private <T extends SchemaConcept> ArrayList<T> getTypes(GraknTx tx, String conceptTypeName) {
@@ -147,33 +154,46 @@ public class DataGenerator2 {
     }
 
     public void generate() {
-        int max_iterations = 10;
+        int max_iterations = 100;
         int it = 0;
+
+        // Store the ids of the concepts inserted by type, using type as the key
+//        this.conceptIdStore = new HashMap<String, ArrayList<String>>();
+        this.conceptIdStore = new ConceptIdStore();
+        this.conceptPicker = new RandomConceptIdPicker(this.rand, false);
 
         GraknSession session = this.getSession();
 
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+            GeneratorFactory gf = new GeneratorFactory();
+
             while (it < max_iterations) {
+                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptIdStore, this.conceptPicker);
 
-//                TypeStrategy typeStrategy = this.schemaStrategy.getStrategy();
-//                GeneratorFactory
-//                        .create(typeStrategy, tx)
-//                        .generate()
-//                        .forEach(Query::execute);
+                Stream<Query> queriesStream = generator.generate();
 
-                TypeStrategy s = (TypeStrategy) this.operationStrategies.next().next();
-                GeneratorFactory gf = new GeneratorFactory();
-                gf
-//                GeneratorFactory
-//                        .create(s, tx)
-//                        .create(this.schemaStrategy.getStrategy(), tx)
-//                        .build(this.operationStrategies, tx)
-                        .create(this.operationStrategies.next().next(), tx)
-//                        .create(s, tx)
-                        .generate();
-//                        .forEach(Query::execute);
+                if (this.doExecution) {
+                    queriesStream.map(q -> (InsertQuery) q)
+                            .forEachOrdered(q -> {
+                        List<Answer> insertions = q.execute();
+                        insertions.forEach(insert -> insert.concepts().forEach(concept -> {
+                            this.conceptIdStore.add(concept);
+                        }));
+                    });
+                } else {
 
+                    // Print the queries rather than executing
+                    Iterator<Query> iter = queriesStream.iterator();
+
+                    while (iter.hasNext()) {
+                        String s = iter.next().toString();
+                        System.out.print(s + "\n");
+                    }
+                }
                 it++;
+            }
+            if (this.doExecution) {
+                tx.commit();
             }
         }
     }

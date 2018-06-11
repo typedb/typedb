@@ -14,7 +14,7 @@ public class TypeStrategy<T extends Type>{
         this.type = type;
         this.numInstancesPDF = numInstancesPDF;
         // TODO Storing the label value can be avoided when TP functionality #20179 is complete
-        typeLabel = this.type.getLabel().getValue();
+        this.typeLabel = this.type.getLabel().getValue();
     }
 
     public T getType() {

@@ -16,7 +16,6 @@ public class EntityGenerator extends Generator<EntityStrategy> {
     }
 
     @Override
-//    public Stream<Query> generate() {
     public Stream<Query> generate() {
         QueryBuilder qb = this.tx.graql();
 
@@ -28,7 +27,6 @@ public class EntityGenerator extends Generator<EntityStrategy> {
 
         int numInstances = this.strategy.getNumInstancesPDF().next();
 
-//        Stream<Query> stream = Stream<Query>();
         Stream<Query> stream = Stream.generate(() -> query)
 //                .map(q -> (Query) q)
                 .limit(numInstances);
