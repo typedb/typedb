@@ -121,9 +121,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * Return as a {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      *
-     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * @return A {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType(){

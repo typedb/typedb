@@ -403,24 +403,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetKeys(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().keys();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRolesPlayedByType(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().plays();
@@ -768,12 +756,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Stream<? extends Concept>> getKeysByTypes(AttributeType<?>... attributeTypes) {
         return new ConceptStreamMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes))).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().keys(attributeTypes);

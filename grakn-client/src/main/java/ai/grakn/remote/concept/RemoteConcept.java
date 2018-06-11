@@ -23,11 +23,15 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.Objects;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -56,6 +60,14 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
         return tx().getConcept(getId()) == null;
     }
 
+    protected final Stream<? extends Concept> runMethodToConceptStream(GrpcConcept.ConceptMethod method) {
+        GrpcIterator.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
+        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
     protected final GrpcGrakn.TxResponse runMethod(GrpcConcept.ConceptMethod method) {
         return runMethod(getId(), method);
     }
@@ -67,11 +79,6 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
     protected final <T> T runMethod(ConceptMethod<T> method) {
         T result = tx().client().runConceptMethod(getId(), method);
         return Objects.requireNonNull(result);
-    }
-
-    final Self runVoidMethod(ConceptMethod<Void> method) {
-        tx().client().runConceptMethod(getId(), method);
-        return asSelf(this);
     }
 
     abstract Self asSelf(Concept concept);
