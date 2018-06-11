@@ -25,19 +25,20 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 import com.google.auto.value.AutoValue;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toSet;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Felix Chapman
@@ -49,19 +50,45 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         return new AutoValue_RemoteRelationship(tx, id);
     }
 
-    @Override
+    @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        return runMethod(ConceptMethod.GET_ROLE_PLAYERS)
-                .collect(groupingBy(RolePlayer::role, mapping(RolePlayer::player, toSet())));
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+
+        GrpcIterator.IteratorId iteratorId = response.getConceptResponse().getIteratorId();
+        Iterable<RolePlayer> rolePlayers = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
+        );
+
+        Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
+        for (RolePlayer rolePlayer : rolePlayers) {
+            if (rolePlayerMap.containsKey(rolePlayer.role())) {
+                rolePlayerMap.get(rolePlayer.role()).add(rolePlayer.player());
+            } else {
+                rolePlayerMap.put(rolePlayer.role(), Collections.singleton(rolePlayer.player()));
+            }
+        }
+
+        return rolePlayerMap;
     }
 
-    @Override
+    @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
     public final Stream<Thing> rolePlayers(Role... roles) {
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         if (roles.length == 0) {
-            return runMethod(ConceptMethod.GET_ROLE_PLAYERS).map(rolePlayer -> rolePlayer.player());
+            method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            return runMethod(ConceptMethod.getRolePlayersByRoles(roles)).map(Concept::asThing);
+            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles)));
         }
+
+        GrpcGrakn.TxResponse response = runMethod(method.build());
+        GrpcIterator.IteratorId iteratorId = response.getConceptResponse().getIteratorId();
+        Iterable<RolePlayer> rolePlayers = () -> new RemoteIterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
+        );
+
+        return StreamSupport.stream(rolePlayers.spliterator(), false).map(RolePlayer::player);
     }
 
     @Override

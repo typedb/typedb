@@ -248,6 +248,28 @@ public abstract class ConceptMethod<T> {
         }
     }
 
+    public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS = new ConceptMethod<Stream<RolePlayer>>() {
+        @Override
+        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Stream<RolePlayer> value) {
+            Stream<TxResponse> responses = value.map(ResponseBuilder::rolePlayer);
+            GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
+            builder.setIteratorId(iteratorId);
+        }
+
+        @Override
+        public TxResponse run(GrpcIterators iterators, Concept concept) {
+            Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
+            concept.asRelationship().allRolePlayers().forEach((role, players) -> {
+                players.forEach(player -> {
+                    rolePlayers.add(RolePlayer.create(role, player));
+                });
+            });
+            Stream<RolePlayer> response = rolePlayers.build();
+
+            return createTxResponse(iterators, response);
+        }
+    };
+
     public static final ConceptMethod<Object> GET_VALUE = new ConceptMethod<Object>() {
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Object value) {
@@ -343,41 +365,7 @@ public abstract class ConceptMethod<T> {
             return createTxResponse(iterators, response);
         }
     };
-    public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS = new ConceptMethod<Stream<RolePlayer>>() {
-        @Override @Nullable
-        public Stream<RolePlayer> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            GrpcIterator.IteratorId iteratorId = txResponse.getConceptResponse().getIteratorId();
-            Iterable<RolePlayer> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.rolePlayer(response.getRolePlayer()));
 
-            return StreamSupport.stream(iterable.spliterator(), false);
-        }
-
-        @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Stream<RolePlayer> value) {
-            Stream<TxResponse> responses = value.map(ResponseBuilder::rolePlayer);
-            GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
-            builder.setIteratorId(iteratorId);
-        }
-
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
-            Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
-            concept.asRelationship().allRolePlayers().forEach((role, players) -> {
-                players.forEach(player -> {
-                    rolePlayers.add(RolePlayer.create(role, player));
-                });
-            });
-            Stream<RolePlayer> response = rolePlayers.build();
-
-            return createTxResponse(iterators, response);
-        }
-    };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES = new ConceptStreamMethod() {
         @Override
         public GrpcConcept.ConceptMethod requestBuilder() {
@@ -832,12 +820,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Stream<? extends Concept>> getRolePlayersByRoles(Role... roles) {
         return new ConceptStreamMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles))).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asRelationship().rolePlayers(roles);

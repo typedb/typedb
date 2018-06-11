@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -127,6 +128,11 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
     public GrpcClient client() {
         return client;
+    }
+
+    public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
+        communicator.send(RequestBuilder.next(iteratorId));
+        return responseOrThrow();
     }
 
     public GrpcGrakn.TxResponse runConceptMethod(GrpcGrakn.TxRequest conceptMethodRequest) {
