@@ -197,22 +197,6 @@ public abstract class Atom extends AtomicBase {
     public abstract Var getPredicateVariable();
 
     /**
-     * @return set of predicates relevant to this atom
-     */
-    public Stream<Predicate> getPredicates() {
-        return getPredicates(Predicate.class);
-    }
-
-    /**
-     * @param type the class of {@link Predicate} to return
-     * @param <T> the type of {@link Predicate} to return
-     * @return stream of predicates relevant to this atom
-     */
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
-    }
-
-    /**
      * @param var variable of interest
      * @return id predicate referring to prescribed variable
      */
@@ -268,7 +252,10 @@ public abstract class Atom extends AtomicBase {
      */
     public Stream<Atomic> getNonSelectableConstraints() {
         return Stream.concat(
-                getPredicates(),
+                Stream.concat(
+                        getPredicates(),
+                        getPredicates().flatMap(AtomicBase::getPredicates)
+                ),
                 getTypeConstraints().filter(at -> !at.isSelectable())
                 );
     }

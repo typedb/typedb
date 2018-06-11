@@ -424,7 +424,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return orderedSelection;
     }
 
-    /**
+    /** Does id predicates -> answer conversion
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public Answer getSubstitution(){

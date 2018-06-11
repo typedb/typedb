@@ -20,9 +20,11 @@ package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -48,13 +50,13 @@ import java.util.stream.Collectors;
  */
 public final class ResolutionPlan {
 
+    final private ReasonerQueryImpl query;
     final private ImmutableList<Atom> plan;
-    final private EmbeddedGraknTx<?> tx;
 
-    public ResolutionPlan(ReasonerQueryImpl query){
-        this.tx =  query.tx();
+    public ResolutionPlan(ReasonerQueryImpl q){
+        this.query = q;
         this.plan = GraqlTraversalPlanner.refinedPlan(query);
-        if (!isValid()) {
+        if (!this.isValid()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
     }
@@ -70,13 +72,13 @@ public final class ResolutionPlan {
     public ImmutableList<Atom> plan(){ return plan;}
 
     /**
-     * @return true if the plan doesn't lead to any non-ground neq predicate
+     * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
      */
     private boolean isValid() {
         //check for neq groundness
         Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
-        Set<Var> mappedVars = new HashSet<>();
-        for(Atom atom : plan){
+        Set<Var> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
+        for(Atom atom : this.plan){
             mappedVars.addAll(atom.getVarNames());
             atom.getPredicates(NeqPredicate.class)
                     .forEach(neq -> {
@@ -100,6 +102,7 @@ public final class ResolutionPlan {
     public LinkedList<ReasonerQueryImpl> queryPlan(){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
+        EmbeddedGraknTx<?> tx = query.tx();
 
         List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
