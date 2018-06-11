@@ -26,19 +26,15 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.GrpcIterators;
-import ai.grakn.rpc.ResponseIterator;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
@@ -48,17 +44,6 @@ import java.util.stream.StreamSupport;
  * @param <T> The type of the concept method return value.
  */
 public abstract class ConceptMethod<T> {
-
-    // Client: RemoteGraknSession, RemoteGraknTx
-    // RPC: RequestBuilder.runConceptMethod()
-    public GrpcConcept.ConceptMethod requestBuilder() {
-        return null;
-    }
-
-    @Nullable // Client: GrpcClient
-    public T readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse)  {
-        return null;
-    }
 
     // Server: TxQueryListener.runConceptMethod()
     public abstract TxResponse run(GrpcIterators iterators, Concept concept);
@@ -232,14 +217,6 @@ public abstract class ConceptMethod<T> {
     }
 
     static abstract class ConceptStreamMethod extends ConceptMethod<Stream<? extends Concept>> {
-        @Override @Nullable
-        public Stream<? extends Concept> readResponse(TxConceptReader txConceptReader, GrpcClient client, TxResponse txResponse) {
-            GrpcIterator.IteratorId iteratorId = txResponse.getConceptResponse().getIteratorId();
-            Iterable<? extends Concept> iterable = () -> new ResponseIterator<>(client, iteratorId, response -> txConceptReader.concept(response.getConcept()));
-
-            return StreamSupport.stream(iterable.spliterator(), false);
-        }
-
         @Override
         public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Stream<? extends Concept> value) {
             Stream<TxResponse> responses = value.map(ResponseBuilder::concept);

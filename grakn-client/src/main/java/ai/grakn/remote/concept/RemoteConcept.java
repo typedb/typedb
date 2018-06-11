@@ -27,9 +27,7 @@ import ai.grakn.remote.rpc.RemoteIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptMethod;
 
-import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -74,11 +72,6 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
 
     protected final GrpcGrakn.TxResponse runMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
         return tx().runConceptMethod(id, method);
-    }
-
-    protected final <T> T runMethod(ConceptMethod<T> method) {
-        T result = tx().client().runConceptMethod(getId(), method);
-        return Objects.requireNonNull(result);
     }
 
     abstract Self asSelf(Concept concept);

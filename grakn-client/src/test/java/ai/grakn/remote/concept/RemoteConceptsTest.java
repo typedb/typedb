@@ -40,7 +40,6 @@ import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
@@ -701,14 +700,14 @@ public class RemoteConceptsTest {
         //verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
     }
 
-    private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
-        verify(server.requests()).onNext(RequestBuilder.runConceptMethod(ID, conceptMethod));
-    }
+//    private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
+//        verify(server.requests()).onNext(RequestBuilder.runConceptMethod(ID, conceptMethod));
+//    }
 
-    private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
-        server.setResponse(
-                RequestBuilder.runConceptMethod(ID, property),
-                property.createTxResponse(server.grpcIterators(), value)
-        );
-    }
+//    private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
+//        server.setResponse(
+//                RequestBuilder.runConceptMethod(ID, property),
+//                property.createTxResponse(server.grpcIterators(), value)
+//        );
+//    }
 }

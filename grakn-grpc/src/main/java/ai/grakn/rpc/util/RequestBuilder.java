@@ -33,7 +33,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.Infer;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
 import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
-import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
@@ -79,14 +78,6 @@ public class RequestBuilder {
 
     public static GrpcGrakn.TxRequest stop(IteratorId iteratorId) {
         return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId).build()).build();
-    }
-
-    public static GrpcGrakn.TxRequest runConceptMethod(ConceptId id, ConceptMethod<?> conceptMethod) {
-        RunConceptMethod runConceptMethod = RunConceptMethod.newBuilder()
-                .setId(ConceptBuilder.conceptId(id))
-                .setConceptMethod(conceptMethod.requestBuilder())
-                .build();
-        return TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
     }
 
     public static GrpcGrakn.TxRequest getConcept(ConceptId id) {

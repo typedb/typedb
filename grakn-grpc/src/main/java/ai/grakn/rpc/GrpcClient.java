@@ -32,7 +32,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
@@ -42,7 +41,6 @@ import com.google.common.collect.ImmutableMap;
 import io.grpc.StatusRuntimeException;
 import mjson.Json;
 
-import javax.annotation.Nullable;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -102,12 +100,6 @@ public class GrpcClient {
     public TxResponse next(IteratorId iteratorId) {
         communicator.send(RequestBuilder.next(iteratorId));
         return responseOrThrow();
-    }
-
-    @Nullable
-    public <T> T runConceptMethod(ConceptId id, ConceptMethod<T> conceptMethod) {
-        communicator.send(RequestBuilder.runConceptMethod(id, conceptMethod));
-        return conceptMethod.readResponse(conceptReader, this, responseOrThrow());
     }
 
     public Stream<? extends Concept> getAttributesByValue(Object value) {
