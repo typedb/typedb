@@ -34,13 +34,19 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.remote.rpc.RemoteIterator;
-import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -53,11 +59,24 @@ import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableMap;
 import io.grpc.StatusRuntimeException;
+import mjson.Json;
 
 import javax.annotation.Nullable;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -65,17 +84,11 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
- *
- * Most of the gRPC legwork is handled in the embedded {@link GrpcClient}. This class is an adapter to that,
- * translating Java calls into gRPC messages.
- *
- * @author Felix Chapman
  */
 public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final RemoteGraknSession session;
     private final GraknTxType txType;
-    private final GrpcClient client;
     private final TxGrpcCommunicator communicator;
     private final TxConceptReader conceptReader;
 
@@ -84,7 +97,6 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         this.txType = txType;
         this.communicator = TxGrpcCommunicator.create(stub);
         this.conceptReader = new RemoteConceptReader(this);
-        this.client = GrpcClient.create(conceptReader, communicator);
         communicator.send(openRequest);
         responseOrThrow();
     }
@@ -128,9 +140,6 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     public TxConceptReader conceptReader() {
         return conceptReader;
-    }
-    public GrpcClient client() {
-        return client;
     }
 
     public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
@@ -200,7 +209,13 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-        return client().getAttributesByValue(value).map(Concept::<V>asAttribute).collect(toImmutableSet());
+        communicator.send(RequestBuilder.getAttributesByValue(value));
+        GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
+        Iterable<Concept> iterable = () -> new RemoteIterator<>(
+                this, iteratorId, response -> conceptReader.concept(response.getConcept())
+        );
+
+        return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
     }
 
     @Nullable
@@ -292,6 +307,118 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     @Override
     public QueryExecutor queryExecutor() {
-        return RemoteQueryExecutor.create(client);
+        return RemoteQueryExecutor.create(this);
+    }
+
+    public Iterator<Object> execQuery(Query<?> query) {
+        communicator.send(RequestBuilder.execQuery(query.toString(), query.inferring()));
+
+        GrpcGrakn.TxResponse txResponse = responseOrThrow();
+
+        switch (txResponse.getResponseCase()) {
+            case ANSWER:
+                return Collections.singleton(answer(txResponse.getAnswer())).iterator();
+            case DONE:
+                return Collections.emptyIterator();
+            case ITERATORID:
+                GrpcIterator.IteratorId iteratorId = txResponse.getIteratorId();
+                return new RemoteIterator<>(this, iteratorId, response -> answer(response.getAnswer()));
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
+        }
+    }
+
+    private Object answer(GrpcGrakn.Answer answer) {
+        switch (answer.getAnswerCase()) {
+            case QUERYANSWER:
+                return queryAnswer(answer.getQueryAnswer());
+            case COMPUTEANSWER:
+                return computeAnswer(answer.getComputeAnswer());
+            case OTHERRESULT:
+                return Json.read(answer.getOtherResult()).getValue();
+            default:
+            case ANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + answer);
+        }
+    }
+
+    private Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer) {
+        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
+
+        queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
+            map.put(Graql.var(grpcVar), conceptReader.concept(grpcConcept));
+        });
+
+        return new QueryAnswer(map.build());
+    }
+
+    private ComputeQuery.Answer computeAnswer(GrpcGrakn.ComputeAnswer computeAnswerRPC) {
+        switch (computeAnswerRPC.getComputeAnswerCase()) {
+            case NUMBER:
+                try {
+                    Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber().getNumber());
+                    return new ComputeQueryImpl.AnswerImpl().setNumber(result);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            case PATHS:
+                return new ComputeQueryImpl.AnswerImpl().setPaths(paths(computeAnswerRPC.getPaths()));
+            case CENTRALITY:
+                return new ComputeQueryImpl.AnswerImpl().setCentrality(centrality(computeAnswerRPC.getCentrality()));
+            case CLUSTERS:
+                return new ComputeQueryImpl.AnswerImpl().setClusters(clusters(computeAnswerRPC.getClusters()));
+            case CLUSTERSIZES:
+                return new ComputeQueryImpl.AnswerImpl().setClusterSizes(clusterSizes(computeAnswerRPC.getClusterSizes()));
+            default:
+            case COMPUTEANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + computeAnswerRPC);
+        }
+    }
+
+    private List<List<ConceptId>> paths(GrpcGrakn.Paths pathsRPC) {
+        List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
+
+        for (GrpcConcept.ConceptIds conceptIds : pathsRPC.getPathsList()) {
+            paths.add(
+                    conceptIds.getConceptIdsList().stream()
+                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                            .collect(Collectors.toList())
+            );
+        }
+
+        return paths;
+    }
+
+    private Map<Long, Set<ConceptId>> centrality(GrpcGrakn.Centrality centralityRPC) {
+        Map<Long, Set<ConceptId>> centrality = new HashMap<>();
+
+        for (Map.Entry<Long, GrpcConcept.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
+            centrality.put(
+                    entry.getKey(),
+                    entry.getValue().getConceptIdsList().stream()
+                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        return centrality;
+    }
+
+    private Set<Set<ConceptId>> clusters(GrpcGrakn.Clusters clustersRPC) {
+        Set<Set<ConceptId>> clusters = new HashSet<>();
+
+        for (GrpcConcept.ConceptIds conceptIds : clustersRPC.getClustersList()) {
+            clusters.add(
+                    conceptIds.getConceptIdsList().stream()
+                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        return clusters;
+    }
+
+    private Set<Long> clusterSizes(GrpcGrakn.ClusterSizes clusterSizesRPC) {
+        return new HashSet<>(clusterSizesRPC.getClusterSizesList());
     }
 }

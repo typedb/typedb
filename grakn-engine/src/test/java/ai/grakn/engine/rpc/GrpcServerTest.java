@@ -42,7 +42,6 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.rpc.GrpcClient;
 import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.rpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
@@ -122,7 +121,7 @@ public class GrpcServerTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
     private final TxConceptReader conceptConverter = mock(TxConceptReader.class);
-    private final GrpcClient client = mock(GrpcClient.class);
+    //private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
     private GrpcServer grpcServer;
