@@ -36,12 +36,6 @@
             <artifactId>auto-value</artifactId>
         </dependency>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-client</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>ro.fortsoft.pf4j</groupId>
             <artifactId>pf4j</artifactId>
         </dependency>
