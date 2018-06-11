@@ -417,24 +417,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetInstances(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().instances();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRolesPlayedByThing(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().plays();
@@ -443,24 +431,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRelationships(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().relationships();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRelationshipTypesThatRelateRole(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRole().relationshipTypes();
@@ -469,12 +445,6 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetTypesThatPlayRole(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRole().playedByTypes();
             return createTxResponse(iterators, response);
@@ -482,24 +452,12 @@ public abstract class ConceptMethod<T> {
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES = new ConceptStreamMethod() {
         @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetRelatedRoles(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
-        @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRelationshipType().relates();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS = new ConceptStreamMethod() {
-        @Override
-        public GrpcConcept.ConceptMethod requestBuilder() {
-            GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-            return builder.setGetOwners(GrpcConcept.Unit.getDefaultInstance()).build();
-        }
-
         @Override
         public TxResponse run(GrpcIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asAttribute().ownerInstances();
@@ -776,12 +734,6 @@ public abstract class ConceptMethod<T> {
 
     public static ConceptMethod<Stream<? extends Concept>> getRelationshipsByRoles(Role... roles) {
         return new ConceptStreamMethod() {
-            @Override
-            public GrpcConcept.ConceptMethod requestBuilder() {
-                GrpcConcept.ConceptMethod.Builder builder = GrpcConcept.ConceptMethod.newBuilder();
-                return builder.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles))).build();
-            }
-
             @Override
             public TxResponse run(GrpcIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().relationships(roles);

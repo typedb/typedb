@@ -28,7 +28,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
 
@@ -52,18 +51,20 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        ConceptMethod<Stream<? extends Concept>> method;
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         if (roles.length == 0) {
-            method = ConceptMethod.GET_RELATIONSHIPS;
+            method.setGetRelationships(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method = ConceptMethod.getRelationshipsByRoles(roles);
+            method.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles)));
         }
-        return runMethod(method).map(Concept::asRelationship);
+        return runMethodToConceptStream(method.build()).map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> plays() {
-        return runMethod(ConceptMethod.GET_ROLES_PLAYED_BY_THING).map(Concept::asRole);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetRolesPlayedByThing(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override

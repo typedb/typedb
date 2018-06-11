@@ -27,7 +27,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 
 import java.util.stream.Stream;
 
@@ -98,7 +97,9 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
 
     @Override
     public final Stream<Instance> instances() {
-        return runMethod(ConceptMethod.GET_INSTANCES).map(this::asInstance);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetInstances(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(this::asInstance);
     }
 
     @Override

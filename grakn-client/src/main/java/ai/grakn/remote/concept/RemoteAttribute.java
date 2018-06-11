@@ -26,7 +26,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
@@ -66,7 +65,9 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        return runMethod(ConceptMethod.GET_OWNERS).map(Concept::asThing);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetOwners(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(Concept::asThing);
     }
 
     @Override

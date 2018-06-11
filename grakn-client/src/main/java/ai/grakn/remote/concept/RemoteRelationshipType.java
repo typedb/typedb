@@ -27,7 +27,6 @@ import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -54,7 +53,9 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
 
     @Override
     public final Stream<Role> relates() {
-        return runMethod(ConceptMethod.GET_RELATED_ROLES).map(Concept::asRole);
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetRelatedRoles(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
