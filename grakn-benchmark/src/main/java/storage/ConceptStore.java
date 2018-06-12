@@ -8,6 +8,6 @@ public interface ConceptStore {
 
     void add(Concept concept);
 
-    ArrayList<String> get(String type);
+//    ArrayList<String> get(String type);
 
 }

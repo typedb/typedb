@@ -1,61 +1,33 @@
 package strategy;
 
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import pdf.PDF;
-import storage.ConceptPicker;
+import storage.RolePlayerConceptPickerInterface;
 
 public class RolePlayerTypeStrategy extends TypeStrategy {
 
-    private final Boolean isCentral;
+    private final Role role;
+    private final String roleLabel;
+    private RolePlayerConceptPickerInterface conceptPicker;
 
-    private ConceptPicker conceptPicker;
-//    private final Boolean isUniquelyPicked;  // For instance we only want to assign employees to a company once
-
-    public RolePlayerTypeStrategy(Type type, PDF numInstancesPDF, ConceptPicker conceptPicker, Boolean isCentral) {
+    public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, RolePlayerConceptPickerInterface conceptPicker) {
         super(type, numInstancesPDF);
-        this.isCentral = isCentral;
+        this.role = role;
+        this.roleLabel = role.getLabel().getValue();
         this.conceptPicker = conceptPicker;
     }
 
-    public RolePlayerTypeStrategy(Type type, PDF numInstancesPDF, ConceptPicker conceptPicker) {
-        super(type, numInstancesPDF);
-        this.isCentral = false;
-        this.conceptPicker = conceptPicker;
-    }
-
-    public ConceptPicker getConceptPicker() {
+    public RolePlayerConceptPickerInterface getConceptPicker() {
         return conceptPicker;
     }
 
-//    public RolePlayerTypeStrategy(Type type, PDF numInstancesPDF, Boolean isCentral, Boolean isUniquelyPicked) {
-//        super(type, numInstancesPDF);
-//        this.isCentral = isCentral;
-////        this.isUniquelyPicked = isUniquelyPicked;
-//    }
-//
-//    public RolePlayerTypeStrategy(Type type, PDF numInstancesPDF) {
-//        super(type, numInstancesPDF);
-//        this.isCentral = false;
-////        this.isUniquelyPicked = false;
-//    }
+    public String getRoleLabel() {
+        return this.roleLabel;
+    }
 
-    public Boolean getCentral() {
-        return isCentral;
+    public Role getRole() {
+        return role;
     }
 }
 
-//import pdf.PDF;
-
-//public class RolePlayerTypeStrategy extends TypeStrategy {
-//
-//    private PDF valuesPDF;
-//
-//    public RolePlayerTypeStrategy(PDF valuesPDF) {
-//        super();
-//        this.valuesPDF = valuesPDF;
-//    }
-//
-//    public PDF getValuesPDF() {
-//        return valuesPDF;
-//    }
-//}

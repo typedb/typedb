@@ -23,6 +23,7 @@ person sub entity,
 
 employment sub relationship,
   relates employee,
+  relates employer,
   relates director,
   relates profession,
   relates wage,
@@ -42,6 +43,10 @@ occupation sub entity,
   # has health-and-safety-risk
   plays profession,
   plays naming-subject;
+
+company sub entity,
+  has name,
+  plays employer;
 
 # vocation sub occupation;
 # pudding-maker, to be wealthy

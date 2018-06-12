@@ -1,7 +1,6 @@
 package generator;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import strategy.EntityStrategy;

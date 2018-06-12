@@ -7,10 +7,7 @@ import ai.grakn.util.SimpleURI;
 import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.DiscreteGaussianPDF;
-import storage.ConceptIdStore;
-import storage.ConceptPicker;
-import storage.ConceptStore;
-import storage.RandomConceptIdPicker;
+import storage.*;
 import strategy.*;
 
 import java.util.*;
@@ -44,12 +41,13 @@ public class DataGenerator {
     private FrequencyOptionCollection<FrequencyOptionCollection> operationStrategies;
 
     private boolean doExecution = true;
-    private ConceptStore conceptIdStore;
-    private RandomConceptIdPicker conceptPicker;
+    private ConceptTypeCountStore conceptTypeCountStore;
+//    private RandomConceptIdPicker conceptPicker;
 
     public DataGenerator() {
 
         this.rand = new Random(RANDOM_SEED);
+        this.conceptTypeCountStore = new ConceptTypeCountStore();
         entityStrategies = new FrequencyOptionCollection<EntityStrategy>(this.rand);
         relationshipStrategies = new FrequencyOptionCollection<RelationshipStrategy>(this.rand);
         attributeStrategies = new FrequencyOptionCollection<AttributeStrategy>(this.rand);
@@ -65,27 +63,49 @@ public class DataGenerator {
             this.roles = this.getTypes(tx, "role");
 
 
-            this.entityStrategies.add(
-                    0.5,
-                    new EntityStrategy(
-                            this.getTypeFromString("person", this.entityTypes),
-                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
+//            this.entityStrategies.add(
+//                    0.5,
+//                    new EntityStrategy(
+//                            this.getTypeFromString("person", this.entityTypes),
+//                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
+
+//            this.entityStrategies.add(
+//                    0.5,
+//                    new EntityStrategy(
+//                            this.getTypeFromString("occupation", this.entityTypes),
+//                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
 
             this.entityStrategies.add(
                     0.5,
                     new EntityStrategy(
-                            this.getTypeFromString("occupation", this.entityTypes),
+                            this.getTypeFromString("company", this.entityTypes),
                             new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
 
-            Set<RelationshipRoleStrategy> employmentRoleStrategies = new HashSet<RelationshipRoleStrategy>();
+            Set<RolePlayerTypeStrategy> employmentRoleStrategies = new HashSet<RolePlayerTypeStrategy>();
+
+//            employmentRoleStrategies.add(
+//                    new RolePlayerTypeStrategy(
+//                            this.getTypeFromString("employee", this.roles),
+//                            this.getTypeFromString("person", this.entityTypes),
+//                            new DiscreteGaussianPDF(this.rand, 20.0, 10.0),
+//                            new RolePlayerConceptPicker(this.rand,
+//                                    "person",
+//                                    "employment",
+//                                    "employee",
+//                                    this.conceptTypeCountStore)
+//                    )
+//            );
 
             employmentRoleStrategies.add(
-                    new RelationshipRoleStrategy(
-                            this.getTypeFromString("employee", this.roles),
-                            new RolePlayerTypeStrategy(
-                                    this.getTypeFromString("person", this.entityTypes),
-                                    new DiscreteGaussianPDF(this.rand, 20.0, 2.0),
-                                    new RandomConceptIdPicker(this.rand, false))
+                    new RolePlayerTypeStrategy(
+                            this.getTypeFromString("employer", this.roles),
+                            this.getTypeFromString("company", this.entityTypes),
+                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
+                            new CentralRolePlayerPicker(this.rand,
+                                    "company",
+                                    "employment",
+                                    "employer",
+                                    this.conceptTypeCountStore)
                     )
             );
 
@@ -154,13 +174,13 @@ public class DataGenerator {
     }
 
     public void generate() {
-        int max_iterations = 100;
+        int max_iterations = 10;
         int it = 0;
 
         // Store the ids of the concepts inserted by type, using type as the key
-//        this.conceptIdStore = new HashMap<String, ArrayList<String>>();
-        this.conceptIdStore = new ConceptIdStore();
-        this.conceptPicker = new RandomConceptIdPicker(this.rand, false);
+//        this.conceptTypeCountStore = new HashMap<String, ArrayList<String>>();
+//        this.conceptTypeCountStore = new ConceptTypeCountStore();
+//        this.conceptPicker = new RandomConceptIdPicker(this.rand, false);
 
         GraknSession session = this.getSession();
 
@@ -169,7 +189,8 @@ public class DataGenerator {
 
             while (it < max_iterations) {
                 try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptIdStore, this.conceptPicker);
+//                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptTypeCountStore, this.conceptPicker);
+                Generator generator = gf.create(this.operationStrategies.next().next(), tx);
 
                 Stream<Query> queriesStream = generator.generate();
 
@@ -178,7 +199,7 @@ public class DataGenerator {
                             .forEachOrdered(q -> {
                         List<Answer> insertions = q.execute();
                         insertions.forEach(insert -> insert.concepts().forEach(concept -> {
-                            this.conceptIdStore.add(concept);
+                            this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
                         }));
                     });
                 } else {

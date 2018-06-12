@@ -7,14 +7,14 @@ import java.util.Set;
 
 public class RelationshipStrategy extends TypeStrategy<RelationshipType> {
 
-    private Set<RelationshipRoleStrategy> roleStrategies;
+    private Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies;
 
-    public <P extends PDF> RelationshipStrategy(RelationshipType type, P numInstancesPDF, Set<RelationshipRoleStrategy> roleStrategies) {
+    public <P extends PDF> RelationshipStrategy(RelationshipType type, P numInstancesPDF, Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies) {
         super(type, numInstancesPDF);
-        this.roleStrategies = roleStrategies;
+        this.rolePlayerTypeStrategies = rolePlayerTypeStrategies;
     }
 
-    public Set<RelationshipRoleStrategy> getRoleStrategies() {
-        return roleStrategies;
+    public Set<RolePlayerTypeStrategy> getRolePlayerTypeStrategies() {
+        return rolePlayerTypeStrategies;
     }
 }
