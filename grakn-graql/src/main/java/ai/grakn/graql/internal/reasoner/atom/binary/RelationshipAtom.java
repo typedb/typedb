@@ -132,9 +132,16 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
+    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
+        RelationshipAtom atom = create(pattern, predicateVar, predicateId, parent);
+        atom.possibleTypes = possibleTypes;
+        return atom;
+    }
+
     private static RelationshipAtom create(RelationshipAtom a, ReasonerQuery parent) {
         RelationshipAtom atom = new AutoValue_RelationshipAtom( a.getVarName(), a.getPattern(), parent, a.getPredicateVariable(), a.getTypeId(), a.getRelationPlayers(), a.getRoleLabels());
         atom.applicableRules = a.applicableRules;
+        atom.possibleTypes = a.possibleTypes;
         return atom;
     }
 
@@ -476,7 +483,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
+        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     /**
@@ -528,6 +535,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         }
         return compatibleTypes;
     }
+    
+    private ImmutableList<Type> getPossibleTypes(){ return possibleTypes;}
 
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
@@ -744,7 +753,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         relationPattern.directIsa(getPredicateVariable()) :
                         relationPattern.isa(getPredicateVariable())
                 ).admin();
-        return create(newPattern, getPredicateVariable(), getTypeId(), getParentQuery());
+        return create(newPattern, this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     /**
@@ -976,7 +985,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 relVar = relVar.rel(rp.getRolePlayer());
             }
         }
-        return create(relVar.admin(), getPredicateVariable(), getTypeId(), getParentQuery());
+        return create(relVar.admin(), this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     /**
@@ -1003,12 +1012,12 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 relVar = relVar.rel(c.getRolePlayer());
             }
         }
-        return create(relVar.admin(), getPredicateVariable(), getTypeId(), getParentQuery());
+        return create(relVar.admin(), this.getPredicateVariable(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override
     public RelationshipAtom rewriteWithTypeVariable(){
-        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
+        return create(this.getPattern(), this.getPredicateVariable().asUserDefined(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override
