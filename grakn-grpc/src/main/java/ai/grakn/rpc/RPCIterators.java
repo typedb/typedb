@@ -35,15 +35,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Felix Chapman
  */
-public class GrpcIterators {
+public class RPCIterators {
     private final AtomicInteger iteratorIdCounter = new AtomicInteger();
     private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
 
-    private GrpcIterators() {
+    private RPCIterators() {
     }
 
-    public static GrpcIterators create() {
-        return new GrpcIterators();
+    public static RPCIterators create() {
+        return new RPCIterators();
     }
 
     /**

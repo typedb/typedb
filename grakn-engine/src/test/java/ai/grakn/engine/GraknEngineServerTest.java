@@ -27,9 +27,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.GraknRPCService;
-import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
-import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.rpc.RPCService;
+import ai.grakn.engine.rpc.RPCOpenerImpl;
+import ai.grakn.engine.rpc.RPCServer;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -39,7 +39,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.RPCOpener;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknVersion;
@@ -213,12 +213,12 @@ public class GraknEngineServerTest {
         Service sparkHttp = Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new GraknRPCService(requestExecutor, postProcessor)).build();
-        GrpcServer grpcServer = GrpcServer.create(server);
+        RPCOpener requestExecutor = new RPCOpenerImpl(engineGraknTxFactory);
+        Server server = ServerBuilder.forPort(grpcPort).addService(new RPCService(requestExecutor, postProcessor)).build();
+        RPCServer rpcServer = RPCServer.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
-                sparkHttp, httpControllers, grpcServer,
+                sparkHttp, httpControllers, rpcServer,
                 engineGraknTxFactory, metricRegistry,
                 queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }

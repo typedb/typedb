@@ -25,17 +25,17 @@ import java.io.IOException;
 /**
  * @author Felix Chapman
  */
-public class GrpcServer implements AutoCloseable {
+public class RPCServer implements AutoCloseable {
 
     private final Server server;
 
-    private GrpcServer(Server server) {
+    private RPCServer(Server server) {
         this.server = server;
     }
 
 
-    public static GrpcServer create(Server server) {
-        return new GrpcServer(server);
+    public static RPCServer create(Server server) {
+        return new RPCServer(server);
     }
 
     /**

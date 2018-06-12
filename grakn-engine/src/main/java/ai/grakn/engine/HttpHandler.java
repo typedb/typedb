@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.printer.JacksonPrinter;
-import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.rpc.RPCServer;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
@@ -56,13 +56,13 @@ public class HttpHandler {
     private final MetricRegistry metricRegistry;
     private final GraknEngineStatus graknEngineStatus;
     private final PostProcessor postProcessor;
-    private final GrpcServer grpcServer;
+    private final RPCServer rpcServer;
     private final Collection<HttpController> additionalCollaborators;
 
     public HttpHandler(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
             GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
-            GrpcServer grpcServer,
+            RPCServer rpcServer,
             Collection<HttpController> additionalCollaborators
     ) {
         this.prop = prop;
@@ -71,7 +71,7 @@ public class HttpHandler {
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
         this.postProcessor = postProcessor;
-        this.grpcServer = grpcServer;
+        this.rpcServer = rpcServer;
         this.additionalCollaborators = additionalCollaborators;
     }
 
@@ -81,7 +81,7 @@ public class HttpHandler {
 
         startCollaborators();
 
-        grpcServer.start();
+        rpcServer.start();
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
@@ -133,7 +133,7 @@ public class HttpHandler {
 
 
     public void stopHTTP() throws InterruptedException {
-        grpcServer.close();
+        rpcServer.close();
 
         spark.stop();
 

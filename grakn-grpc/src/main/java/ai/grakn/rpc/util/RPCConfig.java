@@ -23,6 +23,6 @@ package ai.grakn.rpc.util;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class GrpcConfig {
+public class RPCConfig {
     public static final int GRPC_MAX_MESSAGE_SIZE_IN_BYTES = Integer.MAX_VALUE; // 2 GB
 }

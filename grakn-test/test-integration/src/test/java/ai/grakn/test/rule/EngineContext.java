@@ -35,9 +35,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.GraknRPCService;
-import ai.grakn.engine.rpc.GrpcOpenRequestExecutorImpl;
-import ai.grakn.engine.rpc.GrpcServer;
+import ai.grakn.engine.rpc.RPCService;
+import ai.grakn.engine.rpc.RPCOpenerImpl;
+import ai.grakn.engine.rpc.RPCServer;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -47,7 +47,7 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.RPCOpener;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -307,15 +307,15 @@ public class EngineContext extends CompositeTestRule {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-        GrpcOpenRequestExecutor requestExecutor = new GrpcOpenRequestExecutorImpl(engineGraknTxFactory);
+        RPCOpener requestExecutor = new RPCOpenerImpl(engineGraknTxFactory);
 
-        Server server = ServerBuilder.forPort(0).addService(new GraknRPCService(requestExecutor, postProcessor)).build();
-        GrpcServer grpcServer = GrpcServer.create(server);
+        Server server = ServerBuilder.forPort(0).addService(new RPCService(requestExecutor, postProcessor)).build();
+        RPCServer rpcServer = RPCServer.create(server);
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(id, config, status,
-                spark, Collections.emptyList(), grpcServer,
+                spark, Collections.emptyList(), rpcServer,
                 engineGraknTxFactory, metricRegistry,
                 queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
 

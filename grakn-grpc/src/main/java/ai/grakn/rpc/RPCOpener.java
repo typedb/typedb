@@ -16,34 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
+package ai.grakn.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.GrpcOpenRequestExecutor;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
- * Class used to handle gRPC Open requests. It extracts keyspace and tx type from gRPC request
- * and open new tx using GraknTxFactory
+ * Interface implemented by classes that handle gRPC Open requests
  *
  * @author marcoscoppetta
  */
 
-public class GrpcOpenRequestExecutorImpl implements GrpcOpenRequestExecutor {
+public interface RPCOpener {
 
-    private final EngineGraknTxFactory txFactory;
-
-    public GrpcOpenRequestExecutorImpl(EngineGraknTxFactory txFactory) {
-        this.txFactory=txFactory;
-    }
-
-    @Override
-    public EmbeddedGraknTx<?> execute(Open request) {
-        Keyspace keyspace = Keyspace.of(request.getKeyspace().getValue());
-        GraknTxType txType = GraknTxType.of(request.getTxType().getNumber());
-        return txFactory.tx(keyspace, txType);
-    }
+    EmbeddedGraknTx<?> execute(Open open);
 }

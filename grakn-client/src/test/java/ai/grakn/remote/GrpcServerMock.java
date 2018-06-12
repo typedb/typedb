@@ -18,7 +18,7 @@
 
 package ai.grakn.remote;
 
-import ai.grakn.rpc.GrpcIterators;
+import ai.grakn.rpc.RPCIterators;
 import ai.grakn.rpc.util.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
@@ -71,7 +71,7 @@ import static org.mockito.Mockito.when;
 public final class GrpcServerMock extends CompositeTestRule {
 
     private int iteratorIdCounter = 0;
-    private final GrpcIterators grpcIterators = GrpcIterators.create();
+    private final RPCIterators rpcIterators = RPCIterators.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     private final GraknImplBase service = mock(GraknImplBase.class);
 
@@ -99,8 +99,8 @@ public final class GrpcServerMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    public GrpcIterators grpcIterators() {
-        return grpcIterators;
+    public RPCIterators grpcIterators() {
+        return rpcIterators;
     }
 
     public void setResponse(TxRequest request, TxResponse... responses) {
@@ -190,7 +190,7 @@ public final class GrpcServerMock extends CompositeTestRule {
 
             TxRequest request = args.getArgument(0);
 
-            Optional<TxResponse> next = grpcIterators.next(request.getNext().getIteratorId());
+            Optional<TxResponse> next = rpcIterators.next(request.getNext().getIteratorId());
             serverResponses.onNext(next.orElse(ResponseBuilder.done()));
             return null;
         }).when(serverRequests).onNext(any());

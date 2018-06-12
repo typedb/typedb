@@ -37,8 +37,8 @@ import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.TxConceptReader;
-import ai.grakn.rpc.GrpcIterators;
-import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.RPCIterators;
+import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -72,44 +72,44 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.rpc.GraknRPCService.nonNull;
+import static ai.grakn.engine.rpc.RPCService.nonNull;
 
 /**
- * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
+ * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link RPCServer}.
  * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
  *
  * @author Felix Chapman
  */
-class TxRequestListener implements StreamObserver<TxRequest> {
-    final Logger LOG = LoggerFactory.getLogger(TxRequestListener.class);
+class RPCListener implements StreamObserver<TxRequest> {
+    final Logger LOG = LoggerFactory.getLogger(RPCListener.class);
     private final StreamObserver<TxResponse> reponseSender;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService threadExecutor;
-    private final GrpcOpenRequestExecutor requestExecutor;
+    private final RPCOpener requestExecutor;
     private final PostProcessor postProcessor;
-    private final GrpcIterators grpcIterators = GrpcIterators.create();
+    private final RPCIterators rpcIterators = RPCIterators.create();
 
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
 
-    private TxRequestListener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
+    private RPCListener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, RPCOpener requestExecutor, PostProcessor postProcessor) {
         this.reponseSender = responseSender;
         this.threadExecutor = threadExecutor;
         this.requestExecutor = requestExecutor;
         this.postProcessor = postProcessor;
     }
 
-    public static TxRequestListener create(StreamObserver<TxResponse> responseObserver, GrpcOpenRequestExecutor requestExecutor, PostProcessor postProcessor) {
+    public static RPCListener create(StreamObserver<TxResponse> responseObserver, RPCOpener requestExecutor, PostProcessor postProcessor) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
         ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-        return new TxRequestListener(responseObserver, threadExecutor, requestExecutor, postProcessor);
+        return new RPCListener(responseObserver, threadExecutor, requestExecutor, postProcessor);
     }
 
     @Override
     public void onNext(TxRequest request) {
         try {
             submit(() -> {
-                GraknRPCService.runAndConvertGraknExceptions(() -> handleRequest(request));
+                RPCService.runAndConvertGraknExceptions(() -> handleRequest(request));
             });
         } catch (StatusRuntimeException e) {
             close(e);
@@ -162,7 +162,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
                 break;
             default:
             case REQUEST_NOT_SET:
-                throw GraknRPCService.error(Status.INVALID_ARGUMENT);
+                throw RPCService.error(Status.INVALID_ARGUMENT);
         }
     }
 
@@ -185,7 +185,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
         if (!terminated.getAndSet(true)) {
             if (error != null) {
-                LOG.error("Runtime Exception in TxRequestListener: ", error);
+                LOG.error("Runtime Exception in RPCListener: ", error);
                 reponseSender.onError(error);
             } else {
                 reponseSender.onCompleted();
@@ -209,7 +209,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
     private void open(Open request) {
         if (tx != null) {
-            throw GraknRPCService.error(Status.FAILED_PRECONDITION);
+            throw RPCService.error(Status.FAILED_PRECONDITION);
         }
         tx = requestExecutor.execute(request);
         reponseSender.onNext(ResponseBuilder.done());
@@ -233,7 +233,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
         if (query instanceof Streamable) {
             Stream<GrpcGrakn.TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder::answer);
-            IteratorId iteratorId = grpcIterators.add(responseStream.iterator());
+            IteratorId iteratorId = rpcIterators.add(responseStream.iterator());
 
             response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
         } else {
@@ -250,14 +250,14 @@ class TxRequestListener implements StreamObserver<TxRequest> {
         IteratorId iteratorId = next.getIteratorId();
 
         TxResponse response =
-                grpcIterators.next(iteratorId).orElseThrow(() -> GraknRPCService.error(Status.FAILED_PRECONDITION));
+                rpcIterators.next(iteratorId).orElseThrow(() -> RPCService.error(Status.FAILED_PRECONDITION));
 
         reponseSender.onNext(response);
     }
 
     private void stop(Stop stop) {
         IteratorId iteratorId = stop.getIteratorId();
-        grpcIterators.stop(iteratorId);
+        rpcIterators.stop(iteratorId);
         reponseSender.onNext(ResponseBuilder.done());
     }
 
@@ -267,7 +267,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
 
         ConceptMethod<?> conceptMethod = ConceptMethod.requestReader(txConceptReader, runConceptMethod.getConceptMethod());
 
-        TxResponse response = conceptMethod.run(grpcIterators, concept);
+        TxResponse response = conceptMethod.run(rpcIterators, concept);
 
         reponseSender.onNext(response);
     }
@@ -294,7 +294,7 @@ class TxRequestListener implements StreamObserver<TxRequest> {
         Collection<Attribute<Object>> attributes = tx().getAttributesByValue(ConceptReader.attributeValue(attributeValue));
 
         Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
-        IteratorId iteratorId = grpcIterators.add(iterator);
+        IteratorId iteratorId = rpcIterators.add(iterator);
 
         reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }

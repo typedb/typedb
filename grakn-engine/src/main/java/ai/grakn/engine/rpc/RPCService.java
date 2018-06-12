@@ -29,7 +29,7 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.rpc.GrpcOpenRequestExecutor;
+import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
@@ -45,24 +45,24 @@ import javax.annotation.Nullable;
 
 
 /**
- *  Service used by GrpcServer to provide Grakn core functionality via gRPC
+ *  Service used by RPCServer to provide Grakn core functionality via gRPC
  *
  *  @author marcoscoppetta
  */
 
 
-public class GraknRPCService extends GraknGrpc.GraknImplBase {
-    private final GrpcOpenRequestExecutor executor;
+public class RPCService extends GraknGrpc.GraknImplBase {
+    private final RPCOpener executor;
     private PostProcessor postProcessor;
 
-    public GraknRPCService(GrpcOpenRequestExecutor executor, PostProcessor postProcessor) {
+    public RPCService(RPCOpener executor, PostProcessor postProcessor) {
         this.executor = executor;
         this.postProcessor = postProcessor;
     }
 
     @Override
     public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseSender) {
-        return TxRequestListener.create(responseSender, executor, postProcessor);
+        return RPCListener.create(responseSender, executor, postProcessor);
     }
 
     @Override
@@ -118,7 +118,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
 
     static <T> T nonNull(@Nullable T item) {
         if (item == null) {
-            throw GraknRPCService.error(Status.FAILED_PRECONDITION);
+            throw RPCService.error(Status.FAILED_PRECONDITION);
         } else {
             return item;
         }

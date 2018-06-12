@@ -91,7 +91,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Felix Chapman
  */
-public class GrpcServerIT {
+public class RPCServerIT {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

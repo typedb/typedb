@@ -26,7 +26,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.GrpcIterators;
+import ai.grakn.rpc.RPCIterators;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
@@ -46,17 +46,17 @@ import java.util.stream.Stream;
 public abstract class ConceptMethod<T> {
 
     // Server: TxQueryListener.runConceptMethod()
-    public abstract TxResponse run(GrpcIterators iterators, Concept concept);
+    public abstract TxResponse run(RPCIterators iterators, Concept concept);
 
     // ^-- Server: ConceptMethod.run()
-    public TxResponse createTxResponse(GrpcIterators iterators, T response) {
+    public TxResponse createTxResponse(RPCIterators iterators, T response) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         buildResponse(conceptResponse, iterators, response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
     // ^-- Server: ^ ConceptMethod.createTxResponse()
-    public abstract void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, T value);
+    public abstract void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, T value);
 
     // Server: TxRequestLister.runConceptMethod()
     public static ConceptMethod<?> requestReader(TxConceptReader converter, GrpcConcept.ConceptMethod conceptMethod) {
@@ -183,42 +183,42 @@ public abstract class ConceptMethod<T> {
 
     static abstract class BooleanMethod extends ConceptMethod<Boolean> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Boolean value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Boolean value) {
             builder.setBool(value);
         }
     }
 
     static abstract class OptionalPatternMethod extends ConceptMethod<Optional<Pattern>> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Pattern> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Optional<Pattern> value) {
             builder.setOptionalPattern(ConceptBuilder.optionalPattern(value));
         }
     }
 
     static abstract class ConceptConceptMethod extends ConceptMethod<Concept> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Concept value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Concept value) {
             builder.setConcept(ConceptBuilder.concept(value));
         }
     }
 
     static abstract class OptionalConceptMethod extends ConceptMethod<Optional<Concept>> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<Concept> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Optional<Concept> value) {
             builder.setOptionalConcept(ConceptBuilder.optionalConcept(value));
         }
     }
 
     static abstract class UnitMethod extends ConceptMethod<Void> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Void value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Void value) {
             builder.setUnit(GrpcConcept.Unit.getDefaultInstance());
         }
     }
 
     static abstract class ConceptStreamMethod extends ConceptMethod<Stream<? extends Concept>> {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Stream<? extends Concept> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Stream<? extends Concept> value) {
             Stream<TxResponse> responses = value.map(ResponseBuilder::concept);
             GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
             builder.setIteratorId(iteratorId);
@@ -227,14 +227,14 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Stream<RolePlayer>> GET_ROLE_PLAYERS = new ConceptMethod<Stream<RolePlayer>>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Stream<RolePlayer> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Stream<RolePlayer> value) {
             Stream<TxResponse> responses = value.map(ResponseBuilder::rolePlayer);
             GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
             builder.setIteratorId(iteratorId);
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
             concept.asRelationship().allRolePlayers().forEach((role, players) -> {
                 players.forEach(player -> {
@@ -249,95 +249,95 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Object> GET_VALUE = new ConceptMethod<Object>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Object value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Object value) {
             builder.setAttributeValue(ConceptBuilder.attributeValue(value));
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Object response = concept.asAttribute().getValue();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Optional<AttributeType.DataType<?>>> GET_DATA_TYPE_OF_TYPE = new ConceptMethod<Optional<AttributeType.DataType<?>>>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<AttributeType.DataType<?>> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Optional<AttributeType.DataType<?>> value) {
             builder.setOptionalDataType(ResponseBuilder.optionalDataType(value));
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Optional<AttributeType.DataType<?>> response = Optional.ofNullable(concept.asAttributeType().getDataType());
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<AttributeType.DataType<?>> GET_DATA_TYPE_OF_ATTRIBUTE = new ConceptMethod<AttributeType.DataType<?>>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, AttributeType.DataType<?> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, AttributeType.DataType<?> value) {
             builder.setDataType(ConceptBuilder.dataType(value));
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             AttributeType.DataType<?> response = concept.asAttribute().dataType();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Label> GET_LABEL = new ConceptMethod<Label>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Label value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Label value) {
             builder.setLabel(ConceptBuilder.label(value));
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Label response = concept.asSchemaConcept().getLabel();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Boolean> IS_IMPLICIT = new BooleanMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Boolean response = concept.asSchemaConcept().isImplicit();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Boolean> IS_INFERRED = new BooleanMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Boolean result = concept.asThing().isInferred();
             return createTxResponse(iterators, result);
         }
     };
     public static final ConceptMethod<Boolean> IS_ABSTRACT = new BooleanMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Boolean response = concept.asType().isAbstract();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Optional<Pattern>> GET_WHEN = new OptionalPatternMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Optional<Pattern> result = Optional.ofNullable(concept.asRule().getWhen());
             return createTxResponse(iterators, result);
         }
     };
     public static final ConceptMethod<Optional<Pattern>> GET_THEN = new OptionalPatternMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Optional<Pattern> response = Optional.ofNullable(concept.asRule().getThen());
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Optional<String>> GET_REGEX = new ConceptMethod<Optional<String>>() {
         @Override
-        public void buildResponse(ConceptResponse.Builder builder, GrpcIterators iterators, Optional<String> value) {
+        public void buildResponse(ConceptResponse.Builder builder, RPCIterators iterators, Optional<String> value) {
             builder.setOptionalRegex(ConceptBuilder.optionalRegex(value));
         }
 
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Optional<String> response = Optional.ofNullable(concept.asAttributeType().getRegex());
             return createTxResponse(iterators, response);
         }
@@ -345,98 +345,98 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTE_TYPES = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().attributes();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEY_TYPES = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().keys();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUPER_CONCEPTS = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asSchemaConcept().sups();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_SUB_CONCEPTS = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asSchemaConcept().subs();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ATTRIBUTES = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().attributes();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_KEYS = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().keys();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_TYPE = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().plays();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_INSTANCES = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asType().instances();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_ROLES_PLAYED_BY_THING = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().plays();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIPS = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asThing().relationships();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATIONSHIP_TYPES_THAT_RELATE_ROLE = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRole().relationshipTypes();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_TYPES_THAT_PLAY_ROLE = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRole().playedByTypes();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_RELATED_ROLES = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asRelationshipType().relates();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Stream<? extends Concept>> GET_OWNERS = new ConceptStreamMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Stream<? extends Concept> response = concept.asAttribute().ownerInstances();
             return createTxResponse(iterators, response);
         }
@@ -444,28 +444,28 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Optional<Concept>> GET_DIRECT_SUPER = new OptionalConceptMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Optional<Concept> response = Optional.ofNullable(concept.asSchemaConcept().sup());
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Void> DELETE = new UnitMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             concept.delete();
             return null;
         }
     };
     public static final ConceptMethod<Concept> ADD_ENTITY = new ConceptConceptMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Concept response = concept.asEntityType().addEntity();
             return createTxResponse(iterators, response);
         }
     };
     public static final ConceptMethod<Concept> ADD_RELATIONSHIP = new ConceptConceptMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Concept response = concept.asRelationshipType().addRelationship();
             return createTxResponse(iterators, response);
         }
@@ -473,7 +473,7 @@ public abstract class ConceptMethod<T> {
 
     public static final ConceptMethod<Concept> GET_DIRECT_TYPE = new ConceptConceptMethod() {
         @Override
-        public TxResponse run(GrpcIterators iterators, Concept concept) {
+        public TxResponse run(RPCIterators iterators, Concept concept) {
             Concept response = concept.asThing().type();
             return createTxResponse(iterators, response);
         }
@@ -482,7 +482,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Concept> putAttribute(Object value) {
         return new ConceptConceptMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Concept response = concept.asAttributeType().putAttribute(value);
                 return createTxResponse(iterators, response);
             }
@@ -492,7 +492,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Concept> setAttribute(Attribute<?> attribute) {
         return new ConceptConceptMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Concept response = concept.asThing().attributeRelationship(attribute);
                 return createTxResponse(iterators, response);
             }
@@ -502,7 +502,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Optional<Concept>> getAttribute(Object value) {
         return new OptionalConceptMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Optional<Concept> response = Optional.ofNullable(concept.asAttributeType().getAttribute(value));
                 return createTxResponse(iterators, response);
             }
@@ -512,7 +512,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setLabel(Label label) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asSchemaConcept().setLabel(label);
                 return null;
             }
@@ -522,7 +522,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setAbstract(boolean isAbstract) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().setAbstract(isAbstract);
                 return null;
             }
@@ -532,7 +532,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRegex(Optional<String> regex) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asAttributeType().setRegex(regex.orElse(null));
                 return null;
             }
@@ -542,7 +542,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setAttributeType(AttributeType<?> attributeType) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().attribute(attributeType);
                 return null;
             }
@@ -552,7 +552,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetAttributeType(AttributeType<?> attributeType) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().deleteAttribute(attributeType);
                 return null;
             }
@@ -562,7 +562,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setKeyType(AttributeType<?> attributeType) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().key(attributeType);
                 return null;
             }
@@ -572,7 +572,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetKeyType(AttributeType<?> attributeType) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().deleteKey(attributeType);
                 return null;
             }
@@ -584,7 +584,7 @@ public abstract class ConceptMethod<T> {
              // Make the second argument the super of the first argument
              // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 //TODO: This was copied from ConceptBuilder
 
                 SchemaConcept subConcept = concept.asSchemaConcept();
@@ -612,7 +612,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> removeRolePlayer(RolePlayer rolePlayer) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
                 return null;
             }
@@ -622,7 +622,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetAttribute(Attribute<?> attribute) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asThing().deleteAttribute(attribute);
                 return null;
             }
@@ -632,7 +632,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRolePlayedByType(Role role) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().plays(role);
                 return null;
             }
@@ -642,7 +642,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetRolePlayedByType(Role role) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asType().deletePlays(role);
                 return null;
             }
@@ -652,7 +652,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRolePlayer(RolePlayer rolePlayer) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player());
                 return null;
             }
@@ -662,7 +662,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> setRelatedRole(Role role) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asRelationshipType().relates(role);
                 return null;
             }
@@ -672,7 +672,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Void> unsetRelatedRole(Role role) {
         return new UnitMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 concept.asRelationshipType().deleteRelates(role);
                 return null;
             }
@@ -682,7 +682,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Stream<? extends Concept>> getAttributesByTypes(AttributeType<?>... attributeTypes) {
         return new ConceptStreamMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().attributes(attributeTypes);
                 return createTxResponse(iterators, response);
             }
@@ -692,7 +692,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Stream<? extends Concept>> getKeysByTypes(AttributeType<?>... attributeTypes) {
         return new ConceptStreamMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().keys(attributeTypes);
                 return createTxResponse(iterators, response);
             }
@@ -702,7 +702,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Stream<? extends Concept>> getRolePlayersByRoles(Role... roles) {
         return new ConceptStreamMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asRelationship().rolePlayers(roles);
                 return createTxResponse(iterators, response);
             }
@@ -712,7 +712,7 @@ public abstract class ConceptMethod<T> {
     public static ConceptMethod<Stream<? extends Concept>> getRelationshipsByRoles(Role... roles) {
         return new ConceptStreamMethod() {
             @Override
-            public TxResponse run(GrpcIterators iterators, Concept concept) {
+            public TxResponse run(RPCIterators iterators, Concept concept) {
                 Stream<? extends Concept> response = concept.asThing().relationships(roles);
                 return createTxResponse(iterators, response);
             }

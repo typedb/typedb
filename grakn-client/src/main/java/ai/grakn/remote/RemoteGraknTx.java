@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.remote.rpc.RemoteIterator;
-import ai.grakn.rpc.TxGrpcCommunicator;
+import ai.grakn.rpc.RPCCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -89,13 +89,13 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final RemoteGraknSession session;
     private final GraknTxType txType;
-    private final TxGrpcCommunicator communicator;
+    private final RPCCommunicator communicator;
     private final TxConceptReader conceptReader;
 
     private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.communicator = TxGrpcCommunicator.create(stub);
+        this.communicator = RPCCommunicator.create(stub);
         this.conceptReader = new RemoteConceptReader(this);
         communicator.send(openRequest);
         responseOrThrow();
@@ -109,7 +109,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
 
     private GrpcGrakn.TxResponse responseOrThrow() {
-        TxGrpcCommunicator.Response response;
+        RPCCommunicator.Response response;
 
         try {
             response = communicator.receive();

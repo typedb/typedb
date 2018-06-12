@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <pre>
  * {@code
  *
- *     try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub) {
+ *     try (RPCCommunicator tx = RPCCommunicator.create(stub) {
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().ok();
  *         tx.send(commitMessage);
@@ -53,20 +53,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Felix Chapman
  */
-public class TxGrpcCommunicator implements AutoCloseable {
+public class RPCCommunicator implements AutoCloseable {
 
     private final StreamObserver<TxRequest> requestSender;
     private final ResponseListener responseListener;
 
-    private TxGrpcCommunicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
+    private RPCCommunicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
     }
 
-    public static TxGrpcCommunicator create(GraknGrpc.GraknStub stub) {
+    public static RPCCommunicator create(GraknGrpc.GraknStub stub) {
         ResponseListener responseListener = new ResponseListener();
         StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
-        return new TxGrpcCommunicator(requestSender, responseListener);
+        return new RPCCommunicator(requestSender, responseListener);
     }
 
     /**
@@ -225,7 +225,7 @@ public class TxGrpcCommunicator implements AutoCloseable {
 
         private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
             Preconditions.checkArgument(response == null || error == null);
-            return new AutoValue_TxGrpcCommunicator_Response(response, error);
+            return new AutoValue_RPCCommunicator_Response(response, error);
         }
 
         static Response completed() {

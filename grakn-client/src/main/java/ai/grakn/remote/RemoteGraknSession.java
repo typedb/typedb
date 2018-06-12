@@ -31,7 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 
-import static ai.grakn.rpc.util.GrpcConfig.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
+import static ai.grakn.rpc.util.RPCConfig.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
 
 /**
  * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
