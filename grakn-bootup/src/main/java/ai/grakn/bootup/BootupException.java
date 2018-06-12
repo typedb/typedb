@@ -22,5 +22,16 @@ package ai.grakn.bootup;
  *
  * @author Michele Orsi
  */
-public class ProcessNotStartedException extends RuntimeException {
+public class BootupException extends RuntimeException {
+    public BootupException() {
+        super();
+    }
+
+    public BootupException(Throwable cause) {
+        super(cause);
+    }
+
+    public BootupException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

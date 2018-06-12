@@ -38,6 +38,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
+ * The main class of the 'graql' command. This class is not a class responsible
+ * for booting up the real command, but rather the command itself.
+ *
+ * Please keep the class name "Graql" as it is what will be displayed to the user.
  *
  * @author Michele Orsi
  */

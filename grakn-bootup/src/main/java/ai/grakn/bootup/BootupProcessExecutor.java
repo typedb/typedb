@@ -18,46 +18,45 @@
 
 package ai.grakn.bootup;
 
-import java.io.BufferedReader;
+import org.apache.commons.io.FileUtils;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 /**
+ * This class is responsible for spawning process.
  *
  * @author Michele Orsi
  */
-public abstract class AbstractProcessHandler {
+public class BootupProcessExecutor {
 
-    public static final long WAIT_INTERVAL_S=2;
+    public static final long WAIT_INTERVAL_SECOND = 2;
     public static final String SH = "/bin/sh";
 
-    public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
+    public CompletableFuture<BootupProcessResult> executeAsync(List<String> command, File workingDirectory) {
+        return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
+    }
 
-        StringBuilder outputS = new StringBuilder();
-        int exitValue = 1;
-
-        Process p;
+    public BootupProcessResult executeAndWait(List<String> command, File workingDirectory) {
         try {
-            p = Runtime.getRuntime().exec(cmdarray, envp, dir);
-            p.waitFor();
-            exitValue = p.exitValue();
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))){
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    outputS.append(line).append("\n");
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (IOException e) {
-            // DO NOTHING
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+            ProcessResult result = new ProcessExecutor().readOutput(true).redirectError(stderr).directory(workingDirectory).command(command).execute();
+            return BootupProcessResult.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
         }
-        return new OutputCommand(outputS.toString().trim(), exitValue);
+        catch (IOException | InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Optional<String> getPidFromFile(Path fileName) {
@@ -73,27 +72,8 @@ public abstract class AbstractProcessHandler {
     }
 
     public String getPidFromPsOf(String processName) {
-        return executeAndWait(new String[]{
-                SH,
-                    "-c",
-                    "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "
-            }, null, null).output;
-    }
-
-    private void kill(int pid) {
-        executeAndWait(new String[]{
-                SH,
-                "-c",
-                "kill " + pid
-        }, null, null);
-    }
-
-    private OutputCommand kill(int pid, String signal) {
-        return executeAndWait(new String[]{
-                SH,
-                "-c",
-                "kill -"+signal+" " + pid
-        }, null, null);
+        return executeAndWait(
+                Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).stdout();
     }
 
     public int retrievePid(Path pidFile) {
@@ -110,40 +90,24 @@ public abstract class AbstractProcessHandler {
     }
 
     public void waitUntilStopped(Path pidFile, int pid) {
-        OutputCommand outputCommand;
+        BootupProcessResult bootupProcessResult;
         do {
             System.out.print(".");
             System.out.flush();
 
-            outputCommand = kill(pid,"0");
+            bootupProcessResult = kill(pid,"0"); // kill -0 <pid> does not kill the process. it simply checks if the process is still running.
 
             try {
-                Thread.sleep(WAIT_INTERVAL_S * 1000);
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
-        } while (outputCommand.succes());
+        } while (bootupProcessResult.success());
         System.out.println("SUCCESS");
-        File file = pidFile.toFile();
-        if(file.exists()) {
-            try {
-                Files.delete(pidFile);
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
+        FileUtils.deleteQuietly(pidFile.toFile());
     }
 
-    public String selectCommand(String osx, String linux) {
-        OutputCommand operatingSystem = executeAndWait(new String[]{
-                SH,
-                "-c",
-                "uname"
-        },null,null);
-        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
-    }
-
-    public boolean processIsRunning(Path pidFile) {
+    public boolean isProcessRunning(Path pidFile) {
         boolean isRunning = false;
         String processPid;
         if (pidFile.toFile().exists()) {
@@ -152,12 +116,9 @@ public abstract class AbstractProcessHandler {
                 if(processPid.trim().isEmpty()) {
                     return false;
                 }
-                OutputCommand command = executeAndWait(new String[]{
-                        SH,
-                        "-c",
-                        "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"
-                },null,null);
-                return Integer.parseInt(command.output.trim())>0;
+                BootupProcessResult command =
+                        executeAndWait(Arrays.asList(SH, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
+                return Integer.parseInt(command.stdout().trim())>0;
             } catch (NumberFormatException | IOException e) {
                 return false;
             }
@@ -165,10 +126,10 @@ public abstract class AbstractProcessHandler {
         return isRunning;
     }
 
-    public void stopProgram(Path pidFile, String programName) {
+    public void stopProcessIfRunning(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
-        boolean programIsRunning = processIsRunning(pidFile);
+        boolean programIsRunning = isProcessRunning(pidFile);
         if(!programIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
@@ -177,18 +138,26 @@ public abstract class AbstractProcessHandler {
 
     }
 
-    void stopProcess(Path pidFile) {
-        int pid = retrievePid(pidFile);
-        if (pid <0 ) return;
-        kill(pid);
-        waitUntilStopped(pidFile, pid);
-    }
-
     public void processStatus(Path storagePid, String name) {
-        if (processIsRunning(storagePid)) {
+        if (isProcessRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {
             System.out.println(name+": NOT RUNNING");
         }
+    }
+
+    private void stopProcess(Path pidFile) {
+        int pid = retrievePid(pidFile);
+        if (pid < 0 ) return;
+        kill(pid);
+        waitUntilStopped(pidFile, pid);
+    }
+
+    private void kill(int pid) {
+        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
+    }
+
+    private BootupProcessResult kill(int pid, String signal) {
+        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
     }
 }
