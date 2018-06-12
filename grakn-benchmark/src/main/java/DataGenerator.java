@@ -164,10 +164,11 @@ public class DataGenerator {
 
         GraknSession session = this.getSession();
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+
             GeneratorFactory gf = new GeneratorFactory();
 
             while (it < max_iterations) {
+                try (GraknTx tx = session.open(GraknTxType.WRITE)) {
                 Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptIdStore, this.conceptPicker);
 
                 Stream<Query> queriesStream = generator.generate();
@@ -191,10 +192,11 @@ public class DataGenerator {
                     }
                 }
                 it++;
+                if (this.doExecution) {
+                    tx.commit();
+                }
             }
-            if (this.doExecution) {
-                tx.commit();
-            }
+
         }
     }
 
