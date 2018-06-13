@@ -47,7 +47,6 @@ public abstract class NeqPredicate extends Predicate<Var> {
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract Var getPredicate();
 
-
     public static NeqPredicate create(VarPattern pattern, ReasonerQuery parent) {
         return new AutoValue_NeqPredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
     }

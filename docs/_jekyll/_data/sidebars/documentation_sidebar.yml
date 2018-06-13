@@ -26,9 +26,15 @@ entries:
   - title: Cloud Deployment
     output: web
     folderitems:
+      - title: Overview
+        output: web
+        url: /docs/cloud-deployment/overview
       - title: Google Cloud Deployment
         output: web
         url: /docs/cloud-deployment/gc-deployment
+      - title: AWS Deployment
+        output: web
+        url: /docs/cloud-deployment/aws-deployment
       - title: Best Practices
         output: web
         url: /docs/cloud-deployment/best-practices
