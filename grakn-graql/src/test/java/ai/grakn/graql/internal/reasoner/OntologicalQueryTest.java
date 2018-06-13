@@ -36,6 +36,7 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class OntologicalQueryTest {
 
@@ -44,6 +45,50 @@ public class OntologicalQueryTest {
 
     @Rule
     public final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
+
+    @Rule
+    public final SampleKBContext matchingTypesContext = SampleKBContext.load("matchingTypesTest.gql");
+
+    @Test
+    public void instancePairsRelatedToSameTypeOfEntity(){
+        GraknTx tx = matchingTypesContext.tx();
+        String basePattern = "$x isa service;" +
+                "$y isa service;" +
+                "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
+                "(owner: $y, capability: $yy) isa has-capability; $yy isa $type;" +
+                "$y != $x;";
+
+        String simpleQuery = "match " +
+                basePattern +
+                "get $x, $y;";
+        String queryWithExclusions = "match " +
+                basePattern +
+                "$meta label entity; $type != $meta;" +
+                "$meta2 label thing; $type != $meta2;" +
+                "$meta3 label capability-type; $type != $meta3;" +
+                "get $x, $y, $type;";
+
+        List<Answer> simpleAnswers = tx.graql().infer(false).<GetQuery>parse(simpleQuery).execute();
+        List<Answer> simpleAnswersInferred = tx.graql().infer(true).<GetQuery>parse(simpleQuery).execute();
+        List<Answer> answersWithExclusions = tx.graql().infer(false).<GetQuery>parse(queryWithExclusions).execute();
+        List<Answer> answersWithExclusionsInferred = tx.graql().infer(true).<GetQuery>parse(queryWithExclusions).execute();
+        assertFalse(simpleAnswers.isEmpty());
+        assertFalse(answersWithExclusions.isEmpty());
+        assertCollectionsEqual(simpleAnswers, simpleAnswersInferred);
+        assertCollectionsEqual(answersWithExclusions, answersWithExclusionsInferred);
+    }
+
+    @Test
+    public void instancesOfSubsetOfTypesExcludingGivenType(){
+        GraknTx tx = testContext.tx();
+        String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
+
+        List<Answer> answers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+        List<Answer> answersInferred = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
+
+        assertFalse(answers.isEmpty());
+        assertCollectionsEqual(answers, answersInferred);
+    }
 
     //TODO need to correctly return THING and RELATIONSHIP mapping for %type
     @Ignore
