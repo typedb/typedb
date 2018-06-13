@@ -89,6 +89,7 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        <!-- logs directory -->
         <fileSet>
             <directory>.</directory>
             <outputDirectory>logs</outputDirectory>
@@ -96,6 +97,7 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
+        <!-- storage db directory -->
         <fileSet>
             <directory>.</directory>
             <outputDirectory>db/cassandra/data</outputDirectory>
@@ -117,6 +119,7 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
+        <!-- queue db directory -->
         <fileSet>
             <directory>.</directory>
             <outputDirectory>db/redis</outputDirectory>
@@ -124,12 +127,21 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
-        <!-- Redis Package -->
+        <!-- Queue Package -->
         <fileSet>
             <outputDirectory>services/redis</outputDirectory>
             <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
             <excludes>
                 <exclude>README.md</exclude>
+            </excludes>
+        </fileSet>
+        <!-- Storage Package -->
+        <fileSet>
+            <outputDirectory>services/cassandra</outputDirectory>
+            <directory>${basedir}/target/apache-cassandra-3.11.2</directory>
+            <excludes>
+                <exclude>conf/cassandra.yaml</exclude>
+                <exclude>conf/logback.xml</exclude>
             </excludes>
         </fileSet>
     </fileSets>

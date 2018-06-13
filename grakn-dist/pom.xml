@@ -141,14 +141,26 @@
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
                 <executions>
-                    <execution><!-- Get redis and package into the distribution -->
-                        <id>download-redis</id>
+                    <execution><!-- Get Queue and package into the distribution -->
+                        <id>download-queue</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>wget</goal>
                         </goals>
                         <configuration>
                             <url>https://github.com/graknlabs/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
+                            <unpack>true</unpack>
+                            <outputDirectory>${project.basedir}/target</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution><!-- Get Storage and package into the distribution -->
+                        <id>download-storage</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://apache.mirror.anlx.net/cassandra/3.11.2/apache-cassandra-3.11.2-bin.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>
