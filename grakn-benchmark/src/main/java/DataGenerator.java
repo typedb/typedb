@@ -4,13 +4,18 @@ import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
+import com.google.common.io.Files;
 import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.DiscreteGaussianPDF;
 import storage.*;
 import strategy.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.pattern.Patterns.var;
@@ -173,7 +178,55 @@ public class DataGenerator {
         return conceptTypes;
     }
 
+    private void deleteExistingConcepts() {
+//        Runtime rt = Runtime.getRuntime();
+
+
+        File graql = new File(System.getProperty("user.dir") + "/grakn-benchmark/src/main/resources/societal_model.gql");
+
+        List<String> queries;
+        try {
+            queries = Files.readLines(graql, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
+
+        GraknSession session = this.getSession();
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+
+            QueryBuilder qb = tx.graql();
+            Var x = Graql.var().asUserDefined();  //TODO This needed to be asUserDefined or else getting error: ai.grakn.exception.GraqlQueryException: the variable $1528883020589004 is not in the query
+            Var y = Graql.var().asUserDefined();
+
+            qb.match(x.isa("thing")).delete(x).execute();  // TODO Only got a complaint at runtime when using delete() without supplying a variable
+            //
+//            qb.undefine(y.sub("thing")).execute(); // TODO undefine $y sub thing; doesn't work/isn't supported
+            // TODO undefine $y sub entity; also doesn't work, you need to be specific with undefine
+
+            List<Answer> schema = qb.match(y.sub("thing")).get().execute();
+
+            for (Answer element : schema) {
+                Var z = Graql.var().asUserDefined();
+                qb.undefine(z.id(element.get(y).getId())).execute();
+            }
+
+//            qb.undefine(y.sub("thing")).execute();
+
+            tx.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
+
+            tx.commit();
+
+        }
+    }
+
     public void generate() {
+        // TODO Clean and rebuild the keyspace every time to avoid unpredictable behaviour!
+
+        this.deleteExistingConcepts();
+
         int max_iterations = 10;
         int it = 0;
 
@@ -190,32 +243,35 @@ public class DataGenerator {
             while (it < max_iterations) {
                 try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 //                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptTypeCountStore, this.conceptPicker);
-                Generator generator = gf.create(this.operationStrategies.next().next(), tx);
+                Generator generator = gf.create(this.operationStrategies.next().next(), tx); // TODO Can we do without creating a new generator each iteration
 
                 Stream<Query> queriesStream = generator.generate();
 
-                if (this.doExecution) {
-                    queriesStream.map(q -> (InsertQuery) q)
-                            .forEachOrdered(q -> {
-                        List<Answer> insertions = q.execute();
-                        insertions.forEach(insert -> insert.concepts().forEach(concept -> {
-                            this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
-                        }));
-                    });
-                } else {
+                    if (this.doExecution) {
+                        queriesStream.map(q -> (InsertQuery) q)
+                                .forEachOrdered(q -> {  // TODO Remove ordering?
+                                    List<Answer> insertions = q.execute();
+                                    insertions.forEach(insert -> {
+                                        HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                                        insertedConcepts.forEach(concept -> {
+                                            this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
+                                        });
+                                    });
+                                });
+                    } else {
 
-                    // Print the queries rather than executing
-                    Iterator<Query> iter = queriesStream.iterator();
+                        // Print the queries rather than executing
+                        Iterator<Query> iter = queriesStream.iterator();
 
-                    while (iter.hasNext()) {
-                        String s = iter.next().toString();
-                        System.out.print(s + "\n");
+                        while (iter.hasNext()) {
+                            String s = iter.next().toString();
+                            System.out.print(s + "\n");
+                        }
                     }
-                }
-                it++;
-                if (this.doExecution) {
-                    tx.commit();
-                }
+                    it++;
+                    if (this.doExecution) {
+                        tx.commit();
+                    }
             }
 
         }
