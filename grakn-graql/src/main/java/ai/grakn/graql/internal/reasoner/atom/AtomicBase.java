@@ -24,12 +24,14 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  *
@@ -55,6 +57,22 @@ public abstract class AtomicBase implements Atomic {
     boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     public boolean isUserDefined(){ return getVarName().isUserDefinedName();}
+
+    /**
+     * @return set of predicates relevant to this atomic
+     */
+    public Stream<Predicate> getPredicates() {
+        return getPredicates(Predicate.class);
+    }
+
+    /**
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of {@link Predicate} to return
+     * @return stream of predicates relevant to this atomic
+     */
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
+    }
 
     @Override
     public Set<Var> getVarNames(){
