@@ -38,12 +38,12 @@ public class DataGenerator {
 //    private Set<OperationStrategy>operationStrategies = new HashSet<OperationStrategy>();
 //    private SchemaStrategy schemaStrategy;
 
-    private FrequencyOptionCollection<EntityStrategy> entityStrategies;
-    private FrequencyOptionCollection<RelationshipStrategy> relationshipStrategies;
-    private FrequencyOptionCollection<AttributeStrategy> attributeStrategies;
+    private RouletteWheelCollection<EntityStrategy> entityStrategies;
+    private RouletteWheelCollection<RelationshipStrategy> relationshipStrategies;
+    private RouletteWheelCollection<AttributeStrategy> attributeStrategies;
 
-//    private FrequencyOptionCollection<FrequencyOptionCollection<TypeStrategy>> operationStrategies;
-    private FrequencyOptionCollection<FrequencyOptionCollection> operationStrategies;
+//    private RouletteWheelCollection<RouletteWheelCollection<TypeStrategy>> operationStrategies;
+    private RouletteWheelCollection<RouletteWheelCollection> operationStrategies;
 
     private boolean doExecution = true;
     private ConceptTypeCountStore conceptTypeCountStore;
@@ -53,15 +53,17 @@ public class DataGenerator {
 
         this.rand = new Random(RANDOM_SEED);
         this.conceptTypeCountStore = new ConceptTypeCountStore();
-        entityStrategies = new FrequencyOptionCollection<EntityStrategy>(this.rand);
-        relationshipStrategies = new FrequencyOptionCollection<RelationshipStrategy>(this.rand);
-        attributeStrategies = new FrequencyOptionCollection<AttributeStrategy>(this.rand);
-//        operationStrategies = new FrequencyOptionCollection<FrequencyOptionCollection<TypeStrategy>>(this.rand);
-        operationStrategies = new FrequencyOptionCollection<FrequencyOptionCollection>(this.rand);
+        entityStrategies = new RouletteWheelCollection<EntityStrategy>(this.rand);
+        relationshipStrategies = new RouletteWheelCollection<RelationshipStrategy>(this.rand);
+        attributeStrategies = new RouletteWheelCollection<AttributeStrategy>(this.rand);
+//        operationStrategies = new RouletteWheelCollection<RouletteWheelCollection<TypeStrategy>>(this.rand);
+        operationStrategies = new RouletteWheelCollection<RouletteWheelCollection>(this.rand);
 
         GraknSession session = this.getSession();
 
         try (GraknTx tx = session.open(GraknTxType.READ)) {
+
+            // TODO Add checking to ensure that all of these strategies make sense
             this.entityTypes = this.getTypes(tx, "entity");
             this.relationshipTypes = this.getTypes(tx, "relationship");
             this.attributeTypes = this.getTypes(tx, "attribute");
@@ -108,7 +110,7 @@ public class DataGenerator {
                             new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
                             new CentralRolePlayerPicker(this.rand,
                                     "company",
-                                    "employment",
+                                    "employment", // TODO Should be able to infer the relationship automatically with knowledge of the schema
                                     "employer",
                                     this.conceptTypeCountStore)
                     )
@@ -201,7 +203,13 @@ public class DataGenerator {
             Var x = Graql.var().asUserDefined();  //TODO This needed to be asUserDefined or else getting error: ai.grakn.exception.GraqlQueryException: the variable $1528883020589004 is not in the query
             Var y = Graql.var().asUserDefined();
 
-            qb.match(x.isa("thing")).delete(x).execute();  // TODO Only got a complaint at runtime when using delete() without supplying a variable
+            // qb.match(x.isa("thing")).delete(x).execute();  // TODO Only got a complaint at runtime when using delete() without supplying a variable
+            // TODO Sporadically has errors, logged in bug #20200
+
+            qb.match(x.isa("attribute")).delete(x).execute();
+            qb.match(x.isa("relationship")).delete(x).execute();
+            qb.match(x.isa("entity")).delete(x).execute();
+
             //
 //            qb.undefine(y.sub("thing")).execute(); // TODO undefine $y sub thing; doesn't work/isn't supported
             // TODO undefine $y sub entity; also doesn't work, you need to be specific with undefine
@@ -212,8 +220,6 @@ public class DataGenerator {
                 Var z = Graql.var().asUserDefined();
                 qb.undefine(z.id(element.get(y).getId())).execute();
             }
-
-//            qb.undefine(y.sub("thing")).execute();
 
             tx.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
 

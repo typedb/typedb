@@ -20,9 +20,12 @@ public class InsertionAnalysis {
 
         Find those in the insert without an id
 
-        Get the set of variables used in the match
+        If there's a match statement
+            Get the set of variables used in the match
 
-        Remove any in the insert that also exist in the match
+            Find those variables without an id
+
+            Remove any varibales in the insert that also exist in the match
 
         Those variables remaining must have been inserted
         Then find those variables in the answer, and get their concepts (there should be only one concept per variable?)

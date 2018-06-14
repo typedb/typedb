@@ -35,7 +35,7 @@ public class CentralRolePlayerPicker implements RolePlayerConceptPickerInterface
     }
 
     @Override
-    public Stream<String> get(PDF pdf, GraknTx tx) {
+    public Stream<String> get(PDF pdf, GraknTx tx) { //TODO Change from a Stream<String> of Ids to Stream<ConceptID>
         // Only create a new stream if reset() has been called prior
         if (this.isReset) {
             // Then create the stream

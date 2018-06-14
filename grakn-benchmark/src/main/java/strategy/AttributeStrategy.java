@@ -6,7 +6,6 @@ import pdf.PDF;
 
 import java.util.Set;
 
-//public class AttributeStrategy <P extends PDF> extends TypeStrategy<AttributeType, P> {
 public class AttributeStrategy extends TypeStrategy<AttributeType> {
 
     Set<TypeStrategy> ownerStrategies;

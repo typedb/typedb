@@ -2,10 +2,7 @@ package generator;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Role;
 import ai.grakn.graql.*;
-import storage.ConceptPicker;
-import storage.ConceptStore;
 import strategy.RelationshipStrategy;
 import strategy.RolePlayerTypeStrategy;
 
@@ -17,12 +14,8 @@ import static ai.grakn.graql.internal.pattern.Patterns.var;
 
 public class RelationshipGenerator extends Generator<RelationshipStrategy> {
 
-//    private final ConceptStore conceptStore;
-
-//    public RelationshipGenerator(RelationshipStrategy strategy, GraknTx tx, ConceptStore conceptStore) {
     public RelationshipGenerator(RelationshipStrategy strategy, GraknTx tx) {
         super(strategy, tx);
-//        this.conceptStore = conceptStore;
     }
 
     @Override
@@ -46,7 +39,7 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
 
             String relationshipTypeLabel = strategy.getTypeLabel();
 
-            Pattern matchVarPattern = null;
+            Pattern matchVarPattern = null;  //TODO It will be faster to use a pure insert, supplying the ids for the roleplayers' variables
             VarPattern insertVarPattern = var("r").isa(relationshipTypeLabel);
 
                 // For each role type strategy
@@ -57,10 +50,6 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
                     String roleTypeLabel = rolePlayerTypeStrategy.getTypeLabel();
                     // Find random role-players matching this type
                     // Pick ids from the list of concept ids
-
-
-//                    Stream<String> conceptIdStream = rolePlayerTypeStrategy.getConceptPicker().get(roleTypeLabel, conceptStore,
-//                            rolePlayerTypeStrategy.getNumInstancesPDF().next());
 
                     Stream<String> conceptIdStream = rolePlayerTypeStrategy.getConceptPicker().get(rolePlayerTypeStrategy.getNumInstancesPDF(), tx);
 

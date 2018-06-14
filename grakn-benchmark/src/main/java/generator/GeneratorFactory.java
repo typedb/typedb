@@ -1,7 +1,6 @@
 package generator;
 
 import ai.grakn.GraknTx;
-import storage.ConceptStore;
 import strategy.*;
 
 public class GeneratorFactory {
