@@ -20,22 +20,28 @@ package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import com.google.common.base.Equivalence;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 /**
@@ -50,13 +56,13 @@ import java.util.stream.Collectors;
  */
 public final class ResolutionPlan {
 
-    final private ReasonerQueryImpl query;
     final private ImmutableList<Atom> plan;
+    final private EmbeddedGraknTx<?> tx;
 
-    public ResolutionPlan(ReasonerQueryImpl q){
-        this.query = q;
+    public ResolutionPlan(ReasonerQueryImpl query){
+        this.tx =  query.tx();
         this.plan = GraqlTraversalPlanner.refinedPlan(query);
-        if (!this.isValid()) {
+        if (!isValid()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
     }
@@ -72,13 +78,13 @@ public final class ResolutionPlan {
     public ImmutableList<Atom> plan(){ return plan;}
 
     /**
-     * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
+     * @return true if the plan doesn't lead to any non-ground neq predicate
      */
     private boolean isValid() {
         //check for neq groundness
         Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
-        Set<Var> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
-        for(Atom atom : this.plan){
+        Set<Var> mappedVars = new HashSet<>();
+        for(Atom atom : plan){
             mappedVars.addAll(atom.getVarNames());
             atom.getPredicates(NeqPredicate.class)
                     .forEach(neq -> {
@@ -100,9 +106,8 @@ public final class ResolutionPlan {
      * @return list of prioritised queries
      */
     public LinkedList<ReasonerQueryImpl> queryPlan(){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
+        List<ReasonerQueryImpl> queries = new LinkedList<>();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
-        EmbeddedGraknTx<?> tx = query.tx();
 
         List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
@@ -118,7 +123,57 @@ public final class ResolutionPlan {
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
-        return queries;
+        return refinedQueryPlan(queries);
+    }
+
+    private List<ReasonerQueryImpl> prioritiseQueries(List<ReasonerQueryImpl> queries){
+        return queries.stream()
+                //.sorted(Comparator.comparing(ReasonerQueryImpl::isDisconnected))
+                .sorted(Comparator.comparing(ReasonerQueryImpl::isRuleResolvable))
+                .sorted(Comparator.comparing(q -> !q.isAtomic()))
+                .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    private LinkedList<ReasonerQueryImpl> refinedQueryPlan(List<ReasonerQueryImpl> queries){
+        Equivalence<ReasonerQuery> equality = ReasonerQueryEquivalence.Equality;
+
+        LinkedList<ReasonerQueryImpl> plan = new LinkedList<>();
+        Stack<ReasonerQueryImpl> queryStack = new Stack<>();
+
+        Multimap<Equivalence.Wrapper<ReasonerQueryImpl>, Equivalence.Wrapper<ReasonerQueryImpl>> neighbourMap = HashMultimap.create();
+
+        //determine connectivity
+        queries.forEach(q -> {
+                    Set<Var> vars = q.getVarNames();
+                    Equivalence.Wrapper<ReasonerQueryImpl> wrappedQ = equality.wrap(q);
+                    queries.stream()
+                            .filter(q2 -> !equality.equivalent(q, q2))
+                            .filter(q2 -> !Sets.intersection(vars, q2.getVarNames()).isEmpty())
+                            .map(equality::wrap)
+                            .forEach(q2 -> neighbourMap.put(wrappedQ, q2));
+                });
+
+        //prioritise queries
+        prioritiseQueries(queries).forEach(queryStack::push);
+        while(!plan.containsAll(queries)) {
+            ReasonerQueryImpl query = queryStack.pop();
+            Equivalence.Wrapper<ReasonerQueryImpl> wrappedQuery = equality.wrap(query);
+
+            //candidates
+            List<ReasonerQueryImpl> candidates = prioritiseQueries(
+                    neighbourMap.get(wrappedQuery).stream()
+                            .map(Equivalence.Wrapper::get)
+                            .filter(q -> !(plan.contains(q) || equality.equivalent(q, query)))
+                            .collect(Collectors.toList())
+            );
+
+            if (!candidates.isEmpty() || queries.size() - plan.size() == 1){
+                plan.add(query);
+                candidates.forEach(queryStack::push);
+            }
+        }
+
+        return plan;
     }
 }
 
