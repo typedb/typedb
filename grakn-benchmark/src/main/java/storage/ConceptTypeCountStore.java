@@ -25,4 +25,15 @@ public class ConceptTypeCountStore implements ConceptStore {
     public int get(String typeLabel) {
         return this.conceptTypeCountStorage.get(typeLabel);
     }
+
+    public int total() {
+        /*
+        Return the total number of concepts
+         */
+        int total = 0;
+        for (int c : conceptTypeCountStorage.values()) {
+            total += c;
+        }
+        return total;
+    }
 }
