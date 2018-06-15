@@ -68,7 +68,8 @@ final class ExternalEditor {
     public String execute() throws IOException, InterruptedException {
         // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
         ProcessBuilder builder = new ProcessBuilder(
-                "/bin/bash",
+                "/usr/bin/env",
+                "bash",
                 "-c",
                 editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath()
         );
