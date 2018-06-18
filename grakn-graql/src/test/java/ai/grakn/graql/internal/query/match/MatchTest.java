@@ -655,7 +655,8 @@ public class MatchTest {
         ).execute();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get(x).collect(Collectors.toSet());
+            Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get(x).stream()
+                                        .map(answer -> answer.get(x)).collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
             SchemaConcept schemaConcept = tx.getSchemaConcept(type);
@@ -669,7 +670,8 @@ public class MatchTest {
         });
 
         Stream.of(d, e, f).forEach(type -> {
-            Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get(x).collect(toSet());
+            Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get(x).stream()
+                                           .map(answer -> answer.get(x)).collect(Collectors.toSet());
             Collection<Type> graphAPIPlayedBy = tx.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
@@ -801,7 +803,7 @@ public class MatchTest {
         Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
         Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
-        Set<Attribute<?>> results = match.get(x).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<?>> results = match.get(x).stream().map(answer -> answer.get(x).asAttribute()).collect(toSet());
 
         assertEquals(expected, results);
     }
@@ -972,7 +974,7 @@ public class MatchTest {
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
         Match match = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relationship relationship = match.get("x").findAny().get().asRelationship();
+        Relationship relationship = match.get("x").stream().map(answer -> answer.get("x").asRelationship()).findAny().get();
 
         Match queryById = qb.match(var("x").id(relationship.getId()));
 

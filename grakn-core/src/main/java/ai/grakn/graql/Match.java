@@ -19,14 +19,12 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * a part of a query used for finding data in a knowledge base that matches the given patterns.
@@ -39,21 +37,6 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 public interface Match extends Streamable<Answer> {
-
-    /**
-     * @param var a variable to get
-     * @return a stream of concepts
-     */
-    @CheckReturnValue
-    Stream<Concept> get(String var);
-
-    /**
-     * @param var a variable to get
-     * @return a stream of concepts
-     */
-    @CheckReturnValue
-    Stream<Concept> get(Var var);
-
     /**
      * Get all {@link Var}s mentioned in the query
      */
