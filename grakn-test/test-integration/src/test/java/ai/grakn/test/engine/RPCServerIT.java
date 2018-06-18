@@ -578,6 +578,9 @@ public class RPCServerIT {
 
             chases.addRelationship().addRolePlayer(chaser, dunstan);
 
+            Set<Attribute> set = dunstan.keys(name).collect(toSet());
+            assertEquals(0, set.size());
+
             tx.commit();
         }
 

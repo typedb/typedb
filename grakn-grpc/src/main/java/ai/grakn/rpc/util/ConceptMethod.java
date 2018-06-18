@@ -404,8 +404,8 @@ public abstract class ConceptMethod<T> {
     }
 
     public static TxResponse getAttributesByTypes(Concept concept, GrpcConcept.ConceptMethod method, RPCIterators iterators, TxConceptReader reader) {
-        GrpcConcept.Concepts getAttributeTypes = method.getGetAttributesByTypes();
-        AttributeType<?>[] attributeTypes = ConceptReader.concepts(reader, getAttributeTypes).toArray(AttributeType[]::new);
+        GrpcConcept.Concepts rpcAttributeTypes = method.getGetAttributesByTypes();
+        AttributeType<?>[] attributeTypes = ConceptReader.concepts(reader, rpcAttributeTypes).toArray(AttributeType[]::new);
 
         Stream<? extends Concept> response = concept.asThing().attributes(attributeTypes);
         Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
@@ -448,8 +448,9 @@ public abstract class ConceptMethod<T> {
     }
 
     public static TxResponse getKeysByTypes(Concept concept, RPCIterators iterators, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
-        GrpcConcept.Concepts getKeyTypes = method.getGetAttributesByTypes();
-        AttributeType<?>[] keyTypes = ConceptReader.concepts(reader, getKeyTypes).toArray(AttributeType[]::new);
+        GrpcConcept.Concepts rpcKeyTypes = method.getGetKeysByTypes();
+        AttributeType<?>[] keyTypes = ConceptReader.concepts(reader, rpcKeyTypes).toArray(AttributeType[]::new);
+
         Stream<? extends Concept> response = concept.asThing().keys(keyTypes);
         Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
