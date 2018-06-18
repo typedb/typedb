@@ -86,6 +86,8 @@ public class GraqlTraversalPlanner {
                 .findFirst().orElse(null);
     }
 
+    private static String PLACEHOLDER_ID = "placeholderId";
+
     /**
      * @param query top level query for which the plan is constructed
      * @param atoms list of current atoms of interest
@@ -111,7 +113,7 @@ public class GraqlTraversalPlanner {
 
                 Set<IdPredicate> extraSubs = first.getVarNames().stream()
                         .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                        .map(v -> IdPredicate.create(v, ConceptId.of("placeholderId"), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
                         .collect(Collectors.toSet());
 
                 return Stream.concat(

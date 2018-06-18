@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -42,7 +43,7 @@ public class CumulativeState extends QueryStateBase{
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final Iterator<ResolutionState> feederStateIterator;
 
-    public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
+    public CumulativeState(List<ReasonerQueryImpl> qs,
                            Answer sub,
                            Unifier u,
                            QueryStateBase parent,

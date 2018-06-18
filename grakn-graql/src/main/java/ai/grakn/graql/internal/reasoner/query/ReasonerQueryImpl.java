@@ -50,7 +50,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
-import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
@@ -76,7 +76,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -627,14 +626,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             subGoalIterator = Collections.emptyIterator();
         } else {
             dbIterator = Collections.emptyIterator();
-            LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
 
-            LOG.trace("CQ plan:\n" + subQueries.stream()
-                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
-                    .collect(Collectors.joining("\n"))
-            );
-
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
+            LOG.debug("CQ plan:\n" + queryPlan);
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
         return new Pair<>(
                 Iterators.concat(dbIterator, subGoalIterator),
