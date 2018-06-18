@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
@@ -91,10 +92,23 @@ public class ResolutionQueryPlan {
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
-        return ImmutableList.copyOf(refinePlan(queries));
+        return ImmutableList.copyOf(plan.size() == queries.size()? queries : refine(queries));
     }
 
-    private static List<ReasonerQueryImpl> prioritiseQueries(List<ReasonerQueryImpl> queries){
+    private static Equivalence<ReasonerQuery> equality = ReasonerQueryEquivalence.Equality;
+
+    private static List<Equivalence.Wrapper<ReasonerQueryImpl>> prioritiseQueries(List<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
+        return prioritise(
+                queries.stream()
+                        .map(Equivalence.Wrapper::get)
+                        .collect(Collectors.toList())
+        )
+                .stream()
+                .map(q -> equality.wrap(q))
+                .collect(Collectors.toList());
+    }
+
+    private static List<ReasonerQueryImpl> prioritise(List<ReasonerQueryImpl> queries){
         return queries.stream()
                 .sorted(Comparator.comparing(q -> !q.isAtomic()))
                 .sorted(Comparator.comparing(ReasonerQueryImpl::isRuleResolvable))
@@ -103,39 +117,44 @@ public class ResolutionQueryPlan {
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private static List<ReasonerQueryImpl> refinePlan(List<ReasonerQueryImpl> queries){
-        Equivalence<ReasonerQuery> equality = ReasonerQueryEquivalence.Equality;
+    private static List<ReasonerQueryImpl> refine(List<ReasonerQueryImpl> qs){
+        return refinePlan(qs.stream().map(equality::wrap).collect(Collectors.toList()))
+                .stream()
+                .map(Equivalence.Wrapper::get)
+                .collect(Collectors.toList());
+    }
 
-        LinkedList<ReasonerQueryImpl> plan = new LinkedList<>();
-        Stack<ReasonerQueryImpl> queryStack = new Stack<>();
+    private static List<Equivalence.Wrapper<ReasonerQueryImpl>> refinePlan(List<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
+        LinkedList<Equivalence.Wrapper<ReasonerQueryImpl>> plan = new LinkedList<>();
+        Stack<Equivalence.Wrapper<ReasonerQueryImpl>> queryStack = new Stack<>();
 
         Multimap<Equivalence.Wrapper<ReasonerQueryImpl>, Equivalence.Wrapper<ReasonerQueryImpl>> neighbourMap = HashMultimap.create();
 
         //determine connectivity
-        queries.forEach(q -> {
-            Set<Var> vars = q.getVarNames();
-            Equivalence.Wrapper<ReasonerQueryImpl> wrappedQ = equality.wrap(q);
+        queries.stream()
+                .filter(q -> Objects.nonNull(q.get()))
+                .forEach(q -> {
+            Set<Var> vars = q.get().getVarNames();
             queries.stream()
-                    .filter(q2 -> !equality.equivalent(q, q2))
-                    .filter(q2 -> !Sets.intersection(vars, q2.getVarNames()).isEmpty())
-                    .map(equality::wrap)
-                    .forEach(q2 -> neighbourMap.put(wrappedQ, q2));
+                    .filter(q2 -> !q.equals(q2))
+                    .filter(q2 -> !Sets.intersection(vars, q2.get().getVarNames()).isEmpty())
+                    .forEach(q2 -> neighbourMap.put(q, q2));
         });
 
-        //prioritise queries
         Lists.reverse(prioritiseQueries(queries)).forEach(queryStack::push);
         while(!plan.containsAll(queries)) {
             if (queryStack.isEmpty()){
-                System.out.println();
+                //backtrack
+                Equivalence.Wrapper<ReasonerQueryImpl> last = plan.remove();
+                Lists.reverse(prioritiseQueries(queries)).forEach(queryStack::push);
+                queryStack.remove(last);
             }
-            ReasonerQueryImpl query = queryStack.pop();
-            Equivalence.Wrapper<ReasonerQueryImpl> wrappedQuery = equality.wrap(query);
+            Equivalence.Wrapper<ReasonerQueryImpl> query = queryStack.pop();
 
             //candidates
-            List<ReasonerQueryImpl> candidates = prioritiseQueries(
-                    neighbourMap.get(wrappedQuery).stream()
-                            .map(Equivalence.Wrapper::get)
-                            .filter(q -> !(plan.contains(q) || equality.equivalent(q, query)))
+            List<Equivalence.Wrapper<ReasonerQueryImpl>> candidates = prioritiseQueries(
+                    neighbourMap.get(query).stream()
+                            .filter(q -> !(plan.contains(q) || q.equals(query)))
                             .collect(Collectors.toList())
             );
 
