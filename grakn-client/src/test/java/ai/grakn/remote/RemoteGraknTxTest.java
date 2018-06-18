@@ -44,7 +44,7 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
 import com.google.common.collect.ImmutableSet;

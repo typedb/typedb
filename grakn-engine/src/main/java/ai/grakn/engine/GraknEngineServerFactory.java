@@ -26,9 +26,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.rpc.OpenerImpl;
 import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.rpc.Service;
-import ai.grakn.engine.rpc.OpenerImpl;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
@@ -42,12 +42,10 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.rpc.RPCOpener;
 import com.codahale.metrics.MetricRegistry;
-import io.grpc.netty.NettyServerBuilder;
+import io.grpc.ServerBuilder;
 
 import java.util.Collection;
 import java.util.Collections;
-
-import static ai.grakn.rpc.util.RPCConfig.GRPC_MAX_MESSAGE_SIZE_IN_BYTES;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link GraknEngineServer} in different ways.
@@ -132,7 +130,7 @@ public class GraknEngineServerFactory {
     private static Server configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         RPCOpener requestExecutor = new OpenerImpl(engineGraknTxFactory);
-        io.grpc.Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new Service(requestExecutor, postProcessor)).build();
+        io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort).addService(new Service(requestExecutor, postProcessor)).build();
         return Server.create(grpcServer);
     }
 

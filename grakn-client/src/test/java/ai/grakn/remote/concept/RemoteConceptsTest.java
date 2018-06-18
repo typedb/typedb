@@ -40,7 +40,7 @@ import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

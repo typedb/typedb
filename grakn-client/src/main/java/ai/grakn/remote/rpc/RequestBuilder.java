@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc.util;
+package ai.grakn.remote.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -37,6 +37,7 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
 import ai.grakn.rpc.generated.GrpcIterator.Stop;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.CommonUtil;
 
 import javax.annotation.Nullable;

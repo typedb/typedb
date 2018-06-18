@@ -55,6 +55,11 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-grpc</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-client</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Exposes metrics as a servlet -->
         <dependency>
           <groupId>io.dropwizard.metrics</groupId>

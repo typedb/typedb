@@ -19,7 +19,7 @@
 package ai.grakn.remote;
 
 import ai.grakn.rpc.RPCIterators;
-import ai.grakn.rpc.util.RequestBuilder;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GrpcGrakn;
