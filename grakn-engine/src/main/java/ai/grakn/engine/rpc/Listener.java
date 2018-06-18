@@ -50,7 +50,6 @@ import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
 import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
 import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
