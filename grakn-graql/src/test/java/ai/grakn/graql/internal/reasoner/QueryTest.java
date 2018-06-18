@@ -284,6 +284,7 @@ public class QueryTest {
     }
 
     private static Concept getConcept(EmbeddedGraknTx<?> graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x").findAny().get();
+        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get();
     }
 }

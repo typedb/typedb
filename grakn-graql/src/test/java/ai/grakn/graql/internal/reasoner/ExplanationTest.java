@@ -357,7 +357,8 @@ public class ExplanationTest {
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(var("x").has(typeLabel, val)).get("x").findAny().orElse(null);
+        return graph.graql().match(var("x").has(typeLabel, val)).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){
