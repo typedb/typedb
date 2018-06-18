@@ -26,9 +26,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.RPCServer;
-import ai.grakn.engine.rpc.RPCService;
-import ai.grakn.engine.rpc.RPCOpenerImpl;
+import ai.grakn.engine.rpc.Server;
+import ai.grakn.engine.rpc.Service;
+import ai.grakn.engine.rpc.OpenerImpl;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
@@ -42,9 +42,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.SystemKeyspaceSession;
 import ai.grakn.rpc.RPCOpener;
 import com.codahale.metrics.MetricRegistry;
-import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
-import spark.Service;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -93,9 +91,9 @@ public class GraknEngineServerFactory {
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
 
         // http services: spark, http controller, and gRPC server
-        Service sparkHttp = Service.ignite();
+        spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        RPCServer rpcServer = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
+        Server rpcServer = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
 
         return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, rpcServer, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
     }
@@ -107,7 +105,7 @@ public class GraknEngineServerFactory {
 
     public static GraknEngineServer createGraknEngineServer(
             EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus,
-            Service sparkHttp, Collection<HttpController> httpControllers, RPCServer rpcServer,
+            spark.Service sparkHttp, Collection<HttpController> httpControllers, Server rpcServer,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
             QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, GraknKeyspaceStore graknKeyspaceStore) {
@@ -131,11 +129,11 @@ public class GraknEngineServerFactory {
         return taskRunner;
     }
 
-    private static RPCServer configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
+    private static Server configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        RPCOpener requestExecutor = new RPCOpenerImpl(engineGraknTxFactory);
-        Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new RPCService(requestExecutor, postProcessor)).build();
-        return RPCServer.create(grpcServer);
+        RPCOpener requestExecutor = new OpenerImpl(engineGraknTxFactory);
+        io.grpc.Server grpcServer = NettyServerBuilder.forPort(grpcPort).maxMessageSize(GRPC_MAX_MESSAGE_SIZE_IN_BYTES).addService(new Service(requestExecutor, postProcessor)).build();
+        return Server.create(grpcServer);
     }
 
 }

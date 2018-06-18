@@ -18,24 +18,22 @@
 
 package ai.grakn.engine.rpc;
 
-import io.grpc.Server;
-
 import java.io.IOException;
 
 /**
  * @author Felix Chapman
  */
-public class RPCServer implements AutoCloseable {
+public class Server implements AutoCloseable {
 
-    private final Server server;
+    private final io.grpc.Server server;
 
-    private RPCServer(Server server) {
+    private Server(io.grpc.Server server) {
         this.server = server;
     }
 
 
-    public static RPCServer create(Server server) {
-        return new RPCServer(server);
+    public static Server create(io.grpc.Server server) {
+        return new Server(server);
     }
 
     /**

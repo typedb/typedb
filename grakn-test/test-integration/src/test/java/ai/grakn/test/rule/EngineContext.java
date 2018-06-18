@@ -35,9 +35,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.RPCService;
-import ai.grakn.engine.rpc.RPCOpenerImpl;
-import ai.grakn.engine.rpc.RPCServer;
+import ai.grakn.engine.rpc.Service;
+import ai.grakn.engine.rpc.OpenerImpl;
+import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -54,13 +54,11 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
-import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-import spark.Service;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -88,7 +86,7 @@ public class EngineContext extends CompositeTestRule {
 
     private final GraknConfig config;
     private JedisPool jedisPool;
-    private Service spark;
+    private spark.Service sparkHttp;
 
     private final InMemoryRedisContext redis;
 
@@ -197,7 +195,7 @@ public class EngineContext extends CompositeTestRule {
         // start engine
         setRestAssuredUri(config);
 
-        spark = Service.ignite();
+        sparkHttp = spark.Service.ignite();
 
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + redis.port()));
         RedisWrapper redis = RedisWrapper.create(config);
@@ -226,7 +224,7 @@ public class EngineContext extends CompositeTestRule {
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
             jedisPool.close();
-            spark.stop();
+            sparkHttp.stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
@@ -307,15 +305,15 @@ public class EngineContext extends CompositeTestRule {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-        RPCOpener requestExecutor = new RPCOpenerImpl(engineGraknTxFactory);
+        RPCOpener requestExecutor = new OpenerImpl(engineGraknTxFactory);
 
-        Server server = ServerBuilder.forPort(0).addService(new RPCService(requestExecutor, postProcessor)).build();
-        RPCServer rpcServer = RPCServer.create(server);
+        io.grpc.Server server = ServerBuilder.forPort(0).addService(new Service(requestExecutor, postProcessor)).build();
+        Server rpcServer = Server.create(server);
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(id, config, status,
-                spark, Collections.emptyList(), rpcServer,
+                sparkHttp, Collections.emptyList(), rpcServer,
                 engineGraknTxFactory, metricRegistry,
                 queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
 

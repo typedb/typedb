@@ -72,16 +72,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.rpc.RPCService.nonNull;
+import static ai.grakn.engine.rpc.Service.nonNull;
 
 /**
- * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link RPCServer}.
+ * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link Server}.
  * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
  *
  * @author Felix Chapman
  */
-class RPCListener implements StreamObserver<TxRequest> {
-    final Logger LOG = LoggerFactory.getLogger(RPCListener.class);
+class Listener implements StreamObserver<TxRequest> {
+    final Logger LOG = LoggerFactory.getLogger(Listener.class);
     private final StreamObserver<TxResponse> reponseSender;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService threadExecutor;
@@ -92,24 +92,24 @@ class RPCListener implements StreamObserver<TxRequest> {
     @Nullable
     private EmbeddedGraknTx<?> tx = null;
 
-    private RPCListener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, RPCOpener requestExecutor, PostProcessor postProcessor) {
+    private Listener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, RPCOpener requestExecutor, PostProcessor postProcessor) {
         this.reponseSender = responseSender;
         this.threadExecutor = threadExecutor;
         this.requestExecutor = requestExecutor;
         this.postProcessor = postProcessor;
     }
 
-    public static RPCListener create(StreamObserver<TxResponse> responseObserver, RPCOpener requestExecutor, PostProcessor postProcessor) {
+    public static Listener create(StreamObserver<TxResponse> responseObserver, RPCOpener requestExecutor, PostProcessor postProcessor) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
         ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-        return new RPCListener(responseObserver, threadExecutor, requestExecutor, postProcessor);
+        return new Listener(responseObserver, threadExecutor, requestExecutor, postProcessor);
     }
 
     @Override
     public void onNext(TxRequest request) {
         try {
             submit(() -> {
-                RPCService.runAndConvertGraknExceptions(() -> handleRequest(request));
+                Service.runAndConvertGraknExceptions(() -> handleRequest(request));
             });
         } catch (StatusRuntimeException e) {
             close(e);
@@ -162,7 +162,7 @@ class RPCListener implements StreamObserver<TxRequest> {
                 break;
             default:
             case REQUEST_NOT_SET:
-                throw RPCService.error(Status.INVALID_ARGUMENT);
+                throw Service.error(Status.INVALID_ARGUMENT);
         }
     }
 
@@ -185,7 +185,7 @@ class RPCListener implements StreamObserver<TxRequest> {
 
         if (!terminated.getAndSet(true)) {
             if (error != null) {
-                LOG.error("Runtime Exception in RPCListener: ", error);
+                LOG.error("Runtime Exception in RPC Listener: ", error);
                 reponseSender.onError(error);
             } else {
                 reponseSender.onCompleted();
@@ -209,7 +209,7 @@ class RPCListener implements StreamObserver<TxRequest> {
 
     private void open(Open request) {
         if (tx != null) {
-            throw RPCService.error(Status.FAILED_PRECONDITION);
+            throw Service.error(Status.FAILED_PRECONDITION);
         }
         tx = requestExecutor.execute(request);
         reponseSender.onNext(ResponseBuilder.done());
@@ -250,7 +250,7 @@ class RPCListener implements StreamObserver<TxRequest> {
         IteratorId iteratorId = next.getIteratorId();
 
         TxResponse response =
-                rpcIterators.next(iteratorId).orElseThrow(() -> RPCService.error(Status.FAILED_PRECONDITION));
+                rpcIterators.next(iteratorId).orElseThrow(() -> Service.error(Status.FAILED_PRECONDITION));
 
         reponseSender.onNext(response);
     }

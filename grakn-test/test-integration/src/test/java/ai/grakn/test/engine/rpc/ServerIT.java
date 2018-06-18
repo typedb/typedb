@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.test.engine;
+package ai.grakn.test.engine.rpc;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
@@ -91,7 +91,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Felix Chapman
  */
-public class RPCServerIT {
+public class ServerIT {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

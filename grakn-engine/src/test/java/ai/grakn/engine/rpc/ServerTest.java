@@ -62,7 +62,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import org.junit.After;
@@ -104,7 +103,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Felix Chapman
  */
-public class RPCServerTest {
+public class ServerTest {
 
     private static final String EXCEPTION_MESSAGE = "OH DEAR";
     private static final GraknException EXCEPTION = GraqlQueryException.create(EXCEPTION_MESSAGE);
@@ -124,7 +123,7 @@ public class RPCServerTest {
     //private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
-    private RPCServer rpcServer;
+    private Server rpcServer;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -138,9 +137,9 @@ public class RPCServerTest {
     public void setUp() throws IOException {
         doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
 
-        RPCOpener requestExecutor = new RPCOpenerImpl(txFactory);
-        Server server = ServerBuilder.forPort(PORT).addService(new RPCService(requestExecutor, mockedPostProcessor)).build();
-        rpcServer = RPCServer.create(server);
+        RPCOpener requestExecutor = new OpenerImpl(txFactory);
+        io.grpc.Server server = ServerBuilder.forPort(PORT).addService(new Service(requestExecutor, mockedPostProcessor)).build();
+        rpcServer = Server.create(server);
         rpcServer.start();
 
         QueryBuilder qb = mock(QueryBuilder.class);

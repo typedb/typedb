@@ -32,11 +32,11 @@ import ai.grakn.rpc.generated.GrpcGrakn.Open;
  * @author marcoscoppetta
  */
 
-public class RPCOpenerImpl implements RPCOpener {
+public class OpenerImpl implements RPCOpener {
 
     private final EngineGraknTxFactory txFactory;
 
-    public RPCOpenerImpl(EngineGraknTxFactory txFactory) {
+    public OpenerImpl(EngineGraknTxFactory txFactory) {
         this.txFactory=txFactory;
     }
 

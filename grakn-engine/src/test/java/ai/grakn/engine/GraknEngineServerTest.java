@@ -27,9 +27,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.RPCService;
-import ai.grakn.engine.rpc.RPCOpenerImpl;
-import ai.grakn.engine.rpc.RPCServer;
+import ai.grakn.engine.rpc.Service;
+import ai.grakn.engine.rpc.OpenerImpl;
+import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -46,7 +46,6 @@ import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
-import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +57,6 @@ import org.junit.rules.ExpectedException;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
-import spark.Service;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -91,7 +89,7 @@ public class GraknEngineServerTest {
     public final SessionContext sessionContext = SessionContext.create();
 
     GraknConfig config = GraknConfig.create();
-    Service spark = Service.ignite();
+    spark.Service sparkHttp = spark.Service.ignite();
     RedisWrapper mockRedisWrapper = mock(RedisWrapper.class);
     Jedis mockJedis = mock(Jedis.class);
     private GraknKeyspaceStore graknKeyspaceStore;
@@ -105,7 +103,7 @@ public class GraknEngineServerTest {
 
     @After
     public void tearDown() {
-        spark.stop();
+        sparkHttp.stop();
     }
 
 
@@ -210,12 +208,12 @@ public class GraknEngineServerTest {
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
 
         // http services: spark, http controller, and gRPC server
-        Service sparkHttp = Service.ignite();
+        spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        RPCOpener requestExecutor = new RPCOpenerImpl(engineGraknTxFactory);
-        Server server = ServerBuilder.forPort(grpcPort).addService(new RPCService(requestExecutor, postProcessor)).build();
-        RPCServer rpcServer = RPCServer.create(server);
+        RPCOpener requestExecutor = new OpenerImpl(engineGraknTxFactory);
+        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new Service(requestExecutor, postProcessor)).build();
+        Server rpcServer = Server.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServer,
