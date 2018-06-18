@@ -19,7 +19,7 @@ public class RolePlayerTypeStrategy extends TypeStrategy {
     }
 
     public ConceptIdStreamLimiterInterface getConceptPicker() {
-        return conceptPicker;
+         return conceptPicker;
     }
 
     public String getRoleLabel() {

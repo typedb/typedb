@@ -18,7 +18,8 @@ public class IsaTypeConceptIdPicker extends ConceptIdPicker {
         this.typeLabel = typeLabel;
     }
 
-    private Integer getConceptCount(GraknTx tx) {
+    @Override
+    protected Integer getConceptCount(GraknTx tx) {
         return conceptTypeCountStore.get(this.typeLabel);
     }
 }

@@ -255,7 +255,7 @@ public class DataGenerator {
 
         this.deleteExistingConcepts();
 
-        int max_iterations = 10;
+        int max_iterations = 30;
         int it = 0;
 
         // Store the ids of the concepts inserted by type, using type as the key
@@ -264,7 +264,6 @@ public class DataGenerator {
 //        this.conceptPicker = new RandomConceptIdPicker(this.rand, false);
 
         GraknSession session = this.getSession();
-
 
             GeneratorFactory gf = new GeneratorFactory();
 
