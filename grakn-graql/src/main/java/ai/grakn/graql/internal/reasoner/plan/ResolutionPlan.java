@@ -33,6 +33,7 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public final class ResolutionPlan {
 
     public ResolutionPlan(ReasonerQueryImpl query){
         this.tx =  query.tx();
-        this.plan = GraqlTraversalPlanner.refinedPlan(query);
+        this.plan = GraqlTraversalPlanner.plan(query);
         if (!isValid()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
@@ -128,9 +129,9 @@ public final class ResolutionPlan {
 
     private List<ReasonerQueryImpl> prioritiseQueries(List<ReasonerQueryImpl> queries){
         return queries.stream()
-                //.sorted(Comparator.comparing(ReasonerQueryImpl::isDisconnected))
-                .sorted(Comparator.comparing(ReasonerQueryImpl::isRuleResolvable))
                 .sorted(Comparator.comparing(q -> !q.isAtomic()))
+                .sorted(Comparator.comparing(ReasonerQueryImpl::isRuleResolvable))
+                .sorted(Comparator.comparing(ReasonerQueryImpl::isDisconnected))
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
@@ -154,7 +155,7 @@ public final class ResolutionPlan {
                 });
 
         //prioritise queries
-        prioritiseQueries(queries).forEach(queryStack::push);
+        Lists.reverse(prioritiseQueries(queries)).forEach(queryStack::push);
         while(!plan.containsAll(queries)) {
             ReasonerQueryImpl query = queryStack.pop();
             Equivalence.Wrapper<ReasonerQueryImpl> wrappedQuery = equality.wrap(query);
