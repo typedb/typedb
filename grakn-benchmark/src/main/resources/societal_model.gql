@@ -14,9 +14,7 @@ gendered-name sub attribute datatype string,
 
 person sub entity,
   has forename,  # could look at rules to find names typically given to men/women e.g. not many women called Michael
-  has surname, # familyname?
-#  has dob, # date of birth
-#  has dod, # date of death
+  has surname,
   has gender,
   plays employee,
   plays director;

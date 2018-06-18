@@ -51,19 +51,19 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
                     // Find random role-players matching this type
                     // Pick ids from the list of concept ids
 
-                    Stream<String> conceptIdStream = rolePlayerTypeStrategy.getConceptPicker().get(rolePlayerTypeStrategy.getNumInstancesPDF(), tx);
+                    Stream<ConceptId> conceptIdStream = rolePlayerTypeStrategy.getConceptPicker().getConceptIdStream(rolePlayerTypeStrategy.getNumInstancesPDF(), tx);
 
-                    Iterator<String> iter = conceptIdStream.iterator();
+                    Iterator<ConceptId> iter = conceptIdStream.iterator();
 
                     // Build the match insert query
                     while (iter.hasNext()) {
-                        String conceptId = iter.next();
+                        ConceptId conceptId = iter.next();
                         // Add the concept to the query
                         Var v = Graql.var().asUserDefined();
                         if (matchVarPattern == null) {
-                            matchVarPattern = v.id(ConceptId.of(conceptId));
+                            matchVarPattern = v.id(conceptId);
                         } else {
-                            Pattern varPattern = v.id(ConceptId.of(conceptId));
+                            Pattern varPattern = v.id(conceptId);
                             matchVarPattern = matchVarPattern.and(varPattern);
                         }
 

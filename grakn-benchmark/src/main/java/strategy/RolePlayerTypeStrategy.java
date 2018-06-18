@@ -3,22 +3,22 @@ package strategy;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import pdf.PDF;
-import storage.RolePlayerConceptPickerInterface;
+import pick.ConceptIdStreamLimiterInterface;
 
 public class RolePlayerTypeStrategy extends TypeStrategy {
 
     private final Role role;
     private final String roleLabel;
-    private RolePlayerConceptPickerInterface conceptPicker;
+    private ConceptIdStreamLimiterInterface conceptPicker;
 
-    public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, RolePlayerConceptPickerInterface conceptPicker) {
+    public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, ConceptIdStreamLimiterInterface conceptPicker) {
         super(type, numInstancesPDF);
         this.role = role;
         this.roleLabel = role.getLabel().getValue();
         this.conceptPicker = conceptPicker;
     }
 
-    public RolePlayerConceptPickerInterface getConceptPicker() {
+    public ConceptIdStreamLimiterInterface getConceptPicker() {
         return conceptPicker;
     }
 

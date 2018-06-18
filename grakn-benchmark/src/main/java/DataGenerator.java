@@ -8,6 +8,7 @@ import com.google.common.io.Files;
 import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.DiscreteGaussianPDF;
+import pick.*;
 import storage.*;
 import strategy.*;
 
@@ -108,13 +109,36 @@ public class DataGenerator {
                             this.getTypeFromString("employer", this.roles),
                             this.getTypeFromString("company", this.entityTypes),
                             new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
-                            new CentralRolePlayerPicker(this.rand,
-                                    "company",
-                                    "employment", // TODO Should be able to infer the relationship automatically with knowledge of the schema
-                                    "employer",
-                                    this.conceptTypeCountStore)
+                            new CentralConceptIdStreamLimiter(
+                                    new NotInRelationshipConceptIdStream(
+                                            "employment",
+                                            "employer",
+                                            100,
+                                            new IsaTypeConceptIdPicker(
+                                                    this.rand,
+                                                    this.conceptTypeCountStore,
+                                                    "company"
+                                            )
+
+                                    )
+                            )
                     )
             );
+//            employmentRoleStrategies.add(
+//                    new RolePlayerTypeStrategy(
+//                            this.getTypeFromString("employee", this.roles),
+//                            this.getTypeFromString("person", this.entityTypes),
+//                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
+//                            new ConceptIdStreamLimiter(
+//                                    new IsaTypeConceptIdPicker(
+//                                            this.rand,
+//                                            this.conceptTypeCountStore,
+//                                            "person"
+//                                    )
+//
+//                            )
+//                    )
+//            );
 
 //            employmentRoleStrategies.add(
 //                    new RelationshipRoleStrategy(
@@ -192,8 +216,6 @@ public class DataGenerator {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
 
 
         GraknSession session = this.getSession();
