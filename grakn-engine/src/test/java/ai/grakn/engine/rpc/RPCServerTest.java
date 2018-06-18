@@ -481,9 +481,9 @@ public class RPCServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
 
-            //assertEquals(label, ConceptMethod.GET_LABEL.readResponse(conceptConverter, client, tx.receive().ok()));
+            //assertEquals(label, ConceptMethod.getLabel.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -500,9 +500,9 @@ public class RPCServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_IMPLICIT));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.isImplicit));
 
-            //assertTrue(ConceptMethod.IS_IMPLICIT.readResponse(conceptConverter, client, tx.receive().ok()));
+            //assertTrue(ConceptMethod.isImplicit.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -519,9 +519,9 @@ public class RPCServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.IS_INFERRED));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.isInferred));
 
-            //assertFalse(ConceptMethod.IS_INFERRED.readResponse(conceptConverter, client, tx.receive().ok()));
+            //assertFalse(ConceptMethod.isInferred.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -571,7 +571,7 @@ public class RPCServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -592,7 +592,7 @@ public class RPCServerTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.GET_LABEL));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 

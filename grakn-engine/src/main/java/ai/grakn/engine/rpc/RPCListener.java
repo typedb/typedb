@@ -33,14 +33,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
-import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptMethod;
-import ai.grakn.rpc.util.ConceptReader;
-import ai.grakn.rpc.util.TxConceptReader;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.RPCIterators;
 import ai.grakn.rpc.RPCOpener;
-import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -54,6 +49,11 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
 import ai.grakn.rpc.generated.GrpcIterator.Stop;
+import ai.grakn.rpc.util.ConceptBuilder;
+import ai.grakn.rpc.util.ConceptMethod;
+import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.util.ResponseBuilder;
+import ai.grakn.rpc.util.TxConceptReader;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -265,10 +265,7 @@ class RPCListener implements StreamObserver<TxRequest> {
         Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
         TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
-        ConceptMethod<?> conceptMethod = ConceptMethod.requestReader(txConceptReader, runConceptMethod.getConceptMethod());
-
-        TxResponse response = conceptMethod.run(rpcIterators, concept);
-
+        TxResponse response = ConceptMethod.run(concept, runConceptMethod.getConceptMethod(), rpcIterators, txConceptReader);
         reponseSender.onNext(response);
     }
 
