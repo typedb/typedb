@@ -32,11 +32,9 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
         if (typeCount < numConceptIds) return Stream.empty();
 
         Stream<Integer> randomUniqueOffsetStream = this.generateUniqueRandomOffsetStream(typeCount);
-        Iterator<Integer> randomUniqueOffsetIterator = randomUniqueOffsetStream.iterator();
 
-        Stream<ConceptId> stream = Stream.generate(() -> {
+        return randomUniqueOffsetStream.map(randomOffset -> {
 
-            Integer randomOffset = randomUniqueOffsetIterator.next();
             QueryBuilder qb = tx.graql();
 
             // TODO The following gives exception: Exception in thread "main" java.lang.ClassCastException: ai.grakn.remote.RemoteGraknTx cannot be cast to ai.grakn.kb.internal.EmbeddedGraknTx
@@ -56,8 +54,6 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
             // return the ConceptId of the single variable in the single result
             return result.get(0).get(this.matchVar).getId();
         });
-
-        return stream;
     }
 
     protected Integer getConceptCount(GraknTx tx) {
@@ -83,7 +79,7 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
                 foundUnique = previousRandomOffsets.add(nextChoice);
             }
             return nextChoice;
-        });
+        }).limit(offsetBound);
 
         return stream;
     }

@@ -76,7 +76,7 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
                 // Assemble the query
                 return (Query) qb.match(matchVarPattern).insert(insertVarPattern);
             } else {
-                System.out.println("Couldn't find any existing roleplayers for any roles in " + relationshipTypeLabel + " relationship.");
+                System.out.println("Couldn't find any existing roleplayers for any roles in \"" + relationshipTypeLabel + "\" relationship.");
                 return null;
             }
 
