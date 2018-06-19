@@ -142,14 +142,6 @@ public class ConceptBuilder {
                 .build();
     }
 
-    public static GrpcConcept.OptionalPattern optionalPattern(Optional<Pattern> pattern) {
-        GrpcConcept.OptionalPattern.Builder builder = GrpcConcept.OptionalPattern.newBuilder();
-        return pattern.map(ConceptBuilder::pattern)
-                .map(builder::setPresent)
-                .orElseGet(() -> builder.setAbsent(GrpcConcept.Unit.getDefaultInstance()))
-                .build();
-    }
-
     public static GrpcConcept.Pattern pattern(Pattern pattern) {
         return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
     }

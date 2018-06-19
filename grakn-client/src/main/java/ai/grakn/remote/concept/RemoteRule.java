@@ -49,7 +49,8 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
         method.setGetWhen(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return ConceptReader.optionalPattern(response.getConceptResponse().getOptionalPattern()).orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+        return ConceptReader.pattern(response.getConceptResponse().getPattern());
     }
 
     @Nullable
@@ -59,7 +60,8 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
         method.setGetThen(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return ConceptReader.optionalPattern(response.getConceptResponse().getOptionalPattern()).orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+        return ConceptReader.pattern(response.getConceptResponse().getPattern());
     }
 
     @Override

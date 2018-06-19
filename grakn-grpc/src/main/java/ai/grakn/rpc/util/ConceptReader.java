@@ -24,9 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.util.CommonUtil;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -88,21 +86,12 @@ public class ConceptReader {
         }
     }
 
-    @Nullable
-    public static Optional<Pattern> optionalPattern(GrpcConcept.OptionalPattern pattern) {
-        switch (pattern.getValueCase()) {
-            case PRESENT:
-                return Optional.of(pattern(pattern.getPresent()));
-            case ABSENT:
-                return Optional.empty();
-            case VALUE_NOT_SET:
-            default:
-                throw CommonUtil.unreachableStatement("Unrecognised " + pattern);
-        }
-    }
-
     public static Pattern pattern(GrpcConcept.Pattern pattern ) {
         return Graql.parser().parsePattern(pattern.getValue());
+    }
+
+    public static Pattern pattern(String pattern) {
+        return Graql.parser().parsePattern(pattern);
     }
 
     public static Optional<AttributeType.DataType<?>> optionalDataType(GrpcConcept.OptionalDataType dataType) {

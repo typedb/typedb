@@ -42,12 +42,12 @@ message ConceptMethod {
         Unit isImplicit = 4; // returns bool
         Unit getSubConcepts = 19; // returns IteratorId of Concept
         Unit getSuperConcepts = 53; // returns IteratorId of Concept
-        Unit getDirectSuperConcept = 14; // returns Concept or noResult
+        Unit getDirectSuperConcept = 14; // returns Concept or noResult (bool)
         Concept setDirectSuperConcept = 17; // returns Unit
 
         // Rule
-        Unit getWhen = 7; // returns OptionalPattern
-        Unit getThen = 8; // returns OptionalPattern
+        Unit getWhen = 7; // returns pattern (string) or noResult (bool)
+        Unit getThen = 8; // returns pattern (string) or noResult (bool)
 
         // Role
         Unit getRelationshipTypesThatRelateRole = 20; // returns IteratorId of Concept
@@ -118,8 +118,7 @@ message ConceptResponse {
         DataType dataType = 2;
         Label label = 3;
         bool bool = 4;
-        OptionalPattern optionalPattern = 5;
-        string string = 6;
+        string pattern = 6;
         Concept concept = 9;
         Unit unit = 10;
         OptionalRegex optionalRegex = 11;
@@ -182,13 +181,6 @@ message OptionalRegex {
 
 message Pattern {
     string value = 1;
-}
-
-message OptionalPattern {
-    oneof value {
-        Pattern present = 1;
-        Unit absent = 2;
-    }
 }
 
 message OptionalDataType {
