@@ -42,7 +42,7 @@ public class OpenerImpl implements RPCOpener {
 
     @Override
     public EmbeddedGraknTx<?> execute(Open request) {
-        Keyspace keyspace = Keyspace.of(request.getKeyspace().getValue());
+        Keyspace keyspace = Keyspace.of(request.getKeyspace());
         GraknTxType txType = GraknTxType.of(request.getTxType().getNumber());
         return txFactory.tx(keyspace, txType);
     }

@@ -49,7 +49,7 @@ message DeleteResponse {}
     After this message, the server will send a `Done` message and then accept a command message.
 */
 message Open {
-    Keyspace keyspace = 1;
+    string keyspace = 1;
     TxType txType = 2;
     /* Fields ignored in the open-source version. */
     string username = 3;
@@ -67,7 +67,7 @@ message Commit {}
     After this message, the server will send an `Iterator` message and then accept a command message.
 */
 message ExecQuery {
-    Query query = 1;
+    string query = 1;
     Infer infer = 2; // If this is not present, leave at server default.
 }
 
@@ -178,12 +178,4 @@ enum TxType {
     Read = 0;
     Write = 1;
     Batch = 2;
-}
-
-message Keyspace {
-    string value = 1;
-}
-
-message Query {
-    string value = 1;
 }

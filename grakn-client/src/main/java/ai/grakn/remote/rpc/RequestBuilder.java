@@ -50,8 +50,7 @@ import javax.annotation.Nullable;
 public class RequestBuilder {
 
     public static GrpcGrakn.TxRequest open(Keyspace keyspace, GraknTxType txType) {
-        GrpcGrakn.Keyspace keyspaceRPC = GrpcGrakn.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
-        GrpcGrakn.Open openRPC = GrpcGrakn.Open.newBuilder().setKeyspace(keyspaceRPC).setTxType(txType(txType)).build();
+        GrpcGrakn.Open openRPC = GrpcGrakn.Open.newBuilder().setKeyspace(keyspace.getValue()).setTxType(txType(txType)).build();
 
         return TxRequest.newBuilder().setOpen(openRPC).build();
     }
@@ -65,8 +64,7 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest execQuery(String queryString, @Nullable Boolean infer) {
-        GrpcGrakn.Query query = GrpcGrakn.Query.newBuilder().setValue(queryString).build();
-        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
+        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(queryString);
         if (infer != null) {
             execQueryRequest.setInfer(Infer.newBuilder().setValue(infer));
         }

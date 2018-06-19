@@ -220,7 +220,7 @@ class Listener implements StreamObserver<TxRequest> {
     }
 
     private void execQuery(ExecQuery request) {
-        String queryString = request.getQuery().getValue();
+        String queryString = request.getQuery();
         QueryBuilder graql = tx().graql();
         TxResponse response;
 

@@ -30,8 +30,7 @@ message ConceptMethod {
     oneof conceptMethod {
         // The types here are the arguments for the methods. Most are `Unit`, which indicates no arguments.
         // The return types of these methods are described in `ConceptResponse`.
-
-        // The `returns` indicates what each `ConceptMethod` will return.
+        // The `returns` comment indicates what each `ConceptMethod` will return.
 
         // Concept
         Unit delete = 16; // returns Unit
@@ -114,18 +113,18 @@ message Unit {}
 
 message ConceptResponse {
     oneof value {
-        Unit unit = 10;
-        IteratorId iteratorId = 14;
-        Concept concept = 9;
-        AttributeValue attributeValue = 1;
-        DataType dataType = 2;
-        string label = 3;
-        string pattern = 6;
-        string regex = 12;
-        bool isAbstract = 16;
-        bool isImplicit = 17;
-        bool isInferred = 18;
-        bool noResult = 15;
+        Unit unit = 1;
+        IteratorId iteratorId = 2;
+        Concept concept = 3;
+        AttributeValue attributeValue = 4;
+        DataType dataType = 5;
+        string label = 6;
+        string pattern = 7;
+        string regex = 8;
+        bool isAbstract = 9;
+        bool isImplicit = 10;
+        bool isInferred = 11;
+        bool noResult = 12;
     }
 }
 
