@@ -23,7 +23,7 @@ public class ConceptTypeCountStore implements ConceptStore {
     }
 
     public int get(String typeLabel) {
-        return this.conceptTypeCountStorage.get(typeLabel);
+        return this.conceptTypeCountStorage.getOrDefault(typeLabel, 0);
     }
 
     public int total() {

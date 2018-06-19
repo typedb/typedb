@@ -29,7 +29,7 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
         int typeCount = getConceptCount(tx);
 
         // If there aren't enough concepts to fulfill the number requested, then return null
-        if (typeCount < numConceptIds) return null;
+        if (typeCount < numConceptIds) return Stream.empty();
 
         Stream<Integer> randomUniqueOffsetStream = this.generateUniqueRandomOffsetStream(typeCount);
         Iterator<Integer> randomUniqueOffsetIterator = randomUniqueOffsetStream.iterator();

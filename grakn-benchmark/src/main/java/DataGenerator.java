@@ -143,8 +143,8 @@ public class DataGenerator {
             );
         }
 
-        this.operationStrategies.add(0.8, this.entityStrategies);
-        this.operationStrategies.add(0.2, this.relationshipStrategies);
+        this.operationStrategies.add(0.6, this.entityStrategies);
+        this.operationStrategies.add(0.4, this.relationshipStrategies);
         this.operationStrategies.add(0.0, this.attributeStrategies);
 
     }
@@ -242,49 +242,46 @@ public class DataGenerator {
         int max_iterations = 30;
         int it = 0;
 
-        // Store the ids of the concepts inserted by type, using type as the key
-//        this.conceptTypeCountStore = new HashMap<String, ArrayList<String>>();
-//        this.conceptTypeCountStore = new ConceptTypeCountStore();
-//        this.conceptPicker = new RandomConceptIdPicker(this.rand, false);
-
         GraknSession session = this.getSession();
 
         GeneratorFactory gf = new GeneratorFactory();
 
         while (it < max_iterations) {
+            System.out.printf("Iteration %d%n", it + 1);
             try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 //                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptTypeCountStore, this.conceptPicker);
                 Generator generator = gf.create(this.operationStrategies.next().next(), tx); // TODO Can we do without creating a new generator each iteration
 
                 Stream<Query> queriesStream = generator.generate();
+                if (queriesStream != null) {
 
-                if (this.doExecution) {
-                    queriesStream.map(q -> (InsertQuery) q)
-                            .forEachOrdered(q -> {  // TODO Remove ordering?
-                                List<Answer> insertions = q.execute();
-                                insertions.forEach(insert -> {
-                                    HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
-                                    insertedConcepts.forEach(concept -> {
-                                        this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
+                    if (this.doExecution) {
+                        queriesStream.map(q -> (InsertQuery) q)
+                                .forEach(q -> {  // TODO Remove ordering?
+                                    List<Answer> insertions = q.execute();
+                                    insertions.forEach(insert -> {
+                                        HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                                        insertedConcepts.forEach(concept -> {
+                                            this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
+                                        });
                                     });
                                 });
-                            });
-                } else {
+                    } else {
 
-                    // Print the queries rather than executing
-                    Iterator<Query> iter = queriesStream.iterator();
+                        // Print the queries rather than executing
+                        Iterator<Query> iter = queriesStream.iterator();
 
-                    while (iter.hasNext()) {
-                        String s = iter.next().toString();
-                        System.out.print(s + "\n");
+                        while (iter.hasNext()) {
+                            String s = iter.next().toString();
+                            System.out.print(s + "\n");
+                        }
+                    }
+                    it++;
+                    if (this.doExecution) {
+                        tx.commit();
                     }
                 }
-                it++;
-                if (this.doExecution) {
-                    tx.commit();
-                }
             }
-
         }
     }
 
