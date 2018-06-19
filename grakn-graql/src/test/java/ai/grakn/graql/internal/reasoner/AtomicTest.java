@@ -636,11 +636,16 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);$x isa noRoleEntity;}";
         String relationString2 = "{($x, $y);$x isa entity;}";
+        String relationString3 = "{($x, $y);$x isa relationship;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
         assertEquals(5, relation.getApplicableRules().count());
-        assertEquals(RuleUtils.getRules(graph).count(), relation2.getApplicableRules().count());
+        assertEquals(RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
+
+        //TODO not filtered correctly
+        //assertEquals(RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
     }
 
     @Test
