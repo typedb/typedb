@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -38,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -150,10 +152,10 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        return RuleUtils.getRulesWithType(
-                getSchemaConcept(),
-                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent(),
-                tx());
+        boolean isDirect = getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent();
+        return getPossibleTypes().stream()
+                .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
+                .distinct();
     }
 
     /**
@@ -257,7 +259,7 @@ public abstract class Atom extends AtomicBase {
                         getPredicates().flatMap(AtomicBase::getPredicates)
                 ),
                 getTypeConstraints().filter(at -> !at.isSelectable())
-                );
+        );
     }
 
     /**
@@ -270,6 +272,11 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public Atom inferTypes(Answer sub){ return this; }
+
+    /**
+     * @return list of types this atom can take
+     */
+    public ImmutableList<Type> getPossibleTypes(){ return ImmutableList.of(getSchemaConcept().asType());}
 
     /**
      * @param sub partial substitution

@@ -38,15 +38,18 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -91,7 +94,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? DirectIsaProperty.class : IsaProperty.class;}
 
     //NB: overriding as these require a derived property
     @Override
@@ -126,7 +129,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
                 getVarName().isa(getPredicateVariable()) :
-                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent()?
+                isDirect()?
                         getVarName().directIsa(getSchemaConcept().getLabel().getValue()) :
                         getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
     }
@@ -144,10 +147,23 @@ public abstract class IsaAtom extends IsaAtomBase {
         return this;
     }
 
-    private ImmutableList<Type> inferPossibleEntityTypes(Answer sub){
+    private ImmutableList<Type> inferPossibleTypes(Answer sub){
         if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept().asType());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
-        return tx().admin().getMetaConcept().subs().collect(toImmutableList());
+
+        //determine compatible types from played roles
+        Set<Type> types = getParentQuery().getAtoms(RelationshipAtom.class)
+                .filter(r -> r.getVarNames().contains(getVarName()))
+                .flatMap(r -> r.getRoleVarMap().entries().stream()
+                        .filter(e -> e.getValue().equals(getVarName()))
+                        .map(Map.Entry::getKey))
+                .map(role -> role.playedByTypes().collect(Collectors.toSet()))
+                .reduce(Sets::intersection)
+                .orElse(Sets.newHashSet());
+
+        return !types.isEmpty()?
+                ImmutableList.copyOf(ReasonerUtils.top(types)) :
+                tx().admin().getMetaConcept().subs().collect(toImmutableList());
     }
 
     @Override
@@ -157,8 +173,11 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
+    public ImmutableList<Type> getPossibleTypes() { return inferPossibleTypes(new QueryAnswer()); }
+
+    @Override
     public List<Atom> atomOptions(Answer sub) {
-        return this.inferPossibleEntityTypes(sub).stream()
+        return this.inferPossibleTypes(sub).stream()
                 .map(this::addType)
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
                 .collect(Collectors.toList());

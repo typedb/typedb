@@ -167,7 +167,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         hashCode = hashCode * 37 + getRelationPlayers().hashCode();
         return hashCode;
     }
-    
+
     @Override
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
@@ -535,8 +535,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         }
         return compatibleTypes;
     }
-    
-    private ImmutableList<Type> getPossibleTypes(){ return possibleTypes;}
+
+    @Override
+    public ImmutableList<Type> getPossibleTypes(){ return inferPossibleTypes(new QueryAnswer());}
 
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
@@ -545,7 +546,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    public ImmutableList<Type> inferPossibleTypes(Answer sub) {
+    private ImmutableList<Type> inferPossibleTypes(Answer sub) {
         if (possibleTypes == null) {
             if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
 
