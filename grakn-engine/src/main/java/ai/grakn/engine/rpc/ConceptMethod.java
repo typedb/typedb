@@ -200,19 +200,19 @@ public abstract class ConceptMethod<T> {
 
     private static TxResponse isImplicit(Concept concept) {
         Boolean response = concept.asSchemaConcept().isImplicit();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setBool(response);
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIsImplicit(response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
     private static TxResponse isInferred(Concept concept) {
         Boolean response = concept.asThing().isInferred();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setBool(response);
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIsInferred(response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
     private static TxResponse isAbstract(Concept concept) {
         Boolean response = concept.asType().isAbstract();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setBool(response);
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIsAbstract(response);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 

@@ -122,7 +122,9 @@ message ConceptResponse {
         string label = 3;
         string pattern = 6;
         string regex = 12;
-        bool bool = 4;
+        bool isAbstract = 16;
+        bool isImplicit = 17;
+        bool isInferred = 18;
         bool noResult = 15;
     }
 }

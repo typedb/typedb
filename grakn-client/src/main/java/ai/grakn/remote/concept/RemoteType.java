@@ -108,7 +108,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         method.setIsAbstract(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return response.getConceptResponse().getBool();
+        return response.getConceptResponse().getIsAbstract();
     }
 
     @Override

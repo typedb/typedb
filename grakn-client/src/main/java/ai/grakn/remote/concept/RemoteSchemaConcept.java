@@ -68,7 +68,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         method.setIsImplicit(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return response.getConceptResponse().getBool();
+        return response.getConceptResponse().getIsImplicit();
     }
 
     @Override

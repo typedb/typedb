@@ -119,7 +119,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         method.setIsInferred(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return response.getConceptResponse().getBool();
+        return response.getConceptResponse().getIsInferred();
     }
 
     abstract SomeType asCurrentType(Concept concept);
