@@ -70,7 +70,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     @Override
     public final Self attribute(Attribute attribute) {
         attributeRelationship(attribute);
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -110,7 +110,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         method.setUnsetAttribute(ConceptBuilder.concept(attribute));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override

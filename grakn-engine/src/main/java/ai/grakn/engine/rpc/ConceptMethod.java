@@ -290,9 +290,15 @@ public abstract class ConceptMethod<T> {
     }
 
     public static TxResponse getDirectSuper(Concept concept) {
-        Optional<Concept> response = Optional.ofNullable(concept.asSchemaConcept().sup());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setOptionalConcept(ConceptBuilder.optionalConcept(response));
+        Concept superConcept = concept.asSchemaConcept().sup();
+
+        if (superConcept != null) {
+            conceptResponse.setConcept(ConceptBuilder.concept(superConcept));
+        } else {
+            conceptResponse.setNoResult(true);
+        }
+
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
@@ -508,10 +514,16 @@ public abstract class ConceptMethod<T> {
     }
 
     public static TxResponse getAttribute(Concept concept, GrpcConcept.ConceptMethod method) {
-        Object value = ConceptReader.attributeValue(method.getGetAttribute());
-        Optional<Concept> response = Optional.ofNullable(concept.asAttributeType().getAttribute(value));
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setOptionalConcept(ConceptBuilder.optionalConcept(response));
+        Object value = ConceptReader.attributeValue(method.getGetAttribute());
+        Concept attribute = concept.asAttributeType().getAttribute(value);
+
+        if (attribute != null) {
+            conceptResponse.setConcept(ConceptBuilder.concept(attribute));
+        } else {
+            conceptResponse.setNoResult(true);
+        }
+
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 

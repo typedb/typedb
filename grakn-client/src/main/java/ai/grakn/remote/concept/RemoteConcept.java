@@ -74,5 +74,5 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
         return tx().runConceptMethod(id, method);
     }
 
-    abstract Self asSelf(Concept concept);
+    abstract Self asCurrentBaseType(Concept other);
 }

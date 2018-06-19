@@ -50,7 +50,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         method.setSetRegex(ConceptBuilder.optionalRegex(Optional.ofNullable(regex)));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -69,9 +69,11 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetAttribute(ConceptBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Optional<Concept> concept = tx().conceptReader().optionalConcept(response.getConceptResponse().getOptionalConcept());
 
-        return concept.map(Concept::<D>asAttribute).orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+
+        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        return concept.asAttribute();
     }
 
     @Nullable
@@ -97,13 +99,13 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     }
 
     @Override
-    final AttributeType<D> asSelf(Concept concept) {
-        return concept.asAttributeType();
+    final AttributeType<D> asCurrentBaseType(Concept other) {
+        return other.asAttributeType();
     }
 
     @Override
-    final boolean isSelf(Concept concept) {
-        return concept.isAttributeType();
+    final boolean equalsCurrentBaseType(Concept other) {
+        return other.isAttributeType();
     }
 
     @Override

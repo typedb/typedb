@@ -61,11 +61,6 @@ public class ResponseBuilder {
         return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
 
-    //TODO: rename this to conceptOptional once we do so in the concept.proto
-    public static GrpcGrakn.TxResponse optionalConcept(Optional<Concept> concept) {
-        return GrpcGrakn.TxResponse.newBuilder().setOptionalConcept(ConceptBuilder.optionalConcept(concept)).build();
-    }
-
     public static GrpcGrakn.TxResponse rolePlayer(RolePlayer rolePlayer) {
         return GrpcGrakn.TxResponse.newBuilder().setRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
     }

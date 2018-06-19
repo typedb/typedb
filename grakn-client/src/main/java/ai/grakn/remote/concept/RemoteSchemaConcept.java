@@ -29,7 +29,6 @@ import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ConceptReader;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -44,7 +43,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     public final Self sub(Self type) {
@@ -52,7 +51,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
         runMethod(type.getId(), method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -79,7 +78,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         method.setSetLabel(ConceptBuilder.label(label));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Nullable
@@ -88,21 +87,24 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Optional<Concept> concept = tx().conceptReader().optionalConcept(response.getConceptResponse().getOptionalConcept());
 
-        return concept.filter(this::isSelf).map(this::asSelf).orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+
+        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+
+        return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
     }
 
     @Override
     public final Stream<Self> sups() {
-        return tx().admin().sups(this).filter(this::isSelf).map(this::asSelf);
+        return tx().admin().sups(this).filter(this::equalsCurrentBaseType).map(this::asCurrentBaseType);
     }
 
     @Override
     public final Stream<Self> subs() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetSubConcepts(GrpcConcept.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(this::asSelf);
+        return runMethodToConceptStream(method.build()).map(this::asCurrentBaseType);
     }
 
     @Override
@@ -120,5 +122,5 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
-    abstract boolean isSelf(Concept concept);
+    abstract boolean equalsCurrentBaseType(Concept other);
 }

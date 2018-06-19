@@ -42,7 +42,7 @@ message ConceptMethod {
         Unit isImplicit = 4; // returns bool
         Unit getSubConcepts = 19; // returns IteratorId of Concept
         Unit getSuperConcepts = 53; // returns IteratorId of Concept
-        Unit getDirectSuperConcept = 14; // returns OptionalConcept
+        Unit getDirectSuperConcept = 14; // returns Concept or noResult
         Concept setDirectSuperConcept = 17; // returns Unit
 
         // Rule
@@ -77,7 +77,7 @@ message ConceptMethod {
 
         // Attribute type
         AttributeValue putAttribute = 32; // returns Concept
-        AttributeValue getAttribute = 33; // returns OptionalConcept
+        AttributeValue getAttribute = 33; // returns Concept or noResult
         Unit getDataTypeOfType = 2; // returns OptionalDataType
         Unit getDataTypeOfAttribute = 54; // returns DataType
         Unit getRegex = 9; // returns OptionalRegex
@@ -123,9 +123,9 @@ message ConceptResponse {
         Concept concept = 9;
         Unit unit = 10;
         OptionalRegex optionalRegex = 11;
-        OptionalConcept optionalConcept = 12;
         OptionalDataType optionalDataType = 13;
         IteratorId iteratorId = 14;
+        bool noResult = 15;
     }
 }
 

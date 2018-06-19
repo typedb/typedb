@@ -54,12 +54,12 @@ abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
     }
 
     @Override
-    final Role asSelf(Concept concept) {
-        return concept.asRole();
+    final Role asCurrentBaseType(Concept other) {
+        return other.asRole();
     }
 
     @Override
-    final boolean isSelf(Concept concept) {
-        return concept.isRole();
+    final boolean equalsCurrentBaseType(Concept other) {
+        return other.isRole();
     }
 }

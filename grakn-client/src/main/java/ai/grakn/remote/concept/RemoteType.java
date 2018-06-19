@@ -44,7 +44,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setSetAbstract(isAbstract);
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -53,7 +53,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setSetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -62,7 +62,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setSetKeyType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -71,7 +71,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setSetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -117,7 +117,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -126,7 +126,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -135,7 +135,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     protected abstract Instance asInstance(Concept concept);

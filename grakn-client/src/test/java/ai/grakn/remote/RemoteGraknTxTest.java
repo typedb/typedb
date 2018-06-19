@@ -45,6 +45,7 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
 import com.google.common.collect.ImmutableSet;
@@ -456,7 +457,10 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createEntity(tx, id);
-            server.setResponse(RequestBuilder.getConcept(id), ResponseBuilder.optionalConcept(Optional.of(concept)));
+
+            GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
+                    .setOptionalConcept(ConceptBuilder.optionalConcept(Optional.of(concept))).build();
+            server.setResponse(RequestBuilder.getConcept(id), response);
 
             assertEquals(concept, tx.getConcept(id));
         }
@@ -469,7 +473,9 @@ public class RemoteGraknTxTest {
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            server.setResponse(RequestBuilder.getConcept(id), ResponseBuilder.optionalConcept(Optional.empty()));
+            GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
+                    .setOptionalConcept(ConceptBuilder.optionalConcept(Optional.empty())).build();
+            server.setResponse(RequestBuilder.getConcept(id), response);
 
             assertNull(tx.getConcept(id));
         }
@@ -484,9 +490,9 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
-            server.setResponse(
-                    RequestBuilder.getSchemaConcept(label), ResponseBuilder.optionalConcept(Optional.of(concept))
-            );
+            GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
+                    .setOptionalConcept(ConceptBuilder.optionalConcept(Optional.of(concept))).build();
+            server.setResponse(RequestBuilder.getSchemaConcept(label), response);
 
             assertEquals(concept, tx.getSchemaConcept(label));
         }
@@ -499,9 +505,9 @@ public class RemoteGraknTxTest {
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            server.setResponse(
-                    RequestBuilder.getSchemaConcept(label), ResponseBuilder.optionalConcept(Optional.empty())
-            );
+            GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
+                    .setOptionalConcept(ConceptBuilder.optionalConcept(Optional.empty())).build();
+            server.setResponse(RequestBuilder.getSchemaConcept(label), response);
 
             assertNull(tx.getSchemaConcept(label));
         }

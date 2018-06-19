@@ -93,7 +93,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         method.setSetRolePlayer(ConceptBuilder.rolePlayer(RolePlayer.create(role, thing)));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -109,7 +109,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     }
 
     @Override
-    final Relationship asSelf(Concept concept) {
-        return concept.asRelationship();
+    final Relationship asCurrentBaseType(Concept other) {
+        return other.asRelationship();
     }
 }

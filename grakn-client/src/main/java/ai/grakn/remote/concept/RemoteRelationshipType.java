@@ -64,7 +64,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
         method.setSetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
@@ -73,17 +73,17 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
         method.setUnsetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
-        return asSelf(this);
+        return asCurrentBaseType(this);
     }
 
     @Override
-    final RelationshipType asSelf(Concept concept) {
-        return concept.asRelationshipType();
+    final RelationshipType asCurrentBaseType(Concept other) {
+        return other.asRelationshipType();
     }
 
     @Override
-    final boolean isSelf(Concept concept) {
-        return concept.isRelationshipType();
+    final boolean equalsCurrentBaseType(Concept other) {
+        return other.isRelationshipType();
     }
 
     @Override
