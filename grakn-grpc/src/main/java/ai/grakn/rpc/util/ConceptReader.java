@@ -25,7 +25,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -88,16 +87,5 @@ public class ConceptReader {
 
     public static Pattern pattern(String pattern) {
         return Graql.parser().parsePattern(pattern);
-    }
-
-    public static Optional<AttributeType.DataType<?>> optionalDataType(GrpcConcept.OptionalDataType dataType) {
-        switch (dataType.getValueCase()) {
-            case PRESENT:
-                return Optional.of(dataType(dataType.getPresent()));
-            case ABSENT:
-            case VALUE_NOT_SET:
-            default:
-                return Optional.empty();
-        }
     }
 }

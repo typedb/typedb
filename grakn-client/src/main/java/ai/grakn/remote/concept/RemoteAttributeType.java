@@ -30,7 +30,6 @@ import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 
 /**
  * @author Felix Chapman
@@ -77,11 +76,11 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final AttributeType.DataType<D> getDataType() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetDataTypeOfType(GrpcConcept.Unit.getDefaultInstance());
+        method.setGetDataTypeOfAttributeType(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Optional<AttributeType.DataType<?>> concept = ConceptReader.optionalDataType(response.getConceptResponse().getOptionalDataType());
 
-        return (AttributeType.DataType<D>) concept.orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+        return (AttributeType.DataType<D>) ConceptReader.dataType(response.getConceptResponse().getDataType());
     }
 
     @Nullable

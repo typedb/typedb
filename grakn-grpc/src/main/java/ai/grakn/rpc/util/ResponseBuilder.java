@@ -18,7 +18,6 @@
 
 package ai.grakn.rpc.util;
 
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
@@ -41,7 +40,6 @@ import io.grpc.Metadata;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -169,14 +167,6 @@ public class ResponseBuilder {
 
     public static GrpcGrakn.DeleteResponse delete() {
         return GrpcGrakn.DeleteResponse.getDefaultInstance();
-    }
-
-    public static GrpcConcept.OptionalDataType optionalDataType(Optional<AttributeType.DataType<?>> dataType) {
-        GrpcConcept.OptionalDataType.Builder builder = GrpcConcept.OptionalDataType.newBuilder();
-        return dataType.map(ConceptBuilder::dataType)
-                .map(builder::setPresent)
-                .orElseGet(() -> builder.setAbsent(GrpcConcept.Unit.getDefaultInstance()))
-                .build();
     }
 
     /**

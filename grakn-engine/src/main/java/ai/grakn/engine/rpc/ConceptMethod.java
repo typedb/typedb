@@ -37,7 +37,6 @@ import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -54,8 +53,8 @@ public abstract class ConceptMethod<T> {
         switch (method.getConceptMethodCase()) {
             case GETVALUE:
                 return getValue(concept);
-            case GETDATATYPEOFTYPE:
-                return getDataTypeOfType(concept);
+            case GETDATATYPEOFATTRIBUTETYPE:
+                return getDataTypeOfAttributeType(concept);
             case GETDATATYPEOFATTRIBUTE:
                 return getDataTypeOfAttribute(concept);
             case GETLABEL:
@@ -169,10 +168,15 @@ public abstract class ConceptMethod<T> {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
-    private static TxResponse getDataTypeOfType(Concept concept) {
-        Optional<AttributeType.DataType<?>> response = Optional.ofNullable(concept.asAttributeType().getDataType());
+    private static TxResponse getDataTypeOfAttributeType(Concept concept) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setOptionalDataType(ResponseBuilder.optionalDataType(response));
+        AttributeType.DataType<?> dataType = concept.asAttributeType().getDataType();
+
+        if (dataType != null) {
+            conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
+        } else {
+            conceptResponse.setNoResult(true);
+        }
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
