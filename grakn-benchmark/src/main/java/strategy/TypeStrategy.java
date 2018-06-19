@@ -3,8 +3,7 @@ package strategy;
 import ai.grakn.concept.Type;
 import pdf.PDF;
 
-//public class TypeStrategy<T extends Type, P extends PDF> extends Strategy{
-public class TypeStrategy<T extends Type>{
+public class TypeStrategy<T extends Type> implements TypeStrategyInterface {
     private final T type;
     private final String typeLabel;
 //    private final P numInstancesPDF;

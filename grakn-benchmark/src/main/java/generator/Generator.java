@@ -7,7 +7,7 @@ import strategy.TypeStrategy;
 import java.util.stream.Stream;
 
 // TODO Should generator have an interface to make it easy to pass generators of different types. This means passing a TypeStrategy as a parameter
-public abstract class Generator<T extends TypeStrategy> {
+public abstract class Generator<T extends TypeStrategy> implements GeneratorInterface {
 
     protected final T strategy;
     protected final GraknTx tx;

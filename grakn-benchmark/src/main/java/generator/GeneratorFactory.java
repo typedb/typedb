@@ -5,7 +5,7 @@ import strategy.*;
 
 public class GeneratorFactory {
 
-    public Generator create(Object typeStrategy, GraknTx tx) {
+    public GeneratorInterface create(TypeStrategyInterface typeStrategy, GraknTx tx) {
         /*
 
         We want to pass a structure like:

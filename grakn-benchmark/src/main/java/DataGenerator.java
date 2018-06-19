@@ -6,6 +6,7 @@ import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
 import generator.Generator;
 import generator.GeneratorFactory;
+import generator.GeneratorInterface;
 import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
@@ -32,11 +33,11 @@ public class DataGenerator {
     private ArrayList<Role> roles;
 
 
-    private RouletteWheelCollection<EntityStrategy> entityStrategies;
-    private RouletteWheelCollection<RelationshipStrategy> relationshipStrategies;
-    private RouletteWheelCollection<AttributeStrategy> attributeStrategies;
+    private RouletteWheelCollection<TypeStrategyInterface> entityStrategies;
+    private RouletteWheelCollection<TypeStrategyInterface> relationshipStrategies;
+    private RouletteWheelCollection<TypeStrategyInterface> attributeStrategies;
 
-    private RouletteWheelCollection<RouletteWheelCollection> operationStrategies;
+    private RouletteWheelCollection<RouletteWheelCollection<TypeStrategyInterface>> operationStrategies;
 
     private ConceptTypeCountStore conceptTypeCountStore;
 
@@ -44,11 +45,10 @@ public class DataGenerator {
 
         this.rand = new Random(RANDOM_SEED);
         this.conceptTypeCountStore = new ConceptTypeCountStore();
-        entityStrategies = new RouletteWheelCollection<EntityStrategy>(this.rand);
-        relationshipStrategies = new RouletteWheelCollection<RelationshipStrategy>(this.rand);
-        attributeStrategies = new RouletteWheelCollection<AttributeStrategy>(this.rand);
-//        operationStrategies = new RouletteWheelCollection<RouletteWheelCollection<TypeStrategy>>(this.rand);
-        operationStrategies = new RouletteWheelCollection<RouletteWheelCollection>(this.rand);
+        entityStrategies = new RouletteWheelCollection<>(this.rand);
+        relationshipStrategies = new RouletteWheelCollection<>(this.rand);
+        attributeStrategies = new RouletteWheelCollection<>(this.rand);
+        operationStrategies = new RouletteWheelCollection<>(this.rand);
 
         GraknSession session = this.getSession();
 
@@ -65,15 +65,8 @@ public class DataGenerator {
                     0.5,
                     new EntityStrategy(
                             SchemaManager.getTypeFromString("person", this.entityTypes),
-//                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)
                             new UniformPDF(this.rand, 20, 40)
                     ));
-
-//            this.entityStrategies.add(
-//                    0.5,
-//                    new EntityStrategy(
-//                            SchemaManager.getTypeFromString("occupation", this.entityTypes),
-//                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
 
             this.entityStrategies.add(
                     0.5,
@@ -91,16 +84,11 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("person", this.entityTypes),
                             new ConstantPDF(1),
                             new ConceptIdStreamLimiter(
-//                                    new NotInRelationshipConceptIdStream(
-//                                            "employment",
-//                                            "employee",
-//                                            100,
                                     new IsaTypeConceptIdPicker(
                                             this.rand,
                                             this.conceptTypeCountStore,
                                             "person"
                                     )
-//                                    )
                             )
                     )
             );
@@ -110,7 +98,6 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("employer", this.roles),
                             SchemaManager.getTypeFromString("company", this.entityTypes),
                             new ConstantPDF(1),
-//                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
                             new CentralConceptIdStreamLimiter(
                                     new NotInRelationshipConceptIdStream(
                                             "employment",
@@ -131,7 +118,6 @@ public class DataGenerator {
                     0.3,
                     new RelationshipStrategy(
                             SchemaManager.getTypeFromString("employment", this.relationshipTypes),
-//                            new UniformPDF(this.rand, 2, 30),
                             new DiscreteGaussianPDF(this.rand, 30.0, 30.0),
                             employmentRoleStrategies)
             );
@@ -161,32 +147,40 @@ public class DataGenerator {
         while (conceptTotal < numConceptsLimit) {
             System.out.printf("---- Iteration %d ----\n", this.iteration);
             try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-                
-                //TODO Deal with this being an Object. TypeStrategy should be/have an interface for this purpose?
-                Object typeStrategy = this.operationStrategies.next().next();
-                System.out.print("Generating instances of concept type \"" + ((TypeStrategy) typeStrategy).getTypeLabel() + "\"\n");
 
-                Generator generator = gf.create(typeStrategy, tx); // TODO Can we do without creating a new generator each iteration
+                //TODO Deal with this being an Object. TypeStrategy should be/have an interface for this purpose?
+                TypeStrategyInterface typeStrategy = this.operationStrategies.next().next();
+                System.out.print("Generating instances of concept type \"" + typeStrategy.getTypeLabel() + "\"\n");
+
+                GeneratorInterface generator = gf.create(typeStrategy, tx); // TODO Can we do without creating a new generator each iteration
 
                 System.out.println("Using generator " + generator.getClass().toString());
-                Stream<Query> queriesStream = generator.generate();
+                Stream<Query> queryStream = generator.generate();
+                
+                this.processQueryStream(queryStream);
 
-                queriesStream.map(q -> (InsertQuery) q)
-                        .forEach(q -> {  // TODO Remove ordering?
-                            List<Answer> insertions = q.execute();
-                            insertions.forEach(insert -> {
-                                HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
-                                insertedConcepts.forEach(concept -> {
-                                    this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
-                                });
-                            });
-                        });
                 iteration++;
                 conceptTotal = this.conceptTypeCountStore.total();
                 System.out.printf(String.format("---- %d concepts ----\n", conceptTotal), this.iteration);
                 tx.commit();
             }
         }
+    }
+
+    private void processQueryStream(Stream<Query> queryStream) {
+        /*
+        Make the data insertions from the stream of queries generated
+         */
+        queryStream.map(q -> (InsertQuery) q)
+                .forEach(q -> {
+                    List<Answer> insertions = q.execute();
+                    insertions.forEach(insert -> {
+                        HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                        insertedConcepts.forEach(concept -> {
+                            this.conceptTypeCountStore.add(concept);
+                        });
+                    });
+                });
     }
 
     public void reset() {
@@ -202,12 +196,12 @@ public class DataGenerator {
         dg.reset();
 
         long startTime = System.nanoTime();
-//        dg.generate(631);
         dg.generate(100);
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
         dg.generate(1000);
+        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 
