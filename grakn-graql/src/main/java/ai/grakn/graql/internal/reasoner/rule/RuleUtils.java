@@ -26,10 +26,12 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
+import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -66,9 +68,9 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        return type == null ? getRules(graph) :
-                direct? type.getRulesOfConclusion() :
-                        type.subs().flatMap(SchemaConcept::getRulesOfConclusion);
+        if (type == null) return getRules(graph);
+        Set<SchemaConcept> parentTypes = direct? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+        return parentTypes.stream().flatMap(SchemaConcept::getRulesOfConclusion);
     }
 
     /**

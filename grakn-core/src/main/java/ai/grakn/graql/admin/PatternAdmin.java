@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 
@@ -90,6 +91,12 @@ public interface PatternAdmin extends Pattern {
     default Conjunction<?> asConjunction() {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * @return the corresponding reasoner query
+     */
+    @CheckReturnValue
+    ReasonerQuery toReasonerQuery(GraknTx tx);
 
     /**
      * @return this {@link PatternAdmin} as a {@link VarPatternAdmin}, if it is one.

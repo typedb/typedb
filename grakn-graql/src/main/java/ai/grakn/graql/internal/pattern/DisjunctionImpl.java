@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -61,6 +63,11 @@ abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     @Override
     public Disjunction<?> asDisjunction() {
         return this;
+    }
+
+    @Override
+    public ReasonerQuery toReasonerQuery(GraknTx tx){
+        throw new UnsupportedOperationException();
     }
 
     @Override

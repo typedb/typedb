@@ -51,7 +51,6 @@ public interface ReasonerQuery{
     @CheckReturnValue
     GraknTx tx();
 
-
     /**
      * validate the query wrt transaction it is defined in
      */
@@ -68,6 +67,13 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     Set<Atomic> getAtoms();
+
+    /**
+     *
+     * @return
+     */
+    @CheckReturnValue
+    Conjunction<PatternAdmin> getPattern();
 
     /**
      * @param type the class of {@link Atomic} to return
