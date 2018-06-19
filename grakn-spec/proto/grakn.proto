@@ -87,8 +87,8 @@ message PutAttributeType {
 
 message PutRule {
     Label label = 1;
-    Pattern when = 2;
-    Pattern then = 3;
+    string when = 2;
+    string then = 3;
 }
 
 /*

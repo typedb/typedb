@@ -113,8 +113,11 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest putRule(Label label, Pattern when, Pattern then) {
-        PutRule putRule =
-                PutRule.newBuilder().setLabel(ConceptBuilder.label(label)).setWhen(ConceptBuilder.pattern(when)).setThen(ConceptBuilder.pattern(then)).build();
+        PutRule putRule = PutRule.newBuilder()
+                .setLabel(ConceptBuilder.label(label))
+                .setWhen(when.toString())
+                .setThen(then.toString())
+                .build();
 
         return TxRequest.newBuilder().setPutRule(putRule).build();
     }

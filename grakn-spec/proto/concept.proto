@@ -179,10 +179,6 @@ message OptionalRegex {
     }
 }
 
-message Pattern {
-    string value = 1;
-}
-
 message OptionalDataType {
     oneof value {
         DataType present = 1;

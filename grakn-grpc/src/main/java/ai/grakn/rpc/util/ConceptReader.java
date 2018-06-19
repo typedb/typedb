@@ -86,10 +86,6 @@ public class ConceptReader {
         }
     }
 
-    public static Pattern pattern(GrpcConcept.Pattern pattern ) {
-        return Graql.parser().parsePattern(pattern.getValue());
-    }
-
     public static Pattern pattern(String pattern) {
         return Graql.parser().parsePattern(pattern);
     }

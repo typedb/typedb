@@ -22,7 +22,6 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
@@ -141,9 +140,4 @@ public class ConceptBuilder {
                 .orElseGet(() -> builder.setAbsent(GrpcConcept.Unit.getDefaultInstance()))
                 .build();
     }
-
-    public static GrpcConcept.Pattern pattern(Pattern pattern) {
-        return GrpcConcept.Pattern.newBuilder().setValue(pattern.toString()).build();
-    }
-
 }
