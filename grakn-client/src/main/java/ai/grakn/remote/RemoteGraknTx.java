@@ -192,7 +192,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     public <T extends Concept> T getConcept(ConceptId id) {
         communicator.send(RequestBuilder.getConcept(id));
         GrpcGrakn.TxResponse response = responseOrThrow();
-        if (response.getConceptResponse().getNoResult()) return null;
+        if (response.getNoResult()) return null;
         return (T) conceptReader.concept(response.getConcept());
     }
 
@@ -201,7 +201,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         communicator.send(RequestBuilder.getSchemaConcept(label));
         GrpcGrakn.TxResponse response = responseOrThrow();
-        if (response.getConceptResponse().getNoResult()) return null;
+        if (response.getNoResult()) return null;
         return (T) conceptReader.concept(response.getConcept());
     }
 
