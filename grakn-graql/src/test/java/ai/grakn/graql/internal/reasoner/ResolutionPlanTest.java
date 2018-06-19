@@ -186,7 +186,8 @@ public class ResolutionPlanTest {
     @Test
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
-        Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x").findAny().orElse(null);
+        Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(role1:$x, role2: $y) isa relation;" +
                 "$x has resource 'this';" +

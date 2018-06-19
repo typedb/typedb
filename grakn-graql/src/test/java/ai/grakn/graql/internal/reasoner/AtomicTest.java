@@ -1387,7 +1387,8 @@ public class AtomicTest {
     }
 
     private Concept getConcept(EmbeddedGraknTx<?> graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
+        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
     private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {

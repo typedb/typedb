@@ -37,6 +37,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.test.kbs.MovieKB;
@@ -54,6 +56,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -567,6 +570,32 @@ public class GrpcServerIT {
             exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("not-a-thing")).getMessage());
 
             query.execute();
+        }
+    }
+
+    @Test
+    public void whenPerformingAMatchGetQuery_TheResultsAreCorrect(){
+        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+            //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
+
+            EntityType company = tx.putEntityType("company-123");
+            company.addEntity();
+            company.addEntity();
+
+            EntityType person = tx.putEntityType("person-123");
+            person.addEntity();
+            person.addEntity();
+            person.addEntity();
+
+            QueryBuilder qb = tx.graql();
+            Var x = var("x");
+            Var y = var("y");
+
+            Collection<Answer> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
+            assertEquals(6, result.size());
+
+            result = qb.match(x.isa("company-123")).get(x).execute();
+            assertEquals(2, result.size());
         }
     }
 }

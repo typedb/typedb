@@ -537,6 +537,7 @@ public class RecursiveInferenceTest {
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 }
