@@ -46,5 +46,4 @@ public class NotInRelationshipConceptIdStream implements ConceptIdStreamInterfac
                 return !inRelationship;
         });
     }
-
 }

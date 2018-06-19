@@ -4,7 +4,6 @@ import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
-import com.google.common.io.Files;
 import generator.Generator;
 import generator.GeneratorFactory;
 import pdf.ConstantPDF;
@@ -14,21 +13,17 @@ import pick.*;
 import storage.*;
 import strategy.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.internal.pattern.Patterns.var;
 
 public class DataGenerator {
 
     private static String uri = "localhost:48555";
     private static String keyspace = "societal_model";
+    private static String schemaRelativeDirPath = "/grakn-benchmark/src/main/resources/societal_model.gql";
 
     public static final int RANDOM_SEED = 1;
+    private int iteration = 0;
 
     private Random rand;
     private ArrayList<EntityType> entityTypes;
@@ -43,7 +38,6 @@ public class DataGenerator {
 
     private RouletteWheelCollection<RouletteWheelCollection> operationStrategies;
 
-    private boolean doExecution = true;
     private ConceptTypeCountStore conceptTypeCountStore;
 
     public DataGenerator() {
@@ -61,16 +55,16 @@ public class DataGenerator {
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // TODO Add checking to ensure that all of these strategies make sense
-            this.entityTypes = this.getTypes(tx, "entity");
-            this.relationshipTypes = this.getTypes(tx, "relationship");
-            this.attributeTypes = this.getTypes(tx, "attribute");
-            this.roles = this.getTypes(tx, "role");
+            this.entityTypes = SchemaManager.getTypes(tx, "entity");
+            this.relationshipTypes = SchemaManager.getTypes(tx, "relationship");
+            this.attributeTypes = SchemaManager.getTypes(tx, "attribute");
+            this.roles = SchemaManager.getTypes(tx, "role");
 
 
             this.entityStrategies.add(
                     0.5,
                     new EntityStrategy(
-                            this.getTypeFromString("person", this.entityTypes),
+                            SchemaManager.getTypeFromString("person", this.entityTypes),
 //                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)
                             new UniformPDF(this.rand, 20, 40)
                     ));
@@ -78,13 +72,13 @@ public class DataGenerator {
 //            this.entityStrategies.add(
 //                    0.5,
 //                    new EntityStrategy(
-//                            this.getTypeFromString("occupation", this.entityTypes),
+//                            SchemaManager.getTypeFromString("occupation", this.entityTypes),
 //                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
 
             this.entityStrategies.add(
                     0.5,
                     new EntityStrategy(
-                            this.getTypeFromString("company", this.entityTypes),
+                            SchemaManager.getTypeFromString("company", this.entityTypes),
                             new UniformPDF(this.rand, 1, 5)
                     )
             );
@@ -93,8 +87,8 @@ public class DataGenerator {
 
             employmentRoleStrategies.add(
                     new RolePlayerTypeStrategy(
-                            this.getTypeFromString("employee", this.roles),
-                            this.getTypeFromString("person", this.entityTypes),
+                            SchemaManager.getTypeFromString("employee", this.roles),
+                            SchemaManager.getTypeFromString("person", this.entityTypes),
                             new ConstantPDF(1),
                             new ConceptIdStreamLimiter(
 //                                    new NotInRelationshipConceptIdStream(
@@ -113,8 +107,8 @@ public class DataGenerator {
 
             employmentRoleStrategies.add(
                     new RolePlayerTypeStrategy(
-                            this.getTypeFromString("employer", this.roles),
-                            this.getTypeFromString("company", this.entityTypes),
+                            SchemaManager.getTypeFromString("employer", this.roles),
+                            SchemaManager.getTypeFromString("company", this.entityTypes),
                             new ConstantPDF(1),
 //                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
                             new CentralConceptIdStreamLimiter(
@@ -136,15 +130,15 @@ public class DataGenerator {
             this.relationshipStrategies.add(
                     0.3,
                     new RelationshipStrategy(
-                            this.getTypeFromString("employment", this.relationshipTypes),
+                            SchemaManager.getTypeFromString("employment", this.relationshipTypes),
 //                            new UniformPDF(this.rand, 2, 30),
                             new DiscreteGaussianPDF(this.rand, 30.0, 30.0),
                             employmentRoleStrategies)
             );
         }
 
-        this.operationStrategies.add(0.2, this.entityStrategies);
-        this.operationStrategies.add(0.8, this.relationshipStrategies);
+        this.operationStrategies.add(0.7, this.entityStrategies);
+        this.operationStrategies.add(0.3, this.relationshipStrategies);
         this.operationStrategies.add(0.0, this.attributeStrategies);
 
     }
@@ -153,141 +147,77 @@ public class DataGenerator {
         return RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
     }
 
-    private <T extends SchemaConcept> T getTypeFromString(String typeName, ArrayList<T> typeInstances) {
-        Iterator iter = typeInstances.iterator();
-        String l;
-        T currentType;
-
-        while (iter.hasNext()) {
-            currentType = (T) iter.next();
-            l = currentType.getLabel().toString();
-            if (l.equals(typeName)) {
-                return currentType;
-            }
-        }
-        throw new RuntimeException("Couldn't find a concept type with name \"" + typeName + "\"");
-    }
-
-    private <T extends SchemaConcept> ArrayList<T> getTypes(GraknTx tx, String conceptTypeName) {
-        ArrayList<T> conceptTypes = new ArrayList<T>();
-        QueryBuilder qb = tx.graql();
-        Match match = qb.match(var("x").sub(conceptTypeName));
-        List<Answer> result = match.get().execute();
-        T conceptType;
-
-        // TODO This instead?
-        // this.conceptTypes.add(result.iterator().forEachRemaining(get("x").asEntityType()));
-        Iterator<Answer> conceptTypeIterator = result.iterator();
-        while (conceptTypeIterator.hasNext()) {
-//            conceptType = (T) conceptTypeIterator.next().get("x").asType();
-            conceptType = (T) conceptTypeIterator.next().get("x");
-            conceptTypes.add(conceptType);
-        }
-        conceptTypes.remove(0);  // Remove type "entity"
-
-        return conceptTypes;
-    }
-
-    private void deleteExistingConcepts() {
-//        Runtime rt = Runtime.getRuntime();
-
-
-        File graql = new File(System.getProperty("user.dir") + "/grakn-benchmark/src/main/resources/societal_model.gql");
-
-        List<String> queries;
-        try {
-            queries = Files.readLines(graql, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        GraknSession session = this.getSession();
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-
-            QueryBuilder qb = tx.graql();
-            Var x = Graql.var().asUserDefined();  //TODO This needed to be asUserDefined or else getting error: ai.grakn.exception.GraqlQueryException: the variable $1528883020589004 is not in the query
-            Var y = Graql.var().asUserDefined();
-
-            // qb.match(x.isa("thing")).delete(x).execute();  // TODO Only got a complaint at runtime when using delete() without supplying a variable
-            // TODO Sporadically has errors, logged in bug #20200
-
-            qb.match(x.isa("attribute")).delete(x).execute();
-            qb.match(x.isa("relationship")).delete(x).execute();
-            qb.match(x.isa("entity")).delete(x).execute();
-
-            //
-//            qb.undefine(y.sub("thing")).execute(); // TODO undefine $y sub thing; doesn't work/isn't supported
-            // TODO undefine $y sub entity; also doesn't work, you need to be specific with undefine
-
-            List<Answer> schema = qb.match(y.sub("thing")).get().execute();
-
-            for (Answer element : schema) {
-                Var z = Graql.var().asUserDefined();
-                qb.undefine(z.id(element.get(y).getId())).execute();
-            }
-
-            tx.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
-
-            tx.commit();
-
-        }
-    }
-
-    public void generate() {
-        // TODO Clean and rebuild the keyspace every time to avoid unpredictable behaviour!
-
-        this.deleteExistingConcepts();
-
-        int max_iterations = 30;
-        int it = 0;
+    public void generate(int numConceptsLimit) {
+        /*
+        This method can be called multiple times, with a higher numConceptsLimit each time, so that the generation can be
+        effectively paused while benchmarking takes place
+        */
 
         GraknSession session = this.getSession();
 
         GeneratorFactory gf = new GeneratorFactory();
+        int conceptTotal = this.conceptTypeCountStore.total();
 
-        while (it < max_iterations) {
-            System.out.printf("Iteration %d%n", it);
+        while (conceptTotal < numConceptsLimit) {
+            System.out.printf("---- Iteration %d ----\n", this.iteration);
             try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-//                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptTypeCountStore, this.conceptPicker);
-                Generator generator = gf.create(this.operationStrategies.next().next(), tx); // TODO Can we do without creating a new generator each iteration
+                
+                //TODO Deal with this being an Object. TypeStrategy should be/have an interface for this purpose?
+                Object typeStrategy = this.operationStrategies.next().next();
+                System.out.print("Generating instances of concept type \"" + ((TypeStrategy) typeStrategy).getTypeLabel() + "\"\n");
+
+                Generator generator = gf.create(typeStrategy, tx); // TODO Can we do without creating a new generator each iteration
 
                 System.out.println("Using generator " + generator.getClass().toString());
                 Stream<Query> queriesStream = generator.generate();
 
-                if (this.doExecution) {
-                    queriesStream.map(q -> (InsertQuery) q)
-                            .forEach(q -> {  // TODO Remove ordering?
-                                List<Answer> insertions = q.execute();
-                                insertions.forEach(insert -> {
-                                    HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
-                                    insertedConcepts.forEach(concept -> {
-                                        this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
-                                    });
+                queriesStream.map(q -> (InsertQuery) q)
+                        .forEach(q -> {  // TODO Remove ordering?
+                            List<Answer> insertions = q.execute();
+                            insertions.forEach(insert -> {
+                                HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                                insertedConcepts.forEach(concept -> {
+                                    this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
                                 });
                             });
-                } else {
-
-                    // Print the queries rather than executing
-                    Iterator<Query> iter = queriesStream.iterator();
-
-                    while (iter.hasNext()) {
-                        String s = iter.next().toString();
-                        System.out.print(s + "\n");
-                    }
-                }
-                it++;
-                if (this.doExecution) {
-                    tx.commit();
-                }
+                        });
+                iteration++;
+                conceptTotal = this.conceptTypeCountStore.total();
+                System.out.printf(String.format("---- %d concepts ----\n", conceptTotal), this.iteration);
+                tx.commit();
             }
         }
+    }
+
+    public void reset() {
+        System.out.println("Initialising keyspace...");
+        SchemaManager.initialise(this.getSession(), schemaRelativeDirPath);
+        System.out.println("done");
+        this.iteration = 0;
     }
 
     public static void main(String[] args) {
         DataGenerator dg = new DataGenerator();
         System.out.print("Generating data...\n");
-        dg.generate();
+        dg.reset();
+
+        long startTime = System.nanoTime();
+//        dg.generate(631);
+        dg.generate(100);
+        dg.generate(200);
+        dg.generate(300);
+        dg.generate(400);
+        dg.generate(1000);
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000000;
+
+        long hours = duration / 3600;
+        long minutes = (duration % 3600) / 60;
+        long seconds = duration % 60;
+
+        String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+
+        System.out.printf("Generation took %s\n", timeString);
         System.out.print("Done\n");
     }
 }
