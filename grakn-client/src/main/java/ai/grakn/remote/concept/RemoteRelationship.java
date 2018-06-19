@@ -104,7 +104,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     }
 
     @Override
-    final RelationshipType asMyType(Concept concept) {
+    final RelationshipType asCurrentType(Concept concept) {
         return concept.asRelationshipType();
     }
 

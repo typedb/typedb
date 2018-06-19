@@ -36,7 +36,7 @@ abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements E
     }
 
     @Override
-    final EntityType asMyType(Concept concept) {
+    final EntityType asCurrentType(Concept concept) {
         return concept.asEntityType();
     }
 

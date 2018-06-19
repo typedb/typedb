@@ -34,19 +34,19 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  *
- * @param <Self> The exact type of this class
- * @param <MyType> the type of an instance of this class
+ * @param <SomeThing> The exact type of this class
+ * @param <SomeType> the type of an instance of this class
  */
-abstract class RemoteThing<Self extends Thing, MyType extends Type> extends RemoteConcept<Self> implements Thing {
+abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> extends RemoteConcept<SomeThing> implements Thing {
 
     @Override
-    public final MyType type() {
+    public final SomeType type() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
         Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
 
-        return asMyType(concept);
+        return asCurrentType(concept);
     }
 
     @Override
@@ -68,7 +68,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     }
 
     @Override
-    public final Self attribute(Attribute attribute) {
+    public final SomeThing attribute(Attribute attribute) {
         attributeRelationship(attribute);
         return asCurrentBaseType(this);
     }
@@ -105,7 +105,7 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
     }
 
     @Override
-    public final Self deleteAttribute(Attribute attribute) {
+    public final SomeThing deleteAttribute(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setUnsetAttribute(ConceptBuilder.concept(attribute));
         runMethod(method.build());
@@ -122,5 +122,5 @@ abstract class RemoteThing<Self extends Thing, MyType extends Type> extends Remo
         return response.getConceptResponse().getBool();
     }
 
-    abstract MyType asMyType(Concept concept);
+    abstract SomeType asCurrentType(Concept concept);
 }

@@ -34,7 +34,7 @@ import java.util.stream.StreamSupport;
 /**
  * @author Felix Chapman
  */
-abstract class RemoteConcept<Self extends Concept> implements Concept {
+abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
     abstract RemoteGraknTx tx();
 
@@ -74,5 +74,5 @@ abstract class RemoteConcept<Self extends Concept> implements Concept {
         return tx().runConceptMethod(id, method);
     }
 
-    abstract Self asCurrentBaseType(Concept other);
+    abstract SomeConcept asCurrentBaseType(Concept other);
 }

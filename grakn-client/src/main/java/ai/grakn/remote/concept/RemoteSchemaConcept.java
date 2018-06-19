@@ -34,11 +34,11 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  *
- * @param <Self> The exact type of this class
+ * @param <SomeType> The exact type of this class
  */
-abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteConcept<Self> implements SchemaConcept {
+abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends RemoteConcept<SomeType> implements SchemaConcept {
 
-    public final Self sup(Self type) {
+    public final SomeType sup(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
         runMethod(method.build());
@@ -46,7 +46,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
         return asCurrentBaseType(this);
     }
 
-    public final Self sub(Self type) {
+    public final SomeType sub(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
         runMethod(type.getId(), method.build());
@@ -73,7 +73,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     }
 
     @Override
-    public final Self setLabel(Label label) {
+    public final SomeType setLabel(Label label) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetLabel(ConceptBuilder.label(label));
         runMethod(method.build());
@@ -83,7 +83,7 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
 
     @Nullable
     @Override
-    public final Self sup() {
+    public final SomeType sup() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
@@ -96,12 +96,12 @@ abstract class RemoteSchemaConcept<Self extends SchemaConcept> extends RemoteCon
     }
 
     @Override
-    public final Stream<Self> sups() {
+    public final Stream<SomeType> sups() {
         return tx().admin().sups(this).filter(this::equalsCurrentBaseType).map(this::asCurrentBaseType);
     }
 
     @Override
-    public final Stream<Self> subs() {
+    public final Stream<SomeType> subs() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetSubConcepts(GrpcConcept.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asCurrentBaseType);

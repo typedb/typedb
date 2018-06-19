@@ -33,13 +33,13 @@ import java.util.stream.Stream;
 /**
  * @author Felix Chapman
  *
- * @param <Self> The exact type of this class
- * @param <Instance> the exact type of instances of this class
+ * @param <SomeType> The exact type of this class
+ * @param <SomeThing> the exact type of instances of this class
  */
-abstract class RemoteType<Self extends Type, Instance extends Thing> extends RemoteSchemaConcept<Self> implements Type {
+abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extends RemoteSchemaConcept<SomeType> implements Type {
 
     @Override
-    public final Self setAbstract(Boolean isAbstract) throws GraknTxOperationException {
+    public final SomeType setAbstract(Boolean isAbstract) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetAbstract(isAbstract);
         runMethod(method.build());
@@ -48,7 +48,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self plays(Role role) throws GraknTxOperationException {
+    public final SomeType plays(Role role) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
@@ -57,7 +57,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self key(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetKeyType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
@@ -66,7 +66,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self attribute(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
@@ -96,7 +96,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Stream<Instance> instances() {
+    public final Stream<SomeThing> instances() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetInstances(GrpcConcept.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asInstance);
@@ -112,7 +112,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self deletePlays(Role role) {
+    public final SomeType deletePlays(Role role) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
@@ -121,7 +121,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self deleteAttribute(AttributeType attributeType) {
+    public final SomeType deleteAttribute(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
@@ -130,7 +130,7 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
     }
 
     @Override
-    public final Self deleteKey(AttributeType attributeType) {
+    public final SomeType deleteKey(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
         runMethod(method.build());
@@ -138,5 +138,5 @@ abstract class RemoteType<Self extends Type, Instance extends Thing> extends Rem
         return asCurrentBaseType(this);
     }
 
-    protected abstract Instance asInstance(Concept concept);
+    protected abstract SomeThing asInstance(Concept concept);
 }
