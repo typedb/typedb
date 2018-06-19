@@ -73,6 +73,9 @@ public class AtomicTest {
     public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.load("ruleApplicabilityTest.gql");
 
     @ClassRule
+    public static final SampleKBContext relationHierarchySet = SampleKBContext.load("relationHierarchyTest.gql");
+
+    @ClassRule
     public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.load("resourceApplicabilityTest.gql");
 
     @ClassRule
@@ -601,6 +604,32 @@ public class AtomicTest {
                 RuleUtils.getRules(graph).count(),
                 relation.getApplicableRules().count()
         );
+    }
+
+    @Test
+    public void testRuleApplicability_hierarchicRelations(){
+        EmbeddedGraknTx<?> graph = relationHierarchySet.tx();
+        Atom alpha = ReasonerQueries.atomic(conjunction("{$x isa alpha;}", graph), graph).getAtom();
+        Atom beta = ReasonerQueries.atomic(conjunction("{$x isa beta;}", graph), graph).getAtom();
+        Atom gamma = ReasonerQueries.atomic(conjunction("{$x isa gamma;}", graph), graph).getAtom();
+        Atom delta = ReasonerQueries.atomic(conjunction("{$x isa delta;}", graph), graph).getAtom();
+        Atom eps = ReasonerQueries.atomic(conjunction("{$x isa epsilon;}", graph), graph).getAtom();
+        Atom zeta = ReasonerQueries.atomic(conjunction("{$x isa zeta;}", graph), graph).getAtom();
+        Atom directBeta = ReasonerQueries.atomic(conjunction("{$x isa! beta;}", graph), graph).getAtom();
+        Atom directDelta = ReasonerQueries.atomic(conjunction("{$x isa! delta;}", graph), graph).getAtom();
+        Atom directEps = ReasonerQueries.atomic(conjunction("{$x isa! epsilon;}", graph), graph).getAtom();
+        Atom directZeta = ReasonerQueries.atomic(conjunction("{$x isa! zeta;}", graph), graph).getAtom();
+
+        assertEquals(RuleUtils.getRules(graph).count(), alpha.getApplicableRules().count());
+        assertEquals(beta.getSchemaConcept().subs().count(), beta.getApplicableRules().count());
+        assertEquals(gamma.getSchemaConcept().subs().count(), gamma.getApplicableRules().count());
+        assertEquals(delta.getSchemaConcept().subs().count(), delta.getApplicableRules().count());
+        assertEquals(eps.getSchemaConcept().subs().count(), eps.getApplicableRules().count());
+        assertEquals(zeta.getSchemaConcept().subs().count(), zeta.getApplicableRules().count());
+        assertEquals(1, directBeta.getApplicableRules().count());
+        assertEquals(1, directDelta.getApplicableRules().count());
+        assertEquals(1, directEps.getApplicableRules().count());
+        assertEquals(1, directZeta.getApplicableRules().count());
     }
 
     @Test

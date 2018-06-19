@@ -1,0 +1,111 @@
+define
+
+#Roles
+
+alphaRole sub role;
+betaRole sub alphaRole;
+gammaRole sub alphaRole;
+deltaRole sub betaRole;
+epsilonRole sub betaRole;
+zetaRole sub deltaRole;
+
+#Entities
+
+alphaEntity sub entity
+    plays alphaRole;
+
+betaEntity sub entity
+    plays betaRole;
+
+gammaEntity sub entity
+    plays gammaRole;
+
+deltaEntity sub entity
+    plays deltaRole;
+
+epsilonEntity sub entity
+    plays epsilonRole;
+
+zetaEntity sub entity
+    plays zetaRole;
+
+
+# Relation hierarchy
+#
+#            relation
+#               |
+#             alpha
+#           /       \
+#        beta        gamma
+#        /  \
+#   delta    eps
+#     |
+#    zeta
+
+#Relations
+
+alpha sub relationship
+    relates alphaRole;
+
+beta sub alpha
+    relates betaRole;
+
+gamma sub alpha
+    relates gammaRole;
+
+delta sub beta
+    relates deltaRole;
+
+epsilon sub beta
+    relates epsilonRole;
+
+zeta sub delta
+    relates zetaRole;
+
+alphaRule sub rule
+    when {
+    	$x isa alphaEntity;
+    }
+    then {
+    	(alphaRole: $x) isa alpha;
+    };
+
+betaRule sub rule
+    when {
+    	$x isa betaEntity;
+    }
+    then {
+    	(betaRole: $x) isa beta;
+    };
+
+gammaRule sub rule
+    when {
+    	$x isa gammaEntity;
+    }
+    then {
+    	(gammaRole: $x);
+    };
+
+deltaRule sub rule
+    when {
+    	$x isa deltaEntity;
+    }
+    then {
+    	(deltaRole: $x);
+    };
+
+epsRule sub rule
+    when {
+    	$x isa epsilonEntity;
+    }
+    then {
+    	(epsilonRole: $x);
+    };
+
+zetaRule sub rule
+    when {
+    	$x isa zetaEntity;
+    }
+    then {
+    	(zetaRole: $x);
+    };

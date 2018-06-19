@@ -23,13 +23,16 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
+import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -66,9 +69,17 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        return type == null ? getRules(graph) :
-                direct? type.getRulesOfConclusion() :
-                        type.subs().flatMap(SchemaConcept::getRulesOfConclusion);
+        if (type == null) return getRules(graph);
+        Set<SchemaConcept> parentTypes = direct? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+        Stream<Rule> typedRules = parentTypes.stream().flatMap(SchemaConcept::getRulesOfConclusion);
+
+        Stream<Rule> untypedRules = getRules(graph)
+                .filter(r -> !r.getConclusionTypes().findFirst().isPresent())
+                .filter(r -> {
+                    SchemaConcept headType = new InferenceRule(r, (EmbeddedGraknTx<?>) graph).getHead().getAtom().getSchemaConcept();
+                    return parentTypes.stream().anyMatch(t -> t.equals(headType));
+                });
+        return Stream.concat(typedRules, untypedRules);
     }
 
     /**

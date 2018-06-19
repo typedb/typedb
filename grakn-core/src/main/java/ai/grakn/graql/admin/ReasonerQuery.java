@@ -51,7 +51,6 @@ public interface ReasonerQuery{
     @CheckReturnValue
     GraknTx tx();
 
-
     /**
      * validate the query wrt transaction it is defined in
      */
