@@ -80,8 +80,8 @@ message ConceptMethod {
         AttributeValue getAttribute = 33; // returns Concept or noResult
         Unit getDataTypeOfType = 2; // returns OptionalDataType
         Unit getDataTypeOfAttribute = 54; // returns DataType
-        Unit getRegex = 9; // returns OptionalRegex
-        OptionalRegex setRegex = 31; // returns Unit
+        Unit getRegex = 9; // returns regex (string)
+        string setRegex = 31; // returns Unit
 
         // Thing
         Unit isInferred = 5; // returns bool
@@ -121,7 +121,7 @@ message ConceptResponse {
         string pattern = 6;
         Concept concept = 9;
         Unit unit = 10;
-        OptionalRegex optionalRegex = 11;
+        string regex = 12;
         OptionalDataType optionalDataType = 13;
         IteratorId iteratorId = 14;
         bool noResult = 15;
@@ -170,13 +170,6 @@ message Concepts {
 
 message ConceptIds {
     repeated ConceptId conceptIds = 1;
-}
-
-message OptionalRegex {
-    oneof value {
-        string present = 1;
-        Unit absent = 2;
-    }
 }
 
 message OptionalDataType {

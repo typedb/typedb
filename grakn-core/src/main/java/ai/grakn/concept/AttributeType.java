@@ -126,7 +126,7 @@ public interface AttributeType<D> extends Type {
      * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
      * @return The {@link AttributeType} itself.
      */
-    AttributeType<D> setRegex(@Nullable String regex);
+    AttributeType<D> setRegex(String regex);
 
     /**
      * Set the value for the {@link Attribute}, unique to its type.

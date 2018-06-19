@@ -28,7 +28,6 @@ import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -132,12 +131,5 @@ public class ConceptBuilder {
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
-    }
-
-    public static GrpcConcept.OptionalRegex optionalRegex(Optional<String> regex) {
-        GrpcConcept.OptionalRegex.Builder builder = GrpcConcept.OptionalRegex.newBuilder();
-        return regex.map(builder::setPresent)
-                .orElseGet(() -> builder.setAbsent(GrpcConcept.Unit.getDefaultInstance()))
-                .build();
     }
 }

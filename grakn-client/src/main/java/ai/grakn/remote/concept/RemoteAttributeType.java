@@ -45,11 +45,8 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     }
 
     @Override
-    public final AttributeType<D> setRegex(@Nullable String regex) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRegex(ConceptBuilder.optionalRegex(Optional.ofNullable(regex)));
-        runMethod(method.build());
-
+    public final AttributeType<D> setRegex(String regex) {
+        runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRegex(regex).build());
         return asCurrentBaseType(this);
     }
 
@@ -93,9 +90,9 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetRegex(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Optional<String> regex = ConceptReader.optionalRegex(response.getConceptResponse().getOptionalRegex());
 
-        return regex.orElse(null);
+        if (response.getConceptResponse().getNoResult()) return null;
+        return response.getConceptResponse().getRegex();
     }
 
     @Override

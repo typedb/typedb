@@ -100,15 +100,4 @@ public class ConceptReader {
                 return Optional.empty();
         }
     }
-
-    public static Optional<String> optionalRegex(GrpcConcept.OptionalRegex regex) {
-        switch (regex.getValueCase()) {
-            case PRESENT:
-                return Optional.of(regex.getPresent());
-            case ABSENT:
-            case VALUE_NOT_SET:
-            default:
-                return Optional.empty();
-        }
-    }
 }

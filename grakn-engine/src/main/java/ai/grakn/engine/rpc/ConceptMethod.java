@@ -237,9 +237,15 @@ public abstract class ConceptMethod<T> {
     }
 
     private static TxResponse getRegex(Concept concept) {
-        Optional<String> response = Optional.ofNullable(concept.asAttributeType().getRegex());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setOptionalRegex(ConceptBuilder.optionalRegex(response));
+        String regex = concept.asAttributeType().getRegex();
+
+        if (regex != null) {
+            conceptResponse.setRegex(regex);
+        } else {
+            conceptResponse.setNoResult(true);
+        }
+
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
     }
 
@@ -552,8 +558,7 @@ public abstract class ConceptMethod<T> {
     }
 
     private static TxResponse setRegex(Concept concept, GrpcConcept.ConceptMethod method) {
-        String regex = ConceptReader.optionalRegex(method.getSetRegex()).orElse(null);
-        concept.asAttributeType().setRegex(regex);
+        concept.asAttributeType().setRegex(method.getSetRegex());
         return null;
     }
 
