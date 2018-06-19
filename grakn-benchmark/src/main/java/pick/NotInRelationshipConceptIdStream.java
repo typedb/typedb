@@ -51,6 +51,8 @@ public class NotInRelationshipConceptIdStream implements ConceptIdStreamInterfac
                 Var x = Graql.var("x");
                 Var r = Graql.var("r");
                 ConceptId conceptId = iter.next();
+                // TODO TO improve speed, here we could try to store a set of those conceptIds tried in the past and
+                // found to be in a relationship, so that we don't have to check again. This amounts to doing some kind of storage
                 boolean inRelationship = qb.match(x.id(conceptId), r.rel(this.roleLabel, x).isa(this.relationshipLabel)).get().execute().size() != 0;
 
                 if (!inRelationship) {

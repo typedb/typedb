@@ -35,7 +35,7 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
         Iterator<Integer> randomUniqueOffsetIterator = randomUniqueOffsetStream.iterator();
 
         Stream<ConceptId> stream = Stream.generate(() -> {
-            
+
             Integer randomOffset = randomUniqueOffsetIterator.next();
             QueryBuilder qb = tx.graql();
 

@@ -35,8 +35,11 @@ public class CentralConceptIdStreamLimiter implements ConceptIdStreamLimiterInte
             //TODO read stream to list and store to be used again later
 
             this.conceptIdList = new ArrayList<>();
-            Iterator<ConceptId> iter = stream.iterator();
-            for (int i = 0; i <= numConceptIds; i++) {
+
+
+            Iterator<ConceptId> iter = stream.limit(numConceptIds).iterator();
+//            for (int i = 0; i <= numConceptIds; i++) {
+            while (iter.hasNext()) {
                 this.conceptIdList.add(iter.next());
             }
 

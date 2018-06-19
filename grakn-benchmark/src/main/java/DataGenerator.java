@@ -7,7 +7,9 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.io.Files;
 import generator.Generator;
 import generator.GeneratorFactory;
+import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
+import pdf.UniformPDF;
 import pick.*;
 import storage.*;
 import strategy.*;
@@ -34,21 +36,15 @@ public class DataGenerator {
     private ArrayList<AttributeType> attributeTypes;
     private ArrayList<Role> roles;
 
-//    private Set<EntityStrategy> entityStrategies = new HashSet<EntityStrategy>();
-//    private Set<RelationshipStrategy> relationshipStrategies = new HashSet<RelationshipStrategy>();
-//    private Set<OperationStrategy>operationStrategies = new HashSet<OperationStrategy>();
-//    private SchemaStrategy schemaStrategy;
 
     private RouletteWheelCollection<EntityStrategy> entityStrategies;
     private RouletteWheelCollection<RelationshipStrategy> relationshipStrategies;
     private RouletteWheelCollection<AttributeStrategy> attributeStrategies;
 
-//    private RouletteWheelCollection<RouletteWheelCollection<TypeStrategy>> operationStrategies;
     private RouletteWheelCollection<RouletteWheelCollection> operationStrategies;
 
     private boolean doExecution = true;
     private ConceptTypeCountStore conceptTypeCountStore;
-//    private RandomConceptIdPicker conceptPicker;
 
     public DataGenerator() {
 
@@ -71,11 +67,13 @@ public class DataGenerator {
             this.roles = this.getTypes(tx, "role");
 
 
-//            this.entityStrategies.add(
-//                    0.5,
-//                    new EntityStrategy(
-//                            this.getTypeFromString("person", this.entityTypes),
-//                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)));
+            this.entityStrategies.add(
+                    0.5,
+                    new EntityStrategy(
+                            this.getTypeFromString("person", this.entityTypes),
+//                            new DiscreteGaussianPDF(this.rand, 10.0, 2.0)
+                            new UniformPDF(this.rand, 20, 40)
+                    ));
 
 //            this.entityStrategies.add(
 //                    0.5,
@@ -87,28 +85,38 @@ public class DataGenerator {
                     0.5,
                     new EntityStrategy(
                             this.getTypeFromString("company", this.entityTypes),
-                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0)));
+                            new UniformPDF(this.rand, 1, 5)
+                    )
+            );
 
             Set<RolePlayerTypeStrategy> employmentRoleStrategies = new HashSet<RolePlayerTypeStrategy>();
 
-//            employmentRoleStrategies.add(
-//                    new RolePlayerTypeStrategy(
-//                            this.getTypeFromString("employee", this.roles),
-//                            this.getTypeFromString("person", this.entityTypes),
-//                            new DiscreteGaussianPDF(this.rand, 20.0, 10.0),
-//                            new RolePlayerConceptPicker(this.rand,
-//                                    "person",
-//                                    "employment",
-//                                    "employee",
-//                                    this.conceptTypeCountStore)
-//                    )
-//            );
+            employmentRoleStrategies.add(
+                    new RolePlayerTypeStrategy(
+                            this.getTypeFromString("employee", this.roles),
+                            this.getTypeFromString("person", this.entityTypes),
+                            new ConstantPDF(1),
+                            new ConceptIdStreamLimiter(
+//                                    new NotInRelationshipConceptIdStream(
+//                                            "employment",
+//                                            "employee",
+//                                            100,
+                                            new IsaTypeConceptIdPicker(
+                                                    this.rand,
+                                                    this.conceptTypeCountStore,
+                                                    "person"
+                                            )
+//                                    )
+                            )
+                    )
+            );
 
             employmentRoleStrategies.add(
                     new RolePlayerTypeStrategy(
                             this.getTypeFromString("employer", this.roles),
                             this.getTypeFromString("company", this.entityTypes),
-                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
+                            new ConstantPDF(1),
+//                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
                             new CentralConceptIdStreamLimiter(
                                     new NotInRelationshipConceptIdStream(
                                             "employment",
@@ -124,37 +132,13 @@ public class DataGenerator {
                             )
                     )
             );
-//            employmentRoleStrategies.add(
-//                    new RolePlayerTypeStrategy(
-//                            this.getTypeFromString("employee", this.roles),
-//                            this.getTypeFromString("person", this.entityTypes),
-//                            new DiscreteGaussianPDF(this.rand, 1.0, 1.0),
-//                            new ConceptIdStreamLimiter(
-//                                    new IsaTypeConceptIdPicker(
-//                                            this.rand,
-//                                            this.conceptTypeCountStore,
-//                                            "person"
-//                                    )
-//
-//                            )
-//                    )
-//            );
-
-//            employmentRoleStrategies.add(
-//                    new RelationshipRoleStrategy(
-//                            this.getTypeFromString("profession", this.roles),
-//                            new RolePlayerTypeStrategy(
-//                                    this.getTypeFromString("occupation", this.entityTypes),
-//                                    new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
-//                                    new RandomConceptIdPicker(this.rand, false))
-//                    )
-//            );
 
             this.relationshipStrategies.add(
                     0.3,
                     new RelationshipStrategy(
                             this.getTypeFromString("employment", this.relationshipTypes),
-                            new DiscreteGaussianPDF(this.rand, 2.0, 1.0),
+//                            new UniformPDF(this.rand, 2, 30),
+                            new DiscreteGaussianPDF(this.rand, 30.0, 30.0),
                             employmentRoleStrategies)
             );
         }
@@ -165,7 +149,7 @@ public class DataGenerator {
 
     }
 
-    private GraknSession getSession(){
+    private GraknSession getSession() {
         return RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
     }
 
@@ -177,7 +161,7 @@ public class DataGenerator {
         while (iter.hasNext()) {
             currentType = (T) iter.next();
             l = currentType.getLabel().toString();
-            if (l.equals(typeName)){
+            if (l.equals(typeName)) {
                 return currentType;
             }
         }
@@ -265,40 +249,40 @@ public class DataGenerator {
 
         GraknSession session = this.getSession();
 
-            GeneratorFactory gf = new GeneratorFactory();
+        GeneratorFactory gf = new GeneratorFactory();
 
-            while (it < max_iterations) {
-                try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        while (it < max_iterations) {
+            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 //                Generator generator = gf.create(this.operationStrategies.next().next(), tx, this.conceptTypeCountStore, this.conceptPicker);
                 Generator generator = gf.create(this.operationStrategies.next().next(), tx); // TODO Can we do without creating a new generator each iteration
 
                 Stream<Query> queriesStream = generator.generate();
 
-                    if (this.doExecution) {
-                        queriesStream.map(q -> (InsertQuery) q)
-                                .forEachOrdered(q -> {  // TODO Remove ordering?
-                                    List<Answer> insertions = q.execute();
-                                    insertions.forEach(insert -> {
-                                        HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
-                                        insertedConcepts.forEach(concept -> {
-                                            this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
-                                        });
+                if (this.doExecution) {
+                    queriesStream.map(q -> (InsertQuery) q)
+                            .forEachOrdered(q -> {  // TODO Remove ordering?
+                                List<Answer> insertions = q.execute();
+                                insertions.forEach(insert -> {
+                                    HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                                    insertedConcepts.forEach(concept -> {
+                                        this.conceptTypeCountStore.add(concept); //TODO Store count is being totalled wrong
                                     });
                                 });
-                    } else {
+                            });
+                } else {
 
-                        // Print the queries rather than executing
-                        Iterator<Query> iter = queriesStream.iterator();
+                    // Print the queries rather than executing
+                    Iterator<Query> iter = queriesStream.iterator();
 
-                        while (iter.hasNext()) {
-                            String s = iter.next().toString();
-                            System.out.print(s + "\n");
-                        }
+                    while (iter.hasNext()) {
+                        String s = iter.next().toString();
+                        System.out.print(s + "\n");
                     }
-                    it++;
-                    if (this.doExecution) {
-                        tx.commit();
-                    }
+                }
+                it++;
+                if (this.doExecution) {
+                    tx.commit();
+                }
             }
 
         }
