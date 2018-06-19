@@ -69,6 +69,13 @@ public interface ReasonerQuery{
     Set<Atomic> getAtoms();
 
     /**
+     *
+     * @return
+     */
+    @CheckReturnValue
+    Conjunction<PatternAdmin> getPattern();
+
+    /**
      * @param type the class of {@link Atomic} to return
      * @param <T> the type of {@link Atomic} to return
      * @return stream of atoms of specified type defined in this query

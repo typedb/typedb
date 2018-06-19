@@ -46,8 +46,8 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when.admin().toReasonerQuery(vertex().tx()).getPattern(), getWhen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then.admin().toReasonerQuery(vertex().tx()).getPattern(), getThen(), Pattern::toString);
     }
 
     public static RuleImpl get(VertexElement vertexElement){

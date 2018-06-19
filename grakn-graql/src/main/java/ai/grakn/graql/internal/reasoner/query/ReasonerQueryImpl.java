@@ -229,6 +229,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
+    @Override
     public Conjunction<PatternAdmin> getPattern() {
         return Patterns.conjunction(
                 getAtoms().stream()

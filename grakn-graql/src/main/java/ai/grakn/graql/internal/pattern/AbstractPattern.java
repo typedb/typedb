@@ -18,9 +18,16 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import com.google.common.collect.Iterables;
 
 /**
  * The abstract implementation of {@link PatternAdmin}.
@@ -39,5 +46,12 @@ public abstract class AbstractPattern implements PatternAdmin {
     @Override
     public final Pattern or(Pattern pattern) {
         return Graql.or(this, pattern);
+    }
+
+    @Override
+    public ReasonerQuery toReasonerQuery(GraknTx tx){
+        Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        // TODO: This cast is unsafe - this method should accept an `EmbeddedGraknTx`
+        return ReasonerQueries.create(pattern, (EmbeddedGraknTx<?>) tx);
     }
 }
