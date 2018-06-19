@@ -21,7 +21,6 @@ package ai.grakn.rpc.util;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
@@ -84,10 +83,6 @@ public class ConceptBuilder {
 
     public static GrpcConcept.ConceptId conceptId(ConceptId id) {
         return GrpcConcept.ConceptId.newBuilder().setValue(id.getValue()).build();
-    }
-
-    public static GrpcConcept.Label label(Label label) {
-        return GrpcConcept.Label.newBuilder().setValue(label.getValue()).build();
     }
 
     public static GrpcConcept.AttributeValue attributeValue(Object value) {

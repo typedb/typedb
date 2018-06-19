@@ -19,13 +19,7 @@
 package ai.grakn.rpc.util;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
-
-import java.util.stream.Stream;
 
 /**
  * A utility class to read RPC Concepts and convert them into Grakn Concepts.
@@ -33,14 +27,6 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 public class ConceptReader {
-    public static Stream<? extends Concept> concepts(TxConceptReader conceptConverter, GrpcConcept.Concepts concepts) {
-        return concepts.getConceptsList().stream().map(conceptConverter::concept);
-    }
-
-    public static Label label(GrpcConcept.Label label) {
-        return Label.of(label.getValue());
-    }
-
     public static Object attributeValue(GrpcConcept.AttributeValue value) {
         switch (value.getValueCase()) {
             case STRING:
@@ -83,9 +69,5 @@ public class ConceptReader {
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + dataType);
         }
-    }
-
-    public static Pattern pattern(String pattern) {
-        return Graql.parser().parsePattern(pattern);
     }
 }

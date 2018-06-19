@@ -22,11 +22,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -50,7 +50,7 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
-        return ConceptReader.pattern(response.getConceptResponse().getPattern());
+        return Graql.parser().parsePattern(response.getConceptResponse().getPattern());
     }
 
     @Nullable
@@ -61,7 +61,7 @@ abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
-        return ConceptReader.pattern(response.getConceptResponse().getPattern());
+        return Graql.parser().parsePattern(response.getConceptResponse().getPattern());
     }
 
     @Override

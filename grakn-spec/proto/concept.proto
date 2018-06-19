@@ -37,8 +37,8 @@ message ConceptMethod {
         Unit delete = 16; // returns Unit
 
         // Schema concept
-        Unit getLabel = 3; // returns Label
-        Label setLabel = 18; // returns Unit
+        Unit getLabel = 3; // returns label (string)
+        string setLabel = 18; // returns Unit
         Unit isImplicit = 4; // returns bool
         Unit getSubConcepts = 19; // returns IteratorId of Concept
         Unit getSuperConcepts = 53; // returns IteratorId of Concept
@@ -114,15 +114,15 @@ message Unit {}
 
 message ConceptResponse {
     oneof value {
+        Unit unit = 10;
+        IteratorId iteratorId = 14;
+        Concept concept = 9;
         AttributeValue attributeValue = 1;
         DataType dataType = 2;
-        Label label = 3;
-        bool bool = 4;
+        string label = 3;
         string pattern = 6;
-        Concept concept = 9;
-        Unit unit = 10;
         string regex = 12;
-        IteratorId iteratorId = 14;
+        bool bool = 4;
         bool noResult = 15;
     }
 }
@@ -147,10 +147,6 @@ enum DataType {
     Float = 4;
     Double = 5;
     Date = 6;
-}
-
-message Label {
-    string value = 1;
 }
 
 //TODO: remove this once we clean up the Grakn Proto definitions

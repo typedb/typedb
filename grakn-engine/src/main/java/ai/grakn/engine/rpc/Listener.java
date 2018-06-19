@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.util.EmbeddedConceptReader;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -280,9 +281,9 @@ class Listener implements StreamObserver<TxRequest> {
         reponseSender.onNext(response.build());
     }
 
-    private void getSchemaConcept(GrpcConcept.Label label) {
+    private void getSchemaConcept(String label) {
         TxResponse.Builder response = TxResponse.newBuilder();
-        Concept concept = tx().getSchemaConcept(ConceptReader.label(label));
+        Concept concept = tx().getSchemaConcept(Label.of(label));
 
         if (concept != null) {
             response.setConcept(ConceptBuilder.concept(concept));
@@ -302,33 +303,33 @@ class Listener implements StreamObserver<TxRequest> {
         reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
     }
 
-    private void putEntityType(GrpcConcept.Label label) {
-        EntityType entityType = tx().putEntityType(ConceptReader.label(label));
+    private void putEntityType(String label) {
+        EntityType entityType = tx().putEntityType(Label.of(label));
         reponseSender.onNext(ResponseBuilder.concept(entityType));
     }
 
-    private void putRelationshipType(GrpcConcept.Label label) {
-        RelationshipType relationshipType = tx().putRelationshipType(ConceptReader.label(label));
+    private void putRelationshipType(String label) {
+        RelationshipType relationshipType = tx().putRelationshipType(Label.of(label));
         reponseSender.onNext(ResponseBuilder.concept(relationshipType));
     }
 
     private void putAttributeType(PutAttributeType putAttributeType) {
-        Label label = ConceptReader.label(putAttributeType.getLabel());
+        Label label = Label.of(putAttributeType.getLabel());
         AttributeType.DataType<?> dataType = ConceptReader.dataType(putAttributeType.getDataType());
 
         AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
         reponseSender.onNext(ResponseBuilder.concept(attributeType));
     }
 
-    private void putRole(GrpcConcept.Label label) {
-        Role role = tx().putRole(ConceptReader.label(label));
+    private void putRole(String label) {
+        Role role = tx().putRole(Label.of(label));
         reponseSender.onNext(ResponseBuilder.concept(role));
     }
 
     private void putRule(PutRule putRule) {
-        Label label = ConceptReader.label(putRule.getLabel());
-        Pattern when = ConceptReader.pattern(putRule.getWhen());
-        Pattern then = ConceptReader.pattern(putRule.getThen());
+        Label label = Label.of(putRule.getLabel());
+        Pattern when = Graql.parser().parsePattern(putRule.getWhen());
+        Pattern then = Graql.parser().parsePattern(putRule.getThen());
 
         Rule rule = tx().putRule(label, when, then);
         reponseSender.onNext(ResponseBuilder.concept(rule));

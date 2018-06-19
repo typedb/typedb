@@ -86,7 +86,7 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest getSchemaConcept(Label label) {
-        return TxRequest.newBuilder().setGetSchemaConcept(ConceptBuilder.label(label)).build();
+        return TxRequest.newBuilder().setGetSchemaConcept(label.getValue()).build();
     }
 
     public static GrpcGrakn.TxRequest getAttributesByValue(Object value) {
@@ -94,27 +94,27 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest putEntityType(Label label) {
-        return TxRequest.newBuilder().setPutEntityType(ConceptBuilder.label(label)).build();
+        return TxRequest.newBuilder().setPutEntityType(label.getValue()).build();
     }
 
     public static GrpcGrakn.TxRequest putRelationshipType(Label label) {
-        return TxRequest.newBuilder().setPutRelationshipType(ConceptBuilder.label(label)).build();
+        return TxRequest.newBuilder().setPutRelationshipType(label.getValue()).build();
     }
 
     public static GrpcGrakn.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
         PutAttributeType putAttributeType =
-                PutAttributeType.newBuilder().setLabel(ConceptBuilder.label(label)).setDataType(ConceptBuilder.dataType(dataType)).build();
+                PutAttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
 
         return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
     }
 
     public static GrpcGrakn.TxRequest putRole(Label label) {
-        return TxRequest.newBuilder().setPutRole(ConceptBuilder.label(label)).build();
+        return TxRequest.newBuilder().setPutRole(label.getValue()).build();
     }
 
     public static GrpcGrakn.TxRequest putRule(Label label, Pattern when, Pattern then) {
         PutRule putRule = PutRule.newBuilder()
-                .setLabel(ConceptBuilder.label(label))
+                .setLabel(label.getValue())
                 .setWhen(when.toString())
                 .setThen(then.toString())
                 .build();

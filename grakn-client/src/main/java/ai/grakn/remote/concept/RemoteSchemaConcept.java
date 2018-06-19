@@ -26,7 +26,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -60,7 +59,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         method.setGetLabel(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
-        return ConceptReader.label(response.getConceptResponse().getLabel());
+        return Label.of(response.getConceptResponse().getLabel());
     }
 
     @Override
@@ -75,7 +74,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Override
     public final SomeType setLabel(Label label) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetLabel(ConceptBuilder.label(label));
+        method.setSetLabel(label.getValue());
         runMethod(method.build());
 
         return asCurrentBaseType(this);

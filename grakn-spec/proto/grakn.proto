@@ -28,12 +28,12 @@ message TxRequest {
         Stop stop = 5; // returns Done
         RunConceptMethod runConceptMethod = 6; // returns ConceptResponse
         ConceptId getConcept = 7; // returns Concept or noResult
-        Label getSchemaConcept = 8; // returns Concept or noResult
+        string getSchemaConcept = 8; // returns Concept or noResult
         AttributeValue getAttributesByValue = 9; // returns IteratorId of Concept
-        Label putEntityType = 10; // returns Concept
-        Label putRelationshipType = 11; // returns Concept
+        string putEntityType = 10; // returns Concept
+        string putRelationshipType = 11; // returns Concept
         PutAttributeType putAttributeType = 12; // returns Concept
-        Label putRole = 13; // returns Concept
+        string putRole = 13; // returns Concept
         PutRule putRule = 14; // returns Concept
     }
 }
@@ -81,12 +81,12 @@ message RunConceptMethod {
 }
 
 message PutAttributeType {
-    Label label = 1;
+    string label = 1;
     DataType dataType = 2;
 }
 
 message PutRule {
-    Label label = 1;
+    string label = 1;
     string when = 2;
     string then = 3;
 }
