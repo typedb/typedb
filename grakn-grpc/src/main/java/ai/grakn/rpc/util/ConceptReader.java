@@ -27,28 +27,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
  * @author Grakn Warriors
  */
 public class ConceptReader {
-    public static Object attributeValue(GrpcConcept.AttributeValue value) {
-        switch (value.getValueCase()) {
-            case STRING:
-                return value.getString();
-            case BOOLEAN:
-                return value.getBoolean();
-            case INTEGER:
-                return value.getInteger();
-            case LONG:
-                return value.getLong();
-            case FLOAT:
-                return value.getFloat();
-            case DOUBLE:
-                return value.getDouble();
-            case DATE:
-                return value.getDate();
-            default:
-            case VALUE_NOT_SET:
-                throw new IllegalArgumentException("Unrecognised " + value);
-        }
-    }
-
     public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
         switch (dataType) {
             case String:

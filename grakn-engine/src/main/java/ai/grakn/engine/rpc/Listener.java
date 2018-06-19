@@ -295,7 +295,8 @@ class Listener implements StreamObserver<TxRequest> {
     }
 
     private void getAttributesByValue(AttributeValue attributeValue) {
-        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(ConceptReader.attributeValue(attributeValue));
+        Object value = attributeValue.getAllFields().values().iterator().next();
+        Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
         Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
         IteratorId iteratorId = rpcIterators.add(iterator);

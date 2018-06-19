@@ -49,8 +49,10 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
         method.setGetValue(GrpcConcept.Unit.getDefaultInstance()).build();
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
+        GrpcConcept.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
+
         // TODO: Fix this unsafe casting
-        return (D) ConceptReader.attributeValue(response.getConceptResponse().getAttributeValue());
+        return (D) attributeValue.getAllFields().values().iterator().next();
     }
 
     @Override

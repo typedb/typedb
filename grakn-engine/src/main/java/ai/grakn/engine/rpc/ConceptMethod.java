@@ -33,7 +33,6 @@ import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 
@@ -538,7 +537,7 @@ public abstract class ConceptMethod<T> {
 
     private static TxResponse getAttribute(Concept concept, GrpcConcept.ConceptMethod method) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        Object value = ConceptReader.attributeValue(method.getGetAttribute());
+        Object value = method.getGetAttribute().getAllFields().values().iterator().next();
         Concept attribute = concept.asAttributeType().getAttribute(value);
 
         if (attribute != null) {
@@ -551,7 +550,7 @@ public abstract class ConceptMethod<T> {
     }
 
     private static TxResponse putAttribute(Concept concept, GrpcConcept.ConceptMethod method) {
-        Object value = ConceptReader.attributeValue(method.getPutAttribute());
+        Object value = method.getPutAttribute().getAllFields().values().iterator().next();
         Concept response = concept.asAttributeType().putAttribute(value);
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
         return TxResponse.newBuilder().setConceptResponse(conceptResponse.build()).build();
