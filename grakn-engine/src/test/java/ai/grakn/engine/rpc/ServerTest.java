@@ -42,6 +42,7 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.RPCCommunicator;
 import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.generated.GraknGrpc;
@@ -55,7 +56,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxType;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 import com.google.common.collect.ImmutableList;
@@ -77,17 +77,18 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.rpc.GrpcTestUtil.hasMetadata;
-import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.remote.rpc.RequestBuilder.commit;
 import static ai.grakn.remote.rpc.RequestBuilder.delete;
 import static ai.grakn.remote.rpc.RequestBuilder.execQuery;
 import static ai.grakn.remote.rpc.RequestBuilder.next;
 import static ai.grakn.remote.rpc.RequestBuilder.open;
 import static ai.grakn.remote.rpc.RequestBuilder.stop;
+import static ai.grakn.rpc.GrpcTestUtil.hasMetadata;
+import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.rpc.util.ResponseBuilder.done;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -615,10 +616,10 @@ public class ServerTest {
 
             tx.send(RequestBuilder.getConcept(id));
 
-            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
+            GrpcConcept.Concept response = tx.receive().ok().getConcept();
 
-            assertEquals(id.getValue(), response.getPresent().getId().getValue());
-            assertEquals(BaseType.Relationship, response.getPresent().getBaseType());
+            assertEquals(id.getValue(), response.getId().getValue());
+            assertEquals(BaseType.Relationship, response.getBaseType());
         }
     }
 
@@ -634,9 +635,9 @@ public class ServerTest {
 
             tx.send(RequestBuilder.getConcept(id));
 
-            GrpcConcept.OptionalConcept response = tx.receive().ok().getOptionalConcept();
+            boolean response = tx.receive().ok().getNoResult();
 
-            assertEquals(GrpcConcept.OptionalConcept.ValueCase.ABSENT, response.getValueCase());
+            assertTrue(response);
         }
     }
 

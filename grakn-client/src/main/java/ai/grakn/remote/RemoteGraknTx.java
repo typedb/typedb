@@ -47,6 +47,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.remote.rpc.RemoteIterator;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.RPCCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -55,7 +56,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.util.CommonUtil;
@@ -191,14 +191,18 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         communicator.send(RequestBuilder.getConcept(id));
-        return (T) conceptReader.optionalConcept(responseOrThrow().getOptionalConcept()).orElse(null);
+        GrpcGrakn.TxResponse response = responseOrThrow();
+        if (response.getConceptResponse().getNoResult()) return null;
+        return (T) conceptReader.concept(response.getConcept());
     }
 
     @Nullable
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         communicator.send(RequestBuilder.getSchemaConcept(label));
-        return (T) conceptReader.optionalConcept(responseOrThrow().getOptionalConcept()).orElse(null);
+        GrpcGrakn.TxResponse response = responseOrThrow();
+        if (response.getConceptResponse().getNoResult()) return null;
+        return (T) conceptReader.concept(response.getConcept());
     }
 
     @Nullable

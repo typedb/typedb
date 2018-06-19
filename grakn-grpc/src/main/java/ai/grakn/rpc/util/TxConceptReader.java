@@ -21,27 +21,12 @@ package ai.grakn.rpc.util;
 import ai.grakn.concept.Concept;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.OptionalConcept;
-
-import java.util.Optional;
 
 /**
  * @author Grakn Warriors
  */
 public abstract class TxConceptReader {
     public abstract Concept concept(GrpcConcept.Concept concept);
-
-    public Optional<Concept> optionalConcept(OptionalConcept concept) {
-        switch (concept.getValueCase()) {
-            case PRESENT:
-                return Optional.of(concept(concept.getPresent()));
-            case ABSENT:
-                return Optional.empty();
-            default:
-            case VALUE_NOT_SET:
-                throw new IllegalArgumentException("Unrecognised " + concept);
-        }
-    }
 
     public RolePlayer rolePlayer(GrpcConcept.RolePlayer rolePlayer) {
         return RolePlayer.create(concept(rolePlayer.getRole()).asRole(), concept(rolePlayer.getPlayer()).asThing());

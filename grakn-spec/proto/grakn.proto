@@ -27,8 +27,8 @@ message TxRequest {
         Next next = 4; // returns QueryResult or Done
         Stop stop = 5; // returns Done
         RunConceptMethod runConceptMethod = 6; // returns ConceptResponse
-        ConceptId getConcept = 7; // returns OptionalConcept
-        Label getSchemaConcept = 8; // returns OptionalConcept
+        ConceptId getConcept = 7; // returns Concept or noResult
+        Label getSchemaConcept = 8; // returns Concept or noResult
         AttributeValue getAttributesByValue = 9; // returns IteratorId of Concept
         Label putEntityType = 10; // returns Concept
         Label putRelationshipType = 11; // returns Concept
@@ -105,8 +105,8 @@ message TxResponse {
         ConceptResponse conceptResponse = 3;
         IteratorId iteratorId = 4;
         Concept concept = 5;
-        OptionalConcept optionalConcept = 6;
         RolePlayer rolePlayer = 7;
+        bool noResult = 8;
     }
 }
 

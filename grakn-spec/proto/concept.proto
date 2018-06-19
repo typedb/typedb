@@ -173,13 +173,6 @@ message ConceptIds {
     repeated ConceptId conceptIds = 1;
 }
 
-message OptionalConcept {
-    oneof value {
-        Concept present = 1;
-        Unit absent = 2;
-    }
-}
-
 message OptionalRegex {
     oneof value {
         string present = 1;

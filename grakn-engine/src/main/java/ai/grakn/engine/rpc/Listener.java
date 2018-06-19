@@ -63,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -269,21 +268,29 @@ class Listener implements StreamObserver<TxRequest> {
     }
 
     private void getConcept(GrpcConcept.ConceptId conceptId) {
-        Optional<Concept> concept = Optional.ofNullable(tx().getConcept(ConceptId.of(conceptId.getValue())));
+        TxResponse.Builder response = TxResponse.newBuilder();
+        Concept concept = tx().getConcept(ConceptId.of(conceptId.getValue()));
 
-        TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(ConceptBuilder.optionalConcept(concept)).build();
+        if (concept != null) {
+            response.setConcept(ConceptBuilder.concept(concept));
+        } else {
+            response.setNoResult(true);
+        }
 
-        reponseSender.onNext(response);
+        reponseSender.onNext(response.build());
     }
 
     private void getSchemaConcept(GrpcConcept.Label label) {
-        Optional<Concept> concept = Optional.ofNullable(tx().getSchemaConcept(ConceptReader.label(label)));
+        TxResponse.Builder response = TxResponse.newBuilder();
+        Concept concept = tx().getSchemaConcept(ConceptReader.label(label));
 
-        TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(ConceptBuilder.optionalConcept(concept)).build();
+        if (concept != null) {
+            response.setConcept(ConceptBuilder.concept(concept));
+        } else {
+            response.setNoResult(true);
+        }
 
-        reponseSender.onNext(response);
+        reponseSender.onNext(response.build());
     }
 
     private void getAttributesByValue(AttributeValue attributeValue) {

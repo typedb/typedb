@@ -38,9 +38,10 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -51,12 +52,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.rpc.util.ConceptBuilder.optionalConcept;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -221,15 +220,13 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        TxResponse response =
-                TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.of(concept))).build();
+        TxResponse response = TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
 
         server.setResponse(RequestBuilder.getConcept(ID), response);
 
         assertFalse(entity.isDeleted());
 
-        TxResponse nullResponse =
-                TxResponse.newBuilder().setOptionalConcept(optionalConcept(Optional.empty())).build();
+        TxResponse nullResponse = TxResponse.newBuilder().setNoResult(true).build();
 
         server.setResponse(RequestBuilder.getConcept(ID), nullResponse);
 

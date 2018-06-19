@@ -71,15 +71,6 @@ public class ConceptBuilder {
         }
     }
 
-    public static GrpcConcept.OptionalConcept optionalConcept(Optional<Concept> concept) {
-        GrpcConcept.OptionalConcept.Builder builder = GrpcConcept.OptionalConcept.newBuilder();
-        return concept
-                .map(ConceptBuilder::concept)
-                .map(builder::setPresent)
-                .orElseGet(() -> builder.setAbsent(GrpcConcept.Unit.getDefaultInstance()))
-                .build();
-    }
-
     public static GrpcConcept.RolePlayer rolePlayer(RolePlayer rolePlayer) {
         return GrpcConcept.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(rolePlayer.role()))
