@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.SchemaConcept;
@@ -50,6 +51,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -152,7 +154,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
 
         //determine compatible types from played roles
-        Set<Type> types = getParentQuery().getAtoms(RelationshipAtom.class)
+        Set<Type> typesFromRoles = getParentQuery().getAtoms(RelationshipAtom.class)
                 .filter(r -> r.getVarNames().contains(getVarName()))
                 .flatMap(r -> r.getRoleVarMap().entries().stream()
                         .filter(e -> e.getValue().equals(getVarName()))
@@ -160,6 +162,19 @@ public abstract class IsaAtom extends IsaAtomBase {
                 .map(role -> role.playedByTypes().collect(Collectors.toSet()))
                 .reduce(Sets::intersection)
                 .orElse(Sets.newHashSet());
+
+        Set<Type> typesFromTypes = getParentQuery().getAtoms(IsaAtom.class)
+                .filter(at -> at.getVarNames().contains(getVarName()))
+                .filter(at -> at != this)
+                .map(Binary::getSchemaConcept)
+                .filter(Objects::nonNull)
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .collect(Collectors.toSet());
+
+        Set<Type> types = typesFromTypes.isEmpty()?
+                typesFromRoles :
+                typesFromRoles.isEmpty()? typesFromTypes: Sets.intersection(typesFromRoles, typesFromTypes);
 
         return !types.isEmpty()?
                 ImmutableList.copyOf(ReasonerUtils.top(types)) :
