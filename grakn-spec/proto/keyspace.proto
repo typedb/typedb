@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "KeyspaceProto";
+option java_multiple_files = true;
+
+package keyspace;
+
+service Keyspace {
+    rpc List (List.Req) returns (List.Res);
+    rpc Create (Create.Req) returns (Create.Res);
+    rpc Delete (Delete.Req) returns (Delete.Res);
+}
+
+message List {
+    message Req {}
+    message Res {
+        repeated string names = 1;
+    }
+}
+
+message Create {
+    message Req {
+        string name = 1;
+    }
+    message Res {}
+}
+
+message Delete {
+    message Req {
+        string name = 1;
+    }
+    message Res {}
+}

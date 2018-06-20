@@ -16,18 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc;
+package ai.grakn.engine.rpc;
 
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
- * Interface implemented by classes that handle gRPC Open requests
- *
- * @author marcoscoppetta
+ * Interface implemented by classes that create a new GraknTx for RPC Open requests
  */
 
-public interface RPCOpener {
+public interface OpenRequest {
 
-    EmbeddedGraknTx<?> execute(Open open);
+    EmbeddedGraknTx<?> open(Open open);
 }

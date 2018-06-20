@@ -44,7 +44,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.RPCCommunicator;
-import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -136,8 +135,8 @@ public class ServerTest {
     public void setUp() throws IOException {
         doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
 
-        RPCOpener requestExecutor = new OpenerImpl(txFactory);
-        io.grpc.Server server = ServerBuilder.forPort(PORT).addService(new Service(requestExecutor, mockedPostProcessor)).build();
+        OpenRequest requestExecutor = new OpenRequestImpl(txFactory);
+        io.grpc.Server server = ServerBuilder.forPort(PORT).addService(new TransactionService(requestExecutor, mockedPostProcessor)).build();
         rpcServer = Server.create(server);
         rpcServer.start();
 

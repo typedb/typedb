@@ -22,26 +22,23 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 
 /**
  * Class used to handle gRPC Open requests. It extracts keyspace and tx type from gRPC request
  * and open new tx using GraknTxFactory
- *
- * @author marcoscoppetta
  */
 
-public class OpenerImpl implements RPCOpener {
+public class OpenRequestImpl implements OpenRequest {
 
     private final EngineGraknTxFactory txFactory;
 
-    public OpenerImpl(EngineGraknTxFactory txFactory) {
-        this.txFactory=txFactory;
+    public OpenRequestImpl(EngineGraknTxFactory txFactory) {
+        this.txFactory = txFactory;
     }
 
     @Override
-    public EmbeddedGraknTx<?> execute(Open request) {
+    public EmbeddedGraknTx<?> open(Open request) {
         Keyspace keyspace = Keyspace.of(request.getKeyspace());
         GraknTxType txType = GraknTxType.of(request.getTxType().getNumber());
         return txFactory.tx(keyspace, txType);

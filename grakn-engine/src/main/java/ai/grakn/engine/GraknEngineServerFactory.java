@@ -26,9 +26,9 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.OpenerImpl;
+import ai.grakn.engine.rpc.OpenRequestImpl;
 import ai.grakn.engine.rpc.Server;
-import ai.grakn.engine.rpc.Service;
+import ai.grakn.engine.rpc.TransactionService;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
@@ -40,7 +40,7 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.SystemKeyspaceSession;
-import ai.grakn.rpc.RPCOpener;
+import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 
@@ -129,9 +129,12 @@ public class GraknEngineServerFactory {
 
     private static Server configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        RPCOpener requestExecutor = new OpenerImpl(engineGraknTxFactory);
-        io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort).addService(new Service(requestExecutor, postProcessor)).build();
-        return Server.create(grpcServer);
+        OpenRequest requestOpener = new OpenRequestImpl(engineGraknTxFactory);
+
+        ServerBuilder<?> grpcServer = ServerBuilder.forPort(grpcPort);
+        grpcServer.addService(new TransactionService(requestOpener, postProcessor));
+
+        return Server.create(grpcServer.build());
     }
 
 }

@@ -42,10 +42,8 @@ import java.util.stream.Stream;
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
  * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.generated.GrpcConcept.ConceptMethod}.
- *
- * @param <T> The type of the concept method return value.
  */
-public abstract class ConceptMethod<T> {
+public abstract class ConceptMethod {
 
     // Server: TxRequestLister.runConceptMethod()
     public static TxResponse run(Concept concept, GrpcConcept.ConceptMethod method, RPCIterators iterators, TxConceptReader reader) {
