@@ -49,7 +49,8 @@ public class JacksonPrinterTest {
 
     @Test
     public void whenGraqlQueryResultsInConcept_EnsureConceptWrapperIsReturned() throws JsonProcessingException {
-        ai.grakn.concept.Concept concept = rule.tx().graql().match(var("x").isa("person")).get("x").iterator().next();
+        ai.grakn.concept.Concept concept = rule.tx().graql().match(var("x").isa("person")).get("x")
+                .stream().map(ans -> ans.get("x")).iterator().next();
         Concept conceptWrapper = ConceptBuilder.build(concept);
         assertWrappersMatch(conceptWrapper, concept);
     }
@@ -57,7 +58,8 @@ public class JacksonPrinterTest {
     @Test
     public void whenGraqlQueryResultsInConcepts_EnsureConceptsAreWrappedAndReturned() throws JsonProcessingException {
         Set<ai.grakn.concept.Concept> concepts = rule.tx().graql().
-                match(var("x").isa("person")).get("x").collect(Collectors.toSet());
+                match(var("x").isa("person")).get("x")
+                .stream().map(ans -> ans.get("x")).collect(Collectors.toSet());
         List<Concept> conceptsWrapper = concepts.stream().map(ConceptBuilder::<Concept>build).collect(Collectors.toList());
         assertWrappersMatch(conceptsWrapper, concepts);
     }

@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -150,10 +151,10 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        return RuleUtils.getRulesWithType(
-                getSchemaConcept(),
-                getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent(),
-                tx());
+        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        return getPossibleTypes().stream()
+                .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
+                .distinct();
     }
 
     /**
@@ -257,7 +258,7 @@ public abstract class Atom extends AtomicBase {
                         getPredicates().flatMap(AtomicBase::getPredicates)
                 ),
                 getTypeConstraints().filter(at -> !at.isSelectable())
-                );
+        );
     }
 
     @Override
@@ -265,6 +266,11 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public Atom inferTypes(Answer sub){ return this; }
+
+    /**
+     * @return list of types this atom can take
+     */
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return ImmutableList.of(getSchemaConcept());}
 
     /**
      * @param sub partial substitution
