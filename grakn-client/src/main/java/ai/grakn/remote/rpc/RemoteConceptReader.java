@@ -38,26 +38,26 @@ public class RemoteConceptReader extends TxConceptReader {
 
     @Override
     public Concept concept(GrpcConcept.Concept concept) {
-        ConceptId id = ConceptId.of(concept.getId().getValue());
+        ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {
-            case Entity:
+            case ENTITY:
                 return RemoteConcepts.createEntity(tx, id);
-            case Relationship:
+            case RELATIONSHIP:
                 return RemoteConcepts.createRelationship(tx, id);
-            case Attribute:
+            case ATTRIBUTE:
                 return RemoteConcepts.createAttribute(tx, id);
-            case EntityType:
+            case ENTITY_TYPE:
                 return RemoteConcepts.createEntityType(tx, id);
-            case RelationshipType:
+            case RELATIONSHIP_TYPE:
                 return RemoteConcepts.createRelationshipType(tx, id);
-            case AttributeType:
+            case ATTRIBUTE_TYPE:
                 return RemoteConcepts.createAttributeType(tx, id);
-            case Role:
+            case ROLE:
                 return RemoteConcepts.createRole(tx, id);
-            case Rule:
+            case RULE:
                 return RemoteConcepts.createRule(tx, id);
-            case MetaType:
+            case META_TYPE:
                 return RemoteConcepts.createMetaType(tx, id);
             default:
             case UNRECOGNIZED:

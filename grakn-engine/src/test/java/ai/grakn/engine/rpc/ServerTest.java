@@ -79,9 +79,9 @@ import java.util.stream.Stream;
 
 import static ai.grakn.remote.rpc.RequestBuilder.commit;
 import static ai.grakn.remote.rpc.RequestBuilder.delete;
-import static ai.grakn.remote.rpc.RequestBuilder.query;
 import static ai.grakn.remote.rpc.RequestBuilder.next;
 import static ai.grakn.remote.rpc.RequestBuilder.open;
+import static ai.grakn.remote.rpc.RequestBuilder.query;
 import static ai.grakn.remote.rpc.RequestBuilder.stop;
 import static ai.grakn.rpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
@@ -112,10 +112,8 @@ public class ServerTest {
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
     private static final String QUERY = "match $x isa person; get;";
-    private static final GrpcConcept.ConceptId V123 =
-            GrpcConcept.ConceptId.newBuilder().setValue("V123").build();
-    private static final GrpcConcept.ConceptId V456 =
-            GrpcConcept.ConceptId.newBuilder().setValue("V456").build();
+    private static final String V123 = "V123";
+    private static final String V456 = "V456";
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
@@ -321,7 +319,7 @@ public class ServerTest {
             TxResponse response1 = tx.receive().ok();
 
             GrpcConcept.Concept rpcX =
-                    GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.Relationship).build();
+                    GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
             GrpcGrakn.QueryAnswer.Builder answerX = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             GrpcGrakn.Answer.Builder resultX = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
@@ -330,7 +328,7 @@ public class ServerTest {
             TxResponse response2 = tx.receive().ok();
 
             GrpcConcept.Concept rpcY =
-                    GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.Attribute).build();
+                    GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
             GrpcGrakn.QueryAnswer.Builder answerY = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
             GrpcGrakn.Answer.Builder resultY = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
@@ -618,8 +616,8 @@ public class ServerTest {
 
             GrpcConcept.Concept response = tx.receive().ok().getConcept();
 
-            assertEquals(id.getValue(), response.getId().getValue());
-            assertEquals(BaseType.Relationship, response.getBaseType());
+            assertEquals(id.getValue(), response.getId());
+            assertEquals(BaseType.RELATIONSHIP, response.getBaseType());
         }
     }
 

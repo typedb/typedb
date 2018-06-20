@@ -94,8 +94,7 @@ public class RemoteGraknTxTest {
     private final RemoteGraknSession session = mock(RemoteGraknSession.class);
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
-    private static final GrpcConcept.ConceptId V123 =
-            GrpcConcept.ConceptId.newBuilder().setValue("V123").build();
+    private static final String V123 = "V123";
     private static final IteratorId ITERATOR = IteratorId.newBuilder().setId(100).build();
 
     @Before
@@ -372,7 +371,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingEntityType_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
@@ -387,7 +386,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingRelationshipType_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
@@ -402,7 +401,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingAttributeType_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
         AttributeType.DataType<?> dataType = AttributeType.DataType.STRING;
 
@@ -418,7 +417,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingRole_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
@@ -433,7 +432,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenPuttingRule_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
         Pattern when = var("x").isa("person");
         Pattern then = var("y").isa("person");
@@ -450,7 +449,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenGettingConceptViaID_EnsureCorrectRequestIsSent(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
@@ -467,7 +466,7 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenGettingNonExistentConceptViaID_ReturnNull(){
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
@@ -482,7 +481,7 @@ public class RemoteGraknTxTest {
     @Test
     public void whenGettingSchemaConceptViaLabel_EnsureCorrectRequestIsSent(){
         Label label = Label.of("foo");
-        ConceptId id = ConceptId.of(V123.getValue());
+        ConceptId id = ConceptId.of(V123);
 
         try (RemoteGraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request

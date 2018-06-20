@@ -5,29 +5,40 @@ option java_outer_classname = "GrpcConcept";
 
 import "iterator.proto";
 
+enum BaseType {
+    META_TYPE = 0; // This represents the top-level meta type only
+    ENTITY_TYPE = 1;
+    RELATIONSHIP_TYPE = 3;
+    ATTRIBUTE_TYPE = 4;
+    ENTITY = 5;
+    RELATIONSHIP = 6;
+    ATTRIBUTE = 7;
+    ROLE = 8;
+    RULE = 9;
+}
+
 message Concept {
-    ConceptId id = 1;
+    string id = 1;
     BaseType baseType = 2;
 }
 
-message ConceptId {
-    string value = 1;
+message ConceptIds {
+    repeated string ids = 1;
 }
 
-enum BaseType {
-    Entity = 0;
-    Relationship = 1;
-    Attribute = 2;
-    EntityType = 3;
-    RelationshipType = 4;
-    AttributeType = 5;
-    Role = 6;
-    Rule = 7;
-    MetaType = 8; // This represents the top-level meta type only
+message Concepts {
+    repeated Concept concepts = 1;
 }
+
+message RolePlayer {
+    Concept role = 1;
+    Concept player = 2;
+}
+
+message Unit {} // Represents a message with no information
 
 message ConceptMethod {
-    oneof conceptMethod {
+    oneof method {
         // The types here are the arguments for the methods. Most are `Unit`, which indicates no arguments.
         // The return types of these methods are described in `ConceptResponse`.
         // The `returns` comment indicates what each `ConceptMethod` will return.
@@ -36,8 +47,8 @@ message ConceptMethod {
         Unit delete = 16; // returns Unit
 
         // Schema concept
-        Unit getLabel = 3; // returns label (string)
         string setLabel = 18; // returns Unit
+        Unit getLabel = 3; // returns label (string)
         Unit isImplicit = 4; // returns bool
         Unit getSubConcepts = 19; // returns IteratorId of Concept
         Unit getSuperConcepts = 53; // returns IteratorId of Concept
@@ -53,16 +64,16 @@ message ConceptMethod {
         Unit getTypesThatPlayRole = 21; // returns IteratorId of Concept
 
         // Type
+        bool setAbstract = 22; // returns Unit
+        Unit isAbstract = 6; // returns bool
         Unit getInstances = 30; // returns IteratorId of Concept
         Unit getAttributeTypes = 11; // returns IteratorId of Concept
+        Unit getKeyTypes = 12; // returns IteratorId of Concept
+        Unit getRolesPlayedByType = 29; // returns IteratorId of Concept
         Concept setAttributeType = 25;
         Concept unsetAttributeType = 26;
-        Unit getKeyTypes = 12; // returns IteratorId of Concept
         Concept setKeyType = 27; // returns Unit
         Concept unsetKeyType = 28; // returns Unit
-        Unit isAbstract = 6; // returns bool
-        bool setAbstract = 22; // returns Unit
-        Unit getRolesPlayedByType = 29; // returns IteratorId of Concept
         Concept setRolePlayedByType = 23; // returns Unit
         Concept unsetRolePlayedByType = 24; // returns Unit
 
@@ -75,32 +86,32 @@ message ConceptMethod {
         Concept unsetRelatedRole = 38; // returns Unit
 
         // Attribute type
-        AttributeValue putAttribute = 32; // returns Concept
-        AttributeValue getAttribute = 33; // returns Concept or noResult
-        Unit getDataTypeOfAttributeType = 2; // returns DataType or noResult (bool)
-        Unit getDataTypeOfAttribute = 54; // returns DataType
-        Unit getRegex = 9; // returns regex (string)
         string setRegex = 31; // returns Unit
+        Unit getRegex = 9; // returns regex (string)
+        Unit getDataTypeOfAttribute = 54; // returns DataType
+        Unit getDataTypeOfAttributeType = 2; // returns DataType or noResult (bool)
+        AttributeValue getAttribute = 33; // returns Concept or noResult
+        AttributeValue putAttribute = 32; // returns Concept
 
         // Thing
         Unit isInferred = 5; // returns bool
-        Unit getDirectType = 13; // returns Concept
-        Unit getRelationships = 39; // returns IteratorId of Concept
-        Concepts getRelationshipsByRoles = 48; // returns IteratorId of Concept
-        Unit getRolesPlayedByThing = 40; // returns IteratorId of Concept
-        Unit getAttributes = 41; // returns IteratorId of Concept
-        Concepts getAttributesByTypes = 49; // returns IteratorId of Concept
         Unit getKeys = 42; // returns IteratorId of Concept
-        Concepts getKeysByTypes = 50; // returns IteratorId of Concept
+        Unit getAttributes = 41; // returns IteratorId of Concept
+        Unit getRelationships = 39; // returns IteratorId of Concept
+        Unit getRolesPlayedByThing = 40; // returns IteratorId of Concept
+        Unit getDirectType = 13; // returns Concept
         Concept setAttribute = 43; // returns Unit
         Concept unsetAttribute = 44; // returns Unit
+        Concepts getKeysByTypes = 50; // returns IteratorId of Concept
+        Concepts getAttributesByTypes = 49; // returns IteratorId of Concept
+        Concepts getRelationshipsByRoles = 48; // returns IteratorId of Concept
 
         // Relationship
-        Unit addRelationship = 35; // returns Concept
         Unit getRolePlayers = 10; // returns IteratorId of RolePlayer
-        Concepts getRolePlayersByRoles = 51; // returns IteratorId of Concept
+        Unit addRelationship = 35; // returns Concept
         RolePlayer setRolePlayer = 46; // returns Unit
         RolePlayer unsetRolePlayer = 15; // returns Unit
+        Concepts getRolePlayersByRoles = 51; // returns IteratorId of Concept
 
         // Attribute
         Unit getValue = 1; // returns AttributeValue
@@ -108,23 +119,20 @@ message ConceptMethod {
     }
 }
 
-// Represents a message with no information
-message Unit {}
-
 message ConceptResponse {
-    oneof value {
-        Unit unit = 1;
-        IteratorId iteratorId = 2;
-        Concept concept = 3;
-        AttributeValue attributeValue = 4;
-        DataType dataType = 5;
-        string label = 6;
-        string pattern = 7;
-        string regex = 8;
-        bool isAbstract = 9;
-        bool isImplicit = 10;
-        bool isInferred = 11;
-        bool noResult = 12;
+    oneof response {
+        bool noResult = 1;
+        bool isAbstract = 2;
+        bool isImplicit = 3;
+        bool isInferred = 4;
+        string label = 5;
+        string pattern = 6;
+        string regex = 7;
+        Unit unit = 8;
+        IteratorId iteratorId = 9;
+        Concept concept = 10;
+        AttributeValue attributeValue = 11;
+        DataType dataType = 12;
     }
 }
 
@@ -148,22 +156,4 @@ enum DataType {
     Float = 4;
     Double = 5;
     Date = 6;
-}
-
-//TODO: remove this once we clean up the Grakn Proto definitions
-message RolePlayers {
-    repeated RolePlayer rolePlayers = 1;
-}
-
-message RolePlayer {
-    Concept role = 1;
-    Concept player = 2;
-}
-
-message Concepts {
-    repeated Concept concepts = 1;
-}
-
-message ConceptIds {
-    repeated ConceptId conceptIds = 1;
 }

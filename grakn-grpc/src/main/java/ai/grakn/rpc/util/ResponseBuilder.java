@@ -92,7 +92,7 @@ public class ResponseBuilder {
         GrpcGrakn.ComputeAnswer.Builder computeAnswerRPC = GrpcGrakn.ComputeAnswer.newBuilder();
 
         if (computeAnswer.getNumber().isPresent()) {
-            computeAnswerRPC.setNumber(number(computeAnswer.getNumber().get()));
+            computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
         }
         else if (computeAnswer.getPaths().isPresent()) {
              computeAnswerRPC.setPaths(paths(computeAnswer.getPaths().get()));
@@ -108,10 +108,6 @@ public class ResponseBuilder {
         }
 
         return computeAnswerRPC.build();
-    }
-
-    private static GrpcGrakn.Number number(Number number) {
-        return GrpcGrakn.Number.newBuilder().setNumber(number.toString()).build();
     }
 
     private static GrpcGrakn.Paths paths(List<List<ConceptId>> paths) {
@@ -147,18 +143,11 @@ public class ResponseBuilder {
 
     private static GrpcConcept.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
         GrpcConcept.ConceptIds.Builder conceptIdsRPC = GrpcConcept.ConceptIds.newBuilder();
-        conceptIdsRPC.addAllConceptIds(conceptIds.stream()
-                .map(ResponseBuilder::conceptId)
+        conceptIdsRPC.addAllIds(conceptIds.stream()
+                .map(id -> id.getValue())
                 .collect(Collectors.toList()));
 
         return conceptIdsRPC.build();
-    }
-
-    private static GrpcConcept.ConceptId conceptId(ConceptId conceptId) {
-        GrpcConcept.ConceptId.Builder conceptIdRPC = GrpcConcept.ConceptId.newBuilder();
-        conceptIdRPC.setValue(conceptId.getValue());
-
-        return conceptIdRPC.build();
     }
 
     public static Object buildDefault(Object object) {

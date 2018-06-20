@@ -39,30 +39,30 @@ import static java.util.stream.Collectors.toList;
 public class ConceptBuilder {
     public static GrpcConcept.Concept concept(Concept concept) {
         return GrpcConcept.Concept.newBuilder()
-                .setId(GrpcConcept.ConceptId.newBuilder().setValue(concept.getId().getValue()).build())
+                .setId(concept.getId().getValue())
                 .setBaseType(getBaseType(concept))
                 .build();
     }
 
     public static GrpcConcept.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
-            return GrpcConcept.BaseType.EntityType;
+            return GrpcConcept.BaseType.ENTITY_TYPE;
         } else if (concept.isRelationshipType()) {
-            return GrpcConcept.BaseType.RelationshipType;
+            return GrpcConcept.BaseType.RELATIONSHIP_TYPE;
         } else if (concept.isAttributeType()) {
-            return GrpcConcept.BaseType.AttributeType;
+            return GrpcConcept.BaseType.ATTRIBUTE_TYPE;
         } else if (concept.isEntity()) {
-            return GrpcConcept.BaseType.Entity;
+            return GrpcConcept.BaseType.ENTITY;
         } else if (concept.isRelationship()) {
-            return GrpcConcept.BaseType.Relationship;
+            return GrpcConcept.BaseType.RELATIONSHIP;
         } else if (concept.isAttribute()) {
-            return GrpcConcept.BaseType.Attribute;
+            return GrpcConcept.BaseType.ATTRIBUTE;
         } else if (concept.isRole()) {
-            return GrpcConcept.BaseType.Role;
+            return GrpcConcept.BaseType.ROLE;
         } else if (concept.isRule()) {
-            return GrpcConcept.BaseType.Rule;
+            return GrpcConcept.BaseType.RULE;
         } else if (concept.isType()) {
-            return GrpcConcept.BaseType.MetaType;
+            return GrpcConcept.BaseType.META_TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
@@ -79,10 +79,6 @@ public class ConceptBuilder {
         GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
         grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
         return grpcConcepts.build();
-    }
-
-    public static GrpcConcept.ConceptId conceptId(ConceptId id) {
-        return GrpcConcept.ConceptId.newBuilder().setValue(id.getValue()).build();
     }
 
     public static GrpcConcept.AttributeValue attributeValue(Object value) {

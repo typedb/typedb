@@ -37,12 +37,9 @@ import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.RPCIterators;
 import ai.grakn.rpc.RPCOpener;
-import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
-import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
-import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.RunConceptMethod;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -257,16 +254,16 @@ class Listener implements StreamObserver<TxRequest> {
     }
 
     private void runConceptMethod(RunConceptMethod runConceptMethod) {
-        Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId().getValue())));
+        Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
         TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
-        TxResponse response = ConceptMethod.run(concept, runConceptMethod.getConceptMethod(), rpcIterators, txConceptReader);
+        TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), rpcIterators, txConceptReader);
         reponseSender.onNext(response);
     }
 
-    private void getConcept(GrpcConcept.ConceptId conceptId) {
+    private void getConcept(String conceptId) {
         TxResponse.Builder response = TxResponse.newBuilder();
-        Concept concept = tx().getConcept(ConceptId.of(conceptId.getValue()));
+        Concept concept = tx().getConcept(ConceptId.of(conceptId));
 
         if (concept != null) {
             response.setConcept(ConceptBuilder.concept(concept));
@@ -310,7 +307,7 @@ class Listener implements StreamObserver<TxRequest> {
         reponseSender.onNext(ResponseBuilder.concept(relationshipType));
     }
 
-    private void putAttributeType(PutAttributeType putAttributeType) {
+    private void putAttributeType(GrpcGrakn.AttributeType putAttributeType) {
         Label label = Label.of(putAttributeType.getLabel());
         AttributeType.DataType<?> dataType = ConceptReader.dataType(putAttributeType.getDataType());
 
@@ -323,7 +320,7 @@ class Listener implements StreamObserver<TxRequest> {
         reponseSender.onNext(ResponseBuilder.concept(role));
     }
 
-    private void putRule(PutRule putRule) {
+    private void putRule(GrpcGrakn.Rule putRule) {
         Label label = Label.of(putRule.getLabel());
         Pattern when = Graql.parser().parsePattern(putRule.getWhen());
         Pattern then = Graql.parser().parsePattern(putRule.getThen());

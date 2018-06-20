@@ -36,6 +36,6 @@ public class EmbeddedConceptReader extends TxConceptReader {
 
     @Override
     public Concept concept(GrpcConcept.Concept grpcConcept) {
-        return tx.getConcept(ConceptId.of(grpcConcept.getId().getValue()));
+        return tx.getConcept(ConceptId.of(grpcConcept.getId()));
     }
 }

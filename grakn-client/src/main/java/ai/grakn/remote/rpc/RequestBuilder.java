@@ -29,8 +29,6 @@ import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Commit;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
-import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
-import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
@@ -74,7 +72,7 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest getConcept(ConceptId id) {
-        return TxRequest.newBuilder().setGetConcept(ConceptBuilder.conceptId(id)).build();
+        return TxRequest.newBuilder().setGetConcept(id.getValue()).build();
     }
 
     public static GrpcGrakn.TxRequest getSchemaConcept(Label label) {
@@ -94,8 +92,8 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-        PutAttributeType putAttributeType =
-                PutAttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
+        GrpcGrakn.AttributeType putAttributeType =
+                GrpcGrakn.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
 
         return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
     }
@@ -105,7 +103,7 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest putRule(Label label, Pattern when, Pattern then) {
-        PutRule putRule = PutRule.newBuilder()
+        GrpcGrakn.Rule putRule = GrpcGrakn.Rule.newBuilder()
                 .setLabel(label.getValue())
                 .setWhen(when.toString())
                 .setThen(then.toString())

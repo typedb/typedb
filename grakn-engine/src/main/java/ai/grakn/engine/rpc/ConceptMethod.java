@@ -49,7 +49,7 @@ public abstract class ConceptMethod<T> {
 
     // Server: TxRequestLister.runConceptMethod()
     public static TxResponse run(Concept concept, GrpcConcept.ConceptMethod method, RPCIterators iterators, TxConceptReader reader) {
-        switch (method.getConceptMethodCase()) {
+        switch (method.getMethodCase()) {
             case GETVALUE:
                 return getValue(concept);
             case GETDATATYPEOFATTRIBUTETYPE:
@@ -155,7 +155,7 @@ public abstract class ConceptMethod<T> {
             case UNSETRELATEDROLE:
                 return unsetRelatedRole(concept, method, reader);
             default:
-            case CONCEPTMETHOD_NOT_SET:
+            case METHOD_NOT_SET:
                 throw new IllegalArgumentException("Unrecognised " + method);
         }
     }

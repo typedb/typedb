@@ -149,8 +149,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     public GrpcGrakn.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
         GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
-        runConceptMethod.setId(ConceptBuilder.conceptId(id));
-        runConceptMethod.setConceptMethod(method);
+        runConceptMethod.setId(id.getValue());
+        runConceptMethod.setMethod(method);
         GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
         communicator.send(conceptMethodRequest);
@@ -360,7 +360,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         switch (computeAnswerRPC.getComputeAnswerCase()) {
             case NUMBER:
                 try {
-                    Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber().getNumber());
+                    Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber());
                     return new ComputeQueryImpl.AnswerImpl().setNumber(result);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
@@ -384,8 +384,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
         for (GrpcConcept.ConceptIds conceptIds : pathsRPC.getPathsList()) {
             paths.add(
-                    conceptIds.getConceptIdsList().stream()
-                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                    conceptIds.getIdsList().stream()
+                            .map(ConceptId::of)
                             .collect(Collectors.toList())
             );
         }
@@ -399,8 +399,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         for (Map.Entry<Long, GrpcConcept.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
             centrality.put(
                     entry.getKey(),
-                    entry.getValue().getConceptIdsList().stream()
-                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                    entry.getValue().getIdsList().stream()
+                            .map(ConceptId::of)
                             .collect(Collectors.toSet())
             );
         }
@@ -413,8 +413,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
         for (GrpcConcept.ConceptIds conceptIds : clustersRPC.getClustersList()) {
             clusters.add(
-                    conceptIds.getConceptIdsList().stream()
-                            .map(conceptIdRPC -> ConceptId.of(conceptIdRPC.getValue()))
+                    conceptIds.getIdsList().stream()
+                            .map(ConceptId::of)
                             .collect(Collectors.toSet())
             );
         }
