@@ -79,7 +79,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.remote.rpc.RequestBuilder.commit;
 import static ai.grakn.remote.rpc.RequestBuilder.delete;
-import static ai.grakn.remote.rpc.RequestBuilder.execQuery;
+import static ai.grakn.remote.rpc.RequestBuilder.query;
 import static ai.grakn.remote.rpc.RequestBuilder.next;
 import static ai.grakn.remote.rpc.RequestBuilder.open;
 import static ai.grakn.remote.rpc.RequestBuilder.stop;
@@ -244,7 +244,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
-        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        String keyspace = "not!@akeyspace";
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
@@ -284,7 +284,7 @@ public class ServerTest {
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
         }
 
         GetQuery query = tx.graql().parse(QUERY);
@@ -314,7 +314,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator));
@@ -369,7 +369,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator));
@@ -399,7 +399,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(COUNT_QUERY, null));
+            tx.send(query(COUNT_QUERY, false));
 
             TxResponse expected =
                     TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("100")).build();
@@ -420,16 +420,16 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(DELETE_QUERY, null));
+            tx.send(query(DELETE_QUERY, false));
             assertEquals(ResponseBuilder.done(), tx.receive().ok());
         }
     }
 
-    @Test
+    @Test @Ignore //TODO this test needs to be removed as it is no longer needed
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator));
@@ -443,7 +443,7 @@ public class ServerTest {
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.send(execQuery(QUERY, false));
+            tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator));
@@ -457,7 +457,7 @@ public class ServerTest {
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.send(execQuery(QUERY, true));
+            tx.send(query(QUERY, true));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator));
@@ -655,7 +655,7 @@ public class ServerTest {
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
         try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -721,7 +721,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION));
@@ -741,7 +741,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
             exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION));
@@ -781,7 +781,7 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
 
             tx.send(stop(iterator));
@@ -801,10 +801,10 @@ public class ServerTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator1 = tx.receive().ok().getIteratorId();
 
-            tx.send(execQuery(QUERY, null));
+            tx.send(query(QUERY, false));
             IteratorId iterator2 = tx.receive().ok().getIteratorId();
 
             tx.send(next(iterator1));
@@ -823,8 +823,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
-        GrpcGrakn.Keyspace keyspaceRPC = GrpcGrakn.Keyspace.newBuilder().setValue(MYKS.getValue()).build();
-        Open open = Open.newBuilder().setKeyspace(keyspaceRPC).setTxType(TxType.Write).build();
+        Open open = Open.newBuilder().setKeyspace(MYKS.getValue()).setTxType(TxType.Write).build();
 
         blockingStub.delete(delete(open));
 
@@ -833,7 +832,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
-        GrpcGrakn.Keyspace keyspace = GrpcGrakn.Keyspace.newBuilder().setValue("not!@akeyspace").build();
+        String keyspace = "not!@akeyspace";
 
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 

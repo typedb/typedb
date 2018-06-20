@@ -7,23 +7,25 @@ import "concept.proto";
 import "iterator.proto";
 
 service Grakn {
-    /*
-        Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
-        When the call is completed, the transaction will always be closed, with or without a `Commit` message.
-    */
+    // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+    // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
     rpc Tx (stream TxRequest) returns (stream TxResponse);
 
-    /*
-        Delete a keyspace.
-    */
+    // Delete a keyspace.
     rpc Delete (DeleteRequest) returns (DeleteResponse);
 }
+
+message DeleteRequest {
+    Open open = 1; // This open request describes how to open the transaction in order to delete the keyspace
+}
+
+message DeleteResponse {}
 
 message TxRequest {
     oneof request {
         Open open = 1; // returns Done
         Commit commit = 2; // returns Done
-        ExecQuery execQuery = 3; // returns QueryResult, Done, or IteratorId of QueryResult
+        Query query = 3; // returns QueryResult, Done, or IteratorId of QueryResult
         Next next = 4; // returns QueryResult or Done
         Stop stop = 5; // returns Done
         RunConceptMethod runConceptMethod = 6; // returns ConceptResponse
@@ -38,66 +40,6 @@ message TxRequest {
     }
 }
 
-message DeleteRequest {
-    Open open = 1; // This open request describes how to open the transaction in order to delete the keyspace
-}
-
-message DeleteResponse {}
-
-/*
-    Open a transaction on a keyspace. This must be the first message sent.
-    After this message, the server will send a `Done` message and then accept a command message.
-*/
-message Open {
-    string keyspace = 1;
-    TxType txType = 2;
-    /* Fields ignored in the open-source version. */
-    string username = 3;
-    string password = 4;
-}
-
-/*
-    Command to commit a transaction.
-    After this message, the server will send a `Done` message and then accept a command message.
-*/
-message Commit {}
-
-/*
-    Command to start executing a query.
-    After this message, the server will send an `Iterator` message and then accept a command message.
-*/
-message ExecQuery {
-    string query = 1;
-    Infer infer = 2; // If this is not present, leave at server default.
-}
-
-/*
-    Run a concept method on a concept.
-    After this message, the server will send a `ConceptResponse` message and then accept a command message.
-*/
-message RunConceptMethod {
-    ConceptId id = 1;
-    ConceptMethod conceptMethod = 2;
-}
-
-message PutAttributeType {
-    string label = 1;
-    DataType dataType = 2;
-}
-
-message PutRule {
-    string label = 1;
-    string when = 2;
-    string then = 3;
-}
-
-/*
-    Toggle inference for this query.
-*/
-message Infer {
-    bool value = 1;
-}
-
 message TxResponse {
     oneof response {
         Answer answer = 1;
@@ -110,36 +52,39 @@ message TxResponse {
     }
 }
 
+enum TxType {
+    Read = 0;
+    Write = 1;
+    Batch = 2;
+}
+
+message Open { // Opening a transaction on a keyspace, which must be the first message sent
+               string keyspace = 1;
+               TxType txType = 2;
+               /* Fields ignored in the open-source version. */
+               string username = 3;
+               string password = 4;
+}
+
+message Commit {} // Command to commit a transaction
+
+message Done {} // Tells the client we have completed their command.
+
+message Query { // Graql query to be executed on the database
+                string query = 1; // query string
+                bool infer = 2; // If this is not present, leave at server default.
+}
+
 message Answer {
     oneof answer {
         QueryAnswer queryAnswer = 1;
         ComputeAnswer computeAnswer = 2;
-        // This is used to represent `aggregate` query results.
-        // These come in many different formats, so they are just returned
-        // as JSON strings.
         string otherResult = 3;
+        // otherResult is used to represent `aggregate` query results.
+        // Due to the many different output formats, we are just returning them as JSON for now.
     }
 }
 
-/*
-    Tells the client we have completed their command.
-*/
-message Done {}
-
-/*
-    Represents an answer to a `get`, `insert` or `define` query. e.g.
-
-    ```
-    $x id V123; $y id V456;
-    ```
-    is represented as:
-    ```
-    Answer {
-        "x": Concept { id: "V123" }
-        "y": Concept { id: "V456" }
-    }
-    ```
-*/
 message QueryAnswer {
     map<string, Concept> queryAnswer = 1;
 }
@@ -174,8 +119,18 @@ message ClusterSizes {
     repeated int64 clusterSizes = 1;
 }
 
-enum TxType {
-    Read = 0;
-    Write = 1;
-    Batch = 2;
+message RunConceptMethod { // Calling a method on a concept
+                           ConceptId id = 1;
+                           ConceptMethod conceptMethod = 2;
+}
+
+message PutAttributeType {
+    string label = 1;
+    DataType dataType = 2;
+}
+
+message PutRule {
+    string label = 1;
+    string when = 2;
+    string then = 3;
 }

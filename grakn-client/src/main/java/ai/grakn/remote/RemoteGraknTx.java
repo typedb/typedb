@@ -315,7 +315,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     public Iterator<Object> execQuery(Query<?> query) {
-        communicator.send(RequestBuilder.execQuery(query.toString(), query.inferring()));
+        communicator.send(RequestBuilder.query(query.toString(), query.inferring()));
 
         GrpcGrakn.TxResponse txResponse = responseOrThrow();
 

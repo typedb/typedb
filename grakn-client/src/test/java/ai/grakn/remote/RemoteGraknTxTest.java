@@ -160,7 +160,7 @@ public class RemoteGraknTxTest {
             tx.graql().parse(queryString).execute();
         }
 
-        verify(server.requests()).onNext(RequestBuilder.execQuery(query));
+        verify(server.requests()).onNext(RequestBuilder.query(query));
     }
 
     @Test
@@ -173,7 +173,7 @@ public class RemoteGraknTxTest {
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponseSequence(RequestBuilder.execQuery(query), response);
+        server.setResponseSequence(RequestBuilder.query(query), response);
 
         List<Answer> results;
 
@@ -192,7 +192,7 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x").isa("person")).delete("x");
         String queryString = query.toString();
 
-        server.setResponse(RequestBuilder.execQuery(query), ResponseBuilder.done());
+        server.setResponse(RequestBuilder.query(query), ResponseBuilder.done());
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
@@ -208,7 +208,7 @@ public class RemoteGraknTxTest {
         TxResponse response =
                 TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("true")).build();
 
-        server.setResponse(RequestBuilder.execQuery(query), response);
+        server.setResponse(RequestBuilder.query(query), response);
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
             verify(server.requests()).onNext(any()); // The open request
@@ -226,7 +226,7 @@ public class RemoteGraknTxTest {
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponseSequence(RequestBuilder.execQuery(query), response);
+        server.setResponseSequence(RequestBuilder.query(query), response);
 
         Answer answer;
 
@@ -249,7 +249,7 @@ public class RemoteGraknTxTest {
         GrpcGrakn.Answer queryResult = GrpcGrakn.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
-        server.setResponse(RequestBuilder.execQuery(query),
+        server.setResponse(RequestBuilder.query(query),
                            GrpcGrakn.TxResponse.newBuilder().setIteratorId(ITERATOR).build());
         server.setResponse(RequestBuilder.next(ITERATOR), response);
 
@@ -279,10 +279,10 @@ public class RemoteGraknTxTest {
             QueryBuilder graql = tx.graql();
 
             graql.infer(true).parse(queryString).execute();
-            verify(server.requests()).onNext(RequestBuilder.execQuery(queryString, true));
+            verify(server.requests()).onNext(RequestBuilder.query(queryString, true));
 
             graql.infer(false).parse(queryString).execute();
-            verify(server.requests()).onNext(RequestBuilder.execQuery(queryString, false));
+            verify(server.requests()).onNext(RequestBuilder.query(queryString, false));
         }
     }
 
@@ -333,7 +333,7 @@ public class RemoteGraknTxTest {
     public void whenAnErrorOccurs_TheTxCloses() {
         Query<?> query = match(var("x")).get();
 
-        TxRequest execQueryRequest = RequestBuilder.execQuery(query);
+        TxRequest execQueryRequest = RequestBuilder.query(query);
         throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
@@ -351,7 +351,7 @@ public class RemoteGraknTxTest {
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
         Query<?> query = match(var("x")).get();
 
-        TxRequest execQueryRequest = RequestBuilder.execQuery(query);
+        TxRequest execQueryRequest = RequestBuilder.query(query);
         throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {

@@ -40,7 +40,6 @@ import ai.grakn.rpc.RPCOpener;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.AttributeValue;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
 import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
@@ -123,8 +122,8 @@ class Listener implements StreamObserver<TxRequest> {
             case COMMIT:
                 commit();
                 break;
-            case EXECQUERY:
-                execQuery(request.getExecQuery());
+            case QUERY:
+                query(request.getQuery());
                 break;
             case NEXT:
                 next(request.getNext());
@@ -219,14 +218,11 @@ class Listener implements StreamObserver<TxRequest> {
         reponseSender.onNext(ResponseBuilder.done());
     }
 
-    private void execQuery(ExecQuery request) {
+    private void query(GrpcGrakn.Query request) {
         String queryString = request.getQuery();
         QueryBuilder graql = tx().graql();
         TxResponse response;
-
-        if (request.hasInfer()) {
-            graql = graql.infer(request.getInfer().getValue());
-        }
+        graql = graql.infer(request.getInfer());
 
         Query<?> query = graql.parse(queryString);
 

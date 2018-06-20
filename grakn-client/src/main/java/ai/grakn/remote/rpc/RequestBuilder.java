@@ -28,8 +28,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Commit;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.ExecQuery;
-import ai.grakn.rpc.generated.GrpcGrakn.Infer;
 import ai.grakn.rpc.generated.GrpcGrakn.Open;
 import ai.grakn.rpc.generated.GrpcGrakn.PutAttributeType;
 import ai.grakn.rpc.generated.GrpcGrakn.PutRule;
@@ -39,8 +37,6 @@ import ai.grakn.rpc.generated.GrpcIterator.Next;
 import ai.grakn.rpc.generated.GrpcIterator.Stop;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.CommonUtil;
-
-import javax.annotation.Nullable;
 
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
@@ -59,24 +55,22 @@ public class RequestBuilder {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
-    public static GrpcGrakn.TxRequest execQuery(Query<?> query) {
-        return execQuery(query.toString(), query.inferring());
+    public static GrpcGrakn.TxRequest query(Query<?> query) {
+        return query(query.toString(), query.inferring());
     }
 
-    public static GrpcGrakn.TxRequest execQuery(String queryString, @Nullable Boolean infer) {
-        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(queryString);
-        if (infer != null) {
-            execQueryRequest.setInfer(Infer.newBuilder().setValue(infer));
-        }
-        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
+    public static GrpcGrakn.TxRequest query(String queryString, boolean infer) {
+        GrpcGrakn.Query.Builder queryRequest = GrpcGrakn.Query.newBuilder().setQuery(queryString);
+        queryRequest.setInfer(infer);
+        return TxRequest.newBuilder().setQuery(queryRequest).build();
     }
 
     public static GrpcGrakn.TxRequest next(IteratorId iteratorId) {
-        return TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId).build()).build();
+        return TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
     }
 
     public static GrpcGrakn.TxRequest stop(IteratorId iteratorId) {
-        return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId).build()).build();
+        return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
     }
 
     public static GrpcGrakn.TxRequest getConcept(ConceptId id) {
