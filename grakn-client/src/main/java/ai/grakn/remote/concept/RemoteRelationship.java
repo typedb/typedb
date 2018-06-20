@@ -25,7 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
-import ai.grakn.remote.rpc.RemoteIterator;
+import ai.grakn.remote.rpc.Iterator;
 import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcIterator;
@@ -54,7 +54,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<RolePlayer> rolePlayers = () -> new RemoteIterator<>(
+        Iterable<RolePlayer> rolePlayers = () -> new Iterator<>(
                 tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
         );
 
@@ -80,7 +80,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         }
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<RolePlayer> rolePlayers = () -> new RemoteIterator<>(
+        Iterable<RolePlayer> rolePlayers = () -> new Iterator<>(
                 tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
         );
 

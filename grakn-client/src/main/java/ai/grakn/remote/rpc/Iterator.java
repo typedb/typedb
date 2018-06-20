@@ -34,12 +34,12 @@ import static ai.grakn.rpc.generated.GrpcIterator.Next;
  *
  * @param <T> class type of objects being iterated
  */
-public class RemoteIterator<T> extends AbstractIterator<T> {
+public class Iterator<T> extends AbstractIterator<T> {
     private final GrpcIterator.IteratorId iteratorId;
     private RemoteGraknTx tx;
     private Function<GrpcGrakn.TxResponse, T> responseReader;
 
-    public RemoteIterator(RemoteGraknTx tx, GrpcIterator.IteratorId iteratorId, Function<GrpcGrakn.TxResponse, T> responseReader) {
+    public Iterator(RemoteGraknTx tx, GrpcIterator.IteratorId iteratorId, Function<GrpcGrakn.TxResponse, T> responseReader) {
         this.tx = tx;
         this.iteratorId = iteratorId;
         this.responseReader = responseReader;

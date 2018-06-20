@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc;
+package ai.grakn.remote.rpc;
 
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.generated.GraknGrpc;
@@ -39,34 +39,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * A request is sent with the {@link #send(TxRequest)}} method, and you can block for a response with the
  * {@link #receive()} method.
  *
- * <pre>
  * {@code
- *
- *     try (RPCCommunicator tx = RPCCommunicator.create(stub) {
+ *     try (Communicator tx = Communicator.create(stub) {
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().ok();
  *         tx.send(commitMessage);
  *         StatusRuntimeException validationError = tx.receive.error();
  *     }
  * }
- * </pre>
- *
- * @author Felix Chapman
  */
-public class RPCCommunicator implements AutoCloseable {
+public class Communicator implements AutoCloseable {
 
     private final StreamObserver<TxRequest> requestSender;
     private final ResponseListener responseListener;
 
-    private RPCCommunicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
+    private Communicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
     }
 
-    public static RPCCommunicator create(GraknGrpc.GraknStub stub) {
+    public static Communicator create(GraknGrpc.GraknStub stub) {
         ResponseListener responseListener = new ResponseListener();
         StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
-        return new RPCCommunicator(requestSender, responseListener);
+        return new Communicator(requestSender, responseListener);
     }
 
     /**
@@ -225,7 +220,7 @@ public class RPCCommunicator implements AutoCloseable {
 
         private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
             Preconditions.checkArgument(response == null || error == null);
-            return new AutoValue_RPCCommunicator_Response(response, error);
+            return new AutoValue_Communicator_Response(response, error);
         }
 
         static Response completed() {

@@ -42,8 +42,8 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
+import ai.grakn.remote.rpc.Communicator;
 import ai.grakn.remote.rpc.RequestBuilder;
-import ai.grakn.rpc.RPCCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
@@ -158,7 +158,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
         }
 
@@ -167,7 +167,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
@@ -176,7 +176,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.BATCH));
         }
 
@@ -185,7 +185,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             TxResponse response = tx.receive().ok();
 
@@ -195,7 +195,7 @@ public class ServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(commit());
         }
@@ -205,7 +205,7 @@ public class ServerTest {
 
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -226,8 +226,8 @@ public class ServerTest {
         });
 
         try (
-                RPCCommunicator tx1 = RPCCommunicator.create(stub);
-                RPCCommunicator tx2 = RPCCommunicator.create(stub)
+                Communicator tx1 = Communicator.create(stub);
+                Communicator tx2 = Communicator.create(stub)
         ) {
             tx1.send(open(MYKS, GraknTxType.WRITE));
             tx2.send(open(MYKS, GraknTxType.WRITE));
@@ -244,7 +244,7 @@ public class ServerTest {
         String keyspace = "not!@akeyspace";
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
@@ -269,7 +269,7 @@ public class ServerTest {
             return null;
         }).when(tx).close();
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
@@ -279,7 +279,7 @@ public class ServerTest {
 
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
         }
@@ -307,7 +307,7 @@ public class ServerTest {
 
         when(query.stream()).thenAnswer(params -> answers.stream());
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -362,7 +362,7 @@ public class ServerTest {
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -392,7 +392,7 @@ public class ServerTest {
 
         when(countQuery.execute()).thenReturn(new ComputeQueryImpl.AnswerImpl().setNumber(100L));
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -413,7 +413,7 @@ public class ServerTest {
 
         when(deleteQuery.execute()).thenReturn(null);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -424,7 +424,7 @@ public class ServerTest {
 
     @Test @Ignore //TODO this test needs to be removed as it is no longer needed
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -438,7 +438,7 @@ public class ServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -452,7 +452,7 @@ public class ServerTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, true));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -474,7 +474,7 @@ public class ServerTest {
         when(concept.isSchemaConcept()).thenReturn(true);
         when(concept.asSchemaConcept().getLabel()).thenReturn(label);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -493,7 +493,7 @@ public class ServerTest {
         when(concept.isSchemaConcept()).thenReturn(true);
         when(concept.asSchemaConcept().isImplicit()).thenReturn(true);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -512,7 +512,7 @@ public class ServerTest {
         when(concept.isThing()).thenReturn(true);
         when(concept.asThing().isInferred()).thenReturn(false);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -546,7 +546,7 @@ public class ServerTest {
         when(player.asThing()).thenReturn(player);
         when(player.getId()).thenReturn(playerId);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -564,7 +564,7 @@ public class ServerTest {
 
         when(tx.getConcept(id)).thenReturn(null);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -585,7 +585,7 @@ public class ServerTest {
         when(concept.isSchemaConcept()).thenReturn(false);
         when(concept.asSchemaConcept()).thenThrow(EXCEPTION);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -607,7 +607,7 @@ public class ServerTest {
 
         when(tx.getConcept(id)).thenReturn(concept);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -626,7 +626,7 @@ public class ServerTest {
 
         when(tx.getConcept(id)).thenReturn(null);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -640,7 +640,7 @@ public class ServerTest {
 
     @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(commit());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -651,7 +651,7 @@ public class ServerTest {
 
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(query(QUERY, false));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -662,7 +662,7 @@ public class ServerTest {
 
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -681,7 +681,7 @@ public class ServerTest {
 
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(error);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
@@ -695,7 +695,7 @@ public class ServerTest {
     public void whenCommittingFails_Throw() throws Throwable {
         doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -714,7 +714,7 @@ public class ServerTest {
 
         when(tx.graql().parse(QUERY)).thenThrow(error);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -734,7 +734,7 @@ public class ServerTest {
 
         when(query.stream()).thenThrow(error);
 
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -749,7 +749,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -763,7 +763,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -774,7 +774,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -794,7 +794,7 @@ public class ServerTest {
 
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_ReturnResultsForBothQueries() throws Throwable {
-        try (RPCCommunicator tx = RPCCommunicator.create(stub)) {
+        try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 

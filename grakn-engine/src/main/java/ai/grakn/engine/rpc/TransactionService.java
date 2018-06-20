@@ -45,7 +45,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.RPCIterators;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
@@ -69,11 +68,15 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
@@ -148,6 +151,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         return new StatusRuntimeException(status, trailers);
     }
 
+
     /**
      * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link Server}.
      * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
@@ -159,7 +163,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
         private final PostProcessor postProcessor;
-        private final RPCIterators rpcIterators = RPCIterators.create();
+        private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
@@ -310,7 +314,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
             if (query instanceof Streamable) {
                 Stream<TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder::answer);
-                GrpcIterator.IteratorId iteratorId = rpcIterators.add(responseStream.iterator());
+                GrpcIterator.IteratorId iteratorId = iterators.add(responseStream.iterator());
 
                 response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
             } else {
@@ -327,14 +331,14 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             GrpcIterator.IteratorId iteratorId = next.getIteratorId();
 
             TxResponse response =
-                    rpcIterators.next(iteratorId).orElseThrow(() -> error(Status.FAILED_PRECONDITION));
+                    iterators.next(iteratorId).orElseThrow(() -> error(Status.FAILED_PRECONDITION));
 
             reponseSender.onNext(response);
         }
 
         private void stop(GrpcIterator.Stop stop) {
             GrpcIterator.IteratorId iteratorId = stop.getIteratorId();
-            rpcIterators.stop(iteratorId);
+            iterators.stop(iteratorId);
             reponseSender.onNext(ResponseBuilder.done());
         }
 
@@ -342,7 +346,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
             TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
-            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), rpcIterators, txConceptReader);
+            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, txConceptReader);
             reponseSender.onNext(response);
         }
 
@@ -377,7 +381,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
-            GrpcIterator.IteratorId iteratorId = rpcIterators.add(iterator);
+            GrpcIterator.IteratorId iteratorId = iterators.add(iterator);
 
             reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
         }
@@ -416,6 +420,42 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private EmbeddedGraknTx<?> tx() {
             return nonNull(tx);
+        }
+    }
+
+    /**
+     * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
+     * lazy, streaming responses such as for Graql query results.
+     */
+    public static class Iterators {
+        private final AtomicInteger iteratorIdCounter = new AtomicInteger();
+        private final Map<GrpcIterator.IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
+
+        public static Iterators create() {
+            return new Iterators();
+        }
+
+        public GrpcIterator.IteratorId add(Iterator<TxResponse> iterator) {
+            GrpcIterator.IteratorId iteratorId = GrpcIterator.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+            iterators.put(iteratorId, iterator);
+            return iteratorId;
+        }
+
+        public Optional<TxResponse> next(GrpcIterator.IteratorId iteratorId) {
+            return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
+                TxResponse response;
+                if (iterator.hasNext()) {
+                    response = iterator.next();
+                } else {
+                    response = ResponseBuilder.done();
+                    stop(iteratorId);
+                }
+                return response;
+            });
+        }
+
+        public void stop(GrpcIterator.IteratorId iteratorId) {
+            iterators.remove(iteratorId);
         }
     }
 }

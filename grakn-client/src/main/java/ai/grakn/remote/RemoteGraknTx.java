@@ -45,17 +45,16 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.remote.rpc.Communicator;
 import ai.grakn.remote.rpc.RemoteConceptReader;
-import ai.grakn.remote.rpc.RemoteIterator;
+import ai.grakn.remote.rpc.Iterator;
 import ai.grakn.remote.rpc.RequestBuilder;
-import ai.grakn.rpc.RPCCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.util.CommonUtil;
@@ -71,7 +70,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -89,13 +87,13 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
     private final RemoteGraknSession session;
     private final GraknTxType txType;
-    private final RPCCommunicator communicator;
+    private final Communicator communicator;
     private final TxConceptReader conceptReader;
 
     private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
-        this.communicator = RPCCommunicator.create(stub);
+        this.communicator = Communicator.create(stub);
         this.conceptReader = new RemoteConceptReader(this);
         communicator.send(openRequest);
         responseOrThrow();
@@ -109,7 +107,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
 
 
     private GrpcGrakn.TxResponse responseOrThrow() {
-        RPCCommunicator.Response response;
+        Communicator.Response response;
 
         try {
             response = communicator.receive();
@@ -215,7 +213,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         communicator.send(RequestBuilder.getAttributesByValue(value));
         GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
-        Iterable<Concept> iterable = () -> new RemoteIterator<>(
+        Iterable<Concept> iterable = () -> new Iterator<>(
                 this, iteratorId, response -> conceptReader.concept(response.getConcept())
         );
 
@@ -294,7 +292,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
         GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
-        Iterable<? extends Concept> iterable = () -> new RemoteIterator<>(
+        Iterable<? extends Concept> iterable = () -> new Iterator<>(
                 this, iteratorId, res -> this.conceptReader().concept(res.getConcept())
         );
 
@@ -314,7 +312,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         return RemoteQueryExecutor.create(this);
     }
 
-    public Iterator<Object> execQuery(Query<?> query) {
+    public java.util.Iterator query(Query<?> query) {
         communicator.send(RequestBuilder.query(query.toString(), query.inferring()));
 
         GrpcGrakn.TxResponse txResponse = responseOrThrow();
@@ -326,7 +324,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
                 return Collections.emptyIterator();
             case ITERATORID:
                 GrpcIterator.IteratorId iteratorId = txResponse.getIteratorId();
-                return new RemoteIterator<>(this, iteratorId, response -> answer(response.getAnswer()));
+                return new Iterator<>(this, iteratorId, response -> answer(response.getAnswer()));
             default:
                 throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
         }

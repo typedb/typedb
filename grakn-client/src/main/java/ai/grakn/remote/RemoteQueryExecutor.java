@@ -68,7 +68,7 @@ final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public Answer run(DefineQuery query) {
-        return (Answer) Iterators.getOnlyElement(tx.execQuery(query));
+        return (Answer) Iterators.getOnlyElement(tx.query(query));
     }
 
     @Override
@@ -78,22 +78,22 @@ final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public <T> T run(AggregateQuery<T> query) {
-        return (T) Iterators.getOnlyElement(tx.execQuery(query));
+        return (T) Iterators.getOnlyElement(tx.query(query));
     }
 
 
     @Override
     public ComputeJob<ComputeQuery.Answer> run(ComputeQuery query) {
-        ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.execQuery(query));
+        ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.query(query));
         return RemoteComputeJob.of(answer);
     }
 
     private void runVoid(Query<?> query) {
-        tx.execQuery(query).forEachRemaining(empty -> {});
+        tx.query(query).forEachRemaining(empty -> {});
     }
 
     private Stream<Answer> runAnswerStream(Query<?> query) {
-        Iterable<Object> iterable = () -> tx.execQuery(query);
+        Iterable<Object> iterable = () -> tx.query(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
         return stream.map(Answer.class::cast);
     }
