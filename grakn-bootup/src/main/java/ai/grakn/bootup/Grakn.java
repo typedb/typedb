@@ -31,22 +31,19 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 /**
- *
  * The main class of the 'grakn' command. This class is not a class responsible
  * for booting up the real command, but rather the command itself.
- *
+ * <p>
  * Please keep the class name "Grakn" as it is what will be displayed to the user.
  *
  * @author Ganeshwara Herawan Hananda
  * @author Michele Orsi
- *
  */
 public class Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
     /**
-     *
      * Invocation from class '{@link ai.grakn.bootup.GraknBootup}'
      *
      * @param args
@@ -66,7 +63,7 @@ public class Grakn {
             // Start Engine
             GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
             graknEngineServer.start();
-        } catch (Exception e) {
+        } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getCause()), e);
         }
     }
