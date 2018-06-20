@@ -1,5 +1,6 @@
 package strategy;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import pdf.PDF;
@@ -9,16 +10,16 @@ public class RolePlayerTypeStrategy extends TypeStrategy implements HasPicker {
 
     private final Role role;
     private final String roleLabel;
-    private StreamProviderInterface conceptPicker;
+    private StreamProviderInterface<ConceptId> conceptPicker;
 
-    public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, StreamProviderInterface conceptPicker) {
+    public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, StreamProviderInterface<ConceptId> conceptPicker) {
         super(type, numInstancesPDF);
         this.role = role;
         this.roleLabel = role.getLabel().getValue();
         this.conceptPicker = conceptPicker;
     }
 
-    public StreamProviderInterface getConceptPicker() {
+    public StreamProviderInterface<ConceptId> getPicker() {
          return conceptPicker;
     }
 

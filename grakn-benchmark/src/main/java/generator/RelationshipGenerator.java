@@ -52,7 +52,7 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
 
                 // Find random role-players matching this type
                 // Pick ids from the list of concept ids
-                Stream<ConceptId> conceptIdStream = rolePlayerTypeStrategy.getConceptPicker().getStream(rolePlayerTypeStrategy.getNumInstancesPDF(), tx);
+                Stream<ConceptId> conceptIdStream = rolePlayerTypeStrategy.getPicker().getStream(rolePlayerTypeStrategy.getNumInstancesPDF(), tx);
 
                 Iterator<ConceptId> iter = conceptIdStream.iterator();
 
