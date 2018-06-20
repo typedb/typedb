@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -334,7 +335,7 @@ public class TypeInferenceQueryTest {
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         Atom atom = query.getAtom();
-        List<Type> relationshipTypes = atom.getPossibleTypes();
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
@@ -353,8 +354,8 @@ public class TypeInferenceQueryTest {
         Atom atom = query.getAtom();
         Atom subbedAtom = subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.getPossibleTypes();
-        List<Type> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
+        List<SchemaConcept> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(relationshipTypes, subbedRelationshipTypes);

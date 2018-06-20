@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -276,7 +275,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return list of types this atom can take
      */
-    public ImmutableList<Type> getPossibleTypes(){ return ImmutableList.of(getSchemaConcept().asType());}
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return ImmutableList.of(getSchemaConcept());}
 
     /**
      * @param sub partial substitution

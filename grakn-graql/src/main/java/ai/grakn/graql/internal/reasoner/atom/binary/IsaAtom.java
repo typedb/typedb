@@ -147,8 +147,8 @@ public abstract class IsaAtom extends IsaAtomBase {
         return this;
     }
 
-    private ImmutableList<Type> inferPossibleTypes(Answer sub){
-        if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept().asType());
+    private ImmutableList<SchemaConcept> inferPossibleTypes(Answer sub){
+        if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
 
         //determine compatible types from played roles
@@ -173,7 +173,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public ImmutableList<Type> getPossibleTypes() { return inferPossibleTypes(new QueryAnswer()); }
+    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new QueryAnswer()); }
 
     @Override
     public List<Atom> atomOptions(Answer sub) {
