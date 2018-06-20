@@ -110,7 +110,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public abstract ImmutableList<RelationPlayer> getRelationPlayers();
     public abstract ImmutableSet<Label> getRoleLabels();
 
-    private ImmutableList<Type> possibleTypes = null;
+    private ImmutableList<SchemaConcept> possibleTypes = null;
 
     public static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationPlayer> rps = new ArrayList<>();
@@ -132,7 +132,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
-    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ImmutableList<Type> possibleTypes, ReasonerQuery parent) {
+    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ImmutableList<SchemaConcept> possibleTypes, ReasonerQuery parent) {
         RelationshipAtom atom = create(pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;
@@ -167,7 +167,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         hashCode = hashCode * 37 + getRelationPlayers().hashCode();
         return hashCode;
     }
-    
+
     @Override
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
@@ -535,8 +535,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         }
         return compatibleTypes;
     }
-    
-    private ImmutableList<Type> getPossibleTypes(){ return possibleTypes;}
+
+    @Override
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return inferPossibleTypes(new QueryAnswer());}
 
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
@@ -545,9 +546,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    public ImmutableList<Type> inferPossibleTypes(Answer sub) {
+    private ImmutableList<SchemaConcept> inferPossibleTypes(Answer sub) {
         if (possibleTypes == null) {
-            if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
+            if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept());
 
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
             Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
@@ -555,7 +556,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
 
-            ImmutableList.Builder<Type> builder = ImmutableList.builder();
+            ImmutableList.Builder<SchemaConcept> builder = ImmutableList.builder();
             //prioritise relations with higher chance of yielding answers
             compatibleConfigurations.asMap().entrySet().stream()
                     //prioritise relations with more allowed roles
@@ -603,7 +604,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        List<Type> relationshipTypes = inferPossibleTypes(sub);
+        List<SchemaConcept> relationshipTypes = inferPossibleTypes(sub);
         if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
         return this;
     }

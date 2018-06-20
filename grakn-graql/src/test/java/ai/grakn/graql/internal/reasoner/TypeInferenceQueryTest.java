@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -32,7 +33,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -313,7 +314,7 @@ public class TypeInferenceQueryTest {
         RelationshipAtom ZWatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("z"), var("w")));
         RelationshipAtom midAtom = (RelationshipAtom) ReasonerQueries.atomic(YZatom).getAtom();
 
-        assertEquals(midAtom.inferPossibleTypes(new QueryAnswer()), YZatom.inferPossibleTypes(new QueryAnswer()));
+        assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
         //differently prioritised options arise from using neighbour information
         List<RelationshipType> firstTypeOption = Lists.newArrayList(
@@ -333,8 +334,8 @@ public class TypeInferenceQueryTest {
 
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
+        Atom atom = query.getAtom();
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
@@ -350,11 +351,11 @@ public class TypeInferenceQueryTest {
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
+        Atom atom = query.getAtom();
+        Atom subbedAtom = subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
-        List<Type> subbedRelationshipTypes = subbedAtom.inferPossibleTypes(new QueryAnswer());
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
+        List<SchemaConcept> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(relationshipTypes, subbedRelationshipTypes);
