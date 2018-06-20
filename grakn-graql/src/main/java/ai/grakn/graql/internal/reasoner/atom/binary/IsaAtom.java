@@ -91,7 +91,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? DirectIsaProperty.class : IsaProperty.class;}
 
     //NB: overriding as these require a derived property
     @Override
@@ -126,7 +126,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
                 getVarName().isa(getPredicateVariable()) :
-                getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent()?
+                isDirect()?
                         getVarName().directIsa(getSchemaConcept().getLabel().getValue()) :
                         getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
     }

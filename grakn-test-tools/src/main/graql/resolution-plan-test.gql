@@ -22,6 +22,10 @@ relation sub relationship
     relates role1
     relates role2;
 
+derivedRelation sub relationship
+    relates role1
+    relates role2;
+
 anotherRelation sub relationship
     relates role1
     relates role2;
@@ -32,6 +36,13 @@ yetAnotherRelation sub relationship
 
 resource sub attribute datatype string;
 anotherResource sub attribute datatype string;
+
+simple-rule
+when {
+(role1: $x, role2: $y) isa relation;
+(role1: $y, role2: $z) isa relation;},
+then {
+(role1: $x, role2: $z) isa derivedRelation;};
 
 insert
 
