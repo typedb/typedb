@@ -1,20 +1,19 @@
 package pick;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.ConceptId;
 import pdf.PDF;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-public class CentralConceptIdStreamLimiter implements ConceptIdStreamLimiterInterface {
-    ConceptIdStreamInterface conceptIdStreamer;
+public class CentralStreamProvider<T> implements StreamProviderInterface<T> {
+    StreamInterface<T> streamer;
     private Boolean isReset;
-    private ArrayList<ConceptId> conceptIdList;
+    private ArrayList<T> conceptIdList;
 
-    public CentralConceptIdStreamLimiter(ConceptIdStreamInterface conceptIdStreamer) {
-        this.conceptIdStreamer = conceptIdStreamer;
+    public CentralStreamProvider(StreamInterface<T> streamer) {
+        this.streamer = streamer;
         this.isReset = true;
     }
 
@@ -24,21 +23,20 @@ public class CentralConceptIdStreamLimiter implements ConceptIdStreamLimiterInte
     }
 
     @Override
-    public Stream<ConceptId> getConceptIdStream(PDF pdf, GraknTx tx) {
+    public Stream<T> getStream(PDF pdf, GraknTx tx) {
         // Get the same list as used previously, or generate one if not seen before
         // Only create a new stream if reset() has been called prior
 
-        int numConceptIds = pdf.next();
+        int streamLength = pdf.next();
         if (this.isReset) {
 
-            Stream<ConceptId> stream = this.conceptIdStreamer.getConceptIdStream(numConceptIds,tx);
+            Stream<T> stream = this.streamer.getStream(streamLength,tx);
             //TODO read stream to list and store to be used again later
 
             this.conceptIdList = new ArrayList<>();
 
 
-            Iterator<ConceptId> iter = stream.limit(numConceptIds).iterator();
-//            for (int i = 0; i <= numConceptIds; i++) {
+            Iterator<T> iter = stream.limit(streamLength).iterator();
             while (iter.hasNext()) {
                 this.conceptIdList.add(iter.next());
             }

@@ -4,7 +4,6 @@ import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
-import generator.Generator;
 import generator.GeneratorFactory;
 import generator.GeneratorInterface;
 import pdf.ConstantPDF;
@@ -83,7 +82,7 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("employee", this.roles),
                             SchemaManager.getTypeFromString("person", this.entityTypes),
                             new ConstantPDF(1),
-                            new ConceptIdStreamLimiter(
+                            new StreamProvider<>(
                                     new IsaTypeConceptIdPicker(
                                             this.rand,
                                             this.conceptTypeCountStore,
@@ -98,7 +97,7 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("employer", this.roles),
                             SchemaManager.getTypeFromString("company", this.entityTypes),
                             new ConstantPDF(1),
-                            new CentralConceptIdStreamLimiter(
+                            new CentralStreamProvider<>(
                                     new NotInRelationshipConceptIdStream(
                                             "employment",
                                             "employer",
@@ -120,6 +119,27 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("employment", this.relationshipTypes),
                             new DiscreteGaussianPDF(this.rand, 30.0, 30.0),
                             employmentRoleStrategies)
+            );
+
+            RouletteWheelCollection<String> nameValueOptions = new RouletteWheelCollection<String>(this.rand)
+            .add(0.5, "Da Vinci")
+            .add(0.5, "Nero");
+
+//            TODO How to get the datatype without having to declare it? Does it make sense to do this?
+//            SchemaManager.getDatatype("company", this.entityTypes),
+
+            this.attributeStrategies.add(
+                    1.0,
+                    new AttributeStrategy<String>(
+                            SchemaManager.getTypeFromString("name", this.attributeTypes),
+                            new UniformPDF(this.rand, 3, 20),
+                            new AttributeOwnerTypeStrategy(
+                                    SchemaManager.getTypeFromString("company", this.entityTypes)
+                            ),
+                            new StreamProvider<>(
+                                    new PickableCollectionValuePicker<String>(nameValueOptions)
+                            )
+                    )
             );
         }
 

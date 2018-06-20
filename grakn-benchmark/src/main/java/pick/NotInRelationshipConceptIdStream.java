@@ -8,17 +8,17 @@ import ai.grakn.graql.Var;
 import java.util.stream.Stream;
 
 // TODO I think I change this to be specific "CheckNotInRelationship" since being abstract gives complexity
-public class NotInRelationshipConceptIdStream implements ConceptIdStreamInterface {
+public class NotInRelationshipConceptIdStream implements StreamInterface<ConceptId> {
 
     private String relationshipLabel;
     private String roleLabel;
-    private ConceptIdStreamInterface conceptIdStreamer;
+    private StreamInterface<ConceptId> conceptIdStreamer;
     private Integer numAttemptsLimit;
 
     public NotInRelationshipConceptIdStream(String relationshipLabel,
                                             String roleLabel,
                                             Integer numAttemptsLimit,
-                                            ConceptIdStreamInterface conceptIdStreamer) {
+                                            StreamInterface<ConceptId> conceptIdStreamer) {
         this.conceptIdStreamer = conceptIdStreamer;
         this.relationshipLabel = relationshipLabel;
         this.roleLabel = roleLabel;
@@ -26,15 +26,15 @@ public class NotInRelationshipConceptIdStream implements ConceptIdStreamInterfac
     }
 
     @Override
-    public Stream<ConceptId> getConceptIdStream(int numConceptIds, GraknTx tx) {
+    public Stream<ConceptId> getStream(int streamLength, GraknTx tx) {
 
-        Stream<ConceptId> stream = this.conceptIdStreamer.getConceptIdStream(numConceptIds, tx);
+        Stream<ConceptId> stream = this.conceptIdStreamer.getStream(streamLength, tx);
 
         QueryBuilder qb = tx.graql();
 
         // TODO Ideally this should also terminate when it's no longer possible to find the number of concepts required.
         // TODO Shouldn't the limit for the number of attempts be before the filter? Otherwise it will always wait
-        return stream.limit(this.numAttemptsLimit * numConceptIds).filter(conceptId -> { //TODO Should probably be using stream.filter instead
+        return stream.limit(this.numAttemptsLimit * streamLength).filter(conceptId -> { //TODO Should probably be using stream.filter instead
                 // Keep looking for a concept not in this kind of relationship, stop when one is found (by returning)
                 // or the max number of attempts to find one has been reached
 

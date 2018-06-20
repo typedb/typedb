@@ -1,7 +1,6 @@
 package pick;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
@@ -11,7 +10,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
 
-public class ConceptIdPicker implements ConceptIdStreamInterface {
+public class ConceptIdPicker implements StreamInterface<ConceptId> {
     private Random rand;
 
     private Pattern matchVarPattern;
@@ -24,12 +23,12 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
     }
 
     @Override
-    public Stream<ConceptId> getConceptIdStream(int numConceptIds, GraknTx tx) {
+    public Stream<ConceptId> getStream(int streamLength, GraknTx tx) {
 
         int typeCount = getConceptCount(tx);
 
         // If there aren't enough concepts to fulfill the number requested, then return null
-        if (typeCount < numConceptIds) return Stream.empty();
+        if (typeCount < streamLength) return Stream.empty();
 
         Stream<Integer> randomUniqueOffsetStream = this.generateUniqueRandomOffsetStream(typeCount);
 
@@ -69,7 +68,7 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
 
         HashSet<Object> previousRandomOffsets = new HashSet<>();
 
-        Stream<Integer> stream = Stream.generate(() -> {
+        return Stream.generate(() -> {
 
             boolean foundUnique = false;
 
@@ -80,7 +79,5 @@ public class ConceptIdPicker implements ConceptIdStreamInterface {
             }
             return nextChoice;
         }).limit(offsetBound);
-
-        return stream;
     }
 }

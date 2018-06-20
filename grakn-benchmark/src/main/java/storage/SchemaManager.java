@@ -3,7 +3,9 @@ package storage;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.*;
 import ai.grakn.graql.admin.Answer;
 import com.google.common.io.Files;
@@ -95,5 +97,9 @@ public class SchemaManager {
             }
         }
         throw new RuntimeException("Couldn't find a concept type with name \"" + typeName + "\"");
+    }
+
+    public static AttributeType.DataType getDatatype(String typeName, ArrayList<Type> typeInstances) {
+        return null;
     }
 }

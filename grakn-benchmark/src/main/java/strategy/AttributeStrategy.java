@@ -1,21 +1,45 @@
 package strategy;
 
 import ai.grakn.concept.AttributeType;
-import pdf.DiscreteGaussianPDF;
 import pdf.PDF;
+import pick.StreamProviderInterface;
 
-import java.util.Set;
 
-public class AttributeStrategy extends TypeStrategy<AttributeType> {
+public class AttributeStrategy<Datatype> extends TypeStrategy<AttributeType> implements HasPicker{
 
-    Set<TypeStrategy> ownerStrategies;
+    private PickableCollection<AttributeOwnerTypeStrategy> attributeOwnerStrategies = null;
+    private final StreamProviderInterface valuePicker;
+    private AttributeOwnerTypeStrategy attributeOwnerStrategy = null;
 
-    public AttributeStrategy(AttributeType type, PDF numInstancesPDF, Set<TypeStrategy> ownerStrategies) {
+    public AttributeStrategy(AttributeType type,
+                             PDF numInstancesPDF,
+                             PickableCollection<AttributeOwnerTypeStrategy> attributeOwnerStrategies,
+                             StreamProviderInterface valuePicker) {
         super(type, numInstancesPDF);
-        this.ownerStrategies = ownerStrategies;
+        this.attributeOwnerStrategies = attributeOwnerStrategies;
+        this.valuePicker = valuePicker;
     }
 
-//    public <P extends PDF> AttributeStrategy(AttributeType type, P numInstancesPDF, double frequency, Random rand) {
-//    public AttributeStrategy(AttributeType type, PDF numInstancesPDF) {
-//    }
+    public AttributeStrategy(AttributeType type,
+                             PDF numInstancesPDF,
+                             AttributeOwnerTypeStrategy attributeOwnerStrategy,
+                             StreamProviderInterface valuePicker) {
+        super(type, numInstancesPDF);
+        this.attributeOwnerStrategy = attributeOwnerStrategy;
+        this.valuePicker = valuePicker;
+    }
+
+    public AttributeOwnerTypeStrategy getAttributeOwnerStrategy() {
+        if (this.attributeOwnerStrategy != null) {
+            return this.attributeOwnerStrategy;
+        } else if (this.attributeOwnerStrategies != null) {
+            return this.attributeOwnerStrategies.next();
+        }
+        throw new UnsupportedOperationException("AttributeStrategy must have either one owner or multiple possible owners");
+    }
+
+    @Override
+    public StreamProviderInterface getConceptPicker() {
+        return this.valuePicker;
+    }
 }
