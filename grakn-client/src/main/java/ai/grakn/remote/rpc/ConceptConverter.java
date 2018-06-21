@@ -27,15 +27,9 @@ import ai.grakn.rpc.generated.GrpcConcept;
 /**
  * Concept Reader for a Grakn Client
  */
-public class RemoteConceptReader {
+public class ConceptConverter {
 
-    private final RemoteGraknTx tx;
-
-    public RemoteConceptReader(RemoteGraknTx tx){
-        this.tx = tx;
-    }
-
-    public Concept concept(GrpcConcept.Concept concept) {
+    public static Concept RPCToGraknConcept(RemoteGraknTx tx, GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {

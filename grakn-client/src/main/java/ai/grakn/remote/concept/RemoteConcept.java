@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.remote.rpc.Iterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -62,7 +63,7 @@ abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
     protected final Stream<? extends Concept> runMethodToConceptStream(GrpcConcept.ConceptMethod method) {
         GrpcIterator.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new Iterator<>(
-                tx(), iteratorId, res -> tx().conceptReader().concept(res.getConcept())
+                tx(), iteratorId, res -> ConceptConverter.RPCToGraknConcept(tx(), res.getConcept())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

@@ -24,6 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
@@ -46,7 +47,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setAddRelationship(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
 
         return asInstance(concept);
     }

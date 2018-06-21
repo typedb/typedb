@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
@@ -89,7 +90,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
 
         return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
     }

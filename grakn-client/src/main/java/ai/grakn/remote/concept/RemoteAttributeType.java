@@ -23,6 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -53,7 +54,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setPutAttribute(RequestBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
 
         return asInstance(concept);
     }
@@ -67,7 +68,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
         return concept.asAttribute();
     }
 
