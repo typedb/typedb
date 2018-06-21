@@ -51,8 +51,7 @@ public class ResponseBuilder {
     }
 
     public static TxResponse noResult() {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        return TxResponse.newBuilder().setNoResult(true).build();
     }
 
     public static TxResponse concept(Concept concept) {
@@ -65,6 +64,17 @@ public class ResponseBuilder {
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
         return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
+    }
+
+
+    public static TxResponse conceptResponseWithNoResult() {
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    }
+
+    public static TxResponse conceptResopnseWithConcept(Concept concept) {
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     public static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {

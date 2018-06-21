@@ -53,7 +53,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Metadata;
@@ -156,7 +155,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
      */
     static class TransactionListener implements StreamObserver<TxRequest> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
-        private final StreamObserver<TxResponse> reponseSender;
+        private final StreamObserver<TxResponse> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
@@ -167,7 +166,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         private EmbeddedGraknTx<?> tx = null;
 
         private TransactionListener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor) {
-            this.reponseSender = responseSender;
+            this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
             this.postProcessor = postProcessor;
@@ -268,9 +267,9 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             if (!terminated.getAndSet(true)) {
                 if (error != null) {
                     LOG.error("Runtime Exception in RPC TransactionListener: ", error);
-                    reponseSender.onError(error);
+                    responseSender.onError(error);
                 } else {
-                    reponseSender.onCompleted();
+                    responseSender.onCompleted();
                 }
             }
 
@@ -294,12 +293,12 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
                 throw error(Status.FAILED_PRECONDITION);
             }
             tx = requestOpener.open(request);
-            reponseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.done());
         }
 
         private void commit() {
             tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
-            reponseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.done());
         }
 
         private void query(GrpcGrakn.Query request) {
@@ -322,7 +321,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
                 else response = ResponseBuilder.answer(result);
             }
 
-            reponseSender.onNext(response);
+            responseSender.onNext(response);
         }
 
         private void next(GrpcIterator.Next next) {
@@ -331,13 +330,13 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             TxResponse response =
                     iterators.next(iteratorId).orElseThrow(() -> error(Status.FAILED_PRECONDITION));
 
-            reponseSender.onNext(response);
+            responseSender.onNext(response);
         }
 
         private void stop(GrpcIterator.Stop stop) {
             GrpcIterator.IteratorId iteratorId = stop.getIteratorId();
             iterators.stop(iteratorId);
-            reponseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.done());
         }
 
         private void runConceptMethod(GrpcGrakn.RunConceptMethod runConceptMethod) {
@@ -345,33 +344,25 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             EmbeddedConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
             TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, txConceptReader);
-            reponseSender.onNext(response);
+            responseSender.onNext(response);
         }
 
         private void getConcept(String conceptId) {
-            TxResponse.Builder response = TxResponse.newBuilder();
             Concept concept = tx().getConcept(ConceptId.of(conceptId));
-
-            if (concept != null) {
-                response.setConcept(ConceptBuilder.concept(concept));
+            if (concept == null) {
+                responseSender.onNext(ResponseBuilder.noResult());
             } else {
-                response.setNoResult(true);
+                responseSender.onNext(ResponseBuilder.concept(concept));
             }
-
-            reponseSender.onNext(response.build());
         }
 
         private void getSchemaConcept(String label) {
-            TxResponse.Builder response = TxResponse.newBuilder();
             Concept concept = tx().getSchemaConcept(Label.of(label));
-
-            if (concept != null) {
-                response.setConcept(ConceptBuilder.concept(concept));
+            if (concept == null) {
+                responseSender.onNext(ResponseBuilder.noResult());
             } else {
-                response.setNoResult(true);
+                responseSender.onNext(ResponseBuilder.concept(concept));
             }
-
-            reponseSender.onNext(response.build());
         }
 
         private void getAttributesByValue(GrpcConcept.AttributeValue attributeValue) {
@@ -381,17 +372,17 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
             GrpcIterator.IteratorId iteratorId = iterators.add(iterator);
 
-            reponseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+            responseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
         }
 
         private void putEntityType(String label) {
             EntityType entityType = tx().putEntityType(Label.of(label));
-            reponseSender.onNext(ResponseBuilder.concept(entityType));
+            responseSender.onNext(ResponseBuilder.concept(entityType));
         }
 
         private void putRelationshipType(String label) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(label));
-            reponseSender.onNext(ResponseBuilder.concept(relationshipType));
+            responseSender.onNext(ResponseBuilder.concept(relationshipType));
         }
 
         private void putAttributeType(GrpcGrakn.AttributeType putAttributeType) {
@@ -399,12 +390,12 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
 
             AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
-            reponseSender.onNext(ResponseBuilder.concept(attributeType));
+            responseSender.onNext(ResponseBuilder.concept(attributeType));
         }
 
         private void putRole(String label) {
             Role role = tx().putRole(Label.of(label));
-            reponseSender.onNext(ResponseBuilder.concept(role));
+            responseSender.onNext(ResponseBuilder.concept(role));
         }
 
         private void putRule(GrpcGrakn.Rule putRule) {
@@ -413,7 +404,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             Pattern then = Graql.parser().parsePattern(putRule.getThen());
 
             Rule rule = tx().putRule(label, when, then);
-            reponseSender.onNext(ResponseBuilder.concept(rule));
+            responseSender.onNext(ResponseBuilder.concept(rule));
         }
 
         private EmbeddedGraknTx<?> tx() {

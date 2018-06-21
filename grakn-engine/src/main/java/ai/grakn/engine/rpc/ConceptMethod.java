@@ -32,7 +32,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
 
 import java.util.stream.Stream;
@@ -164,7 +163,7 @@ public abstract class ConceptMethod {
 
     private static TxResponse getDataTypeOfAttributeType(Concept concept) {
         AttributeType.DataType<?> dataType = concept.asAttributeType().getDataType();
-        if (dataType == null) return ResponseBuilder.noResult();
+        if (dataType == null) return ResponseBuilder.conceptResponseWithNoResult();
         return ResponseBuilder.conceptResponseWithDataType(dataType);
     }
 
@@ -284,21 +283,13 @@ public abstract class ConceptMethod {
 
     private static TxResponse getDirectType(Concept concept) {
         Concept type = concept.asThing().type();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(type));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        return ResponseBuilder.conceptResopnseWithConcept(type);
     }
 
     private static TxResponse getDirectSuper(Concept concept) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         Concept superConcept = concept.asSchemaConcept().sup();
-
-        if (superConcept != null) {
-            conceptResponse.setConcept(ConceptBuilder.concept(superConcept));
-        } else {
-            conceptResponse.setNoResult(true);
-        }
-
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        if (superConcept == null) return ResponseBuilder.conceptResponseWithNoResult();
+        return ResponseBuilder.conceptResopnseWithConcept(superConcept);
     }
 
     private static TxResponse setDirectSuper(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
@@ -507,43 +498,32 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse addEntity(Concept concept) {
-        Concept response = concept.asEntityType().addEntity();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        Concept entity = concept.asEntityType().addEntity();
+        return ResponseBuilder.conceptResopnseWithConcept(entity);
     }
 
     private static TxResponse addRelationship(Concept concept) {
-        Concept response = concept.asRelationshipType().addRelationship();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        Concept relationship = concept.asRelationshipType().addRelationship();
+        return ResponseBuilder.conceptResopnseWithConcept(relationship);
     }
 
     private static TxResponse getAttribute(Concept concept, GrpcConcept.ConceptMethod method) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         Object value = method.getGetAttribute().getAllFields().values().iterator().next();
         Concept attribute = concept.asAttributeType().getAttribute(value);
-
-        if (attribute != null) {
-            conceptResponse.setConcept(ConceptBuilder.concept(attribute));
-        } else {
-            conceptResponse.setNoResult(true);
-        }
-
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        if (attribute == null) return ResponseBuilder.conceptResponseWithNoResult();
+        return ResponseBuilder.conceptResopnseWithConcept(attribute);
     }
 
     private static TxResponse putAttribute(Concept concept, GrpcConcept.ConceptMethod method) {
         Object value = method.getPutAttribute().getAllFields().values().iterator().next();
-        Concept response = concept.asAttributeType().putAttribute(value);
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        Concept attribute = concept.asAttributeType().putAttribute(value);
+        return ResponseBuilder.conceptResopnseWithConcept(attribute);
     }
 
     private static TxResponse setAttribute(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Attribute<?> attribute =  reader.concept(method.getSetAttribute()).asAttribute();
-        Concept response = concept.asThing().attributeRelationship(attribute);
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        Concept relationship = concept.asThing().attributeRelationship(attribute);
+        return ResponseBuilder.conceptResopnseWithConcept(relationship);
     }
 
     private static TxResponse unsetAttribute(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
