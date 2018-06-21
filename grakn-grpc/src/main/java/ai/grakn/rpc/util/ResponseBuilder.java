@@ -18,6 +18,7 @@
 
 package ai.grakn.rpc.util;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
@@ -35,9 +36,14 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.util.CommonUtil;
 import io.grpc.Metadata;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -52,19 +58,82 @@ import java.util.stream.Collectors;
  */
 public class ResponseBuilder {
 
-    public static GrpcGrakn.TxResponse done() {
-        return GrpcGrakn.TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
+    public static TxResponse done() {
+        return TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
     }
 
-    public static GrpcGrakn.TxResponse concept(Concept concept) {
-        return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+    public static TxResponse noResult() {
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static GrpcGrakn.TxResponse rolePlayer(Role role, Thing player) {
-        return GrpcGrakn.TxResponse.newBuilder().setRolePlayer(ConceptBuilder.rolePlayer(role, player)).build();
+    public static TxResponse concept(Concept concept) {
+        return TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
 
-    public static GrpcGrakn.TxResponse answer(Object object) {
+    public static TxResponse rolePlayer(Role role, Thing player) {
+        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+                .setRole(ConceptBuilder.concept(role))
+                .setPlayer(ConceptBuilder.concept(player))
+                .build();
+        return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
+    }
+
+    public static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
+        conceptResponse.setDataType(dataType(dataType));
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    }
+    
+    public static TxResponse conceptResponseWithAttributeValue(Object value) {
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(attributeValue(value)).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    }
+
+    private static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
+        if (dataType.equals(AttributeType.DataType.STRING)) {
+            return GrpcConcept.DataType.String;
+        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+            return GrpcConcept.DataType.Boolean;
+        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+            return GrpcConcept.DataType.Integer;
+        } else if (dataType.equals(AttributeType.DataType.LONG)) {
+            return GrpcConcept.DataType.Long;
+        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+            return GrpcConcept.DataType.Float;
+        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+            return GrpcConcept.DataType.Double;
+        } else if (dataType.equals(AttributeType.DataType.DATE)) {
+            return GrpcConcept.DataType.Date;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+        }
+    }
+
+    private static GrpcConcept.AttributeValue attributeValue(Object value) {
+        GrpcConcept.AttributeValue.Builder builder = GrpcConcept.AttributeValue.newBuilder();
+        if (value instanceof String) {
+            builder.setString((String) value);
+        } else if (value instanceof Boolean) {
+            builder.setBoolean((boolean) value);
+        } else if (value instanceof Integer) {
+            builder.setInteger((int) value);
+        } else if (value instanceof Long) {
+            builder.setLong((long) value);
+        } else if (value instanceof Float) {
+            builder.setFloat((float) value);
+        } else if (value instanceof Double) {
+            builder.setDouble((double) value);
+        } else if (value instanceof LocalDateTime) {
+            builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + value);
+        }
+
+        return builder.build();
+    }
+
+    public static TxResponse answer(Object object) {
         GrpcGrakn.Answer answer;
 
         if (object instanceof Answer) {
@@ -76,7 +145,7 @@ public class ResponseBuilder {
             answer = GrpcGrakn.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(buildDefault(object))).build();
         }
 
-        return GrpcGrakn.TxResponse.newBuilder().setAnswer(answer).build();
+        return TxResponse.newBuilder().setAnswer(answer).build();
     }
 
     private static GrpcGrakn.QueryAnswer queryAnswer(Answer answer) {

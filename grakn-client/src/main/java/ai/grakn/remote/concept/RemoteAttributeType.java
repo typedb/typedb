@@ -23,9 +23,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptBuilder;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -51,7 +51,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final Attribute<D> putAttribute(D value) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setPutAttribute(ConceptBuilder.attributeValue(value));
+        method.setPutAttribute(RequestBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
         Concept concept = tx().conceptReader().concept(response.getConceptResponse().getConcept());
 
@@ -62,7 +62,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final Attribute<D> getAttribute(D value) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetAttribute(ConceptBuilder.attributeValue(value));
+        method.setGetAttribute(RequestBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;

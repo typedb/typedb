@@ -158,29 +158,19 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getValue(Concept concept) {
-        Object response = concept.asAttribute().getValue();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setAttributeValue(ConceptBuilder.attributeValue(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        Object value = concept.asAttribute().getValue();
+        return ResponseBuilder.conceptResponseWithAttributeValue(value);
     }
 
     private static TxResponse getDataTypeOfAttributeType(Concept concept) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         AttributeType.DataType<?> dataType = concept.asAttributeType().getDataType();
-
-        if (dataType != null) {
-            conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
-        } else {
-            conceptResponse.setNoResult(true);
-        }
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        if (dataType == null) return ResponseBuilder.noResult();
+        return ResponseBuilder.conceptResponseWithDataType(dataType);
     }
 
     private static TxResponse getDataTypeOfAttribute(Concept concept) {
-        AttributeType.DataType<?> response = concept.asAttribute().dataType();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setDataType(ConceptBuilder.dataType(response));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        AttributeType.DataType<?> dataType = concept.asAttribute().dataType();
+        return ResponseBuilder.conceptResponseWithDataType(dataType);
     }
 
     private static TxResponse getLabel(Concept concept) {
@@ -293,8 +283,8 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getDirectType(Concept concept) {
-        Concept response = concept.asThing().type();
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
+        Concept type = concept.asThing().type();
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(type));
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 

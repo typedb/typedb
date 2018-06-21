@@ -108,7 +108,7 @@ public class RemoteGraknTxTest {
         return GrpcGrakn.TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
     }
     
-    private static GrpcGrakn.TxResponse concept(Concept concept) {
+    private static GrpcGrakn.TxResponse response(Concept concept) {
         return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
     
@@ -386,7 +386,7 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createEntityType(tx, id);
-            server.setResponse(RequestBuilder.putEntityType(label), concept(concept));
+            server.setResponse(RequestBuilder.putEntityType(label), response(concept));
 
             assertEquals(concept, tx.putEntityType(label));
         }
@@ -401,7 +401,7 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRelationshipType(tx, id);
-            server.setResponse(RequestBuilder.putRelationshipType(label), concept(concept));
+            server.setResponse(RequestBuilder.putRelationshipType(label), response(concept));
 
             assertEquals(concept, tx.putRelationshipType(label));
         }
@@ -417,7 +417,7 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
-            server.setResponse(RequestBuilder.putAttributeType(label, dataType), concept(concept));
+            server.setResponse(RequestBuilder.putAttributeType(label, dataType), response(concept));
 
             assertEquals(concept, tx.putAttributeType(label, dataType));
         }
@@ -432,7 +432,7 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRole(tx, id);
-            server.setResponse(RequestBuilder.putRole(label), concept(concept));
+            server.setResponse(RequestBuilder.putRole(label), response(concept));
 
             assertEquals(concept, tx.putRole(label));
         }
@@ -449,7 +449,7 @@ public class RemoteGraknTxTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteConcepts.createRule(tx, id);
-            server.setResponse(RequestBuilder.putRule(label, when, then), concept(concept));
+            server.setResponse(RequestBuilder.putRule(label, when, then), response(concept));
 
             assertEquals(concept, tx.putRule(label, when, then));
         }
@@ -529,8 +529,8 @@ public class RemoteGraknTxTest {
 
             server.setResponseSequence(
                     RequestBuilder.getAttributesByValue(value),
-                    concept(attribute1),
-                    concept(attribute2)
+                    response(attribute1),
+                    response(attribute2)
             );
 
             assertThat(tx.getAttributesByValue(value), containsInAnyOrder(attribute1, attribute2));

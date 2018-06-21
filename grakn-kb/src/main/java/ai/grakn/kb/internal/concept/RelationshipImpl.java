@@ -165,12 +165,12 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     /**
      * Expands this {@link Relationship} to include a new role player which is playing a specific {@link Role}.
      * @param role The role of the new role player.
-     * @param thing The new role player.
+     * @param player The new role player.
      * @return The {@link Relationship} itself
      */
     @Override
-    public Relationship addRolePlayer(Role role, Thing thing) {
-        reify().addRolePlayer(role, thing);
+    public Relationship addRolePlayer(Role role, Thing player) {
+        reify().addRolePlayer(role, player);
         return this;
     }
 
@@ -186,8 +186,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public void removeRolePlayer(Role role, Thing thing) {
-        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
+    public void removeRolePlayer(Role role, Thing player) {
+        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, player));
     }
 
     /**

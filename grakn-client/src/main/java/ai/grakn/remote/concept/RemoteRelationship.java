@@ -91,19 +91,24 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     }
 
     @Override
-    public final Relationship addRolePlayer(Role role, Thing thing) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRolePlayer(ConceptBuilder.rolePlayer(role, thing));
-        runMethod(method.build());
+    public final Relationship addRolePlayer(Role role, Thing player) {
+        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+                .setRole(ConceptBuilder.concept(role))
+                .setPlayer(ConceptBuilder.concept(player))
+                .build();
 
+        runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
         return asCurrentBaseType(this);
     }
 
     @Override
-    public final void removeRolePlayer(Role role, Thing thing) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetRolePlayer(ConceptBuilder.rolePlayer(role, thing));
-        runMethod(method.build());
+    public final void removeRolePlayer(Role role, Thing player) {
+        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+                .setRole(ConceptBuilder.concept(role))
+                .setPlayer(ConceptBuilder.concept(player))
+                .build();
+
+        runMethod(GrpcConcept.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
     }
 
     @Override
