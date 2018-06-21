@@ -151,31 +151,31 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     @Override
     public EntityType putEntityType(Label label) {
         communicator.send(RequestBuilder.putEntityType(label));
-        return ConceptConverter.RPCToGraknConcept(this, responseOrThrow().getConcept()).asEntityType();
+        return ConceptConverter.concept(this, responseOrThrow().getConcept()).asEntityType();
     }
 
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         communicator.send(RequestBuilder.putAttributeType(label, dataType));
-        return ConceptConverter.RPCToGraknConcept(this, responseOrThrow().getConcept()).asAttributeType();
+        return ConceptConverter.concept(this, responseOrThrow().getConcept()).asAttributeType();
     }
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         communicator.send(RequestBuilder.putRule(label, when, then));
-        return ConceptConverter.RPCToGraknConcept(this, responseOrThrow().getConcept()).asRule();
+        return ConceptConverter.concept(this, responseOrThrow().getConcept()).asRule();
     }
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
         communicator.send(RequestBuilder.putRelationshipType(label));
-        return ConceptConverter.RPCToGraknConcept(this, responseOrThrow().getConcept()).asRelationshipType();
+        return ConceptConverter.concept(this, responseOrThrow().getConcept()).asRelationshipType();
     }
 
     @Override
     public Role putRole(Label label) {
         communicator.send(RequestBuilder.putRole(label));
-        return ConceptConverter.RPCToGraknConcept(this, responseOrThrow().getConcept()).asRole();
+        return ConceptConverter.concept(this, responseOrThrow().getConcept()).asRole();
     }
 
     @Nullable
@@ -184,7 +184,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         communicator.send(RequestBuilder.getConcept(id));
         GrpcGrakn.TxResponse response = responseOrThrow();
         if (response.getNoResult()) return null;
-        return (T) ConceptConverter.RPCToGraknConcept(this, response.getConcept());
+        return (T) ConceptConverter.concept(this, response.getConcept());
     }
 
     @Nullable
@@ -193,7 +193,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         communicator.send(RequestBuilder.getSchemaConcept(label));
         GrpcGrakn.TxResponse response = responseOrThrow();
         if (response.getNoResult()) return null;
-        return (T) ConceptConverter.RPCToGraknConcept(this, response.getConcept());
+        return (T) ConceptConverter.concept(this, response.getConcept());
     }
 
     @Nullable
@@ -207,7 +207,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         communicator.send(RequestBuilder.getAttributesByValue(value));
         GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
         Iterable<Concept> iterable = () -> new Iterator<>(
-                this, iteratorId, response -> ConceptConverter.RPCToGraknConcept(this, response.getConcept())
+                this, iteratorId, response -> ConceptConverter.concept(this, response.getConcept())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
@@ -286,7 +286,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
         GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new Iterator<>(
-                this, iteratorId, res -> ConceptConverter.RPCToGraknConcept(this, res.getConcept())
+                this, iteratorId, res -> ConceptConverter.concept(this, res.getConcept())
         );
 
         Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);
@@ -341,7 +341,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            map.put(Graql.var(grpcVar), ConceptConverter.RPCToGraknConcept(this, grpcConcept));
+            map.put(Graql.var(grpcVar), ConceptConverter.concept(this, grpcConcept));
         });
 
         return new QueryAnswer(map.build());

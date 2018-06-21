@@ -27,7 +27,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.remote.rpc.Iterator;
-import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
@@ -62,8 +61,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
         for (GrpcConcept.RolePlayer rolePlayer : rolePlayers) {
-            Role role = ConceptConverter.RPCToGraknConcept(tx(), rolePlayer.getRole()).asRole();
-            Thing player = ConceptConverter.RPCToGraknConcept(tx(), rolePlayer.getPlayer()).asThing();
+            Role role = ConceptConverter.concept(tx(), rolePlayer.getRole()).asRole();
+            Thing player = ConceptConverter.concept(tx(), rolePlayer.getPlayer()).asThing();
             if (rolePlayerMap.containsKey(role)) {
                 rolePlayerMap.get(role).add(player);
             } else {
@@ -80,12 +79,12 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         if (roles.length == 0) {
             method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetRolePlayersByRoles(RequestBuilder.concepts(Stream.of(roles)));
+            method.setGetRolePlayersByRoles(ConceptConverter.concepts(Stream.of(roles)));
         }
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new Iterator<>(
-                tx(), iteratorId, res -> ConceptConverter.RPCToGraknConcept(tx(), res.getRolePlayer().getPlayer()).asThing()
+                tx(), iteratorId, res -> ConceptConverter.concept(tx(), res.getRolePlayer().getPlayer()).asThing()
         );
 
         return StreamSupport.stream(rolePlayers.spliterator(), false);
@@ -94,8 +93,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final Relationship addRolePlayer(Role role, Thing player) {
         GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
-                .setRole(ConceptConverter.GraknToRPCConcept(role))
-                .setPlayer(ConceptConverter.GraknToRPCConcept(player))
+                .setRole(ConceptConverter.concept(role))
+                .setPlayer(ConceptConverter.concept(player))
                 .build();
 
         runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
@@ -105,8 +104,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final void removeRolePlayer(Role role, Thing player) {
         GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
-                .setRole(ConceptConverter.GraknToRPCConcept(role))
-                .setPlayer(ConceptConverter.GraknToRPCConcept(player))
+                .setRole(ConceptConverter.concept(role))
+                .setPlayer(ConceptConverter.concept(player))
                 .build();
 
         runMethod(GrpcConcept.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());

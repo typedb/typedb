@@ -39,7 +39,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sup(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptConverter.GraknToRPCConcept(type));
+        method.setSetDirectSuperConcept(ConceptConverter.concept(type));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -47,7 +47,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sub(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptConverter.GraknToRPCConcept(this)).build();
+        method.setSetDirectSuperConcept(ConceptConverter.concept(this)).build();
         runMethod(type.getId(), method.build());
 
         return asCurrentBaseType(this);
@@ -89,7 +89,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
 
         return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
     }

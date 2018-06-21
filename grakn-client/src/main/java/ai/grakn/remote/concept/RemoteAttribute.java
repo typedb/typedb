@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;
@@ -61,7 +62,7 @@ abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeTyp
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         // TODO: Fix this unsafe casting
-        return (AttributeType.DataType<D>) dataType(response.getConceptResponse().getDataType());
+        return (AttributeType.DataType<D>) ConceptConverter.dataType(response.getConceptResponse().getDataType());
     }
 
     @Override

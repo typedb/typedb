@@ -46,7 +46,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setAddRelationship(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
 
         return asInstance(concept);
     }
@@ -61,7 +61,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     @Override
     public final RelationshipType relates(Role role) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRelatedRole(ConceptConverter.GraknToRPCConcept(role));
+        method.setSetRelatedRole(ConceptConverter.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -70,7 +70,7 @@ abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relat
     @Override
     public final RelationshipType deleteRelates(Role role) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetRelatedRole(ConceptConverter.GraknToRPCConcept(role));
+        method.setUnsetRelatedRole(ConceptConverter.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);

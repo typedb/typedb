@@ -109,7 +109,7 @@ public class RemoteGraknTxTest {
     }
     
     private static GrpcGrakn.TxResponse response(Concept concept) {
-        return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptConverter.GraknToRPCConcept(concept)).build();
+        return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptConverter.concept(concept)).build();
     }
     
     @Test
@@ -465,7 +465,7 @@ public class RemoteGraknTxTest {
             Concept concept = RemoteConcepts.createEntity(tx, id);
 
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
-                    .setConcept(ConceptConverter.GraknToRPCConcept(concept)).build();
+                    .setConcept(ConceptConverter.concept(concept)).build();
             server.setResponse(RequestBuilder.getConcept(id), response);
 
             assertEquals(concept, tx.getConcept(id));
@@ -496,7 +496,7 @@ public class RemoteGraknTxTest {
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
-                    .setConcept(ConceptConverter.GraknToRPCConcept(concept)).build();
+                    .setConcept(ConceptConverter.concept(concept)).build();
             server.setResponse(RequestBuilder.getSchemaConcept(label), response);
 
             assertEquals(concept, tx.getSchemaConcept(label));

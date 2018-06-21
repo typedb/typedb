@@ -50,7 +50,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRolePlayedByType(ConceptConverter.GraknToRPCConcept(role));
+        method.setSetRolePlayedByType(ConceptConverter.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -59,7 +59,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetKeyType(ConceptConverter.GraknToRPCConcept(attributeType));
+        method.setSetKeyType(ConceptConverter.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -68,7 +68,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetAttributeType(ConceptConverter.GraknToRPCConcept(attributeType));
+        method.setSetAttributeType(ConceptConverter.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -114,7 +114,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deletePlays(Role role) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetRolePlayedByType(ConceptConverter.GraknToRPCConcept(role));
+        method.setUnsetRolePlayedByType(ConceptConverter.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -123,7 +123,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deleteAttribute(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetAttributeType(ConceptConverter.GraknToRPCConcept(attributeType));
+        method.setUnsetAttributeType(ConceptConverter.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -132,7 +132,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deleteKey(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetKeyType(ConceptConverter.GraknToRPCConcept(attributeType)).build();
+        method.setUnsetKeyType(ConceptConverter.concept(attributeType)).build();
         runMethod(method.build());
 
         return asCurrentBaseType(this);

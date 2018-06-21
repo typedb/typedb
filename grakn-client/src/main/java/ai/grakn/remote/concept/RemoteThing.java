@@ -26,7 +26,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.remote.rpc.ConceptConverter;
-import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 
@@ -45,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
 
         return asCurrentType(concept);
     }
@@ -56,7 +55,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (roles.length == 0) {
             method.setGetRelationships(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetRelationshipsByRoles(RequestBuilder.concepts(Stream.of(roles)));
+            method.setGetRelationshipsByRoles(ConceptConverter.concepts(Stream.of(roles)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asRelationship);
     }
@@ -77,9 +76,9 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetAttribute(ConceptConverter.GraknToRPCConcept(attribute));
+        method.setSetAttribute(ConceptConverter.concept(attribute));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
         return concept.asRelationship();
     }
 
@@ -89,7 +88,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (attributeTypes.length == 0) {
             method.setGetAttributes(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetAttributesByTypes(RequestBuilder.concepts(Stream.of(attributeTypes)));
+            method.setGetAttributesByTypes(ConceptConverter.concepts(Stream.of(attributeTypes)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asAttribute);
     }
@@ -100,7 +99,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (attributeTypes.length == 0) {
             method.setGetKeys(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetKeysByTypes(RequestBuilder.concepts(Stream.of(attributeTypes)));
+            method.setGetKeysByTypes(ConceptConverter.concepts(Stream.of(attributeTypes)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asAttribute);
     }
@@ -108,7 +107,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     public final SomeThing deleteAttribute(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetAttribute(ConceptConverter.GraknToRPCConcept(attribute));
+        method.setUnsetAttribute(ConceptConverter.concept(attribute));
         runMethod(method.build());
 
         return asCurrentBaseType(this);

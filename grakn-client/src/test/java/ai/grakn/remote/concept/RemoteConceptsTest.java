@@ -218,7 +218,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        TxResponse response = TxResponse.newBuilder().setConcept(ConceptConverter.GraknToRPCConcept(concept)).build();
+        TxResponse response = TxResponse.newBuilder().setConcept(ConceptConverter.concept(concept)).build();
 
         server.setResponse(RequestBuilder.getConcept(ID), response);
 

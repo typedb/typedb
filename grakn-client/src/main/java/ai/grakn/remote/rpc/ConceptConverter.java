@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.rpc;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.RemoteGraknTx;
@@ -25,12 +26,18 @@ import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+
 /**
  * Concept Reader for a Grakn Client
  */
 public class ConceptConverter {
 
-    public static Concept RPCToGraknConcept(RemoteGraknTx tx, GrpcConcept.Concept concept) {
+    public static Concept concept(RemoteGraknTx tx, GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {
@@ -58,7 +65,7 @@ public class ConceptConverter {
         }
     }
 
-    public static GrpcConcept.Concept GraknToRPCConcept(Concept concept) {
+    public static GrpcConcept.Concept concept(Concept concept) {
         return GrpcConcept.Concept.newBuilder()
                 .setId(concept.getId().getValue())
                 .setBaseType(getBaseType(concept))
@@ -86,6 +93,78 @@ public class ConceptConverter {
             return GrpcConcept.BaseType.META_TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
+        }
+    }
+
+    public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
+        GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
+        grpcConcepts.addAllConcepts(concepts.map(ConceptConverter::concept).collect(toList()));
+        return grpcConcepts.build();
+    }
+
+    public static GrpcConcept.AttributeValue attributeValue(Object value) {
+        GrpcConcept.AttributeValue.Builder builder = GrpcConcept.AttributeValue.newBuilder();
+        if (value instanceof String) {
+            builder.setString((String) value);
+        } else if (value instanceof Boolean) {
+            builder.setBoolean((boolean) value);
+        } else if (value instanceof Integer) {
+            builder.setInteger((int) value);
+        } else if (value instanceof Long) {
+            builder.setLong((long) value);
+        } else if (value instanceof Float) {
+            builder.setFloat((float) value);
+        } else if (value instanceof Double) {
+            builder.setDouble((double) value);
+        } else if (value instanceof LocalDateTime) {
+            builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + value);
+        }
+
+        return builder.build();
+    }
+
+
+    public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
+        switch (dataType) {
+            case String:
+                return AttributeType.DataType.STRING;
+            case Boolean:
+                return AttributeType.DataType.BOOLEAN;
+            case Integer:
+                return AttributeType.DataType.INTEGER;
+            case Long:
+                return AttributeType.DataType.LONG;
+            case Float:
+                return AttributeType.DataType.FLOAT;
+            case Double:
+                return AttributeType.DataType.DOUBLE;
+            case Date:
+                return AttributeType.DataType.DATE;
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + dataType);
+        }
+    }
+
+    static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
+        if (dataType.equals(AttributeType.DataType.STRING)) {
+            return GrpcConcept.DataType.String;
+        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+            return GrpcConcept.DataType.Boolean;
+        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+            return GrpcConcept.DataType.Integer;
+        } else if (dataType.equals(AttributeType.DataType.LONG)) {
+            return GrpcConcept.DataType.Long;
+        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+            return GrpcConcept.DataType.Float;
+        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+            return GrpcConcept.DataType.Double;
+        } else if (dataType.equals(AttributeType.DataType.DATE)) {
+            return GrpcConcept.DataType.Date;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
     }
 }
