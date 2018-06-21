@@ -22,10 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
 
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
-
 /**
  * A utility class to build RPC Concepts by converting them from Grakn Concepts.
  *
@@ -39,7 +35,7 @@ public class ConceptBuilder {
                 .build();
     }
 
-    public static GrpcConcept.BaseType getBaseType(Concept concept) {
+    private static GrpcConcept.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
             return GrpcConcept.BaseType.ENTITY_TYPE;
         } else if (concept.isRelationshipType()) {
@@ -62,11 +58,4 @@ public class ConceptBuilder {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
-    public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
-        GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
-        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
-        return grpcConcepts.build();
-    }
-
-
 }

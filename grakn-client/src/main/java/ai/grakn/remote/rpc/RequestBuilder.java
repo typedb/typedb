@@ -21,6 +21,7 @@ package ai.grakn.remote.rpc;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Pattern;
@@ -34,10 +35,14 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
 import ai.grakn.rpc.generated.GrpcIterator.Next;
 import ai.grakn.rpc.generated.GrpcIterator.Stop;
+import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
@@ -132,6 +137,7 @@ public class RequestBuilder {
         return DeleteRequest.newBuilder().setOpen(open).build();
     }
 
+
     public static GrpcConcept.AttributeValue attributeValue(Object value) {
         GrpcConcept.AttributeValue.Builder builder = GrpcConcept.AttributeValue.newBuilder();
         if (value instanceof String) {
@@ -153,6 +159,12 @@ public class RequestBuilder {
         }
 
         return builder.build();
+    }
+
+    public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
+        GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
+        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
+        return grpcConcepts.build();
     }
 
     private static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
