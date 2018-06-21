@@ -19,6 +19,7 @@
 package ai.grakn.remote.concept;
 
 import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
@@ -75,4 +76,27 @@ abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
     }
 
     abstract SomeConcept asCurrentBaseType(Concept other);
+
+    // TODO: There must be a better way than this. Figure out a way autoamtically mapping one side to another.
+    public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
+        switch (dataType) {
+            case String:
+                return AttributeType.DataType.STRING;
+            case Boolean:
+                return AttributeType.DataType.BOOLEAN;
+            case Integer:
+                return AttributeType.DataType.INTEGER;
+            case Long:
+                return AttributeType.DataType.LONG;
+            case Float:
+                return AttributeType.DataType.FLOAT;
+            case Double:
+                return AttributeType.DataType.DOUBLE;
+            case Date:
+                return AttributeType.DataType.DATE;
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + dataType);
+        }
+    }
 }

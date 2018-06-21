@@ -54,7 +54,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
 import ai.grakn.rpc.util.ResponseBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Metadata;
@@ -397,7 +396,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private void putAttributeType(GrpcGrakn.AttributeType putAttributeType) {
             Label label = Label.of(putAttributeType.getLabel());
-            AttributeType.DataType<?> dataType = ConceptReader.dataType(putAttributeType.getDataType());
+            AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
 
             AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
             reponseSender.onNext(ResponseBuilder.concept(attributeType));
@@ -419,6 +418,28 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private EmbeddedGraknTx<?> tx() {
             return nonNull(tx);
+        }
+
+        public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
+            switch (dataType) {
+                case String:
+                    return AttributeType.DataType.STRING;
+                case Boolean:
+                    return AttributeType.DataType.BOOLEAN;
+                case Integer:
+                    return AttributeType.DataType.INTEGER;
+                case Long:
+                    return AttributeType.DataType.LONG;
+                case Float:
+                    return AttributeType.DataType.FLOAT;
+                case Double:
+                    return AttributeType.DataType.DOUBLE;
+                case Date:
+                    return AttributeType.DataType.DATE;
+                default:
+                case UNRECOGNIZED:
+                    throw new IllegalArgumentException("Unrecognised " + dataType);
+            }
         }
     }
 

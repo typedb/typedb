@@ -26,7 +26,6 @@ import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -80,7 +79,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
-        return (AttributeType.DataType<D>) ConceptReader.dataType(response.getConceptResponse().getDataType());
+        return (AttributeType.DataType<D>) dataType(response.getConceptResponse().getDataType());
     }
 
     @Nullable
