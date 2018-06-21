@@ -20,7 +20,6 @@ package ai.grakn.rpc.util;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
@@ -32,24 +31,13 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.util.CommonUtil;
 import io.grpc.Metadata;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
@@ -81,147 +69,17 @@ public class ResponseBuilder {
 
     public static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setDataType(dataType(dataType));
+        conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
     
     public static TxResponse conceptResponseWithAttributeValue(Object value) {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(attributeValue(value)).build();
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
-        if (dataType.equals(AttributeType.DataType.STRING)) {
-            return GrpcConcept.DataType.String;
-        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return GrpcConcept.DataType.Boolean;
-        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return GrpcConcept.DataType.Integer;
-        } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return GrpcConcept.DataType.Long;
-        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return GrpcConcept.DataType.Float;
-        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return GrpcConcept.DataType.Double;
-        } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return GrpcConcept.DataType.Date;
-        } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
-        }
-    }
-
-    private static GrpcConcept.AttributeValue attributeValue(Object value) {
-        GrpcConcept.AttributeValue.Builder builder = GrpcConcept.AttributeValue.newBuilder();
-        if (value instanceof String) {
-            builder.setString((String) value);
-        } else if (value instanceof Boolean) {
-            builder.setBoolean((boolean) value);
-        } else if (value instanceof Integer) {
-            builder.setInteger((int) value);
-        } else if (value instanceof Long) {
-            builder.setLong((long) value);
-        } else if (value instanceof Float) {
-            builder.setFloat((float) value);
-        } else if (value instanceof Double) {
-            builder.setDouble((double) value);
-        } else if (value instanceof LocalDateTime) {
-            builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
-        } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + value);
-        }
-
-        return builder.build();
-    }
-
     public static TxResponse answer(Object object) {
-        GrpcGrakn.Answer answer;
-
-        if (object instanceof Answer) {
-            answer = GrpcGrakn.Answer.newBuilder().setQueryAnswer(queryAnswer((Answer) object)).build();
-        } else if (object instanceof ComputeQuery.Answer) {
-            answer = GrpcGrakn.Answer.newBuilder().setComputeAnswer(computeAnswer((ComputeQuery.Answer) object)).build();
-        } else {
-            // If not an QueryAnswer or ComputeAnswer, convert to JSON
-            answer = GrpcGrakn.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(buildDefault(object))).build();
-        }
-
-        return TxResponse.newBuilder().setAnswer(answer).build();
-    }
-
-    private static GrpcGrakn.QueryAnswer queryAnswer(Answer answer) {
-        GrpcGrakn.QueryAnswer.Builder queryAnswerRPC = GrpcGrakn.QueryAnswer.newBuilder();
-        answer.forEach((var, concept) -> {
-            GrpcConcept.Concept conceptRps = ConceptBuilder.concept(concept);
-            queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
-        });
-
-        return queryAnswerRPC.build();
-    }
-
-    private static GrpcGrakn.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
-        GrpcGrakn.ComputeAnswer.Builder computeAnswerRPC = GrpcGrakn.ComputeAnswer.newBuilder();
-
-        if (computeAnswer.getNumber().isPresent()) {
-            computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
-        }
-        else if (computeAnswer.getPaths().isPresent()) {
-             computeAnswerRPC.setPaths(paths(computeAnswer.getPaths().get()));
-        }
-        else if (computeAnswer.getCentrality().isPresent()) {
-            computeAnswerRPC.setCentrality(centralityCounts(computeAnswer.getCentrality().get()));
-        }
-        else if (computeAnswer.getClusters().isPresent()) {
-            computeAnswerRPC.setClusters(clusters(computeAnswer.getClusters().get()));
-        }
-        else if (computeAnswer.getClusterSizes().isPresent()) {
-            computeAnswerRPC.setClusterSizes(clusterSizes(computeAnswer.getClusterSizes().get()));
-        }
-
-        return computeAnswerRPC.build();
-    }
-
-    private static GrpcGrakn.Paths paths(List<List<ConceptId>> paths) {
-        GrpcGrakn.Paths.Builder pathsRPC = GrpcGrakn.Paths.newBuilder();
-        for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
-
-        return pathsRPC.build();
-    }
-
-    private static GrpcGrakn.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
-        GrpcGrakn.Centrality.Builder centralityCountsRPC = GrpcGrakn.Centrality.newBuilder();
-
-        for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
-            centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
-        }
-
-        return centralityCountsRPC.build();
-    }
-
-    private static GrpcGrakn.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
-        GrpcGrakn.ClusterSizes.Builder clusterSizesRPC = GrpcGrakn.ClusterSizes.newBuilder();
-        clusterSizesRPC.addAllClusterSizes(clusterSizes);
-
-        return clusterSizesRPC.build();
-    }
-
-    private static GrpcGrakn.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
-        GrpcGrakn.Clusters.Builder clustersRPC = GrpcGrakn.Clusters.newBuilder();
-        for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
-
-        return clustersRPC.build();
-    }
-
-    private static GrpcConcept.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
-        GrpcConcept.ConceptIds.Builder conceptIdsRPC = GrpcConcept.ConceptIds.newBuilder();
-        conceptIdsRPC.addAllIds(conceptIds.stream()
-                .map(id -> id.getValue())
-                .collect(Collectors.toList()));
-
-        return conceptIdsRPC.build();
-    }
-
-    public static Object buildDefault(Object object) {
-        return object;
+        return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
     }
 
     public static GrpcGrakn.DeleteResponse delete() {
