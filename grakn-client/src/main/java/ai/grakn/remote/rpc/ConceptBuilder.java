@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Concept Reader for a Grakn Client
  */
-public class ConceptConverter {
+public class ConceptBuilder {
 
     public static Concept concept(RemoteGraknTx tx, GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
@@ -98,7 +98,7 @@ public class ConceptConverter {
 
     public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
         GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
-        grpcConcepts.addAllConcepts(concepts.map(ConceptConverter::concept).collect(toList()));
+        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
         return grpcConcepts.build();
     }
 

@@ -37,7 +37,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.concept.RemoteConcepts;
-import ai.grakn.remote.rpc.ConceptConverter;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -109,7 +109,7 @@ public class RemoteGraknTxTest {
     }
     
     private static GrpcGrakn.TxResponse response(Concept concept) {
-        return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptConverter.concept(concept)).build();
+        return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
     
     @Test
@@ -465,7 +465,7 @@ public class RemoteGraknTxTest {
             Concept concept = RemoteConcepts.createEntity(tx, id);
 
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
-                    .setConcept(ConceptConverter.concept(concept)).build();
+                    .setConcept(ConceptBuilder.concept(concept)).build();
             server.setResponse(RequestBuilder.getConcept(id), response);
 
             assertEquals(concept, tx.getConcept(id));
@@ -496,7 +496,7 @@ public class RemoteGraknTxTest {
 
             Concept concept = RemoteConcepts.createAttributeType(tx, id);
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
-                    .setConcept(ConceptConverter.concept(concept)).build();
+                    .setConcept(ConceptBuilder.concept(concept)).build();
             server.setResponse(RequestBuilder.getSchemaConcept(label), response);
 
             assertEquals(concept, tx.getSchemaConcept(label));

@@ -24,7 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.remote.rpc.ConceptConverter;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 
@@ -50,7 +50,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRolePlayedByType(ConceptConverter.concept(role));
+        method.setSetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -59,7 +59,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetKeyType(ConceptConverter.concept(attributeType));
+        method.setSetKeyType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -68,7 +68,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetAttributeType(ConceptConverter.concept(attributeType));
+        method.setSetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -114,7 +114,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deletePlays(Role role) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetRolePlayedByType(ConceptConverter.concept(role));
+        method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -123,7 +123,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deleteAttribute(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetAttributeType(ConceptConverter.concept(attributeType));
+        method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -132,7 +132,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType deleteKey(AttributeType attributeType) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetKeyType(ConceptConverter.concept(attributeType)).build();
+        method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
         runMethod(method.build());
 
         return asCurrentBaseType(this);

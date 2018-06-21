@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.remote.rpc.ConceptConverter;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 
@@ -39,7 +39,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sup(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptConverter.concept(type));
+        method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -47,7 +47,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sub(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptConverter.concept(this)).build();
+        method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
         runMethod(type.getId(), method.build());
 
         return asCurrentBaseType(this);
@@ -89,7 +89,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
 
         return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
     }

@@ -79,7 +79,7 @@ public class RequestBuilder {
     }
 
     public static GrpcGrakn.TxRequest getAttributesByValue(Object value) {
-        return TxRequest.newBuilder().setGetAttributesByValue(ConceptConverter.attributeValue(value)).build();
+        return TxRequest.newBuilder().setGetAttributesByValue(ConceptBuilder.attributeValue(value)).build();
     }
 
     public static GrpcGrakn.TxRequest putEntityType(Label label) {
@@ -92,7 +92,7 @@ public class RequestBuilder {
 
     public static GrpcGrakn.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
         GrpcGrakn.AttributeType putAttributeType =
-                GrpcGrakn.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptConverter.dataType(dataType)).build();
+                GrpcGrakn.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
 
         return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
     }

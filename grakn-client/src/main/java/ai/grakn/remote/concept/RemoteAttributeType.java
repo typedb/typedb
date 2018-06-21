@@ -23,7 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.RemoteGraknTx;
-import ai.grakn.remote.rpc.ConceptConverter;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;
@@ -51,9 +51,9 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final Attribute<D> putAttribute(D value) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setPutAttribute(ConceptConverter.attributeValue(value));
+        method.setPutAttribute(ConceptBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
 
         return asInstance(concept);
     }
@@ -62,12 +62,12 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
     @Override
     public final Attribute<D> getAttribute(D value) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetAttribute(ConceptConverter.attributeValue(value));
+        method.setGetAttribute(ConceptBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
         return concept.asAttribute();
     }
 
@@ -79,7 +79,7 @@ abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attri
         GrpcGrakn.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
-        return (AttributeType.DataType<D>) ConceptConverter.dataType(response.getConceptResponse().getDataType());
+        return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());
     }
 
     @Nullable

@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.remote.RemoteGraknTx;
-import ai.grakn.remote.rpc.ConceptConverter;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;
@@ -43,7 +43,7 @@ abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implement
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setAddEntity(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptConverter.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
 
         return asInstance(concept);
     }
