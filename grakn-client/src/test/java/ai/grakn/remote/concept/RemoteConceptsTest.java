@@ -38,9 +38,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -218,7 +218,7 @@ public class RemoteConceptsTest {
 
     @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        TxResponse response = TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        TxResponse response = TxResponse.newBuilder().setConcept(ConceptConverter.GraknToRPCConcept(concept)).build();
 
         server.setResponse(RequestBuilder.getConcept(ID), response);
 

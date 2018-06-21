@@ -163,7 +163,7 @@ public class RequestBuilder {
 
     public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
         GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
-        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
+        grpcConcepts.addAllConcepts(concepts.map(ConceptConverter::GraknToRPCConcept).collect(toList()));
         return grpcConcepts.build();
     }
 

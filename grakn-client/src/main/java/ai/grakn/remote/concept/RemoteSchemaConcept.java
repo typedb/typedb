@@ -26,7 +26,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptBuilder;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -40,7 +39,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sup(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
+        method.setSetDirectSuperConcept(ConceptConverter.GraknToRPCConcept(type));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -48,7 +47,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sub(SomeType type) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
+        method.setSetDirectSuperConcept(ConceptConverter.GraknToRPCConcept(this)).build();
         runMethod(type.getId(), method.build());
 
         return asCurrentBaseType(this);

@@ -29,7 +29,6 @@ import ai.grakn.remote.rpc.ConceptConverter;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.util.ConceptBuilder;
 
 import java.util.stream.Stream;
 
@@ -78,7 +77,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetAttribute(ConceptBuilder.concept(attribute));
+        method.setSetAttribute(ConceptConverter.GraknToRPCConcept(attribute));
         GrpcGrakn.TxResponse response = runMethod(method.build());
         Concept concept = ConceptConverter.RPCToGraknConcept(tx(), response.getConceptResponse().getConcept());
         return concept.asRelationship();
@@ -109,7 +108,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     public final SomeThing deleteAttribute(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetAttribute(ConceptBuilder.concept(attribute));
+        method.setUnsetAttribute(ConceptConverter.GraknToRPCConcept(attribute));
         runMethod(method.build());
 
         return asCurrentBaseType(this);

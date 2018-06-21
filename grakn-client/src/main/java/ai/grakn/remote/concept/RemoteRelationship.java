@@ -31,7 +31,6 @@ import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
 import com.google.auto.value.AutoValue;
 
 import java.util.Collections;
@@ -95,8 +94,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final Relationship addRolePlayer(Role role, Thing player) {
         GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
-                .setRole(ConceptBuilder.concept(role))
-                .setPlayer(ConceptBuilder.concept(player))
+                .setRole(ConceptConverter.GraknToRPCConcept(role))
+                .setPlayer(ConceptConverter.GraknToRPCConcept(player))
                 .build();
 
         runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
@@ -106,8 +105,8 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final void removeRolePlayer(Role role, Thing player) {
         GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
-                .setRole(ConceptBuilder.concept(role))
-                .setPlayer(ConceptBuilder.concept(player))
+                .setRole(ConceptConverter.GraknToRPCConcept(role))
+                .setPlayer(ConceptConverter.GraknToRPCConcept(player))
                 .build();
 
         runMethod(GrpcConcept.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
