@@ -28,8 +28,10 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
         Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies = this.strategy.getRolePlayerTypeStrategies();
         for (RolePlayerTypeStrategy rolePlayerTypeStrategy : rolePlayerTypeStrategies) {
             // Reset the roleplayer pickers to cater for the case where they are central
-            rolePlayerTypeStrategy.getConceptPicker().reset();
+            rolePlayerTypeStrategy.getPicker().reset();
         }
+
+        String relationshipTypeLabel = strategy.getTypeLabel();
 
         return Stream.generate(() -> {
             /*
@@ -38,8 +40,6 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
             Get a stream of conceptIds that can play that role, according to the picking strategy. This stream may be
             empty for one role, in which case, a decision has to be made whether to make the relationship anyway or abort
              */
-
-            String relationshipTypeLabel = strategy.getTypeLabel();
 
             Pattern matchVarPattern = null;  //TODO It will be faster to use a pure insert, supplying the ids for the roleplayers' variables
             VarPattern insertVarPattern = var("r").isa(relationshipTypeLabel);

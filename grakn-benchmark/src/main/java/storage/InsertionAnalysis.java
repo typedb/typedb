@@ -34,8 +34,22 @@ public class InsertionAnalysis {
 
         Iterator<VarPatternAdmin> insertVarPatternsIterator = query.admin().varPatterns().iterator();
 
-        HashSet<Var> insertVarsWithoutIds = getVarsWithoutIds(insertVarPatternsIterator);
+//        List<Answer> answerList;
+//        Object x;
+//        try (GraknTx tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("societal_model")).open(GraknTxType.WRITE)) {
+////    answerList = tx.graql().match(Graql.var("x").isa("company").has("name")).get().execute();
+////    answerList = tx.graql().match(Graql.var("x").isa("company").has("name", Graql.var("y"))).get().execute();
+////    answerList = tx.graql().match(Graql.var("x").isa("company").has("name","Ganesh")).get().execute();
+////    answerList = tx.graql().match(Graql.var("x").isa("company"), Graql.var("x").has("name","Ganesh")).get().execute();
+////    answerList = tx.graql().match(Graql.var("x").isa("company")).get().execute();
+////    x = answerList.get(0).get("y").asAttribute().getValue();
+//            answerList = tx.graql().insert(Graql.var("x").isa("company").has("name", Graql.var("y")), Graql.var("y").val("James")).execute();
+//            tx.commit();
+//        }
+//        insert $x has name "Tomas", has name $y; $y "Tomas2"; $x id V28336136;
 
+        HashSet<Var> insertVarsWithoutIds = getVarsWithoutIds(insertVarPatternsIterator);
+        //Close to getting attributes query.admin().varPatterns().iterator().next().admin().getProperty(HasAttributeTypeProperty.class)
         Match match = query.admin().match();
         if (match != null) {
             // We only do anything with the match clause if it exists
@@ -57,13 +71,17 @@ public class InsertionAnalysis {
 
     private static HashSet<Var> getVarsWithoutIds(Iterator<VarPatternAdmin> varPatternAdminIterator) {
 
+        //TODO I don;t think this works at present.
         HashSet<Var> varsWithoutIds = new HashSet<>();
+        HashSet<Var> varsWithIds = new HashSet<>();
 
         while (varPatternAdminIterator.hasNext()) {
 
             VarPatternAdmin varPatternAdmin = varPatternAdminIterator.next();
             Optional<IdProperty> idProperty = varPatternAdmin.getProperty(IdProperty.class);
-            if(!idProperty.isPresent()) {
+            if(idProperty.isPresent()) {
+                varsWithIds.add(varPatternAdmin.var());
+            } else {
                 //ConceptId id = idProperty.get().id();  // How to get the id, but in fact we don't care
 
                 // If no id is present, then add to the set

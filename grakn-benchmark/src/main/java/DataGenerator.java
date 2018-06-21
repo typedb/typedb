@@ -16,6 +16,8 @@ import strategy.*;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
+
 public class DataGenerator {
 
     private static String uri = "localhost:48555";
@@ -102,10 +104,15 @@ public class DataGenerator {
                                             "employment",
                                             "employer",
                                             100,
-                                            new IsaTypeConceptIdPicker(
+//                                            new IsaTypeConceptIdPicker(
+//                                                    this.rand,
+//                                                    this.conceptTypeCountStore,
+//                                                    "company"
+//                                            )
+                                            new ConceptIdPicker(
                                                     this.rand,
-                                                    this.conceptTypeCountStore,
-                                                    "company"
+                                                    var("x").isa("company"),
+                                                    var("x")
                                             )
 
                                     )
@@ -134,7 +141,18 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("name", this.attributeTypes),
                             new UniformPDF(this.rand, 3, 20),
                             new AttributeOwnerTypeStrategy(
-                                    SchemaManager.getTypeFromString("company", this.entityTypes)
+                                    SchemaManager.getTypeFromString("company", this.entityTypes),
+                                    new StreamProvider<ConceptId>(
+//                                            new IsaTypeConceptIdPicker(
+//                                                    this.rand,
+//                                                    this.conceptTypeCountStore,
+//                                                    "company")
+                                            new ConceptIdPicker(
+                                                    this.rand,
+                                                    var("x").isa("company"),
+                                                    var("x")
+                                                    )
+                                    )
                             ),
                             new StreamProvider<>(
                                     new PickableCollectionValuePicker<String>(nameValueOptions)
@@ -146,7 +164,6 @@ public class DataGenerator {
         this.operationStrategies.add(0.7, this.entityStrategies);
         this.operationStrategies.add(0.3, this.relationshipStrategies);
         this.operationStrategies.add(0.0, this.attributeStrategies);
-
     }
 
     private GraknSession getSession() {
@@ -220,8 +237,8 @@ public class DataGenerator {
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
-        dg.generate(1000);
-        dg.generate(10000);
+//        dg.generate(1000);
+//        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 

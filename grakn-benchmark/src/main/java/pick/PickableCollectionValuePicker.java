@@ -15,6 +15,6 @@ public class PickableCollectionValuePicker<T> implements StreamInterface<T> {
 
     @Override
     public Stream<T> getStream(int streamLength, GraknTx tx) {
-        return Stream.generate(() -> valueOptions.next());
+        return Stream.generate(() -> valueOptions.next()).limit(streamLength);
     }
 }

@@ -39,7 +39,7 @@ public class AttributeStrategy<Datatype> extends TypeStrategy<AttributeType> imp
     }
 
     @Override
-    public StreamProviderInterface getConceptPicker() {
+    public StreamProviderInterface getPicker() {
         return this.valuePicker;
     }
 }
