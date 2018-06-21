@@ -45,18 +45,17 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ConceptBuilder;
-import ai.grakn.rpc.util.ConceptReader;
-import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.util.TxConceptReader;
+import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.util.ConceptBuilder;
+import ai.grakn.rpc.util.ConceptReader;
+import ai.grakn.rpc.util.ResponseBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -344,7 +343,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private void runConceptMethod(GrpcGrakn.RunConceptMethod runConceptMethod) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
-            TxConceptReader txConceptReader = new EmbeddedConceptReader(tx());
+            EmbeddedConceptReader txConceptReader = new EmbeddedConceptReader(tx());
 
             TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, txConceptReader);
             reponseSender.onNext(response);

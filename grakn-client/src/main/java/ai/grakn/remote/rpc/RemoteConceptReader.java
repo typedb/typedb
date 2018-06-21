@@ -22,13 +22,12 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.remote.concept.RemoteConcepts;
-import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.rpc.generated.GrpcConcept;
 
 /**
  * Concept Reader for a Grakn Client
  */
-public class RemoteConceptReader extends TxConceptReader {
+public class RemoteConceptReader {
 
     private final RemoteGraknTx tx;
 
@@ -36,7 +35,6 @@ public class RemoteConceptReader extends TxConceptReader {
         this.tx = tx;
     }
 
-    @Override
     public Concept concept(GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 

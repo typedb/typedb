@@ -26,8 +26,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.remote.rpc.Iterator;
-import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
 import com.google.auto.value.AutoValue;
@@ -53,17 +53,20 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     public final Map<Role, Set<Thing>> allRolePlayers() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
+
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<RolePlayer> rolePlayers = () -> new Iterator<>(
-                tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
+        Iterable<GrpcConcept.RolePlayer> rolePlayers = () -> new Iterator<>(
+                tx(), iteratorId, GrpcGrakn.TxResponse::getRolePlayer
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
-        for (RolePlayer rolePlayer : rolePlayers) {
-            if (rolePlayerMap.containsKey(rolePlayer.role())) {
-                rolePlayerMap.get(rolePlayer.role()).add(rolePlayer.player());
+        for (GrpcConcept.RolePlayer rolePlayer : rolePlayers) {
+            Role role = tx().conceptReader().concept(rolePlayer.getRole()).asRole();
+            Thing player = tx().conceptReader().concept(rolePlayer.getPlayer()).asThing();
+            if (rolePlayerMap.containsKey(role)) {
+                rolePlayerMap.get(role).add(player);
             } else {
-                rolePlayerMap.put(rolePlayer.role(), Collections.singleton(rolePlayer.player()));
+                rolePlayerMap.put(role, Collections.singleton(player));
             }
         }
 
@@ -80,17 +83,17 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
         }
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<RolePlayer> rolePlayers = () -> new Iterator<>(
-                tx(), iteratorId, res -> tx().conceptReader().rolePlayer(res.getRolePlayer())
+        Iterable<Thing> rolePlayers = () -> new Iterator<>(
+                tx(), iteratorId, res -> tx().conceptReader().concept(res.getRolePlayer().getPlayer()).asThing()
         );
 
-        return StreamSupport.stream(rolePlayers.spliterator(), false).map(RolePlayer::player);
+        return StreamSupport.stream(rolePlayers.spliterator(), false);
     }
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing thing) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setSetRolePlayer(ConceptBuilder.rolePlayer(RolePlayer.create(role, thing)));
+        method.setSetRolePlayer(ConceptBuilder.rolePlayer(role, thing));
         runMethod(method.build());
 
         return asCurrentBaseType(this);
@@ -99,7 +102,7 @@ abstract class RemoteRelationship extends RemoteThing<Relationship, Relationship
     @Override
     public final void removeRolePlayer(Role role, Thing thing) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setUnsetRolePlayer(ConceptBuilder.rolePlayer(RolePlayer.create(role, thing)));
+        method.setUnsetRolePlayer(ConceptBuilder.rolePlayer(role, thing));
         runMethod(method.build());
     }
 

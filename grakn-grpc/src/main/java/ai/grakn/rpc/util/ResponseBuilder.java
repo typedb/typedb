@@ -20,6 +20,8 @@ package ai.grakn.rpc.util;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
@@ -32,7 +34,6 @@ import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import io.grpc.Metadata;
@@ -59,8 +60,8 @@ public class ResponseBuilder {
         return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
 
-    public static GrpcGrakn.TxResponse rolePlayer(RolePlayer rolePlayer) {
-        return GrpcGrakn.TxResponse.newBuilder().setRolePlayer(ConceptBuilder.rolePlayer(rolePlayer)).build();
+    public static GrpcGrakn.TxResponse rolePlayer(Role role, Thing player) {
+        return GrpcGrakn.TxResponse.newBuilder().setRolePlayer(ConceptBuilder.rolePlayer(role, player)).build();
     }
 
     public static GrpcGrakn.TxResponse answer(Object object) {

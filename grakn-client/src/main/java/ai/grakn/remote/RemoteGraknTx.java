@@ -46,8 +46,8 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.Communicator;
-import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.remote.rpc.Iterator;
+import ai.grakn.remote.rpc.RemoteConceptReader;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -56,7 +56,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.rpc.util.TxConceptReader;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.StatusRuntimeException;
@@ -88,7 +87,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     private final RemoteGraknSession session;
     private final GraknTxType txType;
     private final Communicator communicator;
-    private final TxConceptReader conceptReader;
+    private final RemoteConceptReader conceptReader;
 
     private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
@@ -136,7 +135,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         else return error;
     }
 
-    public TxConceptReader conceptReader() {
+    public RemoteConceptReader conceptReader() {
         return conceptReader;
     }
 

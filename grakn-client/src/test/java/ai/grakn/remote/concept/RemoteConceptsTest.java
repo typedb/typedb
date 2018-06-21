@@ -39,7 +39,6 @@ import ai.grakn.remote.GrpcServerMock;
 import ai.grakn.remote.RemoteGraknSession;
 import ai.grakn.remote.RemoteGraknTx;
 import ai.grakn.remote.rpc.RequestBuilder;
-import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.util.SimpleURI;
@@ -53,7 +52,6 @@ import org.junit.Test;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -433,11 +431,11 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        Stream<RolePlayer> mockedResponse = Stream.of(
-                RolePlayer.create(foo, a),
-                RolePlayer.create(bar, b),
-                RolePlayer.create(bar, c)
-        );
+//        Stream<RolePlayer> mockedResponse = Stream.of(
+//                RolePlayer.create(foo, a),
+//                RolePlayer.create(bar, b),
+//                RolePlayer.create(bar, c)
+//        );
 
         //TxResponse response = getRolePlayers.createTxResponse(server.grpcIterators(), mockedResponse);
 
@@ -461,9 +459,9 @@ public class RemoteConceptsTest {
         Thing b = RemoteConcepts.createRelationship(tx, B);
         Thing c = RemoteConcepts.createAttribute(tx, C);
 
-        Stream<RolePlayer> expected = Stream.of(
-                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
-        );
+//        Stream<RolePlayer> expected = Stream.of(
+//                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
+//        );
 
         //mockConceptMethod(ConceptMethod.getRolePlayers, expected);
 

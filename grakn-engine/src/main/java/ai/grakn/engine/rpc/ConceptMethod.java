@@ -24,16 +24,16 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
+import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.RolePlayer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ConceptBuilder;
 import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.rpc.util.TxConceptReader;
 
 import java.util.stream.Stream;
 
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 public abstract class ConceptMethod {
 
     // Server: TxRequestLister.runConceptMethod()
-    public static TxResponse run(Concept concept, GrpcConcept.ConceptMethod method, TransactionService.Iterators iterators, TxConceptReader reader) {
+    public static TxResponse run(Concept concept, GrpcConcept.ConceptMethod method, TransactionService.Iterators iterators, EmbeddedConceptReader reader) {
         switch (method.getMethodCase()) {
             case GETVALUE:
                 return getValue(concept);
@@ -250,18 +250,15 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getRolePlayers(Concept concept, TransactionService.Iterators iterators) {
-        Stream.Builder<RolePlayer> rolePlayers = Stream.builder();
+        Stream.Builder<TxResponse> rolePlayersBuilder = Stream.builder();
         concept.asRelationship().allRolePlayers().forEach(
-                (role, players) -> players.forEach(
-                        player -> rolePlayers.add(RolePlayer.create(role, player))
-                )
+                (role, players) -> players.forEach(player -> rolePlayersBuilder.add(ResponseBuilder.rolePlayer(role, player)))
         );
-        Stream<RolePlayer> response = rolePlayers.build();
 
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::rolePlayer);
-        GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
-        conceptResponse.setIteratorId(iteratorId);
+        Stream<TxResponse> rolePlayers = rolePlayersBuilder.build();
+        GrpcIterator.IteratorId iteratorId = iterators.add(rolePlayers.iterator());
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
+
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
@@ -273,13 +270,13 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse setAttributeType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setAttributeType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         AttributeType<?> attributeType = reader.concept(method.getSetAttributeType()).asAttributeType();
         concept.asType().attribute(attributeType);
         return null;
     }
 
-    private static TxResponse unsetAttributeType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse unsetAttributeType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         AttributeType<?> attributeType = reader.concept(method.getUnsetAttributeType()).asAttributeType();
         concept.asType().deleteAttribute(attributeType);
         return null;
@@ -314,7 +311,7 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse setDirectSuper(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setDirectSuper(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         // Make the second argument the super of the first argument
         // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
         //TODO: This was copied from ConceptBuilder
@@ -342,9 +339,10 @@ public abstract class ConceptMethod {
         return null;
     }
 
-    private static TxResponse removeRolePlayer(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
-        RolePlayer rolePlayer = reader.rolePlayer(method.getUnsetRolePlayer());
-        concept.asRelationship().removeRolePlayer(rolePlayer.role(), rolePlayer.player());
+    private static TxResponse removeRolePlayer(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
+        Role role = reader.concept(method.getUnsetRolePlayer().getRole()).asRole();
+        Thing player = reader.concept(method.getUnsetRolePlayer().getPlayer()).asThing();
+        concept.asRelationship().removeRolePlayer(role, player);
         return null;
     }
 
@@ -425,7 +423,7 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse getAttributesByTypes(Concept concept, GrpcConcept.ConceptMethod method, TransactionService.Iterators iterators, TxConceptReader reader) {
+    private static TxResponse getAttributesByTypes(Concept concept, GrpcConcept.ConceptMethod method, TransactionService.Iterators iterators, EmbeddedConceptReader reader) {
         GrpcConcept.Concepts rpcAttributeTypes = method.getGetAttributesByTypes();
         AttributeType<?>[] attributeTypes =
                 rpcAttributeTypes.getConceptsList().stream().map(reader::concept).toArray(AttributeType[]::new);
@@ -445,7 +443,7 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse getRelationshipsByRoles(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse getRelationshipsByRoles(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         GrpcConcept.Concepts rpcRoles = method.getGetRelationshipsByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream().map(reader::concept).toArray(Role[]::new);
 
@@ -472,7 +470,7 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse getKeysByTypes(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse getKeysByTypes(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         GrpcConcept.Concepts rpcKeyTypes = method.getGetKeysByTypes();
         AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList().stream().map(reader::concept).toArray(AttributeType[]::new);
 
@@ -483,7 +481,7 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse getRolePlayersByRoles(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse getRolePlayersByRoles(Concept concept, TransactionService.Iterators iterators, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         GrpcConcept.Concepts rpcRoles = method.getGetRolePlayersByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream().map(reader::concept).toArray(Role[]::new);
 
@@ -494,25 +492,25 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse setKeyType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setKeyType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         AttributeType<?> attributeType = reader.concept(method.getSetKeyType()).asAttributeType();
         concept.asType().key(attributeType);
         return null;
     }
 
-    private static TxResponse unsetKeyType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse unsetKeyType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         AttributeType<?> attributeType = reader.concept(method.getUnsetKeyType()).asAttributeType();
         concept.asType().deleteKey(attributeType);
         return null;
     }
 
-    private static TxResponse setRolePlayedByType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setRolePlayedByType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Role role = reader.concept(method.getSetRolePlayedByType()).asRole();
         concept.asType().plays(role);
         return null;
     }
 
-    private static TxResponse unsetRolePlayedByType(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse unsetRolePlayedByType(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Role role = reader.concept(method.getUnsetRolePlayedByType()).asRole();
         concept.asType().deletePlays(role);
         return null;
@@ -551,14 +549,14 @@ public abstract class ConceptMethod {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse setAttribute(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setAttribute(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Attribute<?> attribute =  reader.concept(method.getSetAttribute()).asAttribute();
         Concept response = concept.asThing().attributeRelationship(attribute);
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(response));
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static TxResponse unsetAttribute(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse unsetAttribute(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Attribute<?> attribute = reader.concept(method.getUnsetAttribute()).asAttribute();
         concept.asThing().deleteAttribute(attribute);
         return null;
@@ -569,19 +567,20 @@ public abstract class ConceptMethod {
         return null;
     }
 
-    private static TxResponse setRolePlayer(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
-        RolePlayer rolePlayer = reader.rolePlayer(method.getSetRolePlayer());
-        concept.asRelationship().addRolePlayer(rolePlayer.role(), rolePlayer.player());
+    private static TxResponse setRolePlayer(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
+        Role role = reader.concept(method.getSetRolePlayer().getRole()).asRole();
+        Thing player = reader.concept(method.getSetRolePlayer().getPlayer()).asThing();
+        concept.asRelationship().addRolePlayer(role, player);
         return null;
     }
 
-    private static TxResponse setRelatedRole(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse setRelatedRole(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Role role = reader.concept(method.getSetRelatedRole()).asRole();
         concept.asRelationshipType().relates(role);
         return null;
     }
 
-    private static TxResponse unsetRelatedRole(Concept concept, GrpcConcept.ConceptMethod method, TxConceptReader reader) {
+    private static TxResponse unsetRelatedRole(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         Role role = reader.concept(method.getUnsetRelatedRole()).asRole();
         concept.asRelationshipType().deleteRelates(role);
         return null;

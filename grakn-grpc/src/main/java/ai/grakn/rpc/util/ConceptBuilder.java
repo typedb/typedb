@@ -20,7 +20,8 @@ package ai.grakn.rpc.util;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.rpc.RolePlayer;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
 
@@ -67,10 +68,10 @@ public class ConceptBuilder {
         }
     }
 
-    public static GrpcConcept.RolePlayer rolePlayer(RolePlayer rolePlayer) {
+    public static GrpcConcept.RolePlayer rolePlayer(Role role, Thing player) {
         return GrpcConcept.RolePlayer.newBuilder()
-                .setRole(ConceptBuilder.concept(rolePlayer.role()))
-                .setPlayer(ConceptBuilder.concept(rolePlayer.player()))
+                .setRole(ConceptBuilder.concept(role))
+                .setPlayer(ConceptBuilder.concept(player))
                 .build();
     }
 
