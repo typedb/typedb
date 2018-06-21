@@ -31,6 +31,7 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -66,6 +67,13 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
     }
 
+    public static TxResponse answer(Object object) {
+        return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
+    }
+
+    public static GrpcGrakn.DeleteResponse delete() {
+        return GrpcGrakn.DeleteResponse.getDefaultInstance();
+    }
 
     public static TxResponse conceptResponseWithNoResult() {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
@@ -88,12 +96,19 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static TxResponse answer(Object object) {
-        return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
+    public static TxResponse conceptResponseWithPattern(Pattern pattern) {
+        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
+        if (pattern != null) {
+            conceptResponse.setPattern(pattern.toString());
+        } else {
+            conceptResponse.setNoResult(true);
+        }
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static GrpcGrakn.DeleteResponse delete() {
-        return GrpcGrakn.DeleteResponse.getDefaultInstance();
+    public static TxResponse conceptResponseWithRegex(String regex) {
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     /**

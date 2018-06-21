@@ -27,7 +27,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -208,34 +207,17 @@ public abstract class ConceptMethod {
     }
     
     private static TxResponse getWhen(Concept concept) {
-        return getPattern(concept.asRule().getWhen());
+        return ResponseBuilder.conceptResponseWithPattern(concept.asRule().getWhen());
     }
     
     private static TxResponse getThen(Concept concept) {
-        return getPattern(concept.asRule().getThen());
-    }
-    
-    private static TxResponse getPattern(Pattern pattern) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        if (pattern != null) {
-            conceptResponse.setPattern(pattern.toString());
-        } else {
-            conceptResponse.setNoResult(true);
-        }
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        return ResponseBuilder.conceptResponseWithPattern(concept.asRule().getThen());
     }
 
     private static TxResponse getRegex(Concept concept) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         String regex = concept.asAttributeType().getRegex();
-
-        if (regex != null) {
-            conceptResponse.setRegex(regex);
-        } else {
-            conceptResponse.setNoResult(true);
-        }
-
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        if (regex == null) return ResponseBuilder.conceptResponseWithNoResult();
+        return ResponseBuilder.conceptResponseWithRegex(regex);
     }
 
     private static TxResponse getRolePlayers(Concept concept, TransactionService.Iterators iterators) {
@@ -243,11 +225,9 @@ public abstract class ConceptMethod {
         concept.asRelationship().allRolePlayers().forEach(
                 (role, players) -> players.forEach(player -> rolePlayersBuilder.add(ResponseBuilder.rolePlayer(role, player)))
         );
-
         Stream<TxResponse> rolePlayers = rolePlayersBuilder.build();
         GrpcIterator.IteratorId iteratorId = iterators.add(rolePlayers.iterator());
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
-
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
