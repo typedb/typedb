@@ -266,8 +266,8 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getAttributeTypes(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asType().attributes();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asType().attributes();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
@@ -286,10 +286,12 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getKeyTypes(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asType().keys();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asType().keys();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
+
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
+
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
@@ -352,72 +354,72 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse getOwners(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asAttribute().ownerInstances();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asAttribute().ownerInstances();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getTypesThatPlayRole(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asRole().playedByTypes();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asRole().playedByTypes();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getRolesPlayedByType(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asType().plays();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asType().plays();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getInstances(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asType().instances();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asType().instances();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getRelatedRoles(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asRelationshipType().relates();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asRelationshipType().relates();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getAttributes(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asThing().attributes();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asThing().attributes();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getSuperConcepts(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asSchemaConcept().sups();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asSchemaConcept().sups();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getSubConcepts(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asSchemaConcept().subs();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asSchemaConcept().subs();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getRelationshipTypesThatRelateRole(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asRole().relationshipTypes();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asRole().relationshipTypes();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
@@ -428,17 +430,16 @@ public abstract class ConceptMethod {
         AttributeType<?>[] attributeTypes =
                 rpcAttributeTypes.getConceptsList().stream().map(reader::concept).toArray(AttributeType[]::new);
 
-        Stream<? extends Concept> response = concept.asThing().attributes(attributeTypes);
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
-
+        Stream<? extends Concept> concepts = concept.asThing().attributes(attributeTypes);
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getRelationships(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asThing().relationships();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asThing().relationships();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
@@ -448,25 +449,24 @@ public abstract class ConceptMethod {
         GrpcConcept.Concepts rpcRoles = method.getGetRelationshipsByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream().map(reader::concept).toArray(Role[]::new);
 
-        Stream<? extends Concept> response = concept.asThing().relationships(roles);
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
-
+        Stream<? extends Concept> concepts = concept.asThing().relationships(roles);
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getRolesPlayedByThing(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asThing().plays();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asThing().plays();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static TxResponse getKeys(Concept concept, TransactionService.Iterators iterators) {
-        Stream<? extends Concept> response = concept.asThing().keys();
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
+        Stream<? extends Concept> concepts = concept.asThing().keys();
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
@@ -476,9 +476,8 @@ public abstract class ConceptMethod {
         GrpcConcept.Concepts rpcKeyTypes = method.getGetKeysByTypes();
         AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList().stream().map(reader::concept).toArray(AttributeType[]::new);
 
-        Stream<? extends Concept> response = concept.asThing().keys(keyTypes);
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
-
+        Stream<? extends Concept> concepts = concept.asThing().keys(keyTypes);
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
@@ -488,9 +487,8 @@ public abstract class ConceptMethod {
         GrpcConcept.Concepts rpcRoles = method.getGetRolePlayersByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream().map(reader::concept).toArray(Role[]::new);
 
-        Stream<? extends Concept> response = concept.asRelationship().rolePlayers(roles);
-        Stream<TxResponse> responses = response.map(ResponseBuilder::concept);
-
+        Stream<? extends Concept> concepts = concept.asRelationship().rolePlayers(roles);
+        Stream<TxResponse> responses = concepts.map(ResponseBuilder::concept);
         GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId);
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();

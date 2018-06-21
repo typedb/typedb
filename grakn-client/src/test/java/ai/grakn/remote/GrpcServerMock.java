@@ -155,7 +155,7 @@ public final class GrpcServerMock extends CompositeTestRule {
 
             return streamObserver -> {
                 List<TxResponse> responsesList =
-                        ImmutableList.<TxResponse>builder().add(responses).add(ResponseBuilder.done()).build();
+                        ImmutableList.<TxResponse>builder().add(responses).add(done()).build();
 
                 server.setResponse(RequestBuilder.next(iteratorId), responsesList);
                 streamObserver.onNext(GrpcGrakn.TxResponse.newBuilder().setIteratorId(iteratorId).build());
@@ -179,7 +179,7 @@ public final class GrpcServerMock extends CompositeTestRule {
 
         doAnswer(args -> {
             StreamObserver<DeleteResponse> deleteResponses = args.getArgument(1);
-            deleteResponses.onNext(ResponseBuilder.delete());
+            deleteResponses.onNext(GrpcGrakn.DeleteResponse.getDefaultInstance());
             deleteResponses.onCompleted();
             return null;
         }).when(service).delete(any(), any());
@@ -193,7 +193,8 @@ public final class GrpcServerMock extends CompositeTestRule {
             TxRequest request = args.getArgument(0);
 
             Optional<TxResponse> next = rpcIterators.next(request.getNext().getIteratorId());
-            serverResponses.onNext(next.orElse(ResponseBuilder.done()));
+            serverResponses.onNext(next.orElse(done()));
+
             return null;
         }).when(serverRequests).onNext(any());
 
@@ -220,6 +221,10 @@ public final class GrpcServerMock extends CompositeTestRule {
         }
     }
 
+    private static GrpcGrakn.TxResponse done() {
+        return GrpcGrakn.TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
+    }
+    
     /**
      * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
@@ -257,7 +262,7 @@ public final class GrpcServerMock extends CompositeTestRule {
                 if (iterator.hasNext()) {
                     response = iterator.next();
                 } else {
-                    response = ResponseBuilder.done();
+                    response = done();
                     stop(iteratorId);
                 }
 
