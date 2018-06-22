@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -111,7 +110,6 @@ public class ResponseBuilder {
     public enum ErrorType {
         // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
         PROPERTY_NOT_UNIQUE_EXCEPTION(PropertyNotUniqueException::create),
-        INVALID_KB_EXCEPTION(InvalidKBException::create),
         UNKNOWN(UnknownGraknException::create);
 
         // Enums are meant to be serializable, but functions can't be serialized

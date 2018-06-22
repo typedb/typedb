@@ -328,13 +328,13 @@ public class RemoteGraknTxTest {
 
     @Test
     public void whenCommittingATxFails_Throw() {
-        throwOn(RequestBuilder.commit(), ResponseBuilder.ErrorType.INVALID_KB_EXCEPTION, "do it better next time");
+        GraknException expectedException = InvalidKBException.create("do it better next time");
+        throwOn(RequestBuilder.commit(), expectedException);
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
-
-            exception.expect(InvalidKBException.class);
-            exception.expectMessage("do it better next time");
-
+            exception.expect(RuntimeException.class);
+            exception.expectMessage(expectedException.getName());
+            exception.expectMessage(expectedException.getMessage());
             tx.commit();
         }
     }

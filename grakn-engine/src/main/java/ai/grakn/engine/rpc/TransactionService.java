@@ -117,10 +117,8 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             throw error(Status.INTERNAL, e);
         } catch (PropertyNotUniqueException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
-        } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException e) {
+        } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException | InvalidKBException e) {
             throw error(Status.INVALID_ARGUMENT, e);
-        } catch (InvalidKBException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.INVALID_KB_EXCEPTION);
         } catch (GraknException e) {
             // We shouldn't normally encounter this case unless someone adds a new exception class
             throw convertGraknException(e, ResponseBuilder.ErrorType.UNKNOWN);
