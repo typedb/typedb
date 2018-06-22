@@ -25,7 +25,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -65,7 +64,7 @@ public class ConceptIdPicker implements StreamInterface<ConceptId> {
         // If there aren't enough concepts to fulfill the number requested, then return null
         if (typeCount < streamLength) return Stream.empty();
 
-        Stream<Integer> randomUniqueOffsetStream = this.generateUniqueRandomOffsetStream(typeCount);
+        Stream<Integer> randomUniqueOffsetStream = RandomOffsetGenerator.generate(this.rand, typeCount);
 
         return randomUniqueOffsetStream.map(randomOffset -> {
 
@@ -101,26 +100,5 @@ public class ConceptIdPicker implements StreamInterface<ConceptId> {
                 .aggregate(count())
                 .execute();
         return Math.toIntExact(count);
-    }
-
-    /**
-     * @param offsetBound
-     * @return
-     */
-    private Stream<Integer> generateUniqueRandomOffsetStream(int offsetBound) {
-
-        HashSet<Object> previousRandomOffsets = new HashSet<>();
-
-        return Stream.generate(() -> {
-
-            boolean foundUnique = false;
-
-            int nextChoice = 0;
-            while (!foundUnique) {
-                nextChoice = rand.nextInt(offsetBound);
-                foundUnique = previousRandomOffsets.add(nextChoice);
-            }
-            return nextChoice;
-        }).limit(offsetBound);
     }
 }
