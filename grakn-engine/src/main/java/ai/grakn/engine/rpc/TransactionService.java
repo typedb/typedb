@@ -32,7 +32,6 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
-import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -114,10 +113,8 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             runnable.run();
         } catch (TemporaryWriteException e) {
             throw error(Status.RESOURCE_EXHAUSTED, e);
-        } catch (GraknServerException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_SERVER_EXCEPTION);
         } catch (GraknBackendException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION);
+            throw error(Status.INTERNAL, e);
         } catch (PropertyNotUniqueException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
         } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException e) {
@@ -138,7 +135,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
     private static StatusRuntimeException error(Status status, GraknException e) {
         return new StatusRuntimeException(
-                status.withDescription(e.getName() + " - " + e.getMessage() + "\nPlease check server logs for the stack trace."));
+                status.withDescription(e.getName() + " - " + e.getMessage() + ". Please check server logs for the stack trace."));
     }
 
     private static StatusRuntimeException error(Status status) {

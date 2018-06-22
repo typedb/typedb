@@ -315,10 +315,12 @@ public class RemoteGraknTxTest {
     @Test
     public void whenOpeningATxFails_Throw() {
         TxRequest openRequest = RequestBuilder.open(KEYSPACE, GraknTxType.WRITE);
-        throwOn(openRequest, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION, "well something went wrong");
+        GraknException expectedException = GraknBackendException.create("well something went wrong");
+        throwOn(openRequest, expectedException);
 
-        exception.expect(GraknBackendException.class);
-        exception.expectMessage("well something went wrong");
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(expectedException.getName());
+        exception.expectMessage(expectedException.getMessage());
 
         GraknTx tx = RemoteGraknTx.create(session, openRequest);
         tx.close();

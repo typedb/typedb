@@ -81,7 +81,6 @@ import static ai.grakn.remote.rpc.RequestBuilder.next;
 import static ai.grakn.remote.rpc.RequestBuilder.open;
 import static ai.grakn.remote.rpc.RequestBuilder.query;
 import static ai.grakn.remote.rpc.RequestBuilder.stop;
-import static ai.grakn.rpc.GrpcTestUtil.hasMetadata;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.rpc.util.ResponseBuilder.done;
 import static org.junit.Assert.assertEquals;
@@ -679,10 +678,7 @@ public class ServerTest {
 
         try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
-
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION));
-
+            exception.expect(hasStatus(Status.INTERNAL));
             throw tx.receive().error();
         }
     }
