@@ -30,7 +30,10 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
@@ -47,11 +50,8 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.rpc.util.ResponseBuilder;
-import ai.grakn.rpc.util.ResponseBuilder.ErrorType;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.Before;
@@ -577,7 +577,13 @@ public class RemoteGraknTxTest {
     private void throwOn(TxRequest request, GraknException e) {
         StatusRuntimeException exception;
 
-        if (e instanceof GraqlQueryException) {
+        if (e instanceof TemporaryWriteException) {
+            exception = error(Status.RESOURCE_EXHAUSTED, e);
+        } else if (e instanceof GraknBackendException) {
+            exception = error(Status.INTERNAL, e);
+        } else if (e instanceof PropertyNotUniqueException) {
+            exception = error(Status.ALREADY_EXISTS, e);
+        } else if (e instanceof GraknTxOperationException || e instanceof GraqlQueryException || e instanceof GraqlSyntaxException || e instanceof InvalidKBException) {
             exception = error(Status.INVALID_ARGUMENT, e);
         } else {
             exception = error(Status.UNKNOWN, e);
@@ -588,13 +594,5 @@ public class RemoteGraknTxTest {
 
     private static StatusRuntimeException error(Status status, GraknException e) {
         return status.withDescription(e.getName() + " - " + e.getMessage()).asRuntimeException();
-    }
-
-    private void throwOn(TxRequest request, ErrorType errorType, String message) {
-        Metadata trailers = new Metadata();
-        trailers.put(ResponseBuilder.ErrorType.KEY, errorType);
-        StatusRuntimeException exception = Status.UNKNOWN.withDescription(message).asRuntimeException(trailers);
-
-        server.setResponse(request, exception);
     }
 }

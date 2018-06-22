@@ -55,10 +55,8 @@ import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
-import io.grpc.StatusRuntimeException;
 import mjson.Json;
 
 import javax.annotation.Nullable;
@@ -119,19 +117,13 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
             case OK:
                 return response.ok();
             case ERROR:
-                throw convertStatusRuntimeException(response.error());
+                throw new RuntimeException(response.error().getMessage());
             case COMPLETED:
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }
     }
 
-    private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
-        ResponseBuilder.ErrorType errorType = error.getTrailers().get(ResponseBuilder.ErrorType.KEY);
-
-        if (errorType != null) return errorType.toException(error.getStatus().getDescription());
-        else return new RuntimeException(error.getMessage());
-    }
 
     public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
         communicator.send(RequestBuilder.next(iteratorId));

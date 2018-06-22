@@ -22,16 +22,11 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import io.grpc.Metadata;
-
-import java.util.function.Function;
 
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
@@ -102,59 +97,5 @@ public class ResponseBuilder {
     public static TxResponse conceptResponseWithRegex(String regex) {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-
-    /**
-     * Enumeration of all sub-classes of {@link GraknException} that can be thrown during gRPC calls.
-     */
-    public enum ErrorType {
-        // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
-        PROPERTY_NOT_UNIQUE_EXCEPTION(PropertyNotUniqueException::create),
-        UNKNOWN(UnknownGraknException::create);
-
-        // Enums are meant to be serializable, but functions can't be serialized
-        private transient final Function<String, GraknException> converter;
-
-        ErrorType(Function<String, GraknException> converter) {
-            this.converter = converter;
-        }
-
-        public final GraknException toException(String message) {
-            return converter.apply(message);
-        }
-
-        private static final Metadata.AsciiMarshaller<ErrorType> ERROR_TYPE_ASCII_MARSHALLER = new Metadata.AsciiMarshaller<ErrorType>() {
-            @Override
-            public String toAsciiString(ErrorType value) {
-                return value.name();
-            }
-
-            @Override
-            public ErrorType parseAsciiString(String serialized) {
-                return ErrorType.valueOf(serialized);
-            }
-        };
-
-        public static final Metadata.Key<ErrorType> KEY = Metadata.Key.of("ErrorType", ERROR_TYPE_ASCII_MARSHALLER);
-    }
-
-    static class UnknownGraknException extends GraknException {
-
-        private final String NAME = "UnknownGraknException";
-
-        private static final long serialVersionUID = 4354432748314041017L;
-
-        UnknownGraknException(String error) {
-            super(error);
-        }
-
-        @Override
-        public String getName(){
-            return NAME;
-        }
-
-        public static UnknownGraknException create(String message) {
-            return new UnknownGraknException(message);
-        }
     }
 }

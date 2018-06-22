@@ -54,7 +54,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
 import ai.grakn.rpc.util.ResponseBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -116,32 +115,26 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         } catch (GraknBackendException e) {
             throw error(Status.INTERNAL, e);
         } catch (PropertyNotUniqueException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
+            throw error(Status.ALREADY_EXISTS, e);
         } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException | InvalidKBException e) {
             throw error(Status.INVALID_ARGUMENT, e);
-        } catch (GraknException e) {
-            // We shouldn't normally encounter this case unless someone adds a new exception class
-            throw convertGraknException(e, ResponseBuilder.ErrorType.UNKNOWN);
+        } catch (RuntimeException e) {
+            throw error(e);
         }
     }
 
-    private static StatusRuntimeException convertGraknException(GraknException exception, ResponseBuilder.ErrorType errorType) {
-        Metadata trailers = new Metadata();
-        trailers.put(ResponseBuilder.ErrorType.KEY, errorType);
-        return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
+    private static StatusRuntimeException error(RuntimeException e) {
+        return new StatusRuntimeException(Status.UNKNOWN.withDescription(
+                e.getMessage() + ". Please check server logs for the stack trace."));
     }
 
     private static StatusRuntimeException error(Status status, GraknException e) {
-        return new StatusRuntimeException(
-                status.withDescription(e.getName() + " - " + e.getMessage() + ". Please check server logs for the stack trace."));
+        return new StatusRuntimeException(status.withDescription(
+                e.getName() + " - " + e.getMessage() + ". Please check server logs for the stack trace."));
     }
 
     private static StatusRuntimeException error(Status status) {
         return new StatusRuntimeException(status);
-    }
-
-    private static StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
-        return new StatusRuntimeException(status, trailers);
     }
 
 
