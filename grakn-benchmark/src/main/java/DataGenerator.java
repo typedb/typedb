@@ -1,6 +1,33 @@
-import ai.grakn.*;
-import ai.grakn.concept.*;
-import ai.grakn.graql.*;
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ */
+
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Role;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
@@ -9,15 +36,37 @@ import generator.GeneratorInterface;
 import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
-import pick.*;
-import storage.*;
-import strategy.*;
 
-import java.util.*;
+import pick.IsaTypeConceptIdPicker;
+import pick.StreamProvider;
+import pick.PickableCollectionValuePicker;
+import pick.ConceptIdPicker;
+import pick.CentralStreamProvider;
+import pick.NotInRelationshipConceptIdStream;
+
+import storage.ConceptTypeCountStore;
+import storage.InsertionAnalysis;
+import storage.SchemaManager;
+import strategy.EntityStrategy;
+import strategy.RelationshipStrategy;
+import strategy.AttributeStrategy;
+import strategy.RouletteWheelCollection;
+import strategy.RolePlayerTypeStrategy;
+import strategy.TypeStrategyInterface;
+import strategy.AttributeOwnerTypeStrategy;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.List;
 
 import static ai.grakn.graql.Graql.var;
 
+/**
+ *
+ */
 public class DataGenerator {
 
     private static String uri = "localhost:48555";

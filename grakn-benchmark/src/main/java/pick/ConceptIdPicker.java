@@ -1,27 +1,62 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ */
+
 package pick;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.*;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
 
+/**
+ *
+ */
 public class ConceptIdPicker implements StreamInterface<ConceptId> {
     private Random rand;
 
     private Pattern matchVarPattern;
     private Var matchVar;
 
+    /**
+     * @param rand
+     * @param matchVarPattern
+     * @param matchVar
+     */
     public ConceptIdPicker(Random rand, Pattern matchVarPattern, Var matchVar) {
         this.rand = rand;
         this.matchVarPattern = matchVarPattern;
         this.matchVar = matchVar;
     }
 
+    /**
+     * @param streamLength
+     * @param tx
+     * @return
+     */
     @Override
     public Stream<ConceptId> getStream(int streamLength, GraknTx tx) {
 
@@ -55,6 +90,10 @@ public class ConceptIdPicker implements StreamInterface<ConceptId> {
         });
     }
 
+    /**
+     * @param tx
+     * @return
+     */
     protected Integer getConceptCount(GraknTx tx) {
         QueryBuilder qb = tx.graql();
         // TODO This isn't working, waiting on bug fix
@@ -64,6 +103,10 @@ public class ConceptIdPicker implements StreamInterface<ConceptId> {
         return Math.toIntExact(count);
     }
 
+    /**
+     * @param offsetBound
+     * @return
+     */
     private Stream<Integer> generateUniqueRandomOffsetStream(int offsetBound) {
 
         HashSet<Object> previousRandomOffsets = new HashSet<>();

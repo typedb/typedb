@@ -1,8 +1,31 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ */
+
 package generator;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.*;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.Graql;
 import strategy.RelationshipStrategy;
 import strategy.RolePlayerTypeStrategy;
 
@@ -13,12 +36,22 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.pattern.Patterns.var;
 
+/**
+ *
+ */
 public class RelationshipGenerator extends Generator<RelationshipStrategy> {
 
+    /**
+     * @param strategy
+     * @param tx
+     */
     public RelationshipGenerator(RelationshipStrategy strategy, GraknTx tx) {
         super(strategy, tx);
     }
 
+    /**
+     * @return
+     */
     @Override
     public Stream<Query> generate() {
         QueryBuilder qb = this.tx.graql();
