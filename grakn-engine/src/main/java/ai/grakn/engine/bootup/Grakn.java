@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknEngineServerFactory;
@@ -47,7 +47,7 @@ public class Grakn {
 
     /**
      *
-     * Invocation from class '{@link ai.grakn.bootup.GraknBootup}'
+     * Invocation from class '{@link GraknBootup}'
      *
      * @param args
      */

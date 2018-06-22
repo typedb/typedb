@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
@@ -27,8 +27,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-import static ai.grakn.bootup.BootupProcessExecutor.SH;
-import static ai.grakn.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static ai.grakn.engine.bootup.BootupProcessExecutor.SH;
+import static ai.grakn.engine.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Queue component, including

@@ -43,7 +43,6 @@
         <module>grakn-factory</module>
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
-        <module>grakn-bootup</module>
         <module>grakn-grpc</module>
     </modules>
 
@@ -486,6 +485,11 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-scala_2.10</artifactId>
                 <version>${jackson.version}</version>
@@ -898,11 +902,6 @@
                 <artifactId>system-rules</artifactId>
                 <version>${systen-rules.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-bootup</artifactId>
-                <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.zeroturnaround</groupId>
