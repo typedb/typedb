@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
+import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
@@ -99,7 +100,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Felix Chapman
  */
-public class ServerTest {
+public class ServerRPCTest {
 
     private static final String EXCEPTION_MESSAGE = "OH DEAR";
     private static final GraknException EXCEPTION = GraqlQueryException.create(EXCEPTION_MESSAGE);
@@ -116,7 +117,7 @@ public class ServerTest {
     //private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 
-    private Server rpcServer;
+    private ServerRPC rpcServerRPC;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -132,8 +133,8 @@ public class ServerTest {
 
         OpenRequest requestExecutor = new OpenRequestImpl(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT).addService(new TransactionService(requestExecutor, mockedPostProcessor)).build();
-        rpcServer = Server.create(server);
-        rpcServer.start();
+        rpcServerRPC = ServerRPC.create(server);
+        rpcServerRPC.start();
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
@@ -148,7 +149,7 @@ public class ServerTest {
 
     @After
     public void tearDown() throws InterruptedException {
-        rpcServer.close();
+        rpcServerRPC.close();
     }
 
     @Test

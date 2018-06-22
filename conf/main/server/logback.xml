@@ -89,7 +89,7 @@
     </logger>
 
     <!--GRAKN ASCII text on startup goes to Standard Out-->
-    <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
+    <logger name="ai.grakn.engine.Server" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 

@@ -29,7 +29,6 @@ import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.TransactionService;
 import ai.grakn.engine.rpc.OpenRequestImpl;
-import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -76,7 +75,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class GraknEngineServerTest {
+public class ServerTest {
     private static final String VERSION_KEY = "info:version";
     private static final String OLD_VERSION = "0.0.1-ontoit-alpha";
 
@@ -92,7 +91,7 @@ public class GraknEngineServerTest {
     spark.Service sparkHttp = spark.Service.ignite();
     RedisWrapper mockRedisWrapper = mock(RedisWrapper.class);
     Jedis mockJedis = mock(Jedis.class);
-    private GraknKeyspaceStore graknKeyspaceStore;
+    private KeyspaceStore keyspaceStore;
 
     @Before
     public void setUp() {
@@ -115,15 +114,15 @@ public class GraknEngineServerTest {
         redisServer.start();
 
         try {
-            try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+            try (Server server = createGraknEngineServer(mockRedisWrapper)) {
                 server.start();
-                assertNotNull(graknKeyspaceStore);
+                assertNotNull(keyspaceStore);
 
                 // init a random keyspace
                 String keyspaceName = "thisisarandomwhalekeyspace";
-                graknKeyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
+                keyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
 
-                assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
+                assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
             }
         } finally {
             redisServer.stop();
@@ -132,7 +131,7 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered() throws IOException {
-        try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
             assertThat(server.backgroundTaskRunner().tasks(), hasItem(isA(PostProcessingTask.class)));
         }
     }
@@ -141,7 +140,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() throws IOException {
         when(mockJedis.get(VERSION_KEY)).thenReturn(null);
 
-        try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
             server.start();
         }
 
@@ -152,7 +151,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() throws IOException {
         when(mockJedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
-        try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
             server.start();
         }
 
@@ -165,7 +164,7 @@ public class GraknEngineServerTest {
         when(mockJedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
-        try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
             server.start();
         }
 
@@ -177,27 +176,27 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() throws IOException {
         when(mockJedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
-        try (GraknEngineServer server = createGraknEngineServer(mockRedisWrapper)) {
+        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
             server.start();
         }
 
         verify(mockJedis, never()).set(eq(VERSION_KEY), any());
     }
 
-    private GraknEngineServer createGraknEngineServer(RedisWrapper redisWrapper) {
+    private Server createGraknEngineServer(RedisWrapper redisWrapper) {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
-        GraknEngineStatus status = new GraknEngineStatus();
+        ServerStatus status = new ServerStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        graknKeyspaceStore = GraknKeyspaceStoreFake.of();
+        keyspaceStore = KeyspaceStoreFake.of();
 
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
 
         // post-processing
@@ -213,11 +212,11 @@ public class GraknEngineServerTest {
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestExecutor = new OpenRequestImpl(engineGraknTxFactory);
         io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new TransactionService(requestExecutor, postProcessor)).build();
-        Server rpcServer = Server.create(server);
+        ServerRPC rpcServerRPC = ServerRPC.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
-        return GraknEngineServerFactory.createGraknEngineServer(engineId, config, status,
-                sparkHttp, httpControllers, rpcServer,
+        return ServerFactory.createGraknEngineServer(engineId, config, status,
+                sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
+                queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
     }
 }

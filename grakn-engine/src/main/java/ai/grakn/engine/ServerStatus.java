@@ -16,38 +16,23 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
-
-import java.io.IOException;
+package ai.grakn.engine;
 
 /**
- * @author Felix Chapman
+ * Contains information on the state of an engine.
+ *
+ * @author Domenico Corapi
  */
-public class Server implements AutoCloseable {
+public class ServerStatus {
+    private volatile boolean ready = false;
 
-    private final io.grpc.Server server;
+    public ServerStatus() {}
 
-    private Server(io.grpc.Server server) {
-        this.server = server;
+    public boolean isReady() {
+        return ready;
     }
 
-
-    public static Server create(io.grpc.Server server) {
-        return new Server(server);
+    public void setReady(boolean ready) {
+        this.ready = ready;
     }
-
-    /**
-     * @throws IOException if unable to bind
-     */
-    public void start() throws IOException {
-        server.start();
-    }
-
-    @Override
-    public void close() throws InterruptedException {
-        server.shutdown();
-        server.awaitTermination();
-    }
-
 }
-

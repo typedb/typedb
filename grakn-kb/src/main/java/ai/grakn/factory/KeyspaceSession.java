@@ -27,6 +27,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
  * @author Marco Scoppetta
  */
 
-public interface SystemKeyspaceSession {
+public interface KeyspaceSession {
     EmbeddedGraknTx tx(GraknTxType txType);
 }

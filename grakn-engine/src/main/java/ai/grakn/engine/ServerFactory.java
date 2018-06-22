@@ -24,10 +24,11 @@ import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
+import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.OpenRequestImpl;
-import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.rpc.TransactionService;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
@@ -39,7 +40,7 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.factory.SystemKeyspaceSession;
+import ai.grakn.factory.KeyspaceSession;
 import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
@@ -48,21 +49,21 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * This is a factory class which contains methods for instantiating a {@link GraknEngineServer} in different ways.
+ * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
  *
  * @author Michele Orsi
  */
-public class GraknEngineServerFactory {
+public class ServerFactory {
     /**
-     * Create a {@link GraknEngineServer} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
+     * Create a {@link Server} configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
      *
-     * @return a {@link GraknEngineServer} instance configured for Grakn Core
+     * @return a {@link Server} instance configured for Grakn Core
      */
-    public static GraknEngineServer createGraknEngineServer() {
+    public static Server createGraknEngineServer() {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
         GraknConfig config = GraknConfig.create();
-        GraknEngineStatus status = new GraknEngineStatus();
+        ServerStatus status = new ServerStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
@@ -74,11 +75,11 @@ public class GraknEngineServerFactory {
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
 
-        SystemKeyspaceSession systemKeyspaceSession = new GraknSystemKeyspaceSession(config);
-        GraknKeyspaceStore graknKeyspaceStore = GraknKeyspaceStoreImpl.create(systemKeyspaceSession);
+        KeyspaceSession keyspaceSession = new KeyspaceSessionImpl(config);
+        KeyspaceStore keyspaceStore = KeyspaceStoreImpl.create(keyspaceSession);
 
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
 
         // post-processing
@@ -91,33 +92,33 @@ public class GraknEngineServerFactory {
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        Server rpcServer = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
+        ServerRPC rpcServerRPC = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
 
-        return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, rpcServer, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
+        return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
     }
 
     /**
-     * Allows the creation of a {@link GraknEngineServer} instance with various configurations
-     * @return a {@link GraknEngineServer} instance
+     * Allows the creation of a {@link Server} instance with various configurations
+     * @return a {@link Server} instance
      */
 
-    public static GraknEngineServer createGraknEngineServer(
-            EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus,
-            spark.Service sparkHttp, Collection<HttpController> httpControllers, Server rpcServer,
+    public static Server createGraknEngineServer(
+            EngineID engineId, GraknConfig config, ServerStatus serverStatus,
+            spark.Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, GraknKeyspaceStore graknKeyspaceStore) {
+            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, KeyspaceStore keyspaceStore) {
 
-        HttpHandler httpHandler = new HttpHandler(config, sparkHttp, engineGraknTxFactory, metricRegistry, graknEngineStatus, postProcessor, rpcServer, httpControllers);
+        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, rpcServerRPC, httpControllers);
 
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config, engineGraknTxFactory, postProcessor.index());
 
-        GraknEngineServer graknEngineServer = new GraknEngineServer(engineId, config, graknEngineStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, graknKeyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, keyspaceStore);
 
-        Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
+        Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
 
-        return graknEngineServer;
+        return server;
     }
 
     private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
@@ -127,14 +128,14 @@ public class GraknEngineServerFactory {
         return taskRunner;
     }
 
-    private static Server configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
+    private static ServerRPC configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new OpenRequestImpl(engineGraknTxFactory);
 
         ServerBuilder<?> grpcServer = ServerBuilder.forPort(grpcPort);
         grpcServer.addService(new TransactionService(requestOpener, postProcessor));
 
-        return Server.create(grpcServer.build());
+        return ServerRPC.create(grpcServer.build());
     }
 
 }

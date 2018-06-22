@@ -27,6 +27,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
+import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
@@ -44,28 +46,28 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.GraknKeyspaceStore.SYSTEM_KB_KEYSPACE;
+import static ai.grakn.engine.KeyspaceStore.SYSTEM_KB_KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GraknKeyspaceStoreTest {
+public class KeyspaceStoreTest {
 
     private static final GraknConfig config = GraknConfig.create();
-    private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
+    private static final ServerStatus status = mock(ServerStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
     private static EngineGraknTxFactory graknFactory;
-    private static GraknKeyspaceStore graknKeyspaceStore;
+    private static KeyspaceStore keyspaceStore;
 
     //Needed so that Grakn.session() can return a session
     //Note: This is a rule rather than a class rule because we need to ensure that cass is started up first and then
-    // the graknKeyspaceStore is initialised. If we make this a ClassRule that load order is broken and this test fails with
+    // the keyspaceStore is initialised. If we make this a ClassRule that load order is broken and this test fails with
     // the janus profile.
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, graknKeyspaceStore, status, metricRegistry)).host("0.0.0.0").port(4567);
+    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, keyspaceStore, status, metricRegistry)).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
     @ClassRule
@@ -81,9 +83,9 @@ public class GraknKeyspaceStoreTest {
 
     @BeforeClass
     public static void setup(){
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
-        graknKeyspaceStore.loadSystemSchema();
-        graknFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+        keyspaceStore = KeyspaceStoreImpl.create(new KeyspaceSessionImpl(config));
+        keyspaceStore.loadSystemSchema();
+        graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
         Lock lock = mock(Lock.class);
         when(lockProvider.getLock(any())).thenReturn(lock);
@@ -109,7 +111,7 @@ public class GraknKeyspaceStoreTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -122,7 +124,7 @@ public class GraknKeyspaceStoreTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(graknKeyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -146,7 +148,7 @@ public class GraknKeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknKeyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
     }
 
     @Test
@@ -169,7 +171,7 @@ public class GraknKeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknKeyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

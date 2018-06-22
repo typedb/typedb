@@ -18,21 +18,36 @@
 
 package ai.grakn.engine;
 
+import java.io.IOException;
+
 /**
- * Contains information on the state of an engine.
- *
- * @author Domenico Corapi
+ * @author Felix Chapman
  */
-public class GraknEngineStatus {
-    private volatile boolean ready = false;
+public class ServerRPC implements AutoCloseable {
 
-    public GraknEngineStatus() {}
+    private final io.grpc.Server server;
 
-    public boolean isReady() {
-        return ready;
+    private ServerRPC(io.grpc.Server server) {
+        this.server = server;
     }
 
-    public void setReady(boolean ready) {
-        this.ready = ready;
+
+    public static ServerRPC create(io.grpc.Server server) {
+        return new ServerRPC(server);
     }
+
+    /**
+     * @throws IOException if unable to bind
+     */
+    public void start() throws IOException {
+        server.start();
+    }
+
+    @Override
+    public void close() throws InterruptedException {
+        server.shutdown();
+        server.awaitTermination();
+    }
+
 }
+

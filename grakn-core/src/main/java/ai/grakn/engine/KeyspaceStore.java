@@ -52,7 +52,7 @@ import java.util.Set;
  * @author borislav, fppt
  *
  */
-public interface GraknKeyspaceStore {
+public interface KeyspaceStore {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)

@@ -38,28 +38,28 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author Marco Scoppetta
  */
-public class GraknEngineServer implements AutoCloseable {
+public class Server implements AutoCloseable {
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final EngineID engineId;
     private final GraknConfig config;
-    private final GraknEngineStatus graknEngineStatus;
+    private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
     private final QueueSanityCheck queueSanityCheck;
-    private final HttpHandler httpHandler;
+    private final ServerHTTP httpHandler;
     private final BackgroundTaskRunner backgroundTaskRunner;
 
-    private final GraknKeyspaceStore graknKeyspaceStore;
+    private final KeyspaceStore keyspaceStore;
 
-    public GraknEngineServer(EngineID engineId, GraknConfig config, GraknEngineStatus graknEngineStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, HttpHandler httpHandler, BackgroundTaskRunner backgroundTaskRunner, GraknKeyspaceStore graknKeyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, ServerHTTP httpHandler, BackgroundTaskRunner backgroundTaskRunner, KeyspaceStore keyspaceStore) {
         this.config = config;
-        this.graknEngineStatus = graknEngineStatus;
+        this.serverStatus = serverStatus;
         // Redis connection pool
         this.queueSanityCheck = queueSanityCheck;
         // Lock provider
         this.lockProvider = lockProvider;
-        this.graknKeyspaceStore = graknKeyspaceStore;
+        this.keyspaceStore = keyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
         this.backgroundTaskRunner = backgroundTaskRunner;
@@ -76,7 +76,7 @@ public class GraknEngineServer implements AutoCloseable {
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
-        graknEngineStatus.setReady(true);
+        serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
 
@@ -105,7 +105,7 @@ public class GraknEngineServer implements AutoCloseable {
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 try {
                     LOG.info("{} is checking the system schema", this.engineId);
-                    graknKeyspaceStore.loadSystemSchema();
+                    keyspaceStore.loadSystemSchema();
                 } finally {
                     lock.unlock();
                 }
@@ -126,7 +126,7 @@ public class GraknEngineServer implements AutoCloseable {
         LOG.info("\n==================================================");
     }
 
-    public HttpHandler getHttpHandler() {
+    public ServerHTTP getHttpHandler() {
         return httpHandler;
     }
 
@@ -134,6 +134,6 @@ public class GraknEngineServer implements AutoCloseable {
         return lockProvider;
     }
 
-    public GraknKeyspaceStore systemKeyspace() { return graknKeyspaceStore; }
+    public KeyspaceStore systemKeyspace() { return keyspaceStore; }
 }
 

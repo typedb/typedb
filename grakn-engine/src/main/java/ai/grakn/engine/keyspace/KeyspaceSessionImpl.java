@@ -16,30 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine;
+package ai.grakn.engine.keyspace;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.SystemKeyspaceSession;
+import ai.grakn.factory.KeyspaceSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 /**
- * Provides transactions to access "graknsystem" which is Grakn system keyspace - used by GraknKeyspaceStore to keep track
+ * Provides transactions to access "graknsystem" which is Grakn system keyspace - used by KeyspaceStore to keep track
  * of available keyspaces
  *
  * @author Marco Scoppetta
  */
 
-public class GraknSystemKeyspaceSession implements SystemKeyspaceSession {
+public class KeyspaceSessionImpl implements KeyspaceSession {
 
     //TODO: centralise this
     private final static Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
     private final EmbeddedGraknSession session;
 
-    public GraknSystemKeyspaceSession(GraknConfig config) {
+    public KeyspaceSessionImpl(GraknConfig config) {
         session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, engineURI(config), config, GraknTxFactoryBuilder.getInstance());
     }
 

@@ -28,6 +28,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
+import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -138,7 +139,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
 
     /**
-     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link Server}.
+     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link ServerRPC}.
      * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
      */
     static class TransactionListener implements StreamObserver<TxRequest> {

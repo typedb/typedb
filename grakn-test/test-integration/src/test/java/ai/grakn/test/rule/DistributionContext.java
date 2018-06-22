@@ -48,7 +48,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Start a GraknEngineServer from the packaged distribution Zip.
+ * Start a Grakn Server from the packaged distribution Zip.
  * The class is responsible for unzipping and starting the distribution.
  * The location of the distribution must be at $GRAKN_HOME/grakn-dist/target/grakn-dist-$GRAKN_VERSION.zip
  *

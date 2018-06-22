@@ -25,7 +25,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
@@ -53,19 +53,19 @@ import java.util.concurrent.locks.Lock;
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;
-    private final GraknKeyspaceStore graknKeyspaceStore;
+    private final KeyspaceStore keyspaceStore;
     private final Map<Keyspace, EmbeddedGraknSession> openedSessions;
     private final LockProvider lockProvider;
 
-    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, GraknKeyspaceStore keyspaceStore) {
+    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, KeyspaceStore keyspaceStore) {
         return new EngineGraknTxFactory(engineConfig, lockProvider, keyspaceStore);
     }
 
-    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, GraknKeyspaceStore keyspaceStore) {
+    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, KeyspaceStore keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
         this.lockProvider = lockProvider;
-        this.graknKeyspaceStore = keyspaceStore;
+        this.keyspaceStore = keyspaceStore;
     }
 
     //Should only be used for testing
@@ -76,7 +76,7 @@ public class EngineGraknTxFactory {
 
 
     public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
-        if (!graknKeyspaceStore.containsKeyspace(keyspace)) {
+        if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
 
@@ -110,7 +110,7 @@ public class EngineGraknTxFactory {
             // Create new empty keyspace in db
             session(keyspace).open(GraknTxType.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
-            graknKeyspaceStore.addKeyspace(keyspace);
+            keyspaceStore.addKeyspace(keyspace);
         } finally {
             lock.unlock();
         }
@@ -124,8 +124,8 @@ public class EngineGraknTxFactory {
         return engineConfig;
     }
 
-    public GraknKeyspaceStore keyspaceStore() {
-        return graknKeyspaceStore;
+    public KeyspaceStore keyspaceStore() {
+        return keyspaceStore;
     }
 
     private String engineURI() {

@@ -27,7 +27,6 @@ import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.printer.JacksonPrinter;
-import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
@@ -46,32 +45,32 @@ import java.util.Collection;
 /**
  * @author Michele Orsi
  */
-public class HttpHandler {
+public class ServerHTTP {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerHTTP.class);
 
     private final GraknConfig prop;
     private final Service spark;
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
-    private final GraknEngineStatus graknEngineStatus;
+    private final ServerStatus serverStatus;
     private final PostProcessor postProcessor;
-    private final Server rpcServer;
+    private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
-    public HttpHandler(
+    public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
-            Server rpcServer,
+            ServerStatus serverStatus, PostProcessor postProcessor,
+            ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
         this.metricRegistry = metricRegistry;
-        this.graknEngineStatus = graknEngineStatus;
+        this.serverStatus = serverStatus;
         this.postProcessor = postProcessor;
-        this.rpcServer = rpcServer;
+        this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
     }
 
@@ -81,7 +80,7 @@ public class HttpHandler {
 
         startCollaborators();
 
-        rpcServer.start();
+        rpcServerRPC.start();
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
@@ -92,7 +91,7 @@ public class HttpHandler {
         // Start all the DEFAULT controllers
         new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
-        new SystemController(prop, factory.keyspaceStore(), graknEngineStatus, metricRegistry).start(spark);
+        new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
         new CommitLogController(postProcessor).start(spark);
 
         additionalCollaborators.forEach(httpController -> httpController.start(spark));
@@ -133,7 +132,7 @@ public class HttpHandler {
 
 
     public void stopHTTP() throws InterruptedException {
-        rpcServer.close();
+        rpcServerRPC.close();
 
         spark.stop();
 

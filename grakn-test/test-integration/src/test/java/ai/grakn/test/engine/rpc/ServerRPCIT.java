@@ -93,7 +93,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Felix Chapman
  */
-public class ServerIT {
+public class ServerRPCIT {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

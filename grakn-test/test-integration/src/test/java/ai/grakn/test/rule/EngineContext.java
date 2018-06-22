@@ -23,21 +23,21 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknEngineServerFactory;
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.GraknKeyspaceStore;
-import ai.grakn.engine.GraknKeyspaceStoreImpl;
-import ai.grakn.engine.GraknSystemKeyspaceSession;
+import ai.grakn.engine.KeyspaceStore;
+import ai.grakn.engine.Server;
+import ai.grakn.engine.ServerFactory;
+import ai.grakn.engine.ServerStatus;
+import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
+import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.rpc.TransactionService;
 import ai.grakn.engine.rpc.OpenRequestImpl;
-import ai.grakn.engine.rpc.Server;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -82,7 +82,7 @@ public class EngineContext extends CompositeTestRule {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
-    private GraknEngineServer server;
+    private Server server;
 
     private final GraknConfig config;
     private JedisPool jedisPool;
@@ -90,11 +90,11 @@ public class EngineContext extends CompositeTestRule {
 
     private final InMemoryRedisContext redis;
 
-    public GraknKeyspaceStore systemKeyspace() {
-        return graknKeyspaceStore;
+    public KeyspaceStore systemKeyspace() {
+        return keyspaceStore;
     }
 
-    private GraknKeyspaceStore graknKeyspaceStore;
+    private KeyspaceStore keyspaceStore;
 
     public EngineGraknTxFactory factory() { return engineGraknTxFactory; }
 
@@ -126,7 +126,7 @@ public class EngineContext extends CompositeTestRule {
         return new EngineContext();
     }
 
-    public GraknEngineServer server() {
+    public Server server() {
         return server;
     }
 
@@ -233,7 +233,7 @@ public class EngineContext extends CompositeTestRule {
     private static void clearGraphs(EngineGraknTxFactory factory) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = factory.tx(GraknKeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = factory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().getValue().toString());
@@ -284,19 +284,19 @@ public class EngineContext extends CompositeTestRule {
         return jedisPool;
     }
 
-    private GraknEngineServer startGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
+    private Server startGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
         EngineID id = EngineID.me();
-        GraknEngineStatus status = new GraknEngineStatus();
+        ServerStatus status = new ServerStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        graknKeyspaceStore = GraknKeyspaceStoreImpl.create(new GraknSystemKeyspaceSession(config));
+        keyspaceStore = KeyspaceStoreImpl.create(new KeyspaceSessionImpl(config));
 
         // tx-factory
-        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, graknKeyspaceStore);
+        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
 
         // post-processing
@@ -308,14 +308,14 @@ public class EngineContext extends CompositeTestRule {
         OpenRequest requestExecutor = new OpenRequestImpl(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0).addService(new TransactionService(requestExecutor, postProcessor)).build();
-        Server rpcServer = Server.create(server);
+        ServerRPC rpcServerRPC = ServerRPC.create(server);
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
-        GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer(id, config, status,
-                sparkHttp, Collections.emptyList(), rpcServer,
+        Server graknEngineServer = ServerFactory.createGraknEngineServer(id, config, status,
+                sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, graknKeyspaceStore);
+                queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
 
         graknEngineServer.start();
 

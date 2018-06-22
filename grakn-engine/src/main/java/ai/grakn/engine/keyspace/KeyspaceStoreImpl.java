@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine;
+package ai.grakn.engine.keyspace;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -26,10 +26,11 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.factory.SystemKeyspaceSession;
+import ai.grakn.factory.KeyspaceSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -40,29 +41,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Default implementation of {@link GraknKeyspaceStore} that uses a {@link EngineGraknTxFactory} to access a knowledge
+ * Default implementation of {@link KeyspaceStore} that uses a {@link EngineGraknTxFactory} to access a knowledge
  * base and store keyspace information.
  *
  * @author Felix Chapman
  */
-public class GraknKeyspaceStoreImpl implements GraknKeyspaceStore {
+public class KeyspaceStoreImpl implements KeyspaceStore {
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknKeyspaceStore.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KeyspaceStore.class);
     private final Set<Keyspace> existingKeyspaces;
-    private final SystemKeyspaceSession session;
+    private final KeyspaceSession session;
 
-    private GraknKeyspaceStoreImpl(SystemKeyspaceSession session){
+    private KeyspaceStoreImpl(KeyspaceSession session){
         this.session = session;
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
-    public static GraknKeyspaceStore create(SystemKeyspaceSession session) {
-        return new GraknKeyspaceStoreImpl(session);
+    public static KeyspaceStore create(KeyspaceSession session) {
+        return new KeyspaceStoreImpl(session);
     }
 
     /**
-     * Logs a new {@link Keyspace} to the {@link GraknKeyspaceStore}.
+     * Logs a new {@link Keyspace} to the {@link KeyspaceStore}.
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
