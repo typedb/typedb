@@ -64,7 +64,7 @@ public class Grakn {
             GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
             graknEngineServer.start();
         } catch (RuntimeException | IOException e) {
-            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getCause()), e);
+            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
         }
     }
 }
