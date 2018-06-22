@@ -118,6 +118,8 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             throw error(Status.ALREADY_EXISTS, e);
         } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException | InvalidKBException e) {
             throw error(Status.INVALID_ARGUMENT, e);
+        } catch (StatusRuntimeException e) {
+            throw e;
         } catch (RuntimeException e) {
             throw error(e);
         }
@@ -315,11 +317,9 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private void next(GrpcIterator.Next next) {
             GrpcIterator.IteratorId iteratorId = next.getIteratorId();
-
-            TxResponse response =
-                    iterators.next(iteratorId).orElseThrow(() -> error(Status.FAILED_PRECONDITION));
-
-            responseSender.onNext(response);
+            Optional<TxResponse> response = iterators.next(iteratorId);
+            if (!response.isPresent()) throw error(Status.FAILED_PRECONDITION);
+            responseSender.onNext(response.get());
         }
 
         private void stop(GrpcIterator.Stop stop) {
