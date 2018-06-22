@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -150,10 +151,10 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        return RuleUtils.getRulesWithType(
-                getSchemaConcept(),
-                getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent(),
-                tx());
+        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        return getPossibleTypes().stream()
+                .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
+                .distinct();
     }
 
     /**
@@ -195,22 +196,6 @@ public abstract class Atom extends AtomicBase {
      * @return value variable name
      */
     public abstract Var getPredicateVariable();
-
-    /**
-     * @return set of predicates relevant to this atom
-     */
-    public Stream<Predicate> getPredicates() {
-        return getPredicates(Predicate.class);
-    }
-
-    /**
-     * @param type the class of {@link Predicate} to return
-     * @param <T> the type of {@link Predicate} to return
-     * @return stream of predicates relevant to this atom
-     */
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
-    }
 
     /**
      * @param var variable of interest
@@ -268,9 +253,12 @@ public abstract class Atom extends AtomicBase {
      */
     public Stream<Atomic> getNonSelectableConstraints() {
         return Stream.concat(
-                getPredicates(),
+                Stream.concat(
+                        getPredicates(),
+                        getPredicates().flatMap(AtomicBase::getPredicates)
+                ),
                 getTypeConstraints().filter(at -> !at.isSelectable())
-                );
+        );
     }
 
     @Override
@@ -278,6 +266,11 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public Atom inferTypes(Answer sub){ return this; }
+
+    /**
+     * @return list of types this atom can take
+     */
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return ImmutableList.of(getSchemaConcept());}
 
     /**
      * @param sub partial substitution
