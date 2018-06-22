@@ -31,7 +31,6 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator;
-import ai.grakn.rpc.util.ResponseBuilder;
 
 import java.util.stream.Stream;
 

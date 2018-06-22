@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.rpc.util;
+package ai.grakn.engine.rpc;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;

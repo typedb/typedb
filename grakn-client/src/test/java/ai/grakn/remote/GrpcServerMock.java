@@ -25,7 +25,6 @@ import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
 import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.rpc.util.ResponseBuilder;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -61,7 +60,7 @@ import static org.mockito.Mockito.when;
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
- *     By default, the server will return a {@link ResponseBuilder#done()} to every message. And will respond
+ *     By default, the server will return a "done" {@link TxResponse} to every message. And will respond
  *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
  * </p>
  * <p>
