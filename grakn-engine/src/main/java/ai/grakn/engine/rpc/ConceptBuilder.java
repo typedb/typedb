@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.util.CommonUtil;
@@ -42,6 +43,11 @@ import java.util.stream.Collectors;
  * @author Grakn Warriors
  */
 public class ConceptBuilder {
+
+    public static Concept concept(GrpcConcept.Concept grpcConcept, EmbeddedGraknTx tx) {
+        return tx.getConcept(ConceptId.of(grpcConcept.getId()));
+    }
+
     public static GrpcConcept.Concept concept(Concept concept) {
         return GrpcConcept.Concept.newBuilder()
                 .setId(concept.getId().getValue())

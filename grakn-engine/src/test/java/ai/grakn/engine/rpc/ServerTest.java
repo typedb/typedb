@@ -27,7 +27,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlQueryException;
@@ -74,6 +73,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static ai.grakn.engine.rpc.ResponseBuilder.done;
 import static ai.grakn.remote.rpc.RequestBuilder.commit;
 import static ai.grakn.remote.rpc.RequestBuilder.delete;
 import static ai.grakn.remote.rpc.RequestBuilder.next;
@@ -81,7 +81,6 @@ import static ai.grakn.remote.rpc.RequestBuilder.open;
 import static ai.grakn.remote.rpc.RequestBuilder.query;
 import static ai.grakn.remote.rpc.RequestBuilder.stop;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
-import static ai.grakn.engine.rpc.ResponseBuilder.done;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -114,7 +113,6 @@ public class ServerTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final EmbeddedConceptReader conceptConverter = mock(EmbeddedConceptReader.class);
     //private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
 

@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.Communicator;
 import ai.grakn.remote.rpc.ConceptBuilder;
-import ai.grakn.remote.rpc.Iterator;
+import ai.grakn.remote.rpc.RequestIterator;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -198,7 +198,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         communicator.send(RequestBuilder.getAttributesByValue(value));
         GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
-        Iterable<Concept> iterable = () -> new Iterator<>(
+        Iterable<Concept> iterable = () -> new RequestIterator<>(
                 this, iteratorId, response -> ConceptBuilder.concept(this, response.getConcept())
         );
 
@@ -277,7 +277,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
         GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
-        Iterable<? extends Concept> iterable = () -> new Iterator<>(
+        Iterable<? extends Concept> iterable = () -> new RequestIterator<>(
                 this, iteratorId, res -> ConceptBuilder.concept(this, res.getConcept())
         );
 
@@ -309,7 +309,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
                 return Collections.emptyIterator();
             case ITERATORID:
                 GrpcIterator.IteratorId iteratorId = txResponse.getIteratorId();
-                return new Iterator<>(this, iteratorId, response -> answer(response.getAnswer()));
+                return new RequestIterator<>(this, iteratorId, response -> answer(response.getAnswer()));
             default:
                 throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
         }

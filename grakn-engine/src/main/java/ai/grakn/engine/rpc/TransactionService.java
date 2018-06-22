@@ -29,7 +29,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -328,9 +327,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private void runConceptMethod(GrpcGrakn.RunConceptMethod runConceptMethod) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
-            EmbeddedConceptReader txConceptReader = new EmbeddedConceptReader(tx());
-
-            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, txConceptReader);
+            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
             responseSender.onNext(response);
         }
 
