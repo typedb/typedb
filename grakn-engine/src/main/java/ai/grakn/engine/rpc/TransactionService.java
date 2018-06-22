@@ -113,7 +113,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         try {
             runnable.run();
         } catch (TemporaryWriteException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.TEMPORARY_WRITE_EXCEPTION);
+            throw error(Status.RESOURCE_EXHAUSTED, e);
         } catch (GraknServerException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_SERVER_EXCEPTION);
         } catch (GraknBackendException e) {
@@ -123,7 +123,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         } catch (GraknTxOperationException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_TX_OPERATION_EXCEPTION);
         } catch (GraqlQueryException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION);
+            throw error(Status.INVALID_ARGUMENT, e);
         } catch (GraqlSyntaxException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION);
         } catch (InvalidKBException e) {
@@ -140,8 +140,13 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
         return error(Status.UNKNOWN.withDescription(exception.getMessage()), trailers);
     }
 
-    static StatusRuntimeException error(Status status) {
-        return error(status, null);
+    private static StatusRuntimeException error(Status status, GraknException e) {
+        return new StatusRuntimeException(
+                status.withDescription(e.getName() + " - " + e.getMessage() + "\nPlease check server logs for the stack trace."));
+    }
+
+    private static StatusRuntimeException error(Status status) {
+        return new StatusRuntimeException(status);
     }
 
     private static StatusRuntimeException error(Status status, @Nullable Metadata trailers) {

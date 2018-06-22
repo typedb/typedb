@@ -26,7 +26,6 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -116,7 +115,6 @@ public class ResponseBuilder {
      */
     public enum ErrorType {
         // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
-        GRAQL_QUERY_EXCEPTION(GraqlQueryException::create),
         GRAQL_SYNTAX_EXCEPTION(GraqlSyntaxException::create),
         GRAKN_TX_OPERATION_EXCEPTION(GraknTxOperationException::create),
         TEMPORARY_WRITE_EXCEPTION(TemporaryWriteException::create),
@@ -154,10 +152,17 @@ public class ResponseBuilder {
 
     static class UnknownGraknException extends GraknException {
 
+        private final String NAME = "UnknownGraknException";
+
         private static final long serialVersionUID = 4354432748314041017L;
 
         UnknownGraknException(String error) {
             super(error);
+        }
+
+        @Override
+        public String getName(){
+            return NAME;
         }
 
         public static UnknownGraknException create(String message) {

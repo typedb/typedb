@@ -70,12 +70,19 @@ import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
  */
 public class GraqlQueryException extends GraknException {
 
+    private final String NAME = "GraqlQueryException";
+
     private GraqlQueryException(String error) {
         super(error);
     }
 
     private GraqlQueryException(String error, Exception cause) {
         super(error, cause);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     public static GraqlQueryException create(String formatString, Object... args) {

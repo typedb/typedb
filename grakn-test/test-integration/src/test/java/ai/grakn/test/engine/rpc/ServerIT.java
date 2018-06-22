@@ -660,8 +660,7 @@ public class ServerIT {
         try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
 
-            exception.expect(GraqlQueryException.class);
-            exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("not-a-thing")).getMessage());
+            exception.expect(RuntimeException.class);
 
             query.execute();
         }

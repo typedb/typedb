@@ -701,7 +701,7 @@ public class ServerTest {
 
             tx.send(commit());
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
+            exception.expect(hasStatus(Status.INVALID_ARGUMENT));
 
             throw tx.receive().error();
         }
@@ -730,19 +730,16 @@ public class ServerTest {
     @Test
     public void whenExecutingQueryFails_Throw() throws Throwable {
         String message = "your query is dumb";
-        GraknException error = GraqlQueryException.create(message);
+        GraknException expectedException = GraqlQueryException.create(message);
 
-        when(query.stream()).thenThrow(error);
+        when(query.stream()).thenThrow(expectedException);
 
         try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
-
             tx.send(query(QUERY, false));
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION));
-
+            exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }
     }

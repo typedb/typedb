@@ -46,8 +46,8 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.remote.rpc.Communicator;
-import ai.grakn.remote.rpc.Iterator;
 import ai.grakn.remote.rpc.ConceptBuilder;
+import ai.grakn.remote.rpc.Iterator;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -130,7 +130,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
         ResponseBuilder.ErrorType errorType = error.getTrailers().get(ResponseBuilder.ErrorType.KEY);
 
         if (errorType != null) return errorType.toException(error.getStatus().getDescription());
-        else return error;
+        else return new RuntimeException(error.getMessage());
     }
 
     public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {

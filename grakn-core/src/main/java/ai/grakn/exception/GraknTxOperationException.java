@@ -55,18 +55,26 @@ import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
  *
  * <p>
  *     This exception is thrown to prevent the user from incorrectly mutating the graph.
- *     For example when attempting to an instances to an abstract type this exception is thrown.
+ *     For example, when attempting to create instances for an abstract type, this exception is thrown.
  * </p>
  *
  * @author fppt
  */
 public class GraknTxOperationException extends GraknException{
+
+    private final String NAME = "GraknTxOperationException";
+
     GraknTxOperationException(String error){
         super(error);
     }
 
     protected GraknTxOperationException(String error, Exception e){
         super(error, e);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     public static GraknTxOperationException create(String error) {

@@ -275,7 +275,6 @@ public abstract class ConceptMethod {
     private static TxResponse setDirectSuper(Concept concept, GrpcConcept.ConceptMethod method, EmbeddedConceptReader reader) {
         // Make the second argument the super of the first argument
         // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
-        //TODO: This was copied from ConceptBuilder
 
         GrpcConcept.Concept setDirectSuperConcept = method.getSetDirectSuperConcept();
         SchemaConcept schemaConcept = reader.concept(setDirectSuperConcept).asSchemaConcept();

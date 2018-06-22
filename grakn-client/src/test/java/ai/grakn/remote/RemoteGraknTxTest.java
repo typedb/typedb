@@ -27,6 +27,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
@@ -341,13 +342,15 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x")).get();
 
         TxRequest execQueryRequest = RequestBuilder.query(query);
-        throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+        GraknException expectedException = GraqlQueryException.create("well something went wrong.");
+        throwOn(execQueryRequest, expectedException);
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
-            } catch (GraqlQueryException e) {
-                // Ignore
+            } catch (RuntimeException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.getMessage().contains(expectedException.getName()));
             }
 
             assertTrue(tx.isClosed());
@@ -359,20 +362,19 @@ public class RemoteGraknTxTest {
         Query<?> query = match(var("x")).get();
 
         TxRequest execQueryRequest = RequestBuilder.query(query);
-        throwOn(execQueryRequest, ResponseBuilder.ErrorType.GRAQL_QUERY_EXCEPTION, "well something went wrong");
+        GraknException expectedException = GraqlQueryException.create("well something went wrong.");
+        throwOn(execQueryRequest, expectedException);
 
         try (GraknTx tx = RemoteGraknTx.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.WRITE))) {
             try {
                 tx.graql().match(var("x")).get().execute();
-            } catch (GraqlQueryException e) {
-                // Ignore
+            } catch (RuntimeException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.getMessage().contains(expectedException.getName()));
             }
 
             exception.expect(GraknTxOperationException.class);
-            exception.expectMessage(
-                    GraknTxOperationException.transactionClosed(null, "The gRPC connection closed").getMessage()
-            );
-
+            exception.expectMessage(GraknTxOperationException.transactionClosed(null, "The gRPC connection closed").getMessage());
             tx.admin().getMetaConcept();
         }
     }
@@ -568,6 +570,22 @@ public class RemoteGraknTxTest {
         assertFalse(tx.isClosed());
         action.accept(tx);
         assertTrue(tx.isClosed());
+    }
+
+    private void throwOn(TxRequest request, GraknException e) {
+        StatusRuntimeException exception;
+
+        if (e instanceof GraqlQueryException) {
+            exception = error(Status.INVALID_ARGUMENT, e);
+        } else {
+            exception = error(Status.UNKNOWN, e);
+        }
+
+        server.setResponse(request, exception);
+    }
+
+    private static StatusRuntimeException error(Status status, GraknException e) {
+        return status.withDescription(e.getName() + " - " + e.getMessage()).asRuntimeException();
     }
 
     private void throwOn(TxRequest request, ErrorType errorType, String message) {
