@@ -120,12 +120,8 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_BACKEND_EXCEPTION);
         } catch (PropertyNotUniqueException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.PROPERTY_NOT_UNIQUE_EXCEPTION);
-        } catch (GraknTxOperationException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAKN_TX_OPERATION_EXCEPTION);
-        } catch (GraqlQueryException e) {
+        } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException e) {
             throw error(Status.INVALID_ARGUMENT, e);
-        } catch (GraqlSyntaxException e) {
-            throw convertGraknException(e, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION);
         } catch (InvalidKBException e) {
             throw convertGraknException(e, ResponseBuilder.ErrorType.INVALID_KB_EXCEPTION);
         } catch (GraknException e) {

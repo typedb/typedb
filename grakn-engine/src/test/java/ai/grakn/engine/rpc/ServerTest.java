@@ -30,7 +30,6 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.util.EmbeddedConceptReader;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.ComputeQuery;
@@ -246,10 +245,7 @@ public class ServerTest {
 
         try (Communicator tx = Communicator.create(stub)) {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
-
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
-            exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAKN_TX_OPERATION_EXCEPTION));
-
+            exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }
     }
@@ -717,12 +713,9 @@ public class ServerTest {
         try (Communicator tx = Communicator.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
-
             tx.send(query(QUERY, false));
 
-            exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-            exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAQL_SYNTAX_EXCEPTION));
-
+            exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }
     }
@@ -827,13 +820,8 @@ public class ServerTest {
     @Test
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
         String keyspace = "not!@akeyspace";
-
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
-
-        String message = GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage();
-        exception.expect(hasStatus(Status.UNKNOWN.withDescription(message)));
-        exception.expect(hasMetadata(ResponseBuilder.ErrorType.KEY, ResponseBuilder.ErrorType.GRAKN_TX_OPERATION_EXCEPTION));
-
+        exception.expect(hasStatus(Status.INVALID_ARGUMENT));
         blockingStub.delete(delete(open));
     }
 }

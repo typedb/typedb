@@ -25,8 +25,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
@@ -115,8 +113,6 @@ public class ResponseBuilder {
      */
     public enum ErrorType {
         // TODO: it's likely some of these will NEVER be thrown normally, so shouldn't be here
-        GRAQL_SYNTAX_EXCEPTION(GraqlSyntaxException::create),
-        GRAKN_TX_OPERATION_EXCEPTION(GraknTxOperationException::create),
         TEMPORARY_WRITE_EXCEPTION(TemporaryWriteException::create),
         GRAKN_SERVER_EXCEPTION(GraknServerException::create),
         PROPERTY_NOT_UNIQUE_EXCEPTION(PropertyNotUniqueException::create),
