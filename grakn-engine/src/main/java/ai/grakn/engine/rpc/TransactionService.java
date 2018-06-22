@@ -64,7 +64,6 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -317,9 +316,9 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
 
         private void next(GrpcIterator.Next next) {
             GrpcIterator.IteratorId iteratorId = next.getIteratorId();
-            Optional<TxResponse> response = iterators.next(iteratorId);
-            if (!response.isPresent()) throw error(Status.FAILED_PRECONDITION);
-            responseSender.onNext(response.get());
+            TxResponse response = iterators.next(iteratorId);
+            if (response == null) throw error(Status.FAILED_PRECONDITION);
+            responseSender.onNext(response);
         }
 
         private void stop(GrpcIterator.Stop stop) {
@@ -441,17 +440,19 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             return iteratorId;
         }
 
-        public Optional<TxResponse> next(GrpcIterator.IteratorId iteratorId) {
-            return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
-                TxResponse response;
-                if (iterator.hasNext()) {
-                    response = iterator.next();
-                } else {
-                    response = ResponseBuilder.done();
-                    stop(iteratorId);
-                }
-                return response;
-            });
+        public TxResponse next(GrpcIterator.IteratorId iteratorId) {
+            Iterator<TxResponse> iterator = iterators.get(iteratorId);
+            if (iterator == null) return null;
+
+            TxResponse response;
+            if (iterator.hasNext()) {
+                response = iterator.next();
+            } else {
+                response = ResponseBuilder.done();
+                stop(iteratorId);
+            }
+
+            return response;
         }
 
         public void stop(GrpcIterator.IteratorId iteratorId) {
