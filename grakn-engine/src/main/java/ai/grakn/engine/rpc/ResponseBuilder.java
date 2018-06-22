@@ -27,27 +27,34 @@ import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.generated.GrpcIterator;
+
+import java.util.stream.Stream;
 
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
- *
- * @author Grakn Warriors
  */
 public class ResponseBuilder {
 
-    public static TxResponse done() {
+    static TxResponse done() {
         return TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
     }
 
-    public static TxResponse noResult() {
+    static TxResponse noResult() {
         return TxResponse.newBuilder().setNoResult(true).build();
     }
 
-    public static TxResponse concept(Concept concept) {
+    static TxResponse iteratorId(Stream<TxResponse> responses, TransactionService.Iterators iterators) {
+        GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
+        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
+        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    }
+    
+    static TxResponse concept(Concept concept) {
         return TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
 
-    public static TxResponse rolePlayer(Role role, Thing player) {
+    static TxResponse rolePlayer(Role role, Thing player) {
         GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
@@ -55,36 +62,36 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
     }
 
-    public static TxResponse answer(Object object) {
+    static TxResponse answer(Object object) {
         return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
     }
 
-    public static GrpcGrakn.DeleteResponse delete() {
+    static GrpcGrakn.DeleteResponse delete() {
         return GrpcGrakn.DeleteResponse.getDefaultInstance();
     }
 
-    public static TxResponse conceptResponseWithNoResult() {
+    static TxResponse conceptResponseWithNoResult() {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static TxResponse conceptResopnseWithConcept(Concept concept) {
+    static TxResponse conceptResopnseWithConcept(Concept concept) {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
+    static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
     
-    public static TxResponse conceptResponseWithAttributeValue(Object value) {
+    static TxResponse conceptResponseWithAttributeValue(Object value) {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static TxResponse conceptResponseWithPattern(Pattern pattern) {
+    static TxResponse conceptResponseWithPattern(Pattern pattern) {
         ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
         if (pattern != null) {
             conceptResponse.setPattern(pattern.toString());
@@ -94,7 +101,7 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    public static TxResponse conceptResponseWithRegex(String regex) {
+    static TxResponse conceptResponseWithRegex(String regex) {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
