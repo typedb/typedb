@@ -33,5 +33,6 @@
     <modules>
         <module>test-integration</module>
         <module>test-snb</module>
+        <module>test-distribution</module>
     </modules>
 </project>

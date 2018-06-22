@@ -16,41 +16,56 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.pid;
+package ai.grakn.bootup;
 
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
  *
- * A class which manages grakn engine's PID
+ * A class responsible for managing the PID file of Engine
  *
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class GraknPidFileStore implements GraknPidStore {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknPidFileStore.class);
+public class EnginePidManager {
+    private static final Logger LOG = LoggerFactory.getLogger(EnginePidManager.class);
 
-    private final Path pidFilePath;
+    private Path pidFile;
 
-    public GraknPidFileStore(Path pidFilePath) {
-        this.pidFilePath = pidFilePath;
+    public EnginePidManager(Path pidFile) {
+        this.pidFile = pidFile;
     }
 
-    @Override
-    public void trackGraknPid(long graknPid) {
-        attemptToWritePidFile(graknPid, this.pidFilePath);
+    public void trackGraknPid() {
+        long pid = getPid();
+        trackGraknPid(pid);
+    }
+
+    private long getPid() {
+        String[] pidAndHostnameString = ManagementFactory.getRuntimeMXBean().getName().split("@");
+        String pidString = pidAndHostnameString[0];
+        try {
+            return Long.parseLong(pidString);
+        } catch (NumberFormatException e) {
+            throw new BootupException(ErrorMessage.COULD_NOT_GET_PID.getMessage(pidString), e);
+        }
+    }
+
+    private void trackGraknPid(long graknPid) {
+        attemptToWritePidFile(graknPid, this.pidFile);
         deletePidFileOnExit();
     }
 
     private void deletePidFileOnExit() {
-        this.pidFilePath.toFile().deleteOnExit();
+        this.pidFile.toFile().deleteOnExit();
     }
 
     private void attemptToWritePidFile(long pid, Path pidFilePath) {
@@ -61,7 +76,7 @@ public class GraknPidFileStore implements GraknPidStore {
         try {
             Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BootupException(e);
         }
     }
 }

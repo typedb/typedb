@@ -464,7 +464,8 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingId() {
-        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -473,7 +474,8 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingIdWithType() {
-        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -482,7 +484,8 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingResourceId() {
-        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -491,7 +494,8 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
-        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get().getId();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();

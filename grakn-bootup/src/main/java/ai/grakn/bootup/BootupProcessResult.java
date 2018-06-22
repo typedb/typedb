@@ -16,25 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup.graknengine.pid;
+package ai.grakn.bootup;
+
+import com.google.auto.value.AutoValue;
 
 /**
  *
- * A class responsible for managing the grakn.pid file of Grakn
- *
  * @author Ganeshwara Herawan Hananda
- *
+ * @author Michele Orsi
  */
-public class GraknPidManager {
-    GraknPidStore graknPidStore;
-    GraknPidRetriever graknPidRetriever;
 
-    public GraknPidManager(GraknPidStore graknPidStore, GraknPidRetriever graknPidRetriever) {
-        this.graknPidStore = graknPidStore;
-        this.graknPidRetriever = graknPidRetriever;
+@AutoValue
+public abstract class BootupProcessResult {
+    public static BootupProcessResult create(String stdout, String stderr, int exitCode) {
+        return new AutoValue_BootupProcessResult(stdout, stderr, exitCode);
     }
-    public void trackGraknPid() {
-        long pid = graknPidRetriever.getPid();
-        graknPidStore.trackGraknPid(pid);
+
+    public boolean success() {
+        return exitCode() == 0;
     }
+
+    public abstract String stdout();
+    public abstract String stderr();
+    public abstract int exitCode();
 }
