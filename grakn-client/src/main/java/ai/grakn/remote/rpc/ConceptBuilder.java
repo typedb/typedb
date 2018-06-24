@@ -21,6 +21,12 @@ package ai.grakn.remote.rpc;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.remote.Transaction;
 import ai.grakn.remote.concept.RemoteAttribute;
 import ai.grakn.remote.concept.RemoteAttributeType;
@@ -32,10 +38,22 @@ import ai.grakn.remote.concept.RemoteRelationshipType;
 import ai.grakn.remote.concept.RemoteRole;
 import ai.grakn.remote.concept.RemoteRule;
 import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableMap;
+import mjson.Json;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -153,5 +171,119 @@ public class ConceptBuilder {
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + dataType);
         }
+    }
+
+    static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
+        if (dataType.equals(AttributeType.DataType.STRING)) {
+            return GrpcConcept.DataType.String;
+        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+            return GrpcConcept.DataType.Boolean;
+        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+            return GrpcConcept.DataType.Integer;
+        } else if (dataType.equals(AttributeType.DataType.LONG)) {
+            return GrpcConcept.DataType.Long;
+        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+            return GrpcConcept.DataType.Float;
+        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+            return GrpcConcept.DataType.Double;
+        } else if (dataType.equals(AttributeType.DataType.DATE)) {
+            return GrpcConcept.DataType.Date;
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+        }
+    }
+
+    public static Object answer(GrpcGrakn.Answer answer, Transaction tx) {
+        switch (answer.getAnswerCase()) {
+            case QUERYANSWER:
+                return queryAnswer(answer.getQueryAnswer(), tx);
+            case COMPUTEANSWER:
+                return computeAnswer(answer.getComputeAnswer());
+            case OTHERRESULT:
+                return Json.read(answer.getOtherResult()).getValue();
+            default:
+            case ANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + answer);
+        }
+    }
+
+    public static Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer, Transaction tx) {
+        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
+
+        queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
+            map.put(Graql.var(grpcVar), concept(tx, grpcConcept));
+        });
+
+        return new QueryAnswer(map.build());
+    }
+
+    public static ComputeQuery.Answer computeAnswer(GrpcGrakn.ComputeAnswer computeAnswerRPC) {
+        switch (computeAnswerRPC.getComputeAnswerCase()) {
+            case NUMBER:
+                try {
+                    Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber());
+                    return new ComputeQueryImpl.AnswerImpl().setNumber(result);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            case PATHS:
+                return new ComputeQueryImpl.AnswerImpl().setPaths(paths(computeAnswerRPC.getPaths()));
+            case CENTRALITY:
+                return new ComputeQueryImpl.AnswerImpl().setCentrality(centrality(computeAnswerRPC.getCentrality()));
+            case CLUSTERS:
+                return new ComputeQueryImpl.AnswerImpl().setClusters(clusters(computeAnswerRPC.getClusters()));
+            case CLUSTERSIZES:
+                return new ComputeQueryImpl.AnswerImpl().setClusterSizes(clusterSizes(computeAnswerRPC.getClusterSizes()));
+            default:
+            case COMPUTEANSWER_NOT_SET:
+                throw new IllegalArgumentException("Unexpected " + computeAnswerRPC);
+        }
+    }
+
+    public static List<List<ConceptId>> paths(GrpcGrakn.Paths pathsRPC) {
+        List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
+
+        for (GrpcConcept.ConceptIds conceptIds : pathsRPC.getPathsList()) {
+            paths.add(
+                    conceptIds.getIdsList().stream()
+                            .map(ConceptId::of)
+                            .collect(toList())
+            );
+        }
+
+        return paths;
+    }
+
+    public static Map<Long, Set<ConceptId>> centrality(GrpcGrakn.Centrality centralityRPC) {
+        Map<Long, Set<ConceptId>> centrality = new HashMap<>();
+
+        for (Map.Entry<Long, GrpcConcept.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
+            centrality.put(
+                    entry.getKey(),
+                    entry.getValue().getIdsList().stream()
+                            .map(ConceptId::of)
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        return centrality;
+    }
+
+    public static Set<Set<ConceptId>> clusters(GrpcGrakn.Clusters clustersRPC) {
+        Set<Set<ConceptId>> clusters = new HashSet<>();
+
+        for (GrpcConcept.ConceptIds conceptIds : clustersRPC.getClustersList()) {
+            clusters.add(
+                    conceptIds.getIdsList().stream()
+                            .map(ConceptId::of)
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        return clusters;
+    }
+
+    public static Set<Long> clusterSizes(GrpcGrakn.ClusterSizes clusterSizesRPC) {
+        return new HashSet<>(clusterSizesRPC.getClusterSizesList());
     }
 }

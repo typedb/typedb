@@ -18,6 +18,7 @@
 
 package ai.grakn.remote.executor;
 
+import ai.grakn.QueryExecutor;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -34,20 +35,20 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Remote implementation of {@link ai.grakn.QueryExecutor} that communicates with a Grakn server using gRPC.
+ * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
  *
  * @author Grakn Warriors
  */
-public final class QueryExecutor implements ai.grakn.QueryExecutor {
+public final class RemoteQueryExecutor implements QueryExecutor {
 
     private final Transaction tx;
 
-    private QueryExecutor(Transaction tx) {
+    private RemoteQueryExecutor(Transaction tx) {
         this.tx = tx;
     }
 
-    public static QueryExecutor create(Transaction tx) {
-        return new QueryExecutor(tx);
+    public static RemoteQueryExecutor create(Transaction tx) {
+        return new RemoteQueryExecutor(tx);
     }
 
     @Override
@@ -84,7 +85,7 @@ public final class QueryExecutor implements ai.grakn.QueryExecutor {
     @Override
     public ai.grakn.ComputeExecutor run(ComputeQuery query) {
         ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.query(query));
-        return ComputeExecutor.of(answer);
+        return RemoteComputeExecutor.of(answer);
     }
 
     private void runVoid(Query<?> query) {

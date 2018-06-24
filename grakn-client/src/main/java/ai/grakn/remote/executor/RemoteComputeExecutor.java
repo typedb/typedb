@@ -25,16 +25,16 @@ package ai.grakn.remote.executor;
  *
  * @param <T> The returned result of the compute job
  */
-final class ComputeExecutor<T> implements ai.grakn.ComputeExecutor {
+final class RemoteComputeExecutor<T> implements ai.grakn.ComputeExecutor {
 
     private final T result;
 
-    private ComputeExecutor(T result) {
+    private RemoteComputeExecutor(T result) {
         this.result = result;
     }
 
-    public static <T> ComputeExecutor<T> of(T result) {
-        return new ComputeExecutor<>(result);
+    public static <T> RemoteComputeExecutor<T> of(T result) {
+        return new RemoteComputeExecutor<>(result);
     }
 
     @Override
