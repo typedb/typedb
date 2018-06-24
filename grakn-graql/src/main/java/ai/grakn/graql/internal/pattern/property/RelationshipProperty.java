@@ -37,7 +37,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.executor.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;

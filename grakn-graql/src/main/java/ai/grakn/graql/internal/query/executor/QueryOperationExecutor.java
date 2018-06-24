@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.runner;
+package ai.grakn.graql.internal.query.executor;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;

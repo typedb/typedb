@@ -16,9 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
-
-import ai.grakn.ComputeJob;
+package ai.grakn.remote.executor;
 
 /**
  * Represents a compute query executing on a gRPC server.
@@ -27,16 +25,16 @@ import ai.grakn.ComputeJob;
  *
  * @param <T> The returned result of the compute job
  */
-final class RemoteComputeJob<T> implements ComputeJob<T> {
+final class ComputeExecutor<T> implements ai.grakn.ComputeExecutor {
 
     private final T result;
 
-    private RemoteComputeJob(T result) {
+    private ComputeExecutor(T result) {
         this.result = result;
     }
 
-    public static <T> RemoteComputeJob<T> of(T result) {
-        return new RemoteComputeJob<>(result);
+    public static <T> ComputeExecutor<T> of(T result) {
+        return new ComputeExecutor<>(result);
     }
 
     @Override

@@ -16,10 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.remote.executor;
 
-import ai.grakn.ComputeJob;
-import ai.grakn.QueryExecutor;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -29,26 +27,27 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.remote.RemoteGraknTx;
 import com.google.common.collect.Iterators;
 
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
+ * Remote implementation of {@link ai.grakn.QueryExecutor} that communicates with a Grakn server using gRPC.
  *
  * @author Grakn Warriors
  */
-final class RemoteQueryExecutor implements QueryExecutor {
+public final class QueryExecutor implements ai.grakn.QueryExecutor {
 
     private final RemoteGraknTx tx;
 
-    private RemoteQueryExecutor(RemoteGraknTx tx) {
+    private QueryExecutor(RemoteGraknTx tx) {
         this.tx = tx;
     }
 
-    public static RemoteQueryExecutor create(RemoteGraknTx tx) {
-        return new RemoteQueryExecutor(tx);
+    public static QueryExecutor create(RemoteGraknTx tx) {
+        return new QueryExecutor(tx);
     }
 
     @Override
@@ -83,9 +82,9 @@ final class RemoteQueryExecutor implements QueryExecutor {
 
 
     @Override
-    public ComputeJob<ComputeQuery.Answer> run(ComputeQuery query) {
+    public ai.grakn.ComputeExecutor run(ComputeQuery query) {
         ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.query(query));
-        return RemoteComputeJob.of(answer);
+        return ComputeExecutor.of(answer);
     }
 
     private void runVoid(Query<?> query) {

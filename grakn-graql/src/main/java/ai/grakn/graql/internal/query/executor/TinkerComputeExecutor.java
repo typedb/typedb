@@ -16,9 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.runner;
+package ai.grakn.graql.internal.query.executor;
 
-import ai.grakn.ComputeJob;
+import ai.grakn.ComputeExecutor;
 import ai.grakn.GraknComputer;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -98,14 +98,14 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
  *
  * @author Grakn Warriors
  */
-class TinkerComputeJob implements ComputeJob<ComputeQuery.Answer> {
+class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
 
     private final ComputeQuery query;
 
-    private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeExecutor.class);
     private final EmbeddedGraknTx<?> tx;
 
-    public TinkerComputeJob(EmbeddedGraknTx<?> tx, ComputeQuery query) {
+    public TinkerComputeExecutor(EmbeddedGraknTx<?> tx, ComputeQuery query) {
         this.tx = tx;
         this.query = query;
     }

@@ -16,9 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.runner;
+package ai.grakn.graql.internal.query.executor;
 
-import ai.grakn.ComputeJob;
+import ai.grakn.ComputeExecutor;
 import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
@@ -123,8 +123,8 @@ public class TinkerQueryExecutor implements QueryExecutor {
 
 
     @Override
-    public ComputeJob<ComputeQuery.Answer> run(ComputeQuery query) {
-        return new TinkerComputeJob(tx, query);
+    public ComputeExecutor<ComputeQuery.Answer> run(ComputeQuery query) {
+        return new TinkerComputeExecutor(tx, query);
     }
 
     private void deleteResult(Answer result, Collection<? extends Var> vars) {

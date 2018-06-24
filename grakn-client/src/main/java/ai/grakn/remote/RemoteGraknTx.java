@@ -21,7 +21,6 @@ package ai.grakn.remote;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -45,6 +44,7 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.remote.executor.QueryExecutor;
 import ai.grakn.remote.rpc.Communicator;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestIterator;
@@ -293,8 +293,8 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     @Override
-    public QueryExecutor queryExecutor() {
-        return RemoteQueryExecutor.create(this);
+    public ai.grakn.QueryExecutor queryExecutor() {
+        return QueryExecutor.create(this);
     }
 
     public java.util.Iterator query(Query<?> query) {

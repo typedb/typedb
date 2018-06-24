@@ -27,7 +27,7 @@ import ai.grakn.graql.ComputeQuery;
  *
  * @param <T> The returned result of the compute job
  */
-public interface ComputeJob<T> {
+public interface ComputeExecutor<T> {
 
     /**
      * Get the result of the compute query job
