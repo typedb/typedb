@@ -124,7 +124,7 @@ public class CSVMigratorTest {
             defaultMigrator.load(template, m.setNullString("").convert());
         }
 
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {//Re Open Transaction
 
             Stream<Entity> pets = graph.getEntityType("pet").instances();
             assertEquals(1, pets.count());
@@ -153,7 +153,7 @@ public class CSVMigratorTest {
                 .setLines(3)
                 .build());
 
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {//Re Open Transaction
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             TestCase.assertEquals(3, pets.size());
 
@@ -173,7 +173,7 @@ public class CSVMigratorTest {
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes", defaultMigrator);
 
-        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.transaction(GraknTxType.WRITE);//Re Open Transaction
         assertEquals(8, graph.getEntityType("pet").instances().count());
     }
 
@@ -182,7 +182,7 @@ public class CSVMigratorTest {
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(factory, getFile("csv", "single-file/schema.gql"));
 
-        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.transaction(GraknTxType.WRITE);//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
@@ -226,7 +226,7 @@ public class CSVMigratorTest {
 
         declareAndLoad(template, "pets/data/pets.csv", defaultMigrator);
 
-        try(GraknTx graph = factory.open(GraknTxType.READ)){
+        try(GraknTx graph = factory.transaction(GraknTxType.READ)){
             assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }

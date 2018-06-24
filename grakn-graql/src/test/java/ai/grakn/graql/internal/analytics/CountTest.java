@@ -66,32 +66,32 @@ public class CountTest {
         String nameAnotherThing = "another";
 
         // assert the graph is empty
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             ComputeQuery count = Graql.compute(COUNT);
             Assert.assertEquals(0L, count.withTx(graph).execute().getNumber().get().longValue());
             Assert.assertEquals(0L, graph.graql().compute(COUNT).includeAttributes(true).execute().getNumber().get().longValue());
         }
 
         // add 2 instances
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
             thingy.addEntity();
             thingy.addEntity();
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Assert.assertEquals(2L,
                     Graql.compute(COUNT).withTx(graph).in(nameThing).execute().getNumber().get().longValue());
         }
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
             anotherThing.addEntity();
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
                     Graql.compute(COUNT).withTx(graph).in(nameThing).includeAttributes(true).execute().getNumber().get().longValue());
@@ -106,7 +106,7 @@ public class CountTest {
         String nameThing = "thingy";
         String nameAnotherThing = "another";
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
             thingy.addEntity();
             thingy.addEntity();
@@ -139,7 +139,7 @@ public class CountTest {
 
     @Test
     public void testHasResourceEdges() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             person.attribute(name);
@@ -149,7 +149,7 @@ public class CountTest {
         }
 
         Optional<Number> count;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).execute().getNumber();
             assertEquals(1L, count.get());
 
@@ -175,7 +175,7 @@ public class CountTest {
             assertEquals(1L, count.get());
         }
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = graph.getEntityType("person");
@@ -197,7 +197,7 @@ public class CountTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).execute().getNumber();
             assertEquals(2L, count.get());
 
@@ -229,7 +229,7 @@ public class CountTest {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
@@ -256,7 +256,7 @@ public class CountTest {
         }
 
         Optional<Number> count;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).execute().getNumber();
             assertEquals(1L, count.get());
 
@@ -279,7 +279,7 @@ public class CountTest {
             assertEquals(1L, count.get());
         }
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.getEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             Entity aPerson = person.addEntity();
@@ -287,7 +287,7 @@ public class CountTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).includeAttributes(true).execute().getNumber();
             assertEquals(5L, count.get());
 
@@ -309,7 +309,7 @@ public class CountTest {
     }
 
     private Long executeCount(GraknSession factory) {
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.transaction(GraknTxType.READ)) {
             return graph.graql().compute(COUNT).execute().getNumber().get().longValue();
         }
     }

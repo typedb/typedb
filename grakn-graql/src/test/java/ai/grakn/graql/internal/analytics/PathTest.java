@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -82,7 +81,7 @@ public class PathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() {
         // test on an empty graph
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(PATH).from(entityId1).to(entityId2).execute();
         }
     }
@@ -90,7 +89,7 @@ public class PathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(PATH).from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -98,7 +97,7 @@ public class PathTest {
     @Test
     public void whenThereIsNoPath_PathReturnsEmptyOptional() {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             assertEquals(Collections.emptyList(), graph.graql().compute(PATH).from(entityId1).to(entityId5).execute().getPaths().get());
         }
     }
@@ -109,7 +108,7 @@ public class PathTest {
         List<List<ConceptId>> allPaths;
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1, relationId12);
             List<ConceptId> path = graph.graql().compute(PATH).from(entityId1).to(relationId12).execute().getPaths().get().get(0);
@@ -168,7 +167,7 @@ public class PathTest {
             list.add(i);
         }
         List<List<List<ConceptId>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().compute(PATH).in(thing, related).from(entityId2).to(entityId1).execute().getPaths().get();
             }
         }).collect(Collectors.toList());
@@ -186,7 +185,7 @@ public class PathTest {
         ConceptId endId;
 
         int numberOfPaths = 3;
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
@@ -226,7 +225,7 @@ public class PathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             List<List<ConceptId>> allPaths = graph.graql().compute(PATH).from(startId).to(endId).execute().getPaths().get();
             assertEquals(numberOfPaths, allPaths.size());
             Set<List<ConceptId>> allPathsSet = new HashSet<>(allPaths);
@@ -240,7 +239,7 @@ public class PathTest {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
@@ -286,7 +285,7 @@ public class PathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             List<List<ConceptId>> allPaths = graph.graql().compute(PATH).from(startId).to(endId).execute().getPaths().get();
             assertEquals(correctPaths.size(), allPaths.size());
             Set<List<ConceptId>> allPathsSet = new HashSet<>(allPaths);
@@ -300,7 +299,7 @@ public class PathTest {
         ConceptId endId;
         Set<List<ConceptId>> correctPaths = new HashSet<>();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
@@ -355,7 +354,7 @@ public class PathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             List<List<ConceptId>> allPaths = graph.graql().compute(PATH).from(startId).to(endId).execute().getPaths().get();
             assertEquals(correctPaths.size(), allPaths.size());
             Set<List<ConceptId>> allPathsSet = new HashSet<>(allPaths);
@@ -369,7 +368,7 @@ public class PathTest {
         List<List<ConceptId>> allPaths;
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             if (GraknTestUtil.usingJanus()) {
                 // If no path is found in the vertex program, NoResultException is thrown to skip map reduce.
                 // Tinker doesn't handle this well, so the next graql query would find the graph is empty.
@@ -392,7 +391,7 @@ public class PathTest {
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             person.attribute(name);
@@ -405,7 +404,7 @@ public class PathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             List<List<ConceptId>> allPaths = graph.graql().compute(PATH).from(startId).to(endId)
                     .includeAttributes(true).execute().getPaths().get();
             assertEquals(1, allPaths.size());
@@ -437,7 +436,7 @@ public class PathTest {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
 
@@ -488,7 +487,7 @@ public class PathTest {
             tx.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             List<List<ConceptId>> allPaths;
 
             // Path from power3 to power3
@@ -548,7 +547,7 @@ public class PathTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

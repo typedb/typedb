@@ -120,7 +120,7 @@ public class GraqlDocsTest {
 
         String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
 
-        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).open(GraknTxType.WRITE)) {
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
 
             // TODO: Fix issue with this test when template expects data in a certain format

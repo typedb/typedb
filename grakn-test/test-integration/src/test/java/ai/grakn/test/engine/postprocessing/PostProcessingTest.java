@@ -102,12 +102,12 @@ public class PostProcessingTest {
         String sample = "Sample";
 
         //Create GraknTx With Duplicate Resources
-        EmbeddedGraknTx<?> tx = session.open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> tx = session.transaction(GraknTxType.WRITE);
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.putAttribute(value);
         tx.commitSubmitNoLogs();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());
         //Check duplicates have been created
@@ -144,7 +144,7 @@ public class PostProcessingTest {
 
         Thread.sleep(2000);
 
-        tx = session.open(GraknTxType.READ);
+        tx = session.transaction(GraknTxType.READ);
 
         //Check it's fixed
         assertEquals(1, tx.getAttributeType(sample).instances().count());
@@ -190,7 +190,7 @@ public class PostProcessingTest {
         EntityType et2;
 
         //Create Simple GraknTx
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
             graknTx.commitSubmitNoLogs();
@@ -215,7 +215,7 @@ public class PostProcessingTest {
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();

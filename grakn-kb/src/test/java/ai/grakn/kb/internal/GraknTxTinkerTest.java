@@ -58,11 +58,11 @@ public class GraknTxTinkerTest extends TxTestBase {
             future.get();
         }
 
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
         assertEquals(20, tx.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
-        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE)){
+        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).transaction(GraknTxType.WRITE)){
             graph.getEntityType("Thing").addEntity();
             graph.commit();
         }
@@ -74,14 +74,14 @@ public class GraknTxTinkerTest extends TxTestBase {
         assertNotNull(tx.getEntityType("entity type"));
         tx.admin().delete();
         assertTrue(tx.isClosed());
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
         assertNull(tx.getEntityType("entity type"));
         assertNotNull(tx.getMetaEntityType());
     }
 
     @Test
     public void whenMutatingClosedGraph_Throw() throws InvalidKBException {
-        EmbeddedGraknTx<?> graph = EmbeddedGraknSession.create(Keyspace.of("newgraph"), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = EmbeddedGraknSession.create(Keyspace.of("newgraph"), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
         graph.close();
 
         expectedException.expect(GraknTxOperationException.class);

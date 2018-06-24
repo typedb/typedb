@@ -53,7 +53,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setPutAttribute(ConceptBuilder.attributeValue(value));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);
     }
@@ -67,7 +67,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
         return concept.asAttribute();
     }
 

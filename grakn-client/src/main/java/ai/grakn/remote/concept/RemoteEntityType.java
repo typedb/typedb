@@ -43,7 +43,7 @@ public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> im
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setAddEntity(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);
     }

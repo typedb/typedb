@@ -61,8 +61,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
         for (GrpcConcept.RolePlayer rolePlayer : rolePlayers) {
-            Role role = ConceptBuilder.concept(tx(), rolePlayer.getRole()).asRole();
-            Thing player = ConceptBuilder.concept(tx(), rolePlayer.getPlayer()).asThing();
+            Role role = ConceptBuilder.concept(rolePlayer.getRole(), tx()).asRole();
+            Thing player = ConceptBuilder.concept(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
                 rolePlayerMap.get(role).add(player);
             } else {
@@ -84,7 +84,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new RequestIterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(tx(), res.getRolePlayer().getPlayer()).asThing()
+                tx(), iteratorId, res -> ConceptBuilder.concept(res.getRolePlayer().getPlayer(), tx()).asThing()
         );
 
         return StreamSupport.stream(rolePlayers.spliterator(), false);

@@ -101,8 +101,8 @@ public class RemoteConceptsTest {
 
     @Before
     public void setUp() {
-        session = Grakn.getSession(URI, Keyspace.of("whatever"));
-        tx = session.open(GraknTxType.WRITE);
+        session = Grakn.session(URI, Keyspace.of("whatever"));
+        tx = session.transaction(GraknTxType.WRITE);
         verify(server.requests()).onNext(any()); // The open request
 
         entityType = RemoteEntityType.create(tx, ID);

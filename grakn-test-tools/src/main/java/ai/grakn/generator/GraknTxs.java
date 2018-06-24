@@ -124,9 +124,9 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         closeGraph(lastGeneratedGraph);
 
         // Clear tx before retrieving
-        tx = factory.open(GraknTxType.WRITE);
+        tx = factory.transaction(GraknTxType.WRITE);
         tx.admin().delete();
-        tx = factory.open(GraknTxType.WRITE);
+        tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
             mutateOnce();

@@ -63,7 +63,7 @@ public class DegreeTest {
     @Before
     public void setUp() {
         session = sessionContext.newSession();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class DegreeTest {
                 .addRolePlayer(role2, tx.getConcept(entity4));
         tx.commit();
 
-        tx = session.open(GraknTxType.READ);
+        tx = session.transaction(GraknTxType.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -113,7 +113,7 @@ public class DegreeTest {
         tx.close();
 
         Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             }
         }).collect(Collectors.toSet());
@@ -127,7 +127,7 @@ public class DegreeTest {
                 }
         ));
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees1 =
                     graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute().getCentrality().get();
 
@@ -176,7 +176,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
@@ -225,7 +225,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
@@ -267,7 +267,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -306,7 +306,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -342,7 +342,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -374,7 +374,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }

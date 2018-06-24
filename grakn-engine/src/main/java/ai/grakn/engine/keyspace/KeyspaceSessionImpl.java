@@ -46,7 +46,7 @@ public class KeyspaceSessionImpl implements KeyspaceSession {
 
     @Override
     public EmbeddedGraknTx tx(GraknTxType txType) {
-        return session.open(txType);
+        return session.transaction(txType);
     }
 
     private String engineURI(GraknConfig config) {

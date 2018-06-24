@@ -124,7 +124,7 @@ public class BatchExecutorClientIT {
                     loader.add(q, keyspace)
             );
         }
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             assertEquals(n, graph.getEntityType("name_tag").instances().count());
         }
     }
@@ -181,7 +181,7 @@ public class BatchExecutorClientIT {
         }
 
         if(GraknTestUtil.usingJanus()) {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 assertEquals(n, graph.getEntityType("name_tag").instances().count());
             }
         }
@@ -189,7 +189,7 @@ public class BatchExecutorClientIT {
 
     private BatchExecutorClient loader(int maxDelay) {
         // load schema
-        try (EmbeddedGraknTx<?> graph = session.open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graph = session.transaction(GraknTxType.WRITE)) {
             Role role = graph.putRole("some-role");
             graph.putRelationshipType("some-relationship").relates(role);
 

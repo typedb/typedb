@@ -270,7 +270,7 @@ public class RelationshipTest extends TxTestBase {
         rel2.attribute(r2);
 
         tx.commit();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
 
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

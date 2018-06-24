@@ -63,7 +63,7 @@ public class MigratorTestUtils {
     }
 
     public static void load(GraknSession factory, File schema) {
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {
             graph.graql()
                     .parse(Files.readLines(schema, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
@@ -117,7 +117,7 @@ public class MigratorTestUtils {
      * Check that the pet graph has been loaded correctly
      */
     public static void assertPetGraphCorrect(GraknSession session){
-        try(GraknTx graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
@@ -142,7 +142,7 @@ public class MigratorTestUtils {
      * Check that the pokemon graph has been loaded correctly
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
-        try(GraknTx graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.transaction(GraknTxType.READ)){
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 

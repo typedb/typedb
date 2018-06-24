@@ -73,14 +73,14 @@ public class CorenessTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(1)).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             assertTrue(result.isEmpty());
         }
@@ -88,7 +88,7 @@ public class CorenessTest {
 
     @Test
     public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
             Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
@@ -98,7 +98,7 @@ public class CorenessTest {
 
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
             Entity entity1 = entityType.addEntity();
             Entity entity2 = entityType.addEntity();
@@ -130,7 +130,7 @@ public class CorenessTest {
     public void testOnGraphWithFourEntitiesAndSixRelationships() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             assertEquals(1, result.size());
             assertEquals(4, result.get(3L).size());
@@ -149,7 +149,7 @@ public class CorenessTest {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -171,7 +171,7 @@ public class CorenessTest {
         }
 
         Map<Long, Set<ConceptId>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             System.out.println("result = " + result);
             assertEquals(2, result.size());
@@ -186,7 +186,7 @@ public class CorenessTest {
 
     @Test
     public void testDisconnectedCores() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -262,7 +262,7 @@ public class CorenessTest {
         }
 
         Map<Long, Set<ConceptId>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             assertEquals(2, result.size());
             assertEquals(8, result.get(3L).size());
@@ -287,7 +287,7 @@ public class CorenessTest {
         }
 
         Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return Graql.compute(CENTRALITY).withTx(graph).using(K_CORE).where(min_k(3L)).execute().getCentrality().get();
             }
         }).collect(Collectors.toSet());
@@ -299,7 +299,7 @@ public class CorenessTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

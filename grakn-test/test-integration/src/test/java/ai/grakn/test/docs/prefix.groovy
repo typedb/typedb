@@ -58,9 +58,9 @@ uri = JavaDocsTest.engine.uri()
 host = uri.host
 port = uri.port
 
-tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
+tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).transaction(GraknTxType.WRITE)
 
-_otherTx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
+_otherTx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).transaction(GraknTxType.WRITE)
 keyspace = _otherTx.keyspace()
 _otherTx.close()
 

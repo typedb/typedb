@@ -46,7 +46,7 @@ public interface GraknSession extends AutoCloseable {
      * @see GraknTx
      */
     @CheckReturnValue
-    GraknTx open(GraknTxType transactionType);
+    GraknTx transaction(GraknTxType transactionType);
 
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.

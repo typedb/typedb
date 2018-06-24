@@ -256,7 +256,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).transaction(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isSchemaConcept());
@@ -268,7 +268,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).transaction(GraknTxType.WRITE);
         assertNotNull(graph.getSchemaConcept(label));
         graph.close();
     }

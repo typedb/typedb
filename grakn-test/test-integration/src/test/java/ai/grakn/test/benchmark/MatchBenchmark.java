@@ -50,7 +50,7 @@ public class MatchBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         GraknSession session = sessionContext.newSession();
-        GraknTx graphEntity = session.open(GraknTxType.WRITE);
+        GraknTx graphEntity = session.transaction(GraknTxType.WRITE);
         EntityType entityType = graphEntity.putEntityType(BENCHMARK_ENTITY_TYPE);
         AttributeType<String> attributeType =
                 graphEntity.putAttributeType(BENCHMARK_ATTRIBUTE_TYPE, AttributeType.DataType.STRING);
@@ -62,7 +62,7 @@ public class MatchBenchmark extends BenchmarkTest {
             }
         }
         graphEntity.commit();
-        graph = session.open(GraknTxType.WRITE);
+        graph = session.transaction(GraknTxType.WRITE);
     }
 
     @TearDown

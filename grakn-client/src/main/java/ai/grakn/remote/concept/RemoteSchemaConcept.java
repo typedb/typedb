@@ -89,7 +89,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
         if (response.getConceptResponse().getNoResult()) return null;
 
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
     }

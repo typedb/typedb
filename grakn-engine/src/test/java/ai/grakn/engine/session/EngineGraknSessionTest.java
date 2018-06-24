@@ -65,7 +65,7 @@ public class EngineGraknSessionTest {
     @ClassRule
     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
-    //Needed so that Grakn.getSession() can return a getSession
+    //Needed so that Grakn.session() can return a session
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry));
 
@@ -88,7 +88,7 @@ public class EngineGraknSessionTest {
     public void whenOpeningTransactionsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureTransactionsAreTheSame(){
         String keyspace = "mykeyspace";
 
-        GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
+        GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).transaction(GraknTxType.WRITE);
         tx1.close();
         GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
@@ -116,7 +116,7 @@ public class EngineGraknSessionTest {
         assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession session = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
-        GraknTx tx = session.open(GraknTxType.WRITE);
+        GraknTx tx = session.transaction(GraknTxType.WRITE);
         session.close();
 
         expectedException.expect(GraknTxOperationException.class);

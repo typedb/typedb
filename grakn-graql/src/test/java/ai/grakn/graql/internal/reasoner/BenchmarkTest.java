@@ -73,7 +73,7 @@ public class BenchmarkTest {
         GraknSession graknSession = sessionContext.newSession();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(GraknTx tx = graknSession.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = graknSession.transaction(GraknTxType.WRITE)) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
@@ -123,7 +123,7 @@ public class BenchmarkTest {
             tx.commit();
         }
 
-        try( GraknTx tx = graknSession.open(GraknTxType.READ)) {
+        try( GraknTx tx = graknSession.transaction(GraknTxType.READ)) {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";

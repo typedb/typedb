@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class ConceptBuilder {
 
-    public static Concept concept(Transaction tx, GrpcConcept.Concept concept) {
+    public static Concept concept(GrpcConcept.Concept concept, Transaction tx) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {
@@ -211,7 +211,7 @@ public class ConceptBuilder {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
-            map.put(Graql.var(grpcVar), concept(tx, grpcConcept));
+            map.put(Graql.var(grpcVar), concept(grpcConcept, tx));
         });
 
         return new QueryAnswer(map.build());

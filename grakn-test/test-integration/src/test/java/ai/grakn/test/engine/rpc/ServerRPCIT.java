@@ -108,12 +108,12 @@ public class ServerRPCIT {
     public void setUp() {
         localSession = engine.sessionWithNewKeyspace();
 
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             MovieKB.get().accept(tx);
             tx.commit();
         }
 
-        remoteSession = Grakn.getSession(engine.grpcUri(), localSession.keyspace());
+        remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
     @After
@@ -124,12 +124,12 @@ public class ServerRPCIT {
     @Test
     public void whenPuttingEntityType_EnsureItIsAdded() {
         String label = "Oliver";
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType(label);
             tx.commit();
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType(label));
         }
     }
@@ -137,35 +137,35 @@ public class ServerRPCIT {
     @Test
     public void whenGettingEntityType_EnsureItIsReturned() {
         String label = "Oliver";
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType(label);
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType(label));
         }
     }
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("person").sub("entity")).execute();
             tx.commit();
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             assertNotNull(tx.getEntityType("person"));
         }
     }
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("flibflab").sub("entity")).execute();
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             assertNull(tx.getEntityType("flibflab"));
         }
     }
@@ -174,19 +174,19 @@ public class ServerRPCIT {
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
         List<Answer> answers;
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
             answers = tx.graql().match(var("x").sub("thing")).get().execute();
         }
 
         int size;
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             size = tx.graql().match(var("x").sub("thing")).get().execute().size();
         }
 
         assertThat(answers.toString(), answers, hasSize(size));
         assertThat(Sets.newHashSet(answers), hasSize(size));
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             for (Answer answer : answers) {
                 assertThat(answer.vars(), contains(var("x")));
                 assertNotNull(tx.getConcept(answer.get("x").getId()));
@@ -199,7 +199,7 @@ public class ServerRPCIT {
         Set<Answer> answers1;
         Set<Answer> answers2;
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
             answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
             answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
         }
@@ -209,7 +209,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingTwoParallelQueries_GetBothResults() throws Throwable {
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
             Iterator<Answer> iterator1 = query.iterator();
@@ -225,7 +225,7 @@ public class ServerRPCIT {
     @Test
     public void whenExecutingComputeQueryies_ResultsAreCorrect() {
         ConceptId idCoco, idMike, idCocoAndMike;
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             Role pet = tx.putRole("pet");
             Role owner = tx.putRole("owner");
             EntityType animal = tx.putEntityType("animal").plays(pet);
@@ -246,7 +246,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
             // count
             assertEquals(1L, tx.graql().compute(COUNT).in("animal").execute().getNumber().get());
 
@@ -302,8 +302,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAConcept_TheInformationOnTheConceptIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x")).get();
 
@@ -331,8 +331,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
@@ -348,8 +348,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAThing_TheInformationOnTheThingIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").has("name", "crime")).get();
             Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
@@ -366,8 +366,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAType_TheInformationOnTheTypeIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
             Type remoteConcept = query.stream().findAny().get().get("x").asType();
@@ -383,8 +383,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingARole_TheInformationOnTheRoleIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             Role remoteConcept = query.stream().findAny().get().get("x").asRole();
@@ -397,8 +397,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingARule_TheInformationOnTheRuleIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
             ai.grakn.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
@@ -411,8 +411,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAnEntityType_TheInformationOnTheEntityTypeIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
             EntityType remoteConcept = query.stream().findAny().get().get("x").asEntityType();
@@ -425,8 +425,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingARelationshipType_TheInformationOnTheRelationshipTypeIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("has-cast")).get();
             RelationshipType remoteConcept = query.stream().findAny().get().get("x").asRelationshipType();
@@ -438,8 +438,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAnAttributeType_TheInformationOnTheAttributeTypeIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
             AttributeType<String> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
@@ -456,8 +456,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAnEntity_TheInformationOnTheEntityIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("movie")).get();
             Entity remoteConcept = query.stream().findAny().get().get("x").asEntity();
@@ -470,8 +470,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
             Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
@@ -499,8 +499,8 @@ public class ServerRPCIT {
 
     @Test
     public void whenGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
-        try (GraknTx remoteTx = remoteSession.open(GraknTxType.READ);
-             GraknTx localTx = localSession.open(GraknTxType.READ)
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("title")).get();
             Attribute<?> remoteConcept = query.stream().findAny().get().get("x").asAttribute();
@@ -517,12 +517,12 @@ public class ServerRPCIT {
     public void whenDeletingAConcept_TheConceptIsDeleted() {
         Label label = Label.of("hello");
 
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType(label);
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             SchemaConcept schemaConcept = tx.getSchemaConcept(label);
             assertFalse(schemaConcept.isDeleted());
             schemaConcept.delete();
@@ -530,14 +530,14 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             assertNull(tx.getSchemaConcept(label));
         }
     }
 
     @Test
     public void whenDefiningASchema_TheSchemaIsDefined() {
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             EntityType animal = tx.putEntityType("animal");
             EntityType dog = tx.putEntityType("dog").sup(animal);
             EntityType cat = tx.putEntityType("cat");
@@ -586,7 +586,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             EntityType animal = tx.getEntityType("animal");
             EntityType dog = tx.getEntityType("dog");
             EntityType cat = tx.getEntityType("feline");
@@ -630,12 +630,12 @@ public class ServerRPCIT {
 
     @Test
     public void whenDeletingAKeyspace_TheKeyspaceIsDeleted() {
-        try (GraknTx tx = localSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType("easter");
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
             tx.admin().delete();
@@ -643,7 +643,7 @@ public class ServerRPCIT {
             assertTrue(tx.isClosed());
         }
 
-        try (GraknTx tx = localSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             assertNull(tx.getEntityType("easter"));
         }
     }
@@ -659,7 +659,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (GraknTx tx = remoteSession.open(GraknTxType.READ)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
 
             exception.expect(RuntimeException.class);
@@ -670,7 +670,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenPerformingAMatchGetQuery_TheResultsAreCorrect(){
-        try (GraknTx tx = remoteSession.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
             //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
 
             EntityType company = tx.putEntityType("company-123");

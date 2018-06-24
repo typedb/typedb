@@ -139,7 +139,7 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE);
+            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.WRITE);
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();

@@ -47,7 +47,7 @@ public class AddBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         session = sessionContext.newSession();
-        graph = session.open(GraknTxType.WRITE);
+        graph = session.transaction(GraknTxType.WRITE);
         role1 = graph.putRole("benchmark_role1");
         role2 = graph.putRole("benchmark_role2");
         entityType = graph.putEntityType("benchmarkEntitytype").plays(role1).plays(role2);

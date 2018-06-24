@@ -46,7 +46,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setAddRelationship(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);
     }

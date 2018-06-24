@@ -106,8 +106,8 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.stub()).thenReturn(GraknGrpc.newStub(server.channel()));
-        when(session.blockingStub()).thenReturn(GraknGrpc.newBlockingStub(server.channel()));
+        when(session.stubAsync()).thenReturn(GraknGrpc.newStub(server.channel()));
+        when(session.stubBlocking()).thenReturn(GraknGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
     }
 

@@ -58,7 +58,7 @@ public class RuleTest {
     @Before
     public void setupRules(){
         session = Grakn.session(Grakn.IN_MEMORY, "absd");
-        graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").open(GraknTxType.WRITE);
+        graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").transaction(GraknTxType.WRITE);
     }
 
     @After

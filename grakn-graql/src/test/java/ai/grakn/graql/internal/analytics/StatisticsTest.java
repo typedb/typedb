@@ -94,7 +94,7 @@ public class StatisticsTest {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // resources-type is not set
             assertGraqlQueryExceptionThrown(graph.graql().compute(MAX).in(thing));
             assertGraqlQueryExceptionThrown(graph.graql().compute(MIN).in(thing));
@@ -163,7 +163,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MIN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -202,7 +202,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -225,7 +225,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(MIN).of(resourceType1).in(Collections.emptySet()).execute().getNumber();
             assertEquals(1.2, result.get().doubleValue(), delta);
             result = Graql.compute(MIN).in(thing).of(resourceType2).withTx(graph).execute().getNumber();
@@ -255,7 +255,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(SUM).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
@@ -277,7 +277,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
@@ -291,7 +291,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
             assertEquals(4.5, result.get().doubleValue(), delta);
             result = Graql.compute(SUM).of(resourceType2).in(thing).withTx(graph).execute().getNumber();
@@ -311,7 +311,7 @@ public class StatisticsTest {
 
         // resource-type has no instance
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MEAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -333,7 +333,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -347,7 +347,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().getNumber();
             assertEquals(1.5, result.get().doubleValue(), delta);
             result = Graql.compute(MEAN).of(resourceType2).withTx(graph).execute().getNumber();
@@ -368,7 +368,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(STD).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
@@ -390,7 +390,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
@@ -404,7 +404,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
             assertEquals(Math.sqrt(0.18 / 3), result.get().doubleValue(), delta);
             result = Graql.compute(STD).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
@@ -425,7 +425,7 @@ public class StatisticsTest {
         }
 
         List<Number> numberList = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().compute(STD).of(resourceType2).in(thing).execute().getNumber().get();
             }
         }).collect(Collectors.toList());
@@ -439,7 +439,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MEDIAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -461,7 +461,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
             assertFalse(result.isPresent());
             result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
@@ -475,7 +475,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(MEDIAN).of(resourceType1).execute().getNumber();
             assertEquals(1.5D, result.get().doubleValue(), delta);
             result = Graql.compute(MEDIAN).withTx(graph).of(resourceType6).execute().getNumber();
@@ -500,7 +500,7 @@ public class StatisticsTest {
         }
 
         List<Number> numberList = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().compute(MEDIAN).of(resourceType1).execute().getNumber().get();
             }
         }).collect(Collectors.toList());
@@ -509,7 +509,7 @@ public class StatisticsTest {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
@@ -544,7 +544,7 @@ public class StatisticsTest {
 
         Optional<Number> result;
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // No need to test all statistics as most of them share the same vertex program
 
             result = graph.graql().compute(MIN).of("power").execute().getNumber();
@@ -562,7 +562,7 @@ public class StatisticsTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -620,7 +620,7 @@ public class StatisticsTest {
     }
 
     private void addResourcesInstances() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.<Double>getAttributeType(resourceType1).putAttribute(1.2);
             graph.<Double>getAttributeType(resourceType1).putAttribute(1.5);
             graph.<Double>getAttributeType(resourceType1).putAttribute(1.8);
@@ -646,7 +646,7 @@ public class StatisticsTest {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
             Entity entity3 = graph.getConcept(entityId3);

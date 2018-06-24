@@ -115,7 +115,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -287,7 +287,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void reopenTx() {
         if (!tx.isClosed()) tx.close();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public boolean errorOccurred() {

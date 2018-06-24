@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asCurrentType(concept);
     }
@@ -78,7 +78,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
         GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(tx(), response.getConceptResponse().getConcept());
+        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
         return concept.asRelationship();
     }
 

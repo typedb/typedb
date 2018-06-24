@@ -80,7 +80,7 @@ public class EngineGraknTxFactory {
             initialiseNewKeyspace(keyspace);
         }
 
-        return session(keyspace).open(type);
+        return session(keyspace).transaction(type);
     }
 
     /**
@@ -108,7 +108,7 @@ public class EngineGraknTxFactory {
         lock.lock();
         try {
             // Create new empty keyspace in db
-            session(keyspace).open(GraknTxType.WRITE).close();
+            session(keyspace).transaction(GraknTxType.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
         } finally {

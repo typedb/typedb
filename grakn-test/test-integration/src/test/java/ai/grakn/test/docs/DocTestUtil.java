@@ -159,7 +159,7 @@ public class DocTestUtil {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         GraknSession session = Grakn.session(uri, keyspace);
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);
 
             if (loader == null) {

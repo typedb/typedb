@@ -125,7 +125,7 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        try(GraknTx graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 

@@ -82,7 +82,7 @@ public class GraqlTest {
     @Test
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             assertEquals(6L,
                     ((ComputeQuery.Answer) (graph.graql().parse("compute count;").execute())).getNumber().get());
             assertEquals(3L,
@@ -93,7 +93,7 @@ public class GraqlTest {
     @Test
     public void testDegrees() {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             Map<Long, Set<ConceptId>> degrees =
                     graph.graql().<ComputeQuery>parse("compute centrality using degree;").execute().getCentrality().get();
 
@@ -117,21 +117,21 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.graql().parse("compute centrality of thingy, using degree;").execute();
         }
     }
 
     @Test
     public void testStatisticsMethods() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
             AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
@@ -157,7 +157,7 @@ public class GraqlTest {
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // use graql to compute various statistics
             Optional<? extends Number> result =
                     graph.graql().<ComputeQuery>parse("compute sum of my-resource;").execute().getNumber();
@@ -176,7 +176,7 @@ public class GraqlTest {
 
     @Test
     public void testConnectedComponents() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             List<Long> sizeList =
                     graph.graql().<ComputeQuery>parse("compute cluster using connected-component;").execute().getClusterSizes().get();
             assertTrue(sizeList.isEmpty());
@@ -195,7 +195,7 @@ public class GraqlTest {
     public void testSinglePath() throws InvalidKBException {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
             List<List<ConceptId>> paths = query.execute().getPaths().get();
 
@@ -212,7 +212,7 @@ public class GraqlTest {
     public void testPath() throws InvalidKBException {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             ComputeQuery query = graph.graql().parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';");
 
             List<List<ConceptId>> path = query.execute().getPaths().get();
@@ -226,19 +226,19 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putEntityType(thingy);
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testErrorWhenNoSubgraphForAnalytics() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
             graph.graql().parse("compute max;").execute();
@@ -249,7 +249,7 @@ public class GraqlTest {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putAttributeType("number", AttributeType.DataType.LONG);
             graph.commit();
         }
@@ -260,14 +260,14 @@ public class GraqlTest {
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
                 graph.graql().parse("define thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
 
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 // see if the node was commited
                 assertNull(graph.getEntityType("thingy"));
             }
@@ -275,7 +275,7 @@ public class GraqlTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

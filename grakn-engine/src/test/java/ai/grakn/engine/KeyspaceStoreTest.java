@@ -62,7 +62,7 @@ public class KeyspaceStoreTest {
     private static EngineGraknTxFactory graknFactory;
     private static KeyspaceStore keyspaceStore;
 
-    //Needed so that Grakn.getSession() can return a getSession
+    //Needed so that Grakn.session() can return a session
     //Note: This is a rule rather than a class rule because we need to ensure that cass is started up first and then
     // the keyspaceStore is initialised. If we make this a ClassRule that load order is broken and this test fails with
     // the janus profile.
@@ -77,7 +77,7 @@ public class KeyspaceStoreTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(Keyspace.of(k), GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).open(GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).transaction(GraknTxType.WRITE);
 
     private final Set<GraknTx> transactions = new HashSet<>();
 

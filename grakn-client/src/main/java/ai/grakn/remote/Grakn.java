@@ -43,8 +43,8 @@ public final class Grakn {
 
     private Grakn() {}
 
-    public static Grakn.Session getSession(SimpleURI uri, Keyspace keyspace) {
-        return Session.create(uri, keyspace);
+    public static Grakn.Session session(SimpleURI uri, Keyspace keyspace) {
+        return new Session(uri, keyspace);
     }
 
     /**
@@ -59,34 +59,22 @@ public final class Grakn {
         private final SimpleURI uri;
         private final ManagedChannel channel;
 
-        private Session(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+        private Session(SimpleURI uri, Keyspace keyspace) {
             this.keyspace = keyspace;
             this.uri = uri;
-            this.channel = channel;
+            this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        @VisibleForTesting
-        public static Session create(SimpleURI uri, Keyspace keyspace, ManagedChannel channel) {
-            return new Session(keyspace, uri, channel);
-        }
-
-        private static Session create(SimpleURI uri, Keyspace keyspace){
-            ManagedChannel channel =
-                    ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
-
-            return create(uri, keyspace, channel);
-        }
-
-        GraknGrpc.GraknStub stub() {
+        GraknGrpc.GraknStub stubAsync() {
             return GraknGrpc.newStub(channel);
         }
 
-        GraknGrpc.GraknBlockingStub blockingStub() {
+        GraknGrpc.GraknBlockingStub stubBlocking() {
             return GraknGrpc.newBlockingStub(channel);
         }
 
         @Override
-        public Transaction open(GraknTxType transactionType) {
+        public Transaction transaction(GraknTxType transactionType) {
             return Transaction.create(this, RequestBuilder.open(keyspace, transactionType));
         }
 

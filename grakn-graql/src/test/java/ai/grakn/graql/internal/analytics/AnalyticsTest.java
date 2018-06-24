@@ -77,7 +77,7 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
@@ -99,7 +99,7 @@ public class AnalyticsTest {
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CENTRALITY).using(DEGREE).execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -111,7 +111,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(COUNT).in("rule", "thing").execute();
         }
     }
@@ -120,7 +120,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(COUNT).in("role").execute();
         }
     }
@@ -140,7 +140,7 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
 
         List<?> result = queryList.parallelStream().map(query -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().parse(query).execute().toString();
             }
         }).collect(Collectors.toList());
@@ -148,7 +148,7 @@ public class AnalyticsTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

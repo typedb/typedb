@@ -72,14 +72,14 @@ public class KCoreTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CLUSTER).using(K_CORE).where(k(1L)).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusters().get();
             assertTrue(result.isEmpty());
         }
@@ -87,7 +87,7 @@ public class KCoreTest {
 
     @Test
     public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
             Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusters().get();
@@ -97,7 +97,7 @@ public class KCoreTest {
 
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
             Entity entity1 = entityType.addEntity();
             Entity entity2 = entityType.addEntity();
@@ -129,7 +129,7 @@ public class KCoreTest {
     public void testOnGraphWithFourEntitiesAndSixRelationships() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Set<Set<ConceptId>> result1 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().getClusters().get();
             assertEquals(1, result1.size());
             assertEquals(4, result1.iterator().next().size());
@@ -149,7 +149,7 @@ public class KCoreTest {
     public void testImplicitTypeShouldBeExcluded() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -162,7 +162,7 @@ public class KCoreTest {
         }
 
         Set<Set<ConceptId>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(2L)).execute().getClusters().get();
             assertEquals(1, result.size());
             assertEquals(5, result.iterator().next().size());
@@ -177,7 +177,7 @@ public class KCoreTest {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -198,7 +198,7 @@ public class KCoreTest {
         }
 
         Set<Set<ConceptId>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(4L)).execute().getClusters().get();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
@@ -213,7 +213,7 @@ public class KCoreTest {
 
     @Test
     public void testDisconnectedCores() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -289,7 +289,7 @@ public class KCoreTest {
         }
 
         Set<Set<ConceptId>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().getClusters().get();
             assertEquals(2, result.size());
             assertEquals(4, result.iterator().next().size());
@@ -314,7 +314,7 @@ public class KCoreTest {
         }
 
         Set<Set<Set<ConceptId>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return Graql.compute(CLUSTER).withTx(graph).using(K_CORE).where(k(3L)).execute().getClusters().get();
             }
         }).collect(Collectors.toSet());
@@ -325,7 +325,7 @@ public class KCoreTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

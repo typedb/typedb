@@ -141,7 +141,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 Optional<Answer> answer = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -191,7 +191,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> messageResults = graph.graql().match(
                         $person.isa(PERSON).has(PERSON_ID, operation.personId()),
@@ -250,7 +250,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -284,7 +284,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -323,7 +323,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -362,7 +362,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().infer(true).match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -403,7 +403,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
 
                 List<Answer> results = graph.graql().match(

@@ -81,7 +81,7 @@ public class BenchmarkIT {
         try {
             File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + fileName);
             String s = Files.toString(graqlFile, Charset.forName("UTF-8"));
-            GraknTx tx = session.open(GraknTxType.WRITE);
+            GraknTx tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
             tx.commit();
             tx.close();
@@ -102,7 +102,7 @@ public class BenchmarkIT {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
                                                  GraknSession session, GraknClient graknClient, Keyspace keyspace){
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()) {
-            GraknTx tx = session.open(GraknTxType.READ);
+            GraknTx tx = session.transaction(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
             ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
                     .map(ans -> ans.get(entityVar).getId())
@@ -163,7 +163,7 @@ public class BenchmarkIT {
         String toRoleLabel = "toRole";
 
         //load ontology
-        try(GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Role fromRole = tx.putRole(fromRoleLabel);
             Role toRole = tx.putRole(toRoleLabel);
             AttributeType<String> index = tx.putAttributeType(attributeLabel, AttributeType.DataType.STRING);
@@ -216,7 +216,7 @@ public class BenchmarkIT {
 
         //load initial relation instances
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
-            try(GraknTx tx = session.open(GraknTxType.READ)) {
+            try(GraknTx tx = session.transaction(GraknTxType.READ)) {
                 Var entityVar = var().asUserDefined();
                 ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
                         .map(ans -> ans.get(entityVar).getId())
@@ -264,7 +264,7 @@ public class BenchmarkIT {
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
             ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().getId();
             String queryPattern = "(P-from: $x, P-to: $y) isa P;";
             String queryString = "match " + queryPattern + " get;";
@@ -308,7 +308,7 @@ public class BenchmarkIT {
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         loadJoinData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
             ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().getId();
             String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
             String queryString = "match " + queryPattern + " get;";
@@ -348,7 +348,7 @@ public class BenchmarkIT {
         LOG.debug(new Object() {}.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
             ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").getId();
             ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").getId();
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";

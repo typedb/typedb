@@ -62,7 +62,7 @@ abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
     protected final Stream<? extends Concept> runMethodToConceptStream(GrpcConcept.ConceptMethod method) {
         GrpcIterator.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new RequestIterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(tx(), res.getConcept())
+                tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

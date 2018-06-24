@@ -106,7 +106,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery2 ldbcQuery2, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 LocalDateTime maxDate = SNB.fromDate(ldbcQuery2.maxDate());
 
                 // to make this query execute faster split it into two parts:
@@ -158,7 +158,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery8 ldbcQuery8, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 // for speed the query is again split into the ordering and limit phase
                 Var reply = var("aReply");
                 Var responder = var("responder");
@@ -209,7 +209,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery1 ldbcQuery1, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 Var anyone = var("anyone");
                 Var anyoneElse = var("anyoneElse");
 
@@ -345,7 +345,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery13 ldbcQuery13, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 Match match = match($person.has(PERSON_ID, ldbcQuery13.person1Id()));
                 Concept person1 = match.withTx(graknTx).get().execute().iterator().next().get($person);
                 match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));

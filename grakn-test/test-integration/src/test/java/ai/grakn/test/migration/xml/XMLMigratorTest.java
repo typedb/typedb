@@ -62,7 +62,7 @@ public class XMLMigratorTest {
 
     @After
     public void clearGraph(){
-        try(GraknTx graph = session.open(GraknTxType.WRITE)){
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)){
             AttributeType<String> nameType = graph.getAttributeType("name");
             nameType.instances().forEach(Concept::delete);
 
@@ -106,7 +106,7 @@ public class XMLMigratorTest {
     }
 
     private static void assertThingHasName(String name){
-        try(GraknTx graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.transaction(GraknTxType.READ)){
 
             EntityType thingType = graph.getEntityType("thingy");
             AttributeType nameType = graph.getAttributeType("name");

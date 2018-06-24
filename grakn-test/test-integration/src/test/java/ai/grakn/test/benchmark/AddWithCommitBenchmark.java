@@ -48,7 +48,7 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         session = sessionContext.newSession();
-        try(GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             role1 = tx.putRole("benchmark_role1");
             role2 = tx.putRole("benchmark_role2");
             entityType = tx.putEntityType("benchmark_Entitytype").plays(role1).plays(role2);
@@ -59,7 +59,7 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
 
     @Benchmark
     public void addEntity() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             entityType.addEntity();
             graph.commit();
         }
@@ -67,7 +67,7 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
 
     @Benchmark
     public void addRelation() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             Entity entity1 = entityType.addEntity();
             Entity entity2 = entityType.addEntity();
             relationshipType.addRelationship().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
