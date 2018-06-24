@@ -41,7 +41,7 @@
         <module>grakn-core</module>
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
-        <module>grakn-client</module>
+        <module>client-java</module>
         <module>grakn-test-tools</module>
         <module>grakn-bootup</module>
     </modules>
@@ -239,7 +239,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-client</artifactId>
+                <artifactId>client-java</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
