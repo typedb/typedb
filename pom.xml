@@ -44,7 +44,6 @@
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
         <module>grakn-bootup</module>
-        <module>grakn-grpc</module>
     </modules>
 
     <properties>
@@ -263,11 +262,6 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.3.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-grpc</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
