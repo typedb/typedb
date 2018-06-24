@@ -113,7 +113,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
+        remoteSession = Grakn.getSession(engine.grpcUri(), localSession.keyspace());
     }
 
     @After

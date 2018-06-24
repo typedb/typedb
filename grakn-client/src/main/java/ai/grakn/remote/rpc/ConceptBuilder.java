@@ -22,7 +22,15 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.remote.Transaction;
-import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.remote.concept.RemoteAttribute;
+import ai.grakn.remote.concept.RemoteAttributeType;
+import ai.grakn.remote.concept.RemoteEntity;
+import ai.grakn.remote.concept.RemoteEntityType;
+import ai.grakn.remote.concept.RemoteMetaType;
+import ai.grakn.remote.concept.RemoteRelationship;
+import ai.grakn.remote.concept.RemoteRelationshipType;
+import ai.grakn.remote.concept.RemoteRole;
+import ai.grakn.remote.concept.RemoteRule;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
 
@@ -42,23 +50,23 @@ public class ConceptBuilder {
 
         switch (concept.getBaseType()) {
             case ENTITY:
-                return RemoteConcepts.createEntity(tx, id);
+                return RemoteEntity.create(tx, id);
             case RELATIONSHIP:
-                return RemoteConcepts.createRelationship(tx, id);
+                return RemoteRelationship.create(tx, id);
             case ATTRIBUTE:
-                return RemoteConcepts.createAttribute(tx, id);
+                return RemoteAttribute.create(tx, id);
             case ENTITY_TYPE:
-                return RemoteConcepts.createEntityType(tx, id);
+                return RemoteEntityType.create(tx, id);
             case RELATIONSHIP_TYPE:
-                return RemoteConcepts.createRelationshipType(tx, id);
+                return RemoteRelationshipType.create(tx, id);
             case ATTRIBUTE_TYPE:
-                return RemoteConcepts.createAttributeType(tx, id);
+                return RemoteAttributeType.create(tx, id);
             case ROLE:
-                return RemoteConcepts.createRole(tx, id);
+                return RemoteRole.create(tx, id);
             case RULE:
-                return RemoteConcepts.createRule(tx, id);
+                return RemoteRule.create(tx, id);
             case META_TYPE:
-                return RemoteConcepts.createMetaType(tx, id);
+                return RemoteMetaType.create(tx, id);
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + concept);
@@ -125,7 +133,6 @@ public class ConceptBuilder {
         return builder.build();
     }
 
-
     public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
         switch (dataType) {
             case String:
@@ -145,26 +152,6 @@ public class ConceptBuilder {
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + dataType);
-        }
-    }
-
-    static GrpcConcept.DataType dataType(AttributeType.DataType<?> dataType) {
-        if (dataType.equals(AttributeType.DataType.STRING)) {
-            return GrpcConcept.DataType.String;
-        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return GrpcConcept.DataType.Boolean;
-        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return GrpcConcept.DataType.Integer;
-        } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return GrpcConcept.DataType.Long;
-        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return GrpcConcept.DataType.Float;
-        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return GrpcConcept.DataType.Double;
-        } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return GrpcConcept.DataType.Date;
-        } else {
-            throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
     }
 }

@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
+public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
     public static RemoteRule create(Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRule(tx, id);

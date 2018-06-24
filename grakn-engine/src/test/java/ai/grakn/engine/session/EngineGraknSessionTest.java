@@ -65,7 +65,7 @@ public class EngineGraknSessionTest {
     @ClassRule
     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
-    //Needed so that Grakn.session() can return a session
+    //Needed so that Grakn.getSession() can return a getSession
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry));
 

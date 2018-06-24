@@ -19,8 +19,15 @@
 package ai.grakn.remote;
 
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.util.SimpleURI;
+import com.google.common.annotations.VisibleForTesting;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 /**
  * Entry-point and remote equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
@@ -36,7 +43,66 @@ public final class Grakn {
 
     private Grakn() {}
 
-    public static GraknSession session(SimpleURI uri, Keyspace keyspace) {
-        return Session.create(keyspace, uri);
+    public static Grakn.Session getSession(SimpleURI uri, Keyspace keyspace) {
+        return Session.create(uri, keyspace);
+    }
+
+    /**
+     * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
+     *
+     * @see Transaction
+     * @see Grakn
+     */
+    public static class Session implements GraknSession {
+
+        private final Keyspace keyspace;
+        private final SimpleURI uri;
+        private final ManagedChannel channel;
+
+        private Session(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+            this.keyspace = keyspace;
+            this.uri = uri;
+            this.channel = channel;
+        }
+
+        @VisibleForTesting
+        public static Session create(SimpleURI uri, Keyspace keyspace, ManagedChannel channel) {
+            return new Session(keyspace, uri, channel);
+        }
+
+        private static Session create(SimpleURI uri, Keyspace keyspace){
+            ManagedChannel channel =
+                    ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+
+            return create(uri, keyspace, channel);
+        }
+
+        GraknGrpc.GraknStub stub() {
+            return GraknGrpc.newStub(channel);
+        }
+
+        GraknGrpc.GraknBlockingStub blockingStub() {
+            return GraknGrpc.newBlockingStub(channel);
+        }
+
+        @Override
+        public Transaction open(GraknTxType transactionType) {
+            return Transaction.create(this, RequestBuilder.open(keyspace, transactionType));
+        }
+
+        @Override
+        public void close() throws GraknTxOperationException {
+            channel.shutdown();
+        }
+
+        @Override
+        public String uri() {
+            return uri.toString();
+        }
+
+        @Override
+        public Keyspace keyspace() {
+            return keyspace;
+        }
     }
 }

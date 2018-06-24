@@ -40,7 +40,13 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.concept.RemoteConcepts;
+import ai.grakn.remote.concept.RemoteAttribute;
+import ai.grakn.remote.concept.RemoteAttributeType;
+import ai.grakn.remote.concept.RemoteEntity;
+import ai.grakn.remote.concept.RemoteEntityType;
+import ai.grakn.remote.concept.RemoteRelationshipType;
+import ai.grakn.remote.concept.RemoteRole;
+import ai.grakn.remote.concept.RemoteRule;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
@@ -92,7 +98,7 @@ public class TransactionTest {
     @Rule
     public final GrpcServerMock server = GrpcServerMock.create();
 
-    private final Session session = mock(Session.class);
+    private final Grakn.Session session = mock(Grakn.Session.class);
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
     private static final String V123 = "V123";
@@ -389,7 +395,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createEntityType(tx, id);
+            Concept concept = RemoteEntityType.create(tx, id);
             server.setResponse(RequestBuilder.putEntityType(label), response(concept));
 
             assertEquals(concept, tx.putEntityType(label));
@@ -404,7 +410,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createRelationshipType(tx, id);
+            Concept concept = RemoteRelationshipType.create(tx, id);
             server.setResponse(RequestBuilder.putRelationshipType(label), response(concept));
 
             assertEquals(concept, tx.putRelationshipType(label));
@@ -420,7 +426,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createAttributeType(tx, id);
+            Concept concept = RemoteAttributeType.create(tx, id);
             server.setResponse(RequestBuilder.putAttributeType(label, dataType), response(concept));
 
             assertEquals(concept, tx.putAttributeType(label, dataType));
@@ -435,7 +441,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createRole(tx, id);
+            Concept concept = RemoteRole.create(tx, id);
             server.setResponse(RequestBuilder.putRole(label), response(concept));
 
             assertEquals(concept, tx.putRole(label));
@@ -452,7 +458,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createRule(tx, id);
+            Concept concept = RemoteRule.create(tx, id);
             server.setResponse(RequestBuilder.putRule(label, when, then), response(concept));
 
             assertEquals(concept, tx.putRule(label, when, then));
@@ -466,7 +472,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createEntity(tx, id);
+            Concept concept = RemoteEntity.create(tx, id);
 
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
@@ -498,7 +504,7 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Concept concept = RemoteConcepts.createAttributeType(tx, id);
+            Concept concept = RemoteAttributeType.create(tx, id);
             GrpcGrakn.TxResponse response = GrpcGrakn.TxResponse.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
             server.setResponse(RequestBuilder.getSchemaConcept(label), response);
@@ -528,8 +534,8 @@ public class TransactionTest {
         try (Transaction tx = Transaction.create(session, RequestBuilder.open(KEYSPACE, GraknTxType.READ))) {
             verify(server.requests()).onNext(any()); // The open request
 
-            Attribute<?> attribute1 = RemoteConcepts.createAttribute(tx, ConceptId.of("A"));
-            Attribute<?> attribute2 = RemoteConcepts.createAttribute(tx, ConceptId.of("B"));
+            Attribute<?> attribute1 = RemoteAttribute.create(tx, ConceptId.of("A"));
+            Attribute<?> attribute2 = RemoteAttribute.create(tx, ConceptId.of("B"));
 
             server.setResponseSequence(
                     RequestBuilder.getAttributesByValue(value),

@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
+public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
 
     public static RemoteEntityType create(Transaction tx, ConceptId id) {
         return new AutoValue_RemoteEntityType(tx, id);

@@ -45,14 +45,14 @@ public class SessionTest {
 
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSession() {
-        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
-            assertTrue(Session.class.isAssignableFrom(session.getClass()));
+        try (GraknSession session = Grakn.getSession(URI, KEYSPACE)) {
+            assertTrue(Grakn.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
+        try (GraknSession session = Grakn.getSession(URI, KEYSPACE)) {
             assertEquals(URI.toString(), session.uri());
             assertEquals(KEYSPACE, session.keyspace());
         }
@@ -62,7 +62,7 @@ public class SessionTest {
     public void whenClosingASession_ShutdownTheChannel() {
         ManagedChannel channel = mock(ManagedChannel.class);
 
-        GraknSession ignored = Session.create(KEYSPACE, URI, channel);
+        GraknSession ignored = Grakn.getSession(URI, KEYSPACE);
         ignored.close();
 
         verify(channel).shutdown();
@@ -70,7 +70,7 @@ public class SessionTest {
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = Session.create(KEYSPACE, URI, server.channel())) {
+        try (GraknSession session = Grakn.getSession(URI, KEYSPACE)) {
             try (GraknTx tx = session.open(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(KEYSPACE, tx.keyspace());

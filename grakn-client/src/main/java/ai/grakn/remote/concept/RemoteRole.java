@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
+public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
     public static RemoteRole create(Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRole(tx, id);

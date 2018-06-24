@@ -50,6 +50,6 @@ public class GraknSessionProvider implements SessionProvider{
         SimpleURI uri = location != null ? location : defaultGrpcUri;
         Keyspace keyspace = options.getKeyspace();
 
-        return Grakn.session(uri, keyspace);
+        return Grakn.getSession(uri, keyspace);
     }
 }

@@ -35,8 +35,8 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.remote.Grakn;
 import ai.grakn.remote.GrpcServerMock;
-import ai.grakn.remote.Session;
 import ai.grakn.remote.Transaction;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
@@ -81,7 +81,7 @@ public class RemoteConceptsTest {
     @Rule
     public final GrpcServerMock server = GrpcServerMock.create();
 
-    private Session session;
+    private Grakn.Session session;
     private Transaction tx;
     private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
@@ -101,21 +101,21 @@ public class RemoteConceptsTest {
 
     @Before
     public void setUp() {
-        session = Session.create(Keyspace.of("whatever"), URI, server.channel());
+        session = Grakn.getSession(URI, Keyspace.of("whatever"));
         tx = session.open(GraknTxType.WRITE);
         verify(server.requests()).onNext(any()); // The open request
 
-        entityType = RemoteConcepts.createEntityType(tx, ID);
-        attributeType = RemoteConcepts.createAttributeType(tx, ID);
-        relationshipType = RemoteConcepts.createRelationshipType(tx, ID);
-        role = RemoteConcepts.createRole(tx, ID);
-        rule = RemoteConcepts.createRule(tx, ID);
+        entityType = RemoteEntityType.create(tx, ID);
+        attributeType = RemoteAttributeType.create(tx, ID);
+        relationshipType = RemoteRelationshipType.create(tx, ID);
+        role = RemoteRole.create(tx, ID);
+        rule = RemoteRule.create(tx, ID);
         schemaConcept = role;
         type = entityType;
 
-        entity = RemoteConcepts.createEntity(tx, ID);
-        attribute = RemoteConcepts.createAttribute(tx, ID);
-        relationship = RemoteConcepts.createRelationship(tx, ID);
+        entity = RemoteEntity.create(tx, ID);
+        attribute = RemoteAttribute.create(tx, ID);
+        relationship = RemoteRelationship.create(tx, ID);
         thing = entity;
         concept = entity;
     }
@@ -190,7 +190,7 @@ public class RemoteConceptsTest {
     @Test @Ignore
     public void whenCallingGetAttribute_GetTheExpectedResult() {
         String value = "Dunstan again";
-        Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
+        Attribute<String> attribute = RemoteAttribute.create(tx, A);
 
         //mockConceptMethod(ConceptMethod.getAttribute(value), Optional.of(attribute));
 
@@ -234,9 +234,9 @@ public class RemoteConceptsTest {
     @Test @Ignore
     public void whenCallingSups_GetTheExpectedResult() {
         Type me = entityType;
-        Type mySuper = RemoteConcepts.createEntityType(tx, A);
-        Type mySupersSuper = RemoteConcepts.createEntityType(tx, B);
-        Type metaType = RemoteConcepts.createMetaType(tx, C);
+        Type mySuper = RemoteEntityType.create(tx, A);
+        Type mySupersSuper = RemoteEntityType.create(tx, B);
+        Type metaType = RemoteMetaType.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getSuperConcepts, Stream.of(me, mySuper, mySupersSuper, metaType));
 
@@ -248,8 +248,8 @@ public class RemoteConceptsTest {
     @Test @Ignore
     public void whenCallingSubs_GetTheExpectedResult() {
         Type me = relationshipType;
-        Type mySub = RemoteConcepts.createRelationshipType(tx, A);
-        Type mySubsSub = RemoteConcepts.createRelationshipType(tx, B);
+        Type mySub = RemoteRelationshipType.create(tx, A);
+        Type mySubsSub = RemoteRelationshipType.create(tx, B);
 
         //mockConceptMethod(ConceptMethod.getSubConcepts, Stream.of(me, mySub, mySubsSub));
 
@@ -258,7 +258,7 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingSup_GetTheExpectedResult() {
-        SchemaConcept sup = RemoteConcepts.createEntityType(tx, A);
+        SchemaConcept sup = RemoteEntityType.create(tx, A);
         //mockConceptMethod(getDirectSuper, Optional.of(sup));
         assertEquals(sup, entityType.sup());
     }
@@ -271,7 +271,7 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingType_GetTheExpectedResult() {
-        Type type = RemoteConcepts.createEntityType(tx, A);
+        Type type = RemoteEntityType.create(tx, A);
 
         //mockConceptMethod(getDirectType, type);
 
@@ -280,9 +280,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingAttributesWithNoArguments_GetTheExpectedResult() {
-        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
-        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
-        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+        Attribute<?> a = RemoteAttribute.create(tx, A);
+        Attribute<?> b = RemoteAttribute.create(tx, B);
+        Attribute<?> c = RemoteAttribute.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getAttributes, Stream.of(a, b, c));
 
@@ -291,13 +291,13 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingAttributesWithArguments_GetTheExpectedResult() {
-        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, ConceptId.of("foo"));
-        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, ConceptId.of("bar"));
-        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, ConceptId.of("baz"));
+        AttributeType<?> foo = RemoteAttributeType.create(tx, ConceptId.of("foo"));
+        AttributeType<?> bar = RemoteAttributeType.create(tx, ConceptId.of("bar"));
+        AttributeType<?> baz = RemoteAttributeType.create(tx, ConceptId.of("baz"));
 
-        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
-        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
-        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+        Attribute<?> a = RemoteAttribute.create(tx, A);
+        Attribute<?> b = RemoteAttribute.create(tx, B);
+        Attribute<?> c = RemoteAttribute.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getAttributesByTypes(foo, bar, baz), Stream.of(a, b, c));
 
@@ -306,9 +306,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingKeysWithNoArguments_GetTheExpectedResult() {
-        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
-        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
-        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+        Attribute<?> a = RemoteAttribute.create(tx, A);
+        Attribute<?> b = RemoteAttribute.create(tx, B);
+        Attribute<?> c = RemoteAttribute.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getKeys, Stream.of(a, b, c));
 
@@ -317,13 +317,13 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingKeysWithArguments_GetTheExpectedResult() {
-        AttributeType<?> foo = RemoteConcepts.createAttributeType(tx, ConceptId.of("foo"));
-        AttributeType<?> bar = RemoteConcepts.createAttributeType(tx, ConceptId.of("bar"));
-        AttributeType<?> baz = RemoteConcepts.createAttributeType(tx, ConceptId.of("baz"));
+        AttributeType<?> foo = RemoteAttributeType.create(tx, ConceptId.of("foo"));
+        AttributeType<?> bar = RemoteAttributeType.create(tx, ConceptId.of("bar"));
+        AttributeType<?> baz = RemoteAttributeType.create(tx, ConceptId.of("baz"));
 
-        Attribute<?> a = RemoteConcepts.createAttribute(tx, A);
-        Attribute<?> b = RemoteConcepts.createAttribute(tx, B);
-        Attribute<?> c = RemoteConcepts.createAttribute(tx, C);
+        Attribute<?> a = RemoteAttribute.create(tx, A);
+        Attribute<?> b = RemoteAttribute.create(tx, B);
+        Attribute<?> c = RemoteAttribute.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getKeysByTypes(foo, bar, baz), Stream.of(a, b, c));
 
@@ -332,9 +332,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingPlays_GetTheExpectedResult() {
-        Role a = RemoteConcepts.createRole(tx, A);
-        Role b = RemoteConcepts.createRole(tx, B);
-        Role c = RemoteConcepts.createRole(tx, C);
+        Role a = RemoteRole.create(tx, A);
+        Role b = RemoteRole.create(tx, B);
+        Role c = RemoteRole.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRolesPlayedByType, Stream.of(a, b, c));
 
@@ -343,9 +343,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingInstances_GetTheExpectedResult() {
-        Thing a = RemoteConcepts.createRelationship(tx, A);
-        Thing b = RemoteConcepts.createRelationship(tx, B);
-        Thing c = RemoteConcepts.createRelationship(tx, C);
+        Thing a = RemoteRelationship.create(tx, A);
+        Thing b = RemoteRelationship.create(tx, B);
+        Thing c = RemoteRelationship.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getInstances, Stream.of(a, b, c));
 
@@ -354,9 +354,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingThingPlays_GetTheExpectedResult() {
-        Role a = RemoteConcepts.createRole(tx, A);
-        Role b = RemoteConcepts.createRole(tx, B);
-        Role c = RemoteConcepts.createRole(tx, C);
+        Role a = RemoteRole.create(tx, A);
+        Role b = RemoteRole.create(tx, B);
+        Role c = RemoteRole.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRolesPlayedByThing, Stream.of(a, b, c));
 
@@ -365,9 +365,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRelationshipsWithNoArguments_GetTheExpectedResult() {
-        Relationship a = RemoteConcepts.createRelationship(tx, A);
-        Relationship b = RemoteConcepts.createRelationship(tx, B);
-        Relationship c = RemoteConcepts.createRelationship(tx, C);
+        Relationship a = RemoteRelationship.create(tx, A);
+        Relationship b = RemoteRelationship.create(tx, B);
+        Relationship c = RemoteRelationship.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRelationships, Stream.of(a, b, c));
 
@@ -376,13 +376,13 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRelationshipsWithRoles_GetTheExpectedResult() {
-        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
-        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
-        Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
+        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
+        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
+        Role baz = RemoteRole.create(tx, ConceptId.of("baz"));
 
-        Relationship a = RemoteConcepts.createRelationship(tx, A);
-        Relationship b = RemoteConcepts.createRelationship(tx, B);
-        Relationship c = RemoteConcepts.createRelationship(tx, C);
+        Relationship a = RemoteRelationship.create(tx, A);
+        Relationship b = RemoteRelationship.create(tx, B);
+        Relationship c = RemoteRelationship.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRelationshipsByRoles(foo, bar, baz), Stream.of(a, b, c));
 
@@ -391,9 +391,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRelationshipTypes_GetTheExpectedResult() {
-        RelationshipType a = RemoteConcepts.createRelationshipType(tx, A);
-        RelationshipType b = RemoteConcepts.createRelationshipType(tx, B);
-        RelationshipType c = RemoteConcepts.createRelationshipType(tx, C);
+        RelationshipType a = RemoteRelationshipType.create(tx, A);
+        RelationshipType b = RemoteRelationshipType.create(tx, B);
+        RelationshipType c = RemoteRelationshipType.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRelationshipTypesThatRelateRole, Stream.of(a, b, c));
 
@@ -402,9 +402,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingPlayedByTypes_GetTheExpectedResult() {
-        Type a = RemoteConcepts.createEntityType(tx, A);
-        Type b = RemoteConcepts.createRelationshipType(tx, B);
-        Type c = RemoteConcepts.createAttributeType(tx, C);
+        Type a = RemoteEntityType.create(tx, A);
+        Type b = RemoteRelationshipType.create(tx, B);
+        Type c = RemoteAttributeType.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getTypesThatPlayRole, Stream.of(a, b, c));
 
@@ -413,9 +413,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRelates_GetTheExpectedResult() {
-        Role a = RemoteConcepts.createRole(tx, A);
-        Role b = RemoteConcepts.createRole(tx, B);
-        Role c = RemoteConcepts.createRole(tx, C);
+        Role a = RemoteRole.create(tx, A);
+        Role b = RemoteRole.create(tx, B);
+        Role c = RemoteRole.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRelatedRoles, Stream.of(a, b, c));
 
@@ -424,12 +424,12 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingAllRolePlayers_GetTheExpectedResult() {
-        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
-        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
+        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
+        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
 
-        Thing a = RemoteConcepts.createEntity(tx, A);
-        Thing b = RemoteConcepts.createRelationship(tx, B);
-        Thing c = RemoteConcepts.createAttribute(tx, C);
+        Thing a = RemoteEntity.create(tx, A);
+        Thing b = RemoteRelationship.create(tx, B);
+        Thing c = RemoteAttribute.create(tx, C);
 
 //        Stream<RolePlayer> mockedResponse = Stream.of(
 //                RolePlayer.create(foo, a),
@@ -453,11 +453,11 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRolePlayersWithNoArguments_GetTheExpectedResult() {
-        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
+        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
 
-        Thing a = RemoteConcepts.createEntity(tx, A);
-        Thing b = RemoteConcepts.createRelationship(tx, B);
-        Thing c = RemoteConcepts.createAttribute(tx, C);
+        Thing a = RemoteEntity.create(tx, A);
+        Thing b = RemoteRelationship.create(tx, B);
+        Thing c = RemoteAttribute.create(tx, C);
 
 //        Stream<RolePlayer> expected = Stream.of(
 //                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
@@ -470,13 +470,13 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRolePlayersWithRoles_GetTheExpectedResult() {
-        Role foo = RemoteConcepts.createRole(tx, ConceptId.of("foo"));
-        Role bar = RemoteConcepts.createRole(tx, ConceptId.of("bar"));
-        Role baz = RemoteConcepts.createRole(tx, ConceptId.of("baz"));
+        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
+        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
+        Role baz = RemoteRole.create(tx, ConceptId.of("baz"));
 
-        Thing a = RemoteConcepts.createEntity(tx, A);
-        Thing b = RemoteConcepts.createRelationship(tx, B);
-        Thing c = RemoteConcepts.createAttribute(tx, C);
+        Thing a = RemoteEntity.create(tx, A);
+        Thing b = RemoteRelationship.create(tx, B);
+        Thing c = RemoteAttribute.create(tx, C);
 
         //mockConceptMethod(ConceptMethod.getRolePlayersByRoles(foo, bar, baz), Stream.of(a, b, c));
 
@@ -485,9 +485,9 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingOwnerInstances_GetTheExpectedResult() {
-        Thing a = RemoteConcepts.createEntity(tx, A);
-        Thing b = RemoteConcepts.createRelationship(tx, A);
-        Thing c = RemoteConcepts.createAttribute(tx, A);
+        Thing a = RemoteEntity.create(tx, A);
+        Thing b = RemoteRelationship.create(tx, A);
+        Thing c = RemoteAttribute.create(tx, A);
 
         //mockConceptMethod(ConceptMethod.getOwners, Stream.of(a, b, c));
 
@@ -498,9 +498,9 @@ public class RemoteConceptsTest {
     public void whenCallingAttributeTypes_GetTheExpectedResult() {
 
         ImmutableSet<AttributeType> attributeTypes = ImmutableSet.of(
-                RemoteConcepts.createAttributeType(tx, A),
-                RemoteConcepts.createAttributeType(tx, B),
-                RemoteConcepts.createAttributeType(tx, C)
+                RemoteAttributeType.create(tx, A),
+                RemoteAttributeType.create(tx, B),
+                RemoteAttributeType.create(tx, C)
         );
 
         //mockConceptMethod(getAttributeTypes, attributeTypes.stream());
@@ -512,9 +512,9 @@ public class RemoteConceptsTest {
     public void whenCallingKeyTypes_GetTheExpectedResult() {
 
         ImmutableSet<AttributeType> keyTypes = ImmutableSet.of(
-                RemoteConcepts.createAttributeType(tx, A),
-                RemoteConcepts.createAttributeType(tx, B),
-                RemoteConcepts.createAttributeType(tx, C)
+                RemoteAttributeType.create(tx, A),
+                RemoteAttributeType.create(tx, B),
+                RemoteAttributeType.create(tx, C)
         );
 
         //mockConceptMethod(getKeyTypes, keyTypes.stream());
@@ -530,14 +530,14 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenSettingSuper_ExecuteAConceptMethod() {
-        EntityType sup = RemoteConcepts.createEntityType(tx, A);
+        EntityType sup = RemoteEntityType.create(tx, A);
         assertEquals(entityType, entityType.sup(sup));
         //verifyConceptMethodCalled(ConceptMethod.setDirectSuper(sup));
     }
 
     @Test @Ignore
     public void whenSettingSub_ExecuteAConceptMethod() {
-        EntityType sup = RemoteConcepts.createEntityType(tx, A);
+        EntityType sup = RemoteEntityType.create(tx, A);
         assertEquals(sup, sup.sub(entityType));
         //verifyConceptMethodCalled(ConceptMethod.setDirectSuper(sup));
     }
@@ -551,14 +551,14 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenSettingRelates_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
+        Role role = RemoteRole.create(tx, A);
         assertEquals(relationshipType, relationshipType.relates(role));
         //verifyConceptMethodCalled(ConceptMethod.setRelatedRole(role));
     }
 
     @Test @Ignore
     public void whenSettingPlays_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
+        Role role = RemoteRole.create(tx, A);
         assertEquals(attributeType, attributeType.plays(role));
         //verifyConceptMethodCalled(ConceptMethod.setRolePlayedByType(role));
     }
@@ -577,49 +577,49 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenSettingAttributeType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
         assertEquals(type, type.attribute(attributeType));
         //verifyConceptMethodCalled(ConceptMethod.setAttributeType(attributeType));
     }
 
     @Test @Ignore
     public void whenSettingKeyType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
         assertEquals(type, type.key(attributeType));
         //verifyConceptMethodCalled(ConceptMethod.setKeyType(attributeType));
     }
 
     @Test @Ignore
     public void whenDeletingAttributeType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
         assertEquals(type, type.deleteAttribute(attributeType));
         //verifyConceptMethodCalled(ConceptMethod.unsetAttributeType(attributeType));
     }
 
     @Test @Ignore
     public void whenDeletingKeyType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteConcepts.createAttributeType(tx, A);
+        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
         assertEquals(type, type.deleteKey(attributeType));
         //verifyConceptMethodCalled(ConceptMethod.unsetKeyType(attributeType));
     }
 
     @Test @Ignore
     public void whenDeletingPlays_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
+        Role role = RemoteRole.create(tx, A);
         assertEquals(type, type.deletePlays(role));
         //verifyConceptMethodCalled(ConceptMethod.unsetRolePlayedByType(role));
     }
 
     @Test @Ignore
     public void whenCallingAddEntity_ExecuteAConceptMethod() {
-        Entity entity = RemoteConcepts.createEntity(tx, A);
+        Entity entity = RemoteEntity.create(tx, A);
         //mockConceptMethod(ConceptMethod.addEntity, entity);
         assertEquals(entity, entityType.addEntity());
     }
 
     @Test @Ignore
     public void whenCallingAddRelationship_ExecuteAConceptMethod() {
-        Relationship relationship = RemoteConcepts.createRelationship(tx, A);
+        Relationship relationship = RemoteRelationship.create(tx, A);
         //mockConceptMethod(ConceptMethod.addRelationship, relationship);
         assertEquals(relationship, relationshipType.addRelationship());
     }
@@ -627,14 +627,14 @@ public class RemoteConceptsTest {
     @Test @Ignore
     public void whenCallingPutAttribute_ExecuteAConceptMethod() {
         String value = "Dunstan";
-        Attribute<String> attribute = RemoteConcepts.createAttribute(tx, A);
+        Attribute<String> attribute = RemoteAttribute.create(tx, A);
         //mockConceptMethod(ConceptMethod.putAttribute(value), attribute);
         assertEquals(attribute, attributeType.putAttribute(value));
     }
 
     @Test @Ignore
     public void whenCallingDeleteRelates_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
+        Role role = RemoteRole.create(tx, A);
         assertEquals(relationshipType, relationshipType.deleteRelates(role));
         //verifyConceptMethodCalled(ConceptMethod.unsetRelatedRole(role));
     }
@@ -654,8 +654,8 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingAddAttributeOnThing_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
-        Relationship relationship = RemoteConcepts.createRelationship(tx, C);
+        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
+        Relationship relationship = RemoteRelationship.create(tx, C);
         //mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
 
         assertEquals(thing, thing.attribute(attribute));
@@ -665,23 +665,23 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingAddAttributeRelationshipOnThing_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
-        Relationship relationship = RemoteConcepts.createRelationship(tx, C);
+        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
+        Relationship relationship = RemoteRelationship.create(tx, C);
         //mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
         assertEquals(relationship, thing.attributeRelationship(attribute));
     }
 
     @Test @Ignore
     public void whenCallingDeleteAttribute_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteConcepts.createAttribute(tx, A);
+        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
         assertEquals(thing, thing.deleteAttribute(attribute));
         //verifyConceptMethodCalled(ConceptMethod.unsetAttribute(attribute));
     }
 
     @Test @Ignore
     public void whenCallingAddRolePlayer_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
-        Thing thing = RemoteConcepts.createEntity(tx, B);
+        Role role = RemoteRole.create(tx, A);
+        Thing thing = RemoteEntity.create(tx, B);
         assertEquals(relationship, relationship.addRolePlayer(role, thing));
 
         //verifyConceptMethodCalled(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
@@ -689,8 +689,8 @@ public class RemoteConceptsTest {
 
     @Test @Ignore
     public void whenCallingRemoveRolePlayer_ExecuteAConceptMethod() {
-        Role role = RemoteConcepts.createRole(tx, A);
-        Thing thing = RemoteConcepts.createEntity(tx, B);
+        Role role = RemoteRole.create(tx, A);
+        Thing thing = RemoteEntity.create(tx, B);
         relationship.removeRolePlayer(role, thing);
         //verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
     }

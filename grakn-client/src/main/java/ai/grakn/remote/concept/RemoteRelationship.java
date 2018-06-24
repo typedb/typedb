@@ -43,7 +43,7 @@ import java.util.stream.StreamSupport;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
+public abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
 
     public static RemoteRelationship create(Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRelationship(tx, id);
