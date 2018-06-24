@@ -19,15 +19,51 @@
 package ai.grakn.remote;
 
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.QueryExecutor;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.remote.executor.RemoteQueryExecutor;
+import ai.grakn.remote.rpc.Communicator;
+import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.remote.rpc.RequestIterator;
 import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GrpcConcept;
+import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
-import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point and remote equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
@@ -74,8 +110,8 @@ public final class Grakn {
         }
 
         @Override
-        public Transaction transaction(GraknTxType transactionType) {
-            return Transaction.create(this, RequestBuilder.open(keyspace, transactionType));
+        public Transaction transaction(GraknTxType type) {
+            return new Transaction(this, type);
         }
 
         @Override
@@ -92,5 +128,238 @@ public final class Grakn {
         public Keyspace keyspace() {
             return keyspace;
         }
+    }
+
+    /**
+     * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
+     */
+    public static final class Transaction implements GraknTx, GraknAdmin {
+
+        private final Session session;
+        private final GraknTxType type;
+        private final Communicator communicator;
+
+        private Transaction(Session session, GraknTxType type) {
+            this.session = session;
+            this.type = type;
+            this.communicator = Communicator.create(session.stubAsync());
+            communicator.send(RequestBuilder.open(session.keyspace(), type));
+            responseOrThrow();
+        }
+
+        private GrpcGrakn.TxResponse responseOrThrow() {
+            Communicator.Response response;
+
+            try {
+                response = communicator.receive();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                // This is called from classes like Transaction, that impl methods which do not throw InterruptedException
+                // Therefore, we have to wrap it in a RuntimeException.
+                throw new RuntimeException(e);
+            }
+
+            switch (response.type()) {
+                case OK:
+                    return response.ok();
+                case ERROR:
+                    throw new RuntimeException(response.error().getMessage());
+                case COMPLETED:
+                default:
+                    throw CommonUtil.unreachableStatement("Unexpected response " + response);
+            }
+        }
+
+
+        public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
+            communicator.send(RequestBuilder.next(iteratorId));
+            return responseOrThrow();
+        }
+
+        public GrpcGrakn.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
+            GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
+            runConceptMethod.setId(id.getValue());
+            runConceptMethod.setMethod(method);
+            GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+
+            communicator.send(conceptMethodRequest);
+            return responseOrThrow();
+        }
+
+        @Override
+        public EntityType putEntityType(Label label) {
+            communicator.send(RequestBuilder.putEntityType(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asEntityType();
+        }
+
+        @Override
+        public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
+            communicator.send(RequestBuilder.putAttributeType(label, dataType));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
+        }
+
+        @Override
+        public Rule putRule(Label label, Pattern when, Pattern then) {
+            communicator.send(RequestBuilder.putRule(label, when, then));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
+        }
+
+        @Override
+        public RelationshipType putRelationshipType(Label label) {
+            communicator.send(RequestBuilder.putRelationshipType(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
+        }
+
+        @Override
+        public Role putRole(Label label) {
+            communicator.send(RequestBuilder.putRole(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
+        }
+
+        @Nullable
+        @Override
+        public <T extends Concept> T getConcept(ConceptId id) {
+            communicator.send(RequestBuilder.getConcept(id));
+            GrpcGrakn.TxResponse response = responseOrThrow();
+            if (response.getNoResult()) return null;
+            return (T) ConceptBuilder.concept(response.getConcept(), this);
+        }
+
+        @Nullable
+        @Override
+        public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+            communicator.send(RequestBuilder.getSchemaConcept(label));
+            GrpcGrakn.TxResponse response = responseOrThrow();
+            if (response.getNoResult()) return null;
+            return (T) ConceptBuilder.concept(response.getConcept(), this);
+        }
+
+        @Nullable
+        @Override
+        public <T extends Type> T getType(Label label) {
+            return getSchemaConcept(label);
+        }
+
+        @Override
+        public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
+            communicator.send(RequestBuilder.getAttributesByValue(value));
+            GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
+            Iterable<Concept> iterable = () -> new RequestIterator<>(
+                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
+            );
+
+            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
+        }
+
+        @Nullable
+        @Override
+        public EntityType getEntityType(String label) {
+            return getSchemaConcept(Label.of(label));
+        }
+
+        @Nullable
+        @Override
+        public RelationshipType getRelationshipType(String label) {
+            return getSchemaConcept(Label.of(label));
+        }
+
+        @Nullable
+        @Override
+        public <V> AttributeType<V> getAttributeType(String label) {
+            return getSchemaConcept(Label.of(label));
+        }
+
+        @Nullable
+        @Override
+        public Role getRole(String label) {
+            return getSchemaConcept(Label.of(label));
+        }
+
+        @Nullable
+        @Override
+        public Rule getRule(String label) {
+            return getSchemaConcept(Label.of(label));
+        }
+
+        @Override
+        public GraknAdmin admin() {
+            return this;
+        }
+
+        @Override
+        public GraknTxType txType() {
+            return type;
+        }
+
+        @Override
+        public GraknSession session() {
+            return session;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return communicator.isClosed();
+        }
+
+        @Override
+        public QueryBuilder graql() {
+            return new QueryBuilderImpl(this);
+        }
+
+        @Override
+        public void close() {
+            communicator.close();
+        }
+
+        @Override
+        public void commit() throws InvalidKBException {
+            communicator.send(RequestBuilder.commit());
+            responseOrThrow();
+            close();
+        }
+
+        @Override
+        public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
+            GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+            method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
+            GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
+            Iterable<? extends Concept> iterable = () -> new RequestIterator<>(
+                    this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
+            );
+
+            Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);
+            return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
+        }
+
+        @Override
+        public void delete() {
+            GrpcGrakn.DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(keyspace(), GraknTxType.WRITE).getOpen());
+            session.stubBlocking().delete(request);
+            close();
+        }
+
+        @Override
+        public QueryExecutor queryExecutor() {
+            return RemoteQueryExecutor.create(this);
+        }
+
+        public Iterator query(Query<?> query) {
+            communicator.send(RequestBuilder.query(query.toString(), query.inferring()));
+
+            GrpcGrakn.TxResponse txResponse = responseOrThrow();
+
+            switch (txResponse.getResponseCase()) {
+                case ANSWER:
+                    return Collections.singleton(ConceptBuilder.answer(txResponse.getAnswer(), this)).iterator();
+                case DONE:
+                    return Collections.emptyIterator();
+                case ITERATORID:
+                    GrpcIterator.IteratorId iteratorId = txResponse.getIteratorId();
+                    return new RequestIterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
+                default:
+                    throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
+            }
+        }
+
     }
 }

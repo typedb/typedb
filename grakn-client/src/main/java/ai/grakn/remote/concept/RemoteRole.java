@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.remote.Transaction;
+import ai.grakn.remote.Grakn;
 import ai.grakn.rpc.generated.GrpcConcept;
 import com.google.auto.value.AutoValue;
 
@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    public static RemoteRole create(Transaction tx, ConceptId id) {
+    public static RemoteRole create(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRole(tx, id);
     }
 

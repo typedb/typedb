@@ -22,7 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.remote.Transaction;
+import ai.grakn.remote.Grakn;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -37,7 +37,7 @@ import java.util.stream.StreamSupport;
  */
 abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
-    abstract Transaction tx();
+    abstract Grakn.Transaction tx();
 
     @Override
     public abstract ConceptId getId();

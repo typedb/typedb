@@ -37,7 +37,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.remote.Grakn;
 import ai.grakn.remote.GrpcServerMock;
-import ai.grakn.remote.Transaction;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -82,7 +81,7 @@ public class RemoteConceptsTest {
     public final GrpcServerMock server = GrpcServerMock.create();
 
     private Grakn.Session session;
-    private Transaction tx;
+    private Grakn.Transaction tx;
     private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
 

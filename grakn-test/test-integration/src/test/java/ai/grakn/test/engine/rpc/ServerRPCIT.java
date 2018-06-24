@@ -49,9 +49,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import io.grpc.ManagedChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -89,6 +91,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Felix Chapman
@@ -119,6 +123,32 @@ public class ServerRPCIT {
     @After
     public void tearDown() {
         remoteSession.close();
+    }
+
+    @Test
+    public void whenOpeningASession_ReturnARemoteGraknSession() {
+        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+            assertTrue(Grakn.Session.class.isAssignableFrom(session.getClass()));
+        }
+    }
+
+    @Test
+    public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
+        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+            assertEquals(engine.grpcUri().toString(), session.uri());
+            assertEquals(localSession.keyspace(), session.keyspace());
+        }
+    }
+
+    @Test
+    public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
+        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+            try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+                assertEquals(session, tx.session());
+                assertEquals(localSession.keyspace(), tx.keyspace());
+                assertEquals(GraknTxType.READ, tx.txType());
+            }
+        }
     }
 
     @Test

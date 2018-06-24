@@ -27,7 +27,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.remote.Transaction;
+import ai.grakn.remote.Grakn;
 import ai.grakn.remote.concept.RemoteAttribute;
 import ai.grakn.remote.concept.RemoteAttributeType;
 import ai.grakn.remote.concept.RemoteEntity;
@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class ConceptBuilder {
 
-    public static Concept concept(GrpcConcept.Concept concept, Transaction tx) {
+    public static Concept concept(GrpcConcept.Concept concept, Grakn.Transaction tx) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {
@@ -193,7 +193,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Object answer(GrpcGrakn.Answer answer, Transaction tx) {
+    public static Object answer(GrpcGrakn.Answer answer, Grakn.Transaction tx) {
         switch (answer.getAnswerCase()) {
             case QUERYANSWER:
                 return queryAnswer(answer.getQueryAnswer(), tx);
@@ -207,7 +207,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer, Transaction tx) {
+    public static Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer, Grakn.Transaction tx) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {

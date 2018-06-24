@@ -24,7 +24,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.remote.Transaction;
+import ai.grakn.remote.Grakn;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
-    public static RemoteRule create(Transaction tx, ConceptId id) {
+    public static RemoteRule create(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRule(tx, id);
     }
 

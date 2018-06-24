@@ -24,7 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.remote.Transaction;
+import ai.grakn.remote.Grakn;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
@@ -45,7 +45,7 @@ import java.util.stream.StreamSupport;
 @AutoValue
 public abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {
 
-    public static RemoteRelationship create(Transaction tx, ConceptId id) {
+    public static RemoteRelationship create(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRelationship(tx, id);
     }
 
