@@ -16,8 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-/**
- *  The loader client - use this Java API to access the REST endpoint.
- */
+package ai.grakn.batch;
 
-package ai.grakn.client;
+/**
+ * <p>
+ *     Simple class to encapsulate a query response.
+ *     This is required by the {@link com.netflix.hystrix.Hystrix} framework we use in {@link BatchExecutorClient}
+ * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
+ */
+public class QueryResponse {
+    public static final QueryResponse INSTANCE = new QueryResponse();
+
+    private QueryResponse(){}
+}

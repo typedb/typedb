@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
-package ai.grakn.client;
+package ai.grakn.batch;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;

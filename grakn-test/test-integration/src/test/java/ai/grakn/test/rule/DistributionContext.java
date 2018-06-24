@@ -20,7 +20,7 @@ package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.client.Client;
+import ai.grakn.batch.Client;
 import ai.grakn.bootup.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;

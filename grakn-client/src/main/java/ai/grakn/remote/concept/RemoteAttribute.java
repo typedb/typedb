@@ -23,7 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Transaction;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 @AutoValue
 abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
 
-    public static <D> RemoteAttribute<D> create(RemoteGraknTx tx, ConceptId id) {
+    public static <D> RemoteAttribute<D> create(Transaction tx, ConceptId id) {
         return new AutoValue_RemoteAttribute<>(tx, id);
     }
 

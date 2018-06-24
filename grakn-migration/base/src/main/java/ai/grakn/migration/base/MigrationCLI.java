@@ -21,7 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.client.Client;
+import ai.grakn.batch.Client;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.io.Files;

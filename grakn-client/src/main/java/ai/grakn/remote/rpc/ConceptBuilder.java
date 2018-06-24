@@ -21,7 +21,7 @@ package ai.grakn.remote.rpc;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Transaction;
 import ai.grakn.remote.concept.RemoteConcepts;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.util.CommonUtil;
@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class ConceptBuilder {
 
-    public static Concept concept(RemoteGraknTx tx, GrpcConcept.Concept concept) {
+    public static Concept concept(Transaction tx, GrpcConcept.Concept concept) {
         ConceptId id = ConceptId.of(concept.getId());
 
         switch (concept.getBaseType()) {

@@ -40,7 +40,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.RemoteGrakn;
+import ai.grakn.remote.Grakn;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableMap;
@@ -113,7 +113,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        remoteSession = RemoteGrakn.session(engine.grpcUri(), localSession.keyspace());
+        remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
     }
 
     @After

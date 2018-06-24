@@ -28,11 +28,11 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Transaction;
 
 /**
  * Static factory methods for {@link RemoteConcept} instances, which communicate with a gRPC server using a
- * {@link RemoteGraknTx}.
+ * {@link Transaction}.
  *
  * @author Felix Chapman
  */
@@ -40,39 +40,39 @@ public class RemoteConcepts {
 
     private RemoteConcepts() {}
 
-    public static <D> Attribute<D> createAttribute(RemoteGraknTx tx, ConceptId id) {
+    public static <D> Attribute<D> createAttribute(Transaction tx, ConceptId id) {
         return RemoteAttribute.create(tx, id);
     }
 
-    public static <D> AttributeType<D> createAttributeType(RemoteGraknTx tx, ConceptId id) {
+    public static <D> AttributeType<D> createAttributeType(Transaction tx, ConceptId id) {
         return RemoteAttributeType.create(tx, id);
     }
 
-    public static Entity createEntity(RemoteGraknTx tx, ConceptId id) {
+    public static Entity createEntity(Transaction tx, ConceptId id) {
         return RemoteEntity.create(tx, id);
     }
 
-    public static EntityType createEntityType(RemoteGraknTx tx, ConceptId id) {
+    public static EntityType createEntityType(Transaction tx, ConceptId id) {
         return RemoteEntityType.create(tx, id);
     }
 
-    public static Type createMetaType(RemoteGraknTx tx, ConceptId id) {
+    public static Type createMetaType(Transaction tx, ConceptId id) {
         return RemoteMetaType.create(tx, id);
     }
 
-    public static Relationship createRelationship(RemoteGraknTx tx, ConceptId id) {
+    public static Relationship createRelationship(Transaction tx, ConceptId id) {
         return RemoteRelationship.create(tx, id);
     }
 
-    public static RelationshipType createRelationshipType(RemoteGraknTx tx, ConceptId id) {
+    public static RelationshipType createRelationshipType(Transaction tx, ConceptId id) {
         return RemoteRelationshipType.create(tx, id);
     }
 
-    public static Role createRole(RemoteGraknTx tx, ConceptId id) {
+    public static Role createRole(Transaction tx, ConceptId id) {
         return RemoteRole.create(tx, id);
     }
 
-    public static Rule createRule(RemoteGraknTx tx, ConceptId id) {
+    public static Rule createRule(Transaction tx, ConceptId id) {
         return RemoteRule.create(tx, id);
     }
 }

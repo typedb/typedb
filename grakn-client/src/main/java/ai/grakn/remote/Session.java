@@ -34,29 +34,29 @@ import io.grpc.ManagedChannelBuilder;
 /**
  * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
  *
- * @see RemoteGraknTx
- * @see RemoteGrakn
+ * @see Transaction
+ * @see Grakn
  *
  * @author Felix Chapman
  */
-public class RemoteGraknSession implements GraknSession {
+public class Session implements GraknSession {
 
     private final Keyspace keyspace;
     private final SimpleURI uri;
     private final ManagedChannel channel;
 
-    protected RemoteGraknSession(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+    private Session(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
         this.keyspace = keyspace;
         this.uri = uri;
         this.channel = channel;
     }
 
     @VisibleForTesting
-    public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
-        return new RemoteGraknSession(keyspace, uri, channel);
+    public static Session create(Keyspace keyspace, SimpleURI uri, ManagedChannel channel) {
+        return new Session(keyspace, uri, channel);
     }
 
-    public static RemoteGraknSession create(Keyspace keyspace, SimpleURI uri){
+    public static Session create(Keyspace keyspace, SimpleURI uri){
         ManagedChannel channel =
                 ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
 
@@ -72,8 +72,8 @@ public class RemoteGraknSession implements GraknSession {
     }
 
     @Override
-    public RemoteGraknTx open(GraknTxType transactionType) {
-        return RemoteGraknTx.create(this, RequestBuilder.open(keyspace, transactionType));
+    public Transaction open(GraknTxType transactionType) {
+        return Transaction.create(this, RequestBuilder.open(keyspace, transactionType));
     }
 
     @Override

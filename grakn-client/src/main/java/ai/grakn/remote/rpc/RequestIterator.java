@@ -18,7 +18,7 @@
 
 package ai.grakn.remote.rpc;
 
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Transaction;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.rpc.generated.GrpcIterator;
@@ -36,10 +36,10 @@ import static ai.grakn.rpc.generated.GrpcIterator.Next;
  */
 public class RequestIterator<T> extends AbstractIterator<T> {
     private final GrpcIterator.IteratorId iteratorId;
-    private RemoteGraknTx tx;
+    private Transaction tx;
     private Function<GrpcGrakn.TxResponse, T> responseReader;
 
-    public RequestIterator(RemoteGraknTx tx, GrpcIterator.IteratorId iteratorId, Function<GrpcGrakn.TxResponse, T> responseReader) {
+    public RequestIterator(Transaction tx, GrpcIterator.IteratorId iteratorId, Function<GrpcGrakn.TxResponse, T> responseReader) {
         this.tx = tx;
         this.iteratorId = iteratorId;
         this.responseReader = responseReader;

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.client;
+package ai.grakn.batch;
 
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;

@@ -80,13 +80,13 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 /**
  * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
  */
-public final class RemoteGraknTx implements GraknTx, GraknAdmin {
+public final class Transaction implements GraknTx, GraknAdmin {
 
-    private final RemoteGraknSession session;
+    private final Session session;
     private final GraknTxType txType;
     private final Communicator communicator;
 
-    private RemoteGraknTx(RemoteGraknSession session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
+    private Transaction(Session session, GraknTxType txType, TxRequest openRequest, GraknStub stub) {
         this.session = session;
         this.txType = txType;
         this.communicator = Communicator.create(stub);
@@ -95,9 +95,9 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
     }
 
     // TODO: ideally the transaction should not hold a reference to the session or at least depend on a session interface
-    public static RemoteGraknTx create(RemoteGraknSession session, TxRequest openRequest) {
+    public static Transaction create(Session session, TxRequest openRequest) {
         GraknStub stub = session.stub();
-        return new RemoteGraknTx(session, GraknTxType.of(openRequest.getOpen().getTxType().getNumber()), openRequest, stub);
+        return new Transaction(session, GraknTxType.of(openRequest.getOpen().getTxType().getNumber()), openRequest, stub);
     }
 
 
@@ -108,7 +108,7 @@ public final class RemoteGraknTx implements GraknTx, GraknAdmin {
             response = communicator.receive();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            // This is called from classes like RemoteGraknTx, that impl methods which do not throw InterruptedException
+            // This is called from classes like Transaction, that impl methods which do not throw InterruptedException
             // Therefore, we have to wrap it in a RuntimeException.
             throw new RuntimeException(e);
         }

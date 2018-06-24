@@ -36,8 +36,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.remote.GrpcServerMock;
-import ai.grakn.remote.RemoteGraknSession;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Session;
+import ai.grakn.remote.Transaction;
 import ai.grakn.remote.rpc.ConceptBuilder;
 import ai.grakn.remote.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
@@ -81,8 +81,8 @@ public class RemoteConceptsTest {
     @Rule
     public final GrpcServerMock server = GrpcServerMock.create();
 
-    private RemoteGraknSession session;
-    private RemoteGraknTx tx;
+    private Session session;
+    private Transaction tx;
     private static final SimpleURI URI = new SimpleURI("localhost", 999);
     private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
 
@@ -101,7 +101,7 @@ public class RemoteConceptsTest {
 
     @Before
     public void setUp() {
-        session = RemoteGraknSession.create(Keyspace.of("whatever"), URI, server.channel());
+        session = Session.create(Keyspace.of("whatever"), URI, server.channel());
         tx = session.open(GraknTxType.WRITE);
         verify(server.requests()).onNext(any()); // The open request
 

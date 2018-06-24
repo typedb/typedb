@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Felix Chapman
  */
-public class RemoteGraknSessionTest {
+public class SessionTest {
 
     @Rule
     public final GrpcServerMock server = GrpcServerMock.create();
@@ -45,14 +45,14 @@ public class RemoteGraknSessionTest {
 
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSession() {
-        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
-            assertTrue(RemoteGraknSession.class.isAssignableFrom(session.getClass()));
+        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
+            assertTrue(Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (GraknSession session = RemoteGrakn.session(URI, KEYSPACE)) {
+        try (GraknSession session = Grakn.session(URI, KEYSPACE)) {
             assertEquals(URI.toString(), session.uri());
             assertEquals(KEYSPACE, session.keyspace());
         }
@@ -62,7 +62,7 @@ public class RemoteGraknSessionTest {
     public void whenClosingASession_ShutdownTheChannel() {
         ManagedChannel channel = mock(ManagedChannel.class);
 
-        GraknSession ignored = RemoteGraknSession.create(KEYSPACE, URI, channel);
+        GraknSession ignored = Session.create(KEYSPACE, URI, channel);
         ignored.close();
 
         verify(channel).shutdown();
@@ -70,7 +70,7 @@ public class RemoteGraknSessionTest {
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = RemoteGraknSession.create(KEYSPACE, URI, server.channel())) {
+        try (GraknSession session = Session.create(KEYSPACE, URI, server.channel())) {
             try (GraknTx tx = session.open(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(KEYSPACE, tx.keyspace());

@@ -16,27 +16,29 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.batch;
 
-import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
- * Entry-point and remote equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
+ * Grakn http client. Extend this for more http endpoint.
  *
- * <p>
- *     In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
- *     subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
- * </p>
- *
- * @author Felix Chapman
+ * @author Domenico Corapi
  */
-public final class RemoteGrakn {
+public interface GraknClient {
+    int CONNECT_TIMEOUT_MS = 30 * 1000;
+    int DEFAULT_MAX_RETRY = 3;
 
-    private RemoteGrakn() {}
-
-    public static GraknSession session(SimpleURI uri, Keyspace keyspace) {
-        return RemoteGraknSession.create(keyspace, uri);
+    static GraknClient of(SimpleURI url) {
+        return new GraknClientImpl(url);
     }
+
+    List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException;
+
+    Optional<Keyspace> keyspace(String keyspace) throws GraknClientException;
 }

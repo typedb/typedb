@@ -27,7 +27,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.RemoteGraknTx;
+import ai.grakn.remote.Transaction;
 import com.google.common.collect.Iterators;
 
 import java.util.stream.Stream;
@@ -40,13 +40,13 @@ import java.util.stream.StreamSupport;
  */
 public final class QueryExecutor implements ai.grakn.QueryExecutor {
 
-    private final RemoteGraknTx tx;
+    private final Transaction tx;
 
-    private QueryExecutor(RemoteGraknTx tx) {
+    private QueryExecutor(Transaction tx) {
         this.tx = tx;
     }
 
-    public static QueryExecutor create(RemoteGraknTx tx) {
+    public static QueryExecutor create(Transaction tx) {
         return new QueryExecutor(tx);
     }
 

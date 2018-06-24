@@ -19,9 +19,9 @@
 package ai.grakn.test.client;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
-import ai.grakn.client.GraknClientException;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
+import ai.grakn.batch.GraknClientException;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;

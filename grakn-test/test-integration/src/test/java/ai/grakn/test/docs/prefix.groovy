@@ -19,7 +19,7 @@
 package ai.grakn.test.docs
 
 import ai.grakn.*
-import ai.grakn.client.BatchExecutorClient
+import ai.grakn.batch.BatchExecutorClient
 import ai.grakn.concept.*
 import ai.grakn.engine.TaskId
 import ai.grakn.graql.*
