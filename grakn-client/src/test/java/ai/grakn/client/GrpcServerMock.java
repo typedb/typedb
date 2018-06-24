@@ -16,9 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.client;
 
-import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;

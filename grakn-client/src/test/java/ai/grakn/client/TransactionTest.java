@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.client;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -40,15 +40,15 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.concept.RemoteAttribute;
-import ai.grakn.remote.concept.RemoteAttributeType;
-import ai.grakn.remote.concept.RemoteEntity;
-import ai.grakn.remote.concept.RemoteEntityType;
-import ai.grakn.remote.concept.RemoteRelationshipType;
-import ai.grakn.remote.concept.RemoteRole;
-import ai.grakn.remote.concept.RemoteRule;
-import ai.grakn.remote.rpc.ConceptBuilder;
-import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.client.concept.RemoteAttribute;
+import ai.grakn.client.concept.RemoteAttributeType;
+import ai.grakn.client.concept.RemoteEntity;
+import ai.grakn.client.concept.RemoteEntityType;
+import ai.grakn.client.concept.RemoteRelationshipType;
+import ai.grakn.client.concept.RemoteRole;
+import ai.grakn.client.concept.RemoteRule;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;

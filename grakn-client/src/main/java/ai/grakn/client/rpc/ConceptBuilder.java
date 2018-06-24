@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.rpc;
+package ai.grakn.client.rpc;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -27,16 +27,16 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.remote.Grakn;
-import ai.grakn.remote.concept.RemoteAttribute;
-import ai.grakn.remote.concept.RemoteAttributeType;
-import ai.grakn.remote.concept.RemoteEntity;
-import ai.grakn.remote.concept.RemoteEntityType;
-import ai.grakn.remote.concept.RemoteMetaType;
-import ai.grakn.remote.concept.RemoteRelationship;
-import ai.grakn.remote.concept.RemoteRelationshipType;
-import ai.grakn.remote.concept.RemoteRole;
-import ai.grakn.remote.concept.RemoteRule;
+import ai.grakn.client.Grakn;
+import ai.grakn.client.concept.RemoteAttribute;
+import ai.grakn.client.concept.RemoteAttributeType;
+import ai.grakn.client.concept.RemoteEntity;
+import ai.grakn.client.concept.RemoteEntityType;
+import ai.grakn.client.concept.RemoteMetaType;
+import ai.grakn.client.concept.RemoteRelationship;
+import ai.grakn.client.concept.RemoteRelationshipType;
+import ai.grakn.client.concept.RemoteRole;
+import ai.grakn.client.concept.RemoteRule;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.util.CommonUtil;

@@ -16,15 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.client.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.remote.Grakn;
-import ai.grakn.remote.rpc.ConceptBuilder;
+import ai.grakn.client.Grakn;
+import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;

@@ -16,37 +16,32 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.client.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.remote.Grakn;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.client.Grakn;
 import com.google.auto.value.AutoValue;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RemoteMetaType extends RemoteType<Type, Thing> {
+public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {
 
-    public static RemoteMetaType create(Grakn.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteMetaType(tx, id);
+    public static RemoteEntity create(Grakn.Transaction tx, ConceptId id) {
+        return new AutoValue_RemoteEntity(tx, id);
     }
 
     @Override
-    final Type asCurrentBaseType(Concept other) {
-        return other.asType();
+    final EntityType asCurrentType(Concept concept) {
+        return concept.asEntityType();
     }
 
     @Override
-    boolean equalsCurrentBaseType(Concept other) {
-        return other.isType();
-    }
-
-    @Override
-    protected final Thing asInstance(Concept concept) {
-        return concept.asThing();
+    final Entity asCurrentBaseType(Concept other) {
+        return other.asEntity();
     }
 }

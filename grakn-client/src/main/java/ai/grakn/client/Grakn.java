@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote;
+package ai.grakn.client;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
@@ -41,11 +41,11 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.remote.executor.RemoteQueryExecutor;
-import ai.grakn.remote.rpc.Communicator;
-import ai.grakn.remote.rpc.ConceptBuilder;
-import ai.grakn.remote.rpc.RequestBuilder;
-import ai.grakn.remote.rpc.RequestIterator;
+import ai.grakn.client.executor.RemoteQueryExecutor;
+import ai.grakn.client.rpc.Communicator;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.client.rpc.RequestIterator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
@@ -66,7 +66,7 @@ import java.util.stream.StreamSupport;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
- * Entry-point and remote equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
+ * Entry-point and client equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
  *
  * <p>
  *     In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a

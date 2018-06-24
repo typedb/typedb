@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.client.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -25,7 +25,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.remote.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 

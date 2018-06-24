@@ -16,50 +16,50 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.client.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.remote.Grakn;
-import ai.grakn.remote.rpc.ConceptBuilder;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Type;
+import ai.grakn.client.Grakn;
 import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
 import com.google.auto.value.AutoValue;
+
+import java.util.stream.Stream;
 
 /**
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {
+public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    public static RemoteEntityType create(Grakn.Transaction tx, ConceptId id) {
-        return new AutoValue_RemoteEntityType(tx, id);
+    public static RemoteRole create(Grakn.Transaction tx, ConceptId id) {
+        return new AutoValue_RemoteRole(tx, id);
     }
 
     @Override
-    public final Entity addEntity() {
+    public final Stream<RelationshipType> relationshipTypes() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setAddEntity(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
-
-        return asInstance(concept);
+        method.setGetRelationshipTypesThatRelateRole(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(Concept::asRelationshipType);
     }
 
     @Override
-    final EntityType asCurrentBaseType(Concept other) {
-        return other.asEntityType();
+    public final Stream<Type> playedByTypes() {
+        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        method.setGetTypesThatPlayRole(GrpcConcept.Unit.getDefaultInstance());
+        return runMethodToConceptStream(method.build()).map(Concept::asType);
+    }
+
+    @Override
+    final Role asCurrentBaseType(Concept other) {
+        return other.asRole();
     }
 
     @Override
     final boolean equalsCurrentBaseType(Concept other) {
-        return other.isEntityType();
-    }
-
-    @Override
-    protected final Entity asInstance(Concept concept) {
-        return concept.asEntity();
+        return other.isRole();
     }
 }

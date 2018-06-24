@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.executor;
+package ai.grakn.client.executor;
 
 import ai.grakn.QueryExecutor;
 import ai.grakn.graql.AggregateQuery;
@@ -28,7 +28,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.Grakn;
+import ai.grakn.client.Grakn;
 import com.google.common.collect.Iterators;
 
 import java.util.stream.Stream;

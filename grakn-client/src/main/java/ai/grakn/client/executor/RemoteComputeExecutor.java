@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.executor;
+package ai.grakn.client.executor;
 
 /**
  * Represents a compute query executing on a gRPC server.

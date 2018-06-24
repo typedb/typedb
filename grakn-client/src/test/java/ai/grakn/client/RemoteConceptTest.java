@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.concept;
+package ai.grakn.client;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -35,10 +35,17 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.remote.Grakn;
-import ai.grakn.remote.GrpcServerMock;
-import ai.grakn.remote.rpc.ConceptBuilder;
-import ai.grakn.remote.rpc.RequestBuilder;
+import ai.grakn.client.concept.RemoteAttribute;
+import ai.grakn.client.concept.RemoteAttributeType;
+import ai.grakn.client.concept.RemoteEntity;
+import ai.grakn.client.concept.RemoteEntityType;
+import ai.grakn.client.concept.RemoteMetaType;
+import ai.grakn.client.concept.RemoteRelationship;
+import ai.grakn.client.concept.RemoteRelationshipType;
+import ai.grakn.client.concept.RemoteRole;
+import ai.grakn.client.concept.RemoteRule;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
@@ -68,7 +75,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Felix Chapman
  */
-public class RemoteConceptsTest {
+public class RemoteConceptTest {
 
     private static final ConceptId ID = ConceptId.of("V123");
     private static final Pattern PATTERN = var("x").isa("person");
@@ -215,7 +222,7 @@ public class RemoteConceptsTest {
         assertEquals(PATTERN, rule.getThen());
     }
 
-    @Test
+    @Test @Ignore
     public void whenCallingIsDeleted_GetTheExpectedResult() {
         TxResponse response = TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
 

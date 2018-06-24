@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.remote.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.util.SimpleURI;
 import jline.console.ConsoleReader;
 

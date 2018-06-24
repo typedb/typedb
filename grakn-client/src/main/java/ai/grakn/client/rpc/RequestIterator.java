@@ -16,9 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.remote.rpc;
+package ai.grakn.client.rpc;
 
-import ai.grakn.remote.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcGrakn.Done;
 import ai.grakn.rpc.generated.GrpcIterator;
