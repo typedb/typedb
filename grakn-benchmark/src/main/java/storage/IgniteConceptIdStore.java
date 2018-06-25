@@ -19,7 +19,6 @@
 package storage;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 
 import java.sql.Connection;
@@ -30,6 +29,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 
+/**
+ * Stores identifiers for all concepts in a Grakn
+ */
 public class IgniteConceptIdStore implements ConceptStore {
     private Connection conn;
     private Set<String> typeLabels;
@@ -70,12 +72,10 @@ public class IgniteConceptIdStore implements ConceptStore {
         Label conceptTypeLabel = concept.asThing().type().getLabel();
         String conceptId = concept.asThing().getId().toString(); // TODO use the value instead for attributes
 
-        // Populate City table
         try (PreparedStatement stmt = this.conn.prepareStatement(
                 "INSERT INTO " + conceptTypeLabel + " (id, ) VALUES (?, )")) {
 
             stmt.setString(1, conceptId);
-//            stmt.setLong(2, 0);
             stmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -83,17 +83,64 @@ public class IgniteConceptIdStore implements ConceptStore {
         }
     }
 
+    /*
+    [{ LIMIT expression [OFFSET expression]
+    [SAMPLE_SIZE rowCountInt]} | {[OFFSET expression {ROW | ROWS}]
+    [{FETCH {FIRST | NEXT} expression {ROW | ROWS} ONLY}]}]
+     */
+
     public String get(String typeLabel, int offset) {
+
+        String sql = "SELECT id FROM " + typeLabel +
+                " OFFSET " + offset +
+                " FETCH FIRST ROW ONLY";
+//        ResultSet rs = this.runQuery(sql);
+
         try (Statement stmt = conn.createStatement()) {
-            try (ResultSet rs =
-            stmt.executeQuery("SELECT id " +
-                                 "FROM " + typeLabel +
-//                                 ""))
-                                 " ORDER BY id OFFSET 1 ROWS FETCH FIRST ROW ONLY"))
-//                                 " OFFSET " + offset + " LIMIT 1"))
-            {
-                rs.next();  // Need to do this to increment one line in the ResultSet
-                return rs.getString(1);
+            try (ResultSet rs = stmt.executeQuery(sql)) {
+
+                if (rs != null && rs.next()) { // Need to do this to increment one line in the ResultSet
+                    return rs.getString(1);
+                } else {
+                    return null;
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public int typeCount(String typeLabel) {
+
+        String sql = "SELECT COUNT(1) FROM " + typeLabel;
+//        ResultSet rs = this.runQuery(sql);
+
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery(sql)) {
+
+                if (rs != null && rs.next()) { // Need to do this to increment one line in the ResultSet
+                    return rs.getInt(1);
+                } else {
+                    return 0;
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    private ResultSet runQuery(String sql) {
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery(sql)) {
+                return rs;
             } catch (SQLException e) {
                 e.printStackTrace();
             }

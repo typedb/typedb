@@ -26,7 +26,11 @@ import ai.grakn.concept.Type;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,29 +46,34 @@ public class IgniteConceptIdStoreTest {
     private ArrayList<String> typeLabels;
     private ArrayList<String> conceptIds;
     private ArrayList<Concept> conceptMocks;
+    private String typeLabel;
 
     @Before
     public void setUp() throws SQLException, ClassNotFoundException {
 
-        typeLabels = new ArrayList<>();
-        typeLabels.add("person");
+        typeLabel = "person";
+//        typeLabels = new ArrayList<>();
+//        typeLabels.add(typeLabel);
 //        typeLabels.add("company");
 //        typeLabels.add("dinosaur");
-        typeLabelsSet = new HashSet<>(typeLabels);
+        typeLabelsSet = new HashSet<>();
+        typeLabelsSet.add(typeLabel);
 
         conceptIds = new ArrayList<>();
         conceptIds.add("V123456");
         conceptIds.add("V298345");
         conceptIds.add("V380325");
-
-
+        conceptIds.add("V4");
+        conceptIds.add("V5");
+        conceptIds.add("V6");
+        conceptIds.add("V7");
 
         conceptMocks = new ArrayList<>();
 
         Iterator<String> idIterator = conceptIds.iterator();
-        Iterator<String> labelIterator = typeLabels.iterator();
+//        Iterator<String> labelIterator = typeLabels.iterator();
 
-        while (idIterator.hasNext() && labelIterator.hasNext()) {
+        while (idIterator.hasNext()) {
 
             // Concept
             Concept conceptMock = mock(Concept.class);
@@ -83,9 +92,34 @@ public class IgniteConceptIdStoreTest {
             when(thingMock.type()).thenReturn(conceptTypeMock);
 
             // Concept Type getLabel()
-            Label label = Label.of(labelIterator.next());
+            Label label = Label.of(typeLabel);
             when(conceptTypeMock.getLabel()).thenReturn(label);
         }
+    }
+
+    @Test
+    public void whenConceptIdsAreAdded_conceptIdsAreInTheDB() throws SQLException, ClassNotFoundException {
+        IgniteConceptIdStore.clean(this.typeLabelsSet);
+        this.store = new IgniteConceptIdStore(this.typeLabelsSet);
+
+        // Add all of the elements
+        for (Concept conceptMock : this.conceptMocks) {
+            this.store.add(conceptMock);
+        }
+
+        int counter = 0;
+        // Check objects were added to the db
+        Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery("SELECT * FROM " + this.typeLabel)) {
+                while (rs.next()) {
+                    counter++;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        assertEquals(7, counter);
     }
 
     @Test
@@ -95,8 +129,8 @@ public class IgniteConceptIdStoreTest {
 
         int index = 0;
         this.store.add(this.conceptMocks.get(index));
-        String personId = this.store.get(this.typeLabels.get(0), index);
-        System.out.println("Found id: "+ personId);
+        String personId = this.store.get(this.typeLabel, index);
+        System.out.println("Found id: " + personId);
         assertEquals(personId, this.conceptIds.get(index));
     }
 
@@ -105,16 +139,28 @@ public class IgniteConceptIdStoreTest {
         IgniteConceptIdStore.clean(this.typeLabelsSet);
         this.store = new IgniteConceptIdStore(this.typeLabelsSet);
 
-        int index = 1;
+        int index = 4;
         // Add all of the elements
 
         for (Concept conceptMock : this.conceptMocks) {
             this.store.add(conceptMock);
         }
 
-        String personId = this.store.get(this.typeLabels.get(0), index);
-        System.out.println("Found id: "+ personId);
+        String personId = this.store.get(this.typeLabel, index);
+        System.out.println("Found id: " + personId);
         assertEquals(this.conceptIds.get(index), personId);
     }
 
+    @Test
+    public void whenCountingTypeInstances_resultIsCorrect() throws SQLException, ClassNotFoundException {
+        IgniteConceptIdStore.clean(this.typeLabelsSet);
+        this.store = new IgniteConceptIdStore(this.typeLabelsSet);
+
+        for (Concept conceptMock : this.conceptMocks) {
+            this.store.add(conceptMock);
+        }
+
+        int count = this.store.typeCount(this.typeLabel);
+        assertEquals(7, count);
+    }
 }
