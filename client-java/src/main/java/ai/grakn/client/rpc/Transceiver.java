@@ -220,7 +220,7 @@ public class Transceiver implements AutoCloseable {
 
         private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
             Preconditions.checkArgument(response == null || error == null);
-            return new AutoValue_Communicator_Response(response, error);
+            return new AutoValue_Transceiver_Response(response, error);
         }
 
         static Response completed() {
