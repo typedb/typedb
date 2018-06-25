@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -98,21 +96,6 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
-    }
-
-    @Override
-    public final Stream<Concept> get(String var) {
-        return get(Graql.var(var));
-    }
-
-    @Override
-    public final Stream<Concept> get(Var var) {
-        return stream().map(result -> {
-            if (!result.containsVar(var)) {
-                throw GraqlQueryException.varNotInQuery(var);
-            }
-            return result.get(var);
-        });
     }
 
     @Override

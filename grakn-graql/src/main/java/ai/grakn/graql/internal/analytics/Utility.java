@@ -129,6 +129,7 @@ public class Utility {
                     var("y").id(conceptId2),
                     var("z").rel(var("x")).rel(var("y")))
                     .get("z")
+                    .stream().map(answer -> answer.get("z"))
                     .findFirst();
             if (firstConcept.isPresent()) {
                 return firstConcept.get().getId();
