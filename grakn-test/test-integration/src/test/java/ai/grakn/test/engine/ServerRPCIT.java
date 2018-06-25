@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.test.engine.rpc;
+package ai.grakn.test.engine;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;

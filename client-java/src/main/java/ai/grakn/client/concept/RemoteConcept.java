@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
 /**
  * @author Felix Chapman
  */
-abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
+public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
     abstract Grakn.Transaction tx();
 

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.test.client;
+package ai.grakn.test.batch;
 
 import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
