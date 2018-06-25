@@ -26,7 +26,6 @@ import ai.grakn.client.concept.RemoteAttributeType;
 import ai.grakn.client.concept.RemoteEntity;
 import ai.grakn.client.concept.RemoteEntityType;
 import ai.grakn.client.concept.RemoteRelationship;
-import ai.grakn.client.concept.RemoteRelationshipType;
 import ai.grakn.client.concept.RemoteRole;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -60,22 +59,17 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 
 /**
  * Unit Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
 public class RemoteConceptTest {
 
-    private static final ConceptId ID = ConceptId.of("V123");
     private static final Pattern PATTERN = var("x").isa("person");
 
     private static final ConceptId A = ConceptId.of("A");
@@ -376,146 +370,68 @@ public class RemoteConceptTest {
         assertThat(person.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife, husband));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingInstances_GetTheExpectedResult() {
-        Thing a = RemoteRelationship.create(tx, A);
-        Thing b = RemoteRelationship.create(tx, B);
-        Thing c = RemoteRelationship.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getInstances, Stream.of(a, b, c));
-
-        assertThat(relationshipType.instances().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(email.instances().collect(toSet()), containsInAnyOrder(emailAlice, emailBob));
+        assertThat(name.instances().collect(toSet()), containsInAnyOrder(nameAlice, nameBob));
+        assertThat(age.instances().collect(toSet()), containsInAnyOrder(age20));
+        assertThat(person.instances().collect(toSet()), containsInAnyOrder(alice, bob));
+        assertThat(marriage.instances().collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingThingPlays_GetTheExpectedResult() {
-        Role a = RemoteRole.create(tx, A);
-        Role b = RemoteRole.create(tx, B);
-        Role c = RemoteRole.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRolesPlayedByThing, Stream.of(a, b, c));
-
-        assertThat(thing.plays().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife));
+        assertThat(bob.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(husband));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRelationshipsWithNoArguments_GetTheExpectedResult() {
-        Relationship a = RemoteRelationship.create(tx, A);
-        Relationship b = RemoteRelationship.create(tx, B);
-        Relationship c = RemoteRelationship.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRelationships, Stream.of(a, b, c));
-
-        assertThat(thing.relationships().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
+        assertThat(bob.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRelationshipsWithRoles_GetTheExpectedResult() {
-        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
-        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
-        Role baz = RemoteRole.create(tx, ConceptId.of("baz"));
-
-        Relationship a = RemoteRelationship.create(tx, A);
-        Relationship b = RemoteRelationship.create(tx, B);
-        Relationship c = RemoteRelationship.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRelationshipsByRoles(foo, bar, baz), Stream.of(a, b, c));
-
-        assertThat(thing.relationships(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.relationships(wife).collect(toSet()), containsInAnyOrder(aliceAndBob));
+        assertThat(bob.relationships(husband).collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRelationshipTypes_GetTheExpectedResult() {
-        RelationshipType a = RemoteRelationshipType.create(tx, A);
-        RelationshipType b = RemoteRelationshipType.create(tx, B);
-        RelationshipType c = RemoteRelationshipType.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRelationshipTypesThatRelateRole, Stream.of(a, b, c));
-
-        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(wife.relationshipTypes().collect(toSet()), containsInAnyOrder(marriage));
+        assertThat(husband.relationshipTypes().collect(toSet()), containsInAnyOrder(marriage));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingPlayedByTypes_GetTheExpectedResult() {
-        Type a = RemoteEntityType.create(tx, A);
-        Type b = RemoteRelationshipType.create(tx, B);
-        Type c = RemoteAttributeType.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getTypesThatPlayRole, Stream.of(a, b, c));
-
-        assertThat(role.playedByTypes().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(wife.playedByTypes().collect(toSet()), containsInAnyOrder(person));
+        assertThat(husband.playedByTypes().collect(toSet()), containsInAnyOrder(person));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRelates_GetTheExpectedResult() {
-        Role a = RemoteRole.create(tx, A);
-        Role b = RemoteRole.create(tx, B);
-        Role c = RemoteRole.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRelatedRoles, Stream.of(a, b, c));
-
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(marriage.relates().collect(toSet()), containsInAnyOrder(wife, husband));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingAllRolePlayers_GetTheExpectedResult() {
-        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
-        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
-
-        Thing a = RemoteEntity.create(tx, A);
-        Thing b = RemoteRelationship.create(tx, B);
-        Thing c = RemoteAttribute.create(tx, C);
-
-//        Stream<RolePlayer> mockedResponse = Stream.of(
-//                RolePlayer.create(foo, a),
-//                RolePlayer.create(bar, b),
-//                RolePlayer.create(bar, c)
-//        );
-
-        //TxResponse response = getRolePlayers.createTxResponse(server.grpcIterators(), mockedResponse);
-
-        //server.setResponse(RequestBuilder.runConceptMethod(ID, getRolePlayers), response);
-
-        Map<Role, Set<Thing>> allRolePlayers = relationship.allRolePlayers();
-
         Map<Role, Set<Thing>> expected = ImmutableMap.of(
-                foo, ImmutableSet.of(a),
-                bar, ImmutableSet.of(b, c)
+                wife, ImmutableSet.of(alice),
+                husband, ImmutableSet.of(bob)
         );
-
-        assertEquals(expected, allRolePlayers);
+        assertEquals(expected, aliceAndBob.allRolePlayers());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRolePlayersWithNoArguments_GetTheExpectedResult() {
-        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
-
-        Thing a = RemoteEntity.create(tx, A);
-        Thing b = RemoteRelationship.create(tx, B);
-        Thing c = RemoteAttribute.create(tx, C);
-
-//        Stream<RolePlayer> expected = Stream.of(
-//                RolePlayer.create(foo, a), RolePlayer.create(foo, b), RolePlayer.create(foo, c)
-//        );
-
-        //mockConceptMethod(ConceptMethod.getRolePlayers, expected);
-
-        assertThat(relationship.rolePlayers().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(aliceAndBob.rolePlayers().collect(toSet()), containsInAnyOrder(alice, bob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingRolePlayersWithRoles_GetTheExpectedResult() {
-        Role foo = RemoteRole.create(tx, ConceptId.of("foo"));
-        Role bar = RemoteRole.create(tx, ConceptId.of("bar"));
-        Role baz = RemoteRole.create(tx, ConceptId.of("baz"));
-
-        Thing a = RemoteEntity.create(tx, A);
-        Thing b = RemoteRelationship.create(tx, B);
-        Thing c = RemoteAttribute.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRolePlayersByRoles(foo, bar, baz), Stream.of(a, b, c));
-
-        assertThat(relationship.rolePlayers(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(aliceAndBob.rolePlayers(wife).collect(toSet()), containsInAnyOrder(alice));
+        assertThat(aliceAndBob.rolePlayers(husband).collect(toSet()), containsInAnyOrder(bob));
     }
 
     @Test @Ignore

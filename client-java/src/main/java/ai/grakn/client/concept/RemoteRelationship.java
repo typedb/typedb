@@ -18,15 +18,15 @@
 
 package ai.grakn.client.concept;
 
+import ai.grakn.client.Grakn;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestIterator;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.client.rpc.RequestIterator;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
@@ -84,7 +84,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new RequestIterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(res.getRolePlayer().getPlayer(), tx()).asThing()
+                tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx()).asThing()
         );
 
         return StreamSupport.stream(rolePlayers.spliterator(), false);
