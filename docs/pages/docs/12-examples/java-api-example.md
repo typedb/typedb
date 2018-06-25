@@ -53,7 +53,7 @@ First we need a [knowledge graph](../java-library/setup#initialising-a-transacti
 
 ```java
 GraknSession session = Grakn.session(uri, keyspace);
-GraknTx tx = session.open(GraknTxType.WRITE)
+GraknTx tx = session.transaction(GraknTxType.WRITE)
 ```
 
 
@@ -118,7 +118,7 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 
 ```java
 // After committing we need to open a new transaction
-tx = session.open(GraknTxType.WRITE)
+tx = session.transaction(GraknTxType.WRITE)
 
 // Define the attributes
 Attribute<String> firstNameJohn = firstname.putAttribute("John");
