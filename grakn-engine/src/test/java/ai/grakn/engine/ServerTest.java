@@ -214,7 +214,7 @@ public class ServerTest {
         io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new TransactionService(requestExecutor, postProcessor)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
-        return ServerFactory.createGraknEngineServer(engineId, config, status,
+        return ServerFactory.createServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
                 queueSanityCheck, lockProvider, postProcessor, keyspaceStore);

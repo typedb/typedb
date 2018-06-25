@@ -59,7 +59,7 @@ public class ServerFactory {
      *
      * @return a {@link Server} instance configured for Grakn Core
      */
-    public static Server createGraknEngineServer() {
+    public static Server createServer() {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
         GraknConfig config = GraknConfig.create();
@@ -92,9 +92,9 @@ public class ServerFactory {
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureGrpcServer(config, engineGraknTxFactory, postProcessor);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, postProcessor);
 
-        return createGraknEngineServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ServerFactory {
      * @return a {@link Server} instance
      */
 
-    public static Server createGraknEngineServer(
+    public static Server createServer(
             EngineID engineId, GraknConfig config, ServerStatus serverStatus,
             spark.Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
@@ -128,7 +128,7 @@ public class ServerFactory {
         return taskRunner;
     }
 
-    private static ServerRPC configureGrpcServer(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new OpenRequestImpl(engineGraknTxFactory);
 

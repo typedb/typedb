@@ -312,7 +312,7 @@ public class EngineContext extends CompositeTestRule {
         GraknTestUtil.allocateSparkPort(config);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
-        Server graknEngineServer = ServerFactory.createGraknEngineServer(id, config, status,
+        Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
                 queueSanityCheck, lockProvider, postProcessor, keyspaceStore);

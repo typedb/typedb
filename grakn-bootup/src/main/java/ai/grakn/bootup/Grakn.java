@@ -58,7 +58,7 @@ public class Grakn {
             enginePidManager.trackGraknPid();
 
             // Start Engine
-            Server server = ServerFactory.createGraknEngineServer();
+            Server server = ServerFactory.createServer();
             server.start();
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
