@@ -61,7 +61,6 @@ import com.google.common.collect.Iterables;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -97,7 +96,7 @@ public class TransactionTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final GrpcServerMock server = GrpcServerMock.create();
+    public final ServerRPCMock server = ServerRPCMock.create();
 
     private final Grakn.Session session = mock(Grakn.Session.class);
 
@@ -110,6 +109,7 @@ public class TransactionTest {
         when(session.stubAsync()).thenReturn(GraknGrpc.newStub(server.channel()));
         when(session.stubBlocking()).thenReturn(GraknGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
+        when(session.transaction(any())).thenCallRealMethod();
     }
 
     private static GrpcGrakn.TxResponse done() {
@@ -120,28 +120,28 @@ public class TransactionTest {
         return GrpcGrakn.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
     
-    @Test @Ignore
+    @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
             verify(server.service()).tx(any());
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
             verify(server.requests()).onNext(RequestBuilder.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.BATCH)) {
             verify(server.requests()).onNext(RequestBuilder.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
             verify(server.requests(), never()).onCompleted(); // Make sure transaction is still open here
@@ -150,21 +150,21 @@ public class TransactionTest {
         verify(server.requests()).onCompleted();
     }
 
-    @Test @Ignore
+    @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetKeyspaceOnTx() {
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             assertEquals(session, tx.session());
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
         try (GraknTx tx = session.transaction(GraknTxType.BATCH)) {
             assertEquals(GraknTxType.BATCH, tx.txType());
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
         Query<?> query = match(var("x").isa("person")).get();
         String queryString = query.toString();
@@ -178,7 +178,7 @@ public class TransactionTest {
         verify(server.requests()).onNext(RequestBuilder.query(query));
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQuery_GetAResultBack() {
         Query<?> query = match(var("x").isa("person")).get();
         String queryString = query.toString();
@@ -202,7 +202,7 @@ public class TransactionTest {
         assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
         Query<?> query = match(var("x").isa("person")).delete("x");
         String queryString = query.toString();
@@ -215,7 +215,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
         Query<?> query = match(var("x").isa("person")).aggregate(ask());
         String queryString = query.toString();
@@ -231,7 +231,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
         Query<?> query = define(label("person").sub("entity"));
         String queryString = query.toString();
@@ -254,7 +254,7 @@ public class TransactionTest {
         assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
     }
 
-    @Test(timeout = 5_000) @Ignore
+    @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
@@ -284,7 +284,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
         String queryString = "match $x isa person; get $x;";
 
@@ -301,7 +301,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenCommitting_SendACommitMessageToGrpc() {
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             verify(server.requests()).onNext(any()); // The open request
@@ -312,14 +312,14 @@ public class TransactionTest {
         verify(server.requests()).onNext(RequestBuilder.commit());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCreatingAGraknRemoteTxWithKeyspace_SetsKeyspaceOnTx() {
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             assertEquals(KEYSPACE, tx.keyspace());
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenOpeningATxFails_Throw() {
         TxRequest openRequest = RequestBuilder.open(KEYSPACE, GraknTxType.WRITE);
         GraknException expectedException = GraknBackendException.create("well something went wrong");
@@ -333,7 +333,7 @@ public class TransactionTest {
         tx.close();
     }
 
-    @Test @Ignore
+    @Test
     public void whenCommittingATxFails_Throw() {
         GraknException expectedException = InvalidKBException.create("do it better next time");
         throwOn(RequestBuilder.commit(), expectedException);
@@ -346,7 +346,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenAnErrorOccurs_TheTxCloses() {
         Query<?> query = match(var("x")).get();
 
@@ -366,7 +366,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
         Query<?> query = match(var("x")).get();
 
@@ -388,7 +388,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenPuttingEntityType_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
@@ -403,7 +403,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenPuttingRelationshipType_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
@@ -418,7 +418,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenPuttingAttributeType_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
@@ -434,7 +434,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenPuttingRole_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
@@ -449,7 +449,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenPuttingRule_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
         Label label = Label.of("foo");
@@ -466,7 +466,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingConceptViaID_EnsureCorrectRequestIsSent(){
         ConceptId id = ConceptId.of(V123);
 
@@ -483,7 +483,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingNonExistentConceptViaID_ReturnNull(){
         ConceptId id = ConceptId.of(V123);
 
@@ -497,7 +497,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingSchemaConceptViaLabel_EnsureCorrectRequestIsSent(){
         Label label = Label.of("foo");
         ConceptId id = ConceptId.of(V123);
@@ -514,7 +514,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingNonExistentSchemaConceptViaLabel_ReturnNull(){
         Label label = Label.of("foo");
 
@@ -528,7 +528,7 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingAttributesViaID_EnsureCorrectRequestIsSent(){
         String value = "Hello Oli";
 
@@ -548,22 +548,22 @@ public class TransactionTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenClosingTheTransaction_EnsureItIsFlaggedAsClosed(){
         assertTransactionClosedAfterAction(GraknTx::close);
     }
 
-    @Test @Ignore
+    @Test
     public void whenCommittingTheTransaction_EnsureItIsFlaggedAsClosed(){
         assertTransactionClosedAfterAction(GraknTx::commit);
     }
 
-    @Test @Ignore
+    @Test
     public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed(){
         assertTransactionClosedAfterAction(GraknTx::abort);
     }
 
-    @Test @Ignore
+    @Test
     public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
         DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(KEYSPACE, GraknTxType.WRITE).getOpen());
 

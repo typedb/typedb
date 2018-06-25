@@ -85,7 +85,7 @@ public class RemoteConceptTest {
     private static final ConceptId C = ConceptId.of("C");
 
     @Rule
-    public final GrpcServerMock server = GrpcServerMock.create();
+    public final ServerRPCMock server = ServerRPCMock.create();
 
     private Grakn.Session session;
     private Grakn.Transaction tx;

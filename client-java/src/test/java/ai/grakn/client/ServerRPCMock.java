@@ -69,7 +69,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Felix Chapman
  */
-public final class GrpcServerMock extends CompositeTestRule {
+public final class ServerRPCMock extends CompositeTestRule {
 
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
@@ -81,11 +81,11 @@ public final class GrpcServerMock extends CompositeTestRule {
     @SuppressWarnings("unchecked") // safe because mock
     private StreamObserver<TxRequest> serverRequests = mock(StreamObserver.class);
 
-    private GrpcServerMock() {
+    private ServerRPCMock() {
     }
 
-    public static GrpcServerMock create() {
-        return new GrpcServerMock();
+    public static ServerRPCMock create() {
+        return new ServerRPCMock();
     }
 
     public ManagedChannel channel() {
@@ -149,7 +149,7 @@ public final class GrpcServerMock extends CompositeTestRule {
             return streamObserver -> streamObserver.onError(throwable);
         }
 
-        static TxResponseHandler sequence(GrpcServerMock server, TxResponse... responses) {
+        static TxResponseHandler sequence(ServerRPCMock server, TxResponse... responses) {
             IteratorId iteratorId = server.grpcIterators().add(Iterators.forArray(responses));
 
             return streamObserver -> {

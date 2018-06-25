@@ -20,7 +20,7 @@ package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.rpc.Communicator;
+import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -154,7 +154,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
         }
 
@@ -163,7 +163,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
@@ -172,7 +172,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.BATCH));
         }
 
@@ -181,7 +181,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             TxResponse response = tx.receive().ok();
 
@@ -191,7 +191,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(commit());
         }
@@ -201,7 +201,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -222,8 +222,8 @@ public class ServerRPCTest {
         });
 
         try (
-                Communicator tx1 = Communicator.create(stub);
-                Communicator tx2 = Communicator.create(stub)
+                Transceiver tx1 = Transceiver.create(stub);
+                Transceiver tx2 = Transceiver.create(stub)
         ) {
             tx1.send(open(MYKS, GraknTxType.WRITE));
             tx2.send(open(MYKS, GraknTxType.WRITE));
@@ -240,7 +240,7 @@ public class ServerRPCTest {
         String keyspace = "not!@akeyspace";
         Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(TxRequest.newBuilder().setOpen(open).build());
             exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
@@ -262,7 +262,7 @@ public class ServerRPCTest {
             return null;
         }).when(tx).close();
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
         }
 
@@ -272,7 +272,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
         }
@@ -300,7 +300,7 @@ public class ServerRPCTest {
 
         when(query.stream()).thenAnswer(params -> answers.stream());
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -355,7 +355,7 @@ public class ServerRPCTest {
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -385,7 +385,7 @@ public class ServerRPCTest {
 
         when(countQuery.execute()).thenReturn(new ComputeQueryImpl.AnswerImpl().setNumber(100L));
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -406,7 +406,7 @@ public class ServerRPCTest {
 
         when(deleteQuery.execute()).thenReturn(null);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -417,7 +417,7 @@ public class ServerRPCTest {
 
     @Test @Ignore //TODO this test needs to be removed as it is no longer needed
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -431,7 +431,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -445,7 +445,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, true));
             IteratorId iterator = tx.receive().ok().getIteratorId();
@@ -467,7 +467,7 @@ public class ServerRPCTest {
         when(concept.isSchemaConcept()).thenReturn(true);
         when(concept.asSchemaConcept().getLabel()).thenReturn(label);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -486,7 +486,7 @@ public class ServerRPCTest {
         when(concept.isSchemaConcept()).thenReturn(true);
         when(concept.asSchemaConcept().isImplicit()).thenReturn(true);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -505,7 +505,7 @@ public class ServerRPCTest {
         when(concept.isThing()).thenReturn(true);
         when(concept.asThing().isInferred()).thenReturn(false);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -539,7 +539,7 @@ public class ServerRPCTest {
         when(player.asThing()).thenReturn(player);
         when(player.getId()).thenReturn(playerId);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -557,7 +557,7 @@ public class ServerRPCTest {
 
         when(tx.getConcept(id)).thenReturn(null);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -578,7 +578,7 @@ public class ServerRPCTest {
         when(concept.isSchemaConcept()).thenReturn(false);
         when(concept.asSchemaConcept()).thenThrow(EXCEPTION);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -600,7 +600,7 @@ public class ServerRPCTest {
 
         when(tx.getConcept(id)).thenReturn(concept);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -619,7 +619,7 @@ public class ServerRPCTest {
 
         when(tx.getConcept(id)).thenReturn(null);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
@@ -633,7 +633,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(commit());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -644,7 +644,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(query(QUERY, false));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -655,7 +655,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -674,7 +674,7 @@ public class ServerRPCTest {
 
         when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(error);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             exception.expect(hasStatus(Status.INTERNAL));
             throw tx.receive().error();
@@ -685,7 +685,7 @@ public class ServerRPCTest {
     public void whenCommittingFails_Throw() throws Throwable {
         doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -704,7 +704,7 @@ public class ServerRPCTest {
 
         when(tx.graql().parse(QUERY)).thenThrow(error);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
             tx.send(query(QUERY, false));
@@ -721,7 +721,7 @@ public class ServerRPCTest {
 
         when(query.stream()).thenThrow(expectedException);
 
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
             tx.send(query(QUERY, false));
@@ -733,7 +733,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -747,7 +747,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -758,7 +758,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenSendingNextAfterStop_Throw() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
@@ -778,7 +778,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_ReturnResultsForBothQueries() throws Throwable {
-        try (Communicator tx = Communicator.create(stub)) {
+        try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 

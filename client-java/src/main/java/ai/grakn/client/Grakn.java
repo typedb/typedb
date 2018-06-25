@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
+import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -42,7 +43,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.client.executor.RemoteQueryExecutor;
-import ai.grakn.client.rpc.Communicator;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.RequestIterator;
@@ -67,13 +67,8 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point and client equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
- *
- * <p>
- *     In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
- *     subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
- * </p>
- *
- * @author Felix Chapman
+ * In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
+ * subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
 
@@ -137,21 +132,21 @@ public final class Grakn {
 
         private final Session session;
         private final GraknTxType type;
-        private final Communicator communicator;
+        private final Transceiver transceiver;
 
         private Transaction(Session session, GraknTxType type) {
             this.session = session;
             this.type = type;
-            this.communicator = Communicator.create(session.stubAsync());
-            communicator.send(RequestBuilder.open(session.keyspace(), type));
+            this.transceiver = Transceiver.create(session.stubAsync());
+            transceiver.send(RequestBuilder.open(session.keyspace(), type));
             responseOrThrow();
         }
 
         private GrpcGrakn.TxResponse responseOrThrow() {
-            Communicator.Response response;
+            Transceiver.Response response;
 
             try {
-                response = communicator.receive();
+                response = transceiver.receive();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 // This is called from classes like Transaction, that impl methods which do not throw InterruptedException
@@ -172,7 +167,7 @@ public final class Grakn {
 
 
         public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
-            communicator.send(RequestBuilder.next(iteratorId));
+            transceiver.send(RequestBuilder.next(iteratorId));
             return responseOrThrow();
         }
 
@@ -182,44 +177,44 @@ public final class Grakn {
             runConceptMethod.setMethod(method);
             GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
-            communicator.send(conceptMethodRequest);
+            transceiver.send(conceptMethodRequest);
             return responseOrThrow();
         }
 
         @Override
         public EntityType putEntityType(Label label) {
-            communicator.send(RequestBuilder.putEntityType(label));
+            transceiver.send(RequestBuilder.putEntityType(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asEntityType();
         }
 
         @Override
         public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-            communicator.send(RequestBuilder.putAttributeType(label, dataType));
+            transceiver.send(RequestBuilder.putAttributeType(label, dataType));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
         }
 
         @Override
         public Rule putRule(Label label, Pattern when, Pattern then) {
-            communicator.send(RequestBuilder.putRule(label, when, then));
+            transceiver.send(RequestBuilder.putRule(label, when, then));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
         }
 
         @Override
         public RelationshipType putRelationshipType(Label label) {
-            communicator.send(RequestBuilder.putRelationshipType(label));
+            transceiver.send(RequestBuilder.putRelationshipType(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
         }
 
         @Override
         public Role putRole(Label label) {
-            communicator.send(RequestBuilder.putRole(label));
+            transceiver.send(RequestBuilder.putRole(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
         }
 
         @Nullable
         @Override
         public <T extends Concept> T getConcept(ConceptId id) {
-            communicator.send(RequestBuilder.getConcept(id));
+            transceiver.send(RequestBuilder.getConcept(id));
             GrpcGrakn.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
@@ -228,7 +223,7 @@ public final class Grakn {
         @Nullable
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-            communicator.send(RequestBuilder.getSchemaConcept(label));
+            transceiver.send(RequestBuilder.getSchemaConcept(label));
             GrpcGrakn.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
@@ -242,7 +237,7 @@ public final class Grakn {
 
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-            communicator.send(RequestBuilder.getAttributesByValue(value));
+            transceiver.send(RequestBuilder.getAttributesByValue(value));
             GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
             Iterable<Concept> iterable = () -> new RequestIterator<>(
                     this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
@@ -298,7 +293,7 @@ public final class Grakn {
 
         @Override
         public boolean isClosed() {
-            return communicator.isClosed();
+            return transceiver.isClosed();
         }
 
         @Override
@@ -308,12 +303,12 @@ public final class Grakn {
 
         @Override
         public void close() {
-            communicator.close();
+            transceiver.close();
         }
 
         @Override
         public void commit() throws InvalidKBException {
-            communicator.send(RequestBuilder.commit());
+            transceiver.send(RequestBuilder.commit());
             responseOrThrow();
             close();
         }
@@ -344,7 +339,7 @@ public final class Grakn {
         }
 
         public Iterator query(Query<?> query) {
-            communicator.send(RequestBuilder.query(query.toString(), query.inferring()));
+            transceiver.send(RequestBuilder.query(query.toString(), query.inferring()));
 
             GrpcGrakn.TxResponse txResponse = responseOrThrow();
 

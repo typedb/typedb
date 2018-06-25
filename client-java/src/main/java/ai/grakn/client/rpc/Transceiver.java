@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@link #receive()} method.
  *
  * {@code
- *     try (Communicator tx = Communicator.create(stub) {
+ *     try (Transceiver tx = Transceiver.create(stub) {
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().ok();
  *         tx.send(commitMessage);
@@ -48,20 +48,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     }
  * }
  */
-public class Communicator implements AutoCloseable {
+public class Transceiver implements AutoCloseable {
 
     private final StreamObserver<TxRequest> requestSender;
     private final ResponseListener responseListener;
 
-    private Communicator(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
+    private Transceiver(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
     }
 
-    public static Communicator create(GraknGrpc.GraknStub stub) {
+    public static Transceiver create(GraknGrpc.GraknStub stub) {
         ResponseListener responseListener = new ResponseListener();
         StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
-        return new Communicator(requestSender, responseListener);
+        return new Transceiver(requestSender, responseListener);
     }
 
     /**
