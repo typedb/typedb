@@ -92,7 +92,7 @@ public class DataGenerator {
     private ConceptTypeCountStore conceptTypeCountStore;
 
     public DataGenerator() {
-
+        this.reset();
         this.rand = new Random(RANDOM_SEED);
         this.conceptTypeCountStore = new ConceptTypeCountStore();
         entityStrategies = new RouletteWheelCollection<>(this.rand);
@@ -279,7 +279,6 @@ public class DataGenerator {
     public static void main(String[] args) {
         DataGenerator dg = new DataGenerator();
         System.out.print("Generating data...\n");
-        dg.reset();
 
         long startTime = System.nanoTime();
         dg.generate(100);

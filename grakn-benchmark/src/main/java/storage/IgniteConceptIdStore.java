@@ -50,7 +50,6 @@ public class IgniteConceptIdStore implements ConceptStore {
         for (String typeLabel : this.typeLabels) {
             this.createConceptIdTable(typeLabel);
         }
-
     }
 
     private void createConceptIdTable(String typeLabel) throws SQLException {

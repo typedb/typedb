@@ -39,6 +39,9 @@ import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ *
+ */
 public class IgniteConceptIdStoreTest {
 
     private IgniteConceptIdStore store;
