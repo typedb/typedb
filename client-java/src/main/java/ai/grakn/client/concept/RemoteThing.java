@@ -18,6 +18,7 @@
 
 package ai.grakn.client.concept;
 
+import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -25,10 +26,10 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
@@ -55,7 +56,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (roles.length == 0) {
             method.setGetRelationships(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetRelationshipsByRoles(ConceptBuilder.concepts(Stream.of(roles)));
+            method.setGetRelationshipsByRoles(ConceptBuilder.concepts(Arrays.asList(roles)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asRelationship);
     }
@@ -88,7 +89,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (attributeTypes.length == 0) {
             method.setGetAttributes(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetAttributesByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes)));
+            method.setGetAttributesByTypes(ConceptBuilder.concepts(Arrays.asList(attributeTypes)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asAttribute);
     }
@@ -99,7 +100,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         if (attributeTypes.length == 0) {
             method.setGetKeys(GrpcConcept.Unit.getDefaultInstance());
         } else {
-            method.setGetKeysByTypes(ConceptBuilder.concepts(Stream.of(attributeTypes)));
+            method.setGetKeysByTypes(ConceptBuilder.concepts(Arrays.asList(attributeTypes)));
         }
         return runMethodToConceptStream(method.build()).map(Concept::asAttribute);
     }

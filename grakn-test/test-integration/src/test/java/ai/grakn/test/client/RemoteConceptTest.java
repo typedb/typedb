@@ -41,7 +41,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
@@ -55,7 +54,6 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -69,8 +67,6 @@ import static org.junit.Assert.assertTrue;
  * Unit Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
 public class RemoteConceptTest {
-
-    private static final Pattern PATTERN = var("x").isa("person");
 
     private static final ConceptId A = ConceptId.of("A");
     private static final ConceptId B = ConceptId.of("B");
@@ -126,7 +122,7 @@ public class RemoteConceptTest {
     private String ALICE_EMAIL = "alice@email.com";
     private String BOB = "Bob";
     private String BOB_EMAIL = "bob@email.com";
-    private int TWENTY = 20;
+    private Integer TWENTY = 20;
 
     private AttributeType<Integer> age;
     private AttributeType<String> name;
@@ -137,11 +133,11 @@ public class RemoteConceptTest {
     private Role wife;
     private RelationshipType marriage;
 
-    private Attribute emailAlice;
-    private Attribute emailBob;
-    private Attribute age20;
-    private Attribute nameAlice;
-    private Attribute nameBob;
+    private Attribute<String> emailAlice;
+    private Attribute<String> emailBob;
+    private Attribute<Integer> age20;
+    private Attribute<String> nameAlice;
+    private Attribute<String> nameBob;
     private Entity alice;
     private Entity bob;
     private Relationship aliceAndBob;
@@ -290,14 +286,12 @@ public class RemoteConceptTest {
 
     @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        //mockConceptMethod(getWhen, Optional.of(PATTERN));
-        assertEquals(PATTERN, rule.getWhen());
+        //assertEquals(PATTERN, rule.getWhen());
     }
 
     @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingGetThen_GetTheExpectedResult() {
-        //mockConceptMethod(getThen, Optional.of(PATTERN));
-        assertEquals(PATTERN, rule.getThen());
+        //assertEquals(PATTERN, rule.getThen());
     }
 
     @Test
@@ -434,15 +428,13 @@ public class RemoteConceptTest {
         assertThat(aliceAndBob.rolePlayers(husband).collect(toSet()), containsInAnyOrder(bob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingOwnerInstances_GetTheExpectedResult() {
-        Thing a = RemoteEntity.create(tx, A);
-        Thing b = RemoteRelationship.create(tx, A);
-        Thing c = RemoteAttribute.create(tx, A);
-
-        //mockConceptMethod(ConceptMethod.getOwners, Stream.of(a, b, c));
-
-        assertThat(attribute.ownerInstances().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(emailAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
+        assertThat(emailBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
+        assertThat(nameAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
+        assertThat(nameBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
+        assertThat(age20.ownerInstances().collect(toSet()), containsInAnyOrder(alice, bob));
     }
 
     @Test @Ignore

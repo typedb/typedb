@@ -18,15 +18,6 @@
 
 package ai.grakn.client.rpc;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.ComputeQueryImpl;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.client.Grakn;
 import ai.grakn.client.concept.RemoteAttribute;
 import ai.grakn.client.concept.RemoteAttributeType;
@@ -37,6 +28,15 @@ import ai.grakn.client.concept.RemoteRelationship;
 import ai.grakn.client.concept.RemoteRelationshipType;
 import ai.grakn.client.concept.RemoteRole;
 import ai.grakn.client.concept.RemoteRule;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.generated.GrpcConcept;
 import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.util.CommonUtil;
@@ -48,13 +48,13 @@ import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -122,9 +122,9 @@ public class ConceptBuilder {
         }
     }
 
-    public static GrpcConcept.Concepts concepts(Stream<? extends Concept> concepts) {
+    public static GrpcConcept.Concepts concepts(Collection<Concept> concepts) {
         GrpcConcept.Concepts.Builder grpcConcepts = GrpcConcept.Concepts.newBuilder();
-        grpcConcepts.addAllConcepts(concepts.map(ConceptBuilder::concept).collect(toList()));
+        grpcConcepts.addAllConcepts(concepts.stream().map(ConceptBuilder::concept).collect(toList()));
         return grpcConcepts.build();
     }
 

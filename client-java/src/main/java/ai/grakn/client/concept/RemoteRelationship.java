@@ -32,6 +32,7 @@ import ai.grakn.rpc.generated.GrpcGrakn;
 import ai.grakn.rpc.generated.GrpcIterator;
 import com.google.auto.value.AutoValue;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,9 +78,9 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     public final Stream<Thing> rolePlayers(Role... roles) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         if (roles.length == 0) {
-            method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
+            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Collections.emptyList()));
         } else {
-            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Stream.of(roles)));
+            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Arrays.asList(roles)));
         }
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
