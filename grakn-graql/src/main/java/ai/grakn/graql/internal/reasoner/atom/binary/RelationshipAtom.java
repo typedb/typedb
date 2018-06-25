@@ -132,7 +132,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
-    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ImmutableList<SchemaConcept> possibleTypes, ReasonerQuery parent) {
+    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<SchemaConcept> possibleTypes, ReasonerQuery parent) {
         RelationshipAtom atom = create(pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;
@@ -483,7 +483,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getPossibleTypes(), this.getParentQuery());
+        //NB: do not cache possible types
+        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
     /**
