@@ -43,6 +43,9 @@ import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,9 +60,9 @@ public class ResolutionPlanTest {
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -68,17 +71,16 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-        assertEquals(plan, correctPlan);
+        checkOptimalQueryPlanProduced(query, correctPlan);
     }
 
     @Test
     public void prioritiseMostSubbedRelations() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$z id 'sampleId';" +
                 "$w id 'sampleId2';" +
                 "}";
@@ -88,17 +90,16 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-        assertEquals(plan, correctPlan);
+        checkOptimalQueryPlanProduced(query, correctPlan);
     }
 
     @Test
     public void prioritiseSpecificResourcesOverRelations(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -108,17 +109,16 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-        assertEquals(plan, correctPlan);
+        checkOptimalQueryPlanProduced(query, correctPlan);
     }
 
     @Test
     public void prioritiseSpecificResourcesOverNonSpecific(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$x has anotherResource $r;" +
                 "$w has resource 'test';" +
                 "}";
@@ -130,57 +130,7 @@ public class ResolutionPlanTest {
                 getAtom(query, "relation", testTx),
                 getAtom(query, "anotherResource", testTx)
         );
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-        assertEquals(plan, correctPlan);
-    }
-
-    @Test
-    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
-        EmbeddedGraknTx<?> testTx = testContext.tx();
-        String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa relation;" +
-                "(role1:$w, role2: $u) isa anotherRelation;" +
-                "(role1:$u, role2: $v) isa relation;" +
-                "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-
-        UnmodifiableIterator<Atom> iterator = plan.iterator();
-        Set<Var> vars = new HashSet<>();
-        vars.addAll(iterator.next().getVarNames());
-        while(iterator.hasNext()){
-            Atom next = iterator.next();
-            Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
-            vars.addAll(varNames);
-        }
-    }
-
-    @Test
-    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
-        EmbeddedGraknTx<?> testTx = testContext.tx();
-        String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
-                "(role1:$w, role2: $u) isa relation;" +
-                "(role1:$u, role2: $v) isa anotherRelation;" +
-                "(role1:$v, role2: $q) isa yetAnotherRelation;"+
-                "}";
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-
-        UnmodifiableIterator<Atom> iterator = plan.iterator();
-        Set<Var> vars = new HashSet<>();
-        vars.addAll(iterator.next().getVarNames());
-        while(iterator.hasNext()){
-            Atom next = iterator.next();
-            Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
-            vars.addAll(varNames);
-        }
+        checkOptimalQueryPlanProduced(query, correctPlan);
     }
 
     @Test
@@ -189,8 +139,8 @@ public class ResolutionPlanTest {
         String queryString = "{" +
                 "$x isa baseEntity;" +
                 "$y isa baseEntity;" +
-                "(role1:$x, role2: $xx) isa anotherRelation;$xx isa! $type;" +
-                "(role1:$y, role2: $yy) isa anotherRelation;$yy isa! $type;" +
+                "(someRole:$x, otherRole: $xx) isa anotherRelation;$xx isa! $type;" +
+                "(someRole:$y, otherRole: $yy) isa anotherRelation;$yy isa! $type;" +
                 "$y != $x;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -204,7 +154,7 @@ public class ResolutionPlanTest {
         Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
-                "(role1:$x, role2: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
                 "$x has resource 'this';" +
                 "$y has anotherResource 'that';";
 
@@ -220,6 +170,100 @@ public class ResolutionPlanTest {
         ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString, testTx), testTx);
         assertNotEquals(new ResolutionPlan(queryX).plan().get(0), getAtom(queryX, "anotherResource", testTx));
         assertNotEquals(new ResolutionPlan(queryY).plan().get(0), getAtom(queryX, "resource", testTx));
+    }
+
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa relation;" +
+                "(someRole:$w, otherRole: $u) isa anotherRelation;" +
+                "(someRole:$u, otherRole: $v) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        checkPlanConnected(new ResolutionPlan(query));
+    }
+
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
+                "(someRole:$w, otherRole: $u) isa relation;" +
+                "(someRole:$u, otherRole: $v) isa anotherRelation;" +
+                "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        checkPlanConnected(new ResolutionPlan(query));
+    }
+
+    @Test
+    public void makeSureLongQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        /*
+        follows two-branch pattern
+                                    /   (d, e) - (e, f)
+        (a, b)* - (b, c) - (c, d)
+                                    \   (d, g) - (g, h)
+         */
+        String queryString = "{" +
+                "($a, $b) isa derivedRelation;" +
+                "($b, $c) isa relation;" +
+                "($c, $d) isa anotherDerivedRelation;" +
+
+                "($d, $e) isa anotherRelation;" +
+                "($e, $f) isa derivedRelation;" +
+
+                "($d, $g) isa yetAnotherRelation;" +
+                "($g, $h) isa anotherDerivedRelation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        Atom abAtom = query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("a"), var("b")))).findFirst().orElse(null);
+        Atom efAtom = query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("e"), var("f")))).findFirst().orElse(null);
+        Atom ghAtom = query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("g"), var("h")))).findFirst().orElse(null);
+        assertThat(resolutionPlan.plan().get(0), anyOf(is(abAtom), is(efAtom), is(ghAtom)));
+        checkPlanConnected(resolutionPlan);
+    }
+
+    @Test
+    public void makeSureResolvableOntologicalQueryResolvedLast() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa $type;" +
+                "$type has resource;" +
+                "$y isa someEntity;" +
+                "$y has resource 'someValue';" +
+                "($x, $y) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        Atom resolvableIsa = query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("x"), var("type")))).findFirst().orElse(null);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        assertThat(resolutionPlan.plan().get(3), is(resolvableIsa));
+    }
+
+    private void checkOptimalQueryPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        ImmutableList<Atom> atomPlan = resolutionPlan.plan();
+        assertEquals(atomPlan, desiredAtomPlan);
+        checkPlanConnected(resolutionPlan);
+    }
+
+    private void checkPlanConnected(ResolutionPlan plan){
+        ImmutableList<Atom> atomList = plan.plan();
+
+        UnmodifiableIterator<Atom> iterator = atomList.iterator();
+        Set<Var> vars = new HashSet<>(iterator.next().getVarNames());
+        while(iterator.hasNext()){
+            Atom next = iterator.next();
+            Set<Var> varNames = next.getVarNames();
+            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            vars.addAll(varNames);
+        }
     }
 
     private Atom getAtom(ReasonerQueryImpl query, String typeString, GraknTx tx){

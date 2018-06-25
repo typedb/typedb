@@ -2,49 +2,78 @@ define
 
 #Roles
 
-role1 sub role;
-role2 sub role;
+someRole sub role;
+otherRole sub role;
 
 #Entities
 
 baseEntity sub entity
-    plays role1
-    plays role2
+    plays someRole
+    plays otherRole
     has resource
     has anotherResource;
 
-entity1 sub baseEntity;
-entity2 sub baseEntity;
+someEntity sub baseEntity;
+someOtherEntity sub baseEntity;
 
 #Relations
 
 relation sub relationship
-    relates role1
-    relates role2;
-
-derivedRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
 
 anotherRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
 
 yetAnotherRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
+
+derivedRelation sub relationship
+    relates someRole
+    relates otherRole;
+
+anotherDerivedRelation sub relationship
+    relates someRole
+    relates otherRole;
+
 
 resource sub attribute datatype string;
 anotherResource sub attribute datatype string;
+yetAnotherResource sub attribute datatype string;
+derivedResource sub attribute datatype string;
+anotherDerivedResource sub attribute datatype string;
 
-simple-rule
+simple-relation-rule
 when {
-(role1: $x, role2: $y) isa relation;
-(role1: $y, role2: $z) isa relation;},
+(someRole: $x, otherRole: $y) isa relation;},
 then {
-(role1: $x, role2: $z) isa derivedRelation;};
+(someRole: $x, otherRole: $y) isa derivedRelation;};
+
+another-relation-rule
+when {
+(someRole: $x, otherRole: $y) isa anotherRelation;},
+then {
+(someRole: $x, otherRole: $y) isa anotherDerivedRelation;};
+
+simple-resource-rule
+when{
+$x has resource $r;
+},
+then {
+$x has derivedResource $r;
+};
+
+another-resource-rule
+when{
+$x has anotherResource $r;
+},
+then {
+$x has anotherDerivedResource $r;
+};
 
 insert
 
-$x isa entity1;
-$y isa entity2;
+$x isa someEntity;
+$y isa someOtherEntity;
