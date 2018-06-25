@@ -16,10 +16,18 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.client;
+package ai.grakn.test.client;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
+import ai.grakn.client.concept.RemoteAttribute;
+import ai.grakn.client.concept.RemoteAttributeType;
+import ai.grakn.client.concept.RemoteEntity;
+import ai.grakn.client.concept.RemoteEntityType;
+import ai.grakn.client.concept.RemoteRelationship;
+import ai.grakn.client.concept.RemoteRelationshipType;
+import ai.grakn.client.concept.RemoteRole;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
@@ -35,25 +43,14 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.client.concept.RemoteAttribute;
-import ai.grakn.client.concept.RemoteAttributeType;
-import ai.grakn.client.concept.RemoteEntity;
-import ai.grakn.client.concept.RemoteEntityType;
-import ai.grakn.client.concept.RemoteMetaType;
-import ai.grakn.client.concept.RemoteRelationship;
-import ai.grakn.client.concept.RemoteRelationshipType;
-import ai.grakn.client.concept.RemoteRole;
-import ai.grakn.client.concept.RemoteRule;
-import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.util.SimpleURI;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -61,6 +58,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -73,7 +71,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 /**
- * @author Felix Chapman
+ * Unit Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
 public class RemoteConceptTest {
 
@@ -83,16 +81,16 @@ public class RemoteConceptTest {
     private static final ConceptId A = ConceptId.of("A");
     private static final ConceptId B = ConceptId.of("B");
     private static final ConceptId C = ConceptId.of("C");
+//
+//    @Rule
+//    public final ServerRPCMock server = ServerRPCMock.create();
+//
+//    private Grakn.Session session;
+//    private Grakn.Transaction tx;
+//    private static final SimpleURI URI = new SimpleURI("localhost", 999);
+//    private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
 
-    @Rule
-    public final ServerRPCMock server = ServerRPCMock.create();
-
-    private Grakn.Session session;
-    private Grakn.Transaction tx;
-    private static final SimpleURI URI = new SimpleURI("localhost", 999);
-    private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
-
-    private SchemaConcept schemaConcept;
+    SchemaConcept schemaConcept;
     private Type type;
     private EntityType entityType;
     private AttributeType<String> attributeType;
@@ -105,25 +103,107 @@ public class RemoteConceptTest {
     private Thing thing;
     private Concept concept;
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.create();
+    private Grakn.Session session;
+    private Grakn.Transaction tx;
+
+
+
+
+    // Attribute Type Labels
+    private Label EMAIL = Label.of("email");
+    private Label NAME = Label.of("name");
+    private Label AGE = Label.of("age");
+
+    private String EMAIL_REGEX = "\\S+@\\S+";
+
+    // Entity Type Labels
+    private Label LIVING_THING = Label.of("living-thing");
+    private Label PERSON = Label.of("person");
+
+    // Relationship Type Labels
+    private Label HUSBAND = Label.of("husband");
+    private Label WIFE = Label.of("wife");
+    private Label MARRIAGE = Label.of("marriage");
+
+    // Attribute values
+    private String ALICE = "Alice";
+    private String ALICE_EMAIL = "alice@email.com";
+    private String BOB = "Bob";
+    private String BOB_EMAIL = "bob@email.com";
+    private int TWENTY = 20;
+
+    private AttributeType<Integer> age;
+    private AttributeType<String> name;
+    private AttributeType<String> email;
+    private EntityType livingThing;
+    private EntityType person;
+    private Role husband;
+    private Role wife;
+    private RelationshipType marriage;
+
+    private Attribute emailAlice;
+    private Attribute emailBob;
+    private Attribute age20;
+    private Attribute nameAlice;
+    private Attribute nameBob;
+    private Entity alice;
+    private Entity bob;
+    private Relationship aliceAndBob;
+
     @Before
     public void setUp() {
-        session = Grakn.session(URI, Keyspace.of("whatever"));
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        session = Grakn.session(engine.grpcUri(), keyspace);
         tx = session.transaction(GraknTxType.WRITE);
-        verify(server.requests()).onNext(any()); // The open request
 
-        entityType = RemoteEntityType.create(tx, ID);
-        attributeType = RemoteAttributeType.create(tx, ID);
-        relationshipType = RemoteRelationshipType.create(tx, ID);
-        role = RemoteRole.create(tx, ID);
-        rule = RemoteRule.create(tx, ID);
-        schemaConcept = role;
-        type = entityType;
+        // Attribute Types
+        email = tx.putAttributeType(EMAIL, DataType.STRING).setRegex(EMAIL_REGEX);
+        name = tx.putAttributeType(NAME, DataType.STRING);
+        age = tx.putAttributeType(AGE, DataType.INTEGER);
 
-        entity = RemoteEntity.create(tx, ID);
-        attribute = RemoteAttribute.create(tx, ID);
-        relationship = RemoteRelationship.create(tx, ID);
-        thing = entity;
-        concept = entity;
+        // Entity Types
+        livingThing = tx.putEntityType(LIVING_THING).setAbstract(true);
+        person = tx.putEntityType(PERSON);
+        person.sup(livingThing);
+        person.key(email);
+        person.attribute(name);
+        person.attribute(age);
+
+        // Relationship Types
+        husband = tx.putRole(HUSBAND);
+        wife = tx.putRole(WIFE);
+        marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
+        person.plays(wife).plays(husband);
+
+        // Attributes
+        emailAlice = email.putAttribute(ALICE_EMAIL);
+        emailBob = email.putAttribute(BOB_EMAIL);
+        nameAlice = name.putAttribute(ALICE);
+        nameBob = name.putAttribute(BOB);
+        age20 = age.putAttribute(TWENTY);
+
+        // Entities
+        alice = person.addEntity().attribute(emailAlice).attribute(nameAlice).attribute(age20);
+        bob = person.addEntity().attribute(emailBob).attribute(nameBob).attribute(age20);
+
+        // Relationships
+        aliceAndBob = marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
+
+//        entityType = RemoteEntityType.create(tx, ID);
+//        attributeType = RemoteAttributeType.create(tx, ID);
+//        relationshipType = RemoteRelationshipType.create(tx, ID);
+//        role = RemoteRole.create(tx, ID);
+//        rule = RemoteRule.create(tx, ID);
+//        schemaConcept = role;
+//        type = entityType;
+//
+//        entity = RemoteEntity.create(tx, ID);
+//        attribute = RemoteAttribute.create(tx, ID);
+//        relationship = RemoteRelationship.create(tx, ID);
+//        thing = entity;
+//        concept = entity;
     }
 
     @After
@@ -136,22 +216,76 @@ public class RemoteConceptTest {
         session.close();
     }
 
-    @Test @Ignore
+    @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
-        //mockConceptMethod(ConceptMethod.getLabel, LABEL);
-        assertEquals(LABEL, schemaConcept.getLabel());
+        assertEquals(EMAIL, email.getLabel());
+        assertEquals(NAME, name.getLabel());
+        assertEquals(AGE, age.getLabel());
+        assertEquals(PERSON, person.getLabel());
+        assertEquals(HUSBAND, husband.getLabel());
+        assertEquals(WIFE, wife.getLabel());
+        assertEquals(MARRIAGE, marriage.getLabel());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingIsImplicit_GetTheExpectedResult() {
-        //mockConceptMethod(isImplicit, true);
-        assertTrue(schemaConcept.isImplicit());
-
-        //mockConceptMethod(isImplicit, false);
-        assertFalse(schemaConcept.isImplicit());
+        email.plays().forEach(role -> assertTrue(role.isImplicit()));
+        name.plays().forEach(role -> assertTrue(role.isImplicit()));
+        age.plays().forEach(role -> assertTrue(role.isImplicit()));
     }
 
-    @Test @Ignore
+    @Test
+    public void whenCallingIsAbstract_GetTheExpectedResult() {
+        assertTrue(livingThing.isAbstract());
+    }
+
+    @Test
+    public void whenCallingGetValue_GetTheExpectedResult() {
+        assertEquals(ALICE_EMAIL, emailAlice.getValue());
+        assertEquals(BOB_EMAIL, emailBob.getValue());
+        assertEquals(ALICE, nameAlice.getValue());
+        assertEquals(BOB, nameBob.getValue());
+        assertEquals(TWENTY, age20.getValue());
+    }
+
+    @Test
+    public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
+        assertEquals(DataType.STRING, email.getDataType());
+        assertEquals(DataType.STRING, name.getDataType());
+        assertEquals(DataType.INTEGER, age.getDataType());
+    }
+
+    @Test
+    public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
+        assertEquals(DataType.STRING, emailAlice.dataType());
+        assertEquals(DataType.STRING, emailBob.dataType());
+        assertEquals(DataType.STRING, nameAlice.dataType());
+        assertEquals(DataType.STRING, nameBob.dataType());
+        assertEquals(DataType.INTEGER, age20.dataType());
+    }
+
+    @Test
+    public void whenCallingGetRegex_GetTheExpectedResult() {
+        assertEquals(EMAIL_REGEX, email.getRegex());
+    }
+
+    @Test
+    public void whenCallingGetAttribute_GetTheExpectedResult() {
+        assertEquals(emailAlice, email.getAttribute(ALICE_EMAIL));
+        assertEquals(emailBob, email.getAttribute(BOB_EMAIL));
+        assertEquals(nameAlice, name.getAttribute(ALICE));
+        assertEquals(nameBob, name.getAttribute(BOB));
+        assertEquals(age20, age.getAttribute(TWENTY));
+    }
+
+    @Test
+    public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
+        assertNull(email.getAttribute("x@x.com"));
+        assertNull(name.getAttribute("random"));
+        assertNull(age.getAttribute(-1));
+    }
+
+    @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingIsInferred_GetTheExpectedResult() {
         //mockConceptMethod(isInferred, true);
         assertTrue(thing.isInferred());
@@ -160,191 +294,86 @@ public class RemoteConceptTest {
         assertFalse(thing.isInferred());
     }
 
-    @Test @Ignore
-    public void whenCallingIsAbstract_GetTheExpectedResult() {
-        //mockConceptMethod(IS_ABSTRACT, true);
-        assertTrue(type.isAbstract());
-
-        //mockConceptMethod(IS_ABSTRACT, false);
-        assertFalse(type.isAbstract());
-    }
-
-    @Test @Ignore
-    public void whenCallingGetValue_GetTheExpectedResult() {
-        //mockConceptMethod(GET_VALUE, 123);
-        assertEquals(123, ((Attribute<?>) attribute).getValue());
-    }
-
-    @Test @Ignore
-    public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
-        //mockConceptMethod(getDataTypeOfType, Optional.of(DataType.LONG));
-        assertEquals(DataType.LONG, ((AttributeType<?>) attributeType).getDataType());
-    }
-
-    @Test @Ignore
-    public void whenCallingGetDataTypeOnAttribute_GetTheExpectedResult() {
-        //mockConceptMethod(getDataTypeOfAttribute, DataType.LONG);
-        assertEquals(DataType.LONG, ((Attribute<?>) attribute).dataType());
-    }
-
-    @Test @Ignore
-    public void whenCallingGetRegex_GetTheExpectedResult() {
-        //mockConceptMethod(getRegex, Optional.of("hello"));
-        assertEquals("hello", attributeType.getRegex());
-    }
-
-    @Test @Ignore
-    public void whenCallingGetAttribute_GetTheExpectedResult() {
-        String value = "Dunstan again";
-        Attribute<String> attribute = RemoteAttribute.create(tx, A);
-
-        //mockConceptMethod(ConceptMethod.getAttribute(value), Optional.of(attribute));
-
-        assertEquals(attribute, attributeType.getAttribute(value));
-    }
-
-    @Test @Ignore
-    public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
-        String value = "Dunstan > Oliver";
-        //mockConceptMethod(ConceptMethod.getAttribute(value), Optional.empty());
-        assertNull(attributeType.getAttribute(value));
-    }
-
-    @Test @Ignore
+    @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingGetWhen_GetTheExpectedResult() {
         //mockConceptMethod(getWhen, Optional.of(PATTERN));
         assertEquals(PATTERN, rule.getWhen());
     }
 
-    @Test @Ignore
+    @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingGetThen_GetTheExpectedResult() {
         //mockConceptMethod(getThen, Optional.of(PATTERN));
         assertEquals(PATTERN, rule.getThen());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingIsDeleted_GetTheExpectedResult() {
-        TxResponse response = TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        Entity randomPerson = person.addEntity();
+        assertFalse(randomPerson.isDeleted());
 
-        server.setResponse(RequestBuilder.getConcept(ID), response);
-
-        assertFalse(entity.isDeleted());
-
-        TxResponse nullResponse = TxResponse.newBuilder().setNoResult(true).build();
-
-        server.setResponse(RequestBuilder.getConcept(ID), nullResponse);
-
-        assertTrue(entity.isDeleted());
+        randomPerson.delete();
+        assertTrue(randomPerson.isDeleted());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingSups_GetTheExpectedResult() {
-        Type me = entityType;
-        Type mySuper = RemoteEntityType.create(tx, A);
-        Type mySupersSuper = RemoteEntityType.create(tx, B);
-        Type metaType = RemoteMetaType.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getSuperConcepts, Stream.of(me, mySuper, mySupersSuper, metaType));
-
-        Set<Type> sups = entityType.sups().collect(toSet());
-        assertThat(sups, containsInAnyOrder(me, mySuper, mySupersSuper));
-        assertThat(sups, not(hasItem(metaType)));
+        assertTrue(person.sups().collect(toSet()).contains(livingThing));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingSubs_GetTheExpectedResult() {
-        Type me = relationshipType;
-        Type mySub = RemoteRelationshipType.create(tx, A);
-        Type mySubsSub = RemoteRelationshipType.create(tx, B);
-
-        //mockConceptMethod(ConceptMethod.getSubConcepts, Stream.of(me, mySub, mySubsSub));
-
-        assertThat(relationshipType.subs().collect(toSet()), containsInAnyOrder(me, mySub, mySubsSub));
+        assertTrue(livingThing.subs().collect(toSet()).contains(person));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingSup_GetTheExpectedResult() {
-        SchemaConcept sup = RemoteEntityType.create(tx, A);
-        //mockConceptMethod(getDirectSuper, Optional.of(sup));
-        assertEquals(sup, entityType.sup());
+        assertEquals(livingThing, person.sup());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingSupOnMetaType_GetNull() {
-        //mockConceptMethod(getDirectSuper, Optional.empty());
-        assertNull(schemaConcept.sup());
+        assertNull(tx.getEntityType("entity").sup());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingType_GetTheExpectedResult() {
-        Type type = RemoteEntityType.create(tx, A);
-
-        //mockConceptMethod(getDirectType, type);
-
-        assertEquals(type, thing.type());
+        assertEquals(email, emailAlice.type());
+        assertEquals(email, emailBob.type());
+        assertEquals(name, nameAlice.type());
+        assertEquals(name, nameBob.type());
+        assertEquals(age, age20.type());
+        assertEquals(person, alice.type());
+        assertEquals(person, bob.type());
+        assertEquals(marriage, aliceAndBob.type());
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingAttributesWithNoArguments_GetTheExpectedResult() {
-        Attribute<?> a = RemoteAttribute.create(tx, A);
-        Attribute<?> b = RemoteAttribute.create(tx, B);
-        Attribute<?> c = RemoteAttribute.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getAttributes, Stream.of(a, b, c));
-
-        assertThat(thing.attributes().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.attributes().collect(toSet()), containsInAnyOrder(emailAlice, nameAlice, age20));
+        assertThat(bob.attributes().collect(toSet()), containsInAnyOrder(emailBob, nameBob, age20));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingAttributesWithArguments_GetTheExpectedResult() {
-        AttributeType<?> foo = RemoteAttributeType.create(tx, ConceptId.of("foo"));
-        AttributeType<?> bar = RemoteAttributeType.create(tx, ConceptId.of("bar"));
-        AttributeType<?> baz = RemoteAttributeType.create(tx, ConceptId.of("baz"));
-
-        Attribute<?> a = RemoteAttribute.create(tx, A);
-        Attribute<?> b = RemoteAttribute.create(tx, B);
-        Attribute<?> c = RemoteAttribute.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getAttributesByTypes(foo, bar, baz), Stream.of(a, b, c));
-
-        assertThat(thing.attributes(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.attributes(email, age).collect(toSet()), containsInAnyOrder(emailAlice, age20));
+        assertThat(bob.attributes(email, age).collect(toSet()), containsInAnyOrder(emailBob, age20));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingKeysWithNoArguments_GetTheExpectedResult() {
-        Attribute<?> a = RemoteAttribute.create(tx, A);
-        Attribute<?> b = RemoteAttribute.create(tx, B);
-        Attribute<?> c = RemoteAttribute.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getKeys, Stream.of(a, b, c));
-
-        assertThat(thing.keys().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.keys().collect(toSet()), contains(emailAlice));
+        assertThat(bob.keys().collect(toSet()), contains(emailBob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingKeysWithArguments_GetTheExpectedResult() {
-        AttributeType<?> foo = RemoteAttributeType.create(tx, ConceptId.of("foo"));
-        AttributeType<?> bar = RemoteAttributeType.create(tx, ConceptId.of("bar"));
-        AttributeType<?> baz = RemoteAttributeType.create(tx, ConceptId.of("baz"));
-
-        Attribute<?> a = RemoteAttribute.create(tx, A);
-        Attribute<?> b = RemoteAttribute.create(tx, B);
-        Attribute<?> c = RemoteAttribute.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getKeysByTypes(foo, bar, baz), Stream.of(a, b, c));
-
-        assertThat(thing.keys(foo, bar, baz).collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(alice.keys(email).collect(toSet()), contains(emailAlice));
+        assertThat(bob.keys(email).collect(toSet()), contains(emailBob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingPlays_GetTheExpectedResult() {
-        Role a = RemoteRole.create(tx, A);
-        Role b = RemoteRole.create(tx, B);
-        Role c = RemoteRole.create(tx, C);
-
-        //mockConceptMethod(ConceptMethod.getRolesPlayedByType, Stream.of(a, b, c));
-
-        assertThat(type.plays().collect(toSet()), containsInAnyOrder(a, b, c));
+        assertThat(person.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife, husband));
     }
 
     @Test @Ignore

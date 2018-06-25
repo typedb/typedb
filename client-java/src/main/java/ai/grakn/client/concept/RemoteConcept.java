@@ -33,7 +33,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * @author Felix Chapman
+ * Super class of all Grakn Concepts.
+ *
+ * @param <SomeConcept> represents the actual class of object to downcast to
  */
 public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
