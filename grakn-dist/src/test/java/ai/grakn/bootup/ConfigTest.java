@@ -18,9 +18,9 @@
 
 package ai.grakn.bootup;
 
-import ai.grakn.bootup.config.ConfigProcessor;
-import ai.grakn.bootup.config.QueueConfig;
-import ai.grakn.bootup.config.StorageConfig;
+import ai.grakn.engine.bootup.config.ConfigProcessor;
+import ai.grakn.engine.bootup.config.QueueConfig;
+import ai.grakn.engine.bootup.config.StorageConfig;
 import ai.grakn.engine.GraknConfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;
