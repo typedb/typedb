@@ -16,16 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package storage;
+package pick;
 
-import ai.grakn.concept.Concept;
+import ai.grakn.GraknTx;
+
+import java.util.Random;
+import java.util.stream.Stream;
 
 /**
- *
+ * @param <T>
  */
-public interface ConceptStore {
+public abstract class Picker<T> implements PickerInterface<T> {
+    protected Random rand;
 
-    void add(Concept concept);
+    public Picker(Random rand) {
+        this.rand = rand;
+    }
 
-    int total();
+    public Stream<Integer> getRandomOffsetStream(int streamLength, GraknTx tx) {
+        int typeCount = getConceptCount(tx);
+
+        // If there aren't enough concepts to fulfill the number requested, then return null
+        if (typeCount < streamLength) return null;
+
+        return RandomOffsetGenerator.generate(this.rand, typeCount);
+    }
+
+    abstract Integer getConceptCount(GraknTx tx);
 }

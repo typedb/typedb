@@ -34,19 +34,13 @@ import static ai.grakn.graql.Graql.count;
 /**
  *
  */
-public class ConceptIdPicker implements StreamInterface<ConceptId> {
-    private Random rand;
+public class ConceptIdPicker extends Picker<ConceptId> {
 
-    private Pattern matchVarPattern;
-    private Var matchVar;
+    protected Pattern matchVarPattern;
+    protected Var matchVar;
 
-    /**
-     * @param rand
-     * @param matchVarPattern
-     * @param matchVar
-     */
     public ConceptIdPicker(Random rand, Pattern matchVarPattern, Var matchVar) {
-        this.rand = rand;
+        super(rand);
         this.matchVarPattern = matchVarPattern;
         this.matchVar = matchVar;
     }
@@ -59,12 +53,10 @@ public class ConceptIdPicker implements StreamInterface<ConceptId> {
     @Override
     public Stream<ConceptId> getStream(int streamLength, GraknTx tx) {
 
-        int typeCount = getConceptCount(tx);
-
-        // If there aren't enough concepts to fulfill the number requested, then return null
-        if (typeCount < streamLength) return Stream.empty();
-
-        Stream<Integer> randomUniqueOffsetStream = RandomOffsetGenerator.generate(this.rand, typeCount);
+        Stream<Integer> randomUniqueOffsetStream = this.getRandomOffsetStream(streamLength, tx);
+        if (randomUniqueOffsetStream == null ) {
+            return Stream.empty();
+        }
 
         return randomUniqueOffsetStream.map(randomOffset -> {
 

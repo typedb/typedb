@@ -37,14 +37,15 @@ import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
 
-import pick.IsaTypeConceptIdPicker;
+import pick.FromIdStoragePicker;
 import pick.StreamProvider;
 import pick.PickableCollectionValuePicker;
-import pick.ConceptIdPicker;
 import pick.CentralStreamProvider;
 import pick.NotInRelationshipConceptIdStream;
 
-import storage.ConceptTypeCountStore;
+import storage.ConceptStore;
+import storage.IdStoreInterface;
+import storage.IgniteConceptIdStore;
 import storage.InsertionAnalysis;
 import storage.SchemaManager;
 import strategy.EntityStrategy;
@@ -55,14 +56,11 @@ import strategy.RolePlayerTypeStrategy;
 import strategy.TypeStrategyInterface;
 import strategy.AttributeOwnerTypeStrategy;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.List;
-
-import static ai.grakn.graql.Graql.var;
 
 /**
  *
@@ -77,10 +75,10 @@ public class DataGenerator {
     private int iteration = 0;
 
     private Random rand;
-    private ArrayList<EntityType> entityTypes;
-    private ArrayList<RelationshipType> relationshipTypes;
-    private ArrayList<AttributeType> attributeTypes;
-    private ArrayList<Role> roles;
+    private HashSet<EntityType> entityTypes;
+    private HashSet<RelationshipType> relationshipTypes;
+    private HashSet<AttributeType> attributeTypes;
+    private HashSet<Role> roles;
 
 
     private RouletteWheelCollection<TypeStrategyInterface> entityStrategies;
@@ -89,12 +87,11 @@ public class DataGenerator {
 
     private RouletteWheelCollection<RouletteWheelCollection<TypeStrategyInterface>> operationStrategies;
 
-    private ConceptTypeCountStore conceptTypeCountStore;
+    private ConceptStore storage;
 
     public DataGenerator() {
         this.reset();
         this.rand = new Random(RANDOM_SEED);
-        this.conceptTypeCountStore = new ConceptTypeCountStore();
         entityStrategies = new RouletteWheelCollection<>(this.rand);
         relationshipStrategies = new RouletteWheelCollection<>(this.rand);
         attributeStrategies = new RouletteWheelCollection<>(this.rand);
@@ -105,11 +102,12 @@ public class DataGenerator {
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // TODO Add checking to ensure that all of these strategies make sense
-            this.entityTypes = SchemaManager.getTypes(tx, "entity");
-            this.relationshipTypes = SchemaManager.getTypes(tx, "relationship");
-            this.attributeTypes = SchemaManager.getTypes(tx, "attribute");
-            this.roles = SchemaManager.getTypes(tx, "role");
+            this.entityTypes = SchemaManager.getTypesOfMetaType(tx, "entity");
+            this.relationshipTypes = SchemaManager.getTypesOfMetaType(tx, "relationship");
+            this.attributeTypes = SchemaManager.getTypesOfMetaType(tx, "attribute");
+            this.roles = SchemaManager.getTypesOfMetaType(tx, "role");
 
+            this.storage = new IgniteConceptIdStore(this.entityTypes, this.relationshipTypes, this.attributeTypes);
 
             this.entityStrategies.add(
                     0.5,
@@ -134,11 +132,11 @@ public class DataGenerator {
                             SchemaManager.getTypeFromString("person", this.entityTypes),
                             new ConstantPDF(1),
                             new StreamProvider<>(
-                                    new IsaTypeConceptIdPicker(
+                                    new FromIdStoragePicker<>(
                                             this.rand,
-                                            this.conceptTypeCountStore,
-                                            "person"
-                                    )
+                                            (IdStoreInterface) this.storage,
+                                            "person",
+                                            ConceptId.class)
                             )
                     )
             );
@@ -153,17 +151,11 @@ public class DataGenerator {
                                             "employment",
                                             "employer",
                                             100,
-//                                            new IsaTypeConceptIdPicker(
-//                                                    this.rand,
-//                                                    this.conceptTypeCountStore,
-//                                                    "company"
-//                                            )
-                                            new ConceptIdPicker(
+                                            new FromIdStoragePicker<>(
                                                     this.rand,
-                                                    var("x").isa("company"),
-                                                    var("x")
-                                            )
-
+                                                    (IdStoreInterface) this.storage,
+                                                    "company",
+                                                    ConceptId.class)
                                     )
                             )
                     )
@@ -192,15 +184,11 @@ public class DataGenerator {
                             new AttributeOwnerTypeStrategy(
                                     SchemaManager.getTypeFromString("company", this.entityTypes),
                                     new StreamProvider<ConceptId>(
-//                                            new IsaTypeConceptIdPicker(
-//                                                    this.rand,
-//                                                    this.conceptTypeCountStore,
-//                                                    "company")
-                                            new ConceptIdPicker(
+                                            new FromIdStoragePicker<ConceptId>(
                                                     this.rand,
-                                                    var("x").isa("company"),
-                                                    var("x")
-                                                    )
+                                                    (IdStoreInterface) this.storage,
+                                                    "company",
+                                                    ConceptId.class)
                                     )
                             ),
                             new StreamProvider<>(
@@ -212,7 +200,7 @@ public class DataGenerator {
 
         this.operationStrategies.add(0.7, this.entityStrategies);
         this.operationStrategies.add(0.3, this.relationshipStrategies);
-        this.operationStrategies.add(0.0, this.attributeStrategies);
+        this.operationStrategies.add(0.2, this.attributeStrategies);
     }
 
     private GraknSession getSession() {
@@ -228,7 +216,7 @@ public class DataGenerator {
         GraknSession session = this.getSession();
 
         GeneratorFactory gf = new GeneratorFactory();
-        int conceptTotal = this.conceptTypeCountStore.total();
+        int conceptTotal = this.storage.total();
 
         while (conceptTotal < numConceptsLimit) {
             System.out.printf("---- Iteration %d ----\n", this.iteration);
@@ -246,7 +234,7 @@ public class DataGenerator {
                 this.processQueryStream(queryStream);
 
                 iteration++;
-                conceptTotal = this.conceptTypeCountStore.total();
+                conceptTotal = this.storage.total();
                 System.out.printf(String.format("---- %d concepts ----\n", conceptTotal), this.iteration);
                 tx.commit();
             }
@@ -263,7 +251,7 @@ public class DataGenerator {
                     insertions.forEach(insert -> {
                         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
                         insertedConcepts.forEach(concept -> {
-                            this.conceptTypeCountStore.add(concept);
+                            this.storage.add(concept);
                         });
                     });
                 });
@@ -285,8 +273,8 @@ public class DataGenerator {
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
-//        dg.generate(1000);
-//        dg.generate(10000);
+        dg.generate(1000);
+        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 

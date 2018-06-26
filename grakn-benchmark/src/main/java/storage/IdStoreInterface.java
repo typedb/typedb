@@ -18,14 +18,9 @@
 
 package storage;
 
-import ai.grakn.concept.Concept;
+public interface IdStoreInterface extends ConceptStore {
 
-/**
- *
- */
-public interface ConceptStore {
+    int getConceptCount(String typeLabel);
 
-    void add(Concept concept);
-
-    int total();
+    <T> T get(String typeLabel, Class<T> datatype, int offset);
 }

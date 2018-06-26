@@ -16,16 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package storage;
+package pick;
 
-import ai.grakn.concept.Concept;
+import ai.grakn.GraknTx;
 
-/**
- *
- */
-public interface ConceptStore {
+import java.util.stream.Stream;
 
-    void add(Concept concept);
+public interface PickerInterface<T> extends StreamInterface<T> {
 
-    int total();
+    Stream<Integer> getRandomOffsetStream(int streamLength, GraknTx tx);
 }

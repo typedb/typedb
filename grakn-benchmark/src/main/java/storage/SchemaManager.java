@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,10 +90,10 @@ public class SchemaManager {
         }
     }
 
-    public static <T extends SchemaConcept> ArrayList<T> getTypes(GraknTx tx, String conceptTypeName) {
-        ArrayList<T> conceptTypes = new ArrayList<T>();
+    public static <T extends SchemaConcept> HashSet<T> getTypesOfMetaType(GraknTx tx, String metaTypeName) {
+        HashSet<T> conceptTypes = new HashSet<T>();
         QueryBuilder qb = tx.graql();
-        Match match = qb.match(var("x").sub(conceptTypeName));
+        Match match = qb.match(var("x").sub(metaTypeName));
         List<Answer> result = match.get().execute();
         T conceptType;
 
@@ -109,7 +110,16 @@ public class SchemaManager {
         return conceptTypes;
     }
 
-    public static <T extends SchemaConcept> T getTypeFromString(String typeName, ArrayList<T> typeInstances) {
+//    public static HashSet<String> getMetaTypeLabels(GraknTx tx, String conceptMetaTypeName) {
+//        HashSet<SchemaConcept> typesOfMetaType = getTypesOfMetaType(tx, conceptMetaTypeName);
+//        HashSet<String> labels = new HashSet<>();
+//
+//        for (SchemaConcept type : typesOfMetaType) {
+//            labels.add(type.getLabel());
+//        }
+//    }
+
+    public static <T extends SchemaConcept> T getTypeFromString(String typeName, HashSet<T> typeInstances) {
         Iterator iter = typeInstances.iterator();
         String l;
         T currentType;
@@ -124,7 +134,7 @@ public class SchemaManager {
         throw new RuntimeException("Couldn't find a concept type with name \"" + typeName + "\"");
     }
 
-    public static AttributeType.DataType getDatatype(String typeName, ArrayList<Type> typeInstances) {
+    public static AttributeType.DataType getDatatype(String typeName, HashSet<Type> typeInstances) {
         return null;
     }
 }
