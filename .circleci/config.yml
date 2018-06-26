@@ -14,6 +14,7 @@ jobs:
       - checkout
 
       # add necessary 3rd party apt repositories
+      - run: whoami
       - run: nvm install v10.5.0
       - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
       - run: curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
