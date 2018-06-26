@@ -21,26 +21,16 @@ package ai.grakn.test.client;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
-import ai.grakn.client.concept.RemoteAttribute;
-import ai.grakn.client.concept.RemoteAttributeType;
-import ai.grakn.client.concept.RemoteEntity;
-import ai.grakn.client.concept.RemoteEntityType;
-import ai.grakn.client.concept.RemoteRelationship;
-import ai.grakn.client.concept.RemoteRole;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.AttributeType.DataType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
@@ -66,40 +56,12 @@ import static org.junit.Assert.assertTrue;
 /**
  * Unit Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
-public class RemoteConceptTest {
-
-    private static final ConceptId A = ConceptId.of("A");
-    private static final ConceptId B = ConceptId.of("B");
-    private static final ConceptId C = ConceptId.of("C");
-//
-//    @Rule
-//    public final ServerRPCMock server = ServerRPCMock.create();
-//
-//    private Grakn.Session session;
-//    private Grakn.Transaction tx;
-//    private static final SimpleURI URI = new SimpleURI("localhost", 999);
-//    private static final Label LABEL = Label.of("too-tired-for-funny-test-names-today");
-
-    SchemaConcept schemaConcept;
-    private Type type;
-    private EntityType entityType;
-    private AttributeType<String> attributeType;
-    private RelationshipType relationshipType;
-    private Role role;
-    private ai.grakn.concept.Rule rule;
-    private Entity entity;
-    private Attribute<String> attribute;
-    private Relationship relationship;
-    private Thing thing;
-    private Concept concept;
+public class RemoteConceptIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
     private Grakn.Session session;
     private Grakn.Transaction tx;
-
-
-
 
     // Attribute Type Labels
     private Label EMAIL = Label.of("email");
@@ -111,11 +73,16 @@ public class RemoteConceptTest {
     // Entity Type Labels
     private Label LIVING_THING = Label.of("living-thing");
     private Label PERSON = Label.of("person");
+    private Label MAN = Label.of("man");
+    private Label BOY = Label.of("boy");
 
     // Relationship Type Labels
     private Label HUSBAND = Label.of("husband");
     private Label WIFE = Label.of("wife");
     private Label MARRIAGE = Label.of("marriage");
+
+    private Label FRIEND = Label.of("friend");
+    private Label FRIENDSHIP = Label.of("friendship");
 
     // Attribute values
     private String ALICE = "Alice";
@@ -129,9 +96,13 @@ public class RemoteConceptTest {
     private AttributeType<String> email;
     private EntityType livingThing;
     private EntityType person;
+    private EntityType man;
+    private EntityType boy;
     private Role husband;
     private Role wife;
     private RelationshipType marriage;
+    private Role friend;
+    private RelationshipType friendship;
 
     private Attribute<String> emailAlice;
     private Attribute<String> emailBob;
@@ -161,10 +132,18 @@ public class RemoteConceptTest {
         person.attribute(name);
         person.attribute(age);
 
+        man = tx.putEntityType(MAN);
+        boy = tx.putEntityType(BOY);
+
         // Relationship Types
         husband = tx.putRole(HUSBAND);
         wife = tx.putRole(WIFE);
         marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
+
+
+        friend = tx.putRole(FRIEND);
+        friendship = tx.putRelationshipType(FRIENDSHIP);
+
         person.plays(wife).plays(husband);
 
         // Attributes
@@ -180,20 +159,6 @@ public class RemoteConceptTest {
 
         // Relationships
         aliceAndBob = marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
-
-//        entityType = RemoteEntityType.create(tx, ID);
-//        attributeType = RemoteAttributeType.create(tx, ID);
-//        relationshipType = RemoteRelationshipType.create(tx, ID);
-//        role = RemoteRole.create(tx, ID);
-//        rule = RemoteRule.create(tx, ID);
-//        schemaConcept = role;
-//        type = entityType;
-//
-//        entity = RemoteEntity.create(tx, ID);
-//        attribute = RemoteAttribute.create(tx, ID);
-//        relationship = RemoteRelationship.create(tx, ID);
-//        thing = entity;
-//        concept = entity;
     }
 
     @After
@@ -277,11 +242,8 @@ public class RemoteConceptTest {
 
     @Test @Ignore //TODO: build a more expressive dataset to test this
     public void whenCallingIsInferred_GetTheExpectedResult() {
-        //mockConceptMethod(isInferred, true);
-        assertTrue(thing.isInferred());
-
-        //mockConceptMethod(isInferred, false);
-        assertFalse(thing.isInferred());
+        //assertTrue(thing.isInferred());
+        //assertFalse(thing.isInferred());
     }
 
     @Test @Ignore //TODO: build a more expressive dataset to test this
@@ -295,7 +257,7 @@ public class RemoteConceptTest {
     }
 
     @Test
-    public void whenCallingIsDeleted_GetTheExpectedResult() {
+    public void whenDeletingAConcept_ConceptIsDeleted() {
         Entity randomPerson = person.addEntity();
         assertFalse(randomPerson.isDeleted());
 
@@ -305,12 +267,12 @@ public class RemoteConceptTest {
 
     @Test
     public void whenCallingSups_GetTheExpectedResult() {
-        assertTrue(person.sups().collect(toSet()).contains(livingThing));
+        assertTrue(person.sups().anyMatch(c -> c.equals(livingThing)));
     }
 
     @Test
     public void whenCallingSubs_GetTheExpectedResult() {
-        assertTrue(livingThing.subs().collect(toSet()).contains(person));
+        assertTrue(livingThing.subs().anyMatch(c -> c.equals(person)));
     }
 
     @Test
@@ -437,215 +399,148 @@ public class RemoteConceptTest {
         assertThat(age20.ownerInstances().collect(toSet()), containsInAnyOrder(alice, bob));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingAttributeTypes_GetTheExpectedResult() {
-
-        ImmutableSet<AttributeType> attributeTypes = ImmutableSet.of(
-                RemoteAttributeType.create(tx, A),
-                RemoteAttributeType.create(tx, B),
-                RemoteAttributeType.create(tx, C)
-        );
-
-        //mockConceptMethod(getAttributeTypes, attributeTypes.stream());
-
-        assertEquals(attributeTypes, type.attributes().collect(toSet()));
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(email, name, age));
     }
 
-    @Test @Ignore
+    @Test
     public void whenCallingKeyTypes_GetTheExpectedResult() {
-
-        ImmutableSet<AttributeType> keyTypes = ImmutableSet.of(
-                RemoteAttributeType.create(tx, A),
-                RemoteAttributeType.create(tx, B),
-                RemoteAttributeType.create(tx, C)
-        );
-
-        //mockConceptMethod(getKeyTypes, keyTypes.stream());
-
-        assertEquals(keyTypes, type.keys().collect(toSet()));
+        assertThat(person.keys().collect(toSet()), containsInAnyOrder(email));
     }
 
-    @Test @Ignore
-    public void whenCallingDelete_ExecuteAConceptMethod() {
-        concept.delete();
-        //verifyConceptMethodCalled(ConceptMethod.delete);
+    @Test
+    public void whenSettingSuperType_TypeBecomesSupertype() {
+        man.sup(person);
+        assertEquals(person, man.sup());
     }
 
-    @Test @Ignore
-    public void whenSettingSuper_ExecuteAConceptMethod() {
-        EntityType sup = RemoteEntityType.create(tx, A);
-        assertEquals(entityType, entityType.sup(sup));
-        //verifyConceptMethodCalled(ConceptMethod.setDirectSuper(sup));
+    @Test
+    public void whenSettingSubType_TypeBecomesSubtype() {
+        man.sub(boy);
+        assertTrue(man.subs().anyMatch(c -> c.equals(boy)));
     }
 
-    @Test @Ignore
-    public void whenSettingSub_ExecuteAConceptMethod() {
-        EntityType sup = RemoteEntityType.create(tx, A);
-        assertEquals(sup, sup.sub(entityType));
-        //verifyConceptMethodCalled(ConceptMethod.setDirectSuper(sup));
+    @Test
+    public void whenSettingTypeLabel_LabelIsSetToType() {
+        Label lady = Label.of("lady");
+        EntityType type = tx.putEntityType(lady);
+        assertEquals(lady, type.getLabel());
+
+        Label woman = Label.of("woman");
+        type.setLabel(woman);
+        assertEquals(woman, type.getLabel());
     }
 
-    @Test @Ignore
-    public void whenSettingLabel_ExecuteAConceptMethod() {
-        Label label = Label.of("Dunstan");
-        assertEquals(schemaConcept, schemaConcept.setLabel(label));
-        //verifyConceptMethodCalled(ConceptMethod.setLabel(label));
+    @Test
+    public void whenSettingAndDeletingRelationshipRelatesRole_RoleInRelationshipIsSetAndDeleted() {
+        friendship.relates(friend);
+        assertTrue(friendship.relates().anyMatch(c -> c.equals(friend)));
+
+        friendship.deleteRelates(friend);
+        assertFalse(friendship.relates().anyMatch(c -> c.equals(friend)));
     }
 
-    @Test @Ignore
-    public void whenSettingRelates_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        assertEquals(relationshipType, relationshipType.relates(role));
-        //verifyConceptMethodCalled(ConceptMethod.setRelatedRole(role));
+    @Test
+    public void whenSettingAndDeletingEntityPlaysRole_RolePlaysEntityIsSetAndDeleted() {
+        person.plays(friend);
+        assertTrue(person.plays().anyMatch(c -> c.equals(friend)));
+
+        person.deletePlays(friend);
+        assertFalse(person.plays().anyMatch(c -> c.equals(friend)));
     }
 
-    @Test @Ignore
-    public void whenSettingPlays_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        assertEquals(attributeType, attributeType.plays(role));
-        //verifyConceptMethodCalled(ConceptMethod.setRolePlayedByType(role));
+    @Test
+    public void whenSettingAndUnsettingAbstractType_TypeAbstractIsSetAndUnset() {
+        livingThing.setAbstract(false);
+        assertFalse(livingThing.isAbstract());
+
+        livingThing.setAbstract(true);
+        assertTrue(livingThing.isAbstract());
     }
 
-    @Test @Ignore
-    public void whenSettingAbstractOn_ExecuteAConceptMethod() {
-        assertEquals(attributeType, attributeType.setAbstract(true));
-        //verifyConceptMethodCalled(ConceptMethod.setAbstract(true));
+    @Test
+    public void whenSettingAndDeletingAttributeToType_AttributeIsSetAndDeleted() {
+        EntityType cat = tx.putEntityType(Label.of("cat"));
+        cat.attribute(name);
+        assertTrue(cat.attributes().anyMatch(c -> c.equals(name)));
+
+        cat.deleteAttribute(name);
+        assertFalse(cat.attributes().anyMatch(c -> c.equals(name)));
     }
 
-    @Test @Ignore
-    public void whenSettingAbstractOff_ExecuteAConceptMethod() {
-        assertEquals(attributeType, attributeType.setAbstract(false));
-        //verifyConceptMethodCalled(ConceptMethod.setAbstract(false));
+    @Test
+    public void whenSettingAndDeletingKeyToType_KeyIsSetAndDeleted() {
+        AttributeType<String> username = tx.putAttributeType(Label.of("username"), DataType.STRING);
+        person.key(username);
+        assertTrue(person.keys().anyMatch(c -> c.equals(username)));
+
+        person.deleteKey(username);
+        assertFalse(person.keys().anyMatch(c -> c.equals(username)));
     }
 
-    @Test @Ignore
-    public void whenSettingAttributeType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
-        assertEquals(type, type.attribute(attributeType));
-        //verifyConceptMethodCalled(ConceptMethod.setAttributeType(attributeType));
+    @Test
+    public void whenCallingAddEntity_TypeIsCorrect() {
+        Entity newPerson = person.addEntity();
+        assertEquals(person, newPerson.type());
     }
 
-    @Test @Ignore
-    public void whenSettingKeyType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
-        assertEquals(type, type.key(attributeType));
-        //verifyConceptMethodCalled(ConceptMethod.setKeyType(attributeType));
+    @Test
+    public void whenCallingAddRelationship_TypeIsCorrect() {
+        Relationship newMarriage = marriage.addRelationship();
+        assertEquals(marriage, newMarriage.type());
     }
 
-    @Test @Ignore
-    public void whenDeletingAttributeType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
-        assertEquals(type, type.deleteAttribute(attributeType));
-        //verifyConceptMethodCalled(ConceptMethod.unsetAttributeType(attributeType));
+    @Test
+    public void whenCallingPutAttribute_TypeIsCorrect() {
+        Attribute<String> nameCharlie = name.putAttribute("Charlie");
+        assertEquals(name, nameCharlie.type());
     }
 
-    @Test @Ignore
-    public void whenDeletingKeyType_ExecuteAConceptMethod() {
-        AttributeType<?> attributeType = RemoteAttributeType.create(tx, A);
-        assertEquals(type, type.deleteKey(attributeType));
-        //verifyConceptMethodCalled(ConceptMethod.unsetKeyType(attributeType));
+    @Test
+    public void whenSettingAndUnsettingRegex_RegexIsSetAndUnset() {
+        email.setRegex(null);
+        assertNull((email.getRegex()));
+
+        email.setRegex(EMAIL_REGEX);
+        assertEquals(EMAIL_REGEX, email.getRegex());
     }
 
-    @Test @Ignore
-    public void whenDeletingPlays_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        assertEquals(type, type.deletePlays(role));
-        //verifyConceptMethodCalled(ConceptMethod.unsetRolePlayedByType(role));
+    @Test
+    public void whenCallingAddAttributeRelationshipOnThing_RelationshipIsImplicit() {
+        assertTrue(alice.attributeRelationship(emailAlice).type().isImplicit());
+        assertTrue(alice.attributeRelationship(nameAlice).type().isImplicit());
+        assertTrue(alice.attributeRelationship(age20).type().isImplicit());
+        assertTrue(bob.attributeRelationship(emailBob).type().isImplicit());
+        assertTrue(bob.attributeRelationship(nameBob).type().isImplicit());
+        assertTrue(bob.attributeRelationship(age20).type().isImplicit());
     }
 
-    @Test @Ignore
-    public void whenCallingAddEntity_ExecuteAConceptMethod() {
-        Entity entity = RemoteEntity.create(tx, A);
-        //mockConceptMethod(ConceptMethod.addEntity, entity);
-        assertEquals(entity, entityType.addEntity());
-    }
-
-    @Test @Ignore
-    public void whenCallingAddRelationship_ExecuteAConceptMethod() {
-        Relationship relationship = RemoteRelationship.create(tx, A);
-        //mockConceptMethod(ConceptMethod.addRelationship, relationship);
-        assertEquals(relationship, relationshipType.addRelationship());
-    }
-
-    @Test @Ignore
-    public void whenCallingPutAttribute_ExecuteAConceptMethod() {
-        String value = "Dunstan";
-        Attribute<String> attribute = RemoteAttribute.create(tx, A);
-        //mockConceptMethod(ConceptMethod.putAttribute(value), attribute);
-        assertEquals(attribute, attributeType.putAttribute(value));
-    }
-
-    @Test @Ignore
-    public void whenCallingDeleteRelates_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        assertEquals(relationshipType, relationshipType.deleteRelates(role));
-        //verifyConceptMethodCalled(ConceptMethod.unsetRelatedRole(role));
-    }
-
-    @Test @Ignore
-    public void whenSettingRegex_ExecuteAConceptMethod() {
-        String regex = "[abc]";
-        assertEquals(attributeType, attributeType.setRegex(regex));
-        //verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.of(regex)));
-    }
-
-    @Test @Ignore
-    public void whenResettingRegex_ExecuteAQuery() {
-        assertEquals(attributeType, attributeType.setRegex(null));
-        //verifyConceptMethodCalled(ConceptMethod.setRegex(Optional.empty()));
-    }
-
-    @Test @Ignore
-    public void whenCallingAddAttributeOnThing_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
-        Relationship relationship = RemoteRelationship.create(tx, C);
-        //mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
-
-        assertEquals(thing, thing.attribute(attribute));
-
-        //verifyConceptMethodCalled(ConceptMethod.setAttribute(attribute));
-    }
-
-    @Test @Ignore
-    public void whenCallingAddAttributeRelationshipOnThing_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
-        Relationship relationship = RemoteRelationship.create(tx, C);
-        //mockConceptMethod(ConceptMethod.setAttribute(attribute), relationship);
-        assertEquals(relationship, thing.attributeRelationship(attribute));
-    }
-
-    @Test @Ignore
+    @Test
     public void whenCallingDeleteAttribute_ExecuteAConceptMethod() {
-        Attribute<Long> attribute = RemoteAttribute.create(tx, A);
-        assertEquals(thing, thing.deleteAttribute(attribute));
-        //verifyConceptMethodCalled(ConceptMethod.unsetAttribute(attribute));
+        Entity charlie = person.addEntity();
+        Attribute<String> nameCharlie = name.putAttribute("Charlie");
+        charlie.attribute(nameCharlie);
+        assertTrue(charlie.attributes(name).anyMatch(x -> x.equals(nameCharlie)));
+
+        charlie.deleteAttribute(nameCharlie);
+        assertFalse(charlie.attributes(name).anyMatch(x -> x.equals(nameCharlie)));
     }
 
-    @Test @Ignore
-    public void whenCallingAddRolePlayer_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        Thing thing = RemoteEntity.create(tx, B);
-        assertEquals(relationship, relationship.addRolePlayer(role, thing));
+    @Test
+    public void whenAddingAndRemovingRolePlayer_RolePlayerIsAddedAndRemoved() {
+        Entity dylan = person.addEntity();
+        Entity emily = person.addEntity();
 
-        //verifyConceptMethodCalled(ConceptMethod.setRolePlayer(RolePlayer.create(role, thing)));
+        Relationship dylanAndEmily = friendship.addRelationship()
+                .addRolePlayer(friend, dylan)
+                .addRolePlayer(friend, emily);
+
+        assertThat(dylanAndEmily.rolePlayers().collect(toSet()), containsInAnyOrder(dylan, emily));
+
+        dylanAndEmily.removeRolePlayer(friend, dylan);
+        dylanAndEmily.removeRolePlayer(friend, emily);
+
+        assertTrue(dylanAndEmily.rolePlayers().collect(toSet()).isEmpty());
     }
-
-    @Test @Ignore
-    public void whenCallingRemoveRolePlayer_ExecuteAConceptMethod() {
-        Role role = RemoteRole.create(tx, A);
-        Thing thing = RemoteEntity.create(tx, B);
-        relationship.removeRolePlayer(role, thing);
-        //verifyConceptMethodCalled(ConceptMethod.removeRolePlayer(RolePlayer.create(role, thing)));
-    }
-
-//    private void verifyConceptMethodCalled(ConceptMethod<?> conceptMethod) {
-//        verify(server.requests()).onNext(RequestBuilder.runConceptMethod(ID, conceptMethod));
-//    }
-
-//    private <T> void mockConceptMethod(ConceptMethod<T> property, T value) {
-//        server.setResponse(
-//                RequestBuilder.runConceptMethod(ID, property),
-//                property.createTxResponse(server.grpcIterators(), value)
-//        );
-//    }
 }

@@ -44,6 +44,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
     @Override
     public final AttributeType<D> setRegex(String regex) {
+        if (regex == null) regex = "";
         runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRegex(regex).build());
         return asCurrentBaseType(this);
     }

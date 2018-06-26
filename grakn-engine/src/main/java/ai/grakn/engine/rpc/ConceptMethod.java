@@ -478,7 +478,11 @@ public abstract class ConceptMethod {
     }
 
     private static TxResponse setRegex(Concept concept, GrpcConcept.ConceptMethod method) {
-        concept.asAttributeType().setRegex(method.getSetRegex());
+        if (method.getSetRegex().isEmpty()) {
+            concept.asAttributeType().setRegex(null);
+        } else {
+            concept.asAttributeType().setRegex(method.getSetRegex());
+        }
         return null;
     }
 
