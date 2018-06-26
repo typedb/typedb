@@ -131,9 +131,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public boolean isAtomic(){ return true;}
 
-    @Override
-    public boolean isDisconnected(){ return false;}
-
     /**
      * @return the atom constituting this atomic query
      */

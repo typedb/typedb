@@ -15,6 +15,7 @@ baseEntity sub entity
 
 someEntity sub baseEntity;
 someOtherEntity sub baseEntity;
+yetAnotherEntity sub baseEntity;
 
 #Relations
 

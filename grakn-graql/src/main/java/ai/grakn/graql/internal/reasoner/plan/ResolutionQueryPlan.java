@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,7 +57,7 @@ public class ResolutionQueryPlan {
     private final ImmutableList<ReasonerQueryImpl> queryPlan;
 
     public ResolutionQueryPlan(ReasonerQueryImpl query){
-        this.queryPlan = queryPlan(query);
+        this.queryPlan = refine(queryPlan(query));
     }
 
     @Override
@@ -92,12 +93,12 @@ public class ResolutionQueryPlan {
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
-        return ImmutableList.copyOf(plan.size() == queries.size()? queries : refine(queries));
+        return plan.size() == queries.size()? ImmutableList.copyOf(queries) : refine(queries);
     }
 
     private static Equivalence<ReasonerQuery> equality = ReasonerQueryEquivalence.Equality;
 
-    private static List<Equivalence.Wrapper<ReasonerQueryImpl>> prioritiseQueries(List<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
+    private static List<Equivalence.Wrapper<ReasonerQueryImpl>> prioritiseQueries(Collection<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
         return prioritise(
                 queries.stream()
                         .map(Equivalence.Wrapper::get)
@@ -108,20 +109,27 @@ public class ResolutionQueryPlan {
                 .collect(Collectors.toList());
     }
 
-    private static List<ReasonerQueryImpl> prioritise(List<ReasonerQueryImpl> queries){
+    private static List<ReasonerQueryImpl> prioritise(Collection<ReasonerQueryImpl> queries){
         return queries.stream()
                 .sorted(Comparator.comparing(q -> !q.isAtomic()))
                 .sorted(Comparator.comparing(ReasonerQueryImpl::isRuleResolvable))
-                .sorted(Comparator.comparing(ReasonerQueryImpl::isDisconnected))
-                //.sorted(Comparator.comparing(q -> -q.getAtoms(IdPredicate.class).count()))
+                .sorted(Comparator.comparing(ReasonerQueryImpl::isBoundlesslyDisconnected))
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private static List<ReasonerQueryImpl> refine(List<ReasonerQueryImpl> qs){
-        return refinePlan(qs.stream().map(equality::wrap).collect(Collectors.toList()))
-                .stream()
-                .map(Equivalence.Wrapper::get)
-                .collect(Collectors.toList());
+    private static ImmutableList<ReasonerQueryImpl> refine(List<ReasonerQueryImpl> qs){
+        return ImmutableList.copyOf(
+                refinePlan(qs.stream().map(equality::wrap).collect(Collectors.toList()))
+                        .stream()
+                        .map(Equivalence.Wrapper::get)
+                        .collect(Collectors.toList())
+        );
+    }
+
+    private static boolean isQueryDisconnected(Equivalence.Wrapper<ReasonerQueryImpl> query, List<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
+        return queries.stream()
+                .filter(q -> !q.equals(query))
+                .allMatch(q -> Sets.intersection(q.get().getVarNames(), query.get().getVarNames()).isEmpty());
     }
 
     private static List<Equivalence.Wrapper<ReasonerQueryImpl>> refinePlan(List<Equivalence.Wrapper<ReasonerQueryImpl>> queries){
@@ -151,16 +159,30 @@ public class ResolutionQueryPlan {
             }
             Equivalence.Wrapper<ReasonerQueryImpl> query = queryStack.pop();
 
+            Set<Equivalence.Wrapper<ReasonerQueryImpl>> availableQueries = queries.stream()
+                    .filter(q -> !(plan.contains(q) || q.equals(query)))
+                    .collect(Collectors.toSet());
+
+            Set<Equivalence.Wrapper<ReasonerQueryImpl>> neighbours = neighbourMap.get(query).stream()
+                    .filter(availableQueries::contains)
+                    .collect(Collectors.toSet());
+
+            Set<Var> subbedVars = plan.stream()
+                    .map(Equivalence.Wrapper::get)
+                    .flatMap(q -> q.getVarNames().stream())
+                    .collect(Collectors.toSet());
+            Set<Equivalence.Wrapper<ReasonerQueryImpl>> neighboursFromSubs = availableQueries.stream()
+                    .map(Equivalence.Wrapper::get)
+                    .filter(q -> !Sets.intersection(q.getVarNames(), subbedVars).isEmpty())
+                    .map(q -> equality.wrap(q))
+                    .collect(Collectors.toSet());
+
             //candidates
-            List<Equivalence.Wrapper<ReasonerQueryImpl>> candidates = prioritiseQueries(
-                    neighbourMap.get(query).stream()
-                            .filter(q -> !(plan.contains(q) || q.equals(query)))
-                            .collect(Collectors.toList())
-            );
+            Set<Equivalence.Wrapper<ReasonerQueryImpl>> candidates = isQueryDisconnected(query, queries)? availableQueries : Sets.union(neighbours, neighboursFromSubs);
 
             if (!candidates.isEmpty() || queries.size() - plan.size() == 1){
                 plan.add(query);
-                Lists.reverse(candidates).forEach(queryStack::push);
+                Lists.reverse(prioritiseQueries(candidates)).forEach(queryStack::push);
             }
         }
 

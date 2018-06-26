@@ -31,7 +31,9 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -97,6 +99,26 @@ public abstract class Atom extends AtomicBase {
                 getInnerPredicates())
                 .map(AtomicBase::getVarName)
                 .allMatch(varNames::contains);
+    }
+
+    /**
+     * @return true if this atom is bounded - via substitution/specific resource or schema
+     */
+    public boolean isBounded(){
+        return isResource() && ((ResourceAtom) this).isSpecific()
+                || this instanceof OntologicalAtom
+                || isGround();
+    }
+
+    /**
+     * @return true if this atom is disconnected (doesn't have neighbours)
+     */
+    public boolean isDisconnected(){
+        return isSelectable()
+            && getParentQuery().getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
+                .filter(at -> !at.equals(this))
+                .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
     }
 
     public abstract Class<? extends VarProperty> getVarPropertyClass();

@@ -253,15 +253,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getAtoms(Atom.class).filter(at -> ReasonerQueryEquivalence.containsEquivalentAtom(this, at, Atomic::isAlphaEquivalent)).count() == 2;
     }
 
-    public boolean isDisconnected(){
-        Set<Atom> atoms = selectAtoms();
-        return atoms.stream()
-                .anyMatch(at -> !atoms.stream()
-                        .filter(at2 -> !at2.equals(at))
-                        .filter(at2 -> !Sets.intersection(at.getVarNames(), at2.getVarNames()).isEmpty())
-                        .findFirst().isPresent()
-        );
+    /**
+     * @return true if this query contains disconnected atoms that are unbounded
+     */
+    public boolean isBoundlesslyDisconnected(){
+        return !isAtomic()
+                && selectAtoms().stream()
+                .filter(at -> !at.isBounded())
+                .anyMatch(Atom::isDisconnected);
     }
+
     /**
      * @return true if this query is atomic
      */

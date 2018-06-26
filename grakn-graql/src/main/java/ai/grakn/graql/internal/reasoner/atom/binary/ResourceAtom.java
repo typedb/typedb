@@ -250,6 +250,8 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public boolean isSelectable(){ return true;}
 
+    public boolean isSpecific(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isSpecific());}
+
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
