@@ -88,7 +88,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Felix Chapman
+ * Unit Test for testing Transaction behavior on Grakn Client.
  */
 public class TransactionTest {
 

@@ -54,7 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Unit Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
+ * Integration Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
 public class RemoteConceptIT {
 
