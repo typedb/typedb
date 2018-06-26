@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/openjdk:8-jdk
+      - image: picoded/ubuntu-openjdk-8-jdk:latest
       
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -18,24 +18,31 @@ jobs:
 
     environment:
       # Customize the JVM maximum heap limit
-      MAVEN_OPTS: -Xmx3200m
+      MAVEN_OPTS: -Xmx2G -XX:+HeapDumpOnOutOfMemoryError
     
     steps:
       - checkout
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "pom.xml" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+      # add necessary 3rd party apt repositories
+      - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+      - run: curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+      - run: echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+      - run: sudo apt-get install apt-transport-https
+      - run: sudo apt-get update
 
-      - run: mvn dependency:go-offline
+      # install dependencies
+      - run: sudo apt-get install -y nodejs
+      - run: sudo apt-get -y install yarn
+      - run: sudo apt-get -y install maven
 
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
+      # build grakn
+      - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
+      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
         
       # run tests!
-      - run: mvn integration-test
+      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+      # - run: mvn test --projects "grakn-test/test-integration" -Dtest=**/*Test.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
+      # - run: mvn test --projects "grakn-test/test-integration" -Dtest=**/*IT.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
+      # - run: mvn test --projects "!grakn-test/test-integration" -Dtest=**/*Test.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
+      # - run: mvn test --projects "!grakn-test/test-integration" -Dtest=**/*IT.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
