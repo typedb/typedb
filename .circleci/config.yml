@@ -15,7 +15,6 @@ jobs:
 
       # add necessary 3rd party apt repositories
       - run: whoami
-      - run: nvm install v10.5.0
       - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
       - run: curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
       - run: echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -25,7 +24,19 @@ jobs:
       # install dependencies
       - run: sudo apt-get -y install yarn
       - run: sudo apt-get -y install maven
-
+      - run:
+        name: Install node@6.2.2 (need right version for `yarn`)
+        command: |
+          set +e             
+          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+          export NVM_DIR="/opt/circleci/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install v6.2.2
+          nvm alias default v6.2.2
+          
+          # Each step uses the same `$BASH_ENV`, so need to modify it
+          echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+          echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
       - run: sudo node -v
       
       # build grakn
