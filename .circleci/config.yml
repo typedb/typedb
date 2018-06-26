@@ -6,18 +6,11 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: picoded/ubuntu-openjdk-8-jdk:latest
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
 
     working_directory: ~/repo
 
     environment:
-      # Customize the JVM maximum heap limit
       MAVEN_OPTS: -Xmx2G -XX:+HeapDumpOnOutOfMemoryError
     
     steps:
@@ -41,8 +34,16 @@ jobs:
         
       # run tests!
       - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
-      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
-      # - run: mvn test --projects "grakn-test/test-integration" -Dtest=**/*Test.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
-      # - run: mvn test --projects "grakn-test/test-integration" -Dtest=**/*IT.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
-      # - run: mvn test --projects "!grakn-test/test-integration" -Dtest=**/*Test.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
-      # - run: mvn test --projects "!grakn-test/test-integration" -Dtest=**/*IT.java -DfailIfNoTests=false -Dsurefire.rerunFailingTestsCount=1 jacoco:report
+#      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+
+      # make and store reports
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/grakn-surefire-reports/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+          when: always
+      - store_artifacts:
+          path: ~/grakn-surefire-reports/
+      - store_test_results:
+          path: ~/grakn-surefire-reports/
