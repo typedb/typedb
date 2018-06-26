@@ -5,14 +5,11 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: picoded/ubuntu-openjdk-8-jdk:latest
-
-    working_directory: ~/repo
+    machine: true
+    working_directory: ~/grakn
 
     environment:
-      MAVEN_OPTS: -Xmx2G -XX:+HeapDumpOnOutOfMemoryError
-    
+
     steps:
       - checkout
 
@@ -24,7 +21,7 @@ jobs:
       - run: sudo apt-get update
 
       # install dependencies
-      - run: sudo apt-get install -y nodejs
+      - run: nvm install v10.5.0 # sudo apt-get install -y nodejs
       - run: sudo apt-get -y install yarn
       - run: sudo apt-get -y install maven
 
