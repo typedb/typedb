@@ -44,6 +44,12 @@ jobs:
 #      - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
 #      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
         
+  unit-it-test:
+    machine: true
+    working_directory: ~/grakn
+
+    steps:
+      - run: echo unit it test
       # run tests!
 #      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
 #      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
@@ -60,12 +66,12 @@ jobs:
 #      - store_test_results:
 #          path: ~/grakn-surefire-reports/
 
-  unit-it-test:
+  snb:
     machine: true
     working_directory: ~/grakn
 
     steps:
-      - run: echo unit it test
+      - run: echo SNB
 
 workflows:
   version: 2
@@ -75,6 +81,12 @@ workflows:
       - unit-it-test:
           requires:
             - build
+          filters:
+            branches:
+              only: sequential-branch-filter
+      - snb:
+          requires:
+            - unit-it-test
           filters:
             branches:
               only: sequential-branch-filter
