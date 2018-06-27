@@ -13,6 +13,7 @@ jobs:
     steps:
       - checkout
 
+      - run: mkdir ~/shared-workspace
       - run: echo buildz > ~/shared-workspace/build.txt
 
 #      - run:
