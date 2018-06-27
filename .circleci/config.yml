@@ -75,6 +75,19 @@ jobs:
     steps:
       - run: echo SNB
 
+  biomed:
+    machine: true
+    working_directory: ~/grakn
+
+    steps:
+      - run: echo Biomed
+  long-running:
+    machine: true
+    working_directory: ~/grakn
+
+    steps:
+      - run: echo Long-running
+
 workflows:
   version: 2
   run-all-tests:
@@ -84,5 +97,11 @@ workflows:
           requires:
             - build
       - snb:
+          requires:
+            - unit-it-test
+      - biomed:
+          requires:
+            - unit-it-test
+      - long-running:
           requires:
             - unit-it-test
