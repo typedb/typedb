@@ -18,7 +18,6 @@
 
 package strategy;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import pick.StreamProviderInterface;
 
@@ -26,17 +25,23 @@ import pick.StreamProviderInterface;
  *
  */
 // TODO implement a base interface of TypeStrategyInterface?
-public class AttributeOwnerTypeStrategy implements HasPicker {
+public class AttributeOwnerTypeStrategy<T> implements HasPicker {
     private final Type type;
-    private StreamProviderInterface<ConceptId> conceptIdPicker;
+    private final String typeLabel;
+    private StreamProviderInterface<T> picker;
 
-    public AttributeOwnerTypeStrategy(Type type, StreamProviderInterface<ConceptId> conceptIdPicker) {
+    public AttributeOwnerTypeStrategy(Type type, StreamProviderInterface<T> picker) {
         this.type = type;
-        this.conceptIdPicker = conceptIdPicker;
+        this.picker = picker;
+        typeLabel = this.type.getLabel().getValue();
     }
 
     @Override
-    public StreamProviderInterface getPicker() {
-        return this.conceptIdPicker;
+    public StreamProviderInterface<T> getPicker() {
+        return this.picker;
+    }
+
+    public String getTypeLabel() {
+        return this.typeLabel;
     }
 }

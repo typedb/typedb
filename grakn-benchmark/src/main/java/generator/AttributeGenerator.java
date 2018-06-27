@@ -20,10 +20,12 @@ package generator;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
+import org.apache.tinkerpop.gremlin.structure.T;
 import pdf.ConstantPDF;
 import pick.StreamProviderInterface;
 import strategy.AttributeOwnerTypeStrategy;
@@ -34,15 +36,15 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * @param <Datatype>
+ * @param <ValueDatatype>
  */
-public class AttributeGenerator<Datatype> extends Generator<AttributeStrategy<Datatype>> {
+public class AttributeGenerator<OwnerDatatype, ValueDatatype> extends Generator<AttributeStrategy<OwnerDatatype, ValueDatatype>> {
 
     /**
      * @param strategy
      * @param tx
      */
-    public AttributeGenerator(AttributeStrategy strategy, GraknTx tx) {
+    public AttributeGenerator(AttributeStrategy<OwnerDatatype, ValueDatatype> strategy, GraknTx tx) {
         super(strategy, tx);
     }
 
@@ -56,10 +58,10 @@ public class AttributeGenerator<Datatype> extends Generator<AttributeStrategy<Da
         QueryBuilder qb = this.tx.graql();
         int numInstances = this.strategy.getNumInstancesPDF().next();
 
-        AttributeOwnerTypeStrategy attributeOwnerStrategy = this.strategy.getAttributeOwnerStrategy();
-        StreamProviderInterface<ConceptId> ownerPicker = attributeOwnerStrategy.getPicker();
+        AttributeOwnerTypeStrategy<OwnerDatatype> attributeOwnerStrategy = this.strategy.getAttributeOwnerStrategy();
+        StreamProviderInterface<OwnerDatatype> ownerPicker = attributeOwnerStrategy.getPicker();
 
-        StreamProviderInterface<Datatype> valuePicker = this.strategy.getPicker();
+        StreamProviderInterface<ValueDatatype> valuePicker = this.strategy.getPicker();
         String attributeTypeLabel = this.strategy.getTypeLabel();
 
         valuePicker.reset();
@@ -69,19 +71,26 @@ public class AttributeGenerator<Datatype> extends Generator<AttributeStrategy<Da
 
         return Stream.generate(() -> {
 
-            Stream<ConceptId> ownerConceptIdStream = ownerPicker.getStream(unityPDF, tx);
+            // Owner stream may not be a conceptId stream if the owner is an attribute
+            Stream<OwnerDatatype> ownerConceptIdStream = ownerPicker.getStream(unityPDF, tx);
 
-            Optional<ConceptId> ownerConceptIdOptional = ownerConceptIdStream.findFirst();
+            Optional<OwnerDatatype> ownerConceptIdOptional = ownerConceptIdStream.findFirst();
 
             if (ownerConceptIdOptional.isPresent()) {
-                Stream<Datatype> valueStream = valuePicker.getStream(unityPDF, tx);
+                Stream<ValueDatatype> valueStream = valuePicker.getStream(unityPDF, tx);
 
-                ConceptId ownerConceptId = ownerConceptIdOptional.get();
-                Datatype value = valueStream.findFirst().get();
+                OwnerDatatype ownerId = ownerConceptIdOptional.get();
+                ValueDatatype value = valueStream.findFirst().get();
 
-                Var c = Graql.var().asUserDefined();
+                Var o = Graql.var().asUserDefined();  // Owner
+                Var a = Graql.var().asUserDefined();  // Attribute
 
-                return (Query) qb.insert(c.has(attributeTypeLabel).val(value), c.id(ownerConceptId));
+                if (ownerId.getClass() == ConceptId.class) {
+                    return (Query) qb.insert(o.has(attributeTypeLabel, a), a.val(value), o.id((ConceptId) ownerId));
+                } else {
+                    // Both the type and value are required to identify the owner uniquely
+                    return (Query) qb.match(o.isa(attributeOwnerStrategy.getTypeLabel()).val(ownerId)).insert(o.has(attributeTypeLabel, a), a.val(value));
+                }
             } else {
                 return null;
             }

@@ -1,9 +1,11 @@
 define
 
-name sub attribute datatype string;
+name sub attribute datatype string,
+    has age;
 forename sub name;
 surname sub name;
 gender sub attribute datatype string;
+age sub attribute datatype long;
 
 # If this subs name then we'll get both genders of the name if we ask for the
 # names of the entity. If we don't sub name then we'll get no name without the

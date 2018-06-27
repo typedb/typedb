@@ -18,6 +18,7 @@
 
 package storage;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -26,6 +27,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import com.google.common.collect.ImmutableMap;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -33,7 +35,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Date;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -60,6 +62,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     private Connection conn;
     private HashSet<String> allTypeLabels;
     private final String cachingMethod = "REPLICATED";
+    private final int ID_INDEX = 1;
 
     public static final ImmutableMap<AttributeType.DataType<?>, String> DATATYPE_MAPPING = ImmutableMap.<AttributeType.DataType<?>, String>builder()
             .put(STRING, "VARCHAR")
@@ -74,8 +77,6 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     public IgniteConceptIdStore(HashSet<EntityType> entityTypes,
                                 HashSet<RelationshipType> relationshipTypes,
                                 HashSet<AttributeType> attributeTypes) {
-
-        // TODO Need to do it this way since we need the datatypes of the attributes
 
         this.entityTypeLabels = this.getTypeLabels(entityTypes);
         this.relationshipTypeLabels = this.getTypeLabels(relationshipTypes);
@@ -104,7 +105,6 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         }
 
         // Create database tables.
-        // TODO different table datatypes depending on attribute datatype
         for (String typeLabel : this.entityTypeLabels) {
             this.createConceptIdTable(typeLabel);
         }
@@ -194,18 +194,66 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     public void add(Concept concept) {
 
         Label conceptTypeLabel = concept.asThing().type().getLabel();
-        String conceptId = concept.asThing().getId().toString(); // TODO use the value instead for attributes
+        String tableName = this.getTableName(conceptTypeLabel.toString());
 
-        // TODO ensure attributes are added uniquely
+        if (concept.isAttribute()) {
+            Attribute<?> attribute = concept.asAttribute();
+            AttributeType.DataType<?> datatype = attribute.dataType();
 
-        try (PreparedStatement stmt = this.conn.prepareStatement(
-                "INSERT INTO " + this.getTableName(conceptTypeLabel.toString()) + " (id, ) VALUES (?, )")) {
+            Object value = attribute.getValue();
+            try (PreparedStatement stmt = this.conn.prepareStatement(
+                    "INSERT INTO " + tableName + " (id, ) VALUES (?, )")) {
 
-            stmt.setString(1, conceptId);
-            stmt.executeUpdate();
+                if (value.getClass() == String.class) {
+                    stmt.setString(ID_INDEX, (String) value);
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+                } else if (value.getClass() == Double.class) {
+                    stmt.setDouble(ID_INDEX, (Double) value);
+
+                } else if (value.getClass() == Integer.class) {
+                    stmt.setInt(ID_INDEX, (Integer) value);
+
+                } else if (value.getClass() == Long.class) {
+                    stmt.setLong(ID_INDEX, (Long) value);
+
+                } else if (value.getClass() == Boolean.class) {
+                    stmt.setBoolean(ID_INDEX, (Boolean) value);
+
+                } else if (value.getClass() == Date.class) {
+                    stmt.setDate(ID_INDEX, (Date) value);
+                } else {
+                    throw new UnsupportedOperationException(String.format("Datatype %s isn't supported by Grakn", datatype));
+                }
+
+                stmt.executeUpdate();
+
+            } catch (SQLException e) {
+                if (!e.getSQLState().equals("23000")) {
+                    // TODO Doesn't seem like the right way to go
+                    // In the case of duplicate primary key, which we want to ignore since I want to keep a unique set of
+                    // attribute values in each table
+                    e.printStackTrace();
+                }
+            }
+
+        } else {
+
+            String conceptId = concept.asThing().getId().toString(); // TODO use the value instead for attributes
+
+            try (PreparedStatement stmt = this.conn.prepareStatement(
+                    "INSERT INTO " + tableName + " (id, ) VALUES (?, )")) {
+
+                stmt.setString(ID_INDEX, conceptId);
+                stmt.executeUpdate();
+
+            } catch (SQLException e) {
+                if (!e.getSQLState().equals("23000")) {
+                    // TODO Doesn't seem like the right way to go
+                    // In the case of duplicate primary key, which we want to ignore since I want to keep a unique set of
+                    // attribute values in each table
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -216,37 +264,34 @@ public class IgniteConceptIdStore implements IdStoreInterface {
      */
 
     public <T> T get(String typeLabel, Class<T> datatype, int offset) {
-        //TODO the datatype being used here is important when accessing attributes
-
         String sql = "SELECT id FROM " + getTableName(typeLabel) +
                 " OFFSET " + offset +
                 " FETCH FIRST ROW ONLY";
 //        ResultSet rs = this.runQuery(sql);
-        int columnIndex = 1;
         try (Statement stmt = conn.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(sql)) {
 
                 if (rs != null && rs.next()) { // Need to do this to increment one line in the ResultSet
                     if (datatype == ConceptId.class) {
-                        return datatype.cast(ConceptId.of(rs.getString(columnIndex)));
+                        return datatype.cast(ConceptId.of(rs.getString(ID_INDEX)));
 
                     } else if (datatype == String.class) {
-                        return datatype.cast(rs.getString(columnIndex));
+                        return datatype.cast(rs.getString(ID_INDEX));
 
                     } else if (datatype == Double.class) {
-                        return datatype.cast(rs.getDouble(columnIndex));
+                        return datatype.cast(rs.getDouble(ID_INDEX));
 
                     } else if (datatype == Integer.class) {
-                        return datatype.cast(rs.getInt(columnIndex));
+                        return datatype.cast(rs.getInt(ID_INDEX));
 
                     } else if (datatype == Long.class) {
-                        return datatype.cast(rs.getLong(columnIndex));
+                        return datatype.cast(rs.getLong(ID_INDEX));
 
                     } else if (datatype == Boolean.class) {
-                        return datatype.cast(rs.getBoolean(columnIndex));
+                        return datatype.cast(rs.getBoolean(ID_INDEX));
 
                     } else if (datatype == Date.class) {
-                        return datatype.cast(rs.getDate(columnIndex));
+                        return datatype.cast(rs.getDate(ID_INDEX));
                     } else {
                         throw new UnsupportedOperationException(String.format("Datatype %s isn't supported by Grakn", datatype));
                     }
@@ -312,6 +357,22 @@ public class IgniteConceptIdStore implements IdStoreInterface {
      * Clean all elements in the storage
      */
     public void clean(Set<String> typeLabels) throws SQLException {
+//        Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
+//        try (Statement stmt = conn.createStatement()) {
+//            try (ResultSet rs = stmt.executeQuery("SHOW TABLES")) {
+//                rs.next();
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+
+//        try (PreparedStatement stmt = conn.prepareStatement("DROP DATABASE ")) {
+//            stmt.executeUpdate();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
 
         // TODO figure out how to drop all tables
         for (String typeLabel : typeLabels) {

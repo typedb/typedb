@@ -178,13 +178,13 @@ public class DataGenerator {
 
             this.attributeStrategies.add(
                     1.0,
-                    new AttributeStrategy<String>(
+                    new AttributeStrategy<>(
                             SchemaManager.getTypeFromString("name", this.attributeTypes),
                             new UniformPDF(this.rand, 3, 20),
-                            new AttributeOwnerTypeStrategy(
+                            new AttributeOwnerTypeStrategy<>(
                                     SchemaManager.getTypeFromString("company", this.entityTypes),
-                                    new StreamProvider<ConceptId>(
-                                            new FromIdStoragePicker<ConceptId>(
+                                    new StreamProvider<>(
+                                            new FromIdStoragePicker<>(
                                                     this.rand,
                                                     (IdStoreInterface) this.storage,
                                                     "company",
@@ -193,6 +193,59 @@ public class DataGenerator {
                             ),
                             new StreamProvider<>(
                                     new PickableCollectionValuePicker<String>(nameValueOptions)
+                            )
+                    )
+            );
+
+
+//            RouletteWheelCollection<String> genderValueOptions = new RouletteWheelCollection<String>(this.rand)
+//            .add(0.5, "male")
+//            .add(0.5, "female");
+//
+//
+//            this.attributeStrategies.add(
+//                    1.0,
+//                    new AttributeStrategy<String>(
+//                            SchemaManager.getTypeFromString("gender", this.attributeTypes),
+//                            new UniformPDF(this.rand, 3, 20),
+//                            new AttributeOwnerTypeStrategy<>(
+//                                    SchemaManager.getTypeFromString("name", this.attributeTypes),
+//                                    new StreamProvider<>(
+//                                            new FromIdStoragePicker<>(
+//                                                    this.rand,
+//                                                    (IdStoreInterface) this.storage,
+//                                                    "name",
+//                                                    String.class)
+//                                    )
+//                            ),
+//                            new StreamProvider<>(
+//                                    new PickableCollectionValuePicker<String>(genderValueOptions)
+//                            )
+//                    )
+//            );
+
+            RouletteWheelCollection<Integer> ageValueOptions = new RouletteWheelCollection<Integer>(this.rand)
+            .add(0.5, 24)
+            .add(0.5, 100);
+
+
+            this.attributeStrategies.add(
+                    1.0,
+                    new AttributeStrategy<>(
+                            SchemaManager.getTypeFromString("age", this.attributeTypes),
+                            new UniformPDF(this.rand, 3, 20),
+                            new AttributeOwnerTypeStrategy<>(
+                                    SchemaManager.getTypeFromString("name", this.attributeTypes),
+                                    new StreamProvider<>(
+                                            new FromIdStoragePicker<>(
+                                                    this.rand,
+                                                    (IdStoreInterface) this.storage,
+                                                    "name",
+                                                    String.class)
+                                    )
+                            ),
+                            new StreamProvider<>(
+                                    new PickableCollectionValuePicker<Integer>(ageValueOptions)
                             )
                     )
             );
@@ -250,9 +303,10 @@ public class DataGenerator {
                     List<Answer> insertions = q.execute();
                     insertions.forEach(insert -> {
                         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
-                        insertedConcepts.forEach(concept -> {
-                            this.storage.add(concept);
-                        });
+                        if (insertedConcepts.isEmpty()) {
+                            throw new RuntimeException("No concepts were inserted");
+                        }
+                        insertedConcepts.forEach(concept -> this.storage.add(concept));
                     });
                 });
     }

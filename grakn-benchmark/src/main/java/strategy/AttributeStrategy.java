@@ -24,18 +24,18 @@ import pick.StreamProviderInterface;
 
 
 /**
- * @param <Datatype>
+ * @param <OwnerDatatype>
  */
-public class AttributeStrategy<Datatype> extends TypeStrategy<AttributeType> implements HasPicker{
+public class AttributeStrategy<OwnerDatatype, ValueDatatype> extends TypeStrategy<AttributeType> implements HasPicker{
 
-    private PickableCollection<AttributeOwnerTypeStrategy> attributeOwnerStrategies = null;
-    private final StreamProviderInterface valuePicker;
-    private AttributeOwnerTypeStrategy attributeOwnerStrategy = null;
+    private PickableCollection<AttributeOwnerTypeStrategy<OwnerDatatype>> attributeOwnerStrategies = null;
+    private final StreamProviderInterface<ValueDatatype> valuePicker;
+    private AttributeOwnerTypeStrategy<OwnerDatatype> attributeOwnerStrategy = null;
 
     public AttributeStrategy(AttributeType type,
                              PDF numInstancesPDF,
-                             PickableCollection<AttributeOwnerTypeStrategy> attributeOwnerStrategies,
-                             StreamProviderInterface valuePicker) {
+                             PickableCollection<AttributeOwnerTypeStrategy<OwnerDatatype>> attributeOwnerStrategies,
+                             StreamProviderInterface<ValueDatatype> valuePicker) {
         super(type, numInstancesPDF);
         this.attributeOwnerStrategies = attributeOwnerStrategies;
         this.valuePicker = valuePicker;
@@ -43,14 +43,14 @@ public class AttributeStrategy<Datatype> extends TypeStrategy<AttributeType> imp
 
     public AttributeStrategy(AttributeType type,
                              PDF numInstancesPDF,
-                             AttributeOwnerTypeStrategy attributeOwnerStrategy,
-                             StreamProviderInterface valuePicker) {
+                             AttributeOwnerTypeStrategy<OwnerDatatype> attributeOwnerStrategy,
+                             StreamProviderInterface<ValueDatatype> valuePicker) {
         super(type, numInstancesPDF);
         this.attributeOwnerStrategy = attributeOwnerStrategy;
         this.valuePicker = valuePicker;
     }
 
-    public AttributeOwnerTypeStrategy getAttributeOwnerStrategy() {
+    public AttributeOwnerTypeStrategy<OwnerDatatype> getAttributeOwnerStrategy() {
         if (this.attributeOwnerStrategy != null) {
             return this.attributeOwnerStrategy;
         } else if (this.attributeOwnerStrategies != null) {
@@ -60,7 +60,7 @@ public class AttributeStrategy<Datatype> extends TypeStrategy<AttributeType> imp
     }
 
     @Override
-    public StreamProviderInterface getPicker() {
+    public StreamProviderInterface<ValueDatatype> getPicker() {
         return this.valuePicker;
     }
 }
