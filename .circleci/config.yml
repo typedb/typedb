@@ -87,12 +87,12 @@ jobs:
           at: ~/grakn
 
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      - run: grakn-dist/target/grakn server start
+      - run: grakn-dist/target//grakn-dist-test/grakn server start
 
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
-      - run: grakn-dist/target/grakn server stop
+      - run: grakn-dist/target//grakn-dist-test/grakn server stop
 
   long-running:
     machine: true
