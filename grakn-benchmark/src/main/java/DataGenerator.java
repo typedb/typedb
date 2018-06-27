@@ -171,7 +171,14 @@ public class DataGenerator {
 
             RouletteWheelCollection<String> nameValueOptions = new RouletteWheelCollection<String>(this.rand)
             .add(0.5, "Da Vinci")
-            .add(0.5, "Nero");
+            .add(0.5, "Nero")
+            .add(0.5, "Grakn")
+            .add(0.5, "Google")
+            .add(0.5, "Facebook")
+            .add(0.5, "Microsoft")
+            .add(0.5, "JetBrains")
+            .add(0.5, "IBM")
+            .add(0.5, "Starbucks");
 
 //            TODO How to get the datatype without having to declare it? Does it make sense to do this?
 //            SchemaManager.getDatatype("company", this.entityTypes),
@@ -224,15 +231,23 @@ public class DataGenerator {
 //                    )
 //            );
 
-            RouletteWheelCollection<Integer> ageValueOptions = new RouletteWheelCollection<Integer>(this.rand)
-            .add(0.5, 24)
-            .add(0.5, 100);
+            RouletteWheelCollection<Integer> ratingValueOptions = new RouletteWheelCollection<Integer>(this.rand)
+            .add(0.5, 1)
+            .add(0.5, 2)
+            .add(0.5, 3)
+            .add(0.5, 4)
+            .add(0.5, 5)
+            .add(0.5, 6)
+            .add(0.5, 7)
+            .add(0.5, 8)
+            .add(0.5, 9)
+            .add(0.5, 10);
 
 
             this.attributeStrategies.add(
                     1.0,
                     new AttributeStrategy<>(
-                            SchemaManager.getTypeFromString("age", this.attributeTypes),
+                            SchemaManager.getTypeFromString("rating", this.attributeTypes),
                             new UniformPDF(this.rand, 3, 20),
                             new AttributeOwnerTypeStrategy<>(
                                     SchemaManager.getTypeFromString("name", this.attributeTypes),
@@ -245,7 +260,7 @@ public class DataGenerator {
                                     )
                             ),
                             new StreamProvider<>(
-                                    new PickableCollectionValuePicker<Integer>(ageValueOptions)
+                                    new PickableCollectionValuePicker<Integer>(ratingValueOptions)
                             )
                     )
             );
@@ -327,8 +342,8 @@ public class DataGenerator {
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
-//        dg.generate(1000);
-//        dg.generate(10000);
+        dg.generate(1000);
+        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 
