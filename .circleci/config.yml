@@ -45,17 +45,36 @@ jobs:
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
         
       # run tests!
-      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+#      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
 #      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       # make and store reports
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p ~/grakn-surefire-reports/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
-          when: always
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
+#      - run:
+#          name: Save test results
+#          command: |
+#            mkdir -p ~/grakn-surefire-reports/
+#            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+#          when: always
+#      - store_artifacts:
+#          path: ~/grakn-surefire-reports/
+#      - store_test_results:
+#          path: ~/grakn-surefire-reports/
+
+  deploy:
+    machine: true
+    working_directory: ~/grakn
+
+    steps:
+      - run: echo deploy
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: sequential-branch-filter
