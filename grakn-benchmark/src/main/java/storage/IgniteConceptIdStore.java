@@ -54,8 +54,8 @@ public class IgniteConceptIdStore implements IdStoreInterface {
 
     private final HashSet<String> entityTypeLabels;
     private final HashSet<String> relationshipTypeLabels;
-//    private final HashMap<String, AttributeType.DataType<?>> attributeTypeLabels; // typeLabel, datatype
     private final HashMap<java.lang.String, AttributeType.DataType<?>> attributeTypeLabels; // typeLabel, datatype
+    private HashMap<String, String> typeLabelsTotableNames = new HashMap<>();
 
     private Connection conn;
     private HashSet<String> allTypeLabels;
@@ -155,13 +155,38 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     }
 
     private void createTable(String typeLabel, String sqlDatatypeName) {
+
+        String tableName = this.putTableName(typeLabel);
+
         try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("CREATE TABLE " + typeLabel + " (" +
+            stmt.executeUpdate("CREATE TABLE " + tableName + " (" +
                     " id " + sqlDatatypeName + " PRIMARY KEY, " +
                     "nothing LONG) " +
                     " WITH \"template=" + cachingMethod + "\"");
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private String convertTypeLabelToTableName(String typeLabel) {
+        return typeLabel.replace('-', '_')
+                .replaceAll("[0-9]", "");
+    }
+
+    private String putTableName(String typeLabel) {
+        String tableName = this.convertTypeLabelToTableName(typeLabel);
+        this.typeLabelsTotableNames.put(typeLabel, tableName);
+        return tableName;
+    }
+
+    private String getTableName(String typeLabel) {
+
+        String tableName = this.typeLabelsTotableNames.get(typeLabel);
+        if (tableName != null) {
+            return tableName;
+        } else {
+            // TODO Don't need this else clause if I can figure out how to drop all tables in clean()
+            return convertTypeLabelToTableName(typeLabel);
         }
     }
 
@@ -171,8 +196,10 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         Label conceptTypeLabel = concept.asThing().type().getLabel();
         String conceptId = concept.asThing().getId().toString(); // TODO use the value instead for attributes
 
+        // TODO ensure attributes are added uniquely
+
         try (PreparedStatement stmt = this.conn.prepareStatement(
-                "INSERT INTO " + conceptTypeLabel + " (id, ) VALUES (?, )")) {
+                "INSERT INTO " + this.getTableName(conceptTypeLabel.toString()) + " (id, ) VALUES (?, )")) {
 
             stmt.setString(1, conceptId);
             stmt.executeUpdate();
@@ -191,7 +218,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     public <T> T get(String typeLabel, Class<T> datatype, int offset) {
         //TODO the datatype being used here is important when accessing attributes
 
-        String sql = "SELECT id FROM " + typeLabel +
+        String sql = "SELECT id FROM " + getTableName(typeLabel) +
                 " OFFSET " + offset +
                 " FETCH FIRST ROW ONLY";
 //        ResultSet rs = this.runQuery(sql);
@@ -238,7 +265,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
 
     public int getConceptCount(String typeLabel) {
 
-        String sql = "SELECT COUNT(1) FROM " + typeLabel;
+        String sql = "SELECT COUNT(1) FROM " + getTableName(typeLabel);
 //        ResultSet rs = this.runQuery(sql);
 
         try (Statement stmt = conn.createStatement()) {
@@ -284,11 +311,12 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     /**
      * Clean all elements in the storage
      */
-    public static void clean(Set<String> typeLabels) throws SQLException {
+    public void clean(Set<String> typeLabels) throws SQLException {
+
         // TODO figure out how to drop all tables
         for (String typeLabel : typeLabels) {
             Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
-            try (PreparedStatement stmt = conn.prepareStatement("DROP TABLE IF EXISTS " + typeLabel)) {
+            try (PreparedStatement stmt = conn.prepareStatement("DROP TABLE IF EXISTS " + this.getTableName(typeLabel))) {
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();

@@ -105,7 +105,7 @@ public class DataGenerator {
             this.entityTypes = SchemaManager.getTypesOfMetaType(tx, "entity");
             this.relationshipTypes = SchemaManager.getTypesOfMetaType(tx, "relationship");
             this.attributeTypes = SchemaManager.getTypesOfMetaType(tx, "attribute");
-            this.roles = SchemaManager.getTypesOfMetaType(tx, "role");
+            this.roles = SchemaManager.getRoles(tx, "role");
 
             this.storage = new IgniteConceptIdStore(this.entityTypes, this.relationshipTypes, this.attributeTypes);
 
@@ -273,8 +273,8 @@ public class DataGenerator {
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
-        dg.generate(1000);
-        dg.generate(10000);
+//        dg.generate(1000);
+//        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 

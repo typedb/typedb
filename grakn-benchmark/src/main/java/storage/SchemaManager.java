@@ -22,6 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -30,6 +31,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -90,34 +92,29 @@ public class SchemaManager {
         }
     }
 
-    public static <T extends SchemaConcept> HashSet<T> getTypesOfMetaType(GraknTx tx, String metaTypeName) {
-        HashSet<T> conceptTypes = new HashSet<T>();
+    public static <T extends Type> HashSet<T> getTypesOfMetaType(GraknTx tx, String metaTypeName) {
         QueryBuilder qb = tx.graql();
         Match match = qb.match(var("x").sub(metaTypeName));
         List<Answer> result = match.get().execute();
-        T conceptType;
 
-        // TODO This instead?
-        // this.conceptTypes.add(result.iterator().forEachRemaining(get("x").asEntityType()));
-        Iterator<Answer> conceptTypeIterator = result.iterator();
-        while (conceptTypeIterator.hasNext()) {
-//            conceptType = (T) conceptTypeIterator.next().get("x").asType();
-            conceptType = (T) conceptTypeIterator.next().get("x");
-            conceptTypes.add(conceptType);
-        }
-        conceptTypes.remove(0);  // Remove type "entity"
-
-        return conceptTypes;
+        return result.stream()
+                .map(answer -> (T) answer.get(var("x")).asType())
+                .filter(type -> !type.isImplicit())
+                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.getLabel()))
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
-//    public static HashSet<String> getMetaTypeLabels(GraknTx tx, String conceptMetaTypeName) {
-//        HashSet<SchemaConcept> typesOfMetaType = getTypesOfMetaType(tx, conceptMetaTypeName);
-//        HashSet<String> labels = new HashSet<>();
-//
-//        for (SchemaConcept type : typesOfMetaType) {
-//            labels.add(type.getLabel());
-//        }
-//    }
+    public static HashSet<Role> getRoles(GraknTx tx, String metaTypeName) {
+        QueryBuilder qb = tx.graql();
+        Match match = qb.match(var("x").sub(metaTypeName));
+        List<Answer> result = match.get().execute();
+
+        return result.stream()
+                .map(answer -> answer.get(var("x")).asRole())
+                .filter(type -> !type.isImplicit())
+                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.getLabel()))
+                .collect(Collectors.toCollection(HashSet::new));
+    }
 
     public static <T extends SchemaConcept> T getTypeFromString(String typeName, HashSet<T> typeInstances) {
         Iterator iter = typeInstances.iterator();
