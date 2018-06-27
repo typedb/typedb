@@ -36,6 +36,8 @@ import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
+import java.util.Iterator;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -72,7 +74,8 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        checkOptimalQueryPlanProduced(query, correctPlan);
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
     }
 
     @Test
@@ -91,7 +94,8 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        checkOptimalQueryPlanProduced(query, correctPlan);
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
     }
 
     @Test
@@ -110,7 +114,8 @@ public class ResolutionPlanTest {
                 getAtom(query, "anotherRelation", testTx),
                 getAtom(query, "relation", testTx)
         );
-        checkOptimalQueryPlanProduced(query, correctPlan);
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
     }
 
     @Test
@@ -131,7 +136,8 @@ public class ResolutionPlanTest {
                 getAtom(query, "relation", testTx),
                 getAtom(query, "anotherResource", testTx)
         );
-        checkOptimalQueryPlanProduced(query, correctPlan);
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
     }
 
     @Test
@@ -145,8 +151,8 @@ public class ResolutionPlanTest {
                 "$y != $x;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
-        assertTrue(plan.containsAll(query.selectAtoms()));
+        checkAtomPlanComplete(query, new ResolutionPlan(query));
+        checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
     @Test
@@ -156,8 +162,8 @@ public class ResolutionPlanTest {
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(someRole:$x, otherRole: $y) isa relation;" +
-                "$x has resource 'this';" +
-                "$y has anotherResource 'that';";
+                        "$x has resource 'this';" +
+                        "$y has anotherResource 'that';";
 
         String xPatternString = "{" +
                 "$x id '" + concept.getId() + "';" +
@@ -169,6 +175,10 @@ public class ResolutionPlanTest {
                 "}";
         ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString, testTx), testTx);
         ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString, testTx), testTx);
+
+        checkPlanSanity(queryX);
+        checkPlanSanity(queryY);
+
         assertNotEquals(new ResolutionPlan(queryX).plan().get(0), getAtom(queryX, "anotherResource", testTx));
         assertNotEquals(new ResolutionPlan(queryY).plan().get(0), getAtom(queryX, "resource", testTx));
     }
@@ -184,7 +194,7 @@ public class ResolutionPlanTest {
                 "(someRole:$u, otherRole: $v) isa relation;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        checkPlanConnected(new ResolutionPlan(query));
+        checkPlanSanity(query);
     }
 
     @Test
@@ -199,7 +209,7 @@ public class ResolutionPlanTest {
                 "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        checkPlanConnected(new ResolutionPlan(query));
+        checkPlanSanity(query);
     }
 
     @Test
@@ -213,32 +223,49 @@ public class ResolutionPlanTest {
          */
         String basePatternString =
                 "($a, $b) isa derivedRelation;" +
-                "($b, $c) isa relation;" +
-                "($c, $d) isa anotherDerivedRelation;" +
+                        "($b, $c) isa relation;" +
+                        "($c, $d) isa anotherDerivedRelation;" +
 
-                "($d, $e) isa anotherRelation;" +
-                "($e, $f) isa derivedRelation;" +
+                        "($d, $e) isa anotherRelation;" +
+                        "($e, $f) isa derivedRelation;" +
 
-                "($d, $g) isa yetAnotherRelation;" +
-                "($g, $h) isa anotherDerivedRelation;";
+                        "($d, $g) isa yetAnotherRelation;" +
+                        "($g, $h) isa anotherDerivedRelation;";
 
         String queryString = "{" + basePatternString + "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
-        checkPlanConnected(resolutionPlan);
+        checkPlanSanity(query);
 
         String attributedQueryString = "{" +
                 "$a has resource 'someValue';" +
                 basePatternString +
                 "}";
         ReasonerQueryImpl attributedQuery = ReasonerQueries.create(conjunction(attributedQueryString, testTx), testTx);
-        ResolutionPlan attributedQueryResolutionPlan = new ResolutionPlan(attributedQuery);
-        checkPlanConnected(attributedQueryResolutionPlan);
+        ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
+        checkPlanSanity(attributedQuery);
+
         Atom efAtom = attributedQuery.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("e"), var("f")))).findFirst().orElse(null);
         Atom ghAtom = attributedQuery.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("g"), var("h")))).findFirst().orElse(null);
 
-        ImmutableList<Atom> atomPlan = attributedQueryResolutionPlan.plan();
+        ImmutableList<Atom> atomPlan = attributedResolutionPlan.plan();
         assertThat(atomPlan.get(atomPlan.size()-1), anyOf(is(efAtom), is(ghAtom)));
+    }
+
+    @Test
+    public void makeSureDisconnectedQueryProducesValidPlan(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$a isa baseEntity;" +
+                "($a, $b) isa derivedRelation; $b isa someEntity;" +
+                "$c isa baseEntity;" +
+                "($c, $d) isa relation; $d isa someOtherEntity;" +
+                "$e isa baseEntity;" +
+                "($e, $f) isa anotherRelation; $f isa yetAnotherEntity;" +
+                "}";
+
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        checkAtomPlanComplete(query, new ResolutionPlan(query));
+        checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
     /**
@@ -258,10 +285,8 @@ public class ResolutionPlanTest {
                 "}";
 
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
-
-        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
-        //TODO
+        checkAtomPlanComplete(query, new ResolutionPlan(query));
+        checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
     /**
@@ -279,11 +304,12 @@ public class ResolutionPlanTest {
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        checkAtomPlanComplete(query, resolutionPlan);
+
         Atom resolvableIsa = query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(Sets.newHashSet(var("x"), var("type")))).findFirst().orElse(null);
         assertThat(resolutionPlan.plan().get(3), is(resolvableIsa));
 
-        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
-        //TODO
+        checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
     }
 
     @Test
@@ -298,21 +324,35 @@ public class ResolutionPlanTest {
                 "($d, $e) isa relation; $d isa yetAnotherEntity;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
-        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
-        checkPlanConnected(resolutionPlan);
-
-        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
-        //TODO
+        checkPlanSanity(query);
     }
 
-    private void checkOptimalQueryPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
+    private void checkPlanSanity(ReasonerQueryImpl query){
+        checkAtomPlanSanity(query);
+        checkQueryPlanSanity(query);
+    }
+
+    private void checkAtomPlanSanity(ReasonerQueryImpl query){
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        checkAtomPlanComplete(query, resolutionPlan);
+        checkAtomPlanConnected(resolutionPlan);
+    }
+
+    private void checkQueryPlanSanity(ReasonerQueryImpl query){
+        ResolutionQueryPlan plan = new ResolutionQueryPlan(query);
+        checkQueryPlanComplete(query, plan);
+        checkQueryPlanConnected(plan);
+    }
+
+    private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         ImmutableList<Atom> atomPlan = resolutionPlan.plan();
         assertEquals(atomPlan, desiredAtomPlan);
-        checkPlanConnected(resolutionPlan);
+        checkAtomPlanComplete(query, resolutionPlan);
+        checkAtomPlanConnected(resolutionPlan);
     }
 
-    private void checkPlanConnected(ResolutionPlan plan){
+    private void checkAtomPlanConnected(ResolutionPlan plan){
         ImmutableList<Atom> atomList = plan.plan();
 
         UnmodifiableIterator<Atom> iterator = atomList.iterator();
@@ -323,6 +363,27 @@ public class ResolutionPlanTest {
             assertTrue(!Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
+    }
+
+    private void checkQueryPlanConnected(ResolutionQueryPlan plan){
+        List<ReasonerQueryImpl> atomList = plan.queries();
+
+        Iterator<ReasonerQueryImpl> iterator = atomList.iterator();
+        Set<Var> vars = new HashSet<>(iterator.next().getVarNames());
+        while(iterator.hasNext()){
+            ReasonerQueryImpl next = iterator.next();
+            Set<Var> varNames = next.getVarNames();
+            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            vars.addAll(varNames);
+        }
+    }
+
+    private void checkAtomPlanComplete(ReasonerQueryImpl query, ResolutionPlan plan){
+        assertEquals(query.selectAtoms(), Sets.newHashSet(plan.plan()) );
+    }
+
+    private void checkQueryPlanComplete(ReasonerQueryImpl query, ResolutionQueryPlan plan){
+        assertEquals(query.selectAtoms(), plan.queries().stream().flatMap(q -> q.selectAtoms().stream()).collect(toSet()));
     }
 
     private Atom getAtom(ReasonerQueryImpl query, String typeString, GraknTx tx){
