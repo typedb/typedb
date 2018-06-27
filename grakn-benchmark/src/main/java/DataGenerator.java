@@ -38,6 +38,7 @@ import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
 
 import pick.FromIdStoragePicker;
+import pick.IntegerPicker;
 import pick.StreamProvider;
 import pick.PickableCollectionValuePicker;
 import pick.CentralStreamProvider;
@@ -231,24 +232,24 @@ public class DataGenerator {
 //                    )
 //            );
 
-            RouletteWheelCollection<Integer> ratingValueOptions = new RouletteWheelCollection<Integer>(this.rand)
-            .add(0.5, 1)
-            .add(0.5, 2)
-            .add(0.5, 3)
-            .add(0.5, 4)
-            .add(0.5, 5)
-            .add(0.5, 6)
-            .add(0.5, 7)
-            .add(0.5, 8)
-            .add(0.5, 9)
-            .add(0.5, 10);
+//            RouletteWheelCollection<Integer> ratingValueOptions = new RouletteWheelCollection<Integer>(this.rand)
+//            .add(0.5, 1)
+//            .add(0.5, 2)
+//            .add(0.5, 3)
+//            .add(0.5, 4)
+//            .add(0.5, 5)
+//            .add(0.5, 6)
+//            .add(0.5, 7)
+//            .add(0.5, 8)
+//            .add(0.5, 9)
+//            .add(0.5, 10);
 
 
             this.attributeStrategies.add(
                     1.0,
                     new AttributeStrategy<>(
                             SchemaManager.getTypeFromString("rating", this.attributeTypes),
-                            new UniformPDF(this.rand, 3, 20),
+                            new UniformPDF(this.rand, 10, 20),
                             new AttributeOwnerTypeStrategy<>(
                                     SchemaManager.getTypeFromString("name", this.attributeTypes),
                                     new StreamProvider<>(
@@ -260,7 +261,51 @@ public class DataGenerator {
                                     )
                             ),
                             new StreamProvider<>(
-                                    new PickableCollectionValuePicker<Integer>(ratingValueOptions)
+                                    new IntegerPicker(this.rand, 0, 100)
+                            )
+                    )
+            );
+
+
+            this.attributeStrategies.add(
+                    5.0,
+                    new AttributeStrategy<>(
+                            SchemaManager.getTypeFromString("rating", this.attributeTypes),
+                            new UniformPDF(this.rand, 3, 40),
+                            new AttributeOwnerTypeStrategy<>(
+                                    SchemaManager.getTypeFromString("company", this.entityTypes),
+                                    new StreamProvider<>(
+                                            new FromIdStoragePicker<>(
+                                                    this.rand,
+                                                    (IdStoreInterface) this.storage,
+                                                    "company",
+                                                    ConceptId.class)
+                                    )
+                            ),
+                            new StreamProvider<>(
+                                    new IntegerPicker(this.rand, 0, 100)
+                            )
+                    )
+            );
+
+
+            this.attributeStrategies.add(
+                    3.0,
+                    new AttributeStrategy<>(
+                            SchemaManager.getTypeFromString("rating", this.attributeTypes),
+                            new UniformPDF(this.rand, 40, 60),
+                            new AttributeOwnerTypeStrategy<>(
+                                    SchemaManager.getTypeFromString("employment", this.relationshipTypes),  //TODO change this so that declaring the MetaType to search isn't necessary
+                                    new StreamProvider<>(
+                                            new FromIdStoragePicker<>(
+                                                    this.rand,
+                                                    (IdStoreInterface) this.storage,
+                                                    "employment",
+                                                    ConceptId.class)
+                                    )
+                            ),
+                            new StreamProvider<>(
+                                    new IntegerPicker(this.rand, 1, 10)
                             )
                     )
             );
@@ -343,7 +388,7 @@ public class DataGenerator {
         dg.generate(300);
         dg.generate(400);
         dg.generate(1000);
-        dg.generate(10000);
+//        dg.generate(10000);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 

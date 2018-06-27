@@ -22,6 +22,7 @@ person sub entity,
   plays director;
 
 employment sub relationship,
+  has rating,
   relates employee,
   relates employer,
   relates director,
@@ -46,6 +47,7 @@ occupation sub entity,
 
 company sub entity,
   has name,
+  has rating,
   plays employer;
 
 # vocation sub occupation;
