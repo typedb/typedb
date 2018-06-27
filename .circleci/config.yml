@@ -60,19 +60,19 @@ jobs:
 #      - store_test_results:
 #          path: ~/grakn-surefire-reports/
 
-  deploy:
+  unit-it-test:
     machine: true
     working_directory: ~/grakn
 
     steps:
-      - run: echo deploy
+      - run: echo unit it test
 
 workflows:
   version: 2
-  build-and-deploy:
+  run-all-tests:
     jobs:
       - build
-      - deploy:
+      - unit-it-test:
           requires:
             - build
           filters:
