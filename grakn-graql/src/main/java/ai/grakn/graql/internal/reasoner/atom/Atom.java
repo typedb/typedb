@@ -121,6 +121,13 @@ public abstract class Atom extends AtomicBase {
                 .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
     }
 
+    /**
+     * @return true if this atom requires direct schema lookups
+     */
+    public boolean requiresSchema(){
+        return getSchemaConcept() == null || this instanceof OntologicalAtom;
+    }
+
     public abstract Class<? extends VarProperty> getVarPropertyClass();
 
     @Override

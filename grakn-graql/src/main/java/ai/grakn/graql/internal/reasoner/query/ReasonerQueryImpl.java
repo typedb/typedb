@@ -264,6 +264,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @return true if the query requires direct schema lookups
+     */
+    public boolean requiresSchema(){ return selectAtoms().stream().anyMatch(Atom::requiresSchema);}
+
+    /**
      * @return true if this query is atomic
      */
     public boolean isAtomic() {

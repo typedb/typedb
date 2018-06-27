@@ -57,7 +57,7 @@ public class ResolutionQueryPlan {
     private final ImmutableList<ReasonerQueryImpl> queryPlan;
 
     public ResolutionQueryPlan(ReasonerQueryImpl query){
-        this.queryPlan = refine(queryPlan(query));
+        this.queryPlan = queryPlan(query);
     }
 
     @Override
@@ -93,7 +93,9 @@ public class ResolutionQueryPlan {
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
-        return plan.size() == queries.size()? ImmutableList.copyOf(queries) : refine(queries);
+
+        boolean refine = plan.size() != queries.size() && !query.requiresSchema();
+        return refine? refine(queries) : ImmutableList.copyOf(queries);
     }
 
     private static Equivalence<ReasonerQuery> equality = ReasonerQueryEquivalence.Equality;
