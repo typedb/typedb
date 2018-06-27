@@ -80,6 +80,10 @@ jobs:
     working_directory: ~/grakn
 
     steps:
+      - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
+      - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
+      
+    steps:
       - run: echo Biomed
   long-running:
     machine: true
