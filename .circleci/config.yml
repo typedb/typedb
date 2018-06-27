@@ -83,12 +83,6 @@ workflows:
       - unit-it-test:
           requires:
             - build
-          filters:
-            branches:
-              only: sequential-branch-filter
       - snb:
           requires:
             - unit-it-test
-          filters:
-            branches:
-              only: sequential-branch-filter
