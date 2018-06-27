@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ai.grakn.rpc.generated;
+option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "GrpcConcept";
 
 import "iterator.proto";

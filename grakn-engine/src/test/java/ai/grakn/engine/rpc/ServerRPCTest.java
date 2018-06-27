@@ -44,17 +44,17 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknGrpc.GraknBlockingStub;
-import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.BaseType;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.Open;
-import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.generated.GrpcGrakn.TxType;
-import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.TransactionGrpc;
+import ai.grakn.rpc.proto.TransactionGrpc.TransactionBlockingStub;
+import ai.grakn.rpc.proto.TransactionGrpc.TransactionStub;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.GrpcConcept.BaseType;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.Open;
+import ai.grakn.rpc.proto.TransactionProto.TxRequest;
+import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.TransactionProto.TxType;
+import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -124,8 +124,8 @@ public class ServerRPCTest {
 
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
-    private final GraknStub stub = GraknGrpc.newStub(channel);
-    private final GraknBlockingStub blockingStub = GraknGrpc.newBlockingStub(channel);
+    private final TransactionStub stub = TransactionGrpc.newStub(channel);
+    private final TransactionBlockingStub blockingStub = TransactionGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {
@@ -312,8 +312,8 @@ public class ServerRPCTest {
 
             GrpcConcept.Concept rpcX =
                     GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
-            GrpcGrakn.QueryAnswer.Builder answerX = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            GrpcGrakn.Answer.Builder resultX = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerX);
+            TransactionProto.QueryAnswer.Builder answerX = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
+            TransactionProto.Answer.Builder resultX = TransactionProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(next(iterator));
@@ -321,8 +321,8 @@ public class ServerRPCTest {
 
             GrpcConcept.Concept rpcY =
                     GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
-            GrpcGrakn.QueryAnswer.Builder answerY = GrpcGrakn.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            GrpcGrakn.Answer.Builder resultY = GrpcGrakn.Answer.newBuilder().setQueryAnswer(answerY);
+            TransactionProto.QueryAnswer.Builder answerY = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
+            TransactionProto.Answer.Builder resultY = TransactionProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(next(iterator));
@@ -392,7 +392,7 @@ public class ServerRPCTest {
             tx.send(query(COUNT_QUERY, false));
 
             TxResponse expected =
-                    TxResponse.newBuilder().setAnswer(GrpcGrakn.Answer.newBuilder().setOtherResult("100")).build();
+                    TxResponse.newBuilder().setAnswer(TransactionProto.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }

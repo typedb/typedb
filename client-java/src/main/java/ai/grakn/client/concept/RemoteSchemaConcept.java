@@ -24,8 +24,8 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -57,7 +57,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final Label getLabel() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetLabel(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
 
         return Label.of(response.getConceptResponse().getLabel());
     }
@@ -66,7 +66,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final Boolean isImplicit() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setIsImplicit(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsImplicit();
     }
@@ -85,7 +85,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final SomeType sup() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectSuperConcept(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
 

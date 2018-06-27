@@ -27,16 +27,16 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.proto.TransactionProto.TxResponse;
 
 import java.util.stream.Stream;
 
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.generated.GrpcConcept.ConceptMethod}.
+ * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.proto.GrpcConcept.ConceptMethod}.
  */
 public abstract class ConceptMethod {
 

@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package ai.grakn.rpc.generated;
-option java_outer_classname = "GrpcGrakn";
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "TransactionProto";
 
 import "concept.proto";
 import "iterator.proto";
 
-service Grakn {
+service Transaction {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
     rpc Tx (stream TxRequest) returns (stream TxResponse);

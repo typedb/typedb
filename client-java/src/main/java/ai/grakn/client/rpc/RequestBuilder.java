@@ -25,14 +25,14 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.Commit;
-import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.Open;
-import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
-import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
-import ai.grakn.rpc.generated.GrpcIterator.Next;
-import ai.grakn.rpc.generated.GrpcIterator.Stop;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.Commit;
+import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
+import ai.grakn.rpc.proto.TransactionProto.Open;
+import ai.grakn.rpc.proto.TransactionProto.TxRequest;
+import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.GrpcIterator.Next;
+import ai.grakn.rpc.proto.GrpcIterator.Stop;
 import ai.grakn.util.CommonUtil;
 
 /**
@@ -42,67 +42,67 @@ import ai.grakn.util.CommonUtil;
  */
 public class RequestBuilder {
 
-    public static GrpcGrakn.TxRequest open(Keyspace keyspace, GraknTxType txType) {
-        GrpcGrakn.Open openRPC = GrpcGrakn.Open.newBuilder().setKeyspace(keyspace.getValue()).setTxType(txType(txType)).build();
+    public static TransactionProto.TxRequest open(Keyspace keyspace, GraknTxType txType) {
+        TransactionProto.Open openRPC = TransactionProto.Open.newBuilder().setKeyspace(keyspace.getValue()).setTxType(txType(txType)).build();
 
         return TxRequest.newBuilder().setOpen(openRPC).build();
     }
 
-    public static GrpcGrakn.TxRequest commit() {
+    public static TransactionProto.TxRequest commit() {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
-    public static GrpcGrakn.TxRequest query(Query<?> query) {
+    public static TransactionProto.TxRequest query(Query<?> query) {
         return query(query.toString(), query.inferring());
     }
 
-    public static GrpcGrakn.TxRequest query(String queryString, boolean infer) {
-        GrpcGrakn.Query.Builder queryRequest = GrpcGrakn.Query.newBuilder().setQuery(queryString);
+    public static TransactionProto.TxRequest query(String queryString, boolean infer) {
+        TransactionProto.Query.Builder queryRequest = TransactionProto.Query.newBuilder().setQuery(queryString);
         queryRequest.setInfer(infer);
         return TxRequest.newBuilder().setQuery(queryRequest).build();
     }
 
-    public static GrpcGrakn.TxRequest next(IteratorId iteratorId) {
+    public static TransactionProto.TxRequest next(IteratorId iteratorId) {
         return TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
     }
 
-    public static GrpcGrakn.TxRequest stop(IteratorId iteratorId) {
+    public static TransactionProto.TxRequest stop(IteratorId iteratorId) {
         return TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
     }
 
-    public static GrpcGrakn.TxRequest getConcept(ConceptId id) {
+    public static TransactionProto.TxRequest getConcept(ConceptId id) {
         return TxRequest.newBuilder().setGetConcept(id.getValue()).build();
     }
 
-    public static GrpcGrakn.TxRequest getSchemaConcept(Label label) {
+    public static TransactionProto.TxRequest getSchemaConcept(Label label) {
         return TxRequest.newBuilder().setGetSchemaConcept(label.getValue()).build();
     }
 
-    public static GrpcGrakn.TxRequest getAttributesByValue(Object value) {
+    public static TransactionProto.TxRequest getAttributesByValue(Object value) {
         return TxRequest.newBuilder().setGetAttributesByValue(ConceptBuilder.attributeValue(value)).build();
     }
 
-    public static GrpcGrakn.TxRequest putEntityType(Label label) {
+    public static TransactionProto.TxRequest putEntityType(Label label) {
         return TxRequest.newBuilder().setPutEntityType(label.getValue()).build();
     }
 
-    public static GrpcGrakn.TxRequest putRelationshipType(Label label) {
+    public static TransactionProto.TxRequest putRelationshipType(Label label) {
         return TxRequest.newBuilder().setPutRelationshipType(label.getValue()).build();
     }
 
-    public static GrpcGrakn.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-        GrpcGrakn.AttributeType putAttributeType =
-                GrpcGrakn.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
+    public static TransactionProto.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+        TransactionProto.AttributeType putAttributeType =
+                TransactionProto.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
 
         return TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
     }
 
-    public static GrpcGrakn.TxRequest putRole(Label label) {
+    public static TransactionProto.TxRequest putRole(Label label) {
         return TxRequest.newBuilder().setPutRole(label.getValue()).build();
     }
 
-    public static GrpcGrakn.TxRequest putRule(Label label, Pattern when, Pattern then) {
-        GrpcGrakn.Rule putRule = GrpcGrakn.Rule.newBuilder()
+    public static TransactionProto.TxRequest putRule(Label label, Pattern when, Pattern then) {
+        TransactionProto.Rule putRule = TransactionProto.Rule.newBuilder()
                 .setLabel(label.getValue())
                 .setWhen(when.toString())
                 .setThen(then.toString())
@@ -111,20 +111,20 @@ public class RequestBuilder {
         return TxRequest.newBuilder().setPutRule(putRule).build();
     }
 
-    public static GrpcGrakn.TxType txType(GraknTxType txType) {
+    public static TransactionProto.TxType txType(GraknTxType txType) {
         switch (txType) {
             case READ:
-                return GrpcGrakn.TxType.Read;
+                return TransactionProto.TxType.Read;
             case WRITE:
-                return GrpcGrakn.TxType.Write;
+                return TransactionProto.TxType.Write;
             case BATCH:
-                return GrpcGrakn.TxType.Batch;
+                return TransactionProto.TxType.Batch;
             default:
                 throw CommonUtil.unreachableStatement("Unrecognised " + txType);
         }
     }
 
-    public static GrpcGrakn.DeleteRequest delete(Open open) {
+    public static TransactionProto.DeleteRequest delete(Open open) {
         return DeleteRequest.newBuilder().setOpen(open).build();
     }
 }

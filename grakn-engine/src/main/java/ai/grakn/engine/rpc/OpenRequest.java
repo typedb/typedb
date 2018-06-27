@@ -19,7 +19,7 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.proto.TransactionProto.Open;
 
 /**
  * Interface implemented by classes that create a new GraknTx for RPC Open requests

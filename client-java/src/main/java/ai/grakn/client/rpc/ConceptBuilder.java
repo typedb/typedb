@@ -37,8 +37,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
 import mjson.Json;
@@ -193,7 +193,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Object answer(GrpcGrakn.Answer answer, Grakn.Transaction tx) {
+    public static Object answer(TransactionProto.Answer answer, Grakn.Transaction tx) {
         switch (answer.getAnswerCase()) {
             case QUERYANSWER:
                 return queryAnswer(answer.getQueryAnswer(), tx);
@@ -207,7 +207,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Answer queryAnswer(GrpcGrakn.QueryAnswer queryAnswer, Grakn.Transaction tx) {
+    public static Answer queryAnswer(TransactionProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, grpcConcept) -> {
@@ -217,7 +217,7 @@ public class ConceptBuilder {
         return new QueryAnswer(map.build());
     }
 
-    public static ComputeQuery.Answer computeAnswer(GrpcGrakn.ComputeAnswer computeAnswerRPC) {
+    public static ComputeQuery.Answer computeAnswer(TransactionProto.ComputeAnswer computeAnswerRPC) {
         switch (computeAnswerRPC.getComputeAnswerCase()) {
             case NUMBER:
                 try {
@@ -240,7 +240,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static List<List<ConceptId>> paths(GrpcGrakn.Paths pathsRPC) {
+    public static List<List<ConceptId>> paths(TransactionProto.Paths pathsRPC) {
         List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
 
         for (GrpcConcept.ConceptIds conceptIds : pathsRPC.getPathsList()) {
@@ -254,7 +254,7 @@ public class ConceptBuilder {
         return paths;
     }
 
-    public static Map<Long, Set<ConceptId>> centrality(GrpcGrakn.Centrality centralityRPC) {
+    public static Map<Long, Set<ConceptId>> centrality(TransactionProto.Centrality centralityRPC) {
         Map<Long, Set<ConceptId>> centrality = new HashMap<>();
 
         for (Map.Entry<Long, GrpcConcept.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
@@ -269,7 +269,7 @@ public class ConceptBuilder {
         return centrality;
     }
 
-    public static Set<Set<ConceptId>> clusters(GrpcGrakn.Clusters clustersRPC) {
+    public static Set<Set<ConceptId>> clusters(TransactionProto.Clusters clustersRPC) {
         Set<Set<ConceptId>> clusters = new HashSet<>();
 
         for (GrpcConcept.ConceptIds conceptIds : clustersRPC.getClustersList()) {
@@ -283,7 +283,7 @@ public class ConceptBuilder {
         return clusters;
     }
 
-    public static Set<Long> clusterSizes(GrpcGrakn.ClusterSizes clusterSizesRPC) {
+    public static Set<Long> clusterSizes(TransactionProto.ClusterSizes clusterSizesRPC) {
         return new HashSet<>(clusterSizesRPC.getClusterSizesList());
     }
 }

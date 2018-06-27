@@ -26,8 +26,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final SomeType type() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asCurrentType(concept);
@@ -78,7 +78,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Relationship attributeRelationship(Attribute attribute) {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
         return concept.asRelationship();
     }
@@ -118,7 +118,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final boolean isInferred() {
         GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
         method.setIsInferred(GrpcConcept.Unit.getDefaultInstance());
-        GrpcGrakn.TxResponse response = runMethod(method.build());
+        TransactionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsInferred();
     }

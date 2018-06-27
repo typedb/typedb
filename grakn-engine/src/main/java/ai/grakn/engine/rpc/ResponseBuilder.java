@@ -23,11 +23,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcConcept.ConceptResponse;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.GrpcIterator;
 
 import java.util.stream.Stream;
 
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 public class ResponseBuilder {
 
     static TxResponse done() {
-        return TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
+        return TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
     }
 
     static TxResponse noResult() {
@@ -66,8 +66,8 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
     }
 
-    static GrpcGrakn.DeleteResponse delete() {
-        return GrpcGrakn.DeleteResponse.getDefaultInstance();
+    static TransactionProto.DeleteResponse delete() {
+        return TransactionProto.DeleteResponse.getDefaultInstance();
     }
 
     static TxResponse conceptResponseWithNoResult() {

@@ -46,10 +46,10 @@ import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.RequestIterator;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.proto.TransactionGrpc;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.GrpcIterator;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import io.grpc.ManagedChannel;
@@ -96,12 +96,12 @@ public final class Grakn {
             this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        GraknGrpc.GraknStub stubAsync() {
-            return GraknGrpc.newStub(channel);
+        TransactionGrpc.TransactionStub stubAsync() {
+            return TransactionGrpc.newStub(channel);
         }
 
-        GraknGrpc.GraknBlockingStub stubBlocking() {
-            return GraknGrpc.newBlockingStub(channel);
+        TransactionGrpc.TransactionBlockingStub stubBlocking() {
+            return TransactionGrpc.newBlockingStub(channel);
         }
 
         @Override
@@ -142,7 +142,7 @@ public final class Grakn {
             responseOrThrow();
         }
 
-        private GrpcGrakn.TxResponse responseOrThrow() {
+        private TransactionProto.TxResponse responseOrThrow() {
             Transceiver.Response response;
 
             try {
@@ -166,16 +166,16 @@ public final class Grakn {
         }
 
 
-        public GrpcGrakn.TxResponse next(GrpcIterator.IteratorId iteratorId) {
+        public TransactionProto.TxResponse next(GrpcIterator.IteratorId iteratorId) {
             transceiver.send(RequestBuilder.next(iteratorId));
             return responseOrThrow();
         }
 
-        public GrpcGrakn.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
-            GrpcGrakn.RunConceptMethod.Builder runConceptMethod = GrpcGrakn.RunConceptMethod.newBuilder();
+        public TransactionProto.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
+            TransactionProto.RunConceptMethod.Builder runConceptMethod = TransactionProto.RunConceptMethod.newBuilder();
             runConceptMethod.setId(id.getValue());
             runConceptMethod.setMethod(method);
-            GrpcGrakn.TxRequest conceptMethodRequest = GrpcGrakn.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+            TransactionProto.TxRequest conceptMethodRequest = TransactionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
             transceiver.send(conceptMethodRequest);
             return responseOrThrow();
@@ -215,7 +215,7 @@ public final class Grakn {
         @Override
         public <T extends Concept> T getConcept(ConceptId id) {
             transceiver.send(RequestBuilder.getConcept(id));
-            GrpcGrakn.TxResponse response = responseOrThrow();
+            TransactionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
         }
@@ -224,7 +224,7 @@ public final class Grakn {
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
             transceiver.send(RequestBuilder.getSchemaConcept(label));
-            GrpcGrakn.TxResponse response = responseOrThrow();
+            TransactionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
         }
@@ -328,7 +328,7 @@ public final class Grakn {
 
         @Override
         public void delete() {
-            GrpcGrakn.DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(keyspace(), GraknTxType.WRITE).getOpen());
+            TransactionProto.DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(keyspace(), GraknTxType.WRITE).getOpen());
             session.stubBlocking().delete(request);
             close();
         }
@@ -341,7 +341,7 @@ public final class Grakn {
         public Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.query(query.toString(), query.inferring()));
 
-            GrpcGrakn.TxResponse txResponse = responseOrThrow();
+            TransactionProto.TxResponse txResponse = responseOrThrow();
 
             switch (txResponse.getResponseCase()) {
                 case ANSWER:

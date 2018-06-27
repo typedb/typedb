@@ -44,14 +44,14 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.DeleteRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
-import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.proto.TransactionGrpc;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
+import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
+import ai.grakn.rpc.proto.TransactionProto.TxRequest;
+import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.GrpcIterator;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -75,7 +75,7 @@ import java.util.stream.Stream;
 /**
  *  Grakn RPC TransactionService
  */
-public class TransactionService extends GraknGrpc.GraknImplBase {
+public class TransactionService extends TransactionGrpc.TransactionImplBase {
     private final OpenRequest requestOpener;
     private PostProcessor postProcessor;
 
@@ -277,7 +277,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             }
         }
 
-        private void open(GrpcGrakn.Open request) {
+        private void open(TransactionProto.Open request) {
             if (tx != null) {
                 throw error(Status.FAILED_PRECONDITION);
             }
@@ -290,7 +290,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             responseSender.onNext(ResponseBuilder.done());
         }
 
-        private void query(GrpcGrakn.Query request) {
+        private void query(TransactionProto.Query request) {
             String queryString = request.getQuery();
             QueryBuilder graql = tx().graql();
             TxResponse response;
@@ -326,7 +326,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             responseSender.onNext(ResponseBuilder.done());
         }
 
-        private void runConceptMethod(GrpcGrakn.RunConceptMethod runConceptMethod) {
+        private void runConceptMethod(TransactionProto.RunConceptMethod runConceptMethod) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
             TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
             responseSender.onNext(response);
@@ -370,7 +370,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             responseSender.onNext(ResponseBuilder.concept(relationshipType));
         }
 
-        private void putAttributeType(GrpcGrakn.AttributeType putAttributeType) {
+        private void putAttributeType(TransactionProto.AttributeType putAttributeType) {
             Label label = Label.of(putAttributeType.getLabel());
             AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
 
@@ -383,7 +383,7 @@ public class TransactionService extends GraknGrpc.GraknImplBase {
             responseSender.onNext(ResponseBuilder.concept(role));
         }
 
-        private void putRule(GrpcGrakn.Rule putRule) {
+        private void putRule(TransactionProto.Rule putRule) {
             Label label = Label.of(putRule.getLabel());
             Pattern when = Graql.parser().parsePattern(putRule.getWhen());
             Pattern then = Graql.parser().parsePattern(putRule.getThen());

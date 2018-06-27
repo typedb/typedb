@@ -36,7 +36,9 @@ import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -60,7 +62,7 @@ public class RemoteConceptIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
-    private Grakn.Session session;
+    private static Grakn.Session session;
     private Grakn.Transaction tx;
 
     // Attribute Type Labels
@@ -69,6 +71,7 @@ public class RemoteConceptIT {
     private Label AGE = Label.of("age");
 
     private String EMAIL_REGEX = "\\S+@\\S+";
+    private static int EMAIL_COUNTER = 0;
 
     // Entity Type Labels
     private Label LIVING_THING = Label.of("living-thing");
@@ -113,10 +116,17 @@ public class RemoteConceptIT {
     private Entity bob;
     private Relationship aliceAndBob;
 
+    @BeforeClass
+    public static void setUpClass() {
+        // TODO: uncomment the code below to confirm we have fixed/removed our Core API Cache
+        // session = Grakn.session(engine.grpcUri(), SampleKBLoader.randomKeyspace());
+    }
+
     @Before
     public void setUp() {
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        session = Grakn.session(engine.grpcUri(), keyspace);
+        // move session construction to setupClass
+        session = Grakn.session(engine.grpcUri(), SampleKBLoader.randomKeyspace());
+
         tx = session.transaction(GraknTxType.WRITE);
 
         // Attribute Types
@@ -147,8 +157,10 @@ public class RemoteConceptIT {
         person.plays(wife).plays(husband);
 
         // Attributes
-        emailAlice = email.putAttribute(ALICE_EMAIL);
-        emailBob = email.putAttribute(BOB_EMAIL);
+        EMAIL_COUNTER++;
+        emailAlice = email.putAttribute(ALICE_EMAIL + EMAIL_COUNTER);
+        emailBob = email.putAttribute(BOB_EMAIL + EMAIL_COUNTER);
+
         nameAlice = name.putAttribute(ALICE);
         nameBob = name.putAttribute(BOB);
         age20 = age.putAttribute(TWENTY);
@@ -164,11 +176,13 @@ public class RemoteConceptIT {
     @After
     public void closeTx() {
         tx.close();
+        session.close();
     }
 
-    @After
-    public void closeSession() {
-        session.close();
+    @AfterClass
+    public static void closeSession() {
+        // TODO: uncomment the code below to confirm we have fixed/removed our Core API Cache
+        //session.close();
     }
 
     @Test
@@ -196,8 +210,8 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingGetValue_GetTheExpectedResult() {
-        assertEquals(ALICE_EMAIL, emailAlice.getValue());
-        assertEquals(BOB_EMAIL, emailBob.getValue());
+        assertEquals(ALICE_EMAIL + EMAIL_COUNTER, emailAlice.getValue());
+        assertEquals(BOB_EMAIL + EMAIL_COUNTER, emailBob.getValue());
         assertEquals(ALICE, nameAlice.getValue());
         assertEquals(BOB, nameBob.getValue());
         assertEquals(TWENTY, age20.getValue());
@@ -226,8 +240,8 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingGetAttribute_GetTheExpectedResult() {
-        assertEquals(emailAlice, email.getAttribute(ALICE_EMAIL));
-        assertEquals(emailBob, email.getAttribute(BOB_EMAIL));
+        assertEquals(emailAlice, email.getAttribute(ALICE_EMAIL + EMAIL_COUNTER));
+        assertEquals(emailBob, email.getAttribute(BOB_EMAIL + EMAIL_COUNTER));
         assertEquals(nameAlice, name.getAttribute(ALICE));
         assertEquals(nameBob, name.getAttribute(BOB));
         assertEquals(age20, age.getAttribute(TWENTY));
@@ -240,18 +254,18 @@ public class RemoteConceptIT {
         assertNull(age.getAttribute(-1));
     }
 
-    @Test @Ignore //TODO: build a more expressive dataset to test this
+    @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingIsInferred_GetTheExpectedResult() {
         //assertTrue(thing.isInferred());
         //assertFalse(thing.isInferred());
     }
 
-    @Test @Ignore //TODO: build a more expressive dataset to test this
+    @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingGetWhen_GetTheExpectedResult() {
         //assertEquals(PATTERN, rule.getWhen());
     }
 
-    @Test @Ignore //TODO: build a more expressive dataset to test this
+    @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingGetThen_GetTheExpectedResult() {
         //assertEquals(PATTERN, rule.getThen());
     }
@@ -394,6 +408,10 @@ public class RemoteConceptIT {
     public void whenCallingOwnerInstances_GetTheExpectedResult() {
         assertThat(emailAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
         assertThat(emailBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
+
+//        for (Thing owner : nameAlice.ownerInstances().collect(toSet())) {
+//            System.out.println(owner.type() + " - " + owner);
+//        }
         assertThat(nameAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
         assertThat(nameBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
         assertThat(age20.ownerInstances().collect(toSet()), containsInAnyOrder(alice, bob));
@@ -401,6 +419,20 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingAttributeTypes_GetTheExpectedResult() {
+//        System.out.println();
+//        System.out.println("person.attributes()");
+//        for (AttributeType attributeType : person.attributes().collect(toSet())) {
+//            System.out.println(attributeType.getLabel() + " - " + attributeType);
+//        }
+//        System.out.println("------");
+//        System.out.println(email.getLabel() + " - " + email);
+//        System.out.println(name.getLabel() + " - " + name);
+//        System.out.println(age.getLabel() + " - " + age);
+//        System.out.println("------");
+//        System.out.println(email.getLabel() + " - " + tx.getAttributeType(EMAIL.getValue()));
+//        System.out.println(name.getLabel() + " - " + tx.getAttributeType(NAME.getValue()));
+//        System.out.println(age.getLabel() + " - " + tx.getAttributeType(AGE.getValue()));
+
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(email, name, age));
     }
 

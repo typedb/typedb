@@ -22,7 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.generated.GrpcGrakn.Open;
+import ai.grakn.rpc.proto.TransactionProto.Open;
 
 /**
  * Class used to handle gRPC Open requests. It extracts keyspace and tx type from gRPC request

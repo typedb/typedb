@@ -27,9 +27,9 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.generated.GrpcConcept;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcIterator;
+import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.GrpcIterator;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -57,7 +57,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
         GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<GrpcConcept.RolePlayer> rolePlayers = () -> new RequestIterator<>(
-                tx(), iteratorId, GrpcGrakn.TxResponse::getRolePlayer
+                tx(), iteratorId, TransactionProto.TxResponse::getRolePlayer
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();

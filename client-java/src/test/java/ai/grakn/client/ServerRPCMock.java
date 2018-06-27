@@ -19,12 +19,12 @@
 package ai.grakn.client;
 
 import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
-import ai.grakn.rpc.generated.GrpcGrakn;
-import ai.grakn.rpc.generated.GrpcGrakn.DeleteResponse;
-import ai.grakn.rpc.generated.GrpcGrakn.TxRequest;
-import ai.grakn.rpc.generated.GrpcGrakn.TxResponse;
-import ai.grakn.rpc.generated.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.TransactionGrpc.TransactionImplBase;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
+import ai.grakn.rpc.proto.TransactionProto.TxRequest;
+import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -74,7 +74,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-    private final GraknImplBase service = mock(GraknImplBase.class);
+    private final TransactionImplBase service = mock(TransactionImplBase.class);
 
     private @Nullable StreamObserver<TxResponse> serverResponses = null;
 
@@ -92,7 +92,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRule.getChannel();
     }
 
-    GraknImplBase service() {
+    TransactionImplBase service() {
         return service;
     }
 
@@ -157,7 +157,7 @@ public final class ServerRPCMock extends CompositeTestRule {
                         ImmutableList.<TxResponse>builder().add(responses).add(done()).build();
 
                 server.setResponse(RequestBuilder.next(iteratorId), responsesList);
-                streamObserver.onNext(GrpcGrakn.TxResponse.newBuilder().setIteratorId(iteratorId).build());
+                streamObserver.onNext(TransactionProto.TxResponse.newBuilder().setIteratorId(iteratorId).build());
             };
         }
 
@@ -178,7 +178,7 @@ public final class ServerRPCMock extends CompositeTestRule {
 
         doAnswer(args -> {
             StreamObserver<DeleteResponse> deleteResponses = args.getArgument(1);
-            deleteResponses.onNext(GrpcGrakn.DeleteResponse.getDefaultInstance());
+            deleteResponses.onNext(TransactionProto.DeleteResponse.getDefaultInstance());
             deleteResponses.onCompleted();
             return null;
         }).when(service).delete(any(), any());
@@ -220,8 +220,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
     }
 
-    private static GrpcGrakn.TxResponse done() {
-        return GrpcGrakn.TxResponse.newBuilder().setDone(GrpcGrakn.Done.getDefaultInstance()).build();
+    private static TransactionProto.TxResponse done() {
+        return TransactionProto.TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
     }
     
     /**
@@ -252,7 +252,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         /**
-         * Return the next response from an iterator. Will return a {@link GrpcGrakn.Done} response if the iterator is exhausted.
+         * Return the next response from an iterator. Will return a {@link TransactionProto.Done} response if the iterator is exhausted.
          */
         public Optional<TxResponse> next(IteratorId iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
