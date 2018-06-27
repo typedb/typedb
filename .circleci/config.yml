@@ -6,7 +6,6 @@ version: 2
 jobs:
   build:
     machine: true
-    parallelism: 4
     working_directory: ~/grakn
 
     environment:
@@ -14,31 +13,32 @@ jobs:
     steps:
       - checkout
 
-      # add necessary 3rd party apt repositories
-      - run: whoami
-      - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-      - run: curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-      - run: echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-      - run: sudo apt-get install apt-transport-https
-      - run: sudo apt-get update
-
-      # install dependencies
-      - run: sudo apt-get -y install yarn
-      - run: sudo apt-get -y install maven
       - run:
-          name: Install node@v10.5.0 (need right version for `yarn`)
+          name: Update apt repositories
           command: |
-            set +e             
+            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+            sudo apt-get install apt-transport-https
+            sudo apt-get update
+
+      - run:
+          name: Install yarn and maven
+          command: |
+            sudo apt-get -y install yarn
+            sudo apt-get -y install maven
+
+      - run:
+          name: Install nvm and node
+          command: |
             curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
             export NVM_DIR="/opt/circleci/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install v10.5.0
             nvm alias default v10.5.0
-            
-            # Each step uses the same `$BASH_ENV`, so need to modify it
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-      - run: sudo node -v
+
+      - run: node -v
       
       # build grakn
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
@@ -46,7 +46,7 @@ jobs:
         
       # run tests!
       - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
-      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+#      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       # make and store reports
       - run:
