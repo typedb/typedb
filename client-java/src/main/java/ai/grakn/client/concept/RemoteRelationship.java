@@ -27,9 +27,9 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.GrpcIterator;
+import ai.grakn.rpc.proto.IteratorProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -52,16 +52,16 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetRolePlayers(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetRolePlayers(ConceptProto.Unit.getDefaultInstance());
 
-        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<GrpcConcept.RolePlayer> rolePlayers = () -> new RequestIterator<>(
+        IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        Iterable<ConceptProto.RolePlayer> rolePlayers = () -> new RequestIterator<>(
                 tx(), iteratorId, TransactionProto.TxResponse::getRolePlayer
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
-        for (GrpcConcept.RolePlayer rolePlayer : rolePlayers) {
+        for (ConceptProto.RolePlayer rolePlayer : rolePlayers) {
             Role role = ConceptBuilder.concept(rolePlayer.getRole(), tx()).asRole();
             Thing player = ConceptBuilder.concept(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
@@ -76,14 +76,14 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
     public final Stream<Thing> rolePlayers(Role... roles) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         if (roles.length == 0) {
             method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Collections.emptyList()));
         } else {
             method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Arrays.asList(roles)));
         }
 
-        GrpcIterator.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new RequestIterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx()).asThing()
         );
@@ -93,23 +93,23 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing player) {
-        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(GrpcConcept.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
+        runMethod(ConceptProto.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
         return asCurrentBaseType(this);
     }
 
     @Override
     public final void removeRolePlayer(Role role, Thing player) {
-        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(GrpcConcept.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
+        runMethod(ConceptProto.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
     }
 
     @Override

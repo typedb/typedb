@@ -47,9 +47,9 @@ import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.RequestIterator;
 import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.GrpcIterator;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import io.grpc.ManagedChannel;
@@ -166,12 +166,12 @@ public final class Grakn {
         }
 
 
-        public TransactionProto.TxResponse next(GrpcIterator.IteratorId iteratorId) {
+        public TransactionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {
             transceiver.send(RequestBuilder.next(iteratorId));
             return responseOrThrow();
         }
 
-        public TransactionProto.TxResponse runConceptMethod(ConceptId id, GrpcConcept.ConceptMethod method) {
+        public TransactionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
             TransactionProto.RunConceptMethod.Builder runConceptMethod = TransactionProto.RunConceptMethod.newBuilder();
             runConceptMethod.setId(id.getValue());
             runConceptMethod.setMethod(method);
@@ -238,7 +238,7 @@ public final class Grakn {
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.getAttributesByValue(value));
-            GrpcIterator.IteratorId iteratorId = responseOrThrow().getIteratorId();
+            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
             Iterable<Concept> iterable = () -> new RequestIterator<>(
                     this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
             );
@@ -315,9 +315,9 @@ public final class Grakn {
 
         @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-            GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-            method.setGetSuperConcepts(GrpcConcept.Unit.getDefaultInstance());
-            GrpcIterator.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
+            ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+            method.setGetSuperConcepts(ConceptProto.Unit.getDefaultInstance());
+            IteratorProto.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
             Iterable<? extends Concept> iterable = () -> new RequestIterator<>(
                     this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
             );
@@ -349,7 +349,7 @@ public final class Grakn {
                 case DONE:
                     return Collections.emptyIterator();
                 case ITERATORID:
-                    GrpcIterator.IteratorId iteratorId = txResponse.getIteratorId();
+                    IteratorProto.IteratorId iteratorId = txResponse.getIteratorId();
                     return new RequestIterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);

@@ -30,9 +30,9 @@ import ai.grakn.rpc.proto.TransactionProto.Commit;
 import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
 import ai.grakn.rpc.proto.TransactionProto.Open;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
-import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
-import ai.grakn.rpc.proto.GrpcIterator.Next;
-import ai.grakn.rpc.proto.GrpcIterator.Stop;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
+import ai.grakn.rpc.proto.IteratorProto.Next;
+import ai.grakn.rpc.proto.IteratorProto.Stop;
 import ai.grakn.util.CommonUtil;
 
 /**

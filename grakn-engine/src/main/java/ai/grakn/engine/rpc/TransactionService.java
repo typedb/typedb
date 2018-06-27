@@ -45,13 +45,13 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
 import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.GrpcIterator;
+import ai.grakn.rpc.proto.IteratorProto;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -300,7 +300,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
 
             if (query instanceof Streamable) {
                 Stream<TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder::answer);
-                GrpcIterator.IteratorId iteratorId = iterators.add(responseStream.iterator());
+                IteratorProto.IteratorId iteratorId = iterators.add(responseStream.iterator());
 
                 response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
             } else {
@@ -313,15 +313,15 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             responseSender.onNext(response);
         }
 
-        private void next(GrpcIterator.Next next) {
-            GrpcIterator.IteratorId iteratorId = next.getIteratorId();
+        private void next(IteratorProto.Next next) {
+            IteratorProto.IteratorId iteratorId = next.getIteratorId();
             TxResponse response = iterators.next(iteratorId);
             if (response == null) throw error(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
         }
 
-        private void stop(GrpcIterator.Stop stop) {
-            GrpcIterator.IteratorId iteratorId = stop.getIteratorId();
+        private void stop(IteratorProto.Stop stop) {
+            IteratorProto.IteratorId iteratorId = stop.getIteratorId();
             iterators.stop(iteratorId);
             responseSender.onNext(ResponseBuilder.done());
         }
@@ -350,12 +350,12 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             }
         }
 
-        private void getAttributesByValue(GrpcConcept.AttributeValue attributeValue) {
+        private void getAttributesByValue(ConceptProto.AttributeValue attributeValue) {
             Object value = attributeValue.getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
-            GrpcIterator.IteratorId iteratorId = iterators.add(iterator);
+            IteratorProto.IteratorId iteratorId = iterators.add(iterator);
 
             responseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
         }
@@ -396,7 +396,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             return nonNull(tx);
         }
 
-        public static AttributeType.DataType<?> dataType(GrpcConcept.DataType dataType) {
+        public static AttributeType.DataType<?> dataType(ConceptProto.DataType dataType) {
             switch (dataType) {
                 case String:
                     return AttributeType.DataType.STRING;
@@ -425,19 +425,19 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
      */
     public static class Iterators {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-        private final Map<GrpcIterator.IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
+        private final Map<IteratorProto.IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
 
         public static Iterators create() {
             return new Iterators();
         }
 
-        public GrpcIterator.IteratorId add(Iterator<TxResponse> iterator) {
-            GrpcIterator.IteratorId iteratorId = GrpcIterator.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        public IteratorProto.IteratorId add(Iterator<TxResponse> iterator) {
+            IteratorProto.IteratorId iteratorId = IteratorProto.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
             iterators.put(iteratorId, iterator);
             return iteratorId;
         }
 
-        public TxResponse next(GrpcIterator.IteratorId iteratorId) {
+        public TxResponse next(IteratorProto.IteratorId iteratorId) {
             Iterator<TxResponse> iterator = iterators.get(iteratorId);
             if (iterator == null) return null;
 
@@ -452,7 +452,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             return response;
         }
 
-        public void stop(GrpcIterator.IteratorId iteratorId) {
+        public void stop(IteratorProto.IteratorId iteratorId) {
             iterators.remove(iteratorId);
         }
     }

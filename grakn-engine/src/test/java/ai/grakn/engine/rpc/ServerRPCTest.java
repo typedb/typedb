@@ -47,14 +47,14 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.TransactionGrpc.TransactionBlockingStub;
 import ai.grakn.rpc.proto.TransactionGrpc.TransactionStub;
-import ai.grakn.rpc.proto.GrpcConcept;
-import ai.grakn.rpc.proto.GrpcConcept.BaseType;
+import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.ConceptProto.BaseType;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.Open;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxType;
-import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -310,8 +310,8 @@ public class ServerRPCTest {
             tx.send(next(iterator));
             TxResponse response1 = tx.receive().ok();
 
-            GrpcConcept.Concept rpcX =
-                    GrpcConcept.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
+            ConceptProto.Concept rpcX =
+                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
             TransactionProto.QueryAnswer.Builder answerX = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             TransactionProto.Answer.Builder resultX = TransactionProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
@@ -319,8 +319,8 @@ public class ServerRPCTest {
             tx.send(next(iterator));
             TxResponse response2 = tx.receive().ok();
 
-            GrpcConcept.Concept rpcY =
-                    GrpcConcept.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
+            ConceptProto.Concept rpcY =
+                    ConceptProto.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
             TransactionProto.QueryAnswer.Builder answerY = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
             TransactionProto.Answer.Builder resultY = TransactionProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
@@ -606,7 +606,7 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.getConcept(id));
 
-            GrpcConcept.Concept response = tx.receive().ok().getConcept();
+            ConceptProto.Concept response = tx.receive().ok().getConcept();
 
             assertEquals(id.getValue(), response.getId());
             assertEquals(BaseType.RELATIONSHIP, response.getBaseType());

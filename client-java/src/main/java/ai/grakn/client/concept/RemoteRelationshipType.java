@@ -25,7 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.client.Grakn;
 import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 import com.google.auto.value.AutoValue;
 
@@ -43,8 +43,8 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Relationship addRelationship() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setAddRelationship(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setAddRelationship(ConceptProto.Unit.getDefaultInstance());
         TransactionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
@@ -53,14 +53,14 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Stream<Role> relates() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetRelatedRoles(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetRelatedRoles(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -69,7 +69,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setUnsetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 

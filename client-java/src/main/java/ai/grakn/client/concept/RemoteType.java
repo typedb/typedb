@@ -25,7 +25,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 
 import java.util.stream.Stream;
@@ -40,7 +40,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetAbstract(isAbstract);
         runMethod(method.build());
 
@@ -49,7 +49,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -58,7 +58,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetKeyType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -67,7 +67,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -76,36 +76,36 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final Stream<Role> plays() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetRolesPlayedByType(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetRolesPlayedByType(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
     public final Stream<AttributeType> attributes() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetAttributeTypes(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetAttributeTypes(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetKeyTypes(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetKeyTypes(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<SomeThing> instances() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetInstances(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetInstances(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asInstance);
     }
 
     @Override
     public final Boolean isAbstract() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setIsAbstract(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setIsAbstract(ConceptProto.Unit.getDefaultInstance());
         TransactionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsAbstract();
@@ -113,7 +113,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deletePlays(Role role) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -122,7 +122,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deleteAttribute(AttributeType attributeType) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -131,7 +131,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deleteKey(AttributeType attributeType) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
         runMethod(method.build());
 

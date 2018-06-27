@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 import com.google.auto.value.AutoValue;
 
@@ -45,11 +45,11 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final D getValue() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetValue(GrpcConcept.Unit.getDefaultInstance()).build();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetValue(ConceptProto.Unit.getDefaultInstance()).build();
         TransactionProto.TxResponse response = runMethod(method.build());
 
-        GrpcConcept.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
+        ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
 
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
@@ -57,8 +57,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetDataTypeOfAttribute(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetDataTypeOfAttribute(ConceptProto.Unit.getDefaultInstance());
         TransactionProto.TxResponse response = runMethod(method.build());
 
         // TODO: Fix this unsafe casting
@@ -67,8 +67,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetOwners(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetOwners(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asThing);
     }
 

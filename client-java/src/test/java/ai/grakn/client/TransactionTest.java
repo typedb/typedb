@@ -50,12 +50,12 @@ import ai.grakn.client.concept.RemoteRule;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Status;
@@ -183,7 +183,7 @@ public class TransactionTest {
         Query<?> query = match(var("x").isa("person")).get();
         String queryString = query.toString();
 
-        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
@@ -236,7 +236,7 @@ public class TransactionTest {
         Query<?> query = define(label("person").sub("entity"));
         String queryString = query.toString();
 
-        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
@@ -259,7 +259,7 @@ public class TransactionTest {
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
 
-        GrpcConcept.Concept v123 = GrpcConcept.Concept.newBuilder().setId(V123).build();
+        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
         TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();

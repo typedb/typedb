@@ -24,7 +24,7 @@ import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.GrpcIterator.IteratorId;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -100,7 +100,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRequests;
     }
 
-    public ServerIteratorsMock grpcIterators() {
+    public ServerIteratorsMock IteratorProtos() {
         return rpcIterators;
     }
 
@@ -150,7 +150,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         static TxResponseHandler sequence(ServerRPCMock server, TxResponse... responses) {
-            IteratorId iteratorId = server.grpcIterators().add(Iterators.forArray(responses));
+            IteratorId iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
 
             return streamObserver -> {
                 List<TxResponse> responsesList =

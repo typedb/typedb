@@ -26,7 +26,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.rpc.proto.GrpcConcept;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
 
 import java.util.Arrays;
@@ -42,8 +42,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeType type() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetDirectType(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetDirectType(ConceptProto.Unit.getDefaultInstance());
         TransactionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
@@ -52,9 +52,9 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         if (roles.length == 0) {
-            method.setGetRelationships(GrpcConcept.Unit.getDefaultInstance());
+            method.setGetRelationships(ConceptProto.Unit.getDefaultInstance());
         } else {
             method.setGetRelationshipsByRoles(ConceptBuilder.concepts(Arrays.asList(roles)));
         }
@@ -63,8 +63,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Role> plays() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setGetRolesPlayedByThing(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setGetRolesPlayedByThing(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
@@ -76,7 +76,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
         TransactionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
@@ -85,9 +85,9 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         if (attributeTypes.length == 0) {
-            method.setGetAttributes(GrpcConcept.Unit.getDefaultInstance());
+            method.setGetAttributes(ConceptProto.Unit.getDefaultInstance());
         } else {
             method.setGetAttributesByTypes(ConceptBuilder.concepts(Arrays.asList(attributeTypes)));
         }
@@ -96,9 +96,9 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         if (attributeTypes.length == 0) {
-            method.setGetKeys(GrpcConcept.Unit.getDefaultInstance());
+            method.setGetKeys(ConceptProto.Unit.getDefaultInstance());
         } else {
             method.setGetKeysByTypes(ConceptBuilder.concepts(Arrays.asList(attributeTypes)));
         }
@@ -107,7 +107,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeThing deleteAttribute(Attribute attribute) {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setUnsetAttribute(ConceptBuilder.concept(attribute));
         runMethod(method.build());
 
@@ -116,8 +116,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final boolean isInferred() {
-        GrpcConcept.ConceptMethod.Builder method = GrpcConcept.ConceptMethod.newBuilder();
-        method.setIsInferred(GrpcConcept.Unit.getDefaultInstance());
+        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        method.setIsInferred(ConceptProto.Unit.getDefaultInstance());
         TransactionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsInferred();

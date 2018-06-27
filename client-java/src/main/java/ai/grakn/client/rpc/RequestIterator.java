@@ -21,13 +21,13 @@ package ai.grakn.client.rpc;
 import ai.grakn.client.Grakn;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.Done;
-import ai.grakn.rpc.proto.GrpcIterator;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
 
 import java.util.function.Function;
 
-import static ai.grakn.rpc.proto.GrpcIterator.Next;
+import static ai.grakn.rpc.proto.IteratorProto.Next;
 
 /**
  * A client-side iterator over gRPC messages. Will send {@link Next} messages until it receives a {@link Done} message.
@@ -35,11 +35,11 @@ import static ai.grakn.rpc.proto.GrpcIterator.Next;
  * @param <T> class type of objects being iterated
  */
 public class RequestIterator<T> extends AbstractIterator<T> {
-    private final GrpcIterator.IteratorId iteratorId;
+    private final IteratorProto.IteratorId iteratorId;
     private Grakn.Transaction tx;
     private Function<TransactionProto.TxResponse, T> responseReader;
 
-    public RequestIterator(Grakn.Transaction tx, GrpcIterator.IteratorId iteratorId, Function<TransactionProto.TxResponse, T> responseReader) {
+    public RequestIterator(Grakn.Transaction tx, IteratorProto.IteratorId iteratorId, Function<TransactionProto.TxResponse, T> responseReader) {
         this.tx = tx;
         this.iteratorId = iteratorId;
         this.responseReader = responseReader;

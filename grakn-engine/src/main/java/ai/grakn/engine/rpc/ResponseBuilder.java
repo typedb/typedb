@@ -23,11 +23,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.proto.GrpcConcept;
-import ai.grakn.rpc.proto.GrpcConcept.ConceptResponse;
+import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.ConceptProto.ConceptResponse;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.GrpcIterator;
+import ai.grakn.rpc.proto.IteratorProto;
 
 import java.util.stream.Stream;
 
@@ -45,7 +45,7 @@ public class ResponseBuilder {
     }
 
     static TxResponse iteratorId(Stream<TxResponse> responses, TransactionService.Iterators iterators) {
-        GrpcIterator.IteratorId iteratorId = iterators.add(responses.iterator());
+        IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
     }
@@ -55,7 +55,7 @@ public class ResponseBuilder {
     }
 
     static TxResponse rolePlayer(Role role, Thing player) {
-        GrpcConcept.RolePlayer rolePlayer = GrpcConcept.RolePlayer.newBuilder()
+        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
