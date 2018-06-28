@@ -26,7 +26,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.client.Grakn;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     public final Relationship addRelationship() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setAddRelationship(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);

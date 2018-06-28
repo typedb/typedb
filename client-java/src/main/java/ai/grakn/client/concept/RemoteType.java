@@ -26,7 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
 
@@ -106,7 +106,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final Boolean isAbstract() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setIsAbstract(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsAbstract();
     }

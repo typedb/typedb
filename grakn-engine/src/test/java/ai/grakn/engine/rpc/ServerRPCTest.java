@@ -48,12 +48,12 @@ import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.ConceptProto.BaseType;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
-import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.Open;
-import ai.grakn.rpc.proto.TransactionProto.TxRequest;
-import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.TransactionProto.TxType;
+import ai.grakn.rpc.proto.SessionGrpc;
+import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionProto.Open;
+import ai.grakn.rpc.proto.SessionProto.TxRequest;
+import ai.grakn.rpc.proto.SessionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionProto.TxType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -123,7 +123,7 @@ public class ServerRPCTest {
 
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
-    private final TransactionGrpc.TransactionStub stub = TransactionGrpc.newStub(channel);
+    private final SessionGrpc.SessionStub stub = SessionGrpc.newStub(channel);
     private final KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub = KeyspaceGrpc.newBlockingStub(channel);
 
     @Before
@@ -132,7 +132,7 @@ public class ServerRPCTest {
 
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new TransactionService(requestOpener, mockedPostProcessor))
+                .addService(new SessionService(requestOpener, mockedPostProcessor))
                 .addService(new KeyspaceService(requestOpener))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
@@ -314,8 +314,8 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
-            TransactionProto.QueryAnswer.Builder answerX = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            TransactionProto.Answer.Builder resultX = TransactionProto.Answer.newBuilder().setQueryAnswer(answerX);
+            SessionProto.QueryAnswer.Builder answerX = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
+            SessionProto.Answer.Builder resultX = SessionProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(next(iterator));
@@ -323,8 +323,8 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
-            TransactionProto.QueryAnswer.Builder answerY = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            TransactionProto.Answer.Builder resultY = TransactionProto.Answer.newBuilder().setQueryAnswer(answerY);
+            SessionProto.QueryAnswer.Builder answerY = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
+            SessionProto.Answer.Builder resultY = SessionProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(next(iterator));
@@ -394,7 +394,7 @@ public class ServerRPCTest {
             tx.send(query(COUNT_QUERY, false));
 
             TxResponse expected =
-                    TxResponse.newBuilder().setAnswer(TransactionProto.Answer.newBuilder().setOtherResult("100")).build();
+                    TxResponse.newBuilder().setAnswer(SessionProto.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }

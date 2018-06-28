@@ -25,7 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.client.Grakn;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -53,7 +53,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> putAttribute(D value) {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setPutAttribute(ConceptBuilder.attributeValue(value));
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);
@@ -64,7 +64,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> getAttribute(D value) {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetAttribute(ConceptBuilder.attributeValue(value));
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
 
@@ -77,7 +77,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final AttributeType.DataType<D> getDataType() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetDataTypeOfAttributeType(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());
@@ -88,7 +88,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final String getRegex() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetRegex(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return response.getConceptResponse().getRegex();

@@ -23,10 +23,10 @@ import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceGrpc.KeyspaceImplBase;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.TransactionGrpc.TransactionImplBase;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.TxRequest;
-import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
+import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionProto.TxRequest;
+import ai.grakn.rpc.proto.SessionProto.TxResponse;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.mock;
  *
  * <p>
  *     The gRPC server itself is "real" and can be connected to using the {@link #channel()}. However, the
- *     {@link #transactionService()} and {@link #requests()} are both mock objects and should be used with
+ *     {@link #sessionService()} and {@link #requests()} are both mock objects and should be used with
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
@@ -75,7 +75,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-    private final TransactionImplBase transactionService = mock(TransactionImplBase.class);
+    private final SessionImplBase sessionService = mock(SessionImplBase.class);
     private final KeyspaceImplBase keyspaceService = mock(KeyspaceGrpc.KeyspaceImplBase.class);
 
     private @Nullable StreamObserver<TxResponse> serverResponses = null;
@@ -94,8 +94,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRule.getChannel();
     }
 
-    TransactionImplBase transactionService() {
-        return transactionService;
+    SessionImplBase sessionService() {
+        return sessionService;
     }
 
     KeyspaceImplBase keyspaceService() {
@@ -163,7 +163,7 @@ public final class ServerRPCMock extends CompositeTestRule {
                         ImmutableList.<TxResponse>builder().add(responses).add(done()).build();
 
                 server.setResponse(RequestBuilder.Transaction.next(iteratorId), responsesList);
-                streamObserver.onNext(TransactionProto.TxResponse.newBuilder().setIteratorId(iteratorId).build());
+                streamObserver.onNext(SessionProto.TxResponse.newBuilder().setIteratorId(iteratorId).build());
             };
         }
 
@@ -180,7 +180,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         doAnswer(args -> {
             serverResponses = args.getArgument(0);
             return serverRequests;
-        }).when(transactionService).tx(any());
+        }).when(sessionService).transaction(any());
 
         doAnswer(args -> {
             StreamObserver<KeyspaceProto.Delete.Res> response = args.getArgument(1);
@@ -212,7 +212,7 @@ public final class ServerRPCMock extends CompositeTestRule {
             return null;
         }).when(serverRequests).onCompleted();
 
-        serverRule.getServiceRegistry().addService(transactionService);
+        serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);
     }
 
@@ -227,8 +227,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
     }
 
-    private static TransactionProto.TxResponse done() {
-        return TransactionProto.TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
+    private static SessionProto.TxResponse done() {
+        return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
     }
 
     /**
@@ -259,7 +259,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         /**
-         * Return the next response from an iterator. Will return a {@link TransactionProto.Done} response if the iterator is exhausted.
+         * Return the next response from an iterator. Will return a {@link SessionProto.Done} response if the iterator is exhausted.
          */
         public Optional<TxResponse> next(IteratorId iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {

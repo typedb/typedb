@@ -53,10 +53,10 @@ import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.TxRequest;
-import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionGrpc;
+import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionProto.TxRequest;
+import ai.grakn.rpc.proto.SessionProto.TxResponse;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Status;
@@ -107,24 +107,24 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.transactionStub()).thenReturn(TransactionGrpc.newStub(server.channel()));
+        when(session.sessionStub()).thenReturn(SessionGrpc.newStub(server.channel()));
         when(session.keyspaceBlockingStub()).thenReturn(KeyspaceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
     }
 
-    private static TransactionProto.TxResponse done() {
-        return TransactionProto.TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
+    private static SessionProto.TxResponse done() {
+        return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
     }
     
-    private static TransactionProto.TxResponse response(Concept concept) {
-        return TransactionProto.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+    private static SessionProto.TxResponse response(Concept concept) {
+        return SessionProto.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
     }
     
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
-            verify(server.transactionService()).tx(any());
+            verify(server.sessionService()).transaction(any());
         }
     }
 
@@ -185,8 +185,8 @@ public class TransactionTest {
         String queryString = query.toString();
 
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
+        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponseSequence(RequestBuilder.Transaction.query(query), response);
@@ -222,7 +222,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         TxResponse response =
-                TxResponse.newBuilder().setAnswer(TransactionProto.Answer.newBuilder().setOtherResult("true")).build();
+                TxResponse.newBuilder().setAnswer(SessionProto.Answer.newBuilder().setOtherResult("true")).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
 
@@ -238,8 +238,8 @@ public class TransactionTest {
         String queryString = query.toString();
 
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
+        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponseSequence(RequestBuilder.Transaction.query(query), response);
@@ -261,12 +261,12 @@ public class TransactionTest {
         String queryString = query.toString();
 
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        TransactionProto.QueryAnswer grpcAnswer = TransactionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        TransactionProto.Answer queryResult = TransactionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
+        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
+        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
         TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query),
-                           TransactionProto.TxResponse.newBuilder().setIteratorId(ITERATOR).build());
+                           SessionProto.TxResponse.newBuilder().setIteratorId(ITERATOR).build());
         server.setResponse(RequestBuilder.Transaction.next(ITERATOR), response);
 
         List<Answer> answers;
@@ -476,7 +476,7 @@ public class TransactionTest {
 
             Concept concept = RemoteEntity.create(tx, id);
 
-            TransactionProto.TxResponse response = TransactionProto.TxResponse.newBuilder()
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -491,7 +491,7 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requests()).onNext(any()); // The open request
 
-            TransactionProto.TxResponse response = TransactionProto.TxResponse.newBuilder().setNoResult(true).build();
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
             assertNull(tx.getConcept(id));
@@ -507,7 +507,7 @@ public class TransactionTest {
             verify(server.requests()).onNext(any()); // The open request
 
             Concept concept = RemoteAttributeType.create(tx, id);
-            TransactionProto.TxResponse response = TransactionProto.TxResponse.newBuilder()
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
@@ -522,7 +522,7 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requests()).onNext(any()); // The open request
 
-            TransactionProto.TxResponse response = TransactionProto.TxResponse.newBuilder().setNoResult(true).build();
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
             assertNull(tx.getSchemaConcept(label));

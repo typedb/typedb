@@ -39,10 +39,10 @@ import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.TxRequest;
-import ai.grakn.rpc.proto.TransactionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionGrpc;
+import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionProto.TxRequest;
+import ai.grakn.rpc.proto.SessionProto.TxResponse;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -63,19 +63,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
- *  Grakn RPC TransactionService
+ *  Grakn RPC Session Service
  */
-public class TransactionService extends TransactionGrpc.TransactionImplBase {
+public class SessionService extends SessionGrpc.SessionImplBase {
     private final OpenRequest requestOpener;
     private PostProcessor postProcessor;
 
-    public TransactionService(OpenRequest requestOpener, PostProcessor postProcessor) {
+    public SessionService(OpenRequest requestOpener, PostProcessor postProcessor) {
         this.requestOpener = requestOpener;
         this.postProcessor = postProcessor;
     }
 
-    @Override
-    public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseSender) {
+    public StreamObserver<TxRequest> transaction(StreamObserver<TxResponse> responseSender) {
         return TransactionListener.create(responseSender, requestOpener, postProcessor);
     }
 
@@ -103,10 +102,10 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             this.postProcessor = postProcessor;
         }
 
-        public static TransactionListener create(StreamObserver<TxResponse> responseObserver, OpenRequest requestOpener, PostProcessor postProcessor) {
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
+        public static TransactionListener create(StreamObserver<TxResponse> responseSender, OpenRequest requestOpener, PostProcessor postProcessor) {
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseObserver, threadExecutor, requestOpener, postProcessor);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -217,7 +216,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             }
         }
 
-        private void open(TransactionProto.Open request) {
+        private void open(SessionProto.Open request) {
             if (tx != null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
@@ -236,7 +235,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.done());
         }
 
-        private void query(TransactionProto.Query request) {
+        private void query(SessionProto.Query request) {
             String queryString = request.getQuery();
             QueryBuilder graql = tx().graql();
             TxResponse response;
@@ -272,7 +271,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.done());
         }
 
-        private void runConceptMethod(TransactionProto.RunConceptMethod runConceptMethod) {
+        private void runConceptMethod(SessionProto.RunConceptMethod runConceptMethod) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
             TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
             responseSender.onNext(response);
@@ -316,7 +315,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.concept(relationshipType));
         }
 
-        private void putAttributeType(TransactionProto.AttributeType putAttributeType) {
+        private void putAttributeType(SessionProto.AttributeType putAttributeType) {
             Label label = Label.of(putAttributeType.getLabel());
             AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
 
@@ -329,7 +328,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.concept(role));
         }
 
-        private void putRule(TransactionProto.Rule putRule) {
+        private void putRule(SessionProto.Rule putRule) {
             Label label = Label.of(putRule.getLabel());
             Pattern when = Graql.parser().parsePattern(putRule.getWhen());
             Pattern then = Graql.parser().parsePattern(putRule.getThen());

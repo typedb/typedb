@@ -26,7 +26,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -47,7 +47,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     public final D getValue() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetValue(ConceptProto.Unit.getDefaultInstance()).build();
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
 
@@ -59,7 +59,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     public final AttributeType.DataType<D> dataType() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetDataTypeOfAttribute(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         // TODO: Fix this unsafe casting
         return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());

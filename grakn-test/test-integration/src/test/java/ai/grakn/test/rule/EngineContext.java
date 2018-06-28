@@ -37,7 +37,7 @@ import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.rpc.KeyspaceService;
-import ai.grakn.engine.rpc.TransactionService;
+import ai.grakn.engine.rpc.SessionService;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
@@ -309,7 +309,7 @@ public class EngineContext extends CompositeTestRule {
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new TransactionService(requestOpener, postProcessor))
+                .addService(new SessionService(requestOpener, postProcessor))
                 .addService(new KeyspaceService(requestOpener))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);

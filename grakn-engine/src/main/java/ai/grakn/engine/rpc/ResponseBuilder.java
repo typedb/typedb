@@ -33,7 +33,7 @@ import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -50,70 +50,70 @@ public class ResponseBuilder {
      */
     public static class Transaction {
 
-        static TransactionProto.TxResponse done() {
-            return TransactionProto.TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
+        static SessionProto.TxResponse done() {
+            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
-        static TransactionProto.TxResponse noResult() {
-            return TransactionProto.TxResponse.newBuilder().setNoResult(true).build();
+        static SessionProto.TxResponse noResult() {
+            return SessionProto.TxResponse.newBuilder().setNoResult(true).build();
         }
 
-        static TransactionProto.TxResponse iteratorId(Stream<TransactionProto.TxResponse> responses, TransactionService.Iterators iterators) {
+        static SessionProto.TxResponse iteratorId(Stream<SessionProto.TxResponse> responses, SessionService.Iterators iterators) {
             IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
             ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse concept(Concept concept) {
-            return TransactionProto.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        static SessionProto.TxResponse concept(Concept concept) {
+            return SessionProto.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
         }
 
-        static TransactionProto.TxResponse rolePlayer(Role role, Thing player) {
+        static SessionProto.TxResponse rolePlayer(Role role, Thing player) {
             ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                     .setRole(ConceptBuilder.concept(role))
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();
-            return TransactionProto.TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
+            return SessionProto.TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
         }
 
-        static TransactionProto.TxResponse answer(Object object) {
-            return TransactionProto.TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
+        static SessionProto.TxResponse answer(Object object) {
+            return SessionProto.TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
         }
 
-        static TransactionProto.TxResponse conceptResponseWithNoResult() {
+        static SessionProto.TxResponse conceptResponseWithNoResult() {
             ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setNoResult(true).build();
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse conceptResopnseWithConcept(Concept concept) {
+        static SessionProto.TxResponse conceptResopnseWithConcept(Concept concept) {
             ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
+        static SessionProto.TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
             ConceptProto.ConceptResponse.Builder conceptResponse = ConceptProto.ConceptResponse.newBuilder();
             conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse conceptResponseWithAttributeValue(Object value) {
+        static SessionProto.TxResponse conceptResponseWithAttributeValue(Object value) {
             ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse conceptResponseWithPattern(Pattern pattern) {
+        static SessionProto.TxResponse conceptResponseWithPattern(Pattern pattern) {
             ConceptProto.ConceptResponse.Builder conceptResponse = ConceptProto.ConceptResponse.newBuilder();
             if (pattern != null) {
                 conceptResponse.setPattern(pattern.toString());
             } else {
                 conceptResponse.setNoResult(true);
             }
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static TransactionProto.TxResponse conceptResponseWithRegex(String regex) {
+        static SessionProto.TxResponse conceptResponseWithRegex(String regex) {
             ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setRegex(regex).build();
-            return TransactionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
     }
 

@@ -48,9 +48,9 @@ import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.RequestIterator;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.TransactionGrpc;
+import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
@@ -98,8 +98,8 @@ public final class Grakn {
             this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        TransactionGrpc.TransactionStub transactionStub() {
-            return TransactionGrpc.newStub(channel);
+        SessionGrpc.SessionStub sessionStub() {
+            return SessionGrpc.newStub(channel);
         }
 
         KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub() {
@@ -139,12 +139,12 @@ public final class Grakn {
         private Transaction(Session session, GraknTxType type) {
             this.session = session;
             this.type = type;
-            this.transceiver = Transceiver.create(session.transactionStub());
+            this.transceiver = Transceiver.create(session.sessionStub());
             transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
             responseOrThrow();
         }
 
-        private TransactionProto.TxResponse responseOrThrow() {
+        private SessionProto.TxResponse responseOrThrow() {
             Transceiver.Response response;
 
             try {
@@ -168,16 +168,16 @@ public final class Grakn {
         }
 
 
-        public TransactionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {
+        public SessionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {
             transceiver.send(RequestBuilder.Transaction.next(iteratorId));
             return responseOrThrow();
         }
 
-        public TransactionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
-            TransactionProto.RunConceptMethod.Builder runConceptMethod = TransactionProto.RunConceptMethod.newBuilder();
+        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
+            SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
             runConceptMethod.setId(id.getValue());
             runConceptMethod.setMethod(method);
-            TransactionProto.TxRequest conceptMethodRequest = TransactionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+            SessionProto.TxRequest conceptMethodRequest = SessionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
             transceiver.send(conceptMethodRequest);
             return responseOrThrow();
@@ -217,7 +217,7 @@ public final class Grakn {
         @Override
         public <T extends Concept> T getConcept(ConceptId id) {
             transceiver.send(RequestBuilder.Transaction.getConcept(id));
-            TransactionProto.TxResponse response = responseOrThrow();
+            SessionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
         }
@@ -226,7 +226,7 @@ public final class Grakn {
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
             transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
-            TransactionProto.TxResponse response = responseOrThrow();
+            SessionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
         }
@@ -344,7 +344,7 @@ public final class Grakn {
         public Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
 
-            TransactionProto.TxResponse txResponse = responseOrThrow();
+            SessionProto.TxResponse txResponse = responseOrThrow();
 
             switch (txResponse.getResponseCase()) {
                 case ANSWER:

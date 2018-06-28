@@ -26,7 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;
@@ -122,23 +122,23 @@ public class ConceptBuilder {
         return builder.build();
     }
 
-    static TransactionProto.Answer answer(Object object) {
-        TransactionProto.Answer answer;
+    static SessionProto.Answer answer(Object object) {
+        SessionProto.Answer answer;
 
         if (object instanceof Answer) {
-            answer = TransactionProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
+            answer = SessionProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
         } else if (object instanceof ComputeQuery.Answer) {
-            answer = TransactionProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
+            answer = SessionProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
         } else {
             // If not an QueryAnswer or ComputeAnswer, convert to JSON
-            answer = TransactionProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
+            answer = SessionProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
         }
 
         return answer;
     }
 
-    static TransactionProto.QueryAnswer queryAnswer(Answer answer) {
-        TransactionProto.QueryAnswer.Builder queryAnswerRPC = TransactionProto.QueryAnswer.newBuilder();
+    static SessionProto.QueryAnswer queryAnswer(Answer answer) {
+        SessionProto.QueryAnswer.Builder queryAnswerRPC = SessionProto.QueryAnswer.newBuilder();
         answer.forEach((var, concept) -> {
             ConceptProto.Concept conceptRps = concept(concept);
             queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
@@ -147,8 +147,8 @@ public class ConceptBuilder {
         return queryAnswerRPC.build();
     }
 
-    static TransactionProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
-        TransactionProto.ComputeAnswer.Builder computeAnswerRPC = TransactionProto.ComputeAnswer.newBuilder();
+    static SessionProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
+        SessionProto.ComputeAnswer.Builder computeAnswerRPC = SessionProto.ComputeAnswer.newBuilder();
 
         if (computeAnswer.getNumber().isPresent()) {
             computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
@@ -169,15 +169,15 @@ public class ConceptBuilder {
         return computeAnswerRPC.build();
     }
 
-    private static TransactionProto.Paths paths(List<List<ConceptId>> paths) {
-        TransactionProto.Paths.Builder pathsRPC = TransactionProto.Paths.newBuilder();
+    private static SessionProto.Paths paths(List<List<ConceptId>> paths) {
+        SessionProto.Paths.Builder pathsRPC = SessionProto.Paths.newBuilder();
         for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
 
         return pathsRPC.build();
     }
 
-    private static TransactionProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
-        TransactionProto.Centrality.Builder centralityCountsRPC = TransactionProto.Centrality.newBuilder();
+    private static SessionProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
+        SessionProto.Centrality.Builder centralityCountsRPC = SessionProto.Centrality.newBuilder();
 
         for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
             centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
@@ -186,15 +186,15 @@ public class ConceptBuilder {
         return centralityCountsRPC.build();
     }
 
-    private static TransactionProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
-        TransactionProto.ClusterSizes.Builder clusterSizesRPC = TransactionProto.ClusterSizes.newBuilder();
+    private static SessionProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
+        SessionProto.ClusterSizes.Builder clusterSizesRPC = SessionProto.ClusterSizes.newBuilder();
         clusterSizesRPC.addAllClusterSizes(clusterSizes);
 
         return clusterSizesRPC.build();
     }
 
-    private static TransactionProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
-        TransactionProto.Clusters.Builder clustersRPC = TransactionProto.Clusters.newBuilder();
+    private static SessionProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
+        SessionProto.Clusters.Builder clustersRPC = SessionProto.Clusters.newBuilder();
         for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
 
         return clustersRPC.build();

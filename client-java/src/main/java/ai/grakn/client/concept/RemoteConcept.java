@@ -26,7 +26,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.IteratorProto;
 
 import java.util.stream.Stream;
@@ -69,11 +69,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
-    protected final TransactionProto.TxResponse runMethod(ConceptProto.ConceptMethod method) {
+    protected final SessionProto.TxResponse runMethod(ConceptProto.ConceptMethod method) {
         return runMethod(getId(), method);
     }
 
-    protected final TransactionProto.TxResponse runMethod(ConceptId id, ConceptProto.ConceptMethod method) {
+    protected final SessionProto.TxResponse runMethod(ConceptId id, ConceptProto.ConceptMethod method) {
         return tx().runConceptMethod(id, method);
     }
 

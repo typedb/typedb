@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final SomeType type() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setGetDirectType(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asCurrentType(concept);
@@ -78,7 +78,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Relationship attributeRelationship(Attribute attribute) {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
         return concept.asRelationship();
     }
@@ -118,7 +118,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final boolean isInferred() {
         ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
         method.setIsInferred(ConceptProto.Unit.getDefaultInstance());
-        TransactionProto.TxResponse response = runMethod(method.build());
+        SessionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsInferred();
     }

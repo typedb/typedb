@@ -4,9 +4,9 @@ option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "KeyspaceProto";
 
 service Keyspace {
-    rpc Create (Create.Req) returns (Create.Res);
-    rpc Retrieve (Retrieve.Req) returns (Retrieve.Res);
-    rpc Delete (Delete.Req) returns (Delete.Res);
+    rpc create (Create.Req) returns (Create.Res);
+    rpc retrieve (Retrieve.Req) returns (Retrieve.Res);
+    rpc delete (Delete.Req) returns (Delete.Res);
 }
 
 message Retrieve {

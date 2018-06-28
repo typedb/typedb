@@ -19,8 +19,8 @@
 package ai.grakn.client.rpc;
 
 import ai.grakn.client.Grakn;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.Done;
+import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionProto.Done;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.AbstractIterator;
@@ -37,9 +37,9 @@ import static ai.grakn.rpc.proto.IteratorProto.Next;
 public class RequestIterator<T> extends AbstractIterator<T> {
     private final IteratorProto.IteratorId iteratorId;
     private Grakn.Transaction tx;
-    private Function<TransactionProto.TxResponse, T> responseReader;
+    private Function<SessionProto.TxResponse, T> responseReader;
 
-    public RequestIterator(Grakn.Transaction tx, IteratorProto.IteratorId iteratorId, Function<TransactionProto.TxResponse, T> responseReader) {
+    public RequestIterator(Grakn.Transaction tx, IteratorProto.IteratorId iteratorId, Function<SessionProto.TxResponse, T> responseReader) {
         this.tx = tx;
         this.iteratorId = iteratorId;
         this.responseReader = responseReader;
@@ -47,7 +47,7 @@ public class RequestIterator<T> extends AbstractIterator<T> {
 
     @Override
     protected final T computeNext() {
-        TransactionProto.TxResponse response = tx.next(iteratorId);
+        SessionProto.TxResponse response = tx.next(iteratorId);
 
         switch (response.getResponseCase()) {
             case DONE:
