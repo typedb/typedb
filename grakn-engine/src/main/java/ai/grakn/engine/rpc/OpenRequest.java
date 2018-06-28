@@ -25,7 +25,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 /**
  * Interface implemented by classes that create a new GraknTx for RPC Open requests
  */
-
 public interface OpenRequest {
 
     EmbeddedGraknTx<?> open(OpenRequest.Arguments arguments);

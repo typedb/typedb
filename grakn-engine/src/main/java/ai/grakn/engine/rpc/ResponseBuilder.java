@@ -47,74 +47,80 @@ import java.util.stream.Stream;
  */
 public class ResponseBuilder {
 
-    static TxResponse done() {
-        return TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
-    }
+    public static class Transaction {
 
-    static TxResponse noResult() {
-        return TxResponse.newBuilder().setNoResult(true).build();
-    }
-
-    static TxResponse iteratorId(Stream<TxResponse> responses, TransactionService.Iterators iterators) {
-        IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-    
-    static TxResponse concept(Concept concept) {
-        return TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
-    }
-
-    static TxResponse rolePlayer(Role role, Thing player) {
-        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
-                .setRole(ConceptBuilder.concept(role))
-                .setPlayer(ConceptBuilder.concept(player))
-                .build();
-        return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
-    }
-
-    static TxResponse answer(Object object) {
-        return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
-    }
-
-    static KeyspaceProto.Delete.Res delete() {
-        return KeyspaceProto.Delete.Res.newBuilder().build();
-    }
-
-    static TxResponse conceptResponseWithNoResult() {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-
-    static TxResponse conceptResopnseWithConcept(Concept concept) {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-
-    static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-    
-    static TxResponse conceptResponseWithAttributeValue(Object value) {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-
-    static TxResponse conceptResponseWithPattern(Pattern pattern) {
-        ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
-        if (pattern != null) {
-            conceptResponse.setPattern(pattern.toString());
-        } else {
-            conceptResponse.setNoResult(true);
+        static TxResponse done() {
+            return TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
         }
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+
+        static TxResponse noResult() {
+            return TxResponse.newBuilder().setNoResult(true).build();
+        }
+
+        static TxResponse iteratorId(Stream<TxResponse> responses, TransactionService.Iterators iterators) {
+            IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+            ConceptResponse conceptResponse = ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse concept(Concept concept) {
+            return TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        }
+
+        static TxResponse rolePlayer(Role role, Thing player) {
+            ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+                    .setRole(ConceptBuilder.concept(role))
+                    .setPlayer(ConceptBuilder.concept(player))
+                    .build();
+            return TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
+        }
+
+        static TxResponse answer(Object object) {
+            return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
+        }
+
+        static TxResponse conceptResponseWithNoResult() {
+            ConceptResponse conceptResponse = ConceptResponse.newBuilder().setNoResult(true).build();
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse conceptResopnseWithConcept(Concept concept) {
+            ConceptResponse conceptResponse = ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
+            ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
+            conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse conceptResponseWithAttributeValue(Object value) {
+            ConceptResponse conceptResponse = ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse conceptResponseWithPattern(Pattern pattern) {
+            ConceptResponse.Builder conceptResponse = ConceptResponse.newBuilder();
+            if (pattern != null) {
+                conceptResponse.setPattern(pattern.toString());
+            } else {
+                conceptResponse.setNoResult(true);
+            }
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
+
+        static TxResponse conceptResponseWithRegex(String regex) {
+            ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
+            return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+        }
     }
 
-    static TxResponse conceptResponseWithRegex(String regex) {
-        ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
-        return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    public static class Keyspace {
+
+        static KeyspaceProto.Delete.Res delete() {
+            return KeyspaceProto.Delete.Res.newBuilder().build();
+        }
     }
 
     public static StatusRuntimeException exception(RuntimeException e) {

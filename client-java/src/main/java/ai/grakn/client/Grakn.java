@@ -140,7 +140,7 @@ public final class Grakn {
             this.session = session;
             this.type = type;
             this.transceiver = Transceiver.create(session.transactionStub());
-            transceiver.send(RequestBuilder.open(session.keyspace(), type));
+            transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
             responseOrThrow();
         }
 
@@ -169,7 +169,7 @@ public final class Grakn {
 
 
         public TransactionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {
-            transceiver.send(RequestBuilder.next(iteratorId));
+            transceiver.send(RequestBuilder.Transaction.next(iteratorId));
             return responseOrThrow();
         }
 
@@ -185,38 +185,38 @@ public final class Grakn {
 
         @Override
         public EntityType putEntityType(Label label) {
-            transceiver.send(RequestBuilder.putEntityType(label));
+            transceiver.send(RequestBuilder.Transaction.putEntityType(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asEntityType();
         }
 
         @Override
         public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-            transceiver.send(RequestBuilder.putAttributeType(label, dataType));
+            transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
         }
 
         @Override
         public Rule putRule(Label label, Pattern when, Pattern then) {
-            transceiver.send(RequestBuilder.putRule(label, when, then));
+            transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
         }
 
         @Override
         public RelationshipType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.putRelationshipType(label));
+            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
         }
 
         @Override
         public Role putRole(Label label) {
-            transceiver.send(RequestBuilder.putRole(label));
+            transceiver.send(RequestBuilder.Transaction.putRole(label));
             return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
         }
 
         @Nullable
         @Override
         public <T extends Concept> T getConcept(ConceptId id) {
-            transceiver.send(RequestBuilder.getConcept(id));
+            transceiver.send(RequestBuilder.Transaction.getConcept(id));
             TransactionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
@@ -225,7 +225,7 @@ public final class Grakn {
         @Nullable
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-            transceiver.send(RequestBuilder.getSchemaConcept(label));
+            transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
             TransactionProto.TxResponse response = responseOrThrow();
             if (response.getNoResult()) return null;
             return (T) ConceptBuilder.concept(response.getConcept(), this);
@@ -239,7 +239,7 @@ public final class Grakn {
 
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-            transceiver.send(RequestBuilder.getAttributesByValue(value));
+            transceiver.send(RequestBuilder.Transaction.getAttributesByValue(value));
             IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
             Iterable<Concept> iterable = () -> new RequestIterator<>(
                     this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
@@ -310,7 +310,7 @@ public final class Grakn {
 
         @Override
         public void commit() throws InvalidKBException {
-            transceiver.send(RequestBuilder.commit());
+            transceiver.send(RequestBuilder.Transaction.commit());
             responseOrThrow();
             close();
         }
@@ -330,7 +330,7 @@ public final class Grakn {
 
         @Override
         public void delete() {
-            KeyspaceProto.Delete.Req request = RequestBuilder.delete(keyspace().getValue());
+            KeyspaceProto.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
             KeyspaceGrpc.KeyspaceBlockingStub stub = session.keyspaceBlockingStub();
             stub.delete(request);
             close();
@@ -342,7 +342,7 @@ public final class Grakn {
         }
 
         public Iterator query(Query<?> query) {
-            transceiver.send(RequestBuilder.query(query.toString(), query.inferring()));
+            transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
 
             TransactionProto.TxResponse txResponse = responseOrThrow();
 

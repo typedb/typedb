@@ -162,7 +162,7 @@ public final class ServerRPCMock extends CompositeTestRule {
                 List<TxResponse> responsesList =
                         ImmutableList.<TxResponse>builder().add(responses).add(done()).build();
 
-                server.setResponse(RequestBuilder.next(iteratorId), responsesList);
+                server.setResponse(RequestBuilder.Transaction.next(iteratorId), responsesList);
                 streamObserver.onNext(TransactionProto.TxResponse.newBuilder().setIteratorId(iteratorId).build());
             };
         }

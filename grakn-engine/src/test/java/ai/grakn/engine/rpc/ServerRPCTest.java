@@ -73,13 +73,13 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.commit;
-import static ai.grakn.client.rpc.RequestBuilder.delete;
-import static ai.grakn.client.rpc.RequestBuilder.next;
-import static ai.grakn.client.rpc.RequestBuilder.open;
-import static ai.grakn.client.rpc.RequestBuilder.query;
-import static ai.grakn.client.rpc.RequestBuilder.stop;
-import static ai.grakn.engine.rpc.ResponseBuilder.done;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
+import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.next;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.query;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.stop;
+import static ai.grakn.engine.rpc.ResponseBuilder.Transaction.done;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -413,7 +413,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
-            assertEquals(ResponseBuilder.done(), tx.receive().ok());
+            assertEquals(ResponseBuilder.Transaction.done(), tx.receive().ok());
         }
     }
 
@@ -606,7 +606,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.getConcept(id));
+            tx.send(RequestBuilder.Transaction.getConcept(id));
 
             ConceptProto.Concept response = tx.receive().ok().getConcept();
 
@@ -625,7 +625,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            tx.send(RequestBuilder.getConcept(id));
+            tx.send(RequestBuilder.Transaction.getConcept(id));
 
             boolean response = tx.receive().ok().getNoResult();
 
@@ -754,7 +754,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(stop(IteratorId.getDefaultInstance()));
-            assertEquals(ResponseBuilder.done(), tx.receive().ok());
+            assertEquals(ResponseBuilder.Transaction.done(), tx.receive().ok());
         }
     }
 
@@ -815,7 +815,7 @@ public class ServerRPCTest {
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
         String keyspace = "not!@akeyspace";
         exception.expect(hasStatus(Status.INVALID_ARGUMENT));
-        keyspaceBlockingStub.delete(RequestBuilder.delete(keyspace));
+        keyspaceBlockingStub.delete(RequestBuilder.Keyspace.delete(keyspace));
     }
 }
 

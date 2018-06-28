@@ -228,12 +228,12 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             );
 
             tx = requestOpener.open(args);
-            responseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.Transaction.done());
         }
 
         private void commit() {
             tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
-            responseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.Transaction.done());
         }
 
         private void query(TransactionProto.Query request) {
@@ -245,15 +245,15 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             Query<?> query = graql.parse(queryString);
 
             if (query instanceof Streamable) {
-                Stream<TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder::answer);
+                Stream<TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
                 IteratorProto.IteratorId iteratorId = iterators.add(responseStream.iterator());
 
                 response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
             } else {
                 Object result = query.execute();
 
-                if (result == null) response = ResponseBuilder.done();
-                else response = ResponseBuilder.answer(result);
+                if (result == null) response = ResponseBuilder.Transaction.done();
+                else response = ResponseBuilder.Transaction.answer(result);
             }
 
             responseSender.onNext(response);
@@ -269,7 +269,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
         private void stop(IteratorProto.Stop stop) {
             IteratorProto.IteratorId iteratorId = stop.getIteratorId();
             iterators.stop(iteratorId);
-            responseSender.onNext(ResponseBuilder.done());
+            responseSender.onNext(ResponseBuilder.Transaction.done());
         }
 
         private void runConceptMethod(TransactionProto.RunConceptMethod runConceptMethod) {
@@ -281,18 +281,18 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
         private void getConcept(String conceptId) {
             Concept concept = tx().getConcept(ConceptId.of(conceptId));
             if (concept == null) {
-                responseSender.onNext(ResponseBuilder.noResult());
+                responseSender.onNext(ResponseBuilder.Transaction.noResult());
             } else {
-                responseSender.onNext(ResponseBuilder.concept(concept));
+                responseSender.onNext(ResponseBuilder.Transaction.concept(concept));
             }
         }
 
         private void getSchemaConcept(String label) {
             Concept concept = tx().getSchemaConcept(Label.of(label));
             if (concept == null) {
-                responseSender.onNext(ResponseBuilder.noResult());
+                responseSender.onNext(ResponseBuilder.Transaction.noResult());
             } else {
-                responseSender.onNext(ResponseBuilder.concept(concept));
+                responseSender.onNext(ResponseBuilder.Transaction.concept(concept));
             }
         }
 
@@ -300,7 +300,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             Object value = attributeValue.getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
-            Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder::concept).iterator();
+            Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
             IteratorProto.IteratorId iteratorId = iterators.add(iterator);
 
             responseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
@@ -308,12 +308,12 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
 
         private void putEntityType(String label) {
             EntityType entityType = tx().putEntityType(Label.of(label));
-            responseSender.onNext(ResponseBuilder.concept(entityType));
+            responseSender.onNext(ResponseBuilder.Transaction.concept(entityType));
         }
 
         private void putRelationshipType(String label) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(label));
-            responseSender.onNext(ResponseBuilder.concept(relationshipType));
+            responseSender.onNext(ResponseBuilder.Transaction.concept(relationshipType));
         }
 
         private void putAttributeType(TransactionProto.AttributeType putAttributeType) {
@@ -321,12 +321,12 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
 
             AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
-            responseSender.onNext(ResponseBuilder.concept(attributeType));
+            responseSender.onNext(ResponseBuilder.Transaction.concept(attributeType));
         }
 
         private void putRole(String label) {
             Role role = tx().putRole(Label.of(label));
-            responseSender.onNext(ResponseBuilder.concept(role));
+            responseSender.onNext(ResponseBuilder.Transaction.concept(role));
         }
 
         private void putRule(TransactionProto.Rule putRule) {
@@ -335,7 +335,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             Pattern then = Graql.parser().parsePattern(putRule.getThen());
 
             Rule rule = tx().putRule(label, when, then);
-            responseSender.onNext(ResponseBuilder.concept(rule));
+            responseSender.onNext(ResponseBuilder.Transaction.concept(rule));
         }
 
         private EmbeddedGraknTx<?> tx() {
@@ -391,7 +391,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             if (iterator.hasNext()) {
                 response = iterator.next();
             } else {
-                response = ResponseBuilder.done();
+                response = ResponseBuilder.Transaction.done();
                 stop(iteratorId);
             }
 

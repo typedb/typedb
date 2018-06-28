@@ -55,7 +55,7 @@ public class KeyspaceService extends KeyspaceGrpc.KeyspaceImplBase {
             try (GraknTx tx = requestOpener.open(args)) {
                 tx.admin().delete();
 
-                response.onNext(ResponseBuilder.delete());
+                response.onNext(ResponseBuilder.Keyspace.delete());
                 response.onCompleted();
             }
         } catch (RuntimeException e) {
