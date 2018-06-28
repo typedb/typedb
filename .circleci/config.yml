@@ -171,6 +171,9 @@ workflows:
       - test-3:
           requires:
             - build
+      - biomed:
+          requires:
+            - build
       # - build
       # - unit-it-test:
       #     requires:
