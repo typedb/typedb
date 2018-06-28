@@ -109,12 +109,54 @@ jobs:
       - run: tar -xf grakn-dist-1.2.0.tar.gz
       - run: grakn-dist-1.2.0/grakn server start
       - run: grakn-dist-1.2.0/grakn server status
+
+  test-2:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+
+      - run:
+          name: Update apt repositories
+          command: |
+            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+            sudo apt-get install apt-transport-https
+            sudo apt-get update
+
+      - run:
+          name: Install yarn and maven
+          command: |
+            sudo apt-get -y install yarn
+            sudo apt-get -y install maven
+
+      - run:
+          name: Install nvm and node
+          command: |
+            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+            export NVM_DIR="/opt/circleci/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install v10.5.0
+            nvm alias default v10.5.0
+            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+
+      - run: node -v
       
+      # build grakn
+      - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
+      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
+
+      # run grakn
+      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
+      - run: grakn-dist/target/grakn-dist-test/grakn server start
+      - run: grakn-dist/target/grakn-dist-test/grakn server status
+
 workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test
+      - test-2
       # - build
       # - unit-it-test:
       #     requires:
