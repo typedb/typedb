@@ -167,7 +167,10 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test-3
+      - build
+      - test-3:
+          requires:
+            - build
       # - build
       # - unit-it-test:
       #     requires:
