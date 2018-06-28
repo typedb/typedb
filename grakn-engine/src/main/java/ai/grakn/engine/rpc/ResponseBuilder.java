@@ -47,6 +47,9 @@ import java.util.stream.Stream;
  */
 public class ResponseBuilder {
 
+    /**
+     * An RPC Response Builder class for Transaction Service
+     */
     public static class Transaction {
 
         static TxResponse done() {
@@ -116,6 +119,9 @@ public class ResponseBuilder {
         }
     }
 
+    /**
+     * An RPC Response Builder class for Keyspace Service
+     */
     public static class Keyspace {
 
         static KeyspaceProto.Delete.Res delete() {

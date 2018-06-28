@@ -35,11 +35,12 @@ import ai.grakn.util.CommonUtil;
 
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
- *
- * @author Grakn Warriors
  */
 public class RequestBuilder {
 
+    /**
+     * An RPC Request Builder class for Transaction Service
+     */
     public static class Transaction {
 
         public static TxRequest open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
@@ -125,6 +126,9 @@ public class RequestBuilder {
         }
     }
 
+    /**
+     * An RPC Request Builder class for Keyspace Service
+     */
     public static class Keyspace {
 
         public static KeyspaceProto.Delete.Req delete(String name) {
