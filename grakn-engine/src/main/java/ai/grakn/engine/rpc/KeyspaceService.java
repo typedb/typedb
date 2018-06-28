@@ -19,9 +19,10 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -49,12 +50,9 @@ public class KeyspaceService extends KeyspaceGrpc.KeyspaceImplBase {
 
     @Override
     public void delete(KeyspaceProto.Delete.Req request, StreamObserver<KeyspaceProto.Delete.Res> response) {
+        ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
 
-        TransactionProto.Open openRequest = TransactionProto.Open.newBuilder()
-                .setKeyspace(request.getName()).setTxType(TransactionProto.TxType.Write)
-                .build();
-
-        try (GraknTx tx = requestOpener.open(openRequest)) {
+        try (GraknTx tx = requestOpener.open(args)) {
             tx.admin().delete();
 
             response.onNext(ResponseBuilder.delete());

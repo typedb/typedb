@@ -18,8 +18,9 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.TransactionProto.Open;
 
 /**
  * Interface implemented by classes that create a new GraknTx for RPC Open requests
@@ -27,5 +28,13 @@ import ai.grakn.rpc.proto.TransactionProto.Open;
 
 public interface OpenRequest {
 
-    EmbeddedGraknTx<?> open(Open open);
+    EmbeddedGraknTx<?> open(OpenRequest.Arguments arguments);
+
+    interface Arguments {
+
+        Keyspace getKeyspace();
+
+        GraknTxType getTxType();
+
+    }
 }

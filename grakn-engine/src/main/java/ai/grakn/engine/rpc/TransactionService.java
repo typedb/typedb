@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -101,10 +103,10 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             this.postProcessor = postProcessor;
         }
 
-        public static TransactionListener create(StreamObserver<TxResponse> responseObserver, OpenRequest requestExecutor, PostProcessor postProcessor) {
+        public static TransactionListener create(StreamObserver<TxResponse> responseObserver, OpenRequest requestOpener, PostProcessor postProcessor) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseObserver, threadExecutor, requestExecutor, postProcessor);
+            return new TransactionListener(responseObserver, threadExecutor, requestOpener, postProcessor);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -219,7 +221,13 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
             if (tx != null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
-            tx = requestOpener.open(request);
+
+            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
+                    Keyspace.of(request.getKeyspace()),
+                    GraknTxType.of(request.getTxType().getNumber())
+            );
+
+            tx = requestOpener.open(args);
             responseSender.onNext(ResponseBuilder.done());
         }
 

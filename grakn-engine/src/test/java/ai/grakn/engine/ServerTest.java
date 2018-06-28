@@ -28,7 +28,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.TransactionService;
-import ai.grakn.engine.rpc.OpenRequestImpl;
+import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -210,8 +210,8 @@ public class ServerTest {
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        OpenRequest requestExecutor = new OpenRequestImpl(engineGraknTxFactory);
-        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new TransactionService(requestExecutor, postProcessor)).build();
+        OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new TransactionService(requestOpener, postProcessor)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return ServerFactory.createServer(engineId, config, status,

@@ -20,8 +20,8 @@ package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -44,18 +44,16 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
-import ai.grakn.rpc.proto.TransactionGrpc;
-import ai.grakn.rpc.proto.TransactionGrpc.TransactionBlockingStub;
-import ai.grakn.rpc.proto.TransactionGrpc.TransactionStub;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.ConceptProto.BaseType;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
+import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.Open;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxType;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -125,14 +123,14 @@ public class ServerRPCTest {
 
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
-    private final TransactionStub stub = TransactionGrpc.newStub(channel);
+    private final TransactionGrpc.TransactionStub stub = TransactionGrpc.newStub(channel);
     private final KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub = KeyspaceGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {
         doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
 
-        OpenRequest requestOpener = new OpenRequestImpl(txFactory);
+        OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new TransactionService(requestOpener, mockedPostProcessor))
                 .addService(new KeyspaceService(requestOpener))
@@ -817,7 +815,7 @@ public class ServerRPCTest {
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
         String keyspace = "not!@akeyspace";
         exception.expect(hasStatus(Status.INVALID_ARGUMENT));
-        keyspaceBlockingStub.delete(delete(keyspace));
+        keyspaceBlockingStub.delete(RequestBuilder.delete(keyspace));
     }
 }
 
