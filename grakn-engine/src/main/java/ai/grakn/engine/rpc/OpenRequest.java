@@ -23,12 +23,15 @@ import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 /**
- * Interface implemented by classes that create a new GraknTx for RPC Open requests
+ * A request transaction opener for RPC Services
  */
 public interface OpenRequest {
 
     EmbeddedGraknTx<?> open(OpenRequest.Arguments arguments);
 
+    /**
+     * An argument object for reqeust transacion opener for RPC Services
+     */
     interface Arguments {
 
         Keyspace getKeyspace();
