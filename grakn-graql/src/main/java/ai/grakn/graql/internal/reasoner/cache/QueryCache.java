@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -82,7 +84,14 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             Q equivalentQuery = match.query();
             QueryAnswers answers = match.cachedElement();
             MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
-            answer.unify(multiUnifier).forEach(answers::add);
+
+            Set<Var> queryVars = equivalentQuery.getVarNames();
+            multiUnifier.stream()
+                    .map(answer::unify)
+                    .peek(ans -> {
+                        if (!ans.vars().containsAll(queryVars)) throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery);
+                    })
+                    .forEach(answers::add);
         } else {
             this.putEntry(query, new QueryAnswers(answer));
         }
