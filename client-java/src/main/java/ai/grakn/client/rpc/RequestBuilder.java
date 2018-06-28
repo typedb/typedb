@@ -25,14 +25,13 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.Commit;
-import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
-import ai.grakn.rpc.proto.TransactionProto.Open;
-import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.IteratorProto.Next;
 import ai.grakn.rpc.proto.IteratorProto.Stop;
+import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.TransactionProto;
+import ai.grakn.rpc.proto.TransactionProto.Commit;
+import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.util.CommonUtil;
 
 /**
@@ -124,7 +123,7 @@ public class RequestBuilder {
         }
     }
 
-    public static TransactionProto.DeleteRequest delete(Open open) {
-        return DeleteRequest.newBuilder().setOpen(open).build();
+    public static KeyspaceProto.Delete.Req delete(String name) {
+        return KeyspaceProto.Delete.Req.newBuilder().setName(name).build();
     }
 }

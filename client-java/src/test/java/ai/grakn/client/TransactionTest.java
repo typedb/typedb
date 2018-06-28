@@ -21,6 +21,15 @@ package ai.grakn.client;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.client.concept.RemoteAttribute;
+import ai.grakn.client.concept.RemoteAttributeType;
+import ai.grakn.client.concept.RemoteEntity;
+import ai.grakn.client.concept.RemoteEntityType;
+import ai.grakn.client.concept.RemoteRelationshipType;
+import ai.grakn.client.concept.RemoteRole;
+import ai.grakn.client.concept.RemoteRule;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -40,22 +49,14 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.client.concept.RemoteAttribute;
-import ai.grakn.client.concept.RemoteAttributeType;
-import ai.grakn.client.concept.RemoteEntity;
-import ai.grakn.client.concept.RemoteEntityType;
-import ai.grakn.client.concept.RemoteRelationshipType;
-import ai.grakn.client.concept.RemoteRole;
-import ai.grakn.client.concept.RemoteRule;
-import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
+import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import io.grpc.Status;
@@ -106,8 +107,8 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.stubAsync()).thenReturn(TransactionGrpc.newStub(server.channel()));
-        when(session.stubBlocking()).thenReturn(TransactionGrpc.newBlockingStub(server.channel()));
+        when(session.transactionStub()).thenReturn(TransactionGrpc.newStub(server.channel()));
+        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
     }
@@ -123,7 +124,7 @@ public class TransactionTest {
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
-            verify(server.service()).tx(any());
+            verify(server.transactionService()).tx(any());
         }
     }
 
@@ -565,13 +566,13 @@ public class TransactionTest {
 
     @Test
     public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
-        DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(KEYSPACE, GraknTxType.WRITE).getOpen());
+        KeyspaceProto.Delete.Req request = RequestBuilder.delete(KEYSPACE.getValue());
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
             tx.admin().delete();
         }
 
-        verify(server.service()).delete(eq(request), any());
+        verify(server.keyspaceService()).delete(eq(request), any());
     }
 
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){

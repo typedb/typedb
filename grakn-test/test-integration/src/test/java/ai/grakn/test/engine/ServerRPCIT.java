@@ -52,6 +52,7 @@ import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -102,7 +103,7 @@ public class ServerRPCIT {
     public static final EngineContext engine = EngineContext.create();
 
     private static GraknSession localSession;
-    private static GraknSession remoteSession;
+    private static Grakn.Session remoteSession;
 
     @Before
     public void setUp() {
@@ -150,7 +151,7 @@ public class ServerRPCIT {
     @Test
     public void whenPuttingEntityType_EnsureItIsAdded() {
         String label = "Oliver";
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType(label);
             tx.commit();
         }
@@ -168,14 +169,14 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType(label));
         }
     }
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("person").sub("entity")).execute();
             tx.commit();
         }
@@ -187,7 +188,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("flibflab").sub("entity")).execute();
         }
 
@@ -200,7 +201,7 @@ public class ServerRPCIT {
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
         List<Answer> answers;
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers = tx.graql().match(var("x").sub("thing")).get().execute();
         }
 
@@ -225,7 +226,7 @@ public class ServerRPCIT {
         Set<Answer> answers1;
         Set<Answer> answers2;
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
             answers2 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
         }
@@ -235,7 +236,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingTwoParallelQueries_GetBothResults() throws Throwable {
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
             Iterator<Answer> iterator1 = query.iterator();
@@ -272,7 +273,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             // count
             assertEquals(1L, tx.graql().compute(COUNT).in("animal").execute().getNumber().get());
 
@@ -548,7 +549,7 @@ public class ServerRPCIT {
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             SchemaConcept schemaConcept = tx.getSchemaConcept(label);
             assertFalse(schemaConcept.isDeleted());
             schemaConcept.delete();
@@ -563,7 +564,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenDefiningASchema_TheSchemaIsDefined() {
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             EntityType animal = tx.putEntityType("animal");
             EntityType dog = tx.putEntityType("dog").sup(animal);
             EntityType cat = tx.putEntityType("cat");
@@ -654,14 +655,14 @@ public class ServerRPCIT {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void whenDeletingAKeyspace_TheKeyspaceIsDeleted() {
         try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType("easter");
             tx.commit();
         }
 
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
             tx.admin().delete();
@@ -685,7 +686,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").isa("not-a-thing")).get();
 
             exception.expect(RuntimeException.class);
@@ -696,7 +697,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenPerformingAMatchGetQuery_TheResultsAreCorrect(){
-        try (GraknTx tx = remoteSession.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
 
             EntityType company = tx.putEntityType("company-123");
@@ -718,5 +719,41 @@ public class ServerRPCIT {
             result = qb.match(x.isa("company-123")).get(x).execute();
             assertEquals(2, result.size());
         }
+    }
+
+    @Test
+    public void whenCreatingBasicMultipleTransaction_ThreadsDoNotConflict() {
+        Grakn.Transaction tx1 = remoteSession.transaction(GraknTxType.WRITE);
+        Grakn.Transaction tx2 = remoteSession.transaction(GraknTxType.WRITE);
+
+        EntityType company = tx1.putEntityType("company");
+        EntityType person = tx2.putEntityType("person");
+
+        AttributeType<String> name1 = tx1.putAttributeType(Label.of("name"), DataType.STRING);
+        AttributeType<String> name2 = tx2.putAttributeType(Label.of("name"), DataType.STRING);
+
+        company.attribute(name1);
+        person.attribute(name2);
+
+        Entity google = company.addEntity();
+        Entity alice = person.addEntity();
+
+        google.attribute(name1.putAttribute("Google"));
+        alice.attribute(name2.putAttribute("Alice"));
+
+        assertTrue(company.attributes().anyMatch(a -> a.equals(name1)));
+        assertTrue(person.attributes().anyMatch(a -> a.equals(name2)));
+
+        assertTrue(google.attributes(name1).allMatch(n -> n.getValue().equals("Google")));
+        assertTrue(alice.attributes(name2).allMatch(n -> n.getValue().equals("Alice")));
+
+        tx1.close();
+
+        Entity bob = person.addEntity();
+        bob.attribute(name2.putAttribute("Bob"));
+
+        assertTrue(bob.attributes(name2).allMatch(n -> n.getValue().equals("Bob")));
+
+        tx2.close();
     }
 }

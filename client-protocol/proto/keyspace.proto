@@ -3,15 +3,13 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "KeyspaceProto";
 
-package keyspace;
-
 service Keyspace {
-    rpc List (List.Req) returns (List.Res);
     rpc Create (Create.Req) returns (Create.Res);
+    rpc Retrieve (Retrieve.Req) returns (Retrieve.Res);
     rpc Delete (Delete.Req) returns (Delete.Res);
 }
 
-message List {
+message Retrieve {
     message Req {}
     message Res {
         repeated string names = 1;

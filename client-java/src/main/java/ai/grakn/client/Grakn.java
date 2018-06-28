@@ -46,6 +46,8 @@ import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.RequestIterator;
+import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.TransactionProto;
@@ -96,12 +98,12 @@ public final class Grakn {
             this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        TransactionGrpc.TransactionStub stubAsync() {
+        TransactionGrpc.TransactionStub transactionStub() {
             return TransactionGrpc.newStub(channel);
         }
 
-        TransactionGrpc.TransactionBlockingStub stubBlocking() {
-            return TransactionGrpc.newBlockingStub(channel);
+        KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub() {
+            return KeyspaceGrpc.newBlockingStub(channel);
         }
 
         @Override
@@ -137,7 +139,7 @@ public final class Grakn {
         private Transaction(Session session, GraknTxType type) {
             this.session = session;
             this.type = type;
-            this.transceiver = Transceiver.create(session.stubAsync());
+            this.transceiver = Transceiver.create(session.transactionStub());
             transceiver.send(RequestBuilder.open(session.keyspace(), type));
             responseOrThrow();
         }
@@ -328,8 +330,9 @@ public final class Grakn {
 
         @Override
         public void delete() {
-            TransactionProto.DeleteRequest request = RequestBuilder.delete(RequestBuilder.open(keyspace(), GraknTxType.WRITE).getOpen());
-            session.stubBlocking().delete(request);
+            KeyspaceProto.Delete.Req request = RequestBuilder.delete(keyspace().getValue());
+            KeyspaceGrpc.KeyspaceBlockingStub stub = session.keyspaceBlockingStub();
+            stub.delete(request);
             close();
         }
 

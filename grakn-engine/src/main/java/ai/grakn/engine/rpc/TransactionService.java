@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -30,31 +29,20 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknException;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
+import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.DeleteRequest;
-import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.IteratorProto;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,54 +77,6 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
         return TransactionListener.create(responseSender, requestOpener, postProcessor);
     }
 
-    @Override
-    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseSender) {
-        try {
-            runAndConvertGraknExceptions(() -> {
-                try (GraknTx tx = requestOpener.open(request.getOpen())) {
-                    tx.admin().delete();
-                }
-
-                responseSender.onNext(ResponseBuilder.delete());
-                responseSender.onCompleted();
-            });
-        } catch (StatusRuntimeException e) {
-            responseSender.onError(e);
-        }
-    }
-
-    static void runAndConvertGraknExceptions(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (TemporaryWriteException e) {
-            throw error(Status.RESOURCE_EXHAUSTED, e);
-        } catch (GraknBackendException e) {
-            throw error(Status.INTERNAL, e);
-        } catch (PropertyNotUniqueException e) {
-            throw error(Status.ALREADY_EXISTS, e);
-        } catch (GraknTxOperationException | GraqlQueryException | GraqlSyntaxException | InvalidKBException e) {
-            throw error(Status.INVALID_ARGUMENT, e);
-        } catch (StatusRuntimeException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            throw error(e);
-        }
-    }
-
-    private static StatusRuntimeException error(RuntimeException e) {
-        return new StatusRuntimeException(Status.UNKNOWN.withDescription(
-                e.getMessage() + ". Please check server logs for the stack trace."));
-    }
-
-    private static StatusRuntimeException error(Status status, GraknException e) {
-        return new StatusRuntimeException(status.withDescription(
-                e.getName() + " - " + e.getMessage() + ". Please check server logs for the stack trace."));
-    }
-
-    private static StatusRuntimeException error(Status status) {
-        return new StatusRuntimeException(status);
-    }
-
 
     /**
      * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link ServerRPC}.
@@ -169,7 +109,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
 
         private static <T> T nonNull(@Nullable T item) {
             if (item == null) {
-                throw error(Status.FAILED_PRECONDITION);
+                throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             } else {
                 return item;
             }
@@ -178,11 +118,9 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
         @Override
         public void onNext(TxRequest request) {
             try {
-                submit(() -> {
-                    runAndConvertGraknExceptions(() -> handleRequest(request));
-                });
-            } catch (StatusRuntimeException e) {
-                close(e);
+                submit(() -> handleRequest(request));
+            } catch (RuntimeException e) {
+                close(ResponseBuilder.exception(e));
             }
         }
 
@@ -242,7 +180,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
                     break;
                 default:
                 case REQUEST_NOT_SET:
-                    throw error(Status.INVALID_ARGUMENT);
+                    throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
             }
         }
 
@@ -279,7 +217,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
 
         private void open(TransactionProto.Open request) {
             if (tx != null) {
-                throw error(Status.FAILED_PRECONDITION);
+                throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
             tx = requestOpener.open(request);
             responseSender.onNext(ResponseBuilder.done());
@@ -316,7 +254,7 @@ public class TransactionService extends TransactionGrpc.TransactionImplBase {
         private void next(IteratorProto.Next next) {
             IteratorProto.IteratorId iteratorId = next.getIteratorId();
             TxResponse response = iterators.next(iteratorId);
-            if (response == null) throw error(Status.FAILED_PRECONDITION);
+            if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
         }
 

@@ -44,6 +44,7 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
+import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.TransactionGrpc;
 import ai.grakn.rpc.proto.TransactionGrpc.TransactionBlockingStub;
 import ai.grakn.rpc.proto.TransactionGrpc.TransactionStub;
@@ -125,14 +126,17 @@ public class ServerRPCTest {
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
     private final TransactionStub stub = TransactionGrpc.newStub(channel);
-    private final TransactionBlockingStub blockingStub = TransactionGrpc.newBlockingStub(channel);
+    private final KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub = KeyspaceGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {
         doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
 
-        OpenRequest requestExecutor = new OpenRequestImpl(txFactory);
-        io.grpc.Server server = ServerBuilder.forPort(PORT).addService(new TransactionService(requestExecutor, mockedPostProcessor)).build();
+        OpenRequest requestOpener = new OpenRequestImpl(txFactory);
+        io.grpc.Server server = ServerBuilder.forPort(PORT)
+                .addService(new TransactionService(requestOpener, mockedPostProcessor))
+                .addService(new KeyspaceService(requestOpener))
+                .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();
 
@@ -804,9 +808,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
-        Open open = Open.newBuilder().setKeyspace(MYKS.getValue()).setTxType(TxType.Write).build();
-
-        blockingStub.delete(delete(open));
+        keyspaceBlockingStub.delete(delete(MYKS.getValue()));
 
         verify(tx).delete();
     }
@@ -814,9 +816,8 @@ public class ServerRPCTest {
     @Test
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
         String keyspace = "not!@akeyspace";
-        Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
         exception.expect(hasStatus(Status.INVALID_ARGUMENT));
-        blockingStub.delete(delete(open));
+        keyspaceBlockingStub.delete(delete(keyspace));
     }
 }
 

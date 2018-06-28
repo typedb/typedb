@@ -19,12 +19,14 @@
 package ai.grakn.client;
 
 import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
+import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceGrpc.KeyspaceImplBase;
+import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.TransactionGrpc.TransactionImplBase;
 import ai.grakn.rpc.proto.TransactionProto;
-import ai.grakn.rpc.proto.TransactionProto.DeleteResponse;
 import ai.grakn.rpc.proto.TransactionProto.TxRequest;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -49,14 +51,13 @@ import java.util.function.Supplier;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Semi-mocked gRPC server that can handle transactions.
  *
  * <p>
  *     The gRPC server itself is "real" and can be connected to using the {@link #channel()}. However, the
- *     {@link #service()} and {@link #requests()} are both mock objects and should be used with
+ *     {@link #transactionService()} and {@link #requests()} are both mock objects and should be used with
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
@@ -74,7 +75,8 @@ public final class ServerRPCMock extends CompositeTestRule {
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-    private final TransactionImplBase service = mock(TransactionImplBase.class);
+    private final TransactionImplBase transactionService = mock(TransactionImplBase.class);
+    private final KeyspaceImplBase keyspaceService = mock(KeyspaceGrpc.KeyspaceImplBase.class);
 
     private @Nullable StreamObserver<TxResponse> serverResponses = null;
 
@@ -92,8 +94,12 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRule.getChannel();
     }
 
-    TransactionImplBase service() {
-        return service;
+    TransactionImplBase transactionService() {
+        return transactionService;
+    }
+
+    KeyspaceImplBase keyspaceService() {
+        return keyspaceService;
     }
 
     public StreamObserver<TxRequest> requests() {
@@ -171,17 +177,17 @@ public final class ServerRPCMock extends CompositeTestRule {
 
     @Override
     protected void before() throws Throwable {
-        when(service.tx(any())).thenAnswer(args -> {
+        doAnswer(args -> {
             serverResponses = args.getArgument(0);
             return serverRequests;
-        });
+        }).when(transactionService).tx(any());
 
         doAnswer(args -> {
-            StreamObserver<DeleteResponse> deleteResponses = args.getArgument(1);
-            deleteResponses.onNext(TransactionProto.DeleteResponse.getDefaultInstance());
-            deleteResponses.onCompleted();
+            StreamObserver<KeyspaceProto.Delete.Res> response = args.getArgument(1);
+            response.onNext(KeyspaceProto.Delete.Res.newBuilder().build());
+            response.onCompleted();
             return null;
-        }).when(service).delete(any(), any());
+        }).when(keyspaceService).delete(any(), any());
 
         // Return a default "done" response to every message from the client
         doAnswer(args -> {
@@ -206,7 +212,8 @@ public final class ServerRPCMock extends CompositeTestRule {
             return null;
         }).when(serverRequests).onCompleted();
 
-        serverRule.getServiceRegistry().addService(service);
+        serverRule.getServiceRegistry().addService(transactionService);
+        serverRule.getServiceRegistry().addService(keyspaceService);
     }
 
     @Override
@@ -223,7 +230,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private static TransactionProto.TxResponse done() {
         return TransactionProto.TxResponse.newBuilder().setDone(TransactionProto.Done.getDefaultInstance()).build();
     }
-    
+
     /**
      * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.

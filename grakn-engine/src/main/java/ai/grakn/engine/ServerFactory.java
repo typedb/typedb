@@ -28,6 +28,7 @@ import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequestImpl;
 import ai.grakn.engine.rpc.TransactionService;
 import ai.grakn.engine.task.BackgroundTaskRunner;
@@ -132,10 +133,12 @@ public class ServerFactory {
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new OpenRequestImpl(engineGraknTxFactory);
 
-        ServerBuilder<?> grpcServer = ServerBuilder.forPort(grpcPort);
-        grpcServer.addService(new TransactionService(requestOpener, postProcessor));
+        io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
+                .addService(new TransactionService(requestOpener, postProcessor))
+                .addService(new KeyspaceService(requestOpener))
+                .build();
 
-        return ServerRPC.create(grpcServer.build());
+        return ServerRPC.create(grpcServer);
     }
 
 }

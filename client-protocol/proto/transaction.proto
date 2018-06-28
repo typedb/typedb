@@ -10,16 +10,7 @@ service Transaction {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
     rpc Tx (stream TxRequest) returns (stream TxResponse);
-
-    // Delete a keyspace.
-    rpc Delete (DeleteRequest) returns (DeleteResponse);
 }
-
-message DeleteRequest {
-    Open open = 1; // This open request describes how to open the transaction in order to delete the keyspace
-}
-
-message DeleteResponse {}
 
 message TxRequest {
     oneof request {

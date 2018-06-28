@@ -22,12 +22,23 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.ConceptProto.ConceptResponse;
+import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.TransactionProto;
 import ai.grakn.rpc.proto.TransactionProto.TxResponse;
 import ai.grakn.rpc.proto.IteratorProto;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 
 import java.util.stream.Stream;
 
@@ -66,8 +77,8 @@ public class ResponseBuilder {
         return TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
     }
 
-    static TransactionProto.DeleteResponse delete() {
-        return TransactionProto.DeleteResponse.getDefaultInstance();
+    static KeyspaceProto.Delete.Res delete() {
+        return KeyspaceProto.Delete.Res.newBuilder().build();
     }
 
     static TxResponse conceptResponseWithNoResult() {
@@ -104,5 +115,35 @@ public class ResponseBuilder {
     static TxResponse conceptResponseWithRegex(String regex) {
         ConceptResponse conceptResponse = ConceptResponse.newBuilder().setRegex(regex).build();
         return TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+    }
+
+    public static StatusRuntimeException exception(RuntimeException e) {
+
+        if (e instanceof GraknException) {
+            GraknException ge = (GraknException) e;
+            String message = ge.getName() + "-" + ge.getMessage();
+            if (e instanceof TemporaryWriteException) {
+                return exception(Status.RESOURCE_EXHAUSTED, message);
+            } else if (e instanceof GraknBackendException) {
+                return exception(Status.INTERNAL, message);
+            } else if (e instanceof PropertyNotUniqueException) {
+                return exception(Status.ALREADY_EXISTS, message);
+            } else if (e instanceof GraknTxOperationException | e instanceof GraqlQueryException |
+                    e instanceof GraqlSyntaxException | e instanceof InvalidKBException) {
+                return exception(Status.INVALID_ARGUMENT, message);
+            }
+        } else if (e instanceof StatusRuntimeException) {
+            return (StatusRuntimeException) e;
+        }
+
+        return exception(Status.UNKNOWN, e.getMessage());
+    }
+
+    private static StatusRuntimeException exception(Status status, String message) {
+        return exception(status.withDescription(message + ". Please check server logs for the stack trace."));
+    }
+
+    public static StatusRuntimeException exception(Status status) {
+        return new StatusRuntimeException(status);
     }
 }
