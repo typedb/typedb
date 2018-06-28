@@ -87,16 +87,12 @@ jobs:
           at: ~/grakn
 
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      # - run: grakn-dist/target/grakn-dist-test/grakn server start
+      - run: grakn-dist/target/grakn-dist-test/grakn server start
 
-      # - run: sleep 10
+      - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
+      - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
-      # - run: grakn-dist/target/grakn-dist-test/grakn server status
-      # - run: grakn-dist/target/grakn-dist-test/graql console -e 'match $e sub thing; get;'
-      # - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
-      # - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
-
-      # - run: grakn-dist/target/grakn-dist-test/grakn server stop
+      - run: grakn-dist/target/grakn-dist-test/grakn server stop
 
   long-running:
     machine: true
@@ -104,21 +100,31 @@ jobs:
 
     steps:
       - run: echo Long-running
-
+  
+  test:
+    machine: true
+    working_directory: ~
+    steps:
+      - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
+      - run: tar -xf grakn-dist-1.2.0.tar.gz
+      - run: grakn-dist-1.2.0/grakn server start
+      - run: grakn-dist-1.2.0/grakn server status
+      
 workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
-      - unit-it-test:
-          requires:
-            - build
-      - snb:
-          requires:
-            - unit-it-test
-      - biomed:
-          requires:
-            - unit-it-test
-      - long-running:
-          requires:
-            - unit-it-test
+      - test
+      # - build
+      # - unit-it-test:
+      #     requires:
+      #       - build
+      # - snb:
+      #     requires:
+      #       - unit-it-test
+      # - biomed:
+      #     requires:
+      #       - unit-it-test
+      # - long-running:
+      #     requires:
+      #       - unit-it-test
