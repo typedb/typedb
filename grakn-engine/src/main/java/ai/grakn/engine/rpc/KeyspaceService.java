@@ -50,13 +50,14 @@ public class KeyspaceService extends KeyspaceGrpc.KeyspaceImplBase {
 
     @Override
     public void delete(KeyspaceProto.Delete.Req request, StreamObserver<KeyspaceProto.Delete.Res> response) {
-        ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
+        try {
+            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
+            try (GraknTx tx = requestOpener.open(args)) {
+                tx.admin().delete();
 
-        try (GraknTx tx = requestOpener.open(args)) {
-            tx.admin().delete();
-
-            response.onNext(ResponseBuilder.delete());
-            response.onCompleted();
+                response.onNext(ResponseBuilder.delete());
+                response.onCompleted();
+            }
         } catch (RuntimeException e) {
             response.onError(ResponseBuilder.exception(e));
         }
