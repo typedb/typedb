@@ -184,8 +184,9 @@ jobs:
       - run: tar -xf grakn-dist-1.2.0.tar.gz
       - run: |
           grakn-dist-1.2.0/grakn server start
-          sleep 10
-          grakn-dist-1.2.0/grakn server status
+          PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
+          PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
+
 
 
 workflows:
