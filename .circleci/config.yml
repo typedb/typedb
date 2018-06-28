@@ -172,10 +172,11 @@ jobs:
     steps:
       - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
       - run: tar -xf grakn-dist-1.2.0.tar.gz
-      - run: grakn-dist-1.2.0/services/cassandra/cassandra
-      - run: jps
+      - run:
+          shell: /bin/bash
+          command: grakn-dist-1.2.0/grakn server start
       - run: sleep 10
-      - run: jps
+      - run: grakn-dist-1.2.0/grakn server status
 
 workflows:
   version: 2
