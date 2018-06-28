@@ -175,12 +175,24 @@ jobs:
       - run: grakn-dist-1.2.0/services/cassandra/cassandra -f
       - run: sleep 10
       - run: grakn-dist-1.2.0/grakn server status
+  
+  test-5:
+    machine: true
+    working_directory: ~
+    steps:
+      - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
+      - run: tar -xf grakn-dist-1.2.0.tar.gz
+      - run: |
+          grakn-dist-1.2.0/grakn server start
+          sleep 10
+          grakn-dist-1.2.0/grakn server status
+
 
 workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test-4
+      - test-5
       
       # - test-3:
       #     requires:
