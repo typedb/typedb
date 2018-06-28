@@ -112,6 +112,21 @@ jobs:
       - run: sleep 10
       - run: grakn-dist-1.2.0/grakn server status
 
+  test-swap:
+    machine: true
+    working_directory: ~
+    steps:
+      - run: sudo fallocate -l 10G /swapfile
+      - run: sudo chmod 600 /swapfile
+      - run: sudo mkswap /swapfile
+      - run: sudo swapon /swapfile
+
+      - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
+      - run: tar -xf grakn-dist-1.2.0.tar.gz
+      - run: grakn-dist-1.2.0/grakn server start
+      - run: sleep 10
+      - run: grakn-dist-1.2.0/grakn server status
+
   test-2:
     machine: true
     working_directory: ~/grakn
@@ -170,7 +185,7 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test
+      - test-swap
       
       # - test-3:
       #     requires:
