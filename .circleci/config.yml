@@ -156,6 +156,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - attach_workspace:
+          at: ~/grakn
       # run grakn
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
       - run: grakn-dist/target/grakn-dist-test/grakn server start
