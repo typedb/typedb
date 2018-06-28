@@ -109,6 +109,7 @@ jobs:
       - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
       - run: tar -xf grakn-dist-1.2.0.tar.gz
       - run: grakn-dist-1.2.0/grakn server start
+      - run: sleep 10
       - run: grakn-dist-1.2.0/grakn server status
 
   test-2:
@@ -169,10 +170,11 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
-      - test-3:
-          requires:
-            - build
+      - test
+      
+      # - test-3:
+      #     requires:
+      #       - build
       # - biomed:
       #     requires:
       #       - build
