@@ -215,7 +215,7 @@ jobs:
 
       # run test
       - run: |
-          grakn-dist-1.2.0/grakn server start
+          grakn-dist/target/grakn-dist-test/grakn server start
           PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
           PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
