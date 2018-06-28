@@ -14,8 +14,8 @@ service Session {
 
 message TxRequest {
     oneof request {
-        Open open = 1; // returns Done
-        Commit commit = 2; // returns Done
+        Open.Req open = 1; // returns Done
+        Commit.Req commit = 2; // returns Done
         Query query = 3; // returns QueryResult, Done, or IteratorId of QueryResult
         Next next = 4; // returns QueryResult or Done
         Stop stop = 5; // returns Done
@@ -33,6 +33,8 @@ message TxRequest {
 
 message TxResponse {
     oneof response {
+        Open.Res open = 10;
+        Commit.Res commit = 11;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -50,14 +52,20 @@ enum TxType {
 }
 
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
-    string keyspace = 1;
-    TxType txType = 2;
-    /* Fields ignored in the open-source version. */
-    string username = 3;
-    string password = 4;
+    message Req {
+        string keyspace = 1;
+        TxType txType = 2;
+        /* Fields ignored in the open-source version. */
+        string username = 3;
+        string password = 4;
+    }
+    message Res {}
 }
 
-message Commit {} // Command to commit a transaction
+message Commit { // Command to commit a transaction
+    message Req {}
+    message Res {}
+}
 
 message Done {} // Tells the client we have completed their command.
 

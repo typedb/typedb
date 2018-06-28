@@ -187,7 +187,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.READ));
             TxResponse response = tx.receive().ok();
 
-            assertEquals(done(), response);
+            assertEquals(ResponseBuilder.Transaction.open(), response);
         }
     }
 
@@ -210,7 +210,7 @@ public class ServerRPCTest {
             tx.send(commit());
             TxResponse response = tx.receive().ok();
 
-            assertEquals(done(), response);
+            assertEquals(ResponseBuilder.Transaction.commit(), response);
         }
     }
 
@@ -240,10 +240,10 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         String keyspace = "not!@akeyspace";
-        Open open = Open.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
+        Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(TxRequest.newBuilder().setOpen(open).build());
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
             exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }

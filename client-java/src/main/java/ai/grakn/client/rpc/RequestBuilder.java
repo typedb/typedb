@@ -42,13 +42,18 @@ public class RequestBuilder {
     public static class Transaction {
 
         public static SessionProto.TxRequest open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
-            SessionProto.Open openRPC = SessionProto.Open.newBuilder().setKeyspace(keyspace.getValue()).setTxType(txType(txType)).build();
+            SessionProto.Open.Req openRequest = SessionProto.Open.Req.newBuilder()
+                    .setKeyspace(keyspace.getValue())
+                    .setTxType(txType(txType))
+                    .build();
 
-            return SessionProto.TxRequest.newBuilder().setOpen(openRPC).build();
+            return SessionProto.TxRequest.newBuilder().setOpen(openRequest).build();
         }
 
         public static SessionProto.TxRequest commit() {
-            return SessionProto.TxRequest.newBuilder().setCommit(SessionProto.Commit.getDefaultInstance()).build();
+            return SessionProto.TxRequest.newBuilder()
+                    .setCommit(SessionProto.Commit.Req.getDefaultInstance())
+                    .build();
         }
 
         public static SessionProto.TxRequest query(Query<?> query) {

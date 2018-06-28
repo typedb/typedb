@@ -50,6 +50,18 @@ public class ResponseBuilder {
      */
     public static class Transaction {
 
+        static SessionProto.TxResponse open() {
+            return SessionProto.TxResponse.newBuilder()
+                    .setOpen(SessionProto.Open.Res.getDefaultInstance())
+                    .build();
+        }
+
+        static SessionProto.TxResponse commit() {
+            return SessionProto.TxResponse.newBuilder()
+                    .setCommit(SessionProto.Commit.Res.getDefaultInstance())
+                    .build();
+        }
+
         static SessionProto.TxResponse done() {
             return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
@@ -123,7 +135,7 @@ public class ResponseBuilder {
     public static class Keyspace {
 
         static KeyspaceProto.Delete.Res delete() {
-            return KeyspaceProto.Delete.Res.newBuilder().build();
+            return KeyspaceProto.Delete.Res.getDefaultInstance();
         }
     }
 

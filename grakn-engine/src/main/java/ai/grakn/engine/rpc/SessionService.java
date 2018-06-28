@@ -216,7 +216,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             }
         }
 
-        private void open(SessionProto.Open request) {
+        private void open(SessionProto.Open.Req request) {
             if (tx != null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
@@ -227,12 +227,12 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             );
 
             tx = requestOpener.open(args);
-            responseSender.onNext(ResponseBuilder.Transaction.done());
+            responseSender.onNext(ResponseBuilder.Transaction.open());
         }
 
         private void commit() {
             tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
-            responseSender.onNext(ResponseBuilder.Transaction.done());
+            responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
 
         private void query(SessionProto.Query request) {
