@@ -88,7 +88,8 @@ jobs:
 
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
       - run: grakn-dist/target/grakn-dist-test/grakn server start
-
+      - run: sleep 10
+      - run: grakn-dist/target/grakn-dist-test/grakn server status
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
@@ -161,6 +162,7 @@ jobs:
       # run grakn
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
       - run: grakn-dist/target/grakn-dist-test/grakn server start
+      - run: sleep 10
       - run: grakn-dist/target/grakn-dist-test/grakn server status
 
 workflows:
