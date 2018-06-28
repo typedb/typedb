@@ -41,15 +41,21 @@ import java.util.Set;
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
-public class AtomicState extends QueryState<ReasonerAtomicQuery>{
+class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
-    public AtomicState(ReasonerAtomicQuery q,
-                       Answer sub,
-                       Unifier u,
-                       QueryStateBase parent,
-                       Set<ReasonerAtomicQuery> subGoals,
-                       QueryCache<ReasonerAtomicQuery> cache) {
-        super(ReasonerQueries.atomic(q, sub), sub, u, parent, subGoals, cache);
+    AtomicState(ReasonerAtomicQuery query,
+                Answer sub,
+                Unifier u,
+                QueryStateBase parent,
+                Set<ReasonerAtomicQuery> subGoals,
+                QueryCache<ReasonerAtomicQuery> cache) {
+        super(ReasonerQueries.atomic(query, sub),
+                sub,
+                u,
+                () -> cache.getAnswerStreamWithUnifier(ReasonerQueries.atomic(query, sub)).getValue().inverse(),
+                parent,
+                subGoals,
+                cache);
     }
 
     @Override

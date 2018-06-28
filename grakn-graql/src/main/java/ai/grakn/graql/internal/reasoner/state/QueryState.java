@@ -24,9 +24,9 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  *
@@ -43,15 +43,14 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
 
     private final Q query;
     private final Iterator<ResolutionState> subGoalIterator;
-    private final MultiUnifier cacheUnifier;
+    private final Supplier<MultiUnifier> cacheUnifierSupplier;
+    private MultiUnifier cacheUnifier = null;
 
-    QueryState(Q query, Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    QueryState(Q query, Answer sub, Unifier u, Supplier<MultiUnifier> cus, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.query = query;
-
-        Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator = query.queryStateIterator(this, subGoals, cache);
-        this.subGoalIterator = queryStateIterator.getKey();
-        this.cacheUnifier = queryStateIterator.getValue();
+        this.subGoalIterator = query.queryStateIterator(this, subGoals, cache);
+        this.cacheUnifierSupplier = cus;
     }
 
     @Override
@@ -67,5 +66,8 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
     /**
      * @return cache unifier if any
      */
-    MultiUnifier getCacheUnifier(){ return cacheUnifier;}
+    MultiUnifier getCacheUnifier(){
+        if (cacheUnifier == null) this.cacheUnifier = cacheUnifierSupplier.get();
+        return cacheUnifier;
+    }
 }
