@@ -152,11 +152,20 @@ jobs:
       - run: grakn-dist/target/grakn-dist-test/grakn server start
       - run: grakn-dist/target/grakn-dist-test/grakn server status
 
+  test-3:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      # run grakn
+      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
+      - run: grakn-dist/target/grakn-dist-test/grakn server start
+      - run: grakn-dist/target/grakn-dist-test/grakn server status
+
 workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test-2
+      - test-3
       # - build
       # - unit-it-test:
       #     requires:
