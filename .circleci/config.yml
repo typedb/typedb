@@ -90,6 +90,9 @@ jobs:
       - run: grakn-dist/target/grakn-dist-test/grakn server start
 
       - run: sleep 10
+
+      - run: grakn-dist/target/grakn-dist-test/grakn server status
+      - run: grakn-dist/target/grakn-dist-test/graql console -e 'match $e sub thing; get;'
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
