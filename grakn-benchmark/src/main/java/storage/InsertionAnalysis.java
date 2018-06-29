@@ -89,7 +89,6 @@ public class InsertionAnalysis {
 
     private static HashSet<Var> getVarsWithoutIds(Iterator<VarPatternAdmin> varPatternAdminIterator) {
 
-        //TODO I don;t think this works at present.
         HashSet<Var> varsWithoutIds = new HashSet<>();
         HashSet<Var> varsWithIds = new HashSet<>();
 

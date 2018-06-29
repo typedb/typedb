@@ -25,7 +25,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 /**
- *
+ * @param <T>
  */
 public class FromIdStoragePicker<T> extends Picker<T> {
 

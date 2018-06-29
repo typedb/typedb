@@ -188,7 +188,7 @@ public class DataGenerator {
                     1.0,
                     new AttributeStrategy<>(
                             SchemaManager.getTypeFromString("name", this.attributeTypes),
-                            new UniformPDF(this.rand, 3, 20),
+                            new UniformPDF(this.rand, 3, 100),
                             new AttributeOwnerTypeStrategy<>(
                                     SchemaManager.getTypeFromString("company", this.entityTypes),
                                     new StreamProvider<>(
@@ -283,7 +283,7 @@ public class DataGenerator {
                                     )
                             ),
                             new StreamProvider<>(
-                                    new IntegerPicker(this.rand, 0, 100)
+                                    new IntegerPicker(this.rand, 0, 1000000)
                             )
                     )
             );
@@ -311,8 +311,8 @@ public class DataGenerator {
             );
         }
 
-        this.operationStrategies.add(0.7, this.entityStrategies);
-        this.operationStrategies.add(0.3, this.relationshipStrategies);
+        this.operationStrategies.add(0.6, this.entityStrategies);
+        this.operationStrategies.add(0.2, this.relationshipStrategies);
         this.operationStrategies.add(0.2, this.attributeStrategies);
     }
 
@@ -387,8 +387,9 @@ public class DataGenerator {
         dg.generate(200);
         dg.generate(300);
         dg.generate(400);
-        dg.generate(1000);
+//        dg.generate(1000);
 //        dg.generate(10000);
+//        dg.generate(1000000);//Started at 19:33
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000000;
 

@@ -87,7 +87,7 @@ public class ConceptIdPicker extends Picker<ConceptId> {
      */
     protected Integer getConceptCount(GraknTx tx) {
         QueryBuilder qb = tx.graql();
-        // TODO This isn't working, waiting on bug fix
+        // TODO This isn't working, waiting on bug fix - this was likely due to a mismatch between the Grakn active code and the Grakn build on my machine. Test to check if this is still a problem
         Long count = qb.match(this.matchVarPattern)
                 .aggregate(count())
                 .execute();

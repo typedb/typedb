@@ -24,7 +24,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 /**
- * 
+ *
  */
 public class IntegerPicker implements StreamInterface<Integer>{
     private Random rand;

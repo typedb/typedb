@@ -52,7 +52,7 @@ public class CentralStreamProvider<T> implements StreamProviderInterface<T> {
         if (this.isReset) {
 
             Stream<T> stream = this.streamer.getStream(streamLength,tx);
-            //TODO read stream to list and store to be used again later
+            //Read stream to list and store to be used again later
 
             this.conceptIdList = new ArrayList<>();
 

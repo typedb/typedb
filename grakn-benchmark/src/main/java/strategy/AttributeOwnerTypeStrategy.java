@@ -22,7 +22,7 @@ import ai.grakn.concept.Type;
 import pick.StreamProviderInterface;
 
 /**
- *
+ * @param <T>
  */
 // TODO implement a base interface of TypeStrategyInterface?
 public class AttributeOwnerTypeStrategy<T> implements HasPicker {

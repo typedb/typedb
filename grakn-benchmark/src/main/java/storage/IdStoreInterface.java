@@ -18,6 +18,9 @@
 
 package storage;
 
+/**
+ *
+ */
 public interface IdStoreInterface extends ConceptStore {
 
     int getConceptCount(String typeLabel);

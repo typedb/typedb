@@ -25,6 +25,7 @@ import pick.StreamProviderInterface;
 
 /**
  * @param <OwnerDatatype>
+ * @param <ValueDatatype>
  */
 public class AttributeStrategy<OwnerDatatype, ValueDatatype> extends TypeStrategy<AttributeType> implements HasPicker{
 
