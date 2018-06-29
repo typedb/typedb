@@ -97,7 +97,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Felix Chapman
+ * Unit Tests for {@link ai.grakn.engine.ServerRPC}
  */
 public class ServerRPCTest {
 
@@ -608,7 +608,7 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            ConceptProto.Concept response = tx.receive().ok().getConcept();
+            ConceptProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
 
             assertEquals(id.getValue(), response.getId());
             assertEquals(BaseType.RELATIONSHIP, response.getBaseType());
@@ -627,9 +627,7 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            boolean response = tx.receive().ok().getNoResult();
-
-            assertTrue(response);
+            assertTrue(tx.receive().ok().getGetConcept().getNull().isInitialized());
         }
     }
 

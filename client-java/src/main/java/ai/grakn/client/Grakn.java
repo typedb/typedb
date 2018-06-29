@@ -23,6 +23,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
+import ai.grakn.client.executor.RemoteQueryExecutor;
+import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -42,15 +45,12 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.client.executor.RemoteQueryExecutor;
-import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
@@ -212,8 +212,12 @@ public final class Grakn {
         public <T extends Concept> T getConcept(ConceptId id) {
             transceiver.send(RequestBuilder.Transaction.getConcept(id));
             SessionProto.TxResponse response = responseOrThrow();
-            if (response.getNoResult()) return null;
-            return (T) ConceptBuilder.concept(response.getConcept(), this);
+            switch (response.getGetConcept().getResCase()) {
+                case NULL:
+                    return null;
+                default:
+                    return (T) ConceptBuilder.concept(response.getGetConcept().getConcept(), this);
+            }
         }
 
         @Nullable

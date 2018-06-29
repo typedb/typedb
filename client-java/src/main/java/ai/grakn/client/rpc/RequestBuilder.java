@@ -77,7 +77,9 @@ public class RequestBuilder {
         }
 
         public static SessionProto.TxRequest getConcept(ConceptId id) {
-            return SessionProto.TxRequest.newBuilder().setGetConcept(id.getValue()).build();
+            return SessionProto.TxRequest.newBuilder()
+                    .setGetConcept(SessionProto.GetConcept.Req.newBuilder().setId(id.getValue()))
+                    .build();
         }
 
         public static SessionProto.TxRequest getSchemaConcept(Label label) {

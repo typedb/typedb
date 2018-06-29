@@ -63,18 +63,28 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.TxResponse done() {
-            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
-        }
-
         static SessionProto.TxResponse query(@Nullable IteratorProto.IteratorId iteratorId) {
-            SessionProto.Query.Res res;
+            SessionProto.Query.Res.Builder res = SessionProto.Query.Res.newBuilder();
             if (iteratorId == null) {
-                res = SessionProto.Query.Res.newBuilder().setNull(SessionProto.Null.getDefaultInstance()).build();
+                res.setNull(SessionProto.Null.getDefaultInstance());
             } else {
-                res = SessionProto.Query.Res.newBuilder().setIteratorId(iteratorId).build();
+                res.setIteratorId(iteratorId);
             }
             return SessionProto.TxResponse.newBuilder().setQuery(res).build();
+        }
+
+        static SessionProto.TxResponse getConcept(@Nullable Concept concept) {
+            SessionProto.GetConcept.Res.Builder res = SessionProto.GetConcept.Res.newBuilder();
+            if (concept == null) {
+                res.setNull(SessionProto.Null.getDefaultInstance());
+            } else {
+                res.setConcept(ConceptBuilder.concept(concept));
+            }
+            return SessionProto.TxResponse.newBuilder().setGetConcept(res).build();
+        }
+
+        static SessionProto.TxResponse done() {
+            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
         static SessionProto.TxResponse noResult() {

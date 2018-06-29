@@ -92,7 +92,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Felix Chapman
+ * Integration Tests for {@link ai.grakn.engine.ServerRPC}
  */
 public class ServerRPCIT {
 

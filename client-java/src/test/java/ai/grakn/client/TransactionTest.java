@@ -83,7 +83,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit Test for testing Transaction behavior on Grakn Client.
+ * Unit Tests for {@link ai.grakn.client.Grakn.Transaction}
  */
 public class TransactionTest {
 

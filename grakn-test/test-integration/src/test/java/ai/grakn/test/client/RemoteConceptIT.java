@@ -19,7 +19,6 @@
 package ai.grakn.test.client;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -56,7 +55,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Test for testing methods for all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
+ * Integration Tests for testing methods of all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
  */
 public class RemoteConceptIT {
 

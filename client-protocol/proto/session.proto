@@ -19,7 +19,7 @@ message TxRequest {
         Query.Req query = 3; // returns Answer, Done, or IteratorId of Answer
         Next next = 4; // returns Answer or Done
         Stop stop = 5; // returns Done
-        string getConcept = 7; // returns Concept or noResult
+        GetConcept.Req getConcept = 7; // returns Concept or noResult
         string getSchemaConcept = 8; // returns Concept or noResult
         string putEntityType = 10; // returns Concept
         string putRelationshipType = 11; // returns Concept
@@ -36,6 +36,7 @@ message TxResponse {
         Open.Res open = 10;
         Commit.Res commit = 11;
         Query.Res query = 12;
+        GetConcept.Res getConcept = 13;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
