@@ -14,7 +14,7 @@ jobs:
       - checkout
 
       - run:
-          name: Update apt repositories
+          name: Prepare apt repositories
           command: |
             curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
             echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -23,9 +23,7 @@ jobs:
 
       - run:
           name: Install yarn and maven
-          command: |
-            sudo apt-get -y install yarn
-            sudo apt-get -y install maven
+          command: sudo apt-get -y install yarn maven
 
       - run:
           name: Install nvm and node
@@ -38,11 +36,10 @@ jobs:
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
 
-      - run: node -v
-      
       # build grakn
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
+      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
 
       - persist_to_workspace:
           root: ~/grakn
@@ -86,14 +83,9 @@ jobs:
       - attach_workspace:
           at: ~/grakn
 
-      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      - run: grakn-dist/target/grakn-dist-test/grakn server start
-      - run: sleep 10
-      - run: grakn-dist/target/grakn-dist-test/grakn server status
+      - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
-
-      - run: grakn-dist/target/grakn-dist-test/grakn server stop
 
   long-running:
     machine: true
@@ -101,148 +93,21 @@ jobs:
 
     steps:
       - run: echo Long-running
-  
-  test:
-    machine: true
-    working_directory: ~
-    steps:
-      - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
-      - run: tar -xf grakn-dist-1.2.0.tar.gz
-      - run: grakn-dist-1.2.0/grakn server start
-      - run: sleep 10
-      - run: grakn-dist-1.2.0/grakn server status
-
-  test-2:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-
-      - run:
-          name: Update apt repositories
-          command: |
-            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-            sudo apt-get install apt-transport-https
-            sudo apt-get update
-
-      - run:
-          name: Install yarn and maven
-          command: |
-            sudo apt-get -y install yarn
-            sudo apt-get -y install maven
-
-      - run:
-          name: Install nvm and node
-          command: |
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
-            export NVM_DIR="/opt/circleci/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install v10.5.0
-            nvm alias default v10.5.0
-            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-
-      - run: node -v
-      
-      # build grakn
-      - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
-      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
-
-      # run grakn
-      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      - run: grakn-dist/target/grakn-dist-test/grakn server start
-      - run: grakn-dist/target/grakn-dist-test/grakn server status
-
-  test-3:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - attach_workspace:
-          at: ~/grakn
-      # run grakn
-      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      - run: grakn-dist/target/grakn-dist-test/grakn server start
-      - run: sleep 10
-      - run: grakn-dist/target/grakn-dist-test/grakn server status
-
-  test-4:
-    machine: true
-    working_directory: ~
-    steps:
-      - run: wget https://github.com/graknlabs/grakn/releases/download/v1.2.0/grakn-dist-1.2.0.tar.gz
-      - run: tar -xf grakn-dist-1.2.0.tar.gz
-      - run: grakn-dist-1.2.0/services/cassandra/cassandra -f
-      - run: sleep 10
-      - run: grakn-dist-1.2.0/grakn server status
-  
-  test-5:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-
-      - run:
-          name: Update apt repositories
-          command: |
-            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-            sudo apt-get install apt-transport-https
-            sudo apt-get update
-
-      - run:
-          name: Install yarn and maven
-          command: |
-            sudo apt-get -y install yarn
-            sudo apt-get -y install maven
-
-      - run:
-          name: Install nvm and node
-          command: |
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
-            export NVM_DIR="/opt/circleci/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install v10.5.0
-            nvm alias default v10.5.0
-            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-
-      - run: node -v
-      
-      # build grakn
-      - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
-      - run: mvn --batch-mode install -T 2.5C -DskipTests=true
-
-      # run test
-      - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
-      - run: |
-          grakn-dist/target/grakn-dist-test/grakn server start
-          PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
-          PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
 workflows:
   version: 2
   run-all-tests:
     jobs:
-      - test-5
-      
-      # - test-3:
-      #     requires:
-      #       - build
-      # - biomed:
-      #     requires:
-      #       - build
-
-      # - build
-      # - unit-it-test:
-      #     requires:
-      #       - build
+      - build
+      - unit-it-test:
+          requires:
+            - build
       # - snb:
       #     requires:
       #       - unit-it-test
-      # - biomed:
-      #     requires:
-      #       - unit-it-test
+      - biomed:
+          requires:
+            - unit-it-test
       # - long-running:
       #     requires:
       #       - unit-it-test
