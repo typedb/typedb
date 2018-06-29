@@ -61,24 +61,24 @@ jobs:
 
   unit-it-test:
     machine: true
+    parallelism: 2
     working_directory: ~/grakn
     steps:
       - run: echo unit it test
       # run tests!
-#      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
-#      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       # make and store reports
-#      - run:
-#          name: Save test results
-#          command: |
-#            mkdir -p ~/grakn-surefire-reports/
-#            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
-#          when: always
-#      - store_artifacts:
-#          path: ~/grakn-surefire-reports/
-#      - store_test_results:
-#          path: ~/grakn-surefire-reports/
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/grakn-surefire-reports/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+          when: always
+      - store_artifacts:
+          path: ~/grakn-surefire-reports/
+      - store_test_results:
+          path: ~/grakn-surefire-reports/
 
   distribution-e2e:
       machine: true
@@ -90,6 +90,18 @@ jobs:
             name: Restore maven m2 cache
             key: grakn-cache-m2-version-1
         - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+        # make and store reports
+        - run:
+            name: Save test results
+            command: |
+              mkdir -p ~/grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+            when: always
+        - store_artifacts:
+            path: ~/grakn-surefire-reports/
+        - store_test_results:
+            path: ~/grakn-surefire-reports/
+
   
   snb-e2e:
     machine: true
@@ -128,12 +140,12 @@ workflows:
       - distribution-e2e:
           requires:
             - build
-      - snb-e2e:
-          requires:
-            - unit-it-test
-      - biomed-e2e:
-          requires:
-            - unit-it-test
+#      - snb-e2e:
+#          requires:
+#            - unit-it-test
+#      - biomed-e2e:
+#          requires:
+#            - unit-it-test
       # - long-running-e2e:
       #     requires:
       #       - unit-it-test
