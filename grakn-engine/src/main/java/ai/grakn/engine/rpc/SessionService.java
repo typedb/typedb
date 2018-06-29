@@ -281,13 +281,9 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.getConcept(concept));
         }
 
-        private void getSchemaConcept(String label) {
-            Concept concept = tx().getSchemaConcept(Label.of(label));
-            if (concept == null) {
-                responseSender.onNext(ResponseBuilder.Transaction.noResult());
-            } else {
-                responseSender.onNext(ResponseBuilder.Transaction.concept(concept));
-            }
+        private void getSchemaConcept(SessionProto.GetSchemaConcept.Req request) {
+            Concept concept = tx().getSchemaConcept(Label.of(request.getLabel()));
+            responseSender.onNext(ResponseBuilder.Transaction.getSchemaConcept(concept));
         }
 
         private void getAttributesByValue(ConceptProto.AttributeValue attributeValue) {

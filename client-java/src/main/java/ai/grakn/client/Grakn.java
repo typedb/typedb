@@ -225,8 +225,12 @@ public final class Grakn {
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
             transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
             SessionProto.TxResponse response = responseOrThrow();
-            if (response.getNoResult()) return null;
-            return (T) ConceptBuilder.concept(response.getConcept(), this);
+            switch (response.getGetSchemaConcept().getResCase()) {
+                case NULL:
+                    return null;
+                default:
+                    return (T) ConceptBuilder.concept(response.getGetSchemaConcept().getConcept(), this);
+            }
         }
 
         @Nullable

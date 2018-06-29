@@ -83,6 +83,16 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setGetConcept(res).build();
         }
 
+        static SessionProto.TxResponse getSchemaConcept(@Nullable Concept concept) {
+            SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
+            if (concept == null) {
+                res.setNull(SessionProto.Null.getDefaultInstance());
+            } else {
+                res.setConcept(ConceptBuilder.concept(concept));
+            }
+            return SessionProto.TxResponse.newBuilder().setGetSchemaConcept(res).build();
+        }
+
         static SessionProto.TxResponse done() {
             return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }

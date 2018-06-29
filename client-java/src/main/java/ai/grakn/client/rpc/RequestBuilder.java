@@ -83,7 +83,9 @@ public class RequestBuilder {
         }
 
         public static SessionProto.TxRequest getSchemaConcept(Label label) {
-            return SessionProto.TxRequest.newBuilder().setGetSchemaConcept(label.getValue()).build();
+            return SessionProto.TxRequest.newBuilder()
+                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
+                    .build();
         }
 
         public static SessionProto.TxRequest getAttributesByValue(Object value) {

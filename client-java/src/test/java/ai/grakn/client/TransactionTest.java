@@ -378,7 +378,9 @@ public class TransactionTest {
             Concept concept = RemoteEntity.create(tx, id);
 
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
-                    .setConcept(ConceptBuilder.concept(concept)).build();
+                    .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept)))
+                    .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
             assertEquals(concept, tx.getConcept(id));
@@ -392,7 +394,10 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
+                    .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
+                            .setNull(SessionProto.Null.getDefaultInstance()))
+                    .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
             assertNull(tx.getConcept(id));
@@ -409,7 +414,9 @@ public class TransactionTest {
 
             Concept concept = RemoteAttributeType.create(tx, id);
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
-                    .setConcept(ConceptBuilder.concept(concept)).build();
+                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept)))
+                    .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
             assertEquals(concept, tx.getSchemaConcept(label));
@@ -423,7 +430,10 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
+            SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
+                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
+                            .setNull(SessionProto.Null.getDefaultInstance()))
+                    .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
             assertNull(tx.getSchemaConcept(label));

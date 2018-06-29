@@ -14,13 +14,13 @@ service Session {
 
 message TxRequest {
     oneof request {
-        Open.Req open = 1; // returns Done
-        Commit.Req commit = 2; // returns Done
-        Query.Req query = 3; // returns Answer, Done, or IteratorId of Answer
-        Next next = 4; // returns Answer or Done
-        Stop stop = 5; // returns Done
-        GetConcept.Req getConcept = 7; // returns Concept or noResult
-        string getSchemaConcept = 8; // returns Concept or noResult
+        Open.Req open = 1;
+        Commit.Req commit = 2;
+        Query.Req query = 3;
+        Next next = 4;
+        Stop stop = 5;
+        GetConcept.Req getConcept = 7;
+        GetSchemaConcept.Req getSchemaConcept = 8;
         string putEntityType = 10; // returns Concept
         string putRelationshipType = 11; // returns Concept
         string putRole = 13; // returns Concept
@@ -37,6 +37,7 @@ message TxResponse {
         Commit.Res commit = 11;
         Query.Res query = 12;
         GetConcept.Res getConcept = 13;
+        GetSchemaConcept.Res getSchemaConcept = 14;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -88,6 +89,18 @@ message Query { // Graql query to be executed on the database
 message GetConcept {
     message Req {
         string id = 1;
+    }
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message GetSchemaConcept {
+    message Req {
+        string label = 1;
     }
     message Res {
         oneof res {
