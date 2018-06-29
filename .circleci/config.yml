@@ -40,14 +40,16 @@ jobs:
       # - save the new .m2 cache
       ##############################################################################
       - restore_cache:
-          key: grakn-cache-m2
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-1
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
       - save_cache:
+          name: Save maven m2 cache
           paths:
             - ~/.m2
-          key: grakn-cache-m2
+          key: grakn-cache-m2-version-1
 
       ##############################################################################
       # share Grakn with other jobs by putting it in the workspace
@@ -84,6 +86,9 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-1
         - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
   
   snb-e2e:
@@ -117,18 +122,18 @@ workflows:
   run-all-tests:
     jobs:
       - build
-#      - unit-it-test:
-#          requires:
-#            - build
-#      - distribution-e2e:
-#          requires:
-#            - build
-#      - snb-e2e:
-#          requires:
-#            - unit-it-test
-#      - biomed-e2e:
-#          requires:
-#            - unit-it-test
+      - unit-it-test:
+          requires:
+            - build
+      - distribution-e2e:
+          requires:
+            - build
+      - snb-e2e:
+          requires:
+            - unit-it-test
+      - biomed-e2e:
+          requires:
+            - unit-it-test
       # - long-running-e2e:
       #     requires:
       #       - unit-it-test
