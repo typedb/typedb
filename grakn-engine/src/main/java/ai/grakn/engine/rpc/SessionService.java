@@ -243,18 +243,17 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             if (query instanceof Streamable) {
                 responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
                 iteratorId = iterators.add(responseStream.iterator());
-                response = ResponseBuilder.Transaction.query(iteratorId);
             } else {
                 Object result = query.execute();
-                if (result != null) {
+                if (result == null) {
+                    iteratorId = null;
+                } else {
                     responseStream = Stream.of(ResponseBuilder.Transaction.answer(result));
                     iteratorId = iterators.add(responseStream.iterator());
-                    response = ResponseBuilder.Transaction.query(iteratorId);
-                } else {
-                    response = ResponseBuilder.Transaction.query();
                 }
             }
 
+            response = ResponseBuilder.Transaction.query(iteratorId);
             responseSender.onNext(response);
         }
 

@@ -52,7 +52,8 @@ enum TxType {
     Batch = 2;
 }
 
-message Done {} // Tells the client we have completed their command.
+message Done {} // Indicates that a request is completedk
+message Null {} // Indicates that a request does not yield any result
 
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
     message Req {
@@ -78,7 +79,19 @@ message Query { // Graql query to be executed on the database
     message Res {
         oneof res {
             IteratorId iteratorId = 1;
-            Done done = 2;
+            Null null = 2;
+        }
+    }
+}
+
+message GetConcept {
+    message Req {
+        string id = 1;
+    }
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
         }
     }
 }

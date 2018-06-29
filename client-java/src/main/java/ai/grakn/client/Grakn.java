@@ -340,7 +340,7 @@ public final class Grakn {
             SessionProto.TxResponse txResponse = responseOrThrow();
 
             switch (txResponse.getQuery().getResCase()) {
-                case DONE:
+                case NULL:
                     return Collections.emptyIterator();
                 case ITERATORID:
                     IteratorProto.IteratorId iteratorId = txResponse.getQuery().getIteratorId();

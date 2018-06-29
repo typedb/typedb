@@ -32,12 +32,13 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -66,16 +67,14 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
-        static SessionProto.TxResponse query() {
-            return SessionProto.TxResponse.newBuilder()
-                    .setQuery(SessionProto.Query.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()))
-                    .build();
-        }
-
-        static SessionProto.TxResponse query(IteratorProto.IteratorId iteratorId) {
-            return SessionProto.TxResponse.newBuilder()
-                    .setQuery(SessionProto.Query.Res.newBuilder().setIteratorId(iteratorId))
-                    .build();
+        static SessionProto.TxResponse query(@Nullable IteratorProto.IteratorId iteratorId) {
+            SessionProto.Query.Res res;
+            if (iteratorId == null) {
+                res = SessionProto.Query.Res.newBuilder().setNull(SessionProto.Null.getDefaultInstance()).build();
+            } else {
+                res = SessionProto.Query.Res.newBuilder().setIteratorId(iteratorId).build();
+            }
+            return SessionProto.TxResponse.newBuilder().setQuery(res).build();
         }
 
         static SessionProto.TxResponse noResult() {

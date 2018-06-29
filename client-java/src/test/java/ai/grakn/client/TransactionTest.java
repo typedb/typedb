@@ -160,9 +160,11 @@ public class TransactionTest {
         Query<?> query = match(var("x").isa("person")).delete("x");
         String queryString = query.toString();
 
-        server.setResponse(RequestBuilder.Transaction.query(query), SessionProto.TxResponse.newBuilder()
-                        .setQuery(SessionProto.Query.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()))
-                        .build());
+        TxResponse response = SessionProto.TxResponse.newBuilder()
+                .setQuery(SessionProto.Query.Res.newBuilder().setNull(SessionProto.Null.getDefaultInstance()))
+                .build();
+
+        server.setResponse(RequestBuilder.Transaction.query(query), response);
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
             verify(server.requestListener()).onNext(any()); // The open request
