@@ -9,6 +9,10 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
+
+      ##############################################################################
+      # update repositories and install toolings (yarn, maven, node)
+      ##############################################################################
       - run:
           name: Prepare apt repositories
           command: |
@@ -29,10 +33,28 @@ jobs:
             nvm alias default v10.5.0
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+
+      ##############################################################################
+      # restore cache to speed up build, and also update them
+      ##############################################################################
+      - restore_cache:
+          key: grakn-{{ checksum "pom.xml" }}
+      - run: mvn dependency:go-offline # gets the project dependencies
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: grakn-{{ checksum "pom.xml" }}
+
+      ##############################################################################
+      # build Grakn
+      ##############################################################################
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
 
+      ##############################################################################
+      # share Grakn with other jobs by putting it in the workspace
+      ##############################################################################
       - persist_to_workspace:
           root: ~/grakn
           paths:
@@ -66,7 +88,7 @@ jobs:
         - attach_workspace:
             at: ~/grakn
         - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
-
+  
   snb-e2e:
     machine: true
     working_directory: ~/grakn
