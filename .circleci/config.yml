@@ -7,12 +7,8 @@ jobs:
   build:
     machine: true
     working_directory: ~/grakn
-
-    environment:
-
     steps:
       - checkout
-
       - run:
           name: Prepare apt repositories
           command: |
@@ -20,11 +16,9 @@ jobs:
             echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
             sudo apt-get install apt-transport-https
             sudo apt-get update
-
       - run:
           name: Install yarn and maven
           command: sudo apt-get -y install yarn maven
-
       - run:
           name: Install nvm and node
           command: |
@@ -35,8 +29,6 @@ jobs:
             nvm alias default v10.5.0
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-
-      # build grakn
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
       - run: tar -xf grakn-dist/target/grakn-dist-test.tar.gz -C grakn-dist/target/
@@ -49,7 +41,6 @@ jobs:
   unit-it-test:
     machine: true
     working_directory: ~/grakn
-
     steps:
       - run: echo unit it test
       # run tests!
@@ -68,29 +59,37 @@ jobs:
 #      - store_test_results:
 #          path: ~/grakn-surefire-reports/
 
-  snb:
+  distribution-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+
+  snb-e2e:
     machine: true
     working_directory: ~/grakn
-
-    steps:
-      - run: echo SNB
-
-  biomed:
-    machine: true
-    working_directory: ~/grakn
-
     steps:
       - attach_workspace:
           at: ~/grakn
+      - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/load.sh
+      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/validate.sh
 
+  biomed-e2e:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - attach_workspace:
+          at: ~/grakn
       - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
-  long-running:
+  long-running-e2e:
     machine: true
     working_directory: ~/grakn
-
     steps:
       - run: echo Long-running
 
@@ -102,12 +101,15 @@ workflows:
       - unit-it-test:
           requires:
             - build
-      # - snb:
-      #     requires:
-      #       - unit-it-test
-      - biomed:
+      - distribution-e2e:
+          requires:
+            - build
+      - snb-e2e:
           requires:
             - unit-it-test
-      # - long-running:
+      - biomed-e2e:
+          requires:
+            - unit-it-test
+      # - long-running-e2e:
       #     requires:
       #       - unit-it-test
