@@ -65,30 +65,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       ##############################################################################
-      # update repositories and install toolings (yarn, maven, node)
-      ##############################################################################
-      - run:
-          name: Prepare apt repositories
-          command: |
-            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-            sudo apt-get install apt-transport-https
-            sudo apt-get update
-      - run:
-          name: Install yarn and maven
-          command: sudo apt-get -y install yarn maven
-      - run:
-          name: Install nvm and node
-          command: |
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
-            export NVM_DIR="/opt/circleci/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install v10.5.0
-            nvm alias default v10.5.0
-            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
-            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
-
-      ##############################################################################
       # - attach to workspace
       # - restore .m2 cache to speed up build
       # - run tests
@@ -118,33 +94,32 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    ##############################################################################
-    # - attach to workspace
-    # - restore .m2 cache to speed up build
-    # - run tests
-    ##############################################################################
-    - attach_workspace:
-        at: ~/grakn
-    - restore_cache:
-        name: Restore maven m2 cache
-        key: grakn-cache-m2-version-1
-    - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+      ##############################################################################
+      # - attach to workspace
+      # - restore .m2 cache to speed up build
+      # - run tests
+      ##############################################################################
+      - attach_workspace:
+          at: ~/grakn
+      - restore_cache:
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-1
+      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
     
-    ##############################################################################
-    # make and store reports
-    ##############################################################################
-    - run:
-        name: Save test results
-        command: |
-            mkdir -p ~/grakn-surefire-reports/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
-        when: always
-    - store_artifacts:
-        path: ~/grakn-surefire-reports/
-    - store_test_results:
-        path: ~/grakn-surefire-reports/
+      ##############################################################################
+      # make and store reports
+      ##############################################################################
+      - run:
+          name: Save test results
+          command: |
+              mkdir -p ~/grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+          when: always
+      - store_artifacts:
+          path: ~/grakn-surefire-reports/
+      - store_test_results:
+          path: ~/grakn-surefire-reports/
 
-  
   snb-e2e:
     machine: true
     working_directory: ~/grakn
