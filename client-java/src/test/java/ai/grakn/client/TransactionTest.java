@@ -56,7 +56,6 @@ import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.TxRequest;
 import ai.grakn.rpc.proto.SessionProto.TxResponse;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.Before;
@@ -106,10 +105,6 @@ public class TransactionTest {
         when(session.keyspaceBlockingStub()).thenReturn(KeyspaceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
-    }
-
-    private static SessionProto.TxResponse done() {
-        return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
     }
     
     private static SessionProto.TxResponse response(Concept concept) {

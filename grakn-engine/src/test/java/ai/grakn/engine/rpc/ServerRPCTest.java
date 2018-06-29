@@ -73,8 +73,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
+import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.next;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.query;
