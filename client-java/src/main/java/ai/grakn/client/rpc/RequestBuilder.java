@@ -68,14 +68,6 @@ public class RequestBuilder {
             return SessionProto.TxRequest.newBuilder().setQuery(queryRequest).build();
         }
 
-        public static SessionProto.TxRequest next(IteratorId iteratorId) {
-            return SessionProto.TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
-        }
-
-        public static SessionProto.TxRequest stop(IteratorId iteratorId) {
-            return SessionProto.TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
-        }
-
         public static SessionProto.TxRequest getConcept(ConceptId id) {
             return SessionProto.TxRequest.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Req.newBuilder().setId(id.getValue()))
@@ -88,12 +80,14 @@ public class RequestBuilder {
                     .build();
         }
 
-        public static SessionProto.TxRequest getAttributesByValue(Object value) {
-            return SessionProto.TxRequest.newBuilder().setGetAttributesByValue(ConceptBuilder.attributeValue(value)).build();
+        public static SessionProto.TxRequest putEntityType(Label label) {
+            return SessionProto.TxRequest.newBuilder()
+                    .setPutEntityType(SessionProto.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
+                    .build();
         }
 
-        public static SessionProto.TxRequest putEntityType(Label label) {
-            return SessionProto.TxRequest.newBuilder().setPutEntityType(label.getValue()).build();
+        public static SessionProto.TxRequest getAttributesByValue(Object value) {
+            return SessionProto.TxRequest.newBuilder().setGetAttributesByValue(ConceptBuilder.attributeValue(value)).build();
         }
 
         public static SessionProto.TxRequest putRelationshipType(Label label) {
@@ -132,6 +126,14 @@ public class RequestBuilder {
                 default:
                     throw CommonUtil.unreachableStatement("Unrecognised " + txType);
             }
+        }
+
+        public static SessionProto.TxRequest next(IteratorId iteratorId) {
+            return SessionProto.TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
+        }
+
+        public static SessionProto.TxRequest stop(IteratorId iteratorId) {
+            return SessionProto.TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
         }
     }
 

@@ -144,6 +144,49 @@ public final class Grakn {
             responseOrThrow();
         }
 
+        @Override
+        public GraknAdmin admin() {
+            return this;
+        }
+
+        @Override
+        public GraknTxType txType() {
+            return type;
+        }
+
+        @Override
+        public GraknSession session() {
+            return session;
+        }
+
+        @Override
+        public void close() {
+            transceiver.close();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return transceiver.isClosed();
+        }
+
+        @Override
+        public QueryBuilder graql() {
+            return new QueryBuilderImpl(this);
+        }
+
+        @Override
+        public QueryExecutor queryExecutor() {
+            return RemoteQueryExecutor.create(this);
+        }
+
+        @Override // TODO: Move out of Transaction class
+        public void delete() {
+            KeyspaceProto.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
+            KeyspaceGrpc.KeyspaceBlockingStub stub = session.keyspaceBlockingStub();
+            stub.delete(request);
+            close();
+        }
+
         private SessionProto.TxResponse responseOrThrow() {
             Transceiver.Response response;
 
@@ -167,44 +210,27 @@ public final class Grakn {
             }
         }
 
-        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
-            SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
-            runConceptMethod.setId(id.getValue());
-            runConceptMethod.setMethod(method);
-            SessionProto.TxRequest conceptMethodRequest = SessionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
-
-            transceiver.send(conceptMethodRequest);
-            return responseOrThrow();
+        @Override
+        public void commit() throws InvalidKBException {
+            transceiver.send(RequestBuilder.Transaction.commit());
+            responseOrThrow();
+            close();
         }
 
-        @Override
-        public EntityType putEntityType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putEntityType(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asEntityType();
-        }
+        public java.util.Iterator query(Query<?> query) {
+            transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
+            SessionProto.TxResponse txResponse = responseOrThrow();
 
-        @Override
-        public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-            transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
-        }
+            switch (txResponse.getQuery().getResCase()) {
+                case NULL:
+                    return Collections.emptyIterator();
+                case ITERATORID:
+                    IteratorProto.IteratorId iteratorId = txResponse.getQuery().getIteratorId();
+                    return new Iterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
+                default:
+                    throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
+            }
 
-        @Override
-        public Rule putRule(Label label, Pattern when, Pattern then) {
-            transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
-        }
-
-        @Override
-        public RelationshipType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
-        }
-
-        @Override
-        public Role putRole(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRole(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
         }
 
         @Nullable
@@ -231,6 +257,36 @@ public final class Grakn {
                 default:
                     return (T) ConceptBuilder.concept(response.getGetSchemaConcept().getConcept(), this);
             }
+        }
+
+        @Override
+        public EntityType putEntityType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putEntityType(label));
+            return ConceptBuilder.concept(responseOrThrow().getPutEntityType().getConcept(), this).asEntityType();
+        }
+
+        @Override
+        public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
+            transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
+        }
+
+        @Override
+        public Rule putRule(Label label, Pattern when, Pattern then) {
+            transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
+        }
+
+        @Override
+        public RelationshipType putRelationshipType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
+        }
+
+        @Override
+        public Role putRole(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRole(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
         }
 
         @Nullable
@@ -281,43 +337,6 @@ public final class Grakn {
         }
 
         @Override
-        public GraknAdmin admin() {
-            return this;
-        }
-
-        @Override
-        public GraknTxType txType() {
-            return type;
-        }
-
-        @Override
-        public GraknSession session() {
-            return session;
-        }
-
-        @Override
-        public boolean isClosed() {
-            return transceiver.isClosed();
-        }
-
-        @Override
-        public QueryBuilder graql() {
-            return new QueryBuilderImpl(this);
-        }
-
-        @Override
-        public void close() {
-            transceiver.close();
-        }
-
-        @Override
-        public void commit() throws InvalidKBException {
-            transceiver.send(RequestBuilder.Transaction.commit());
-            responseOrThrow();
-            close();
-        }
-
-        @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
             ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
             method.setGetSuperConcepts(ConceptProto.Unit.getDefaultInstance());
@@ -330,33 +349,14 @@ public final class Grakn {
             return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
         }
 
-        @Override
-        public void delete() {
-            KeyspaceProto.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
-            KeyspaceGrpc.KeyspaceBlockingStub stub = session.keyspaceBlockingStub();
-            stub.delete(request);
-            close();
-        }
+        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
+            SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
+            runConceptMethod.setId(id.getValue());
+            runConceptMethod.setMethod(method);
+            SessionProto.TxRequest conceptMethodRequest = SessionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
-        @Override
-        public QueryExecutor queryExecutor() {
-            return RemoteQueryExecutor.create(this);
-        }
-
-        public java.util.Iterator query(Query<?> query) {
-            transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
-            SessionProto.TxResponse txResponse = responseOrThrow();
-
-            switch (txResponse.getQuery().getResCase()) {
-                case NULL:
-                    return Collections.emptyIterator();
-                case ITERATORID:
-                    IteratorProto.IteratorId iteratorId = txResponse.getQuery().getIteratorId();
-                    return new Iterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
-                default:
-                    throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
-            }
-
+            transceiver.send(conceptMethodRequest);
+            return responseOrThrow();
         }
 
         private SessionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {

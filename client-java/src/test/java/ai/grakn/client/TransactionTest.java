@@ -299,7 +299,9 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteEntityType.create(tx, id);
-            server.setResponse(RequestBuilder.Transaction.putEntityType(label), response(concept));
+            TxResponse response = TxResponse.newBuilder().setPutEntityType(SessionProto.PutEntityType.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept))).build();
+            server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
             assertEquals(concept, tx.putEntityType(label));
         }

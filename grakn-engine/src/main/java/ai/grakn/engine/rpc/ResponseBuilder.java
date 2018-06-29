@@ -93,12 +93,14 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setGetSchemaConcept(res).build();
         }
 
-        static SessionProto.TxResponse done() {
-            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
+        static SessionProto.TxResponse putEntityType(Concept concept) {
+            SessionProto.PutEntityType.Res.Builder res = SessionProto.PutEntityType.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept));
+            return SessionProto.TxResponse.newBuilder().setPutEntityType(res).build();
         }
 
-        static SessionProto.TxResponse noResult() {
-            return SessionProto.TxResponse.newBuilder().setNoResult(true).build();
+        static SessionProto.TxResponse done() {
+            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
         static SessionProto.TxResponse iteratorId(Stream<SessionProto.TxResponse> responses, SessionService.Iterators iterators) {

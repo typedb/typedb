@@ -257,25 +257,6 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(response);
         }
 
-        private void next(IteratorProto.Next next) {
-            IteratorProto.IteratorId iteratorId = next.getIteratorId();
-            TxResponse response = iterators.next(iteratorId);
-            if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
-            responseSender.onNext(response);
-        }
-
-        private void stop(IteratorProto.Stop stop) {
-            IteratorProto.IteratorId iteratorId = stop.getIteratorId();
-            iterators.stop(iteratorId);
-            responseSender.onNext(ResponseBuilder.Transaction.done());
-        }
-
-        private void runConceptMethod(SessionProto.RunConceptMethod runConceptMethod) {
-            Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
-            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
-            responseSender.onNext(response);
-        }
-
         private void getConcept(SessionProto.GetConcept.Req request) {
             Concept concept = tx().getConcept(ConceptId.of(request.getId()));
             responseSender.onNext(ResponseBuilder.Transaction.getConcept(concept));
@@ -286,6 +267,11 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.getSchemaConcept(concept));
         }
 
+        private void putEntityType(SessionProto.PutEntityType.Req request) {
+            EntityType entityType = tx().putEntityType(Label.of(request.getLabel()));
+            responseSender.onNext(ResponseBuilder.Transaction.putEntityType(entityType));
+        }
+
         private void getAttributesByValue(ConceptProto.AttributeValue attributeValue) {
             Object value = attributeValue.getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
@@ -294,11 +280,6 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             IteratorProto.IteratorId iteratorId = iterators.add(iterator);
 
             responseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
-        }
-
-        private void putEntityType(String label) {
-            EntityType entityType = tx().putEntityType(Label.of(label));
-            responseSender.onNext(ResponseBuilder.Transaction.concept(entityType));
         }
 
         private void putRelationshipType(String label) {
@@ -352,6 +333,25 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case UNRECOGNIZED:
                     throw new IllegalArgumentException("Unrecognised " + dataType);
             }
+        }
+
+        private void runConceptMethod(SessionProto.RunConceptMethod runConceptMethod) {
+            Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
+            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
+            responseSender.onNext(response);
+        }
+
+        private void next(IteratorProto.Next next) {
+            IteratorProto.IteratorId iteratorId = next.getIteratorId();
+            TxResponse response = iterators.next(iteratorId);
+            if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
+            responseSender.onNext(response);
+        }
+
+        private void stop(IteratorProto.Stop stop) {
+            IteratorProto.IteratorId iteratorId = stop.getIteratorId();
+            iterators.stop(iteratorId);
+            responseSender.onNext(ResponseBuilder.Transaction.done());
         }
     }
 
