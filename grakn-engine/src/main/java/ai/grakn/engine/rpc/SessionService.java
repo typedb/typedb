@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -235,24 +236,25 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
 
-        private void query(SessionProto.Query request) {
-            String queryString = request.getQuery();
-            QueryBuilder graql = tx().graql();
+        private void query(SessionProto.Query.Req request) {
+            Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
+
+            Stream<TxResponse> responseStream;
+            IteratorProto.IteratorId iteratorId;
             TxResponse response;
-            graql = graql.infer(request.getInfer());
-
-            Query<?> query = graql.parse(queryString);
-
             if (query instanceof Streamable) {
-                Stream<TxResponse> responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
-                IteratorProto.IteratorId iteratorId = iterators.add(responseStream.iterator());
-
-                response = TxResponse.newBuilder().setIteratorId(iteratorId).build();
+                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
+                iteratorId = iterators.add(responseStream.iterator());
+                response = ResponseBuilder.Transaction.query(iteratorId);
             } else {
                 Object result = query.execute();
-
-                if (result == null) response = ResponseBuilder.Transaction.done();
-                else response = ResponseBuilder.Transaction.answer(result);
+                if (result != null) {
+                    responseStream = Stream.of(ResponseBuilder.Transaction.answer(result));
+                    iteratorId = iterators.add(responseStream.iterator());
+                    response = ResponseBuilder.Transaction.query(iteratorId);
+                } else {
+                    response = ResponseBuilder.Transaction.query();
+                }
             }
 
             responseSender.onNext(response);
@@ -369,7 +371,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
      * lazy, streaming responses such as for Graql query results.
      */
     public static class Iterators {
-        private final AtomicInteger iteratorIdCounter = new AtomicInteger();
+        private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
         private final Map<IteratorProto.IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
 
         public static Iterators create() {

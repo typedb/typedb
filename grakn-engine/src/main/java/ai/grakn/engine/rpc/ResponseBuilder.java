@@ -66,6 +66,18 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
+        static SessionProto.TxResponse query() {
+            return SessionProto.TxResponse.newBuilder()
+                    .setQuery(SessionProto.Query.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()))
+                    .build();
+        }
+
+        static SessionProto.TxResponse query(IteratorProto.IteratorId iteratorId) {
+            return SessionProto.TxResponse.newBuilder()
+                    .setQuery(SessionProto.Query.Res.newBuilder().setIteratorId(iteratorId))
+                    .build();
+        }
+
         static SessionProto.TxResponse noResult() {
             return SessionProto.TxResponse.newBuilder().setNoResult(true).build();
         }

@@ -57,7 +57,7 @@ import static org.mockito.Mockito.mock;
  *
  * <p>
  *     The gRPC server itself is "real" and can be connected to using the {@link #channel()}. However, the
- *     {@link #sessionService()} and {@link #requests()} are both mock objects and should be used with
+ *     {@link #sessionService()} and {@link #requestListener()} are both mock objects and should be used with
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
@@ -81,7 +81,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private @Nullable StreamObserver<TxResponse> serverResponses = null;
 
     @SuppressWarnings("unchecked") // safe because mock
-    private StreamObserver<TxRequest> serverRequests = mock(StreamObserver.class);
+    private StreamObserver<TxRequest> reqeustListener = mock(StreamObserver.class);
 
     private ServerRPCMock() {
     }
@@ -102,8 +102,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         return keyspaceService;
     }
 
-    public StreamObserver<TxRequest> requests() {
-        return serverRequests;
+    public StreamObserver<TxRequest> requestListener() {
+        return reqeustListener;
     }
 
     public ServerIteratorsMock IteratorProtos() {
@@ -143,7 +143,7 @@ public final class ServerRPCMock extends CompositeTestRule {
             }
             next.get().handle(serverResponses);
             return null;
-        }).when(serverRequests).onNext(request);
+        }).when(reqeustListener).onNext(request);
     }
 
     private interface TxResponseHandler {
@@ -179,7 +179,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     protected void before() throws Throwable {
         doAnswer(args -> {
             serverResponses = args.getArgument(0);
-            return serverRequests;
+            return reqeustListener;
         }).when(sessionService).transaction(any());
 
         doAnswer(args -> {
@@ -201,7 +201,7 @@ public final class ServerRPCMock extends CompositeTestRule {
             serverResponses.onNext(next.orElse(done()));
 
             return null;
-        }).when(serverRequests).onNext(any());
+        }).when(reqeustListener).onNext(any());
 
         // Return a default "complete" response to every "complete" message from the client
         doAnswer(args -> {
@@ -210,7 +210,7 @@ public final class ServerRPCMock extends CompositeTestRule {
             }
             serverResponses.onCompleted();
             return null;
-        }).when(serverRequests).onCompleted();
+        }).when(reqeustListener).onCompleted();
 
         serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);

@@ -16,8 +16,8 @@ message TxRequest {
     oneof request {
         Open.Req open = 1; // returns Done
         Commit.Req commit = 2; // returns Done
-        Query query = 3; // returns QueryResult, Done, or IteratorId of QueryResult
-        Next next = 4; // returns QueryResult or Done
+        Query.Req query = 3; // returns Answer, Done, or IteratorId of Answer
+        Next next = 4; // returns Answer or Done
         Stop stop = 5; // returns Done
         string getConcept = 7; // returns Concept or noResult
         string getSchemaConcept = 8; // returns Concept or noResult
@@ -35,6 +35,7 @@ message TxResponse {
     oneof response {
         Open.Res open = 10;
         Commit.Res commit = 11;
+        Query.Res query = 12;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -50,6 +51,8 @@ enum TxType {
     Write = 1;
     Batch = 2;
 }
+
+message Done {} // Tells the client we have completed their command.
 
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
     message Req {
@@ -67,11 +70,17 @@ message Commit { // Command to commit a transaction
     message Res {}
 }
 
-message Done {} // Tells the client we have completed their command.
-
 message Query { // Graql query to be executed on the database
-    string query = 1; // query string
-    bool infer = 2; // If this is not present, leave at server default.
+    message Req {
+        string query = 1; // query string
+        bool infer = 2; // If this is not present, leave at server default.
+    }
+    message Res {
+        oneof res {
+            IteratorId iteratorId = 1;
+            Done done = 2;
+        }
+    }
 }
 
 message Answer {

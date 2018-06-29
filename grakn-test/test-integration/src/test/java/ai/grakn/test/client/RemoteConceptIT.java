@@ -408,10 +408,6 @@ public class RemoteConceptIT {
     public void whenCallingOwnerInstances_GetTheExpectedResult() {
         assertThat(emailAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
         assertThat(emailBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
-
-//        for (Thing owner : nameAlice.ownerInstances().collect(toSet())) {
-//            System.out.println(owner.type() + " - " + owner);
-//        }
         assertThat(nameAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
         assertThat(nameBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
         assertThat(age20.ownerInstances().collect(toSet()), containsInAnyOrder(alice, bob));
@@ -419,20 +415,6 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingAttributeTypes_GetTheExpectedResult() {
-//        System.out.println();
-//        System.out.println("person.attributes()");
-//        for (AttributeType attributeType : person.attributes().collect(toSet())) {
-//            System.out.println(attributeType.getLabel() + " - " + attributeType);
-//        }
-//        System.out.println("------");
-//        System.out.println(email.getLabel() + " - " + email);
-//        System.out.println(name.getLabel() + " - " + name);
-//        System.out.println(age.getLabel() + " - " + age);
-//        System.out.println("------");
-//        System.out.println(email.getLabel() + " - " + tx.getAttributeType(EMAIL.getValue()));
-//        System.out.println(name.getLabel() + " - " + tx.getAttributeType(NAME.getValue()));
-//        System.out.println(age.getLabel() + " - " + tx.getAttributeType(AGE.getValue()));
-
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(email, name, age));
     }
 

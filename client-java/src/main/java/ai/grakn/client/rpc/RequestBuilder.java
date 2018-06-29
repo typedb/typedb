@@ -61,8 +61,10 @@ public class RequestBuilder {
         }
 
         public static SessionProto.TxRequest query(String queryString, boolean infer) {
-            SessionProto.Query.Builder queryRequest = SessionProto.Query.newBuilder().setQuery(queryString);
-            queryRequest.setInfer(infer);
+            SessionProto.Query.Req queryRequest = SessionProto.Query.Req.newBuilder()
+                    .setQuery(queryString)
+                    .setInfer(infer)
+                    .build();
             return SessionProto.TxRequest.newBuilder().setQuery(queryRequest).build();
         }
 

@@ -307,7 +307,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             TxResponse response1 = tx.receive().ok();
@@ -362,7 +362,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             tx.receive().ok();
@@ -413,7 +413,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
-            assertEquals(ResponseBuilder.Transaction.done(), tx.receive().ok());
+            assertEquals(ResponseBuilder.Transaction.query(), tx.receive().ok());
         }
     }
 
@@ -422,7 +422,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             tx.send(stop(iterator));
@@ -436,7 +436,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             tx.send(stop(iterator));
@@ -450,7 +450,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, true));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             tx.send(stop(iterator));
@@ -765,7 +765,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getIteratorId();
+            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(stop(iterator));
             tx.receive();
@@ -785,10 +785,10 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator1 = tx.receive().ok().getIteratorId();
+            IteratorId iterator1 = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator2 = tx.receive().ok().getIteratorId();
+            IteratorId iterator2 = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator1));
             tx.receive().ok();

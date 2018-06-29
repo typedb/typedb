@@ -43,11 +43,9 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
@@ -69,9 +67,6 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static ai.grakn.graql.Graql.ask;
-import static ai.grakn.graql.Graql.define;
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
@@ -131,24 +126,24 @@ public class TransactionTest {
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
+            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
         }
     }
 
     @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.BATCH)) {
-            verify(server.requests()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
+            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
         }
     }
 
     @Test
     public void whenClosingAGraknRemoteTx_SendCompletedMessageToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests(), never()).onCompleted(); // Make sure transaction is still open here
+            verify(server.requestListener(), never()).onCompleted(); // Make sure transaction is still open here
         }
 
-        verify(server.requests()).onCompleted();
+        verify(server.requestListener()).onCompleted();
     }
 
     @Test
@@ -166,114 +161,40 @@ public class TransactionTest {
     }
 
     @Test
-    public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
-        Query<?> query = match(var("x").isa("person")).get();
-        String queryString = query.toString();
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-
-            tx.graql().parse(queryString).execute();
-        }
-
-        verify(server.requests()).onNext(RequestBuilder.Transaction.query(query));
-    }
-
-    @Test
-    public void whenExecutingAQuery_GetAResultBack() {
-        Query<?> query = match(var("x").isa("person")).get();
-        String queryString = query.toString();
-
-        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
-
-        server.setResponseSequence(RequestBuilder.Transaction.query(query), response);
-
-        List<Answer> results;
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-            results = tx.graql().<GetQuery>parse(queryString).execute();
-        }
-
-        Answer answer = Iterables.getOnlyElement(results);
-        assertEquals(answer.vars(), ImmutableSet.of(var("x")));
-        assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
-    }
-
-    @Test
     public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
         Query<?> query = match(var("x").isa("person")).delete("x");
         String queryString = query.toString();
 
-        server.setResponse(RequestBuilder.Transaction.query(query), done());
+        server.setResponse(RequestBuilder.Transaction.query(query), SessionProto.TxResponse.newBuilder()
+                        .setQuery(SessionProto.Query.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()))
+                        .build());
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
             assertNull(tx.graql().parse(queryString).execute());
         }
     }
 
-    @Test
-    public void whenExecutingAQueryWithABooleanResult_GetABoolBack() {
-        Query<?> query = match(var("x").isa("person")).aggregate(ask());
-        String queryString = query.toString();
-
-        TxResponse response =
-                TxResponse.newBuilder().setAnswer(SessionProto.Answer.newBuilder().setOtherResult("true")).build();
-
-        server.setResponse(RequestBuilder.Transaction.query(query), response);
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-            assertTrue(tx.graql().<Query<Boolean>>parse(queryString).execute());
-        }
-    }
-
-    @Test
-    public void whenExecutingAQueryWithASingleAnswer_GetAnAnswerBack() {
-        Query<?> query = define(label("person").sub("entity"));
-        String queryString = query.toString();
-
-        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
-
-        server.setResponseSequence(RequestBuilder.Transaction.query(query), response);
-
-        Answer answer;
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-            answer = tx.graql().<DefineQuery>parse(queryString).execute();
-        }
-
-        assertEquals(answer.vars(), ImmutableSet.of(var("x")));
-        assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
-    }
-
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
+        TxResponse queryIterator = SessionProto.TxResponse.newBuilder()
+                .setQuery(SessionProto.Query.Res.newBuilder().setIteratorId(ITERATOR))
+                .build();
+
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
-
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        SessionProto.QueryAnswer grpcAnswer = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123).build();
-        SessionProto.Answer queryResult = SessionProto.Answer.newBuilder().setQueryAnswer(grpcAnswer).build();
-        TxResponse response = TxResponse.newBuilder().setAnswer(queryResult).build();
+        TxResponse iteratorNext = TxResponse.newBuilder().setAnswer(SessionProto.Answer.newBuilder()
+                .setQueryAnswer(SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
 
-        server.setResponse(RequestBuilder.Transaction.query(query),
-                           SessionProto.TxResponse.newBuilder().setIteratorId(ITERATOR).build());
-        server.setResponse(RequestBuilder.Transaction.next(ITERATOR), response);
+        server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
+        server.setResponse(RequestBuilder.Transaction.next(ITERATOR), iteratorNext);
 
         List<Answer> answers;
         int numAnswers = 10;
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
             answers = tx.graql().<GetQuery>parse(queryString).stream().limit(numAnswers).collect(toList());
         }
 
@@ -286,31 +207,14 @@ public class TransactionTest {
     }
 
     @Test
-    public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
-        String queryString = "match $x isa person; get $x;";
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
-
-            QueryBuilder graql = tx.graql();
-
-            graql.infer(true).parse(queryString).execute();
-            verify(server.requests()).onNext(RequestBuilder.Transaction.query(queryString, true));
-
-            graql.infer(false).parse(queryString).execute();
-            verify(server.requests()).onNext(RequestBuilder.Transaction.query(queryString, false));
-        }
-    }
-
-    @Test
     public void whenCommitting_SendACommitMessageToGrpc() {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             tx.commit();
         }
 
-        verify(server.requests()).onNext(RequestBuilder.Transaction.commit());
+        verify(server.requestListener()).onNext(RequestBuilder.Transaction.commit());
     }
 
     @Test
@@ -395,7 +299,7 @@ public class TransactionTest {
         Label label = Label.of("foo");
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteEntityType.create(tx, id);
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response(concept));
@@ -410,7 +314,7 @@ public class TransactionTest {
         Label label = Label.of("foo");
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRelationshipType.create(tx, id);
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response(concept));
@@ -426,7 +330,7 @@ public class TransactionTest {
         AttributeType.DataType<?> dataType = AttributeType.DataType.STRING;
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteAttributeType.create(tx, id);
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response(concept));
@@ -441,7 +345,7 @@ public class TransactionTest {
         Label label = Label.of("foo");
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRole.create(tx, id);
             server.setResponse(RequestBuilder.Transaction.putRole(label), response(concept));
@@ -458,7 +362,7 @@ public class TransactionTest {
         Pattern then = var("y").isa("person");
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRule.create(tx, id);
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response(concept));
@@ -472,7 +376,7 @@ public class TransactionTest {
         ConceptId id = ConceptId.of(V123);
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteEntity.create(tx, id);
 
@@ -489,7 +393,7 @@ public class TransactionTest {
         ConceptId id = ConceptId.of(V123);
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
@@ -504,7 +408,7 @@ public class TransactionTest {
         ConceptId id = ConceptId.of(V123);
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteAttributeType.create(tx, id);
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
@@ -520,7 +424,7 @@ public class TransactionTest {
         Label label = Label.of("foo");
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder().setNoResult(true).build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
@@ -534,7 +438,7 @@ public class TransactionTest {
         String value = "Hello Oli";
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-            verify(server.requests()).onNext(any()); // The open request
+            verify(server.requestListener()).onNext(any()); // The open request
 
             Attribute<?> attribute1 = RemoteAttribute.create(tx, ConceptId.of("A"));
             Attribute<?> attribute2 = RemoteAttribute.create(tx, ConceptId.of("B"));

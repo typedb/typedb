@@ -343,20 +343,18 @@ public final class Grakn {
 
         public Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
-
             SessionProto.TxResponse txResponse = responseOrThrow();
 
-            switch (txResponse.getResponseCase()) {
-                case ANSWER:
-                    return Collections.singleton(ConceptBuilder.answer(txResponse.getAnswer(), this)).iterator();
+            switch (txResponse.getQuery().getResCase()) {
                 case DONE:
                     return Collections.emptyIterator();
                 case ITERATORID:
-                    IteratorProto.IteratorId iteratorId = txResponse.getIteratorId();
+                    IteratorProto.IteratorId iteratorId = txResponse.getQuery().getIteratorId();
                     return new RequestIterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }
+
         }
 
     }
