@@ -61,7 +61,6 @@ jobs:
 
   unit-it-test:
     machine: true
-    parallelism: 2
     working_directory: ~/grakn
     steps:
       ##############################################################################
