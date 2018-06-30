@@ -3,8 +3,8 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "SessionProto";
 
-import "concept.proto";
-import "iterator.proto";
+import "Concept.proto";
+import "Iterator.proto";
 
 service Session {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.

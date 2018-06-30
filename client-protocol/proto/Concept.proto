@@ -3,7 +3,7 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "ConceptProto";
 
-import "iterator.proto";
+import "Iterator.proto";
 
 enum BaseType {
     META_TYPE = 0; // This represents the top-level meta type only
