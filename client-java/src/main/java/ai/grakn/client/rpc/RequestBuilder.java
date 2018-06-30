@@ -74,6 +74,14 @@ public class RequestBuilder {
                     .build();
         }
 
+
+        public static SessionProto.TxRequest getAttributes(Object value) {
+            return SessionProto.TxRequest.newBuilder()
+                    .setGetAttributes(SessionProto.GetAttributes.Req.newBuilder()
+                            .setValue(ConceptBuilder.attributeValue(value))
+                    ).build();
+        }
+
         public static SessionProto.TxRequest getSchemaConcept(Label label) {
             return SessionProto.TxRequest.newBuilder()
                     .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
@@ -84,10 +92,6 @@ public class RequestBuilder {
             return SessionProto.TxRequest.newBuilder()
                     .setPutEntityType(SessionProto.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
                     .build();
-        }
-
-        public static SessionProto.TxRequest getAttributesByValue(Object value) {
-            return SessionProto.TxRequest.newBuilder().setGetAttributesByValue(ConceptBuilder.attributeValue(value)).build();
         }
 
         public static SessionProto.TxRequest putRelationshipType(Label label) {

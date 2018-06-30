@@ -160,8 +160,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case GETSCHEMACONCEPT:
                     getSchemaConcept(request.getGetSchemaConcept());
                     break;
-                case GETATTRIBUTESBYVALUE:
-                    getAttributesByValue(request.getGetAttributesByValue());
+                case GETATTRIBUTES:
+                    getAttributes(request.getGetAttributes());
                     break;
                 case PUTENTITYTYPE:
                     putEntityType(request.getPutEntityType());
@@ -272,14 +272,14 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.putEntityType(entityType));
         }
 
-        private void getAttributesByValue(ConceptProto.AttributeValue attributeValue) {
-            Object value = attributeValue.getAllFields().values().iterator().next();
+        private void getAttributes(SessionProto.GetAttributes.Req request) {
+            Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
             IteratorProto.IteratorId iteratorId = iterators.add(iterator);
 
-            responseSender.onNext(TxResponse.newBuilder().setIteratorId(iteratorId).build());
+            responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
         }
 
         private void putRelationshipType(String label) {

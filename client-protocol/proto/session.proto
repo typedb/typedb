@@ -20,13 +20,13 @@ message TxRequest {
         Next next = 4;
         Stop stop = 5;
         GetConcept.Req getConcept = 6;
-        GetSchemaConcept.Req getSchemaConcept = 7;
-        AttributeValue getAttributesByValue = 12; // returns IteratorId of Concept
-        PutEntityType.Req putEntityType = 8;
-        AttributeType putAttributeType = 13; // returns Concept
-        string putRelationshipType = 9; // returns Concept
-        string putRole = 10; // returns Concept
-        Rule putRule = 11; // returns Concept
+        GetAttributes.Req getAttributes = 7;
+        GetSchemaConcept.Req getSchemaConcept = 8;
+        PutEntityType.Req putEntityType = 9;
+        AttributeType putAttributeType = 10; // returns Concept
+        string putRelationshipType = 11; // returns Concept
+        string putRole = 12; // returns Concept
+        Rule putRule = 13; // returns Concept
         RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
     }
 }
@@ -37,8 +37,9 @@ message TxResponse {
         Commit.Res commit = 11;
         Query.Res query = 12;
         GetConcept.Res getConcept = 13;
-        GetSchemaConcept.Res getSchemaConcept = 14;
-        PutEntityType.Res putEntityType = 15;
+        GetAttributes.Res getAttributes = 14;
+        GetSchemaConcept.Res getSchemaConcept = 15;
+        PutEntityType.Res putEntityType = 16;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -108,6 +109,15 @@ message GetSchemaConcept {
             Concept concept = 1;
             Null null = 2;
         }
+    }
+}
+
+message GetAttributes {
+    message Req {
+        AttributeValue value = 1;
+    }
+    message Res {
+        IteratorId iteratorId = 1;
     }
 }
 

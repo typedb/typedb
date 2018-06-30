@@ -246,6 +246,17 @@ public final class Grakn {
             }
         }
 
+        @Override
+        public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
+            transceiver.send(RequestBuilder.Transaction.getAttributes(value));
+            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
+            Iterable<Concept> iterable = () -> new Iterator<>(
+                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
+            );
+
+            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
+        }
+
         @Nullable
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
@@ -293,17 +304,6 @@ public final class Grakn {
         @Override
         public <T extends Type> T getType(Label label) {
             return getSchemaConcept(label);
-        }
-
-        @Override
-        public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-            transceiver.send(RequestBuilder.Transaction.getAttributesByValue(value));
-            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
-            Iterable<Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
-            );
-
-            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
         }
 
         @Nullable

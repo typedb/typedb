@@ -453,7 +453,7 @@ public class TransactionTest {
             Attribute<?> attribute2 = RemoteAttribute.create(tx, ConceptId.of("B"));
 
             server.setResponseSequence(
-                    RequestBuilder.Transaction.getAttributesByValue(value),
+                    RequestBuilder.Transaction.getAttributes(value),
                     response(attribute1),
                     response(attribute2)
             );
