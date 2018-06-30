@@ -61,11 +61,17 @@ public class RequestBuilder {
         }
 
         public static SessionProto.TxRequest query(String queryString, boolean infer) {
-            SessionProto.Query.Req queryRequest = SessionProto.Query.Req.newBuilder()
+            SessionProto.Query.Req request = SessionProto.Query.Req.newBuilder()
                     .setQuery(queryString)
                     .setInfer(infer)
                     .build();
-            return SessionProto.TxRequest.newBuilder().setQuery(queryRequest).build();
+            return SessionProto.TxRequest.newBuilder().setQuery(request).build();
+        }
+
+        public static SessionProto.TxRequest getSchemaConcept(Label label) {
+            return SessionProto.TxRequest.newBuilder()
+                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
+                    .build();
         }
 
         public static SessionProto.TxRequest getConcept(ConceptId id) {
@@ -82,27 +88,23 @@ public class RequestBuilder {
                     ).build();
         }
 
-        public static SessionProto.TxRequest getSchemaConcept(Label label) {
-            return SessionProto.TxRequest.newBuilder()
-                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
-                    .build();
-        }
-
         public static SessionProto.TxRequest putEntityType(Label label) {
             return SessionProto.TxRequest.newBuilder()
                     .setPutEntityType(SessionProto.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
                     .build();
         }
 
-        public static SessionProto.TxRequest putRelationshipType(Label label) {
-            return SessionProto.TxRequest.newBuilder().setPutRelationshipType(label.getValue()).build();
+        public static SessionProto.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+            SessionProto.PutAttributeType.Req request = SessionProto.PutAttributeType.Req.newBuilder()
+                    .setLabel(label.getValue())
+                    .setDataType(ConceptBuilder.dataType(dataType))
+                    .build();
+
+            return SessionProto.TxRequest.newBuilder().setPutAttributeType(request).build();
         }
 
-        public static SessionProto.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-            SessionProto.AttributeType putAttributeType =
-                    SessionProto.AttributeType.newBuilder().setLabel(label.getValue()).setDataType(ConceptBuilder.dataType(dataType)).build();
-
-            return SessionProto.TxRequest.newBuilder().setPutAttributeType(putAttributeType).build();
+        public static SessionProto.TxRequest putRelationshipType(Label label) {
+            return SessionProto.TxRequest.newBuilder().setPutRelationshipType(label.getValue()).build();
         }
 
         public static SessionProto.TxRequest putRole(Label label) {

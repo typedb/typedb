@@ -230,74 +230,6 @@ public final class Grakn {
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }
-
-        }
-
-        @Nullable
-        @Override
-        public <T extends Concept> T getConcept(ConceptId id) {
-            transceiver.send(RequestBuilder.Transaction.getConcept(id));
-            SessionProto.TxResponse response = responseOrThrow();
-            switch (response.getGetConcept().getResCase()) {
-                case NULL:
-                    return null;
-                default:
-                    return (T) ConceptBuilder.concept(response.getGetConcept().getConcept(), this);
-            }
-        }
-
-        @Override
-        public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
-            transceiver.send(RequestBuilder.Transaction.getAttributes(value));
-            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
-            Iterable<Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
-            );
-
-            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
-        }
-
-        @Nullable
-        @Override
-        public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-            transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
-            SessionProto.TxResponse response = responseOrThrow();
-            switch (response.getGetSchemaConcept().getResCase()) {
-                case NULL:
-                    return null;
-                default:
-                    return (T) ConceptBuilder.concept(response.getGetSchemaConcept().getConcept(), this);
-            }
-        }
-
-        @Override
-        public EntityType putEntityType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putEntityType(label));
-            return ConceptBuilder.concept(responseOrThrow().getPutEntityType().getConcept(), this).asEntityType();
-        }
-
-        @Override
-        public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-            transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asAttributeType();
-        }
-
-        @Override
-        public Rule putRule(Label label, Pattern when, Pattern then) {
-            transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
-        }
-
-        @Override
-        public RelationshipType putRelationshipType(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
-        }
-
-        @Override
-        public Role putRole(Label label) {
-            transceiver.send(RequestBuilder.Transaction.putRole(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
         }
 
         @Nullable
@@ -334,6 +266,73 @@ public final class Grakn {
         @Override
         public Rule getRule(String label) {
             return getSchemaConcept(Label.of(label));
+        }
+
+        @Nullable
+        @Override
+        public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+            transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
+            SessionProto.TxResponse response = responseOrThrow();
+            switch (response.getGetSchemaConcept().getResCase()) {
+                case NULL:
+                    return null;
+                default:
+                    return (T) ConceptBuilder.concept(response.getGetSchemaConcept().getConcept(), this);
+            }
+        }
+
+        @Nullable
+        @Override
+        public <T extends Concept> T getConcept(ConceptId id) {
+            transceiver.send(RequestBuilder.Transaction.getConcept(id));
+            SessionProto.TxResponse response = responseOrThrow();
+            switch (response.getGetConcept().getResCase()) {
+                case NULL:
+                    return null;
+                default:
+                    return (T) ConceptBuilder.concept(response.getGetConcept().getConcept(), this);
+            }
+        }
+
+        @Override
+        public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
+            transceiver.send(RequestBuilder.Transaction.getAttributes(value));
+            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
+            Iterable<Concept> iterable = () -> new Iterator<>(
+                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
+            );
+
+            return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
+        }
+
+        @Override
+        public EntityType putEntityType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putEntityType(label));
+            return ConceptBuilder.concept(responseOrThrow().getPutEntityType().getConcept(), this).asEntityType();
+        }
+
+        @Override
+        public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
+            transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
+            return ConceptBuilder.concept(responseOrThrow().getPutAttributeType().getConcept(), this).asAttributeType();
+        }
+
+        @Override
+        public RelationshipType putRelationshipType(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
+        }
+
+        @Override
+        public Role putRole(Label label) {
+            transceiver.send(RequestBuilder.Transaction.putRole(label));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
+        }
+
+        @Override
+        public Rule putRule(Label label, Pattern when, Pattern then) {
+            transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
+            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
         }
 
         @Override

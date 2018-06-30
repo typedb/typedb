@@ -23,7 +23,7 @@ message TxRequest {
         GetAttributes.Req getAttributes = 7;
         GetSchemaConcept.Req getSchemaConcept = 8;
         PutEntityType.Req putEntityType = 9;
-        AttributeType putAttributeType = 10; // returns Concept
+        PutAttributeType.Req putAttributeType = 10;
         string putRelationshipType = 11; // returns Concept
         string putRole = 12; // returns Concept
         Rule putRule = 13; // returns Concept
@@ -40,6 +40,7 @@ message TxResponse {
         GetAttributes.Res getAttributes = 14;
         GetSchemaConcept.Res getSchemaConcept = 15;
         PutEntityType.Res putEntityType = 16;
+        PutAttributeType.Res putAttributeType = 17;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -130,6 +131,15 @@ message PutEntityType {
     }
 }
 
+message PutAttributeType {
+    message Req {
+        string label = 1;
+        DataType dataType = 2;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
 message Answer {
     oneof answer {
         QueryAnswer queryAnswer = 1;
@@ -173,11 +183,6 @@ message ClusterSizes {
 message RunConceptMethod { // Calling a method on a concept
     string id = 1;
     ConceptMethod method = 2;
-}
-
-message AttributeType {
-    string label = 1;
-    DataType dataType = 2;
 }
 
 message Rule {

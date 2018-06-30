@@ -151,32 +151,32 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case STOP:
                     stop(request.getStop());
                     break;
-                case RUNCONCEPTMETHOD:
-                    runConceptMethod(request.getRunConceptMethod());
-                    break;
                 case GETCONCEPT:
                     getConcept(request.getGetConcept());
-                    break;
-                case GETSCHEMACONCEPT:
-                    getSchemaConcept(request.getGetSchemaConcept());
                     break;
                 case GETATTRIBUTES:
                     getAttributes(request.getGetAttributes());
                     break;
+                case GETSCHEMACONCEPT:
+                    getSchemaConcept(request.getGetSchemaConcept());
+                    break;
                 case PUTENTITYTYPE:
                     putEntityType(request.getPutEntityType());
                     break;
-                case PUTRELATIONSHIPTYPE:
-                    putRelationshipType(request.getPutRelationshipType());
-                    break;
                 case PUTATTRIBUTETYPE:
                     putAttributeType(request.getPutAttributeType());
+                    break;
+                case PUTRELATIONSHIPTYPE:
+                    putRelationshipType(request.getPutRelationshipType());
                     break;
                 case PUTROLE:
                     putRole(request.getPutRole());
                     break;
                 case PUTRULE:
                     putRule(request.getPutRule());
+                    break;
+                case RUNCONCEPTMETHOD:
+                    runConceptMethod(request.getRunConceptMethod());
                     break;
                 default:
                 case REQUEST_NOT_SET:
@@ -257,19 +257,14 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(response);
         }
 
-        private void getConcept(SessionProto.GetConcept.Req request) {
-            Concept concept = tx().getConcept(ConceptId.of(request.getId()));
-            responseSender.onNext(ResponseBuilder.Transaction.getConcept(concept));
-        }
-
         private void getSchemaConcept(SessionProto.GetSchemaConcept.Req request) {
             Concept concept = tx().getSchemaConcept(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.getSchemaConcept(concept));
         }
 
-        private void putEntityType(SessionProto.PutEntityType.Req request) {
-            EntityType entityType = tx().putEntityType(Label.of(request.getLabel()));
-            responseSender.onNext(ResponseBuilder.Transaction.putEntityType(entityType));
+        private void getConcept(SessionProto.GetConcept.Req request) {
+            Concept concept = tx().getConcept(ConceptId.of(request.getId()));
+            responseSender.onNext(ResponseBuilder.Transaction.getConcept(concept));
         }
 
         private void getAttributes(SessionProto.GetAttributes.Req request) {
@@ -282,17 +277,22 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
         }
 
+        private void putEntityType(SessionProto.PutEntityType.Req request) {
+            EntityType entityType = tx().putEntityType(Label.of(request.getLabel()));
+            responseSender.onNext(ResponseBuilder.Transaction.putEntityType(entityType));
+        }
+
+        private void putAttributeType(SessionProto.PutAttributeType.Req request) {
+            Label label = Label.of(request.getLabel());
+            AttributeType.DataType<?> dataType = dataType(request.getDataType());
+
+            AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
+            responseSender.onNext(ResponseBuilder.Transaction.putAttributeType(attributeType));
+        }
+
         private void putRelationshipType(String label) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(label));
             responseSender.onNext(ResponseBuilder.Transaction.concept(relationshipType));
-        }
-
-        private void putAttributeType(SessionProto.AttributeType putAttributeType) {
-            Label label = Label.of(putAttributeType.getLabel());
-            AttributeType.DataType<?> dataType = dataType(putAttributeType.getDataType());
-
-            AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
-            responseSender.onNext(ResponseBuilder.Transaction.concept(attributeType));
         }
 
         private void putRole(String label) {

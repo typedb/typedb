@@ -73,6 +73,16 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setQuery(res).build();
         }
 
+        static SessionProto.TxResponse getSchemaConcept(@Nullable Concept concept) {
+            SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
+            if (concept == null) {
+                res.setNull(SessionProto.Null.getDefaultInstance());
+            } else {
+                res.setConcept(ConceptBuilder.concept(concept));
+            }
+            return SessionProto.TxResponse.newBuilder().setGetSchemaConcept(res).build();
+        }
+
         static SessionProto.TxResponse getConcept(@Nullable Concept concept) {
             SessionProto.GetConcept.Res.Builder res = SessionProto.GetConcept.Res.newBuilder();
             if (concept == null) {
@@ -89,20 +99,16 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setGetAttributes(res).build();
         }
 
-        static SessionProto.TxResponse getSchemaConcept(@Nullable Concept concept) {
-            SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
-            if (concept == null) {
-                res.setNull(SessionProto.Null.getDefaultInstance());
-            } else {
-                res.setConcept(ConceptBuilder.concept(concept));
-            }
-            return SessionProto.TxResponse.newBuilder().setGetSchemaConcept(res).build();
-        }
-
         static SessionProto.TxResponse putEntityType(Concept concept) {
             SessionProto.PutEntityType.Res.Builder res = SessionProto.PutEntityType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.TxResponse.newBuilder().setPutEntityType(res).build();
+        }
+
+        static SessionProto.TxResponse putAttributeType(Concept concept) {
+            SessionProto.PutAttributeType.Res.Builder res = SessionProto.PutAttributeType.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept));
+            return SessionProto.TxResponse.newBuilder().setPutAttributeType(res).build();
         }
 
         static SessionProto.TxResponse done() {

@@ -332,7 +332,10 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteAttributeType.create(tx, id);
-            server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response(concept));
+            TxResponse response = TxResponse.newBuilder()
+                    .setPutAttributeType(SessionProto.PutAttributeType.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept))).build();
+            server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
             assertEquals(concept, tx.putAttributeType(label, dataType));
         }
@@ -381,8 +384,7 @@ public class TransactionTest {
 
             SessionProto.TxResponse response = SessionProto.TxResponse.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept)))
-                    .build();
+                            .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
             assertEquals(concept, tx.getConcept(id));
