@@ -83,7 +83,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                     materialisedAnswer(baseAnswer, rule, unifier) :
                     ruleAnswer(baseAnswer, rule, unifier);
         }
-        return getCache().recordAnswerWithUnifier(query, answer, getCacheUnifier());
+        return getCache().recordAnswer(query, answer, getCacheUnifier());
     }
 
     private Answer ruleAnswer(Answer baseAnswer, InferenceRule rule, Unifier unifier){

@@ -305,7 +305,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query) {
-        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(query.toString()));
+        return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString()));
     }
 
     public static GraqlQueryException noAtomsSelected(ReasonerQuery query) {
