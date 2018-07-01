@@ -49,10 +49,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -93,12 +93,11 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom is ground (all variables are bound)
      */
     public boolean isGround(){
-        Set<Var> varNames = getVarNames();
-        return Stream.concat(
-                getPredicates(),
-                getInnerPredicates())
+        Set<Var> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
                 .map(AtomicBase::getVarName)
-                .allMatch(varNames::contains);
+                .collect(toSet());
+        return getVarNames().stream()
+                .allMatch(mappedVars::contains);
     }
 
     /**
@@ -133,10 +132,10 @@ public abstract class Atom extends AtomicBase {
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
         Set<String> errors = new HashSet<>();
-        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(Collectors.toSet());
+        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(toSet());
         Set<Var> varNames = Sets.difference(
                 getVarNames(),
-                this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
+                this.getInnerPredicates().map(Atomic::getVarName).collect(toSet())
         );
         boolean unboundVariables = varNames.stream()
                 .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
