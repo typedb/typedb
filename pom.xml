@@ -938,11 +938,11 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>snapshots</id>
-            <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
         <repository>
             <id>releases</id>
-            <url>https://maven.grakn.ai/content/repositories/releases/</url>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
 
