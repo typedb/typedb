@@ -167,12 +167,6 @@ jobs:
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
-  long-running-e2e:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - run: echo Long-running
-
 workflows:
   version: 2
   run-all-tests:
@@ -184,12 +178,9 @@ workflows:
       - distribution-e2e:
           requires:
             - build
-#      - snb-e2e:
-#          requires:
-#            - unit-it-test
-#      - biomed-e2e:
-#          requires:
-#            - unit-it-test
-      # - long-running-e2e:
-      #     requires:
-      #       - unit-it-test
+      - snb-e2e:
+          requires:
+            - build
+      - biomed-e2e:
+          requires:
+            - build
