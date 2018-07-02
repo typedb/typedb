@@ -5,6 +5,7 @@ option java_outer_classname = "SessionProto";
 
 import "Concept.proto";
 import "Iterator.proto";
+import "ConceptMethod.proto";
 
 service Session {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.

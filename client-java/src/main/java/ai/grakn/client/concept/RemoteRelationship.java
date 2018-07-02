@@ -26,9 +26,10 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.IteratorProto;
+import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -51,8 +52,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetRolePlayers(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetRolePlayers(ConceptMethodProto.Unit.getDefaultInstance());
 
         IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
         Iterable<ConceptProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
@@ -75,7 +76,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
     public final Stream<Thing> rolePlayers(Role... roles) {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         if (roles.length == 0) {
             method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Collections.emptyList()));
         } else {
@@ -97,7 +98,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(ConceptProto.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
+        runMethod(ConceptMethodProto.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
         return asCurrentBaseType(this);
     }
 
@@ -108,7 +109,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(ConceptProto.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
+        runMethod(ConceptMethodProto.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
     }
 
     @Override

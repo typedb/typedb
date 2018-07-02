@@ -18,13 +18,13 @@
 
 package ai.grakn.client.concept;
 
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.client.Grakn;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -41,15 +41,15 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
 
     @Override
     public final Stream<RelationshipType> relationshipTypes() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetRelationshipTypesThatRelateRole(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetRelationshipTypesThatRelateRole(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRelationshipType);
     }
 
     @Override
     public final Stream<Type> playedByTypes() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetTypesThatPlayRole(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetTypesThatPlayRole(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asType);
     }
 

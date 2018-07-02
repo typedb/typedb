@@ -31,6 +31,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -135,7 +136,8 @@ public class ResponseBuilder {
 
         static SessionProto.TxResponse iteratorId(Stream<SessionProto.TxResponse> responses, SessionService.Iterators iterators) {
             IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-            ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setIteratorId(iteratorId).build();
+            ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
+                    .setIteratorId(iteratorId).build();
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
@@ -156,28 +158,31 @@ public class ResponseBuilder {
         }
 
         static SessionProto.TxResponse conceptResponseWithNoResult() {
-            ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setNoResult(true).build();
+            ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
+                    .setNoResult(true).build();
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.TxResponse conceptResopnseWithConcept(Concept concept) {
-            ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+            ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept)).build();
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
-            ConceptProto.ConceptResponse.Builder conceptResponse = ConceptProto.ConceptResponse.newBuilder();
+            ConceptMethodProto.ConceptResponse.Builder conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder();
             conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.TxResponse conceptResponseWithAttributeValue(Object value) {
-            ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setAttributeValue(ConceptBuilder.attributeValue(value)).build();
+            ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
+                    .setAttributeValue(ConceptBuilder.attributeValue(value)).build();
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.TxResponse conceptResponseWithPattern(Pattern pattern) {
-            ConceptProto.ConceptResponse.Builder conceptResponse = ConceptProto.ConceptResponse.newBuilder();
+            ConceptMethodProto.ConceptResponse.Builder conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder();
             if (pattern != null) {
                 conceptResponse.setPattern(pattern.toString());
             } else {
@@ -187,7 +192,8 @@ public class ResponseBuilder {
         }
 
         static SessionProto.TxResponse conceptResponseWithRegex(String regex) {
-            ConceptProto.ConceptResponse conceptResponse = ConceptProto.ConceptResponse.newBuilder().setRegex(regex).build();
+            ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
+                    .setRegex(regex).build();
             return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
         }
     }

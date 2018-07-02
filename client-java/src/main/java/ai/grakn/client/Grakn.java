@@ -45,6 +45,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
@@ -337,8 +338,8 @@ public final class Grakn {
 
         @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-            ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-            method.setGetSuperConcepts(ConceptProto.Unit.getDefaultInstance());
+            ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+            method.setGetSuperConcepts(ConceptMethodProto.Unit.getDefaultInstance());
             IteratorProto.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
                     this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
@@ -348,7 +349,7 @@ public final class Grakn {
             return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
         }
 
-        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptProto.ConceptMethod method) {
+        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
             SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
             runConceptMethod.setId(id.getValue());
             runConceptMethod.setMethod(method);

@@ -18,13 +18,13 @@
 
 package ai.grakn.client.concept;
 
+import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.client.rpc.ConceptBuilder;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import javax.annotation.Nullable;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends RemoteConcept<SomeType> implements SchemaConcept {
 
     public final SomeType sup(SomeType type) {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
         runMethod(method.build());
 
@@ -46,7 +46,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     public final SomeType sub(SomeType type) {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
         runMethod(type.getId(), method.build());
 
@@ -55,8 +55,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Label getLabel() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetLabel(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetLabel(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.TxResponse response = runMethod(method.build());
 
         return Label.of(response.getConceptResponse().getLabel());
@@ -64,8 +64,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Boolean isImplicit() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setIsImplicit(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setIsImplicit(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.TxResponse response = runMethod(method.build());
 
         return response.getConceptResponse().getIsImplicit();
@@ -73,7 +73,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final SomeType setLabel(Label label) {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setSetLabel(label.getValue());
         runMethod(method.build());
 
@@ -83,8 +83,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Nullable
     @Override
     public final SomeType sup() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetDirectSuperConcept(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetDirectSuperConcept(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.TxResponse response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
@@ -101,8 +101,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Stream<SomeType> subs() {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setGetSubConcepts(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setGetSubConcepts(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asCurrentBaseType);
     }
 

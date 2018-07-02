@@ -24,9 +24,9 @@ import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.IteratorProto;
+import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -50,8 +50,8 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        ConceptProto.ConceptMethod.Builder method = ConceptProto.ConceptMethod.newBuilder();
-        method.setDelete(ConceptProto.Unit.getDefaultInstance());
+        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        method.setDelete(ConceptMethodProto.Unit.getDefaultInstance());
         runMethod(method.build());
     }
 
@@ -60,7 +60,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().getConcept(getId()) == null;
     }
 
-    protected final Stream<? extends Concept> runMethodToConceptStream(ConceptProto.ConceptMethod method) {
+    protected final Stream<? extends Concept> runMethodToConceptStream(ConceptMethodProto.ConceptMethod method) {
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
@@ -68,11 +68,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
-    protected final SessionProto.TxResponse runMethod(ConceptProto.ConceptMethod method) {
+    protected final SessionProto.TxResponse runMethod(ConceptMethodProto.ConceptMethod method) {
         return runMethod(getId(), method);
     }
 
-    protected final SessionProto.TxResponse runMethod(ConceptId id, ConceptProto.ConceptMethod method) {
+    protected final SessionProto.TxResponse runMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
         return tx().runConceptMethod(id, method);
     }
 
