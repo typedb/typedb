@@ -25,8 +25,7 @@ import ai.grakn.rpc.proto.KeyspaceGrpc.KeyspaceImplBase;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.TxRequest;
-import ai.grakn.rpc.proto.SessionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -61,11 +60,11 @@ import static org.mockito.Mockito.mock;
  *     {@link org.mockito.Mockito#verify(Object)}.
  * </p>
  * <p>
- *     By default, the server will return a "done" {@link TxResponse} to every message. And will respond
+ *     By default, the server will return a "done" {@link Transaction.Res} to every message. And will respond
  *     with {@link StreamObserver#onCompleted()} when receiving a {@link StreamObserver#onCompleted()} from the client.
  * </p>
  * <p>
- *     In order to mock additional responses, use the method {@link #setResponse(TxRequest, TxResponse...)}.
+ *     In order to mock additional responses, use the method {@link #setResponse(Transaction.Req, Transaction.Res...)}.
  * </p>
  *
  * @author Felix Chapman
@@ -78,10 +77,10 @@ public final class ServerRPCMock extends CompositeTestRule {
     private final SessionImplBase sessionService = mock(SessionImplBase.class);
     private final KeyspaceImplBase keyspaceService = mock(KeyspaceGrpc.KeyspaceImplBase.class);
 
-    private @Nullable StreamObserver<TxResponse> serverResponses = null;
+    private @Nullable StreamObserver<Transaction.Res> serverResponses = null;
 
     @SuppressWarnings("unchecked") // safe because mock
-    private StreamObserver<TxRequest> reqeustListener = mock(StreamObserver.class);
+    private StreamObserver<Transaction.Req> reqeustListener = mock(StreamObserver.class);
 
     private ServerRPCMock() {
     }
@@ -102,7 +101,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return keyspaceService;
     }
 
-    public StreamObserver<TxRequest> requestListener() {
+    public StreamObserver<Transaction.Req> requestListener() {
         return reqeustListener;
     }
 
@@ -110,23 +109,23 @@ public final class ServerRPCMock extends CompositeTestRule {
         return rpcIterators;
     }
 
-    public void setResponse(TxRequest request, TxResponse... responses) {
+    public void setResponse(Transaction.Req request, Transaction.Res... responses) {
         setResponse(request, Arrays.asList(responses));
     }
 
-    public void setResponseSequence(TxRequest request, TxResponse... responses) {
+    public void setResponseSequence(Transaction.Req request, Transaction.Res... responses) {
         setResponseHandlers(request, Collections.singletonList(TxResponseHandler.sequence(this, responses)));
     }
 
-    public void setResponse(TxRequest request, Throwable throwable) {
+    public void setResponse(Transaction.Req request, Throwable throwable) {
         setResponseHandlers(request, ImmutableList.of(TxResponseHandler.onError(throwable)));
     }
 
-    private void setResponse(TxRequest request, List<TxResponse> responses) {
+    private void setResponse(Transaction.Req request, List<Transaction.Res> responses) {
         setResponseHandlers(request, Lists.transform(responses, TxResponseHandler::onNext));
     }
 
-    private void setResponseHandlers(TxRequest request, List<TxResponseHandler> responses) {
+    private void setResponseHandlers(Transaction.Req request, List<TxResponseHandler> responses) {
         Supplier<TxResponseHandler> next;
 
         // If there is only one mocked response, just return it again and again
@@ -147,7 +146,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     }
 
     private interface TxResponseHandler {
-        static TxResponseHandler onNext(TxResponse response) {
+        static TxResponseHandler onNext(Transaction.Res response) {
             return streamObserver -> streamObserver.onNext(response);
         }
 
@@ -155,19 +154,19 @@ public final class ServerRPCMock extends CompositeTestRule {
             return streamObserver -> streamObserver.onError(throwable);
         }
 
-        static TxResponseHandler sequence(ServerRPCMock server, TxResponse... responses) {
+        static TxResponseHandler sequence(ServerRPCMock server, Transaction.Res... responses) {
             IteratorId iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
 
             return streamObserver -> {
-                List<TxResponse> responsesList =
-                        ImmutableList.<TxResponse>builder().add(responses).add(done()).build();
+                List<Transaction.Res> responsesList =
+                        ImmutableList.<Transaction.Res>builder().add(responses).add(done()).build();
 
                 server.setResponse(RequestBuilder.Transaction.next(iteratorId), responsesList);
-                streamObserver.onNext(SessionProto.TxResponse.newBuilder().setIteratorId(iteratorId).build());
+                streamObserver.onNext(SessionProto.Transaction.Res.newBuilder().setIteratorId(iteratorId).build());
             };
         }
 
-        void handle(StreamObserver<TxResponse> streamObserver);
+        void handle(StreamObserver<Transaction.Res> streamObserver);
     }
 
     @Override
@@ -195,9 +194,9 @@ public final class ServerRPCMock extends CompositeTestRule {
                 throw new IllegalArgumentException("Set-up of rule not called");
             }
 
-            TxRequest request = args.getArgument(0);
+            Transaction.Req request = args.getArgument(0);
 
-            Optional<TxResponse> next = rpcIterators.next(request.getNext().getIteratorId());
+            Optional<Transaction.Res> next = rpcIterators.next(request.getNext().getIteratorId());
             serverResponses.onNext(next.orElse(done()));
 
             return null;
@@ -227,19 +226,19 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
     }
 
-    private static SessionProto.TxResponse done() {
-        return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
+    private static SessionProto.Transaction.Res done() {
+        return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
     }
 
     /**
-     * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      *
      * @author Felix Chapman
      */
     public static class ServerIteratorsMock {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-        private final Map<IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
+        private final Map<IteratorId, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         private ServerIteratorsMock() {
         }
@@ -251,7 +250,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         /**
          * Register a new iterator and return the ID of the iterator
          */
-        public IteratorId add(Iterator<TxResponse> iterator) {
+        public IteratorId add(Iterator<Transaction.Res> iterator) {
             IteratorId iteratorId = IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
 
             iterators.put(iteratorId, iterator);
@@ -261,9 +260,9 @@ public final class ServerRPCMock extends CompositeTestRule {
         /**
          * Return the next response from an iterator. Will return a {@link SessionProto.Done} response if the iterator is exhausted.
          */
-        public Optional<TxResponse> next(IteratorId iteratorId) {
+        public Optional<Transaction.Res> next(IteratorId iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
-                TxResponse response;
+                Transaction.Res response;
 
                 if (iterator.hasNext()) {
                     response = iterator.next();

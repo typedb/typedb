@@ -49,11 +49,8 @@ import ai.grakn.rpc.proto.ConceptProto.BaseType;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Open;
-import ai.grakn.rpc.proto.SessionProto.TxRequest;
-import ai.grakn.rpc.proto.SessionProto.TxResponse;
-import ai.grakn.rpc.proto.SessionProto.TxType;
+import ai.grakn.rpc.proto.SessionProto.Transaction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -185,7 +182,7 @@ public class ServerRPCTest {
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
-            TxResponse response = tx.receive().ok();
+            Transaction.Res response = tx.receive().ok();
 
             assertEquals(ResponseBuilder.Transaction.open(), response);
         }
@@ -208,7 +205,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(commit());
-            TxResponse response = tx.receive().ok();
+            Transaction.Res response = tx.receive().ok();
 
             assertEquals(ResponseBuilder.Transaction.commit(), response);
         }
@@ -240,10 +237,10 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         String keyspace = "not!@akeyspace";
-        Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(TxType.Write).build();
+        Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(GraknTxType.WRITE.getId()).build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(Transaction.Req.newBuilder().setOpen(openRequest).build());
             exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }
@@ -310,27 +307,27 @@ public class ServerRPCTest {
             IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
-            TxResponse response1 = tx.receive().ok();
+            Transaction.Res response1 = tx.receive().ok();
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
             ConceptProto.QueryAnswer.Builder answerX = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             ConceptProto.Answer.Builder resultX = ConceptProto.Answer.newBuilder().setQueryAnswer(answerX);
-            assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
+            assertEquals(Transaction.Res.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(next(iterator));
-            TxResponse response2 = tx.receive().ok();
+            Transaction.Res response2 = tx.receive().ok();
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
             ConceptProto.QueryAnswer.Builder answerY = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
             ConceptProto.Answer.Builder resultY = ConceptProto.Answer.newBuilder().setQueryAnswer(answerY);
-            assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
+            assertEquals(Transaction.Res.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(next(iterator));
-            TxResponse response3 = tx.receive().ok();
+            Transaction.Res response3 = tx.receive().ok();
 
-            TxResponse expected = done();
+            Transaction.Res expected = done();
             assertEquals(expected, response3);
 
             tx.send(stop(iterator));
@@ -372,7 +369,7 @@ public class ServerRPCTest {
 
             tx.send(stop(iterator));
 
-            TxResponse response = tx.receive().ok();
+            Transaction.Res response = tx.receive().ok();
 
             assertEquals(done(), response);
         }
@@ -393,8 +390,8 @@ public class ServerRPCTest {
 
             tx.send(query(COUNT_QUERY, false));
 
-            TxResponse expected =
-                    TxResponse.newBuilder().setAnswer(ConceptProto.Answer.newBuilder().setOtherResult("100")).build();
+            Transaction.Res expected =
+                    Transaction.Res.newBuilder().setAnswer(ConceptProto.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }
