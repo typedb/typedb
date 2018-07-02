@@ -316,7 +316,10 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRelationshipType.create(tx, id);
-            server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response(concept));
+            TxResponse response = TxResponse.newBuilder()
+                    .setPutRelationshipType(SessionProto.PutRelationshipType.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept))).build();
+            server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
             assertEquals(concept, tx.putRelationshipType(label));
         }
@@ -350,7 +353,10 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRole.create(tx, id);
-            server.setResponse(RequestBuilder.Transaction.putRole(label), response(concept));
+            TxResponse response = TxResponse.newBuilder()
+                    .setPutRole(SessionProto.PutRole.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept))).build();
+            server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
             assertEquals(concept, tx.putRole(label));
         }
@@ -367,7 +373,10 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteRule.create(tx, id);
-            server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response(concept));
+            TxResponse response = TxResponse.newBuilder()
+                    .setPutRule(SessionProto.PutRule.Res.newBuilder()
+                            .setConcept(ConceptBuilder.concept(concept))).build();
+            server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
             assertEquals(concept, tx.putRule(label, when, then));
         }

@@ -320,19 +320,19 @@ public final class Grakn {
         @Override
         public RelationshipType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRelationshipType();
+            return ConceptBuilder.concept(responseOrThrow().getPutRelationshipType().getConcept(), this).asRelationshipType();
         }
 
         @Override
         public Role putRole(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRole(label));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRole();
+            return ConceptBuilder.concept(responseOrThrow().getPutRole().getConcept(), this).asRole();
         }
 
         @Override
         public Rule putRule(Label label, Pattern when, Pattern then) {
             transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
-            return ConceptBuilder.concept(responseOrThrow().getConcept(), this).asRule();
+            return ConceptBuilder.concept(responseOrThrow().getPutRule().getConcept(), this).asRule();
         }
 
         @Override

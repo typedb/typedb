@@ -151,14 +151,14 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case STOP:
                     stop(request.getStop());
                     break;
+                case GETSCHEMACONCEPT:
+                    getSchemaConcept(request.getGetSchemaConcept());
+                    break;
                 case GETCONCEPT:
                     getConcept(request.getGetConcept());
                     break;
                 case GETATTRIBUTES:
                     getAttributes(request.getGetAttributes());
-                    break;
-                case GETSCHEMACONCEPT:
-                    getSchemaConcept(request.getGetSchemaConcept());
                     break;
                 case PUTENTITYTYPE:
                     putEntityType(request.getPutEntityType());
@@ -290,23 +290,23 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.putAttributeType(attributeType));
         }
 
-        private void putRelationshipType(String label) {
-            RelationshipType relationshipType = tx().putRelationshipType(Label.of(label));
-            responseSender.onNext(ResponseBuilder.Transaction.concept(relationshipType));
+        private void putRelationshipType(SessionProto.PutRelationshipType.Req request) {
+            RelationshipType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
+            responseSender.onNext(ResponseBuilder.Transaction.putRelationshipType(relationshipType));
         }
 
-        private void putRole(String label) {
-            Role role = tx().putRole(Label.of(label));
-            responseSender.onNext(ResponseBuilder.Transaction.concept(role));
+        private void putRole(SessionProto.PutRole.Req request) {
+            Role role = tx().putRole(Label.of(request.getLabel()));
+            responseSender.onNext(ResponseBuilder.Transaction.putRole(role));
         }
 
-        private void putRule(SessionProto.Rule putRule) {
-            Label label = Label.of(putRule.getLabel());
-            Pattern when = Graql.parser().parsePattern(putRule.getWhen());
-            Pattern then = Graql.parser().parsePattern(putRule.getThen());
+        private void putRule(SessionProto.PutRule.Req request) {
+            Label label = Label.of(request.getLabel());
+            Pattern when = Graql.parser().parsePattern(request.getWhen());
+            Pattern then = Graql.parser().parsePattern(request.getThen());
 
             Rule rule = tx().putRule(label, when, then);
-            responseSender.onNext(ResponseBuilder.Transaction.concept(rule));
+            responseSender.onNext(ResponseBuilder.Transaction.putRule(rule));
         }
 
         private EmbeddedGraknTx<?> tx() {

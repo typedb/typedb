@@ -111,6 +111,24 @@ public class ResponseBuilder {
             return SessionProto.TxResponse.newBuilder().setPutAttributeType(res).build();
         }
 
+        static SessionProto.TxResponse putRelationshipType(Concept concept) {
+            SessionProto.PutRelationshipType.Res.Builder res = SessionProto.PutRelationshipType.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept));
+            return SessionProto.TxResponse.newBuilder().setPutRelationshipType(res).build();
+        }
+
+        static SessionProto.TxResponse putRole(Concept concept) {
+            SessionProto.PutRole.Res.Builder res = SessionProto.PutRole.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept));
+            return SessionProto.TxResponse.newBuilder().setPutRole(res).build();
+        }
+
+        static SessionProto.TxResponse putRule(Concept concept) {
+            SessionProto.PutRule.Res.Builder res = SessionProto.PutRule.Res.newBuilder()
+                    .setConcept(ConceptBuilder.concept(concept));
+            return SessionProto.TxResponse.newBuilder().setPutRule(res).build();
+        }
+
         static SessionProto.TxResponse done() {
             return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }

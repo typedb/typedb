@@ -19,14 +19,14 @@ message TxRequest {
         Query.Req query = 3;
         Next next = 4;
         Stop stop = 5;
-        GetConcept.Req getConcept = 6;
-        GetAttributes.Req getAttributes = 7;
-        GetSchemaConcept.Req getSchemaConcept = 8;
+        GetSchemaConcept.Req getSchemaConcept = 6;
+        GetConcept.Req getConcept = 7;
+        GetAttributes.Req getAttributes = 8;
         PutEntityType.Req putEntityType = 9;
         PutAttributeType.Req putAttributeType = 10;
-        string putRelationshipType = 11; // returns Concept
-        string putRole = 12; // returns Concept
-        Rule putRule = 13; // returns Concept
+        PutRelationshipType.Req putRelationshipType = 11;
+        PutRole.Req putRole = 12;
+        PutRule.Req putRule = 13;
         RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
     }
 }
@@ -36,11 +36,14 @@ message TxResponse {
         Open.Res open = 10;
         Commit.Res commit = 11;
         Query.Res query = 12;
-        GetConcept.Res getConcept = 13;
-        GetAttributes.Res getAttributes = 14;
-        GetSchemaConcept.Res getSchemaConcept = 15;
+        GetSchemaConcept.Res getSchemaConcept = 13;
+        GetConcept.Res getConcept = 14;
+        GetAttributes.Res getAttributes = 15;
         PutEntityType.Res putEntityType = 16;
         PutAttributeType.Res putAttributeType = 17;
+        PutRelationshipType.Res putRelationshipType = 18;
+        PutRole.Res putRole = 19;
+        PutRule.Res putRule = 20;
         Answer answer = 1;
         Done done = 2;
         ConceptResponse conceptResponse = 3;
@@ -89,9 +92,9 @@ message Query { // Graql query to be executed on the database
     }
 }
 
-message GetConcept {
+message GetSchemaConcept {
     message Req {
-        string id = 1;
+        string label = 1;
     }
     message Res {
         oneof res {
@@ -101,9 +104,9 @@ message GetConcept {
     }
 }
 
-message GetSchemaConcept {
+message GetConcept {
     message Req {
-        string label = 1;
+        string id = 1;
     }
     message Res {
         oneof res {
@@ -140,6 +143,36 @@ message PutAttributeType {
         Concept concept = 1;
     }
 }
+
+message PutRelationshipType {
+    message Req {
+        string label = 1;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message PutRole {
+    message Req {
+        string label = 1;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message PutRule {
+    message Req {
+        string label = 1;
+        string when = 2;
+        string then = 3;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
 message Answer {
     oneof answer {
         QueryAnswer queryAnswer = 1;
@@ -183,10 +216,4 @@ message ClusterSizes {
 message RunConceptMethod { // Calling a method on a concept
     string id = 1;
     ConceptMethod method = 2;
-}
-
-message Rule {
-    string label = 1;
-    string when = 2;
-    string then = 3;
 }

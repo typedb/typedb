@@ -104,21 +104,26 @@ public class RequestBuilder {
         }
 
         public static SessionProto.TxRequest putRelationshipType(Label label) {
-            return SessionProto.TxRequest.newBuilder().setPutRelationshipType(label.getValue()).build();
+            SessionProto.PutRelationshipType.Req request = SessionProto.PutRelationshipType.Req.newBuilder()
+                    .setLabel(label.getValue())
+                    .build();
+            return SessionProto.TxRequest.newBuilder().setPutRelationshipType(request).build();
         }
 
         public static SessionProto.TxRequest putRole(Label label) {
-            return SessionProto.TxRequest.newBuilder().setPutRole(label.getValue()).build();
+            SessionProto.PutRole.Req request = SessionProto.PutRole.Req.newBuilder()
+                    .setLabel(label.getValue())
+                    .build();
+            return SessionProto.TxRequest.newBuilder().setPutRole(request).build();
         }
 
         public static SessionProto.TxRequest putRule(Label label, Pattern when, Pattern then) {
-            SessionProto.Rule putRule = SessionProto.Rule.newBuilder()
+            SessionProto.PutRule.Req request = SessionProto.PutRule.Req.newBuilder()
                     .setLabel(label.getValue())
                     .setWhen(when.toString())
                     .setThen(then.toString())
                     .build();
-
-            return SessionProto.TxRequest.newBuilder().setPutRule(putRule).build();
+            return SessionProto.TxRequest.newBuilder().setPutRule(request).build();
         }
 
         public static SessionProto.TxType txType(GraknTxType txType) {
