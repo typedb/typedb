@@ -47,7 +47,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     public final Pattern getWhen() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetWhen(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return Graql.parser().parsePattern(response.getConceptResponse().getPattern());
@@ -58,7 +58,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     public final Pattern getThen() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetThen(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return Graql.parser().parsePattern(response.getConceptResponse().getPattern());

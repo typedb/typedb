@@ -48,7 +48,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     public final D getValue() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetValue(ConceptMethodProto.Unit.getDefaultInstance()).build();
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
 
@@ -60,7 +60,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     public final AttributeType.DataType<D> dataType() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetDataTypeOfAttribute(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         // TODO: Fix this unsafe casting
         return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());

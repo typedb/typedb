@@ -29,7 +29,6 @@ import ai.grakn.rpc.proto.IteratorProto.Next;
 import ai.grakn.rpc.proto.IteratorProto.Stop;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.util.CommonUtil;
 
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
@@ -41,110 +40,97 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.TxRequest open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
+        public static SessionProto.Transaction.Req open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
             SessionProto.Open.Req openRequest = SessionProto.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
-                    .setTxType(txType(txType))
+                    .setTxType(txType.getId())
                     .build();
 
-            return SessionProto.TxRequest.newBuilder().setOpen(openRequest).build();
+            return SessionProto.Transaction.Req.newBuilder().setOpen(openRequest).build();
         }
 
-        public static SessionProto.TxRequest commit() {
-            return SessionProto.TxRequest.newBuilder()
+        public static SessionProto.Transaction.Req commit() {
+            return SessionProto.Transaction.Req.newBuilder()
                     .setCommit(SessionProto.Commit.Req.getDefaultInstance())
                     .build();
         }
 
-        public static SessionProto.TxRequest query(Query<?> query) {
+        public static SessionProto.Transaction.Req query(Query<?> query) {
             return query(query.toString(), query.inferring());
         }
 
-        public static SessionProto.TxRequest query(String queryString, boolean infer) {
+        public static SessionProto.Transaction.Req query(String queryString, boolean infer) {
             SessionProto.Query.Req request = SessionProto.Query.Req.newBuilder()
                     .setQuery(queryString)
                     .setInfer(infer)
                     .build();
-            return SessionProto.TxRequest.newBuilder().setQuery(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setQuery(request).build();
         }
 
-        public static SessionProto.TxRequest getSchemaConcept(Label label) {
-            return SessionProto.TxRequest.newBuilder()
+        public static SessionProto.Transaction.Req getSchemaConcept(Label label) {
+            return SessionProto.Transaction.Req.newBuilder()
                     .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
                     .build();
         }
 
-        public static SessionProto.TxRequest getConcept(ConceptId id) {
-            return SessionProto.TxRequest.newBuilder()
+        public static SessionProto.Transaction.Req getConcept(ConceptId id) {
+            return SessionProto.Transaction.Req.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Req.newBuilder().setId(id.getValue()))
                     .build();
         }
 
 
-        public static SessionProto.TxRequest getAttributes(Object value) {
-            return SessionProto.TxRequest.newBuilder()
+        public static SessionProto.Transaction.Req getAttributes(Object value) {
+            return SessionProto.Transaction.Req.newBuilder()
                     .setGetAttributes(SessionProto.GetAttributes.Req.newBuilder()
                             .setValue(ConceptBuilder.attributeValue(value))
                     ).build();
         }
 
-        public static SessionProto.TxRequest putEntityType(Label label) {
-            return SessionProto.TxRequest.newBuilder()
+        public static SessionProto.Transaction.Req putEntityType(Label label) {
+            return SessionProto.Transaction.Req.newBuilder()
                     .setPutEntityType(SessionProto.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
                     .build();
         }
 
-        public static SessionProto.TxRequest putAttributeType(Label label, AttributeType.DataType<?> dataType) {
+        public static SessionProto.Transaction.Req putAttributeType(Label label, AttributeType.DataType<?> dataType) {
             SessionProto.PutAttributeType.Req request = SessionProto.PutAttributeType.Req.newBuilder()
                     .setLabel(label.getValue())
                     .setDataType(ConceptBuilder.dataType(dataType))
                     .build();
 
-            return SessionProto.TxRequest.newBuilder().setPutAttributeType(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setPutAttributeType(request).build();
         }
 
-        public static SessionProto.TxRequest putRelationshipType(Label label) {
+        public static SessionProto.Transaction.Req putRelationshipType(Label label) {
             SessionProto.PutRelationshipType.Req request = SessionProto.PutRelationshipType.Req.newBuilder()
                     .setLabel(label.getValue())
                     .build();
-            return SessionProto.TxRequest.newBuilder().setPutRelationshipType(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setPutRelationshipType(request).build();
         }
 
-        public static SessionProto.TxRequest putRole(Label label) {
+        public static SessionProto.Transaction.Req putRole(Label label) {
             SessionProto.PutRole.Req request = SessionProto.PutRole.Req.newBuilder()
                     .setLabel(label.getValue())
                     .build();
-            return SessionProto.TxRequest.newBuilder().setPutRole(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setPutRole(request).build();
         }
 
-        public static SessionProto.TxRequest putRule(Label label, Pattern when, Pattern then) {
+        public static SessionProto.Transaction.Req putRule(Label label, Pattern when, Pattern then) {
             SessionProto.PutRule.Req request = SessionProto.PutRule.Req.newBuilder()
                     .setLabel(label.getValue())
                     .setWhen(when.toString())
                     .setThen(then.toString())
                     .build();
-            return SessionProto.TxRequest.newBuilder().setPutRule(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setPutRule(request).build();
         }
 
-        public static SessionProto.TxType txType(GraknTxType txType) {
-            switch (txType) {
-                case READ:
-                    return SessionProto.TxType.Read;
-                case WRITE:
-                    return SessionProto.TxType.Write;
-                case BATCH:
-                    return SessionProto.TxType.Batch;
-                default:
-                    throw CommonUtil.unreachableStatement("Unrecognised " + txType);
-            }
+        public static SessionProto.Transaction.Req next(IteratorId iteratorId) {
+            return SessionProto.Transaction.Req.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
         }
 
-        public static SessionProto.TxRequest next(IteratorId iteratorId) {
-            return SessionProto.TxRequest.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
-        }
-
-        public static SessionProto.TxRequest stop(IteratorId iteratorId) {
-            return SessionProto.TxRequest.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
+        public static SessionProto.Transaction.Req stop(IteratorId iteratorId) {
+            return SessionProto.Transaction.Req.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
         }
     }
 

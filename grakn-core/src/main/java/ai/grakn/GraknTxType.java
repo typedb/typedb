@@ -40,6 +40,10 @@ public enum GraknTxType {
         this.type = type;
     }
 
+    public int getId() {
+        return type;
+    }
+
     @Override
     public String toString() {
         return this.name();

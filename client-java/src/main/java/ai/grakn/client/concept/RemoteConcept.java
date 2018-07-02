@@ -68,11 +68,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
-    protected final SessionProto.TxResponse runMethod(ConceptMethodProto.ConceptMethod method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptMethodProto.ConceptMethod method) {
         return runMethod(getId(), method);
     }
 
-    protected final SessionProto.TxResponse runMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
         return tx().runConceptMethod(id, method);
     }
 

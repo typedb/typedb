@@ -10,55 +10,50 @@ import "ConceptMethod.proto";
 service Session {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
-    rpc transaction (stream TxRequest) returns (stream TxResponse);
+    rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
 }
 
-message TxRequest {
-    oneof request {
-        Open.Req open = 1;
-        Commit.Req commit = 2;
-        Query.Req query = 3;
-        Next next = 4;
-        Stop stop = 5;
-        GetSchemaConcept.Req getSchemaConcept = 6;
-        GetConcept.Req getConcept = 7;
-        GetAttributes.Req getAttributes = 8;
-        PutEntityType.Req putEntityType = 9;
-        PutAttributeType.Req putAttributeType = 10;
-        PutRelationshipType.Req putRelationshipType = 11;
-        PutRole.Req putRole = 12;
-        PutRule.Req putRule = 13;
-        RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
+message Transaction {
+    message Req {
+        oneof req {
+            Open.Req open = 1;
+            Commit.Req commit = 2;
+            Query.Req query = 3;
+            Next next = 4;
+            Stop stop = 5;
+            GetSchemaConcept.Req getSchemaConcept = 6;
+            GetConcept.Req getConcept = 7;
+            GetAttributes.Req getAttributes = 8;
+            PutEntityType.Req putEntityType = 9;
+            PutAttributeType.Req putAttributeType = 10;
+            PutRelationshipType.Req putRelationshipType = 11;
+            PutRole.Req putRole = 12;
+            PutRule.Req putRule = 13;
+            RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
+        }
     }
-}
-
-message TxResponse {
-    oneof response {
-        Open.Res open = 10;
-        Commit.Res commit = 11;
-        Query.Res query = 12;
-        GetSchemaConcept.Res getSchemaConcept = 13;
-        GetConcept.Res getConcept = 14;
-        GetAttributes.Res getAttributes = 15;
-        PutEntityType.Res putEntityType = 16;
-        PutAttributeType.Res putAttributeType = 17;
-        PutRelationshipType.Res putRelationshipType = 18;
-        PutRole.Res putRole = 19;
-        PutRule.Res putRule = 20;
-        Answer answer = 1;
-        Done done = 2;
-        ConceptResponse conceptResponse = 3;
-        IteratorId iteratorId = 4;
-        Concept concept = 5;
-        RolePlayer rolePlayer = 7;
-        bool noResult = 8;
+    message Res {
+        oneof res {
+            Open.Res open = 10;
+            Commit.Res commit = 11;
+            Query.Res query = 12;
+            GetSchemaConcept.Res getSchemaConcept = 13;
+            GetConcept.Res getConcept = 14;
+            GetAttributes.Res getAttributes = 15;
+            PutEntityType.Res putEntityType = 16;
+            PutAttributeType.Res putAttributeType = 17;
+            PutRelationshipType.Res putRelationshipType = 18;
+            PutRole.Res putRole = 19;
+            PutRule.Res putRule = 20;
+            Answer answer = 1;
+            Done done = 2;
+            ConceptResponse conceptResponse = 3;
+            IteratorId iteratorId = 4;
+            Concept concept = 5;
+            RolePlayer rolePlayer = 7;
+            bool noResult = 8;
+        }
     }
-}
-
-enum TxType {
-    Read = 0;
-    Write = 1;
-    Batch = 2;
 }
 
 message Done {} // Indicates that a request is completedk
@@ -67,7 +62,7 @@ message Null {} // Indicates that a request does not yield any result
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
     message Req {
         string keyspace = 1;
-        TxType txType = 2;
+        int32 txType = 2;
         /* Fields ignored in the open-source version. */
         string username = 3;
         string password = 4;

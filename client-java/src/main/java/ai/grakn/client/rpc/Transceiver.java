@@ -20,8 +20,7 @@ package ai.grakn.client.rpc;
 
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.SessionGrpc;
-import ai.grakn.rpc.proto.SessionProto.TxRequest;
-import ai.grakn.rpc.proto.SessionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionProto.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -33,16 +32,16 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Wrapper for making Tx calls to a gRPC server - handles sending a stream of {@link TxRequest}s and receiving a
- * stream of {@link TxResponse}s.
+ * Wrapper for making Tx calls to a gRPC server - handles sending a stream of {@link Transaction.Req}s and receiving a
+ * stream of {@link Transaction.Res}s.
  *
- * A request is sent with the {@link #send(TxRequest)}} method, and you can block for a response with the
+ * A request is sent with the {@link #send(Transaction.Req)}} method, and you can block for a response with the
  * {@link #receive()} method.
  *
  * {@code
  *     try (Transceiver tx = Transceiver.create(stub) {
  *         tx.send(openMessage);
- *         TxResponse doneMessage = tx.receive().ok();
+ *         Transaction.Res doneMessage = tx.receive().ok();
  *         tx.send(commitMessage);
  *         StatusRuntimeException validationError = tx.receive.error();
  *     }
@@ -50,17 +49,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Transceiver implements AutoCloseable {
 
-    private final StreamObserver<TxRequest> requestSender;
+    private final StreamObserver<Transaction.Req> requestSender;
     private final ResponseListener responseListener;
 
-    private Transceiver(StreamObserver<TxRequest> requestSender, ResponseListener responseListener) {
+    private Transceiver(StreamObserver<Transaction.Req> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
     }
 
     public static Transceiver create(SessionGrpc.SessionStub stub) {
         ResponseListener responseListener = new ResponseListener();
-        StreamObserver<TxRequest> requestSender = stub.transaction(responseListener);
+        StreamObserver<Transaction.Req> requestSender = stub.transaction(responseListener);
         return new Transceiver(requestSender, responseListener);
     }
 
@@ -69,7 +68,7 @@ public class Transceiver implements AutoCloseable {
      *
      * This method is non-blocking - it returns immediately.
      */
-    public void send(TxRequest request) {
+    public void send(Transaction.Req request) {
         if (responseListener.terminated.get()) {
             throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
         }
@@ -110,13 +109,13 @@ public class Transceiver implements AutoCloseable {
      *
      * A response can be polled with the {@link #poll()} method.
      */
-    private static class ResponseListener implements StreamObserver<TxResponse>, AutoCloseable {
+    private static class ResponseListener implements StreamObserver<Transaction.Res>, AutoCloseable {
 
         private final BlockingQueue<Response> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);
 
         @Override
-        public void onNext(TxResponse value) {
+        public void onNext(Transaction.Res value) {
             queue.add(Response.ok(value));
         }
 
@@ -164,13 +163,13 @@ public class Transceiver implements AutoCloseable {
     }
 
     /**
-     * A response from the gRPC server, that may be a successful response {@link #ok(TxResponse), an error
+     * A response from the gRPC server, that may be a successful response {@link #ok(Transaction.Res), an error
      * {@link #error(StatusRuntimeException)}} or a "completed" message {@link #completed()}.
      */
     @AutoValue
     public abstract static class Response {
 
-        abstract @Nullable TxResponse nullableOk();
+        abstract @Nullable Transaction.Res nullableOk();
         abstract @Nullable StatusRuntimeException nullableError();
 
         public final Type type() {
@@ -195,8 +194,8 @@ public class Transceiver implements AutoCloseable {
          *
          * @throws IllegalStateException if this is not a successful response
          */
-        public final TxResponse ok() {
-            TxResponse response = nullableOk();
+        public final Transaction.Res ok() {
+            Transaction.Res response = nullableOk();
             if (response == null) {
                 throw new IllegalStateException("Expected successful response not found: " + toString());
             } else {
@@ -218,7 +217,7 @@ public class Transceiver implements AutoCloseable {
             }
         }
 
-        private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
+        private static Response create(@Nullable Transaction.Res response, @Nullable StatusRuntimeException error) {
             Preconditions.checkArgument(response == null || error == null);
             return new AutoValue_Transceiver_Response(response, error);
         }
@@ -231,7 +230,7 @@ public class Transceiver implements AutoCloseable {
             return create(null, error);
         }
 
-        static Response ok(TxResponse response) {
+        static Response ok(Transaction.Res response) {
             return create(response, null);
         }
     }

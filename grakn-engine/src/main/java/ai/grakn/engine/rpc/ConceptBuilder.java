@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;

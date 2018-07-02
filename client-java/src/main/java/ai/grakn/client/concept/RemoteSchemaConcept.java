@@ -57,7 +57,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final Label getLabel() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetLabel(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         return Label.of(response.getConceptResponse().getLabel());
     }
@@ -66,7 +66,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final Boolean isImplicit() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setIsImplicit(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         return response.getConceptResponse().getIsImplicit();
     }
@@ -85,7 +85,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final SomeType sup() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetDirectSuperConcept(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
 

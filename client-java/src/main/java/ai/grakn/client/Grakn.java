@@ -188,7 +188,7 @@ public final class Grakn {
             close();
         }
 
-        private SessionProto.TxResponse responseOrThrow() {
+        private SessionProto.Transaction.Res responseOrThrow() {
             Transceiver.Response response;
 
             try {
@@ -220,7 +220,7 @@ public final class Grakn {
 
         public java.util.Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
-            SessionProto.TxResponse txResponse = responseOrThrow();
+            SessionProto.Transaction.Res txResponse = responseOrThrow();
 
             switch (txResponse.getQuery().getResCase()) {
                 case NULL:
@@ -273,7 +273,7 @@ public final class Grakn {
         @Override
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
             transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
-            SessionProto.TxResponse response = responseOrThrow();
+            SessionProto.Transaction.Res response = responseOrThrow();
             switch (response.getGetSchemaConcept().getResCase()) {
                 case NULL:
                     return null;
@@ -286,7 +286,7 @@ public final class Grakn {
         @Override
         public <T extends Concept> T getConcept(ConceptId id) {
             transceiver.send(RequestBuilder.Transaction.getConcept(id));
-            SessionProto.TxResponse response = responseOrThrow();
+            SessionProto.Transaction.Res response = responseOrThrow();
             switch (response.getGetConcept().getResCase()) {
                 case NULL:
                     return null;
@@ -349,17 +349,17 @@ public final class Grakn {
             return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
         }
 
-        public SessionProto.TxResponse runConceptMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
+        public SessionProto.Transaction.Res runConceptMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
             SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
             runConceptMethod.setId(id.getValue());
             runConceptMethod.setMethod(method);
-            SessionProto.TxRequest conceptMethodRequest = SessionProto.TxRequest.newBuilder().setRunConceptMethod(runConceptMethod).build();
+            SessionProto.Transaction.Req conceptMethodRequest = SessionProto.Transaction.Req.newBuilder().setRunConceptMethod(runConceptMethod).build();
 
             transceiver.send(conceptMethodRequest);
             return responseOrThrow();
         }
 
-        private SessionProto.TxResponse next(IteratorProto.IteratorId iteratorId) {
+        private SessionProto.Transaction.Res next(IteratorProto.IteratorId iteratorId) {
             transceiver.send(RequestBuilder.Transaction.next(iteratorId));
             return responseOrThrow();
         }
@@ -372,9 +372,9 @@ public final class Grakn {
         public static class Iterator<T> extends AbstractIterator<T> {
             private final IteratorProto.IteratorId iteratorId;
             private Transaction tx;
-            private Function<SessionProto.TxResponse, T> responseReader;
+            private Function<SessionProto.Transaction.Res, T> responseReader;
 
-            public Iterator(Transaction tx, IteratorProto.IteratorId iteratorId, Function<SessionProto.TxResponse, T> responseReader) {
+            public Iterator(Transaction tx, IteratorProto.IteratorId iteratorId, Function<SessionProto.Transaction.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;
@@ -382,12 +382,12 @@ public final class Grakn {
 
             @Override
             protected final T computeNext() {
-                SessionProto.TxResponse response = tx.next(iteratorId);
+                SessionProto.Transaction.Res response = tx.next(iteratorId);
 
-                switch (response.getResponseCase()) {
+                switch (response.getResCase()) {
                     case DONE:
                         return endOfData();
-                    case RESPONSE_NOT_SET:
+                    case RES_NOT_SET:
                         throw CommonUtil.unreachableStatement("Unexpected " + response);
                     default:
                         return responseReader.apply(response);

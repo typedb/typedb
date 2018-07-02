@@ -45,7 +45,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     public final Relationship addRelationship() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setAddRelationship(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);

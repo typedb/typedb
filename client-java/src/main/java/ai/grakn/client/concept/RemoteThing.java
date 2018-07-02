@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final SomeType type() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetDirectType(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asCurrentType(concept);
@@ -78,7 +78,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Relationship attributeRelationship(Attribute attribute) {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
         return concept.asRelationship();
     }
@@ -118,7 +118,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final boolean isInferred() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setIsInferred(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         return response.getConceptResponse().getIsInferred();
     }

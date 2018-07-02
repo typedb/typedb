@@ -52,149 +52,149 @@ public class ResponseBuilder {
      */
     public static class Transaction {
 
-        static SessionProto.TxResponse open() {
-            return SessionProto.TxResponse.newBuilder()
+        static SessionProto.Transaction.Res open() {
+            return SessionProto.Transaction.Res.newBuilder()
                     .setOpen(SessionProto.Open.Res.getDefaultInstance())
                     .build();
         }
 
-        static SessionProto.TxResponse commit() {
-            return SessionProto.TxResponse.newBuilder()
+        static SessionProto.Transaction.Res commit() {
+            return SessionProto.Transaction.Res.newBuilder()
                     .setCommit(SessionProto.Commit.Res.getDefaultInstance())
                     .build();
         }
 
-        static SessionProto.TxResponse query(@Nullable IteratorProto.IteratorId iteratorId) {
+        static SessionProto.Transaction.Res query(@Nullable IteratorProto.IteratorId iteratorId) {
             SessionProto.Query.Res.Builder res = SessionProto.Query.Res.newBuilder();
             if (iteratorId == null) {
                 res.setNull(SessionProto.Null.getDefaultInstance());
             } else {
                 res.setIteratorId(iteratorId);
             }
-            return SessionProto.TxResponse.newBuilder().setQuery(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setQuery(res).build();
         }
 
-        static SessionProto.TxResponse getSchemaConcept(@Nullable Concept concept) {
+        static SessionProto.Transaction.Res getSchemaConcept(@Nullable Concept concept) {
             SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(SessionProto.Null.getDefaultInstance());
             } else {
                 res.setConcept(ConceptBuilder.concept(concept));
             }
-            return SessionProto.TxResponse.newBuilder().setGetSchemaConcept(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetSchemaConcept(res).build();
         }
 
-        static SessionProto.TxResponse getConcept(@Nullable Concept concept) {
+        static SessionProto.Transaction.Res getConcept(@Nullable Concept concept) {
             SessionProto.GetConcept.Res.Builder res = SessionProto.GetConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(SessionProto.Null.getDefaultInstance());
             } else {
                 res.setConcept(ConceptBuilder.concept(concept));
             }
-            return SessionProto.TxResponse.newBuilder().setGetConcept(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetConcept(res).build();
         }
 
-        static SessionProto.TxResponse getAttributes(IteratorProto.IteratorId iteratorId) {
+        static SessionProto.Transaction.Res getAttributes(IteratorProto.IteratorId iteratorId) {
             SessionProto.GetAttributes.Res.Builder res = SessionProto.GetAttributes.Res.newBuilder()
                     .setIteratorId(iteratorId);
-            return SessionProto.TxResponse.newBuilder().setGetAttributes(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetAttributes(res).build();
         }
 
-        static SessionProto.TxResponse putEntityType(Concept concept) {
+        static SessionProto.Transaction.Res putEntityType(Concept concept) {
             SessionProto.PutEntityType.Res.Builder res = SessionProto.PutEntityType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
-            return SessionProto.TxResponse.newBuilder().setPutEntityType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutEntityType(res).build();
         }
 
-        static SessionProto.TxResponse putAttributeType(Concept concept) {
+        static SessionProto.Transaction.Res putAttributeType(Concept concept) {
             SessionProto.PutAttributeType.Res.Builder res = SessionProto.PutAttributeType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
-            return SessionProto.TxResponse.newBuilder().setPutAttributeType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutAttributeType(res).build();
         }
 
-        static SessionProto.TxResponse putRelationshipType(Concept concept) {
+        static SessionProto.Transaction.Res putRelationshipType(Concept concept) {
             SessionProto.PutRelationshipType.Res.Builder res = SessionProto.PutRelationshipType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
-            return SessionProto.TxResponse.newBuilder().setPutRelationshipType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRelationshipType(res).build();
         }
 
-        static SessionProto.TxResponse putRole(Concept concept) {
+        static SessionProto.Transaction.Res putRole(Concept concept) {
             SessionProto.PutRole.Res.Builder res = SessionProto.PutRole.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
-            return SessionProto.TxResponse.newBuilder().setPutRole(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRole(res).build();
         }
 
-        static SessionProto.TxResponse putRule(Concept concept) {
+        static SessionProto.Transaction.Res putRule(Concept concept) {
             SessionProto.PutRule.Res.Builder res = SessionProto.PutRule.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
-            return SessionProto.TxResponse.newBuilder().setPutRule(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRule(res).build();
         }
 
-        static SessionProto.TxResponse done() {
-            return SessionProto.TxResponse.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
+        static SessionProto.Transaction.Res done() {
+            return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
-        static SessionProto.TxResponse iteratorId(Stream<SessionProto.TxResponse> responses, SessionService.Iterators iterators) {
+        static SessionProto.Transaction.Res iteratorId(Stream<SessionProto.Transaction.Res> responses, SessionService.Iterators iterators) {
             IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
             ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
                     .setIteratorId(iteratorId).build();
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse concept(Concept concept) {
-            return SessionProto.TxResponse.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
+        static SessionProto.Transaction.Res concept(Concept concept) {
+            return SessionProto.Transaction.Res.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
         }
 
-        static SessionProto.TxResponse rolePlayer(Role role, Thing player) {
+        static SessionProto.Transaction.Res rolePlayer(Role role, Thing player) {
             ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                     .setRole(ConceptBuilder.concept(role))
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();
-            return SessionProto.TxResponse.newBuilder().setRolePlayer(rolePlayer).build();
+            return SessionProto.Transaction.Res.newBuilder().setRolePlayer(rolePlayer).build();
         }
 
-        static SessionProto.TxResponse answer(Object object) {
-            return SessionProto.TxResponse.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
+        static SessionProto.Transaction.Res answer(Object object) {
+            return SessionProto.Transaction.Res.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
         }
 
-        static SessionProto.TxResponse conceptResponseWithNoResult() {
+        static SessionProto.Transaction.Res conceptResponseWithNoResult() {
             ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
                     .setNoResult(true).build();
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse conceptResopnseWithConcept(Concept concept) {
+        static SessionProto.Transaction.Res conceptResopnseWithConcept(Concept concept) {
             ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
+        static SessionProto.Transaction.Res conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
             ConceptMethodProto.ConceptResponse.Builder conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder();
             conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse conceptResponseWithAttributeValue(Object value) {
+        static SessionProto.Transaction.Res conceptResponseWithAttributeValue(Object value) {
             ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
                     .setAttributeValue(ConceptBuilder.attributeValue(value)).build();
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse conceptResponseWithPattern(Pattern pattern) {
+        static SessionProto.Transaction.Res conceptResponseWithPattern(Pattern pattern) {
             ConceptMethodProto.ConceptResponse.Builder conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder();
             if (pattern != null) {
                 conceptResponse.setPattern(pattern.toString());
             } else {
                 conceptResponse.setNoResult(true);
             }
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
-        static SessionProto.TxResponse conceptResponseWithRegex(String regex) {
+        static SessionProto.Transaction.Res conceptResponseWithRegex(String regex) {
             ConceptMethodProto.ConceptResponse conceptResponse = ConceptMethodProto.ConceptResponse.newBuilder()
                     .setRegex(regex).build();
-            return SessionProto.TxResponse.newBuilder().setConceptResponse(conceptResponse).build();
+            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
     }
 

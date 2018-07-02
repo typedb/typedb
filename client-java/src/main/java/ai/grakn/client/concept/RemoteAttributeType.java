@@ -53,7 +53,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> putAttribute(D value) {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setPutAttribute(ConceptBuilder.attributeValue(value));
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
         return asInstance(concept);
@@ -64,7 +64,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> getAttribute(D value) {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetAttribute(ConceptBuilder.attributeValue(value));
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
 
@@ -77,7 +77,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final AttributeType.DataType<D> getDataType() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetDataTypeOfAttributeType(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());
@@ -88,7 +88,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final String getRegex() {
         ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
         method.setGetRegex(ConceptMethodProto.Unit.getDefaultInstance());
-        SessionProto.TxResponse response = runMethod(method.build());
+        SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
         return response.getConceptResponse().getRegex();

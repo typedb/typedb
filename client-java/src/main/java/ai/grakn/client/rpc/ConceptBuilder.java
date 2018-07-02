@@ -38,7 +38,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMap;
 import mjson.Json;

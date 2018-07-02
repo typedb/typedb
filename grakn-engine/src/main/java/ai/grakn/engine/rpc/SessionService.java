@@ -40,8 +40,7 @@ import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.TxRequest;
-import ai.grakn.rpc.proto.SessionProto.TxResponse;
+import ai.grakn.rpc.proto.SessionProto.Transaction;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -73,18 +72,18 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         this.postProcessor = postProcessor;
     }
 
-    public StreamObserver<TxRequest> transaction(StreamObserver<TxResponse> responseSender) {
+    public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
         return TransactionListener.create(responseSender, requestOpener, postProcessor);
     }
 
 
     /**
      * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link ServerRPC}.
-     * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
+     * Receives a stream of {@link Transaction.Req}s and returning a stream of {@link Transaction.Res}s.
      */
-    static class TransactionListener implements StreamObserver<TxRequest> {
+    static class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
-        private final StreamObserver<TxResponse> responseSender;
+        private final StreamObserver<Transaction.Res> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
@@ -94,14 +93,14 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<TxResponse> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
             this.postProcessor = postProcessor;
         }
 
-        public static TransactionListener create(StreamObserver<TxResponse> responseSender, OpenRequest requestOpener, PostProcessor postProcessor) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, PostProcessor postProcessor) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor);
@@ -116,7 +115,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         }
 
         @Override
-        public void onNext(TxRequest request) {
+        public void onNext(Transaction.Req request) {
             try {
                 submit(() -> handleRequest(request));
             } catch (RuntimeException e) {
@@ -134,8 +133,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             close(null);
         }
 
-        private void handleRequest(TxRequest request) {
-            switch (request.getRequestCase()) {
+        private void handleRequest(Transaction.Req request) {
+            switch (request.getReqCase()) {
                 case OPEN:
                     open(request.getOpen());
                     break;
@@ -179,7 +178,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                     runConceptMethod(request.getRunConceptMethod());
                     break;
                 default:
-                case REQUEST_NOT_SET:
+                case REQ_NOT_SET:
                     throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
             }
         }
@@ -222,7 +221,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    GraknTxType.of(request.getTxType().getNumber())
+                    GraknTxType.of(request.getTxType())
             );
 
             tx = requestOpener.open(args);
@@ -237,9 +236,9 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         private void query(SessionProto.Query.Req request) {
             Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
 
-            Stream<TxResponse> responseStream;
+            Stream<Transaction.Res> responseStream;
             IteratorProto.IteratorId iteratorId;
-            TxResponse response;
+            Transaction.Res response;
             if (query instanceof Streamable) {
                 responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
                 iteratorId = iterators.add(responseStream.iterator());
@@ -271,7 +270,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
-            Iterator<TxResponse> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
+            Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
             IteratorProto.IteratorId iteratorId = iterators.add(iterator);
 
             responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
@@ -337,13 +336,13 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
         private void runConceptMethod(SessionProto.RunConceptMethod runConceptMethod) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
-            TxResponse response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
+            Transaction.Res response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
             responseSender.onNext(response);
         }
 
         private void next(IteratorProto.Next next) {
             IteratorProto.IteratorId iteratorId = next.getIteratorId();
-            TxResponse response = iterators.next(iteratorId);
+            Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
         }
@@ -356,28 +355,28 @@ public class SessionService extends SessionGrpc.SessionImplBase {
     }
 
     /**
-     * Contains a mutable map of iterators of {@link TxResponse}s for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
     public static class Iterators {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
-        private final Map<IteratorProto.IteratorId, Iterator<TxResponse>> iterators = new ConcurrentHashMap<>();
+        private final Map<IteratorProto.IteratorId, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         public static Iterators create() {
             return new Iterators();
         }
 
-        public IteratorProto.IteratorId add(Iterator<TxResponse> iterator) {
+        public IteratorProto.IteratorId add(Iterator<Transaction.Res> iterator) {
             IteratorProto.IteratorId iteratorId = IteratorProto.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
             iterators.put(iteratorId, iterator);
             return iteratorId;
         }
 
-        public TxResponse next(IteratorProto.IteratorId iteratorId) {
-            Iterator<TxResponse> iterator = iterators.get(iteratorId);
+        public Transaction.Res next(IteratorProto.IteratorId iteratorId) {
+            Iterator<Transaction.Res> iterator = iterators.get(iteratorId);
             if (iterator == null) return null;
 
-            TxResponse response;
+            Transaction.Res response;
             if (iterator.hasNext()) {
                 response = iterator.next();
             } else {
