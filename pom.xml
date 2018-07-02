@@ -1244,18 +1244,6 @@
                 </repository>
             </distributionManagement>
         </profile>
-        <profile>
-            <id>internal-releases</id>
-            <properties>
-                <skip.deploy.dist>false</skip.deploy.dist>
-            </properties>
-            <distributionManagement>
-                <repository>
-                    <id>internal-releases</id>
-                    <url>https://maven.grakn.ai/content/repositories/internal-releases/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
     </profiles>
 
 </project>
