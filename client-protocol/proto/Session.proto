@@ -10,11 +10,11 @@ import "ConceptMethod.proto";
 service Session {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
-    rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
+    rpc transaction (stream Transaction.Reqs) returns (stream Transaction.Res);
 }
 
 message Transaction {
-    message Req {
+    message Reqs {
         oneof req {
             Open.Req open = 1;
             Commit.Req commit = 2;
@@ -47,7 +47,7 @@ message Transaction {
             PutRule.Res putRule = 20;
             Answer answer = 1;
             Done done = 2;
-            ConceptResponse conceptResponse = 3;
+            ConceptMethod.Res conceptResponse = 3;
             IteratorId iteratorId = 4;
             Concept concept = 5;
             RolePlayer rolePlayer = 7;
@@ -171,5 +171,5 @@ message PutRule {
 
 message RunConceptMethod { // Calling a method on a concept
     string id = 1;
-    ConceptMethod method = 2;
+    ConceptMethod.Req method = 2;
 }

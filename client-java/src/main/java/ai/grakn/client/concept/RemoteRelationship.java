@@ -52,7 +52,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetRolePlayers(ConceptMethodProto.Unit.getDefaultInstance());
 
         IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
@@ -76,7 +76,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
     public final Stream<Thing> rolePlayers(Role... roles) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         if (roles.length == 0) {
             method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Collections.emptyList()));
         } else {
@@ -98,7 +98,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(ConceptMethodProto.ConceptMethod.newBuilder().setSetRolePlayer(rolePlayer).build());
+        runMethod(ConceptMethodProto.ConceptMethod.Req.newBuilder().setSetRolePlayer(rolePlayer).build());
         return asCurrentBaseType(this);
     }
 
@@ -109,7 +109,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
 
-        runMethod(ConceptMethodProto.ConceptMethod.newBuilder().setUnsetRolePlayer(rolePlayer).build());
+        runMethod(ConceptMethodProto.ConceptMethod.Req.newBuilder().setUnsetRolePlayer(rolePlayer).build());
     }
 
     @Override

@@ -46,7 +46,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final D getValue() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetValue(ConceptMethodProto.Unit.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -58,7 +58,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetDataTypeOfAttribute(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -68,7 +68,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetOwners(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asThing);
     }

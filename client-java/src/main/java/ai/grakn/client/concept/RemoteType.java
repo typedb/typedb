@@ -40,7 +40,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetAbstract(isAbstract);
         runMethod(method.build());
 
@@ -49,7 +49,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -58,7 +58,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetKeyType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -67,7 +67,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -76,35 +76,35 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final Stream<Role> plays() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetRolesPlayedByType(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
     public final Stream<AttributeType> attributes() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetAttributeTypes(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetKeyTypes(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<SomeThing> instances() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetInstances(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asInstance);
     }
 
     @Override
     public final Boolean isAbstract() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setIsAbstract(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -113,7 +113,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deletePlays(Role role) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -122,7 +122,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deleteAttribute(AttributeType attributeType) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
         runMethod(method.build());
 
@@ -131,7 +131,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType deleteKey(AttributeType attributeType) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
         runMethod(method.build());
 

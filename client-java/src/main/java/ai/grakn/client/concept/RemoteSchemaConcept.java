@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends RemoteConcept<SomeType> implements SchemaConcept {
 
     public final SomeType sup(SomeType type) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(type));
         runMethod(method.build());
 
@@ -46,7 +46,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     public final SomeType sub(SomeType type) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetDirectSuperConcept(ConceptBuilder.concept(this)).build();
         runMethod(type.getId(), method.build());
 
@@ -55,7 +55,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Label getLabel() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetLabel(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -64,7 +64,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Boolean isImplicit() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setIsImplicit(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -73,7 +73,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final SomeType setLabel(Label label) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetLabel(label.getValue());
         runMethod(method.build());
 
@@ -83,7 +83,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Nullable
     @Override
     public final SomeType sup() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetDirectSuperConcept(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -101,7 +101,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Stream<SomeType> subs() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetSubConcepts(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(this::asCurrentBaseType);
     }

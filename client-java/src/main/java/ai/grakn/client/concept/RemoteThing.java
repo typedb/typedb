@@ -42,7 +42,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeType type() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetDirectType(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
@@ -52,7 +52,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         if (roles.length == 0) {
             method.setGetRelationships(ConceptMethodProto.Unit.getDefaultInstance());
         } else {
@@ -63,7 +63,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Role> plays() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetRolesPlayedByThing(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
@@ -76,7 +76,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Relationship attributeRelationship(Attribute attribute) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetAttribute(ConceptBuilder.concept(attribute));
         SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
@@ -85,7 +85,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         if (attributeTypes.length == 0) {
             method.setGetAttributes(ConceptMethodProto.Unit.getDefaultInstance());
         } else {
@@ -96,7 +96,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         if (attributeTypes.length == 0) {
             method.setGetKeys(ConceptMethodProto.Unit.getDefaultInstance());
         } else {
@@ -107,7 +107,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeThing deleteAttribute(Attribute attribute) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setUnsetAttribute(ConceptBuilder.concept(attribute));
         runMethod(method.build());
 
@@ -116,7 +116,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final boolean isInferred() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setIsInferred(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 

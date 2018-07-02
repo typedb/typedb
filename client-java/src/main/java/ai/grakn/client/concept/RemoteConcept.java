@@ -50,7 +50,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setDelete(ConceptMethodProto.Unit.getDefaultInstance());
         runMethod(method.build());
     }
@@ -60,7 +60,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().getConcept(getId()) == null;
     }
 
-    protected final Stream<? extends Concept> runMethodToConceptStream(ConceptMethodProto.ConceptMethod method) {
+    protected final Stream<? extends Concept> runMethodToConceptStream(ConceptMethodProto.ConceptMethod.Req method) {
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
@@ -68,11 +68,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
-    protected final SessionProto.Transaction.Res runMethod(ConceptMethodProto.ConceptMethod method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptMethodProto.ConceptMethod.Req method) {
         return runMethod(getId(), method);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptMethodProto.ConceptMethod method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptMethodProto.ConceptMethod.Req method) {
         return tx().runConceptMethod(id, method);
     }
 

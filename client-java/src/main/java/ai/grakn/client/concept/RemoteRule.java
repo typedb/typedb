@@ -45,7 +45,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern getWhen() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetWhen(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -56,7 +56,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern getThen() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetThen(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 

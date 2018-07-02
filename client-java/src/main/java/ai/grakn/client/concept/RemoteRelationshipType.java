@@ -43,7 +43,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Relationship addRelationship() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setAddRelationship(ConceptMethodProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
@@ -53,14 +53,14 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Stream<Role> relates() {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setGetRelatedRoles(ConceptMethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setSetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -69,7 +69,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        ConceptMethodProto.ConceptMethod.Builder method = ConceptMethodProto.ConceptMethod.newBuilder();
+        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
         method.setUnsetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
