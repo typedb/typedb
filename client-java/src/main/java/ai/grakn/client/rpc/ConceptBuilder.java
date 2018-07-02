@@ -193,7 +193,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Object answer(SessionProto.Answer answer, Grakn.Transaction tx) {
+    public static Object answer(ConceptProto.Answer answer, Grakn.Transaction tx) {
         switch (answer.getAnswerCase()) {
             case QUERYANSWER:
                 return queryAnswer(answer.getQueryAnswer(), tx);
@@ -207,7 +207,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static Answer queryAnswer(SessionProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
+    public static Answer queryAnswer(ConceptProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
         ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
 
         queryAnswer.getQueryAnswerMap().forEach((grpcVar, ConceptProto) -> {
@@ -217,7 +217,7 @@ public class ConceptBuilder {
         return new QueryAnswer(map.build());
     }
 
-    public static ComputeQuery.Answer computeAnswer(SessionProto.ComputeAnswer computeAnswerRPC) {
+    public static ComputeQuery.Answer computeAnswer(ConceptProto.ComputeAnswer computeAnswerRPC) {
         switch (computeAnswerRPC.getComputeAnswerCase()) {
             case NUMBER:
                 try {
@@ -240,7 +240,7 @@ public class ConceptBuilder {
         }
     }
 
-    public static List<List<ConceptId>> paths(SessionProto.Paths pathsRPC) {
+    public static List<List<ConceptId>> paths(ConceptProto.Paths pathsRPC) {
         List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
 
         for (ConceptProto.ConceptIds conceptIds : pathsRPC.getPathsList()) {
@@ -254,7 +254,7 @@ public class ConceptBuilder {
         return paths;
     }
 
-    public static Map<Long, Set<ConceptId>> centrality(SessionProto.Centrality centralityRPC) {
+    public static Map<Long, Set<ConceptId>> centrality(ConceptProto.Centrality centralityRPC) {
         Map<Long, Set<ConceptId>> centrality = new HashMap<>();
 
         for (Map.Entry<Long, ConceptProto.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
@@ -269,7 +269,7 @@ public class ConceptBuilder {
         return centrality;
     }
 
-    public static Set<Set<ConceptId>> clusters(SessionProto.Clusters clustersRPC) {
+    public static Set<Set<ConceptId>> clusters(ConceptProto.Clusters clustersRPC) {
         Set<Set<ConceptId>> clusters = new HashSet<>();
 
         for (ConceptProto.ConceptIds conceptIds : clustersRPC.getClustersList()) {
@@ -283,7 +283,7 @@ public class ConceptBuilder {
         return clusters;
     }
 
-    public static Set<Long> clusterSizes(SessionProto.ClusterSizes clusterSizesRPC) {
+    public static Set<Long> clusterSizes(ConceptProto.ClusterSizes clusterSizesRPC) {
         return new HashSet<>(clusterSizesRPC.getClusterSizesList());
     }
 }

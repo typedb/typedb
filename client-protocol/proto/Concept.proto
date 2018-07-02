@@ -157,3 +157,45 @@ enum DataType {
     Double = 5;
     Date = 6;
 }
+
+
+
+message Answer {
+    oneof answer {
+        QueryAnswer queryAnswer = 1;
+        ComputeAnswer computeAnswer = 2;
+        string otherResult = 3;
+        // otherResult is used to represent `aggregate` query results.
+        // Due to the many different output formats, we are just returning them as JSON for now.
+    }
+}
+
+message QueryAnswer {
+    map<string, Concept> queryAnswer = 1;
+}
+
+message ComputeAnswer {
+    oneof computeAnswer {
+        string number = 1; // number is stored as string  to accomodate numerics of any type (int, long, float, double)
+        Paths paths = 2;
+        Centrality centrality = 3;
+        Clusters clusters = 4;
+        ClusterSizes clusterSizes = 5;
+    }
+}
+
+message Paths {
+    repeated ConceptIds paths = 1;
+}
+
+message Centrality {
+    map<int64, ConceptIds> centrality = 1;
+}
+
+message Clusters {
+    repeated ConceptIds clusters = 1;
+}
+
+message ClusterSizes {
+    repeated int64 clusterSizes = 1;
+}

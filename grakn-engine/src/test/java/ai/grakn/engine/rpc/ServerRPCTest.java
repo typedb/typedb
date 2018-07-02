@@ -314,8 +314,8 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(BaseType.RELATIONSHIP).build();
-            SessionProto.QueryAnswer.Builder answerX = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            SessionProto.Answer.Builder resultX = SessionProto.Answer.newBuilder().setQueryAnswer(answerX);
+            ConceptProto.QueryAnswer.Builder answerX = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
+            ConceptProto.Answer.Builder resultX = ConceptProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(next(iterator));
@@ -323,8 +323,8 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(BaseType.ATTRIBUTE).build();
-            SessionProto.QueryAnswer.Builder answerY = SessionProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            SessionProto.Answer.Builder resultY = SessionProto.Answer.newBuilder().setQueryAnswer(answerY);
+            ConceptProto.QueryAnswer.Builder answerY = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
+            ConceptProto.Answer.Builder resultY = ConceptProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(next(iterator));
@@ -394,7 +394,7 @@ public class ServerRPCTest {
             tx.send(query(COUNT_QUERY, false));
 
             TxResponse expected =
-                    TxResponse.newBuilder().setAnswer(SessionProto.Answer.newBuilder().setOtherResult("100")).build();
+                    TxResponse.newBuilder().setAnswer(ConceptProto.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }

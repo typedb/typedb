@@ -122,23 +122,23 @@ public class ConceptBuilder {
         return builder.build();
     }
 
-    static SessionProto.Answer answer(Object object) {
-        SessionProto.Answer answer;
+    static ConceptProto.Answer answer(Object object) {
+        ConceptProto.Answer answer;
 
         if (object instanceof Answer) {
-            answer = SessionProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
+            answer = ConceptProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
         } else if (object instanceof ComputeQuery.Answer) {
-            answer = SessionProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
+            answer = ConceptProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
         } else {
             // If not an QueryAnswer or ComputeAnswer, convert to JSON
-            answer = SessionProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
+            answer = ConceptProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
         }
 
         return answer;
     }
 
-    static SessionProto.QueryAnswer queryAnswer(Answer answer) {
-        SessionProto.QueryAnswer.Builder queryAnswerRPC = SessionProto.QueryAnswer.newBuilder();
+    static ConceptProto.QueryAnswer queryAnswer(Answer answer) {
+        ConceptProto.QueryAnswer.Builder queryAnswerRPC = ConceptProto.QueryAnswer.newBuilder();
         answer.forEach((var, concept) -> {
             ConceptProto.Concept conceptRps = concept(concept);
             queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
@@ -147,8 +147,8 @@ public class ConceptBuilder {
         return queryAnswerRPC.build();
     }
 
-    static SessionProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
-        SessionProto.ComputeAnswer.Builder computeAnswerRPC = SessionProto.ComputeAnswer.newBuilder();
+    static ConceptProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
+        ConceptProto.ComputeAnswer.Builder computeAnswerRPC = ConceptProto.ComputeAnswer.newBuilder();
 
         if (computeAnswer.getNumber().isPresent()) {
             computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
@@ -169,15 +169,15 @@ public class ConceptBuilder {
         return computeAnswerRPC.build();
     }
 
-    private static SessionProto.Paths paths(List<List<ConceptId>> paths) {
-        SessionProto.Paths.Builder pathsRPC = SessionProto.Paths.newBuilder();
+    private static ConceptProto.Paths paths(List<List<ConceptId>> paths) {
+        ConceptProto.Paths.Builder pathsRPC = ConceptProto.Paths.newBuilder();
         for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
 
         return pathsRPC.build();
     }
 
-    private static SessionProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
-        SessionProto.Centrality.Builder centralityCountsRPC = SessionProto.Centrality.newBuilder();
+    private static ConceptProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
+        ConceptProto.Centrality.Builder centralityCountsRPC = ConceptProto.Centrality.newBuilder();
 
         for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
             centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
@@ -186,15 +186,15 @@ public class ConceptBuilder {
         return centralityCountsRPC.build();
     }
 
-    private static SessionProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
-        SessionProto.ClusterSizes.Builder clusterSizesRPC = SessionProto.ClusterSizes.newBuilder();
+    private static ConceptProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
+        ConceptProto.ClusterSizes.Builder clusterSizesRPC = ConceptProto.ClusterSizes.newBuilder();
         clusterSizesRPC.addAllClusterSizes(clusterSizes);
 
         return clusterSizesRPC.build();
     }
 
-    private static SessionProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
-        SessionProto.Clusters.Builder clustersRPC = SessionProto.Clusters.newBuilder();
+    private static ConceptProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
+        ConceptProto.Clusters.Builder clustersRPC = ConceptProto.Clusters.newBuilder();
         for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
 
         return clustersRPC.build();
