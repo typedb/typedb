@@ -120,7 +120,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerAtomicQuery positive(){
-        return new ReasonerAtomicQuery(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+        return new ReasonerAtomicQuery(
+                getAtoms().stream()
+                        .filter(at -> !(at instanceof NeqPredicate))
+                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
+                        .collect(Collectors.toSet()),
+                tx());
     }
 
     @Override

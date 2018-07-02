@@ -64,8 +64,7 @@ public class NeqComplementState extends AtomicState {
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);
-
-        ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(q.positive(), sub);
+        ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(ReasonerQueries.atomic(q, sub).positive());
         this.predicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
         this.predicateSub = sub.project(this.predicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
