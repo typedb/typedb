@@ -25,6 +25,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 
@@ -115,7 +116,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setGetSubConcepts(ConceptProto.GetSubConcepts.Req.getDefaultInstance()).build();
 
-        return streamMethod(method).map(this::asCurrentBaseType);
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetSubConcepts().getIteratorId();
+        return conceptStream(iteratorId).map(this::asCurrentBaseType);
     }
 
     @Override

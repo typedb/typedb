@@ -26,6 +26,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
@@ -40,101 +41,116 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
 
     @Override
     public final SomeType setAbstract(Boolean isAbstract) throws GraknTxOperationException {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setSetAbstract(isAbstract);
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetAbstract(ConceptProto.SetAbstract.Req.newBuilder()
+                        .setAbstract(isAbstract)).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setSetRolePlayedByType(ConceptBuilder.concept(role));
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetRolePlayedByType(ConceptProto.SetRolePlayedByType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(role))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setSetKeyType(ConceptBuilder.concept(attributeType));
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetKeyType(ConceptProto.SetKeyType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(attributeType))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setSetAttributeType(ConceptBuilder.concept(attributeType));
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetAttributeType(ConceptProto.SetAttributeType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(attributeType))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final Stream<Role> plays() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetRolesPlayedByType(ConceptProto.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(Concept::asRole);
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetRolesPlayedByType(ConceptProto.GetRolesPlayedByType.Req.getDefaultInstance()).build();
+
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRolesPlayedByType().getIteratorId();
+        return conceptStream(iteratorId).map(Concept::asRole);
     }
 
     @Override
     public final Stream<AttributeType> attributes() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetAttributeTypes(ConceptProto.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetAttributeTypes(ConceptProto.GetAttributeTypes.Req.getDefaultInstance()).build();
+
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetAttributeTypes().getIteratorId();
+        return conceptStream(iteratorId).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> keys() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetKeyTypes(ConceptProto.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(Concept::asAttributeType);
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetKeyTypes(ConceptProto.GetKeyTypes.Req.getDefaultInstance()).build();
+
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetKeyTypes().getIteratorId();
+        return conceptStream(iteratorId).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<SomeThing> instances() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetInstances(ConceptProto.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(this::asInstance);
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetInstances(ConceptProto.GetInstances.Req.getDefaultInstance()).build();
+
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetInstances().getIteratorId();
+        return conceptStream(iteratorId).map(this::asInstance);
     }
 
     @Override
     public final Boolean isAbstract() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setIsAbstract(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setIsAbstract(ConceptProto.IsAbstract.Req.getDefaultInstance()).build();
 
-        return response.getConceptResponse().getIsAbstract();
+        SessionProto.Transaction.Res response = runMethod(method);
+        return response.getConceptMethod().getResponse().getIsAbstract().getAbstract();
     }
 
     @Override
     public final SomeType deletePlays(Role role) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setUnsetRolePlayedByType(ConceptBuilder.concept(role));
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setUnsetRolePlayedByType(ConceptProto.UnsetRolePlayedByType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(role))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final SomeType deleteAttribute(AttributeType attributeType) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setUnsetAttributeType(ConceptBuilder.concept(attributeType));
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setUnsetAttributeType(ConceptProto.UnsetAttributeType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(attributeType))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final SomeType deleteKey(AttributeType attributeType) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setUnsetKeyType(ConceptBuilder.concept(attributeType)).build();
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setUnsetKeyType(ConceptProto.UnsetKeyType.Req.newBuilder()
+                        .setConcept(ConceptBuilder.concept(attributeType))).build();
 
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 

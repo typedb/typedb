@@ -62,8 +62,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().getConcept(getId()) == null;
     }
 
-    protected final Stream<? extends Concept> streamMethod(ConceptProto.Method.Req method) {
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetSubConcepts().getIteratorId();
+    protected final Stream<? extends Concept> conceptStream(IteratorProto.IteratorId iteratorId) {
         Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
         );

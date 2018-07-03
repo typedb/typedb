@@ -126,24 +126,24 @@ message Method {
             GetThen.Req getThen = 10;
 
             // Role methods
-            Unit getRelationshipTypesThatRelateRole = 1020; // returns IteratorId of Concept
-            Unit getTypesThatPlayRole = 1021; // returns IteratorId of Concept
+            GetRelationshipTypesThatRelateRole.Req getRelationshipTypesThatRelateRole = 11;
+            GetTypesThatPlayRole.Req getTypesThatPlayRole = 12;
 
             // Type methods
-            bool setAbstract = 1022; // returns Unit
-            Unit isAbstract = 106; // returns bool
-            Unit getInstances = 1030; // returns IteratorId of Concept
-            Unit getAttributeTypes = 1011; // returns IteratorId of Concept
-            Unit getKeyTypes = 1012; // returns IteratorId of Concept
-            Unit getRolesPlayedByType = 1029; // returns IteratorId of Concept
-            Concept setAttributeType = 1025;
-            Concept unsetAttributeType = 1026;
-            Concept setKeyType = 1027; // returns Unit
-            Concept unsetKeyType = 1028; // returns Unit
-            Concept setRolePlayedByType = 1023; // returns Unit
-            Concept unsetRolePlayedByType = 1024; // returns Unit
+            IsAbstract.Req isAbstract = 13;
+            SetAbstract.Req setAbstract = 14;
+            GetInstances.Req getInstances = 15;
+            GetAttributeTypes.Req getAttributeTypes = 16;
+            GetKeyTypes.Req getKeyTypes = 17;
+            GetRolesPlayedByType.Req getRolesPlayedByType = 18;
+            SetAttributeType.Req setAttributeType = 19;
+            UnsetAttributeType.Req unsetAttributeType = 20;
+            SetKeyType.Req setKeyType = 21;
+            UnsetKeyType.Req unsetKeyType = 22;
+            SetRolePlayedByType.Req setRolePlayedByType = 23;
+            UnsetRolePlayedByType.Req unsetRolePlayedByType = 24;
 
-            // Entity type
+            // EntityType methods
             Unit addEntity = 1034; // returns Concept
 
             // Relationship type
@@ -202,9 +202,27 @@ message Method {
             GetWhen.Res getWhen = 9;
             GetThen.Res getThen = 10;
 
+            // Role methods
+            GetRelationshipTypesThatRelateRole.Res getRelationshipTypesThatRelateRole = 11;
+            GetTypesThatPlayRole.Res getTypesThatPlayRole = 12;
+
+            // Type methods
+            IsAbstract.Res isAbstract = 13;
+            SetAbstract.Res setAbstract = 14;
+            GetInstances.Res getInstances = 15;
+            GetAttributeTypes.Res getAttributeTypes = 16;
+            GetKeyTypes.Res getKeyTypes = 17;
+            GetRolesPlayedByType.Res getRolesPlayedByType = 18;
+            SetAttributeType.Res setAttributeType = 19;
+            UnsetAttributeType.Res unsetAttributeType = 20;
+            SetKeyType.Res setKeyType = 21;
+            UnsetKeyType.Res unsetKeyType = 22;
+            SetRolePlayedByType.Res setRolePlayedByType = 23;
+            UnsetRolePlayedByType.Res unsetRolePlayedByType = 24;
+
+
 
             bool noResult = 101;
-            bool isAbstract = 102;
             bool isInferred = 104;
             string regex = 107;
             Unit unit = 108;
@@ -273,9 +291,6 @@ message SetDirectSuperConcept {
     message Res {}
 }
 
-//Unit getWhen = 107; // returns pattern (string) or noResult (bool)
-//Unit getThen = 108; // returns pattern (string) or noResult (bool)
-
 message GetWhen {
     message Req {}
     message Res {
@@ -294,4 +309,102 @@ message GetThen {
             Null null = 2;
         }
     }
+}
+
+message GetRelationshipTypesThatRelateRole {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetTypesThatPlayRole {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message IsAbstract {
+    message Req {}
+    message Res {
+        bool abstract = 1;
+    }
+}
+
+message SetAbstract {
+    message Req {
+        bool abstract = 1;
+    }
+    message Res {}
+}
+
+message GetInstances {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetAttributeTypes {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetKeyTypes {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRolesPlayedByType {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message SetAttributeType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetAttributeType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message SetKeyType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetKeyType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message SetRolePlayedByType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetRolePlayedByType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
 }
