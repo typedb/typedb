@@ -61,7 +61,7 @@ jobs:
 
   parallel:
     machine: true
-    parallelism: 1
+    parallelism: 2
     working_directory: ~/grakn
     steps:
       ##############################################################################
