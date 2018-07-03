@@ -152,6 +152,28 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setRolePlayer(rolePlayer).build();
         }
 
+        /**
+         * An RPC Response Builder class for Concept Methods
+         */
+        public static class ConceptMethod {
+
+            static SessionProto.Transaction.Res delete() {
+                SessionProto.ConceptMethod.Res response = SessionProto.ConceptMethod.Res.newBuilder()
+                        .setResponse(ConceptProto.Method.Res.newBuilder()
+                                .setDelete(ConceptProto.Delete.Res.getDefaultInstance())).build();
+                return SessionProto.Transaction.Res.newBuilder().setConceptMethod(response).build();
+            }
+
+            static SessionProto.Transaction.Res getLabel(String label) {
+                SessionProto.ConceptMethod.Res response = SessionProto.ConceptMethod.Res.newBuilder()
+                        .setResponse(ConceptProto.Method.Res.newBuilder()
+                                .setGetLabel(ConceptProto.GetLabel.Res.newBuilder()
+                                        .setLabel(label))).build();
+                return SessionProto.Transaction.Res.newBuilder().setConceptMethod(response).build();
+            }
+
+        }
+
         static SessionProto.Transaction.Res answer(Object object) {
             return SessionProto.Transaction.Res.newBuilder().setAnswer(ConceptBuilder.answer(object)).build();
         }

@@ -42,14 +42,18 @@ public abstract class ConceptMethod {
     public static Transaction.Res run(Concept concept, ConceptProto.Method.Req method,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
         switch (method.getReqCase()) {
+            case DELETE:
+                return delete(concept);
+            case GETLABEL:
+                return getLabel(concept);
+
+
             case GETVALUE:
                 return getValue(concept);
             case GETDATATYPEOFATTRIBUTETYPE:
                 return getDataTypeOfAttributeType(concept);
             case GETDATATYPEOFATTRIBUTE:
                 return getDataTypeOfAttribute(concept);
-            case GETLABEL:
-                return getLabel(concept);
             case SETLABEL:
                 return setLabel(concept, method);
             case ISIMPLICIT:
@@ -86,8 +90,6 @@ public abstract class ConceptMethod {
                 return setDirectSuper(concept, method, tx);
             case UNSETROLEPLAYER:
                 return removeRolePlayer(concept, method, tx);
-            case DELETE:
-                return delete(concept);
             case GETOWNERS:
                 return getOwners(concept, iterators);
             case GETTYPESTHATPLAYROLE:
@@ -152,6 +154,16 @@ public abstract class ConceptMethod {
         }
     }
 
+    private static Transaction.Res delete(Concept concept) {
+        concept.delete();
+        return ResponseBuilder.Transaction.ConceptMethod.delete();
+    }
+
+    private static Transaction.Res getLabel(Concept concept) {
+        Label label = concept.asSchemaConcept().getLabel();
+        return ResponseBuilder.Transaction.ConceptMethod.getLabel(label.getValue());
+    }
+
     private static Transaction.Res getValue(Concept concept) {
         Object value = concept.asAttribute().getValue();
         return ResponseBuilder.Transaction.conceptResponseWithAttributeValue(value);
@@ -166,13 +178,6 @@ public abstract class ConceptMethod {
     private static Transaction.Res getDataTypeOfAttribute(Concept concept) {
         AttributeType.DataType<?> dataType = concept.asAttribute().dataType();
         return ResponseBuilder.Transaction.conceptResponseWithDataType(dataType);
-    }
-
-    private static Transaction.Res getLabel(Concept concept) {
-        Label label = concept.asSchemaConcept().getLabel();
-        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder();
-        conceptResponse.setLabel(label.getValue());
-        return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static Transaction.Res setLabel(Concept concept, ConceptProto.Method.Req method) {
@@ -305,12 +310,6 @@ public abstract class ConceptMethod {
         Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRole(), tx).asRole();
         Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().removeRolePlayer(role, player);
-        return null;
-    }
-
-    private static Transaction.Res delete(Concept concept) {
-
-        concept.delete();
         return null;
     }
 

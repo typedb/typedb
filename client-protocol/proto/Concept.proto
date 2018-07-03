@@ -99,6 +99,8 @@ message ConceptIds {
     repeated string ids = 1;
 }
 
+message Unit {} // Represents a message with no information
+
 message Method {
     message Req {
         oneof req {
@@ -107,11 +109,15 @@ message Method {
             // The `returns` comment indicates what each `ConceptMethod` will return.
 
             // Concept
-            Unit delete = 16; // returns Unit
+            Delete.Req delete = 1;
 
             // Schema concept
+            GetLabel.Req getLabel = 2;
+
+
+
+
             string setLabel = 118; // returns Unit
-            Unit getLabel = 103; // returns label (string)
             Unit isImplicit = 104; // returns bool
             Unit getSubConcepts = 1019; // returns IteratorId of Concept
             Unit getSuperConcepts = 1053; // returns IteratorId of Concept
@@ -183,6 +189,12 @@ message Method {
     }
     message Res {
         oneof res {
+            Delete.Res delete = 1;
+            GetLabel.Res getLabel = 2;
+
+
+
+
             bool noResult = 101;
             bool isAbstract = 102;
             bool isImplicit = 103;
@@ -199,4 +211,14 @@ message Method {
     }
 }
 
-message Unit {} // Represents a message with no information
+message Delete {
+    message Req {}
+    message Res {}
+}
+
+message GetLabel {
+    message Req {}
+    message Res {
+        string label = 1;
+    }
+}

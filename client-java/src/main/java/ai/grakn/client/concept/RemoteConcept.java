@@ -50,9 +50,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setDelete(ConceptProto.Unit.getDefaultInstance());
-        runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setDelete(ConceptProto.Delete.Req.getDefaultInstance())
+                .build();
+
+        runMethod(method);
     }
 
     @Override

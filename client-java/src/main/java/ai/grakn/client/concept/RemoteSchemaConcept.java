@@ -55,11 +55,13 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Label getLabel() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetLabel(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetLabel(ConceptProto.GetLabel.Req.getDefaultInstance())
+                .build();
 
-        return Label.of(response.getConceptResponse().getLabel());
+        SessionProto.Transaction.Res response = runMethod(method);
+
+        return Label.of(response.getConceptMethod().getResponse().getGetLabel().getLabel());
     }
 
     @Override
