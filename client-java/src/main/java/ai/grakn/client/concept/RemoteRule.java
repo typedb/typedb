@@ -25,7 +25,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.proto.ConceptMethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -45,8 +45,8 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern getWhen() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setGetWhen(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setGetWhen(ConceptProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
@@ -56,8 +56,8 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern getThen() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setGetThen(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setGetThen(ConceptProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;

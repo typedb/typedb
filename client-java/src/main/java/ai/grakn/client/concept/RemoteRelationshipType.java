@@ -25,7 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.rpc.proto.ConceptMethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -43,8 +43,8 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Relationship addRelationship() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setAddRelationship(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setAddRelationship(ConceptProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
 
@@ -53,14 +53,14 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final Stream<Role> relates() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setGetRelatedRoles(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setGetRelatedRoles(ConceptProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         method.setSetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 
@@ -69,7 +69,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
 
     @Override
     public final RelationshipType deleteRelates(Role role) {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         method.setUnsetRelatedRole(ConceptBuilder.concept(role));
         runMethod(method.build());
 

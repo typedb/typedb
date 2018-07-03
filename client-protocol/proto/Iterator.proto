@@ -3,6 +3,8 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "IteratorProto";
 
+package session;
+
 /*
     Request next query result.
     After this message, the server will send a `QueryResult` or a `Done` message and then accept a command message.

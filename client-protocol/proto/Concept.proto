@@ -5,6 +5,8 @@ option java_outer_classname = "ConceptProto";
 
 import "Iterator.proto";
 
+package session;
+
 enum BaseType {
     META_TYPE = 0; // This represents the top-level meta type only
     ENTITY_TYPE = 1;
@@ -20,10 +22,6 @@ enum BaseType {
 message Concept {
     string id = 1;
     BaseType baseType = 2;
-}
-
-message ConceptIds {
-    repeated string ids = 1;
 }
 
 message Concepts {
@@ -96,3 +94,109 @@ message Clusters {
 message ClusterSizes {
     repeated int64 clusterSizes = 1;
 }
+
+message ConceptIds {
+    repeated string ids = 1;
+}
+
+message Method {
+    message Req {
+        oneof req {
+            // The types here are the arguments for the methods. Most are `Unit`, which indicates no arguments.
+            // The return types of these methods are described in `ConceptResponse`.
+            // The `returns` comment indicates what each `ConceptMethod` will return.
+
+            // Concept
+            Unit delete = 16; // returns Unit
+
+            // Schema concept
+            string setLabel = 118; // returns Unit
+            Unit getLabel = 103; // returns label (string)
+            Unit isImplicit = 104; // returns bool
+            Unit getSubConcepts = 1019; // returns IteratorId of Concept
+            Unit getSuperConcepts = 1053; // returns IteratorId of Concept
+            Unit getDirectSuperConcept = 1014; // returns Concept or noResult (bool)
+            Concept setDirectSuperConcept = 1017; // returns Unit
+
+            // Rule
+            Unit getWhen = 107; // returns pattern (string) or noResult (bool)
+            Unit getThen = 108; // returns pattern (string) or noResult (bool)
+
+            // Role
+            Unit getRelationshipTypesThatRelateRole = 1020; // returns IteratorId of Concept
+            Unit getTypesThatPlayRole = 1021; // returns IteratorId of Concept
+
+            // Type
+            bool setAbstract = 1022; // returns Unit
+            Unit isAbstract = 106; // returns bool
+            Unit getInstances = 1030; // returns IteratorId of Concept
+            Unit getAttributeTypes = 1011; // returns IteratorId of Concept
+            Unit getKeyTypes = 1012; // returns IteratorId of Concept
+            Unit getRolesPlayedByType = 1029; // returns IteratorId of Concept
+            Concept setAttributeType = 1025;
+            Concept unsetAttributeType = 1026;
+            Concept setKeyType = 1027; // returns Unit
+            Concept unsetKeyType = 1028; // returns Unit
+            Concept setRolePlayedByType = 1023; // returns Unit
+            Concept unsetRolePlayedByType = 1024; // returns Unit
+
+            // Entity type
+            Unit addEntity = 1034; // returns Concept
+
+            // Relationship type
+            Unit getRelatedRoles = 1036; // returns IteratorId of Concept
+            Concept setRelatedRole = 1037; // returns Unit
+            Concept unsetRelatedRole = 1038; // returns Unit
+
+            // Attribute type
+            string setRegex = 1031; // returns Unit
+            Unit getRegex = 109; // returns regex (string)
+            Unit getDataTypeOfAttribute = 1054; // returns DataType
+            Unit getDataTypeOfAttributeType = 102; // returns DataType or noResult (bool)
+            AttributeValue getAttribute = 1033; // returns Concept or noResult
+            AttributeValue putAttribute = 1032; // returns Concept
+
+            // Thing
+            Unit isInferred = 105; // returns bool
+            Unit getKeys = 1042; // returns IteratorId of Concept
+            Unit getAttributes = 1041; // returns IteratorId of Concept
+            Unit getRelationships = 1039; // returns IteratorId of Concept
+            Unit getRolesPlayedByThing = 1040; // returns IteratorId of Concept
+            Unit getDirectType = 1013; // returns Concept
+            Concept setAttribute = 1043; // returns Unit
+            Concept unsetAttribute = 1044; // returns Unit
+            Concepts getKeysByTypes = 1050; // returns IteratorId of Concept
+            Concepts getAttributesByTypes = 1049; // returns IteratorId of Concept
+            Concepts getRelationshipsByRoles = 1048; // returns IteratorId of Concept
+
+            // Relationship
+            Unit getRolePlayers = 1010; // returns IteratorId of RolePlayer
+            Unit addRelationship = 1035; // returns Concept
+            RolePlayer setRolePlayer = 1046; // returns Unit
+            RolePlayer unsetRolePlayer = 1015; // returns Unit
+            Concepts getRolePlayersByRoles = 1051; // returns IteratorId of Concept
+
+            // Attribute
+            Unit getValue = 101; // returns AttributeValue
+            Unit getOwners = 1047; // returns IteratorId of Concept
+        }
+    }
+    message Res {
+        oneof res {
+            bool noResult = 101;
+            bool isAbstract = 102;
+            bool isImplicit = 103;
+            bool isInferred = 104;
+            string label = 105;
+            string pattern = 106;
+            string regex = 107;
+            Unit unit = 108;
+            IteratorId iteratorId = 109;
+            Concept concept = 110;
+            AttributeValue attributeValue = 111;
+            DataType dataType = 112;
+        }
+    }
+}
+
+message Unit {} // Represents a message with no information

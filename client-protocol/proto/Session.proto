@@ -5,7 +5,8 @@ option java_outer_classname = "SessionProto";
 
 import "Concept.proto";
 import "Iterator.proto";
-import "ConceptMethod.proto";
+
+package session;
 
 service Session {
     // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
@@ -45,7 +46,7 @@ message Transaction {
             PutRelationshipType.Res putRelationshipType = 18;
             PutRole.Res putRole = 19;
             PutRule.Res putRule = 20;
-            ConceptMethod.Res conceptResponse = 21;
+            Method.Res conceptResponse = 21;
             Answer answer = 1;
             Done done = 2;
             IteratorId iteratorId = 4;
@@ -171,5 +172,5 @@ message PutRule {
 
 message RunConceptMethod { // Calling a method on a concept
     string id = 1;
-    ConceptMethod.Req method = 2;
+    Method.Req method = 2;
 }

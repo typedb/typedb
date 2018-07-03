@@ -24,7 +24,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.rpc.proto.ConceptMethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -45,13 +45,13 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final AttributeType<D> setRegex(String regex) {
         if (regex == null) regex = "";
-        runMethod(ConceptMethodProto.ConceptMethod.Req.newBuilder().setSetRegex(regex).build());
+        runMethod(ConceptProto.Method.Req.newBuilder().setSetRegex(regex).build());
         return asCurrentBaseType(this);
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         method.setPutAttribute(ConceptBuilder.attributeValue(value));
         SessionProto.Transaction.Res response = runMethod(method.build());
         Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
@@ -62,7 +62,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         method.setGetAttribute(ConceptBuilder.attributeValue(value));
         SessionProto.Transaction.Res response = runMethod(method.build());
 
@@ -75,8 +75,8 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setGetDataTypeOfAttributeType(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setGetDataTypeOfAttributeType(ConceptProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;
@@ -86,8 +86,8 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final String getRegex() {
-        ConceptMethodProto.ConceptMethod.Req.Builder method = ConceptMethodProto.ConceptMethod.Req.newBuilder();
-        method.setGetRegex(ConceptMethodProto.Unit.getDefaultInstance());
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
+        method.setGetRegex(ConceptProto.Unit.getDefaultInstance());
         SessionProto.Transaction.Res response = runMethod(method.build());
 
         if (response.getConceptResponse().getNoResult()) return null;

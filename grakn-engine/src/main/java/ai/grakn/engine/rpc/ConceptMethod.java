@@ -27,7 +27,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
@@ -36,11 +35,11 @@ import java.util.stream.Stream;
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.proto.ConceptMethodProto.ConceptMethod.Req}.
+ * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.proto.ConceptProto.Method.Req}.
  */
 public abstract class ConceptMethod {
 
-    public static Transaction.Res run(Concept concept, ConceptMethodProto.ConceptMethod.Req method,
+    public static Transaction.Res run(Concept concept, ConceptProto.Method.Req method,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
         switch (method.getReqCase()) {
             case GETVALUE:
@@ -171,38 +170,38 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getLabel(Concept concept) {
         Label label = concept.asSchemaConcept().getLabel();
-        ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder();
+        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder();
         conceptResponse.setLabel(label.getValue());
         return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static Transaction.Res setLabel(Concept concept, ConceptMethodProto.ConceptMethod.Req method) {
+    private static Transaction.Res setLabel(Concept concept, ConceptProto.Method.Req method) {
         concept.asSchemaConcept().setLabel(Label.of(method.getSetLabel()));
         return null;
     }
 
     private static Transaction.Res isImplicit(Concept concept) {
         Boolean response = concept.asSchemaConcept().isImplicit();
-        ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder()
                 .setIsImplicit(response);
         return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static Transaction.Res isInferred(Concept concept) {
         Boolean response = concept.asThing().isInferred();
-        ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder()
                 .setIsInferred(response);
         return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static Transaction.Res isAbstract(Concept concept) {
         Boolean response = concept.asType().isAbstract();
-        ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder()
                 .setIsAbstract(response);
         return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
-    private static Transaction.Res setAbstract(Concept concept, ConceptMethodProto.ConceptMethod.Req method) {
+    private static Transaction.Res setAbstract(Concept concept, ConceptProto.Method.Req method) {
         concept.asType().setAbstract(method.getSetAbstract());
         return null;
     }
@@ -232,7 +231,7 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
-                                                    ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+                                                    ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         ConceptProto.Concepts rpcRoles = method.getGetRolePlayersByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
@@ -248,13 +247,13 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.iteratorId(responses, iterators);
     }
 
-    private static Transaction.Res setAttributeType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setAttributeType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getSetAttributeType(), tx).asAttributeType();
         concept.asType().attribute(attributeType);
         return null;
     }
 
-    private static Transaction.Res unsetAttributeType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res unsetAttributeType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnsetAttributeType(), tx).asAttributeType();
         concept.asType().deleteAttribute(attributeType);
         return null;
@@ -277,7 +276,7 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(superConcept);
     }
 
-    private static Transaction.Res setDirectSuper(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setDirectSuper(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         // Make the second argument the super of the first argument
         // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
 
@@ -302,7 +301,7 @@ public abstract class ConceptMethod {
         return null;
     }
 
-    private static Transaction.Res removeRolePlayer(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res removeRolePlayer(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRole(), tx).asRole();
         Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().removeRolePlayer(role, player);
@@ -310,6 +309,7 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res delete(Concept concept) {
+
         concept.delete();
         return null;
     }
@@ -368,7 +368,7 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.iteratorId(responses, iterators);
     }
 
-    private static Transaction.Res getAttributesByTypes(Concept concept, ConceptMethodProto.ConceptMethod.Req method,
+    private static Transaction.Res getAttributesByTypes(Concept concept, ConceptProto.Method.Req method,
                                                    SessionService.Iterators iterators, EmbeddedGraknTx tx) {
         ConceptProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes();
         AttributeType<?>[] attributeTypes = rpcAttributeTypes.getConceptsList().stream()
@@ -387,7 +387,7 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res getRelationshipsByRoles(Concept concept, SessionService.Iterators iterators,
-                                                      ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+                                                      ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         ConceptProto.Concepts rpcRoles = method.getGetRelationshipsByRoles();
         Role[] roles = rpcRoles.getConceptsList().stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
@@ -410,7 +410,7 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res getKeysByTypes(Concept concept, SessionService.Iterators iterators,
-                                             ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+                                             ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         ConceptProto.Concepts rpcKeyTypes = method.getGetKeysByTypes();
         AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList()
                 .stream().map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
@@ -421,25 +421,25 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.iteratorId(responses, iterators);
     }
 
-    private static Transaction.Res setKeyType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setKeyType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getSetKeyType(), tx).asAttributeType();
         concept.asType().key(attributeType);
         return null;
     }
 
-    private static Transaction.Res unsetKeyType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res unsetKeyType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnsetKeyType(), tx).asAttributeType();
         concept.asType().deleteKey(attributeType);
         return null;
     }
 
-    private static Transaction.Res setRolePlayedByType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setRolePlayedByType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getSetRolePlayedByType(), tx).asRole();
         concept.asType().plays(role);
         return null;
     }
 
-    private static Transaction.Res unsetRolePlayedByType(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res unsetRolePlayedByType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getUnsetRolePlayedByType(), tx).asRole();
         concept.asType().deletePlays(role);
         return null;
@@ -455,32 +455,32 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(relationship);
     }
 
-    private static Transaction.Res getAttribute(Concept concept, ConceptMethodProto.ConceptMethod.Req method) {
+    private static Transaction.Res getAttribute(Concept concept, ConceptProto.Method.Req method) {
         Object value = method.getGetAttribute().getAllFields().values().iterator().next();
         Concept attribute = concept.asAttributeType().getAttribute(value);
         if (attribute == null) return ResponseBuilder.Transaction.conceptResponseWithNoResult();
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(attribute);
     }
 
-    private static Transaction.Res putAttribute(Concept concept, ConceptMethodProto.ConceptMethod.Req method) {
+    private static Transaction.Res putAttribute(Concept concept, ConceptProto.Method.Req method) {
         Object value = method.getPutAttribute().getAllFields().values().iterator().next();
         Concept attribute = concept.asAttributeType().putAttribute(value);
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(attribute);
     }
 
-    private static Transaction.Res setAttribute(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setAttribute(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Attribute<?> attribute =  ConceptBuilder.concept(method.getSetAttribute(), tx).asAttribute();
         Concept relationship = concept.asThing().attributeRelationship(attribute);
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(relationship);
     }
 
-    private static Transaction.Res unsetAttribute(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res unsetAttribute(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Attribute<?> attribute = ConceptBuilder.concept(method.getUnsetAttribute(), tx).asAttribute();
         concept.asThing().deleteAttribute(attribute);
         return null;
     }
 
-    private static Transaction.Res setRegex(Concept concept, ConceptMethodProto.ConceptMethod.Req method) {
+    private static Transaction.Res setRegex(Concept concept, ConceptProto.Method.Req method) {
         if (method.getSetRegex().isEmpty()) {
             concept.asAttributeType().setRegex(null);
         } else {
@@ -489,20 +489,20 @@ public abstract class ConceptMethod {
         return null;
     }
 
-    private static Transaction.Res setRolePlayer(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setRolePlayer(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getSetRolePlayer().getRole(), tx).asRole();
         Thing player = ConceptBuilder.concept(method.getSetRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().addRolePlayer(role, player);
         return null;
     }
 
-    private static Transaction.Res setRelatedRole(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setRelatedRole(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getSetRelatedRole(), tx).asRole();
         concept.asRelationshipType().relates(role);
         return null;
     }
 
-    private static Transaction.Res unsetRelatedRole(Concept concept, ConceptMethodProto.ConceptMethod.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res unsetRelatedRole(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getUnsetRelatedRole(), tx).asRole();
         concept.asRelationshipType().deleteRelates(role);
         return null;

@@ -31,7 +31,6 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.proto.ConceptMethodProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -136,7 +135,7 @@ public class ResponseBuilder {
 
         static SessionProto.Transaction.Res iteratorId(Stream<SessionProto.Transaction.Res> responses, SessionService.Iterators iterators) {
             IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-            ConceptMethodProto.ConceptMethod.Res conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+            ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setIteratorId(iteratorId).build();
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
@@ -158,31 +157,31 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res conceptResponseWithNoResult() {
-            ConceptMethodProto.ConceptMethod.Res conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+            ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setNoResult(true).build();
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.Transaction.Res conceptResopnseWithConcept(Concept concept) {
-            ConceptMethodProto.ConceptMethod.Res conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+            ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept)).build();
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.Transaction.Res conceptResponseWithDataType(AttributeType.DataType<?> dataType) {
-            ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder();
+            ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder();
             conceptResponse.setDataType(ConceptBuilder.dataType(dataType));
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.Transaction.Res conceptResponseWithAttributeValue(Object value) {
-            ConceptMethodProto.ConceptMethod.Res conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+            ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setAttributeValue(ConceptBuilder.attributeValue(value)).build();
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
         static SessionProto.Transaction.Res conceptResponseWithPattern(Pattern pattern) {
-            ConceptMethodProto.ConceptMethod.Res.Builder conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder();
+            ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder();
             if (pattern != null) {
                 conceptResponse.setPattern(pattern.toString());
             } else {
@@ -192,7 +191,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res conceptResponseWithRegex(String regex) {
-            ConceptMethodProto.ConceptMethod.Res conceptResponse = ConceptMethodProto.ConceptMethod.Res.newBuilder()
+            ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setRegex(regex).build();
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }

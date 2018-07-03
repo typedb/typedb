@@ -3,6 +3,8 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "KeyspaceProto";
 
+package keyspace;
+
 service Keyspace {
     rpc create (Create.Req) returns (Create.Res);
     rpc retrieve (Retrieve.Req) returns (Retrieve.Res);

@@ -18,11 +18,11 @@
 
 package ai.grakn.client.concept;
 
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.client.Grakn;
 import com.google.auto.value.AutoValue;
 
 /**
