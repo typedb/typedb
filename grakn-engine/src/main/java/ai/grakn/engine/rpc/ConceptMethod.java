@@ -62,6 +62,11 @@ public abstract class ConceptMethod {
             case SETDIRECTSUPERCONCEPT:
                 return setDirectSuperConcept(concept, method, tx);
 
+            // Rule methods
+            case GETWHEN:
+                return getWhen(concept);
+            case GETTHEN:
+                return getThen(concept);
 
 
 
@@ -77,10 +82,6 @@ public abstract class ConceptMethod {
                 return isAbstract(concept);
             case SETABSTRACT:
                 return setAbstract(concept, method);
-            case GETWHEN:
-                return getWhen(concept);
-            case GETTHEN:
-                return getThen(concept);
             case GETREGEX:
                 return getRegex(concept);
             case GETROLEPLAYERS:
@@ -223,6 +224,15 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.ConceptMethod.setDirectSuperConcept();
     }
 
+    // Rule methods
+
+    private static Transaction.Res getWhen(Concept concept) {
+        return ResponseBuilder.Transaction.ConceptMethod.getWhen(concept.asRule().getWhen());
+    }
+
+    private static Transaction.Res getThen(Concept concept) {
+        return ResponseBuilder.Transaction.ConceptMethod.getThen(concept.asRule().getThen());
+    }
 
 
     private static Transaction.Res getValue(Concept concept) {
@@ -258,14 +268,6 @@ public abstract class ConceptMethod {
     private static Transaction.Res setAbstract(Concept concept, ConceptProto.Method.Req method) {
         concept.asType().setAbstract(method.getSetAbstract());
         return null;
-    }
-    
-    private static Transaction.Res getWhen(Concept concept) {
-        return ResponseBuilder.Transaction.conceptResponseWithPattern(concept.asRule().getWhen());
-    }
-    
-    private static Transaction.Res getThen(Concept concept) {
-        return ResponseBuilder.Transaction.conceptResponseWithPattern(concept.asRule().getThen());
     }
 
     private static Transaction.Res getRegex(Concept concept) {

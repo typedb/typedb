@@ -109,10 +109,10 @@ message Method {
             // The return types of these methods are described in `ConceptResponse`.
             // The `returns` comment indicates what each `ConceptMethod` will return.
 
-            // Concept
+            // Concept methods
             Delete.Req delete = 1;
 
-            // Schema concept
+            // SchemaConcept methods
             IsImplicit.Req isImplicit = 2;
             GetLabel.Req getLabel = 3;
             SetLabel.Req setLabel = 4;
@@ -121,15 +121,15 @@ message Method {
             GetDirectSuperConcept.Req getDirectSuperConcept = 7;
             SetDirectSuperConcept.Req setDirectSuperConcept = 8;
 
-            // Rule
-            Unit getWhen = 107; // returns pattern (string) or noResult (bool)
-            Unit getThen = 108; // returns pattern (string) or noResult (bool)
+            // Rule methods
+            GetWhen.Req getWhen = 9;
+            GetThen.Req getThen = 10;
 
-            // Role
+            // Role methods
             Unit getRelationshipTypesThatRelateRole = 1020; // returns IteratorId of Concept
             Unit getTypesThatPlayRole = 1021; // returns IteratorId of Concept
 
-            // Type
+            // Type methods
             bool setAbstract = 1022; // returns Unit
             Unit isAbstract = 106; // returns bool
             Unit getInstances = 1030; // returns IteratorId of Concept
@@ -186,7 +186,10 @@ message Method {
     }
     message Res {
         oneof res {
+            // Concept methods
             Delete.Res delete = 1;
+
+            // SchemaConcept methods
             IsImplicit.Res isImplicit = 2;
             GetLabel.Res getLabel = 3;
             SetLabel.Res setLabel = 4;
@@ -195,13 +198,14 @@ message Method {
             GetDirectSuperConcept.Res getDirectSuperConcept = 7;
             SetDirectSuperConcept.Res setDirectSuperConcept = 8;
 
+            // Rule methods
+            GetWhen.Res getWhen = 9;
+            GetThen.Res getThen = 10;
 
 
             bool noResult = 101;
             bool isAbstract = 102;
             bool isInferred = 104;
-            string label = 105;
-            string pattern = 106;
             string regex = 107;
             Unit unit = 108;
             IteratorId iteratorId = 109;
@@ -267,4 +271,27 @@ message SetDirectSuperConcept {
         Concept concept = 1;
     }
     message Res {}
+}
+
+//Unit getWhen = 107; // returns pattern (string) or noResult (bool)
+//Unit getThen = 108; // returns pattern (string) or noResult (bool)
+
+message GetWhen {
+    message Req {}
+    message Res {
+        oneof res {
+            string pattern = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message GetThen {
+    message Req {}
+    message Res {
+        oneof res {
+            string pattern = 1;
+            Null null = 2;
+        }
+    }
 }

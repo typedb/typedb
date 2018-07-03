@@ -27,6 +27,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -45,23 +46,37 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern getWhen() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetWhen(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetWhen(ConceptProto.GetWhen.Req.getDefaultInstance()).build();
+        SessionProto.Transaction.Res response = runMethod(method);
 
-        if (response.getConceptResponse().getNoResult()) return null;
-        return Graql.parser().parsePattern(response.getConceptResponse().getPattern());
+        ConceptProto.GetWhen.Res whenResponse = response.getConceptMethod().getResponse().getGetWhen();
+        switch (whenResponse.getResCase()) {
+            case NULL:
+                return null;
+            case PATTERN:
+                return Graql.parser().parsePattern(whenResponse.getPattern());
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
     }
 
     @Nullable
     @Override
     public final Pattern getThen() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetThen(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetThen(ConceptProto.GetThen.Req.getDefaultInstance()).build();
+        SessionProto.Transaction.Res response = runMethod(method);
 
-        if (response.getConceptResponse().getNoResult()) return null;
-        return Graql.parser().parsePattern(response.getConceptResponse().getPattern());
+        ConceptProto.GetThen.Res thenResponse = response.getConceptMethod().getResponse().getGetThen();
+        switch (thenResponse.getResCase()) {
+            case NULL:
+                return null;
+            case PATTERN:
+                return Graql.parser().parsePattern(thenResponse.getPattern());
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
     }
 
     @Override

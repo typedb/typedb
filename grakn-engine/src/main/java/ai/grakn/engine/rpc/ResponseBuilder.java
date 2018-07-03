@@ -159,6 +159,12 @@ public class ResponseBuilder {
          */
         public static class ConceptMethod {
 
+            private static SessionProto.Transaction.Res conceptMethodResponse(ConceptProto.Method.Res response) {
+                return SessionProto.Transaction.Res.newBuilder()
+                        .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
+                                .setResponse(response)).build();
+            }
+
             static SessionProto.Transaction.Res delete() {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setDelete(ConceptProto.Delete.Res.getDefaultInstance()).build();
@@ -226,12 +232,19 @@ public class ResponseBuilder {
                 return conceptMethodResponse(response);
             }
 
-            private static SessionProto.Transaction.Res conceptMethodResponse(ConceptProto.Method.Res response) {
-                return SessionProto.Transaction.Res.newBuilder()
-                        .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
-                                .setResponse(response)).build();
+            static SessionProto.Transaction.Res getWhen(Pattern pattern) {
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setGetWhen(ConceptProto.GetWhen.Res.newBuilder()
+                                .setPattern(pattern.toString())).build();
+                return conceptMethodResponse(response);
             }
 
+            static SessionProto.Transaction.Res getThen(Pattern pattern) {
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setGetThen(ConceptProto.GetThen.Res.newBuilder()
+                                .setPattern(pattern.toString())).build();
+                return conceptMethodResponse(response);
+            }
         }
 
         static SessionProto.Transaction.Res answer(Object object) {
@@ -259,16 +272,6 @@ public class ResponseBuilder {
         static SessionProto.Transaction.Res conceptResponseWithAttributeValue(Object value) {
             ConceptProto.Method.Res conceptResponse = ConceptProto.Method.Res.newBuilder()
                     .setAttributeValue(ConceptBuilder.attributeValue(value)).build();
-            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
-        }
-
-        static SessionProto.Transaction.Res conceptResponseWithPattern(Pattern pattern) {
-            ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder();
-            if (pattern != null) {
-                conceptResponse.setPattern(pattern.toString());
-            } else {
-                conceptResponse.setNoResult(true);
-            }
             return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
         }
 
