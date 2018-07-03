@@ -91,6 +91,7 @@ jobs:
       ##############################################################################
       # - attach to workspace
       # - restore .m2 cache to speed up build
+      # - parallelise unit and it tests by building an 'includesFile' for unit tests (maven surefire) and it tests (maven failsafe)
       # - run tests
       ##############################################################################
       - attach_workspace:
@@ -98,10 +99,20 @@ jobs:
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-1
-      - run: circleci tests glob "**/src/test/java/**/*IT.java" "**/src/test/java/**/*Test.java" | circleci tests split --total="$CIRCLE_NODE_TOTAL" --index="$CIRCLE_NODE_INDEX" > parallelize-tests-filename.txt
-      - run: cat parallelize-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelize-tests-surefire-name.txt
-      - run: mvn test -Dsurefire.includesFile=`echo ~/grakn/parallelize-tests-surefire-name.txt`
-#      - run: mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+      - run:
+          name: Create parallelise-unit-tests.txt and parallelise-it-tests.txt For Parallelisation Purpose
+          command: |
+            circleci tests glob "**/src/test/java/**/*Test.java" | circleci tests split --total="$CIRCLE_NODE_TOTAL" --index="$CIRCLE_NODE_INDEX" > parallelise-unit-tests-filename.txt
+            cat parallelise-unit-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-unit-tests.txt
+            circleci tests glob "**/src/test/java/**/*IT.java" | circleci tests split --total="$CIRCLE_NODE_TOTAL" --index="$CIRCLE_NODE_INDEX" > parallelise-it-tests-filename.txt
+            cat parallelise-it-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-it-tests.txt
+      - run:
+          name: List Of Unit Tests To Be Ran On This Machine
+          command: cat parallelise-unit-tests.txt
+      - run:
+          name: List Of IT Tests To Be Ran On This Machine
+          command: cat parallelise-it-tests.txt
+      - run: mvn verify -Dsurefire.includesFile=`echo ~/grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo ~/grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       ##############################################################################
       # make and store reports
