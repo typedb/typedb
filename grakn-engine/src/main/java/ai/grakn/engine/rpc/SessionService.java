@@ -369,6 +369,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         public IteratorProto.IteratorId add(Iterator<Transaction.Res> iterator) {
             IteratorProto.IteratorId iteratorId = IteratorProto.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
             iterators.put(iteratorId, iterator);
+            System.out.println("xxx" + iteratorId);
             return iteratorId;
         }
 

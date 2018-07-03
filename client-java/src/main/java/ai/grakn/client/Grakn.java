@@ -337,9 +337,14 @@ public final class Grakn {
 
         @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-            ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-            method.setGetSuperConcepts(ConceptProto.Unit.getDefaultInstance());
-            IteratorProto.IteratorId iteratorId = runConceptMethod(schemaConcept.getId(), method.build()).getConceptResponse().getIteratorId();
+            ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                    .setGetSuperConcepts(ConceptProto.GetSuperConcepts.Req.getDefaultInstance()).build();
+
+            SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.getId(), method);
+            IteratorProto.IteratorId iteratorId = response.getConceptMethod().getResponse().getGetSuperConcepts().getIteratorId();
+
+            System.out.println("ooo" + iteratorId);
+
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
                     this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
             );

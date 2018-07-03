@@ -3,6 +3,7 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "SessionProto";
 
+import "Value.proto";
 import "Concept.proto";
 import "Iterator.proto";
 
@@ -31,7 +32,7 @@ message Transaction {
             PutRole.Req putRole = 12;
             PutRule.Req putRule = 13;
             RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
-            ConceptMethod.Req conceptMethod = 15;
+            //ConceptMethod.Req conceptMethod = 15;
         }
     }
     message Res {
@@ -59,8 +60,7 @@ message Transaction {
     }
 }
 
-message Done {} // Indicates that a request is completedk
-message Null {} // Indicates that a request does not yield any result
+
 
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
     message Req {
@@ -178,10 +178,10 @@ message RunConceptMethod { // Calling a method on a concept
 }
 
 message ConceptMethod {
-    message Req {
-        string conceptId = 1;
-        Method.Req method = 2;
-    }
+//    message Req {
+//        string conceptId = 1;
+//        Method.Req method = 2;
+//    }
     message Res {
         Method.Res response = 1;
     }

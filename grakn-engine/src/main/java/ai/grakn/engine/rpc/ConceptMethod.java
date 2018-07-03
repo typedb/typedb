@@ -42,10 +42,27 @@ public abstract class ConceptMethod {
     public static Transaction.Res run(Concept concept, ConceptProto.Method.Req method,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
         switch (method.getReqCase()) {
+            // Concept methods
             case DELETE:
                 return delete(concept);
+
+            // SchemaConcept methods
+            case ISIMPLICIT:
+                return isImplicit(concept);
             case GETLABEL:
                 return getLabel(concept);
+            case SETLABEL:
+                return setLabel(concept, method);
+            case GETSUBCONCEPTS:
+                return getSubConcepts(concept, iterators);
+            case GETSUPERCONCEPTS:
+                return getSuperConcepts(concept, iterators);
+            case GETDIRECTSUPERCONCEPT:
+                return getDirectSuperConcept(concept);
+            case SETDIRECTSUPERCONCEPT:
+                return setDirectSuperConcept(concept, method, tx);
+
+
 
 
             case GETVALUE:
@@ -54,10 +71,6 @@ public abstract class ConceptMethod {
                 return getDataTypeOfAttributeType(concept);
             case GETDATATYPEOFATTRIBUTE:
                 return getDataTypeOfAttribute(concept);
-            case SETLABEL:
-                return setLabel(concept, method);
-            case ISIMPLICIT:
-                return isImplicit(concept);
             case ISINFERRED:
                 return isInferred(concept);
             case ISABSTRACT:
@@ -84,10 +97,6 @@ public abstract class ConceptMethod {
                 return getKeyTypes(concept, iterators);
             case GETDIRECTTYPE:
                 return getDirectType(concept);
-            case GETDIRECTSUPERCONCEPT:
-                return getDirectSuper(concept);
-            case SETDIRECTSUPERCONCEPT:
-                return setDirectSuper(concept, method, tx);
             case UNSETROLEPLAYER:
                 return removeRolePlayer(concept, method, tx);
             case GETOWNERS:
@@ -102,10 +111,6 @@ public abstract class ConceptMethod {
                 return getRelatedRoles(concept, iterators);
             case GETATTRIBUTES:
                 return getAttributes(concept, iterators);
-            case GETSUPERCONCEPTS:
-                return getSuperConcepts(concept, iterators);
-            case GETSUBCONCEPTS:
-                return getSubConcepts(concept, iterators);
             case GETRELATIONSHIPTYPESTHATRELATEROLE:
                 return getRelationshipTypesThatRelateRole(concept, iterators);
             case GETATTRIBUTESBYTYPES:
@@ -154,15 +159,71 @@ public abstract class ConceptMethod {
         }
     }
 
+    // Concept methods
+
     private static Transaction.Res delete(Concept concept) {
         concept.delete();
         return ResponseBuilder.Transaction.ConceptMethod.delete();
+    }
+
+    // SchemaConcept methods
+
+    private static Transaction.Res isImplicit(Concept concept) {
+        Boolean response = concept.asSchemaConcept().isImplicit();
+        return ResponseBuilder.Transaction.ConceptMethod.isImplicit(response);
     }
 
     private static Transaction.Res getLabel(Concept concept) {
         Label label = concept.asSchemaConcept().getLabel();
         return ResponseBuilder.Transaction.ConceptMethod.getLabel(label.getValue());
     }
+
+    private static Transaction.Res setLabel(Concept concept, ConceptProto.Method.Req method) {
+        concept.asSchemaConcept().setLabel(Label.of(method.getSetLabel().getLabel()));
+        return ResponseBuilder.Transaction.ConceptMethod.setLabel();
+    }
+
+    private static Transaction.Res getSubConcepts(Concept concept, SessionService.Iterators iterators) {
+        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().subs();
+        return ResponseBuilder.Transaction.ConceptMethod.getSubConcepts(concepts, iterators);
+    }
+
+    private static Transaction.Res getSuperConcepts(Concept concept, SessionService.Iterators iterators) {
+        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().sups();
+        return ResponseBuilder.Transaction.ConceptMethod.getSuperConcepts(concepts, iterators);
+    }
+
+    private static Transaction.Res getDirectSuperConcept(Concept concept) {
+        Concept superConcept = concept.asSchemaConcept().sup();
+        return ResponseBuilder.Transaction.ConceptMethod.getDirectSuperConcept(superConcept);
+    }
+
+    private static Transaction.Res setDirectSuperConcept(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        // Make the second argument the super of the first argument
+        // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+
+        ConceptProto.Concept setDirectSuperConcept = method.getSetDirectSuperConcept().getConcept();
+        SchemaConcept superConcept = ConceptBuilder.concept(setDirectSuperConcept, tx).asSchemaConcept();
+        SchemaConcept subConcept = concept.asSchemaConcept();
+
+        if (superConcept.isEntityType()) {
+            subConcept.asEntityType().sup(superConcept.asEntityType());
+        } else if (superConcept.isRelationshipType()) {
+            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
+        } else if (superConcept.isRole()) {
+            subConcept.asRole().sup(superConcept.asRole());
+        } else if (superConcept.isAttributeType()) {
+            subConcept.asAttributeType().sup(superConcept.asAttributeType());
+        } else if (superConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
+        } else {
+            throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
+        }
+
+        return ResponseBuilder.Transaction.ConceptMethod.setDirectSuperConcept();
+    }
+
+
 
     private static Transaction.Res getValue(Concept concept) {
         Object value = concept.asAttribute().getValue();
@@ -178,18 +239,6 @@ public abstract class ConceptMethod {
     private static Transaction.Res getDataTypeOfAttribute(Concept concept) {
         AttributeType.DataType<?> dataType = concept.asAttribute().dataType();
         return ResponseBuilder.Transaction.conceptResponseWithDataType(dataType);
-    }
-
-    private static Transaction.Res setLabel(Concept concept, ConceptProto.Method.Req method) {
-        concept.asSchemaConcept().setLabel(Label.of(method.getSetLabel()));
-        return null;
-    }
-
-    private static Transaction.Res isImplicit(Concept concept) {
-        Boolean response = concept.asSchemaConcept().isImplicit();
-        ConceptProto.Method.Res.Builder conceptResponse = ConceptProto.Method.Res.newBuilder()
-                .setIsImplicit(response);
-        return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
     }
 
     private static Transaction.Res isInferred(Concept concept) {
@@ -275,37 +324,6 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.conceptResopnseWithConcept(type);
     }
 
-    private static Transaction.Res getDirectSuper(Concept concept) {
-        Concept superConcept = concept.asSchemaConcept().sup();
-        if (superConcept == null) return ResponseBuilder.Transaction.conceptResponseWithNoResult();
-        return ResponseBuilder.Transaction.conceptResopnseWithConcept(superConcept);
-    }
-
-    private static Transaction.Res setDirectSuper(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        // Make the second argument the super of the first argument
-        // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
-
-        ConceptProto.Concept setDirectSuperConcept = method.getSetDirectSuperConcept();
-        SchemaConcept superConcept = ConceptBuilder.concept(setDirectSuperConcept, tx).asSchemaConcept();
-        SchemaConcept subConcept = concept.asSchemaConcept();
-
-        if (superConcept.isEntityType()) {
-            subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationshipType()) {
-            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
-        } else if (superConcept.isRole()) {
-            subConcept.asRole().sup(superConcept.asRole());
-        } else if (superConcept.isAttributeType()) {
-            subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (superConcept.isRule()) {
-            subConcept.asRule().sup(superConcept.asRule());
-        } else {
-            throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
-        }
-
-        return null;
-    }
-
     private static Transaction.Res removeRolePlayer(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRole(), tx).asRole();
         Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getPlayer(), tx).asThing();
@@ -345,18 +363,6 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getAttributes(Concept concept, SessionService.Iterators iterators) {
         Stream<? extends Concept> concepts = concept.asThing().attributes();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getSuperConcepts(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asSchemaConcept().sups();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getSubConcepts(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asSchemaConcept().subs();
         Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
         return ResponseBuilder.Transaction.iteratorId(responses, iterators);
     }

@@ -26,6 +26,7 @@ import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.ValueProto;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -227,7 +228,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     }
 
     private static SessionProto.Transaction.Res done() {
-        return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
+        return SessionProto.Transaction.Res.newBuilder().setDone(ValueProto.Done.getDefaultInstance()).build();
     }
 
     /**
@@ -258,7 +259,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         /**
-         * Return the next response from an iterator. Will return a {@link SessionProto.Done} response if the iterator is exhausted.
+         * Return the next response from an iterator. Will return a {@link ValueProto.Done} response if the iterator is exhausted.
          */
         public Optional<Transaction.Res> next(IteratorId iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {

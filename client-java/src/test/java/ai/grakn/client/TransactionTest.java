@@ -54,6 +54,7 @@ import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.ValueProto;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -160,7 +161,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Query.Res.newBuilder().setNull(SessionProto.Null.getDefaultInstance()))
+                .setQuery(SessionProto.Query.Res.newBuilder().setNull(ValueProto.Null.getDefaultInstance()))
                 .build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
@@ -408,7 +409,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
-                            .setNull(SessionProto.Null.getDefaultInstance()))
+                            .setNull(ValueProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -444,7 +445,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
-                            .setNull(SessionProto.Null.getDefaultInstance()))
+                            .setNull(ValueProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 

@@ -3,6 +3,7 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "ConceptProto";
 
+import "Value.proto";
 import "Iterator.proto";
 
 package session;
@@ -112,17 +113,13 @@ message Method {
             Delete.Req delete = 1;
 
             // Schema concept
-            GetLabel.Req getLabel = 2;
-
-
-
-
-            string setLabel = 118; // returns Unit
-            Unit isImplicit = 104; // returns bool
-            Unit getSubConcepts = 1019; // returns IteratorId of Concept
-            Unit getSuperConcepts = 1053; // returns IteratorId of Concept
-            Unit getDirectSuperConcept = 1014; // returns Concept or noResult (bool)
-            Concept setDirectSuperConcept = 1017; // returns Unit
+            IsImplicit.Req isImplicit = 2;
+            GetLabel.Req getLabel = 3;
+            SetLabel.Req setLabel = 4;
+            GetSubConcepts.Req getSubConcepts = 5;
+            GetSuperConcepts.Req getSuperConcepts = 6;
+            GetDirectSuperConcept.Req getDirectSuperConcept = 7;
+            SetDirectSuperConcept.Req setDirectSuperConcept = 8;
 
             // Rule
             Unit getWhen = 107; // returns pattern (string) or noResult (bool)
@@ -190,14 +187,18 @@ message Method {
     message Res {
         oneof res {
             Delete.Res delete = 1;
-            GetLabel.Res getLabel = 2;
-
+            IsImplicit.Res isImplicit = 2;
+            GetLabel.Res getLabel = 3;
+            SetLabel.Res setLabel = 4;
+            GetSubConcepts.Res getSubConcepts = 5;
+            GetSuperConcepts.Res getSuperConcepts = 6;
+            GetDirectSuperConcept.Res getDirectSuperConcept = 7;
+            SetDirectSuperConcept.Res setDirectSuperConcept = 8;
 
 
 
             bool noResult = 101;
             bool isAbstract = 102;
-            bool isImplicit = 103;
             bool isInferred = 104;
             string label = 105;
             string pattern = 106;
@@ -221,4 +222,49 @@ message GetLabel {
     message Res {
         string label = 1;
     }
+}
+
+message SetLabel {
+    message Req {
+        string label = 1;
+    }
+    message Res {}
+}
+
+message IsImplicit {
+    message Req{}
+    message Res{
+        bool implicit = 1;
+    }
+}
+
+message GetSubConcepts {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetSuperConcepts {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetDirectSuperConcept {
+    message Req {}
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message SetDirectSuperConcept {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
 }
