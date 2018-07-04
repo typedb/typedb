@@ -286,7 +286,8 @@ public final class Schema {
                 endIndex = implicitType.getValue().lastIndexOf("-");
             }
 
-            return Label.of(implicitType.getValue().substring(4, endIndex));
+            //return the Label without the `@has-`or '@key-' prefix
+            return Label.of(implicitType.getValue().substring(5, endIndex));
         }
     }
 

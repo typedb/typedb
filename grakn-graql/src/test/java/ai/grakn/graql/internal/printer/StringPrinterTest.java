@@ -68,7 +68,7 @@ public class StringPrinterTest {
 
         Match match = rule.tx().graql().match(var("r").isa("has-cluster"));
 
-        Relationship relationship = match.get("r").iterator().next().asRelationship();
+        Relationship relationship = match.get("r").stream().map(ans -> ans.get("r").asRelationship()).findFirst().get();
         long numRolePlayers = relationship.rolePlayers().count();
         long numCommas = numRolePlayers - 1;
 

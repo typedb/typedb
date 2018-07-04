@@ -184,9 +184,25 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    public void makeSureIndirectTypeAtomsAreNotLostWhenPlanning(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa baseEntity;" +
+                "$y isa baseEntity;" +
+                "(role1:$x, role2: $xx) isa anotherRelation;$xx isa! $type;" +
+                "(role1:$y, role2: $yy) isa anotherRelation;$yy isa! $type;" +
+                "$y != $x;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        assertTrue(plan.containsAll(query.selectAtoms()));
+    }
+
+    @Test
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
-        Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x").findAny().orElse(null);
+        Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(role1:$x, role2: $y) isa relation;" +
                 "$x has resource 'this';" +

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static ai.grakn.engine.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Engine process,

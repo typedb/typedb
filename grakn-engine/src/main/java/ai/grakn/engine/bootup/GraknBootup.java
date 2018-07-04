@@ -16,10 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.bootup.config.ConfigProcessor;
+import ai.grakn.engine.bootup.config.ConfigProcessor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;

@@ -24,11 +24,11 @@ subRole2 sub role2;
 #                     |
 #               noRoleEntity
 #              /            \                                   \
-#  singleRoleEntity(R3)   anotherSingleRoleEntity(R2)    yetAnotherSingleRoleEntity(R1)
+#  singleRoleEntity(R3)   anotherSingleRoleEntity(R2, SR2)    yetAnotherSingleRoleEntity(R1)
 #           |                   |
-#   twoRoleEntity(R4)     anotherTwoRoleEntity(R3)
+#   twoRoleEntity(+R4)     anotherTwoRoleEntity(+R3)
 #                               |
-#                         threeRoleEntity(R4)
+#                         threeRoleEntity(+R4)
 
 noRoleEntity sub entity;
 
@@ -50,14 +50,12 @@ singleRoleEntity sub noRoleEntity
 twoRoleEntity sub singleRoleEntity
     plays role4;
 
-
 #plays in twoRoleBinary, anotherTwoRoleBinary, threeRoleBinary
 anotherTwoRoleEntity sub anotherSingleRoleEntity
     plays role3;
 #plays in twoRoleBinary, anotherTwoRoleBinary, threeRoleBinary
 threeRoleEntity sub anotherTwoRoleEntity
     plays role4;
-
 
 #Relations
 
