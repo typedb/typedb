@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,13 +50,14 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
+@SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class NeqComplementState extends AtomicState {
 
-    private final Answer predicateSub;
     private final ResolutionState complementState;
     private boolean visited = false;
 
-    private final Set<NeqPredicate> predicates;
+    private final Answer neqPredicateSub;
+    private final Set<NeqPredicate> neqPredicates;
 
     NeqComplementState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -65,17 +67,18 @@ public class NeqComplementState extends AtomicState {
                        QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);
         ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(ReasonerQueries.atomic(q, sub).positive());
-        this.predicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        this.predicateSub = sub.project(this.predicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
+        this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
+        this.neqPredicateSub = getQuery().getSubstitution().merge(sub)
+                .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
         complementState = complementQuery.subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer fullAnswer = state.getSubstitution().merge(predicateSub);
+        Answer fullAnswer = state.getSubstitution().merge(neqPredicateSub);
 
-        boolean isNeqSatisfied = predicates.stream()
+        boolean isNeqSatisfied = neqPredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));
         return isNeqSatisfied?
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :

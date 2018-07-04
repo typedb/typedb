@@ -83,8 +83,8 @@ public class OntologicalQueryTest {
         GraknTx tx = testContext.tx();
         String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
 
-        List<Answer> answers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
-        List<Answer> answersInferred = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answersInferred = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
 
         assertFalse(answers.isEmpty());
         assertCollectionsEqual(answers, answersInferred);
