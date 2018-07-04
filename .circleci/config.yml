@@ -231,6 +231,9 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/grakn
+      - restore_cache:
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-2
       - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
       - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/load.sh
       - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/validate.sh
@@ -241,6 +244,9 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/grakn
+      - restore_cache:
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-2
       - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
