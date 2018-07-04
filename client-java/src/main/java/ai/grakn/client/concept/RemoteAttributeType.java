@@ -24,7 +24,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -46,8 +46,8 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final String getRegex() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetRegex(ConceptProto.GetRegex.Req.getDefaultInstance()).build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetRegex(MethodProto.GetRegex.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         String regex = response.getConceptMethod().getResponse().getGetRegex().getRegex();
@@ -57,8 +57,8 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final AttributeType<D> setRegex(String regex) {
         if (regex == null) regex = "";
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetRegex(ConceptProto.SetRegex.Req.newBuilder()
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setSetRegex(MethodProto.SetRegex.Req.newBuilder()
                         .setRegex(regex)).build();
 
         runMethod(method);
@@ -67,8 +67,8 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setPutAttribute(ConceptProto.PutAttribute.Req.newBuilder()
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setPutAttribute(MethodProto.PutAttribute.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
@@ -79,12 +79,12 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetAttribute(ConceptProto.GetAttribute.Req.newBuilder()
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetAttribute(MethodProto.GetAttribute.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.GetAttribute.Res methodResponse = response.getConceptMethod().getResponse().getGetAttribute();
+        MethodProto.GetAttribute.Res methodResponse = response.getConceptMethod().getResponse().getGetAttribute();
         switch (methodResponse.getResCase()) {
             case NULL:
                 return null;
@@ -98,11 +98,11 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetDataTypeOfAttributeType(ConceptProto.GetDataTypeOfAttributeType.Req.getDefaultInstance()).build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetDataTypeOfAttributeType(MethodProto.GetDataTypeOfAttributeType.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.GetDataTypeOfAttributeType.Res methodResponse = response.getConceptMethod().getResponse().getGetDataTypeOfAttributeType();
+        MethodProto.GetDataTypeOfAttributeType.Res methodResponse = response.getConceptMethod().getResponse().getGetDataTypeOfAttributeType();
         switch (methodResponse.getResCase()) {
             case NULL:
                 return null;

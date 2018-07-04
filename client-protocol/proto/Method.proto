@@ -1,0 +1,437 @@
+syntax = "proto3";
+
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "MethodProto";
+
+import "Concept.proto";
+import "Iterator.proto";
+
+package session;
+
+message Unit {} // Represents a message with no information
+
+message Method {
+    message Req {
+        oneof req {
+            // Concept methods
+            Delete.Req delete = 1;
+
+            // SchemaConcept methods
+            IsImplicit.Req isImplicit = 2;
+            GetLabel.Req getLabel = 3;
+            SetLabel.Req setLabel = 4;
+            GetSubConcepts.Req getSubConcepts = 5;
+            GetSuperConcepts.Req getSuperConcepts = 6;
+            GetDirectSuperConcept.Req getDirectSuperConcept = 7;
+            SetDirectSuperConcept.Req setDirectSuperConcept = 8;
+
+            // Rule methods
+            GetWhen.Req getWhen = 9;
+            GetThen.Req getThen = 10;
+
+            // Role methods
+            GetRelationshipTypesThatRelateRole.Req getRelationshipTypesThatRelateRole = 11;
+            GetTypesThatPlayRole.Req getTypesThatPlayRole = 12;
+
+            // Type methods
+            IsAbstract.Req isAbstract = 13;
+            SetAbstract.Req setAbstract = 14;
+            GetInstances.Req getInstances = 15;
+            GetAttributeTypes.Req getAttributeTypes = 16;
+            GetKeyTypes.Req getKeyTypes = 17;
+            GetRolesPlayedByType.Req getRolesPlayedByType = 18;
+            SetAttributeType.Req setAttributeType = 19;
+            UnsetAttributeType.Req unsetAttributeType = 20;
+            SetKeyType.Req setKeyType = 21;
+            UnsetKeyType.Req unsetKeyType = 22;
+            SetRolePlayedByType.Req setRolePlayedByType = 23;
+            UnsetRolePlayedByType.Req unsetRolePlayedByType = 24;
+
+            // EntityType methods
+            AddEntity.Req addEntity = 25;
+
+            // RelationshipType methods
+            AddRelationship.Req addRelationship = 26;
+            GetRelatedRoles.Req getRelatedRoles = 27;
+            SetRelatedRole.Req setRelatedRole = 28;
+            UnsetRelatedRole.Req unsetRelatedRole = 29;
+
+            // AttributeType methods
+            GetRegex.Req getRegex = 30;
+            SetRegex.Req setRegex = 31;
+            GetDataTypeOfAttributeType.Req getDataTypeOfAttributeType = 32;
+            GetAttribute.Req getAttribute = 33;
+            PutAttribute.Req putAttribute = 34;
+
+            // Thing methods
+            Unit isInferred = 105; // returns bool
+            Unit getKeys = 1042; // returns IteratorId of Concept
+            Unit getAttributes = 1041; // returns IteratorId of Concept
+            Unit getRelationships = 1039; // returns IteratorId of Concept
+            Unit getRolesPlayedByThing = 1040; // returns IteratorId of Concept
+            Unit getDirectType = 1013; // returns Concept
+            Concept setAttribute = 1043; // returns Unit
+            Concept unsetAttribute = 1044; // returns Unit
+            Concepts getKeysByTypes = 1050; // returns IteratorId of Concept
+            Concepts getAttributesByTypes = 1049; // returns IteratorId of Concept
+            Concepts getRelationshipsByRoles = 1048; // returns IteratorId of Concept
+
+            // Relationship methods
+            Unit getRolePlayers = 1010; // returns IteratorId of RolePlayer
+            RolePlayer setRolePlayer = 1046; // returns Unit
+            RolePlayer unsetRolePlayer = 1015; // returns Unit
+            Concepts getRolePlayersByRoles = 1051; // returns IteratorId of Concept
+
+            // Attribute methods
+            Unit getValue = 101; // returns AttributeValue
+            Unit getOwners = 1047; // returns IteratorId of Concept
+            GetDataTypeOfAttribute.Req getDataTypeOfAttribute = 999;
+        }
+    }
+    message Res {
+        oneof res {
+            // Concept methods
+            Delete.Res delete = 1;
+
+            // SchemaConcept methods
+            IsImplicit.Res isImplicit = 2;
+            GetLabel.Res getLabel = 3;
+            SetLabel.Res setLabel = 4;
+            GetSubConcepts.Res getSubConcepts = 5;
+            GetSuperConcepts.Res getSuperConcepts = 6;
+            GetDirectSuperConcept.Res getDirectSuperConcept = 7;
+            SetDirectSuperConcept.Res setDirectSuperConcept = 8;
+
+            // Rule methods
+            GetWhen.Res getWhen = 9;
+            GetThen.Res getThen = 10;
+
+            // Role methods
+            GetRelationshipTypesThatRelateRole.Res getRelationshipTypesThatRelateRole = 11;
+            GetTypesThatPlayRole.Res getTypesThatPlayRole = 12;
+
+            // Type methods
+            IsAbstract.Res isAbstract = 13;
+            SetAbstract.Res setAbstract = 14;
+            GetInstances.Res getInstances = 15;
+            GetAttributeTypes.Res getAttributeTypes = 16;
+            GetKeyTypes.Res getKeyTypes = 17;
+            GetRolesPlayedByType.Res getRolesPlayedByType = 18;
+            SetAttributeType.Res setAttributeType = 19;
+            UnsetAttributeType.Res unsetAttributeType = 20;
+            SetKeyType.Res setKeyType = 21;
+            UnsetKeyType.Res unsetKeyType = 22;
+            SetRolePlayedByType.Res setRolePlayedByType = 23;
+            UnsetRolePlayedByType.Res unsetRolePlayedByType = 24;
+
+            // EntityType methods
+            AddEntity.Res addEntity = 25;
+
+            // Relationship type
+            AddRelationship.Res addRelationship = 26;
+            GetRelatedRoles.Res getRelatedRoles = 27;
+            SetRelatedRole.Res setRelatedRole = 28;
+            UnsetRelatedRole.Res unsetRelatedRole = 29;
+
+            // Attribute type
+            GetRegex.Res getRegex = 30;
+            SetRegex.Res setRegex = 31;
+            GetDataTypeOfAttributeType.Res getDataTypeOfAttributeType = 32;
+            GetAttribute.Res getAttribute = 33;
+            PutAttribute.Res putAttribute = 34;
+
+            // Attribute methods
+            GetDataTypeOfAttribute.Res getDataTypeOfAttribute = 999;
+
+            bool isInferred = 104;
+            Unit unit = 108;
+            IteratorId iteratorId = 109;
+            Concept concept = 110;
+            AttributeValue attributeValue = 111;
+        }
+    }
+}
+
+// Concept methods
+
+message Delete {
+    message Req {}
+    message Res {}
+}
+
+// SchemaConcept methods
+
+message GetLabel {
+    message Req {}
+    message Res {
+        string label = 1;
+    }
+}
+
+message SetLabel {
+    message Req {
+        string label = 1;
+    }
+    message Res {}
+}
+
+message IsImplicit {
+    message Req{}
+    message Res{
+        bool implicit = 1;
+    }
+}
+
+message GetSubConcepts {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetSuperConcepts {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetDirectSuperConcept {
+    message Req {}
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message SetDirectSuperConcept {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+// Rule methods
+
+message GetWhen {
+    message Req {}
+    message Res {
+        oneof res {
+            string pattern = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message GetThen {
+    message Req {}
+    message Res {
+        oneof res {
+            string pattern = 1;
+            Null null = 2;
+        }
+    }
+}
+
+// Role methods
+
+message GetRelationshipTypesThatRelateRole {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetTypesThatPlayRole {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+// Type methods
+
+message IsAbstract {
+    message Req {}
+    message Res {
+        bool abstract = 1;
+    }
+}
+
+message SetAbstract {
+    message Req {
+        bool abstract = 1;
+    }
+    message Res {}
+}
+
+message GetInstances {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetAttributeTypes {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetKeyTypes {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRolesPlayedByType {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message SetAttributeType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetAttributeType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message SetKeyType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetKeyType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message SetRolePlayedByType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetRolePlayedByType {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+// EntityType methods
+
+message AddEntity {
+    message Req {}
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+// RelationshipType methods
+
+message AddRelationship {
+    message Req {}
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message GetRelatedRoles {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message SetRelatedRole {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetRelatedRole {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+// AttributeType methods
+
+message GetRegex {
+    message Req {}
+    message Res {
+        string regex = 1;
+    }
+}
+
+message SetRegex {
+    message Req {
+        string regex = 1;
+    }
+    message Res {}
+}
+
+message GetDataTypeOfAttributeType {
+    message Req {}
+    message Res {
+        oneof res {
+            DataType dataType = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message GetAttribute {
+    message Req {
+        AttributeValue value = 1;
+    }
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message PutAttribute {
+    message Req {
+        AttributeValue value = 1;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+
+
+
+
+// Attribute methods
+
+message GetDataTypeOfAttribute {
+    message Req {}
+    message Res {
+        DataType dataType = 1;
+    }
+}

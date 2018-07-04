@@ -54,7 +54,6 @@ import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.ValueProto;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -161,7 +160,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Query.Res.newBuilder().setNull(ValueProto.Null.getDefaultInstance()))
+                .setQuery(SessionProto.Query.Res.newBuilder().setNull(ConceptProto.Null.getDefaultInstance()))
                 .build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
@@ -180,9 +179,9 @@ public class TransactionTest {
 
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
-        ValueProto.Concept v123 = ValueProto.Concept.newBuilder().setId(V123).build();
-        Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(ValueProto.Answer.newBuilder()
-                .setQueryAnswer(ValueProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
+        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
+        Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(ConceptProto.Answer.newBuilder()
+                .setQueryAnswer(ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.next(ITERATOR), iteratorNext);
@@ -409,7 +408,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
-                            .setNull(ValueProto.Null.getDefaultInstance()))
+                            .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -445,7 +444,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
-                            .setNull(ValueProto.Null.getDefaultInstance()))
+                            .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 

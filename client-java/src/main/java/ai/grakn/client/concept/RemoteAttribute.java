@@ -26,8 +26,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.ValueProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -46,11 +46,11 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final D getValue() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetValue(ConceptProto.Unit.getDefaultInstance()).build();
+        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
+        method.setGetValue(MethodProto.Unit.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method.build());
 
-        ValueProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
+        ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
 
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
@@ -58,8 +58,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetDataTypeOfAttribute(ConceptProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetDataTypeOfAttribute(MethodProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
 
@@ -70,8 +70,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final Stream<Thing> ownerInstances() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetOwners(ConceptProto.Unit.getDefaultInstance());
+        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
+        method.setGetOwners(MethodProto.Unit.getDefaultInstance());
         return runMethodToConceptStream(method.build()).map(Concept::asThing);
     }
 

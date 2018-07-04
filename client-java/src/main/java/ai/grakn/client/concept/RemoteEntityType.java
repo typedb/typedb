@@ -24,7 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -40,8 +40,8 @@ public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> im
 
     @Override
     public final Entity addEntity() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAddEntity(ConceptProto.AddEntity.Req.getDefaultInstance()).build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setAddEntity(MethodProto.AddEntity.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getAddEntity().getConcept(), tx());

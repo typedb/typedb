@@ -24,8 +24,8 @@ import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
@@ -50,8 +50,8 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setDelete(ConceptProto.Delete.Req.getDefaultInstance())
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setDelete(MethodProto.Delete.Req.getDefaultInstance())
                 .build();
 
         runMethod(method);
@@ -70,7 +70,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    protected final Stream<? extends Concept> runMethodToConceptStream(ConceptProto.Method.Req method) {
+    protected final Stream<? extends Concept> runMethodToConceptStream(MethodProto.Method.Req method) {
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
         Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
@@ -78,11 +78,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
-    protected final SessionProto.Transaction.Res runMethod(ConceptProto.Method.Req method) {
+    protected final SessionProto.Transaction.Res runMethod(MethodProto.Method.Req method) {
         return runMethod(getId(), method);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptProto.Method.Req method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptId id, MethodProto.Method.Req method) {
         return tx().runConceptMethod(id, method);
     }
 

@@ -36,7 +36,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.ValueProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
@@ -312,7 +312,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             return nonNull(tx);
         }
 
-        public static AttributeType.DataType<?> dataType(ValueProto.DataType dataType) {
+        public static AttributeType.DataType<?> dataType(ConceptProto.DataType dataType) {
             switch (dataType) {
                 case String:
                     return AttributeType.DataType.STRING;
