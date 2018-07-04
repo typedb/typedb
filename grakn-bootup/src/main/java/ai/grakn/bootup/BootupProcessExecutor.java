@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException;
 public class BootupProcessExecutor {
 
     public static final long WAIT_INTERVAL_SECOND = 2;
-    public static final String ENV = "/usr/bin/env"
+    public static final String ENV = "/usr/bin/env";
     public static final String SHELL = "sh";
 
     public CompletableFuture<BootupProcessResult> executeAsync(List<String> command, File workingDirectory) {
