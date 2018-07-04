@@ -56,9 +56,7 @@ public final class ResolutionPlan {
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
         this.plan = GraqlTraversalPlanner.refinedPlan(query);
-        if (!this.isValid()) {
-            throw GraqlQueryException.nonGroundNeqPredicate(query);
-        }
+        validatePlan();
     }
 
     @Override
@@ -72,10 +70,16 @@ public final class ResolutionPlan {
     public ImmutableList<Atom> plan(){ return plan;}
 
     /**
+     * @return true if the plan is complete with respect to provided query - contains all selectable atoms
+     */
+    private boolean isComplete(){
+        return plan.containsAll(query.selectAtoms());
+    }
+
+    /**
      * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
      */
-    private boolean isValid() {
-        //check for neq groundness
+    private boolean isNeqGround(){
         Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
         Set<Var> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
         for(Atom atom : this.plan){
@@ -93,6 +97,16 @@ public final class ResolutionPlan {
                     });
         }
         return nonGroundPredicates.isEmpty();
+    }
+
+
+    private void validatePlan() {
+        if (!isNeqGround()) {
+            throw GraqlQueryException.nonGroundNeqPredicate(query);
+        }
+        if (!isComplete()){
+            throw GraqlQueryException.incompleteResolutionPlan(query);
+        }
     }
 
     /**

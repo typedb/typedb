@@ -54,12 +54,36 @@ public class ResolutionPlanTest {
 
 
     @Test
+    public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedResource() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa someEntity;" +
+                "$y isa resource;$y val 'value';" +
+                "$z isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        new ResolutionPlan(query);
+    }
+
+    @Test
+    public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedEntity() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa someEntity;$x id 'V123';" +
+                "$y isa resource;" +
+                "$z isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        new ResolutionPlan(query);
+    }
+
+    @Test
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -76,9 +100,9 @@ public class ResolutionPlanTest {
     public void prioritiseMostSubbedRelations() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$z id 'sampleId';" +
                 "$w id 'sampleId2';" +
                 "}";
@@ -96,9 +120,9 @@ public class ResolutionPlanTest {
     public void prioritiseSpecificResourcesOverRelations(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -116,9 +140,9 @@ public class ResolutionPlanTest {
     public void prioritiseSpecificResourcesOverNonSpecific(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$x has anotherResource $r;" +
                 "$w has resource 'test';" +
                 "}";
@@ -138,11 +162,11 @@ public class ResolutionPlanTest {
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa relation;" +
-                "(role1:$w, role2: $u) isa anotherRelation;" +
-                "(role1:$u, role2: $v) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa relation;" +
+                "(someRole:$w, otherRole: $u) isa anotherRelation;" +
+                "(someRole:$u, otherRole: $v) isa relation;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
@@ -162,12 +186,12 @@ public class ResolutionPlanTest {
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
-                "(role1:$x, role2: $y) isa relation;" +
-                "(role1:$y, role2: $z) isa anotherRelation;" +
-                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
-                "(role1:$w, role2: $u) isa relation;" +
-                "(role1:$u, role2: $v) isa anotherRelation;" +
-                "(role1:$v, role2: $q) isa yetAnotherRelation;"+
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa anotherRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
+                "(someRole:$w, otherRole: $u) isa relation;" +
+                "(someRole:$u, otherRole: $v) isa anotherRelation;" +
+                "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
@@ -189,8 +213,8 @@ public class ResolutionPlanTest {
         String queryString = "{" +
                 "$x isa baseEntity;" +
                 "$y isa baseEntity;" +
-                "(role1:$x, role2: $xx) isa anotherRelation;$xx isa! $type;" +
-                "(role1:$y, role2: $yy) isa anotherRelation;$yy isa! $type;" +
+                "(someRole:$x, otherRole: $xx) isa anotherRelation;$xx isa! $type;" +
+                "(someRole:$y, otherRole: $yy) isa anotherRelation;$yy isa! $type;" +
                 "$y != $x;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
@@ -204,7 +228,7 @@ public class ResolutionPlanTest {
         Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
-                "(role1:$x, role2: $y) isa relation;" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
                 "$x has resource 'this';" +
                 "$y has anotherResource 'that';";
 
