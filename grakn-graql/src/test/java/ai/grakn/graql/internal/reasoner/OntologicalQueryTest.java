@@ -102,22 +102,20 @@ public class OntologicalQueryTest {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
-    //TODO: need to be able to transform rule head attributes to relations to correctly map attribute answers
-    @Ignore
     @Test
     public void allRolePlayerPairsAndTheirRelationType(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String relationString = "match $x isa relationship;get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
-        List<Answer> rolePlayerPairs = qb.<GetQuery>parse(rolePlayerPairString).execute();
-        //TODO doesn't include THING and RELATIONSHIP, with RELATIONSHIP it's 38, with THING as well it should be 57
-        assertEquals(rolePlayerPairs.size(), 25);
+        GetQuery rolePlayerQuery = qb.parse(rolePlayerPairString);
+        List<Answer> rolePlayerPairs = rolePlayerQuery.execute();
+        //TODO doesn't include THING and RELATIONSHIP
+        //25 relation variants + 2 x 3 resource relation instances
+        assertEquals(rolePlayerPairs.size(), 31);
 
-        List<Answer> relations = qb.<GetQuery>parse(relationString).execute();
-        //one implicit, 3 x binary, 2 x ternary, 7 (3 reflexive) x reifying-relation
-        assertEquals(relations.size(), 13);
+        //TODO
+        //rolePlayerPairs.forEach(ans -> assertEquals(ans.vars(), rolePlayerQuery.vars()));
     }
 
     /** HasAtom **/
@@ -275,6 +273,13 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa relationship;get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+
+        //TODO? doesn't pick up attribute relations
+        //one implicit,
+        //3 x binary,
+        //2 x ternary,
+        //7 (3 reflexive) x reifying-relation
+        //3 x has-description resource relation
         assertEquals(answers.size(), 13);
     }
 
