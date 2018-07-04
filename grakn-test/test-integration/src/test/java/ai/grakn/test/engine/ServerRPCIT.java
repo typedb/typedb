@@ -41,14 +41,20 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
+import java.util.stream.Collectors;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -105,6 +111,9 @@ public class ServerRPCIT {
     private static GraknSession localSession;
     private static Grakn.Session remoteSession;
 
+    private static GraknSession reasonerLocalSession;
+    private static Grakn.Session reasonerRemoteSession;
+
     @Before
     public void setUp() {
         localSession = engine.sessionWithNewKeyspace();
@@ -113,8 +122,15 @@ public class ServerRPCIT {
             MovieKB.get().accept(tx);
             tx.commit();
         }
-
         remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
+
+        reasonerLocalSession = engine.sessionWithNewKeyspace();
+
+        try (GraknTx tx = reasonerLocalSession.transaction(GraknTxType.WRITE)) {
+            GenealogyKB.get().accept(tx);
+            tx.commit();
+        }
+        reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
     }
 
     @After
@@ -219,6 +235,84 @@ public class ServerRPCIT {
                 assertNotNull(tx.getConcept(answer.get("x").getId()));
             }
         }
+    }
+
+    @Test
+    public void whenExecutingAQuery_ExplanationsAreReturned() throws InterruptedException {
+        List<Answer> remoteAnswers;
+        List<Answer> localAnswers;
+
+        final long limit = 3;
+        String queryString = "match " +
+                "($x, $y) isa cousins;" +
+                "limit " + limit + ";"+
+                "get;";
+
+        try (Grakn.Transaction tx = reasonerRemoteSession.transaction(GraknTxType.READ)) {
+            remoteAnswers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+        }
+
+        try (GraknTx tx = reasonerLocalSession.transaction(GraknTxType.READ)) {
+            localAnswers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
+        }
+
+        assertEquals(remoteAnswers.size(), limit);
+        remoteAnswers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "(cousin: $x, cousin: $y) isa cousins;" +
+                    "limit 1; get;";
+
+            Answer specificAnswer;
+            try (Grakn.Transaction tx = reasonerRemoteSession.transaction(GraknTxType.READ)) {
+                specificAnswer = Iterables.getOnlyElement(tx.graql().infer(true).<GetQuery>parse(specificQuery).execute());
+            }
+            assertEquals(answer, specificAnswer);
+            testExplanation(specificAnswer);
+        });
+    }
+
+    private void testExplanation(Answer answer){
+        answerHasConsistentExplanations(answer);
+        checkExplanationCompleteness(answer);
+        checkAnswerConnectedness(answer);
+    }
+
+    //ensures that each branch ends up with an lookup explanation
+    private void checkExplanationCompleteness(Answer answer){
+        assertFalse("Non-lookup explanation misses children",
+                answer.getExplanations().stream()
+                        .filter(e -> !e.isLookupExplanation())
+                        .anyMatch(e -> e.getAnswers().isEmpty())
+        );
+    }
+
+    private void checkAnswerConnectedness(Answer answer){
+        ImmutableList<Answer> answers = answer.getExplanation().getAnswers();
+        answers.forEach(a -> {
+            TestCase.assertTrue("Disconnected answer in explanation",
+                    answers.stream()
+                            .filter(a2 -> !a2.equals(a))
+                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+            );
+        });
+    }
+
+    private void answerHasConsistentExplanations(Answer answer){
+        Set<Answer> answers = answer.getPartialAnswers().stream()
+                .filter(a -> !a.getExplanation().isJoinExplanation())
+                .collect(Collectors.toSet());
+
+        answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
+    }
+
+    private boolean explanationConsistentWithAnswer(Answer ans){
+        ReasonerQuery query = ans.getExplanation().getQuery();
+        Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
+        return vars.containsAll(ans.map().keySet());
     }
 
     @Test
