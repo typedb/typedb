@@ -152,7 +152,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res rolePlayer(Role role, Thing player) {
-            ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+            ValueProto.RolePlayer rolePlayer = ValueProto.RolePlayer.newBuilder()
                     .setRole(ConceptBuilder.concept(role))
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();

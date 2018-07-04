@@ -25,7 +25,7 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.ValueProto;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;
@@ -43,63 +43,63 @@ import java.util.stream.Collectors;
  */
 public class ConceptBuilder {
 
-    public static Concept concept(ConceptProto.Concept ConceptProto, EmbeddedGraknTx tx) {
-        return tx.getConcept(ConceptId.of(ConceptProto.getId()));
+    public static Concept concept(ValueProto.Concept ValueProto, EmbeddedGraknTx tx) {
+        return tx.getConcept(ConceptId.of(ValueProto.getId()));
     }
 
-    public static ConceptProto.Concept concept(Concept concept) {
-        return ConceptProto.Concept.newBuilder()
+    public static ValueProto.Concept concept(Concept concept) {
+        return ValueProto.Concept.newBuilder()
                 .setId(concept.getId().getValue())
                 .setBaseType(getBaseType(concept))
                 .build();
     }
 
-    private static ConceptProto.BaseType getBaseType(Concept concept) {
+    private static ValueProto.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
-            return ConceptProto.BaseType.ENTITY_TYPE;
+            return ValueProto.BaseType.ENTITY_TYPE;
         } else if (concept.isRelationshipType()) {
-            return ConceptProto.BaseType.RELATIONSHIP_TYPE;
+            return ValueProto.BaseType.RELATIONSHIP_TYPE;
         } else if (concept.isAttributeType()) {
-            return ConceptProto.BaseType.ATTRIBUTE_TYPE;
+            return ValueProto.BaseType.ATTRIBUTE_TYPE;
         } else if (concept.isEntity()) {
-            return ConceptProto.BaseType.ENTITY;
+            return ValueProto.BaseType.ENTITY;
         } else if (concept.isRelationship()) {
-            return ConceptProto.BaseType.RELATIONSHIP;
+            return ValueProto.BaseType.RELATIONSHIP;
         } else if (concept.isAttribute()) {
-            return ConceptProto.BaseType.ATTRIBUTE;
+            return ValueProto.BaseType.ATTRIBUTE;
         } else if (concept.isRole()) {
-            return ConceptProto.BaseType.ROLE;
+            return ValueProto.BaseType.ROLE;
         } else if (concept.isRule()) {
-            return ConceptProto.BaseType.RULE;
+            return ValueProto.BaseType.RULE;
         } else if (concept.isType()) {
-            return ConceptProto.BaseType.META_TYPE;
+            return ValueProto.BaseType.META_TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 
-    static ConceptProto.DataType dataType(AttributeType.DataType<?> dataType) {
+    static ValueProto.DataType dataType(AttributeType.DataType<?> dataType) {
         if (dataType.equals(AttributeType.DataType.STRING)) {
-            return ConceptProto.DataType.String;
+            return ValueProto.DataType.String;
         } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return ConceptProto.DataType.Boolean;
+            return ValueProto.DataType.Boolean;
         } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return ConceptProto.DataType.Integer;
+            return ValueProto.DataType.Integer;
         } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return ConceptProto.DataType.Long;
+            return ValueProto.DataType.Long;
         } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return ConceptProto.DataType.Float;
+            return ValueProto.DataType.Float;
         } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return ConceptProto.DataType.Double;
+            return ValueProto.DataType.Double;
         } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return ConceptProto.DataType.Date;
+            return ValueProto.DataType.Date;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
     }
 
-    static ConceptProto.AttributeValue attributeValue(Object value) {
-        ConceptProto.AttributeValue.Builder builder = ConceptProto.AttributeValue.newBuilder();
+    static ValueProto.AttributeValue attributeValue(Object value) {
+        ValueProto.AttributeValue.Builder builder = ValueProto.AttributeValue.newBuilder();
         if (value instanceof String) {
             builder.setString((String) value);
         } else if (value instanceof Boolean) {
@@ -121,33 +121,33 @@ public class ConceptBuilder {
         return builder.build();
     }
 
-    static ConceptProto.Answer answer(Object object) {
-        ConceptProto.Answer answer;
+    static ValueProto.Answer answer(Object object) {
+        ValueProto.Answer answer;
 
         if (object instanceof Answer) {
-            answer = ConceptProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
+            answer = ValueProto.Answer.newBuilder().setQueryAnswer(ConceptBuilder.queryAnswer((Answer) object)).build();
         } else if (object instanceof ComputeQuery.Answer) {
-            answer = ConceptProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
+            answer = ValueProto.Answer.newBuilder().setComputeAnswer(ConceptBuilder.computeAnswer((ComputeQuery.Answer) object)).build();
         } else {
             // If not an QueryAnswer or ComputeAnswer, convert to JSON
-            answer = ConceptProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
+            answer = ValueProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
         }
 
         return answer;
     }
 
-    static ConceptProto.QueryAnswer queryAnswer(Answer answer) {
-        ConceptProto.QueryAnswer.Builder queryAnswerRPC = ConceptProto.QueryAnswer.newBuilder();
+    static ValueProto.QueryAnswer queryAnswer(Answer answer) {
+        ValueProto.QueryAnswer.Builder queryAnswerRPC = ValueProto.QueryAnswer.newBuilder();
         answer.forEach((var, concept) -> {
-            ConceptProto.Concept conceptRps = concept(concept);
+            ValueProto.Concept conceptRps = concept(concept);
             queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
         });
 
         return queryAnswerRPC.build();
     }
 
-    static ConceptProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
-        ConceptProto.ComputeAnswer.Builder computeAnswerRPC = ConceptProto.ComputeAnswer.newBuilder();
+    static ValueProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
+        ValueProto.ComputeAnswer.Builder computeAnswerRPC = ValueProto.ComputeAnswer.newBuilder();
 
         if (computeAnswer.getNumber().isPresent()) {
             computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
@@ -168,15 +168,15 @@ public class ConceptBuilder {
         return computeAnswerRPC.build();
     }
 
-    private static ConceptProto.Paths paths(List<List<ConceptId>> paths) {
-        ConceptProto.Paths.Builder pathsRPC = ConceptProto.Paths.newBuilder();
+    private static ValueProto.Paths paths(List<List<ConceptId>> paths) {
+        ValueProto.Paths.Builder pathsRPC = ValueProto.Paths.newBuilder();
         for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
 
         return pathsRPC.build();
     }
 
-    private static ConceptProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
-        ConceptProto.Centrality.Builder centralityCountsRPC = ConceptProto.Centrality.newBuilder();
+    private static ValueProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
+        ValueProto.Centrality.Builder centralityCountsRPC = ValueProto.Centrality.newBuilder();
 
         for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
             centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
@@ -185,22 +185,22 @@ public class ConceptBuilder {
         return centralityCountsRPC.build();
     }
 
-    private static ConceptProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
-        ConceptProto.ClusterSizes.Builder clusterSizesRPC = ConceptProto.ClusterSizes.newBuilder();
+    private static ValueProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
+        ValueProto.ClusterSizes.Builder clusterSizesRPC = ValueProto.ClusterSizes.newBuilder();
         clusterSizesRPC.addAllClusterSizes(clusterSizes);
 
         return clusterSizesRPC.build();
     }
 
-    private static ConceptProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
-        ConceptProto.Clusters.Builder clustersRPC = ConceptProto.Clusters.newBuilder();
+    private static ValueProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
+        ValueProto.Clusters.Builder clustersRPC = ValueProto.Clusters.newBuilder();
         for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
 
         return clustersRPC.build();
     }
 
-    private static ConceptProto.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
-        ConceptProto.ConceptIds.Builder conceptIdsRPC = ConceptProto.ConceptIds.newBuilder();
+    private static ValueProto.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
+        ValueProto.ConceptIds.Builder conceptIdsRPC = ValueProto.ConceptIds.newBuilder();
         conceptIdsRPC.addAllIds(conceptIds.stream()
                 .map(id -> id.getValue())
                 .collect(Collectors.toList()));

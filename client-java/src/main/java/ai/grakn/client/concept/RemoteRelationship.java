@@ -29,6 +29,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.ValueProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -55,12 +56,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
         method.setGetRolePlayers(ConceptProto.Unit.getDefaultInstance());
 
         IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
-        Iterable<ConceptProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
+        Iterable<ValueProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, SessionProto.Transaction.Res::getRolePlayer
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
-        for (ConceptProto.RolePlayer rolePlayer : rolePlayers) {
+        for (ValueProto.RolePlayer rolePlayer : rolePlayers) {
             Role role = ConceptBuilder.concept(rolePlayer.getRole(), tx()).asRole();
             Thing player = ConceptBuilder.concept(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
@@ -92,7 +93,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final Relationship addRolePlayer(Role role, Thing player) {
-        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+        ValueProto.RolePlayer rolePlayer = ValueProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
@@ -103,7 +104,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final void removeRolePlayer(Role role, Thing player) {
-        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+        ValueProto.RolePlayer rolePlayer = ValueProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();

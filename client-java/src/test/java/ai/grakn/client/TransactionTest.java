@@ -180,9 +180,9 @@ public class TransactionTest {
 
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
-        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(ConceptProto.Answer.newBuilder()
-                .setQueryAnswer(ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
+        ValueProto.Concept v123 = ValueProto.Concept.newBuilder().setId(V123).build();
+        Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(ValueProto.Answer.newBuilder()
+                .setQueryAnswer(ValueProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.next(ITERATOR), iteratorNext);

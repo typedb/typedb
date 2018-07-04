@@ -27,6 +27,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.ValueProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -49,7 +50,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
         method.setGetValue(ConceptProto.Unit.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method.build());
 
-        ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
+        ValueProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
 
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
