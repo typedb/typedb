@@ -1,2 +1,0 @@
-grakn-graql/src/test/java/ai/grakn/graql/internal/analytics/AnalyticsTest.java
-grakn-engine/src/test/java/ai/grakn/engine/EngineTest.java
