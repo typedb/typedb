@@ -111,9 +111,6 @@ public class ServerRPCIT {
     private static GraknSession localSession;
     private static Grakn.Session remoteSession;
 
-    private static GraknSession reasonerLocalSession;
-    private static Grakn.Session reasonerRemoteSession;
-
     @Before
     public void setUp() {
         localSession = engine.sessionWithNewKeyspace();
@@ -123,14 +120,6 @@ public class ServerRPCIT {
             tx.commit();
         }
         remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
-
-        reasonerLocalSession = engine.sessionWithNewKeyspace();
-
-        try (GraknTx tx = reasonerLocalSession.transaction(GraknTxType.WRITE)) {
-            GenealogyKB.get().accept(tx);
-            tx.commit();
-        }
-        reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
     }
 
     @After
@@ -237,8 +226,16 @@ public class ServerRPCIT {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void whenExecutingAQuery_ExplanationsAreReturned() throws InterruptedException {
+        GraknSession reasonerLocalSession = engine.sessionWithNewKeyspace();
+        try (GraknTx tx = reasonerLocalSession.transaction(GraknTxType.WRITE)) {
+            GenealogyKB.get().accept(tx);
+            tx.commit();
+        }
+        
+        Grakn.Session reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
+
         List<Answer> remoteAnswers;
         List<Answer> localAnswers;
 
