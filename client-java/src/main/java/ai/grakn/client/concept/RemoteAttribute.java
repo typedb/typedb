@@ -57,12 +57,14 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetDataTypeOfAttribute(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetDataTypeOfAttribute(ConceptProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
+
+        SessionProto.Transaction.Res response = runMethod(method);
 
         // TODO: Fix this unsafe casting
-        return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());
+        return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptMethod().getResponse()
+                .getGetDataTypeOfAttribute().getDataType());
     }
 
     @Override

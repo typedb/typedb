@@ -26,6 +26,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
@@ -42,56 +43,74 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
         return new AutoValue_RemoteAttributeType<>(tx, id);
     }
 
+    @Nullable
+    @Override
+    public final String getRegex() {
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetRegex(ConceptProto.GetRegex.Req.getDefaultInstance()).build();
+
+        SessionProto.Transaction.Res response = runMethod(method);
+        String regex = response.getConceptMethod().getResponse().getGetRegex().getRegex();
+        return regex.isEmpty() ? null : regex;
+    }
+
     @Override
     public final AttributeType<D> setRegex(String regex) {
         if (regex == null) regex = "";
-        runMethod(ConceptProto.Method.Req.newBuilder().setSetRegex(regex).build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetRegex(ConceptProto.SetRegex.Req.newBuilder()
+                        .setRegex(regex)).build();
+
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
     @Override
     public final Attribute<D> putAttribute(D value) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setPutAttribute(ConceptBuilder.attributeValue(value));
-        SessionProto.Transaction.Res response = runMethod(method.build());
-        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setPutAttribute(ConceptProto.PutAttribute.Req.newBuilder()
+                        .setValue(ConceptBuilder.attributeValue(value))).build();
 
+        SessionProto.Transaction.Res response = runMethod(method);
+        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getPutAttribute().getConcept(), tx());
         return asInstance(concept);
     }
 
     @Nullable
     @Override
     public final Attribute<D> getAttribute(D value) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetAttribute(ConceptBuilder.attributeValue(value));
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetAttribute(ConceptProto.GetAttribute.Req.newBuilder()
+                        .setValue(ConceptBuilder.attributeValue(value))).build();
 
-        if (response.getConceptResponse().getNoResult()) return null;
-
-        Concept concept = ConceptBuilder.concept(response.getConceptResponse().getConcept(), tx());
-        return concept.asAttribute();
+        SessionProto.Transaction.Res response = runMethod(method);
+        ConceptProto.GetAttribute.Res methodResponse = response.getConceptMethod().getResponse().getGetAttribute();
+        switch (methodResponse.getResCase()) {
+            case NULL:
+                return null;
+            case CONCEPT:
+                return ConceptBuilder.concept(methodResponse.getConcept(), tx()).asAttribute();
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
     }
 
     @Nullable
     @Override
     public final AttributeType.DataType<D> getDataType() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetDataTypeOfAttributeType(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetDataTypeOfAttributeType(ConceptProto.GetDataTypeOfAttributeType.Req.getDefaultInstance()).build();
 
-        if (response.getConceptResponse().getNoResult()) return null;
-        return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptResponse().getDataType());
-    }
-
-    @Nullable
-    @Override
-    public final String getRegex() {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        method.setGetRegex(ConceptProto.Unit.getDefaultInstance());
-        SessionProto.Transaction.Res response = runMethod(method.build());
-
-        if (response.getConceptResponse().getNoResult()) return null;
-        return response.getConceptResponse().getRegex();
+        SessionProto.Transaction.Res response = runMethod(method);
+        ConceptProto.GetDataTypeOfAttributeType.Res methodResponse = response.getConceptMethod().getResponse().getGetDataTypeOfAttributeType();
+        switch (methodResponse.getResCase()) {
+            case NULL:
+                return null;
+            case DATATYPE:
+                return (AttributeType.DataType<D>) ConceptBuilder.dataType(methodResponse.getDataType());
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
     }
 
     @Override

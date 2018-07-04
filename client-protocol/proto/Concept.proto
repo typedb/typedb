@@ -105,10 +105,6 @@ message Unit {} // Represents a message with no information
 message Method {
     message Req {
         oneof req {
-            // The types here are the arguments for the methods. Most are `Unit`, which indicates no arguments.
-            // The return types of these methods are described in `ConceptResponse`.
-            // The `returns` comment indicates what each `ConceptMethod` will return.
-
             // Concept methods
             Delete.Req delete = 1;
 
@@ -144,22 +140,22 @@ message Method {
             UnsetRolePlayedByType.Req unsetRolePlayedByType = 24;
 
             // EntityType methods
-            Unit addEntity = 1034; // returns Concept
+            AddEntity.Req addEntity = 25;
 
-            // Relationship type
-            Unit getRelatedRoles = 1036; // returns IteratorId of Concept
-            Concept setRelatedRole = 1037; // returns Unit
-            Concept unsetRelatedRole = 1038; // returns Unit
+            // RelationshipType methods
+            AddRelationship.Req addRelationship = 26;
+            GetRelatedRoles.Req getRelatedRoles = 27;
+            SetRelatedRole.Req setRelatedRole = 28;
+            UnsetRelatedRole.Req unsetRelatedRole = 29;
 
-            // Attribute type
-            string setRegex = 1031; // returns Unit
-            Unit getRegex = 109; // returns regex (string)
-            Unit getDataTypeOfAttribute = 1054; // returns DataType
-            Unit getDataTypeOfAttributeType = 102; // returns DataType or noResult (bool)
-            AttributeValue getAttribute = 1033; // returns Concept or noResult
-            AttributeValue putAttribute = 1032; // returns Concept
+            // AttributeType methods
+            GetRegex.Req getRegex = 30;
+            SetRegex.Req setRegex = 31;
+            GetDataTypeOfAttributeType.Req getDataTypeOfAttributeType = 32;
+            GetAttribute.Req getAttribute = 33;
+            PutAttribute.Req putAttribute = 34;
 
-            // Thing
+            // Thing methods
             Unit isInferred = 105; // returns bool
             Unit getKeys = 1042; // returns IteratorId of Concept
             Unit getAttributes = 1041; // returns IteratorId of Concept
@@ -172,16 +168,16 @@ message Method {
             Concepts getAttributesByTypes = 1049; // returns IteratorId of Concept
             Concepts getRelationshipsByRoles = 1048; // returns IteratorId of Concept
 
-            // Relationship
+            // Relationship methods
             Unit getRolePlayers = 1010; // returns IteratorId of RolePlayer
-            Unit addRelationship = 1035; // returns Concept
             RolePlayer setRolePlayer = 1046; // returns Unit
             RolePlayer unsetRolePlayer = 1015; // returns Unit
             Concepts getRolePlayersByRoles = 1051; // returns IteratorId of Concept
 
-            // Attribute
+            // Attribute methods
             Unit getValue = 101; // returns AttributeValue
             Unit getOwners = 1047; // returns IteratorId of Concept
+            GetDataTypeOfAttribute.Req getDataTypeOfAttribute = 999;
         }
     }
     message Res {
@@ -220,24 +216,42 @@ message Method {
             SetRolePlayedByType.Res setRolePlayedByType = 23;
             UnsetRolePlayedByType.Res unsetRolePlayedByType = 24;
 
+            // EntityType methods
+            AddEntity.Res addEntity = 25;
 
+            // Relationship type
+            AddRelationship.Res addRelationship = 26;
+            GetRelatedRoles.Res getRelatedRoles = 27;
+            SetRelatedRole.Res setRelatedRole = 28;
+            UnsetRelatedRole.Res unsetRelatedRole = 29;
 
-            bool noResult = 101;
+            // Attribute type
+            GetRegex.Res getRegex = 30;
+            SetRegex.Res setRegex = 31;
+            GetDataTypeOfAttributeType.Res getDataTypeOfAttributeType = 32;
+            GetAttribute.Res getAttribute = 33;
+            PutAttribute.Res putAttribute = 34;
+
+            // Attribute methods
+            GetDataTypeOfAttribute.Res getDataTypeOfAttribute = 999;
+
             bool isInferred = 104;
-            string regex = 107;
             Unit unit = 108;
             IteratorId iteratorId = 109;
             Concept concept = 110;
             AttributeValue attributeValue = 111;
-            DataType dataType = 112;
         }
     }
 }
+
+// Concept methods
 
 message Delete {
     message Req {}
     message Res {}
 }
+
+// SchemaConcept methods
 
 message GetLabel {
     message Req {}
@@ -291,6 +305,8 @@ message SetDirectSuperConcept {
     message Res {}
 }
 
+// Rule methods
+
 message GetWhen {
     message Req {}
     message Res {
@@ -311,6 +327,8 @@ message GetThen {
     }
 }
 
+// Role methods
+
 message GetRelationshipTypesThatRelateRole {
     message Req {}
     message Res {
@@ -324,6 +342,8 @@ message GetTypesThatPlayRole {
         IteratorId iteratorId = 1;
     }
 }
+
+// Type methods
 
 message IsAbstract {
     message Req {}
@@ -407,4 +427,103 @@ message UnsetRolePlayedByType {
         Concept concept = 1;
     }
     message Res {}
+}
+
+// EntityType methods
+
+message AddEntity {
+    message Req {}
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+// RelationshipType methods
+
+message AddRelationship {
+    message Req {}
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message GetRelatedRoles {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message SetRelatedRole {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+message UnsetRelatedRole {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+// AttributeType methods
+
+message GetRegex {
+    message Req {}
+    message Res {
+        string regex = 1;
+    }
+}
+
+message SetRegex {
+    message Req {
+        string regex = 1;
+    }
+    message Res {}
+}
+
+message GetDataTypeOfAttributeType {
+    message Req {}
+    message Res {
+        oneof res {
+            DataType dataType = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message GetAttribute {
+    message Req {
+        AttributeValue value = 1;
+    }
+    message Res {
+        oneof res {
+            Concept concept = 1;
+            Null null = 2;
+        }
+    }
+}
+
+message PutAttribute {
+    message Req {
+        AttributeValue value = 1;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+
+
+
+
+// Attribute methods
+
+message GetDataTypeOfAttribute {
+    message Req {}
+    message Res {
+        DataType dataType = 1;
+    }
 }
