@@ -121,12 +121,12 @@ public class GeoInferenceTest {
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
         assertEquals(answers.size(), 6);
 
         List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -146,7 +146,7 @@ public class GeoInferenceTest {
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
         List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         assertCollectionsEqual(answers, answers2);
@@ -160,21 +160,21 @@ public class GeoInferenceTest {
         Concept europe = getConcept(graph, "name", "Europe");
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y id '" + poland.getId().getValue() + "'; get;";
+                "$y id '" + poland.id().getValue() + "'; get;";
 
         String queryString2 = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y id '" + europe.getId().getValue() + "'; get;";
+                "$y id '" + europe.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
         assertEquals(answers.size(), 6);
 
 
         List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -185,16 +185,16 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         String queryString2 = "match " +
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
                 "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
         List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         assertCollectionsEqual(answers, answers2);
@@ -207,13 +207,13 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($r1: $x, $r2: $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
 
         answers.forEach(ans -> assertEquals(ans.size(), 4));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 20);
     }
 
@@ -242,11 +242,11 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
     }
 
@@ -267,7 +267,7 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "$x ($r1: $x1, $r2: $x2) isa is-located-in;" +
-                "$x2 id '" + masovia.getId().getValue() + "'; get;";
+                "$x2 id '" + masovia.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 20);
@@ -308,13 +308,13 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $r2: $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
 
         answers.forEach(ans -> assertEquals(ans.size(), 3));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 10);
     }
 

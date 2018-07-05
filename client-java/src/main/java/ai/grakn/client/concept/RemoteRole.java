@@ -41,7 +41,7 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
     }
 
     @Override
-    public final Stream<RelationshipType> relationshipTypes() {
+    public final Stream<RelationshipType> relationships() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRelationshipTypesThatRelateRole(MethodProto.GetRelationshipTypesThatRelateRole.Req.getDefaultInstance()).build();
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRelationshipTypesThatRelateRole().getIteratorId();
@@ -49,7 +49,7 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
     }
 
     @Override
-    public final Stream<Type> playedByTypes() {
+    public final Stream<Type> players() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetTypesThatPlayRole(MethodProto.GetTypesThatPlayRole.Req.getDefaultInstance()).build();
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetTypesThatPlayRole().getIteratorId();

@@ -190,32 +190,32 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType.play(role1).play(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
 
-            Entity start = entityType.addEntity();
-            Entity end = entityType.addEntity();
+            Entity start = entityType.create();
+            Entity end = entityType.create();
 
-            startId = start.getId();
-            endId = end.getId();
+            startId = start.id();
+            endId = end.id();
 
             // create N identical length path
             for (int i = 0; i < numberOfPaths; i++) {
                 List<ConceptId> validPath = new ArrayList<>();
                 validPath.add(startId);
 
-                Entity middle = entityType.addEntity();
-                ConceptId middleId = middle.getId();
-                ConceptId assertion1 = relationshipType.addRelationship()
-                        .addRolePlayer(role1, start)
-                        .addRolePlayer(role2, middle).getId();
+                Entity middle = entityType.create();
+                ConceptId middleId = middle.id();
+                ConceptId assertion1 = relationshipType.create()
+                        .assign(role1, start)
+                        .assign(role2, middle).id();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
-                ConceptId assertion2 = relationshipType.addRelationship()
-                        .addRolePlayer(role1, middle)
-                        .addRolePlayer(role2, end).getId();
+                ConceptId assertion2 = relationshipType.create()
+                        .assign(role1, middle)
+                        .assign(role2, end).id();
 
                 validPath.add(assertion2);
                 validPath.add(endId);
@@ -244,37 +244,37 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.plays(role1).plays(role2);
-            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType.play(role1).play(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relate(role1).relate(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
-            entityType.plays(role3).plays(role4);
-            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
+            entityType.play(role3).play(role4);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relate(role3).relate(role4);
 
-            Entity start = entityType.addEntity();
-            Entity end = entityType.addEntity();
-            Entity middle = entityType.addEntity();
+            Entity start = entityType.create();
+            Entity end = entityType.create();
+            Entity middle = entityType.create();
 
-            startId = start.getId();
-            endId = end.getId();
-            ConceptId middleId = middle.getId();
+            startId = start.id();
+            endId = end.id();
+            ConceptId middleId = middle.id();
 
-            ConceptId assertion11 = relationshipType1.addRelationship()
-                    .addRolePlayer(role1, start)
-                    .addRolePlayer(role2, middle).getId();
+            ConceptId assertion11 = relationshipType1.create()
+                    .assign(role1, start)
+                    .assign(role2, middle).id();
 
-            ConceptId assertion12 = relationshipType1.addRelationship()
-                    .addRolePlayer(role1, middle)
-                    .addRolePlayer(role2, end).getId();
+            ConceptId assertion12 = relationshipType1.create()
+                    .assign(role1, middle)
+                    .assign(role2, end).id();
 
-            ConceptId assertion21 = relationshipType2.addRelationship()
-                    .addRolePlayer(role3, start)
-                    .addRolePlayer(role4, middle).getId();
+            ConceptId assertion21 = relationshipType2.create()
+                    .assign(role3, start)
+                    .assign(role4, middle).id();
 
-            ConceptId assertion22 = relationshipType2.addRelationship()
-                    .addRolePlayer(role3, middle)
-                    .addRolePlayer(role4, end).getId();
+            ConceptId assertion22 = relationshipType2.create()
+                    .assign(role3, middle)
+                    .assign(role4, end).id();
 
 
             correctPaths.add(Lists.newArrayList(startId, assertion11, middleId, assertion12, endId));
@@ -304,44 +304,44 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.plays(role1).plays(role2);
-            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType.play(role1).play(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relate(role1).relate(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             Role role5 = graph.putRole("role5");
-            entityType.plays(role3).plays(role4).plays(role5);
+            entityType.play(role3).play(role4).play(role5);
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relates(role3).relates(role4).relates(role5);
+                    .relate(role3).relate(role4).relate(role5);
 
-            Entity start = entityType.addEntity();
-            Entity end = entityType.addEntity();
-            Entity middle = entityType.addEntity();
-            Entity middleA = entityType.addEntity();
-            Entity middleB = entityType.addEntity();
+            Entity start = entityType.create();
+            Entity end = entityType.create();
+            Entity middle = entityType.create();
+            Entity middleA = entityType.create();
+            Entity middleB = entityType.create();
 
-            startId = start.getId();
-            endId = end.getId();
-            ConceptId middleId = middle.getId();
-            ConceptId middleAId = middleA.getId();
-            ConceptId middleBId = middleB.getId();
+            startId = start.id();
+            endId = end.id();
+            ConceptId middleId = middle.id();
+            ConceptId middleAId = middleA.id();
+            ConceptId middleBId = middleB.id();
 
-            ConceptId assertion1 = relationshipType1.addRelationship()
-                    .addRolePlayer(role1, start)
-                    .addRolePlayer(role2, middle).getId();
+            ConceptId assertion1 = relationshipType1.create()
+                    .assign(role1, start)
+                    .assign(role2, middle).id();
 
-            ConceptId assertion2 = relationshipType2.addRelationship()
-                    .addRolePlayer(role3, middle)
-                    .addRolePlayer(role4, middleA)
-                    .addRolePlayer(role5, middleB).getId();
+            ConceptId assertion2 = relationshipType2.create()
+                    .assign(role3, middle)
+                    .assign(role4, middleA)
+                    .assign(role5, middleB).id();
 
-            ConceptId assertion1A = relationshipType1.addRelationship()
-                    .addRolePlayer(role1, middleA)
-                    .addRolePlayer(role2, end).getId();
+            ConceptId assertion1A = relationshipType1.create()
+                    .assign(role1, middleA)
+                    .assign(role2, end).id();
 
-            ConceptId assertion1B = relationshipType1.addRelationship()
-                    .addRolePlayer(role1, middleB)
-                    .addRolePlayer(role2, end).getId();
+            ConceptId assertion1B = relationshipType1.create()
+                    .assign(role1, middleB)
+                    .assign(role2, end).id();
 
             List<ConceptId> sharedPath = Lists.newArrayList(startId, assertion1, middleId, assertion2);
             List<ConceptId> path1 = new ArrayList<>(sharedPath);
@@ -394,12 +394,12 @@ public class PathTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            person.attribute(name);
-            Entity aPerson = person.addEntity();
-            startId = aPerson.getId();
-            Attribute<String> jason = name.putAttribute("jason");
-            aPerson.attribute(jason);
-            endId = jason.getId();
+            person.has(name);
+            Entity aPerson = person.create();
+            startId = aPerson.id();
+            Attribute<String> jason = name.create("jason");
+            aPerson.has(jason);
+            endId = jason.id();
 
             graph.commit();
         }
@@ -412,7 +412,7 @@ public class PathTest {
             assertEquals("@has-name", graph.getConcept(allPaths.get(0).get(1))
                                                     .asRelationship()
                                                     .type()
-                                                    .getLabel()
+                                                    .label()
                                                     .getValue());
         }
     }
@@ -440,50 +440,50 @@ public class PathTest {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
 
-            person.attribute(power);
+            person.has(power);
 
             // manually construct the attribute relation
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
             Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
             RelationshipType relationType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")).getValue());
 
-            Entity person1 = person.addEntity();
-            idPerson1 = person1.getId();
-            Entity person2 = person.addEntity();
-            idPerson2 = person2.getId();
-            Entity person3 = person.addEntity();
-            idPerson3 = person3.getId();
+            Entity person1 = person.create();
+            idPerson1 = person1.id();
+            Entity person2 = person.create();
+            idPerson2 = person2.id();
+            Entity person3 = person.create();
+            idPerson3 = person3.id();
 
-            Attribute power1 = power.putAttribute(1L);
-            idPower1 = power1.getId();
-            Attribute power2 = power.putAttribute(2L);
-            idPower2 = power2.getId();
-            Attribute power3 = power.putAttribute(3L);
-            idPower3 = power3.getId();
+            Attribute power1 = power.create(1L);
+            idPower1 = power1.id();
+            Attribute power2 = power.create(2L);
+            idPower2 = power2.id();
+            Attribute power3 = power.create(3L);
+            idPower3 = power3.id();
 
             assert relationType != null;
-            idRelationPerson1Power1 = relationType.addRelationship()
-                    .addRolePlayer(resourceOwner, person1)
-                    .addRolePlayer(resourceValue, power1).getId();
+            idRelationPerson1Power1 = relationType.create()
+                    .assign(resourceOwner, person1)
+                    .assign(resourceValue, power1).id();
 
-            idRelationPerson2Power2 = relationType.addRelationship()
-                    .addRolePlayer(resourceOwner, person2)
-                    .addRolePlayer(resourceValue, power2).getId();
+            idRelationPerson2Power2 = relationType.create()
+                    .assign(resourceOwner, person2)
+                    .assign(resourceValue, power2).id();
 
             // add implicit resource relationships as well
-            person.attribute(power);
+            person.has(power);
 
-            person1.attribute(power2);
-            person3.attribute(power3);
+            person1.has(power2);
+            person3.has(power3);
 
             // finally add a relation between persons to make it more interesting
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            person.plays(role1).plays(role2);
-            RelationshipType relationTypePerson = tx.putRelationshipType(related).relates(role1).relates(role2);
-            idRelationPerson1Person3 = relationTypePerson.addRelationship()
-                    .addRolePlayer(role1, person1)
-                    .addRolePlayer(role2, person3).getId();
+            person.play(role1).play(role2);
+            RelationshipType relationTypePerson = tx.putRelationshipType(related).relate(role1).relate(role2);
+            idRelationPerson1Person3 = relationTypePerson.create()
+                    .assign(role1, person1)
+                    .assign(role2, person3).id();
             tx.commit();
         }
 
@@ -551,36 +551,36 @@ public class PathTest {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
-            Entity entity5 = entityType1.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
+            Entity entity5 = entityType1.create();
 
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
-            entityId5 = entity5.getId();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
+            entityId5 = entity5.id();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.plays(role1).plays(role2);
-            entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType1.play(role1).play(role2);
+            entityType2.play(role1).play(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
 
-            relationId12 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId();
-            relationId13 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity3).getId();
-            relationId24 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId();
-            relationId34 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity3)
-                    .addRolePlayer(role2, entity4).getId();
+            relationId12 = relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id();
+            relationId13 = relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity3).id();
+            relationId24 = relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id();
+            relationId34 = relationshipType.create()
+                    .assign(role1, entity3)
+                    .assign(role2, entity4).id();
 
             graph.commit();
         }

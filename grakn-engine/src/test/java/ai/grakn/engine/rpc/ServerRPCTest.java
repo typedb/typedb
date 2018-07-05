@@ -282,14 +282,14 @@ public class ServerRPCTest {
     @Test
     public void whenExecutingAQueryRemotely_AResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
+        when(conceptX.id()).thenReturn(ConceptId.of("V123"));
         when(conceptX.isRelationship()).thenReturn(true);
-        when(conceptX.asRelationship().type().getLabel()).thenReturn(Label.of("L123"));
+        when(conceptX.asRelationship().type().label()).thenReturn(Label.of("L123"));
 
         Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
+        when(conceptY.id()).thenReturn(ConceptId.of("V456"));
         when(conceptY.isAttribute()).thenReturn(true);
-        when(conceptY.asAttribute().type().getLabel()).thenReturn(Label.of("L456"));
+        when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<Answer> answers = ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
@@ -336,14 +336,14 @@ public class ServerRPCTest {
     @Test(timeout = 1000) // This tests uses an endless stream, so a failure may cause it to never terminate
     public void whenExecutingAQueryRemotelyAndAskingForOneResult_OnlyOneResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
+        when(conceptX.id()).thenReturn(ConceptId.of("V123"));
         when(conceptX.isEntity()).thenReturn(true);
-        when(conceptX.asEntity().type().getLabel()).thenReturn(Label.of("L123"));
+        when(conceptX.asEntity().type().label()).thenReturn(Label.of("L123"));
 
         Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
+        when(conceptY.id()).thenReturn(ConceptId.of("V456"));
         when(conceptY.isEntity()).thenReturn(true);
-        when(conceptY.asEntity().type().getLabel()).thenReturn(Label.of("L456"));
+        when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<Answer> answers = ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
@@ -463,15 +463,15 @@ public class ServerRPCTest {
         Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(tx.getConcept(id)).thenReturn(concept);
         when(concept.isSchemaConcept()).thenReturn(true);
-        when(concept.asSchemaConcept().getLabel()).thenReturn(label);
+        when(concept.asSchemaConcept().label()).thenReturn(label);
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
 
-            //assertEquals(label, ConceptMethod.getLabel.readResponse(conceptConverter, client, tx.receive().ok()));
+            //assertEquals(label, ConceptMethod.label.readResponse(conceptConverter, client, tx.receive().ok()));
         }
     }
 
@@ -527,7 +527,7 @@ public class ServerRPCTest {
         when(tx.getConcept(roleId)).thenReturn(role);
         when(role.isRole()).thenReturn(true);
         when(role.asRole()).thenReturn(role);
-        when(role.getId()).thenReturn(roleId);
+        when(role.id()).thenReturn(roleId);
 
         Entity player = mock(Entity.class, RETURNS_DEEP_STUBS);
         when(tx.getConcept(playerId)).thenReturn(player);
@@ -535,17 +535,17 @@ public class ServerRPCTest {
         when(player.asEntity()).thenReturn(player);
         when(player.isThing()).thenReturn(true);
         when(player.asThing()).thenReturn(player);
-        when(player.getId()).thenReturn(playerId);
+        when(player.id()).thenReturn(playerId);
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //ConceptMethod<Void> conceptMethod = ConceptMethod.removeRolePlayer(RolePlayer.create(role, player));
+            //ConceptMethod<Void> conceptMethod = ConceptMethod.unassign(RolePlayer.create(role, player));
             //tx.send(RequestBuilder.runConceptMethod(conceptId, conceptMethod));
             //tx.receive().ok();
 
-            verify(concept.asRelationship()).removeRolePlayer(role, player);
+            verify(concept.asRelationship()).unassign(role, player);
         }
     }
 
@@ -559,7 +559,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -580,7 +580,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.READ));
             tx.receive().ok();
 
-            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.getLabel));
+            //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
@@ -593,7 +593,7 @@ public class ServerRPCTest {
         ConceptId id = ConceptId.of("V123456");
 
         Concept concept = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(concept.getId()).thenReturn(id);
+        when(concept.id()).thenReturn(id);
         when(concept.isRelationship()).thenReturn(true);
 
         when(tx.getConcept(id)).thenReturn(concept);

@@ -191,7 +191,7 @@ public class BatchExecutorClientIT {
         // load schema
         try (EmbeddedGraknTx<?> graph = session.transaction(GraknTxType.WRITE)) {
             Role role = graph.putRole("some-role");
-            graph.putRelationshipType("some-relationship").relates(role);
+            graph.putRelationshipType("some-relationship").relate(role);
 
             EntityType nameTag = graph.putEntityType("name_tag");
             AttributeType<String> nameTagString = graph
@@ -199,8 +199,8 @@ public class BatchExecutorClientIT {
             AttributeType<String> nameTagId = graph
                     .putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
-            nameTag.attribute(nameTagString);
-            nameTag.attribute(nameTagId);
+            nameTag.has(nameTagString);
+            nameTag.has(nameTagId);
             graph.commitSubmitNoLogs();
 
             GraknClient graknClient = GraknClient.of(engine.uri());

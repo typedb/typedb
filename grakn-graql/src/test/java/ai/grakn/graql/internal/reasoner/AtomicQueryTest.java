@@ -146,12 +146,12 @@ public class AtomicQueryTest {
         Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
         Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute()).get("x");
 
-        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r 'inferred';$x id " + firstEntity.getId().getValue() + ";}", graph), graph);
+        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r 'inferred';$x id " + firstEntity.id().getValue() + ";}", graph), graph);
         String reuseResourcePatternString =
                 "{" +
                         "$x has resource $r;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "}";
 
         ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString, graph), graph);
@@ -162,14 +162,14 @@ public class AtomicQueryTest {
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), false);
     }
 
@@ -183,8 +183,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
                         "$r (role1: $x, role2: $y);" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$y id " + secondEntity.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$y id " + secondEntity.id().getValue() + ";" +
                         "}"
                 , graph),
                 graph
@@ -1170,7 +1170,7 @@ public class AtomicQueryTest {
 
     private Concept getConceptByResourceValue(EmbeddedGraknTx<?> graph, String id){
         Set<Concept> instances = graph.getAttributesByValue(id)
-                .stream().flatMap(Attribute::ownerInstances).collect(Collectors.toSet());
+                .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();

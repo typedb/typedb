@@ -32,9 +32,9 @@ public class PostProcessingTestUtils {
     @SuppressWarnings("unchecked")
     static <T> Set<Vertex> createDuplicateResource(EmbeddedGraknTx<?> graknTx, AttributeType<T> attributeType, Attribute<T> attribute) {
         Vertex originalResource = graknTx.getTinkerTraversal().V()
-                .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
+                .has(Schema.VertexProperty.ID.name(), attribute.id().getValue()).next();
         Vertex vertexResourceTypeShard = graknTx.getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), attributeType.id().getValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex resourceVertex = graknTx.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());

@@ -49,7 +49,7 @@ public interface Relationship extends Thing {
      * @return The instance itself
      */
     @Override
-    Relationship attribute(Attribute attribute);
+    Relationship has(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 
@@ -69,7 +69,7 @@ public interface Relationship extends Thing {
      * @return A list of all the role types and the instances playing them in this {@link Relationship}.
      */
     @CheckReturnValue
-    Map<Role, Set<Thing>> allRolePlayers();
+    Map<Role, Set<Thing>> rolePlayersMap();
 
     /**
      * Retrieves a list of every {@link Thing} involved in the {@link Relationship}, filtered by {@link Role} played.
@@ -89,7 +89,7 @@ public interface Relationship extends Thing {
      *
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relationship addRolePlayer(Role role, Thing player);
+    Relationship assign(Role role, Thing player);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Relationship}
@@ -97,7 +97,7 @@ public interface Relationship extends Thing {
      * @return The {@link Relationship} itself
      */
     @Override
-    Relationship deleteAttribute(Attribute attribute);
+    Relationship unhas(Attribute attribute);
 
     /**
      * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relationship}.
@@ -106,7 +106,7 @@ public interface Relationship extends Thing {
      * @param role The {@link Role} being played by the {@link Thing}
      * @param player The {@link Thing} playing the {@link Role} in this {@link Relationship}
      */
-    void removeRolePlayer(Role role, Thing player);
+    void unassign(Role role, Thing player);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

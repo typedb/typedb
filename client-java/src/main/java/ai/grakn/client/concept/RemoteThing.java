@@ -116,7 +116,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override
-    public final Stream<Role> plays() {
+    public final Stream<Role> roles() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRolesPlayedByThing(MethodProto.GetRolesPlayedByThing.Req.getDefaultInstance()).build();
 
@@ -126,13 +126,15 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override
-    public final SomeThing attribute(Attribute attribute) {
-        attributeRelationship(attribute);
+    public final SomeThing has(Attribute attribute) {
+        relhas(attribute);
         return asCurrentBaseType(this);
     }
 
-    @Override
-    public final Relationship attributeRelationship(Attribute attribute) {
+    @Override @Deprecated
+    public final Relationship relhas(Attribute attribute) {
+        // TODO: remove usage of this method as a getter, and replace with relationships(Attribute attribute)
+        // TODO: remove this method altogether and just use has(Attribute attribute)
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetAttributeRelationship(MethodProto.SetAttributeRelationship.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();
@@ -146,7 +148,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     }
 
     @Override
-    public final SomeThing deleteAttribute(Attribute attribute) {
+    public final SomeThing unhas(Attribute attribute) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setUnsetAttributeRelationship(MethodProto.UnsetAttributeRelationship.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();

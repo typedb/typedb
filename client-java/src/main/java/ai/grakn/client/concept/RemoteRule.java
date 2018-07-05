@@ -45,7 +45,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
 
     @Nullable
     @Override
-    public final Pattern getWhen() {
+    public final Pattern when() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetWhen(MethodProto.GetWhen.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
@@ -63,7 +63,7 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
 
     @Nullable
     @Override
-    public final Pattern getThen() {
+    public final Pattern then() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetThen(MethodProto.GetThen.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
@@ -80,12 +80,12 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     }
 
     @Override
-    public final Stream<Type> getHypothesisTypes() {
+    public final Stream<Type> whenTypes() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
-    public final Stream<Type> getConclusionTypes() {
+    public final Stream<Type> thenTypes() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 

@@ -105,7 +105,7 @@ public class BenchmarkIT {
             GraknTx tx = session.transaction(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
             ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
-                    .map(ans -> ans.get(entityVar).getId())
+                    .map(ans -> ans.get(entityVar).id())
                     .toArray(ConceptId[]::new);
 
             assertEquals(instances.length, N);
@@ -123,9 +123,9 @@ public class BenchmarkIT {
                 Var fromRolePlayer = Graql.var();
                 Var toRolePlayer = Graql.var();
                 Pattern relationInsert = Graql.var()
-                        .rel(Graql.label(fromRole.getLabel()), fromRolePlayer)
-                        .rel(Graql.label(toRole.getLabel()), toRolePlayer)
-                        .isa(Graql.label(relationType.getLabel()))
+                        .rel(Graql.label(fromRole.label()), fromRolePlayer)
+                        .rel(Graql.label(toRole.label()), toRolePlayer)
+                        .isa(Graql.label(relationType.label()))
                         .and(fromRolePlayer.asUserDefined().id(instances[from]))
                         .and(toRolePlayer.asUserDefined().id(instances[to]));
                 loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
@@ -168,15 +168,15 @@ public class BenchmarkIT {
             Role toRole = tx.putRole(toRoleLabel);
             AttributeType<String> index = tx.putAttributeType(attributeLabel, AttributeType.DataType.STRING);
             tx.putEntityType(entityLabel)
-                    .plays(fromRole)
-                    .plays(toRole)
-                    .attribute(index);
+                    .play(fromRole)
+                    .play(toRole)
+                    .has(index);
 
             //define N relation types
             for (int i = 1; i <= N; i++) {
                 tx.putRelationshipType(genericRelationLabel + i)
-                        .relates(fromRole)
-                        .relates(toRole);
+                        .relate(fromRole)
+                        .relate(toRole);
             }
 
             //define N rules
@@ -189,20 +189,20 @@ public class BenchmarkIT {
                         .when(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), intermedVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), intermedVar)
                                                 .isa(baseRelationLabel),
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), intermedVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), intermedVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa(genericRelationLabel + (i - 1))
                                 )
                         )
                         .then(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa(genericRelationLabel + i)
                                 )
                         );
@@ -219,7 +219,7 @@ public class BenchmarkIT {
             try(GraknTx tx = session.transaction(GraknTxType.READ)) {
                 Var entityVar = var().asUserDefined();
                 ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
-                        .map(ans -> ans.get(entityVar).getId())
+                        .map(ans -> ans.get(entityVar).id())
                         .toArray(ConceptId[]::new);
 
                 RelationshipType baseRelation = tx.getRelationshipType(baseRelationLabel);
@@ -237,9 +237,9 @@ public class BenchmarkIT {
                     Var toRolePlayer = Graql.var();
 
                     Pattern relationInsert = Graql.var()
-                            .rel(Graql.label(fromRole.getLabel()), fromRolePlayer)
-                            .rel(Graql.label(toRole.getLabel()), toRolePlayer)
-                            .isa(Graql.label(baseRelation.getLabel()))
+                            .rel(Graql.label(fromRole.label()), fromRolePlayer)
+                            .rel(Graql.label(toRole.label()), toRolePlayer)
+                            .isa(Graql.label(baseRelation.label()))
                             .and(fromRolePlayer.asUserDefined().id(instances[i - 1]))
                             .and(toRolePlayer.asUserDefined().id(instances[i]));
                     loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
@@ -265,7 +265,7 @@ public class BenchmarkIT {
         loadTransitivityData(N);
 
         try(GraknTx tx = session.transaction(GraknTxType.READ)) {
-            ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().getId();
+            ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().id();
             String queryPattern = "(P-from: $x, P-to: $y) isa P;";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -309,7 +309,7 @@ public class BenchmarkIT {
         loadJoinData(N);
 
         try(GraknTx tx = session.transaction(GraknTxType.READ)) {
-            ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().getId();
+            ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().id();
             String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -349,8 +349,8 @@ public class BenchmarkIT {
         loadRuleChainData(N);
 
         try(GraknTx tx = session.transaction(GraknTxType.READ)) {
-            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").getId();
-            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").getId();
+            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").id();
+            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").id();
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +

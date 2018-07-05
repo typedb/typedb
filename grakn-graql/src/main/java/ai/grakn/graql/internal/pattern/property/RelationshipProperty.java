@@ -198,7 +198,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
 
         Role role = executor.get(roleVar.var()).asRole();
         Thing roleplayer = executor.get(relationPlayer.getRolePlayer().var()).asThing();
-        relationship.addRolePlayer(role, roleplayer);
+        relationship.assign(role, roleplayer);
     }
 
     private Set<Var> requiredVars(Var var) {
@@ -233,7 +233,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                     Concept concept = parent.tx().getConcept(roleId.getPredicate());
                     if(concept != null) {
                         if (concept.isRole()) {
-                            Label roleLabel = concept.asSchemaConcept().getLabel();
+                            Label roleLabel = concept.asSchemaConcept().label();
                             rolePattern = roleVar.label(roleLabel);
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(var);

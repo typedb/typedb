@@ -75,8 +75,8 @@ public class CountTest {
         // add 2 instances
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
-            thingy.addEntity();
-            thingy.addEntity();
+            thingy.create();
+            thingy.create();
             graph.commit();
         }
 
@@ -87,7 +87,7 @@ public class CountTest {
 
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-            anotherThing.addEntity();
+            anotherThing.create();
             graph.commit();
         }
 
@@ -108,10 +108,10 @@ public class CountTest {
 
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
-            thingy.addEntity();
-            thingy.addEntity();
+            thingy.create();
+            thingy.create();
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-            anotherThing.addEntity();
+            anotherThing.create();
             graph.commit();
         }
 
@@ -142,9 +142,9 @@ public class CountTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            person.attribute(name);
-            Entity aPerson = person.addEntity();
-            aPerson.attribute(name.putAttribute("jason"));
+            person.has(name);
+            Entity aPerson = person.create();
+            aPerson.has(name.create("jason"));
             graph.commit();
         }
 
@@ -179,21 +179,21 @@ public class CountTest {
 
             // manually construct the relation type and instance
             EntityType person = graph.getEntityType("person");
-            Entity aPerson = person.addEntity();
+            Entity aPerson = person.create();
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            Attribute jason = name.putAttribute("jason");
+            Attribute jason = name.create("jason");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
-            person.plays(resourceOwner);
+            person.play(resourceOwner);
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
-            name.plays(resourceValue);
+            name.play(resourceValue);
 
             RelationshipType relationshipType =
                     graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
-                            .relates(resourceOwner).relates(resourceValue);
-            relationshipType.addRelationship()
-                    .addRolePlayer(resourceOwner, aPerson)
-                    .addRolePlayer(resourceValue, jason);
+                            .relate(resourceOwner).relate(resourceValue);
+            relationshipType.create()
+                    .assign(resourceOwner, aPerson)
+                    .assign(resourceValue, jason);
             graph.commit();
         }
 
@@ -233,24 +233,24 @@ public class CountTest {
 
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
-            Entity aPerson = person.addEntity();
+            Entity aPerson = person.create();
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            Attribute jason = name.putAttribute("jason");
+            Attribute jason = name.create("jason");
 
-            person.attribute(name);
+            person.has(name);
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
-            person.plays(resourceOwner);
+            person.play(resourceOwner);
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
-            name.plays(resourceValue);
+            name.play(resourceValue);
 
             RelationshipType relationshipType =
                     graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
-                            .relates(resourceOwner).relates(resourceValue);
+                            .relate(resourceOwner).relate(resourceValue);
             // here relationship type is still implicit
-            relationshipType.addRelationship()
-                    .addRolePlayer(resourceOwner, aPerson)
-                    .addRolePlayer(resourceValue, jason);
+            relationshipType.create()
+                    .assign(resourceOwner, aPerson)
+                    .assign(resourceValue, jason);
 
             graph.commit();
         }
@@ -282,8 +282,8 @@ public class CountTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType person = graph.getEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            Entity aPerson = person.addEntity();
-            aPerson.attribute(name.getAttribute("jason"));
+            Entity aPerson = person.create();
+            aPerson.has(name.attribute("jason"));
             graph.commit();
         }
 

@@ -92,14 +92,14 @@ public class GraknTxOperationException extends GraknException{
      * Throw when trying to add instances to an abstract Type
      */
     public static GraknTxOperationException addingInstancesToAbstractType(Type type){
-        return create(ErrorMessage.IS_ABSTRACT.getMessage(type.getLabel()));
+        return create(ErrorMessage.IS_ABSTRACT.getMessage(type.label()));
     }
 
     /**
      * Thrown when a {@link Thing} is not allowed to have {@link Attribute} of that {@link AttributeType}
      */
     public static GraknTxOperationException hasNotAllowed(Thing thing, Attribute attribute){
-        return create(HAS_INVALID.getMessage(thing.type().getLabel(), attribute.type().getLabel()));
+        return create(HAS_INVALID.getMessage(thing.type().label(), attribute.type().label()));
     }
 
     /**
@@ -107,28 +107,28 @@ public class GraknTxOperationException extends GraknException{
      * data type {@link AttributeType.DataType#STRING}
      */
     public static GraknTxOperationException cannotSetRegex(AttributeType attributeType){
-        return create(REGEX_NOT_STRING.getMessage(attributeType.getLabel()));
+        return create(REGEX_NOT_STRING.getMessage(attributeType.label()));
     }
 
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
     public static GraknTxOperationException cannotBeDeleted(SchemaConcept schemaConcept){
-        return create(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.getLabel()));
+        return create(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.label()));
     }
 
     /**
-     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#attribute(AttributeType)}
+     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#has(AttributeType)}
      */
     public static GraknTxOperationException duplicateHas(Type type, AttributeType attributeType){
-        return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.getLabel(), attributeType.getLabel()));
+        return create(ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(type.label(), attributeType.label()));
     }
 
     /**
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
     public static GraknTxOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
-        return create(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
+        return create(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.label(), superElement.label()));
     }
 
     /**
@@ -166,7 +166,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
     public static GraknTxOperationException regexFailure(AttributeType attributeType, String value, String regex){
-        return create(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, attributeType.getLabel(), value));
+        return create(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, attributeType.label(), value));
     }
 
     /**
@@ -220,7 +220,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when an thing does not have a type
      */
     public static GraknTxOperationException noType(Thing thing){
-        return create(NO_TYPE.getMessage(thing.getId()));
+        return create(NO_TYPE.getMessage(thing.id()));
     }
 
     /**
@@ -273,7 +273,7 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
         return create(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
-                oldSuper.getLabel(), newSuper.getLabel(), oldSuper.getLabel(), role.getLabel(), newSuper.getLabel()));
+                oldSuper.label(), newSuper.label(), oldSuper.label(), role.label(), newSuper.label()));
     }
 
     /**

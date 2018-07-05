@@ -41,7 +41,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     abstract Grakn.Transaction tx();
 
     @Override
-    public abstract ConceptId getId();
+    public abstract ConceptId id();
 
     @Override
     public final Keyspace keyspace() {
@@ -59,7 +59,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final boolean isDeleted() {
-        return tx().getConcept(getId()) == null;
+        return tx().getConcept(id()) == null;
     }
 
     protected final Stream<? extends Concept> conceptStream(IteratorProto.IteratorId iteratorId) {
@@ -71,7 +71,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     }
 
     protected final SessionProto.Transaction.Res runMethod(MethodProto.Method.Req method) {
-        return runMethod(getId(), method);
+        return runMethod(id(), method);
     }
 
     protected final SessionProto.Transaction.Res runMethod(ConceptId id, MethodProto.Method.Req method) {

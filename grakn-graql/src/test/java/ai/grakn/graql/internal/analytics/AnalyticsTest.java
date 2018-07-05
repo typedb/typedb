@@ -83,17 +83,17 @@ public class AnalyticsTest {
             EntityType thingy = graph.putEntityType("thingy");
 
             AttributeType<Long> attribute = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
-            thingy.attribute(attribute);
+            thingy.has(attribute);
 
             Role degreeOwner = graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role degreeValue = graph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
             RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
-                    .relates(degreeOwner)
-                    .relates(degreeValue);
-            thingy.plays(degreeOwner);
+                    .relate(degreeOwner)
+                    .relate(degreeValue);
+            thingy.play(degreeOwner);
 
-            Entity thisThing = thingy.addEntity();
-            relationshipType.addRelationship().addRolePlayer(degreeOwner, thisThing);
+            Entity thisThing = thingy.create();
+            relationshipType.create().assign(degreeOwner, thisThing);
 
             graph.commit();
         }
@@ -152,28 +152,28 @@ public class AnalyticsTest {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
 
-            entityId1 = entity1.getId().getValue();
-            entityId2 = entity2.getId().getValue();
-            entityId3 = entity3.getId().getValue();
-            entityId4 = entity4.getId().getValue();
+            entityId1 = entity1.id().getValue();
+            entityId2 = entity2.id().getValue();
+            entityId3 = entity3.id().getValue();
+            entityId4 = entity4.id().getValue();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.plays(role1).plays(role2);
-            entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType1.play(role1).play(role2);
+            entityType2.play(role1).play(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
 
-            relationId12 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId().getValue();
+            relationId12 = relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id().getValue();
+            relationId24 = relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id().getValue();
 
             graph.commit();
         }

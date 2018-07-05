@@ -54,7 +54,7 @@ public class GraqlCompleter implements Completer {
             Stream<SchemaConcept> metaConcepts =
                     Stream.of(tx.getMetaConcept(), tx.getMetaRole(), tx.getMetaRule()).flatMap(SchemaConcept::subs);
 
-            labels = metaConcepts.map(SchemaConcept::getLabel).collect(toImmutableSet());
+            labels = metaConcepts.map(SchemaConcept::label).collect(toImmutableSet());
         }
         return new GraqlCompleter(labels);
     }

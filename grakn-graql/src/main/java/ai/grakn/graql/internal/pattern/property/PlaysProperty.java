@@ -91,7 +91,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
-            executor.get(var).asType().plays(role);
+            executor.get(var).asType().play(role);
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
@@ -104,7 +104,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
             Role role = executor.get(this.role().var()).asRole();
 
             if (!type.isDeleted() && !role.isDeleted()) {
-                type.deletePlays(role);
+                type.unplay(role);
             }
         };
 

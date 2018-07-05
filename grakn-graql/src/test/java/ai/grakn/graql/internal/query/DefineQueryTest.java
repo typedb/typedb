@@ -140,7 +140,7 @@ public class DefineQueryTest {
         ).execute();
 
         Match match = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -153,7 +153,7 @@ public class DefineQueryTest {
         ).execute();
 
         Match match = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
@@ -272,7 +272,7 @@ public class DefineQueryTest {
 
         Match match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x")
-                .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().getRegex());
+                .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }
 
     @Test
@@ -421,7 +421,7 @@ public class DefineQueryTest {
 
     @Test
     public void whenModifyingAThingInADefineQuery_Throw() {
-        ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().getId();
+        ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().id();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
@@ -439,9 +439,9 @@ public class DefineQueryTest {
         EntityType type = movies.tx().getEntityType("a-new-type");
         Label newLabel = Label.of("a-new-new-type");
 
-        qb.define(label(newLabel).id(type.getId())).execute();
+        qb.define(label(newLabel).id(type.id())).execute();
 
-        assertEquals(newLabel, type.getLabel());
+        assertEquals(newLabel, type.label());
     }
 
     @Test

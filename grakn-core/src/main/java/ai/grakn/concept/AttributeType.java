@@ -56,7 +56,7 @@ public interface AttributeType<D> extends Type {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    AttributeType setLabel(Label label);
+    AttributeType label(Label label);
 
     /**
      * Sets the {@link AttributeType} to be abstract - which prevents it from having any instances.
@@ -66,7 +66,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> setAbstract(Boolean isAbstract);
+    AttributeType<D> isAbstract(Boolean isAbstract);
 
     /**
      * Sets the supertype of the {@link AttributeType} to be the AttributeType specified.
@@ -91,7 +91,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> plays(Role role);
+    AttributeType<D> play(Role role);
 
     /**
      * Removes the ability of this {@link AttributeType} to play a specific {@link Role}
@@ -100,7 +100,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deletePlays(Role role);
+    AttributeType<D> unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link AttributeType} to have {@link Attribute}s of type {@link AttributeType}
@@ -109,7 +109,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deleteAttribute(AttributeType attributeType);
+    AttributeType<D> unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link AttributeType}
@@ -118,7 +118,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deleteKey(AttributeType attributeType);
+    AttributeType<D> unkey(AttributeType attributeType);
 
     /**
      * Set the regular expression that instances of the {@link AttributeType} must conform to.
@@ -126,7 +126,7 @@ public interface AttributeType<D> extends Type {
      * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
      * @return The {@link AttributeType} itself.
      */
-    AttributeType<D> setRegex(String regex);
+    AttributeType<D> regex(String regex);
 
     /**
      * Set the value for the {@link Attribute}, unique to its type.
@@ -134,7 +134,7 @@ public interface AttributeType<D> extends Type {
      * @param value A value for the {@link Attribute} which is unique to its type
      * @return new or existing {@link Attribute} of this type with the provided value.
      */
-    Attribute<D> putAttribute(D value);
+    Attribute<D> create(D value);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -152,7 +152,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> attribute(AttributeType attributeType);
+    AttributeType<D> has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
     /**
@@ -173,7 +173,7 @@ public interface AttributeType<D> extends Type {
      */
     @CheckReturnValue
     @Nullable
-    Attribute<D> getAttribute(D value);
+    Attribute<D> attribute(D value);
 
     /**
      * Returns a collection of super-types of this {@link AttributeType}.
@@ -206,7 +206,7 @@ public interface AttributeType<D> extends Type {
      */
     @Nullable
     @CheckReturnValue
-    DataType<D> getDataType();
+    DataType<D> dataType();
 
     /**
      * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
@@ -218,7 +218,7 @@ public interface AttributeType<D> extends Type {
      */
     @CheckReturnValue
     @Nullable
-    String getRegex();
+    String regex();
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")

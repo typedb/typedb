@@ -89,9 +89,9 @@ public class GraqlControllerInsertTest {
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
         Concept person = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(person.getId()).thenReturn(ConceptId.of("V123"));
+        when(person.id()).thenReturn(ConceptId.of("V123"));
         when(person.isThing()).thenReturn(true);
-        when(person.asThing().type().getLabel()).thenReturn(Label.of("person"));
+        when(person.asThing().type().label()).thenReturn(Label.of("person"));
 
         when(query.execute()).thenReturn(ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(var("x"), person))

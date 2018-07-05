@@ -92,7 +92,7 @@ public class ConceptBuilder {
 
     public static ConceptProto.Concept concept(Concept concept) {
         return ConceptProto.Concept.newBuilder()
-                .setId(concept.getId().getValue())
+                .setId(concept.id().getValue())
                 .setBaseType(getBaseType(concept))
                 .build();
     }

@@ -53,12 +53,12 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
                 .setSetDirectSuperConcept(MethodProto.SetDirectSuperConcept.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(this))).build();
 
-        runMethod(type.getId(), method);
+        runMethod(type.id(), method);
         return asCurrentBaseType(this);
     }
 
     @Override
-    public final Label getLabel() {
+    public final Label label() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetLabel(MethodProto.GetLabel.Req.getDefaultInstance()).build();
 
@@ -76,7 +76,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     @Override
-    public final SomeType setLabel(Label label) {
+    public final SomeType label(Label label) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetLabel(MethodProto.SetLabel.Req.newBuilder()
                         .setLabel(label.getValue())).build();
@@ -121,17 +121,17 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     @Override
-    public final LabelId getLabelId() {
+    public final LabelId labelId() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
-    public final Stream<Rule> getRulesOfHypothesis() {
+    public final Stream<Rule> whenRules() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 
     @Override
-    public final Stream<Rule> getRulesOfConclusion() {
+    public final Stream<Rule> thenRules() {
         throw new UnsupportedOperationException(); // TODO: remove from API
     }
 

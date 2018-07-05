@@ -161,11 +161,11 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
-        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
+        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.label());
     }
 
     public static GraqlQueryException insertMetaType(Label label, SchemaConcept schemaConcept) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.getLabel()));
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.label()));
     }
 
     /**
@@ -343,7 +343,7 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept) {
-        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.label()));
     }
 
     public static GraqlQueryException unexpectedResult(Var var) {

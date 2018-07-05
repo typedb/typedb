@@ -136,23 +136,23 @@ public class GraqlTest {
 
             AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.attribute(resource);
+            thingy.has(resource);
 
-            Entity theResourceOwner = thingy.addEntity();
+            Entity theResourceOwner = thingy.create();
 
             Role resourceOwner = graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role resourceValue = graph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
             RelationshipType relationshipType = graph.getRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
 
-            relationshipType.addRelationship()
-                    .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putAttribute(1L));
-            relationshipType.addRelationship()
-                    .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putAttribute(2L));
-            relationshipType.addRelationship()
-                    .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putAttribute(3L));
+            relationshipType.create()
+                    .assign(resourceOwner, theResourceOwner)
+                    .assign(resourceValue, resource.create(1L));
+            relationshipType.create()
+                    .assign(resourceOwner, theResourceOwner)
+                    .assign(resourceValue, resource.create(2L));
+            relationshipType.create()
+                    .assign(resourceOwner, theResourceOwner)
+                    .assign(resourceValue, resource.create(3L));
 
             graph.commit();
         }
@@ -279,28 +279,28 @@ public class GraqlTest {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
 
-            entityId1 = entity1.getId().getValue();
-            entityId2 = entity2.getId().getValue();
-            entityId3 = entity3.getId().getValue();
-            entityId4 = entity4.getId().getValue();
+            entityId1 = entity1.id().getValue();
+            entityId2 = entity2.id().getValue();
+            entityId3 = entity3.id().getValue();
+            entityId4 = entity4.id().getValue();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.plays(role1).plays(role2);
-            entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType1.play(role1).play(role2);
+            entityType2.play(role1).play(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
 
-            relationId12 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId().getValue();
+            relationId12 = relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id().getValue();
+            relationId24 = relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id().getValue();
 
             graph.commit();
         }

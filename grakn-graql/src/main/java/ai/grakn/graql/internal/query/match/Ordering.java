@@ -58,7 +58,7 @@ abstract class Ordering {
     // All data types are comparable, so this is safe
     @SuppressWarnings("unchecked")
     private Comparable<? super Comparable> getOrderValue(Answer result) {
-        return (Comparable<? super Comparable>) result.get(var()).asAttribute().getValue();
+        return (Comparable<? super Comparable>) result.get(var()).asAttribute().value();
     }
 
     @Override

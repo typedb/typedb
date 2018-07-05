@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 public abstract class IsaAtomBase extends TypeAtom{
 
     Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
-        ConceptId typeId = type.getId();
+        ConceptId typeId = type.id();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
         IdPredicate newPredicate = IdPredicate.create(typeVariable.id(typeId).admin(), getParentQuery());

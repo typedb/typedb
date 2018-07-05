@@ -46,7 +46,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     }
 
     @Override
-    public final D getValue() {
+    public final D value() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetValue(MethodProto.GetValue.Req.getDefaultInstance()).build();
 
@@ -57,7 +57,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     }
 
     @Override
-    public final Stream<Thing> ownerInstances() {
+    public final Stream<Thing> owners() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetOwners(MethodProto.GetOwners.Req.getDefaultInstance()).build();
 

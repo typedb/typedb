@@ -65,7 +65,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
         SchemaConcept concept = tx.getSchemaConcept(oldLabel);
         if (concept == null) return null;
 
-        Set<Label> newLabels = concept.subs().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> newLabels = concept.subs().map(SchemaConcept::label).collect(toSet());
 
         return new AutoValue_LabelFragmentSet(varProperty(), typeVar, ImmutableSet.copyOf(newLabels));
     }

@@ -42,7 +42,7 @@ public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> im
     }
 
     @Override
-    public final Entity addEntity() {
+    public final Entity create() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setAddEntity(MethodProto.AddEntity.Req.getDefaultInstance()).build();
 

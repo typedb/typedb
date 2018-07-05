@@ -77,7 +77,7 @@ public class QueryPlannerTest {
         EntityType entityType4 = graph.putEntityType(thingy4);
 
         AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.DataType.STRING);
-        entityType4.attribute(attributeType);
+        entityType4.has(attributeType);
 
         EntityType superType1 = graph.putEntityType(thingy)
                 .sub(entityType0)
@@ -86,29 +86,29 @@ public class QueryPlannerTest {
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
-        superType1.plays(role1).plays(role2).plays(role3);
-        entityType2.plays(role1).plays(role2).plays(role3);
-        entityType3.plays(role1).plays(role2).plays(role3);
+        superType1.play(role1).play(role2).play(role3);
+        entityType2.play(role1).play(role2).play(role3);
+        entityType3.play(role1).play(role2).play(role3);
         RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                .relates(role1).relates(role2).relates(role3);
+                .relate(role1).relate(role2).relate(role3);
         graph.putRelationshipType(sameAsRelated)
-                .relates(role1).relates(role2).relates(role3);
+                .relate(role1).relate(role2).relate(role3);
 
         Role role4 = graph.putRole("role4");
         Role role5 = graph.putRole("role5");
-        entityType1.plays(role4).plays(role5);
-        entityType2.plays(role4).plays(role5);
-        entityType4.plays(role4);
+        entityType1.play(role4).play(role5);
+        entityType2.play(role4).play(role5);
+        entityType4.play(role4);
         graph.putRelationshipType(veryRelated)
-                .relates(role4).relates(role5);
+                .relate(role4).relate(role5);
 
-        Entity entity1 = entityType1.addEntity();
-        Entity entity2 = entityType2.addEntity();
-        Entity entity3 = entityType3.addEntity();
-        relationshipType1.addRelationship()
-                .addRolePlayer(role1, entity1)
-                .addRolePlayer(role2, entity2)
-                .addRolePlayer(role3, entity3);
+        Entity entity1 = entityType1.create();
+        Entity entity2 = entityType2.create();
+        Entity entity3 = entityType3.create();
+        relationshipType1.create()
+                .assign(role1, entity1)
+                .assign(role2, entity2)
+                .assign(role3, entity3);
     });
 
     @Before
@@ -326,16 +326,16 @@ public class QueryPlannerTest {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
         // thing 2 = 4, thing3 = 7
-        tx.shard(tx.getEntityType(thingy2).getId());
-        tx.shard(tx.getEntityType(thingy2).getId());
-        tx.shard(tx.getEntityType(thingy2).getId());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
 
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
 
         Pattern pattern;
         ImmutableList<Fragment> plan;
@@ -350,11 +350,11 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
-//        varName = plan.get(7).end().getValue();
-//        assertEquals(y.getValue(), varName);
+//        varName = plan.get(7).end().value();
+//        assertEquals(y.value(), varName);
 //
-//        varName = plan.get(11).end().getValue();
-//        assertEquals(y.getValue(), varName);
+//        varName = plan.get(11).end().value();
+//        assertEquals(y.value(), varName);
 
         pattern = and(
                 x.isa(thingy),
@@ -381,9 +381,9 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(z, plan.get(4).end());
 
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy).getId());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy).id());
         // now thing = 5, thing1 = 3
 
         pattern = and(
@@ -402,8 +402,8 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(x, plan.get(3).end());
 
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
         // now thing = 7, thing1 = 5
 
         pattern = and(

@@ -301,8 +301,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
-            getGlobalCache().cacheLabel(concept.getLabel(), concept.getLabelId());
-            getGlobalCache().cacheType(concept.getLabel(), concept);
+            getGlobalCache().cacheLabel(concept.label(), concept.labelId());
+            getGlobalCache().cacheType(concept.label(), concept);
         });
     }
 
@@ -477,8 +477,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
     private GraknTxOperationException labelTaken(SchemaConcept schemaConcept){
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel())) return GraknTxOperationException.reservedLabel(schemaConcept.getLabel());
-        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.getLabel());
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) return GraknTxOperationException.reservedLabel(schemaConcept.label());
+        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 
     private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
@@ -537,8 +537,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
             throw GraknTxOperationException.metaTypeImmutable(label);
-        } else if (!dataType.equals(attributeType.getDataType())) {
-            throw GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+        } else if (!dataType.equals(attributeType.dataType())) {
+            throw GraknTxOperationException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return attributeType;
@@ -894,7 +894,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     private void copyRelationshipReified(Attribute main, Attribute other, Relationship otherRelationship) {
         //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-        otherRelationship.allRolePlayers().forEach((role, instances) -> {
+        otherRelationship.rolePlayersMap().forEach((role, instances) -> {
             Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
             if (instances.contains(other) && relationReified.isPresent()) {
                 relationReified.get().putRolePlayerEdge(role, main);

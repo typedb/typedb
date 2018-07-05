@@ -44,7 +44,7 @@ public interface RelationshipType extends Type {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    RelationshipType setLabel(Label label);
+    RelationshipType label(Label label);
 
     /**
      * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
@@ -54,7 +54,7 @@ public interface RelationshipType extends Type {
      *
      * @throws GraknTxOperationException if this is a meta type
      */
-    Relationship addRelationship();
+    Relationship create();
 
     /**
      * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.
@@ -88,7 +88,7 @@ public interface RelationshipType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationshipType attribute(AttributeType attributeType);
+    RelationshipType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -109,7 +109,7 @@ public interface RelationshipType extends Type {
      * @param role A new role which is part of this relationship.
      * @return The {@link RelationshipType} itself.
      */
-    RelationshipType relates(Role role);
+    RelationshipType relate(Role role);
 
     //------------------------------------- Other ----------------------------------
 
@@ -120,7 +120,7 @@ public interface RelationshipType extends Type {
      * @param role The Role to delete from the {@link RelationshipType}.
      * @return The {@link RelationshipType} itself.
      */
-    RelationshipType deleteRelates(Role role);
+    RelationshipType unrelate(Role role);
 
     //---- Inherited Methods
     /**
@@ -130,7 +130,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType setAbstract(Boolean isAbstract);
+    RelationshipType isAbstract(Boolean isAbstract);
 
     /**
      * Returns the direct supertype of this {@link RelationshipType}.
@@ -162,7 +162,7 @@ public interface RelationshipType extends Type {
      * @return  The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType plays(Role role);
+    RelationshipType play(Role role);
 
     /**
      * Removes the ability of this {@link RelationshipType} to play a specific {@link Role}
@@ -171,7 +171,7 @@ public interface RelationshipType extends Type {
      * @return The {@link Rule} itself.
      */
     @Override
-    RelationshipType deletePlays(Role role);
+    RelationshipType unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link RelationshipType} to have {@link Attribute}s of type {@link AttributeType}
@@ -180,7 +180,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType deleteAttribute(AttributeType attributeType);
+    RelationshipType unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link RelationshipType}
@@ -189,7 +189,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType deleteKey(AttributeType attributeType);
+    RelationshipType unkey(AttributeType attributeType);
 
     /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}

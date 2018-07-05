@@ -513,31 +513,31 @@ public class StatisticsTest {
 
             // manually construct the relation type and instance
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
-            EntityType person = tx.putEntityType("person").attribute(power);
+            EntityType person = tx.putEntityType("person").has(power);
             Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
             Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
 
-            person.attribute(power);
+            person.has(power);
 
-            Entity person1 = person.addEntity();
-            Entity person2 = person.addEntity();
-            Entity person3 = person.addEntity();
-            Attribute power1 = power.putAttribute(1L);
-            Attribute power2 = power.putAttribute(2L);
-            Attribute power3 = power.putAttribute(3L);
+            Entity person1 = person.create();
+            Entity person2 = person.create();
+            Entity person3 = person.create();
+            Attribute power1 = power.create(1L);
+            Attribute power2 = power.create(2L);
+            Attribute power3 = power.create(3L);
             RelationshipType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
-                    .relates(resourceOwner).relates(resourceValue);
+                    .relate(resourceOwner).relate(resourceValue);
 
-            relationType.addRelationship()
-                    .addRolePlayer(resourceOwner, person1)
-                    .addRolePlayer(resourceValue, power1);
+            relationType.create()
+                    .assign(resourceOwner, person1)
+                    .assign(resourceValue, power1);
 
-            relationType.addRelationship()
-                    .addRolePlayer(resourceOwner, person2)
-                    .addRolePlayer(resourceValue, power2);
-            person1.attribute(power2);
+            relationType.create()
+                    .assign(resourceOwner, person2)
+                    .assign(resourceValue, power2);
+            person1.has(power2);
 
-            person3.attribute(power3);
+            person3.has(power3);
 
             tx.commit();
         }
@@ -566,30 +566,30 @@ public class StatisticsTest {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             Role relation1 = tx.putRole("relation1");
             Role relation2 = tx.putRole("relation2");
-            entityType1.plays(relation1).plays(relation2);
-            entityType2.plays(relation1).plays(relation2);
-            RelationshipType related = tx.putRelationshipType("related").relates(relation1).relates(relation2);
+            entityType1.play(relation1).play(relation2);
+            entityType2.play(relation1).play(relation2);
+            RelationshipType related = tx.putRelationshipType("related").relate(relation1).relate(relation2);
 
-            related.addRelationship()
-                    .addRolePlayer(relation1, entity1)
-                    .addRolePlayer(relation2, entity2);
-            related.addRelationship()
-                    .addRolePlayer(relation1, entity2)
-                    .addRolePlayer(relation2, entity3);
-            related.addRelationship()
-                    .addRolePlayer(relation1, entity2)
-                    .addRolePlayer(relation2, entity4);
+            related.create()
+                    .assign(relation1, entity1)
+                    .assign(relation2, entity2);
+            related.create()
+                    .assign(relation1, entity2)
+                    .assign(relation2, entity3);
+            related.create()
+                    .assign(relation1, entity2)
+                    .assign(relation2, entity4);
 
             AttributeType<Double> attribute1 = tx.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE);
             AttributeType<Long> attribute2 = tx.putAttributeType(resourceType2, AttributeType.DataType.LONG);
@@ -599,21 +599,21 @@ public class StatisticsTest {
             AttributeType<Double> attribute6 = tx.putAttributeType(resourceType6, AttributeType.DataType.DOUBLE);
             AttributeType<Double> attribute7 = tx.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE);
 
-            entityType1.attribute(attribute1);
-            entityType1.attribute(attribute2);
-            entityType1.attribute(attribute3);
-            entityType1.attribute(attribute4);
-            entityType1.attribute(attribute5);
-            entityType1.attribute(attribute6);
-            entityType1.attribute(attribute7);
+            entityType1.has(attribute1);
+            entityType1.has(attribute2);
+            entityType1.has(attribute3);
+            entityType1.has(attribute4);
+            entityType1.has(attribute5);
+            entityType1.has(attribute6);
+            entityType1.has(attribute7);
 
-            entityType2.attribute(attribute1);
-            entityType2.attribute(attribute2);
-            entityType2.attribute(attribute3);
-            entityType2.attribute(attribute4);
-            entityType2.attribute(attribute5);
-            entityType2.attribute(attribute6);
-            entityType2.attribute(attribute7);
+            entityType2.has(attribute1);
+            entityType2.has(attribute2);
+            entityType2.has(attribute3);
+            entityType2.has(attribute4);
+            entityType2.has(attribute5);
+            entityType2.has(attribute6);
+            entityType2.has(attribute7);
 
             tx.commit();
         }
@@ -621,25 +621,25 @@ public class StatisticsTest {
 
     private void addResourcesInstances() throws InvalidKBException {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-            graph.<Double>getAttributeType(resourceType1).putAttribute(1.2);
-            graph.<Double>getAttributeType(resourceType1).putAttribute(1.5);
-            graph.<Double>getAttributeType(resourceType1).putAttribute(1.8);
+            graph.<Double>getAttributeType(resourceType1).create(1.2);
+            graph.<Double>getAttributeType(resourceType1).create(1.5);
+            graph.<Double>getAttributeType(resourceType1).create(1.8);
 
-            graph.<Long>getAttributeType(resourceType2).putAttribute(4L);
-            graph.<Long>getAttributeType(resourceType2).putAttribute(-1L);
-            graph.<Long>getAttributeType(resourceType2).putAttribute(0L);
+            graph.<Long>getAttributeType(resourceType2).create(4L);
+            graph.<Long>getAttributeType(resourceType2).create(-1L);
+            graph.<Long>getAttributeType(resourceType2).create(0L);
 
-            graph.<Long>getAttributeType(resourceType5).putAttribute(6L);
-            graph.<Long>getAttributeType(resourceType5).putAttribute(7L);
-            graph.<Long>getAttributeType(resourceType5).putAttribute(8L);
+            graph.<Long>getAttributeType(resourceType5).create(6L);
+            graph.<Long>getAttributeType(resourceType5).create(7L);
+            graph.<Long>getAttributeType(resourceType5).create(8L);
 
-            graph.<Double>getAttributeType(resourceType6).putAttribute(7.2);
-            graph.<Double>getAttributeType(resourceType6).putAttribute(7.5);
-            graph.<Double>getAttributeType(resourceType6).putAttribute(7.8);
+            graph.<Double>getAttributeType(resourceType6).create(7.2);
+            graph.<Double>getAttributeType(resourceType6).create(7.5);
+            graph.<Double>getAttributeType(resourceType6).create(7.8);
 
-            graph.<String>getAttributeType(resourceType4).putAttribute("a");
-            graph.<String>getAttributeType(resourceType4).putAttribute("b");
-            graph.<String>getAttributeType(resourceType4).putAttribute("c");
+            graph.<String>getAttributeType(resourceType4).create("a");
+            graph.<String>getAttributeType(resourceType4).create("b");
+            graph.<String>getAttributeType(resourceType4).create("c");
 
             graph.commit();
         }
@@ -667,56 +667,56 @@ public class StatisticsTest {
             Role resourceValue6 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
             RelationshipType relationshipType1 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
-            relationshipType1.addRelationship()
-                    .addRolePlayer(resourceOwner1, entity1)
-                    .addRolePlayer(resourceValue1, graph.<Double>getAttributeType(resourceType1).putAttribute(1.2));
-            relationshipType1.addRelationship()
-                    .addRolePlayer(resourceOwner1, entity1)
-                    .addRolePlayer(resourceValue1, graph.<Double>getAttributeType(resourceType1).putAttribute(1.5));
-            relationshipType1.addRelationship()
-                    .addRolePlayer(resourceOwner1, entity3)
-                    .addRolePlayer(resourceValue1, graph.<Double>getAttributeType(resourceType1).putAttribute(1.8));
+            relationshipType1.create()
+                    .assign(resourceOwner1, entity1)
+                    .assign(resourceValue1, graph.<Double>getAttributeType(resourceType1).create(1.2));
+            relationshipType1.create()
+                    .assign(resourceOwner1, entity1)
+                    .assign(resourceValue1, graph.<Double>getAttributeType(resourceType1).create(1.5));
+            relationshipType1.create()
+                    .assign(resourceOwner1, entity3)
+                    .assign(resourceValue1, graph.<Double>getAttributeType(resourceType1).create(1.8));
 
             RelationshipType relationshipType2 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
-            relationshipType2.addRelationship()
-                    .addRolePlayer(resourceOwner2, entity1)
-                    .addRolePlayer(resourceValue2, graph.<Long>getAttributeType(resourceType2).putAttribute(4L));
-            relationshipType2.addRelationship()
-                    .addRolePlayer(resourceOwner2, entity1)
-                    .addRolePlayer(resourceValue2, graph.<Long>getAttributeType(resourceType2).putAttribute(-1L));
-            relationshipType2.addRelationship()
-                    .addRolePlayer(resourceOwner2, entity4)
-                    .addRolePlayer(resourceValue2, graph.<Long>getAttributeType(resourceType2).putAttribute(0L));
+            relationshipType2.create()
+                    .assign(resourceOwner2, entity1)
+                    .assign(resourceValue2, graph.<Long>getAttributeType(resourceType2).create(4L));
+            relationshipType2.create()
+                    .assign(resourceOwner2, entity1)
+                    .assign(resourceValue2, graph.<Long>getAttributeType(resourceType2).create(-1L));
+            relationshipType2.create()
+                    .assign(resourceOwner2, entity4)
+                    .assign(resourceValue2, graph.<Long>getAttributeType(resourceType2).create(0L));
 
-            graph.<Long>getAttributeType(resourceType3).putAttribute(100L);
+            graph.<Long>getAttributeType(resourceType3).create(100L);
 
             RelationshipType relationshipType5 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
-            relationshipType5.addRelationship()
-                    .addRolePlayer(resourceOwner5, entity1)
-                    .addRolePlayer(resourceValue5, graph.<Long>getAttributeType(resourceType5).putAttribute(-7L));
-            relationshipType5.addRelationship()
-                    .addRolePlayer(resourceOwner5, entity2)
-                    .addRolePlayer(resourceValue5, graph.<Long>getAttributeType(resourceType5).putAttribute(-7L));
-            relationshipType5.addRelationship()
-                    .addRolePlayer(resourceOwner5, entity4)
-                    .addRolePlayer(resourceValue5, graph.<Long>getAttributeType(resourceType5).putAttribute(-7L));
+            relationshipType5.create()
+                    .assign(resourceOwner5, entity1)
+                    .assign(resourceValue5, graph.<Long>getAttributeType(resourceType5).create(-7L));
+            relationshipType5.create()
+                    .assign(resourceOwner5, entity2)
+                    .assign(resourceValue5, graph.<Long>getAttributeType(resourceType5).create(-7L));
+            relationshipType5.create()
+                    .assign(resourceOwner5, entity4)
+                    .assign(resourceValue5, graph.<Long>getAttributeType(resourceType5).create(-7L));
 
             RelationshipType relationshipType6 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
-            relationshipType6.addRelationship()
-                    .addRolePlayer(resourceOwner6, entity1)
-                    .addRolePlayer(resourceValue6, graph.<Double>getAttributeType(resourceType6).putAttribute(7.5));
-            relationshipType6.addRelationship()
-                    .addRolePlayer(resourceOwner6, entity2)
-                    .addRolePlayer(resourceValue6, graph.<Double>getAttributeType(resourceType6).putAttribute(7.5));
-            relationshipType6.addRelationship()
-                    .addRolePlayer(resourceOwner6, entity4)
-                    .addRolePlayer(resourceValue6, graph.<Double>getAttributeType(resourceType6).putAttribute(7.5));
+            relationshipType6.create()
+                    .assign(resourceOwner6, entity1)
+                    .assign(resourceValue6, graph.<Double>getAttributeType(resourceType6).create(7.5));
+            relationshipType6.create()
+                    .assign(resourceOwner6, entity2)
+                    .assign(resourceValue6, graph.<Double>getAttributeType(resourceType6).create(7.5));
+            relationshipType6.create()
+                    .assign(resourceOwner6, entity4)
+                    .assign(resourceValue6, graph.<Double>getAttributeType(resourceType6).create(7.5));
 
             // some resources in, but not connect them to any instances
-            graph.<Double>getAttributeType(resourceType1).putAttribute(2.8);
-            graph.<Long>getAttributeType(resourceType2).putAttribute(-5L);
-            graph.<Long>getAttributeType(resourceType5).putAttribute(10L);
-            graph.<Double>getAttributeType(resourceType6).putAttribute(0.8);
+            graph.<Double>getAttributeType(resourceType1).create(2.8);
+            graph.<Long>getAttributeType(resourceType2).create(-5L);
+            graph.<Long>getAttributeType(resourceType5).create(10L);
+            graph.<Double>getAttributeType(resourceType6).create(0.8);
 
             graph.commit();
         }

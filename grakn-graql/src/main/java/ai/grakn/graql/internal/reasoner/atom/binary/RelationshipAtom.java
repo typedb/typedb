@@ -188,8 +188,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public String toString(){
         String typeString = getSchemaConcept() != null?
-                getSchemaConcept().getLabel().getValue() :
-                "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
+                getSchemaConcept().label().getValue() :
+                "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
                 (isDirect()? "!" : "") +
@@ -241,8 +241,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 relationPattern() :
                 isDirect()?
-                        relationPattern().isaExplicit(getSchemaConcept().getLabel().getValue()):
-                        relationPattern().isa(getSchemaConcept().getLabel().getValue());
+                        relationPattern().isaExplicit(getSchemaConcept().label().getValue()):
+                        relationPattern().isa(getSchemaConcept().label().getValue());
     }
 
     private VarPattern relationPattern() {
@@ -353,18 +353,18 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         getRelationPlayers().forEach(rp -> {
             VarPatternAdmin role = rp.getRole().orElse(null);
             if (role == null){
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
             } else {
                 Label roleLabel = role.getTypeLabel().orElse(null);
                 if (roleLabel == null){
-                    errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                    errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                 } else {
                     if (Schema.MetaSchema.isMetaLabel(roleLabel)) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.then(), rule.label()));
                     }
                     Role roleType = tx().getRole(roleLabel.getValue());
                     if (roleType != null && roleType.isImplicit()) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.then(), rule.label()));
                     }
                 }
             }
@@ -377,7 +377,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isRelationshipType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.label()));
             return errors;
         }
 
@@ -385,17 +385,17 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
             Role role = e.getKey();
-            if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
+            if (!Schema.MetaSchema.isMetaLabel(role.label())) {
                 //check whether this role can be played in this relation
                 if (type != null && type.asRelationshipType().relates().noneMatch(r -> r.equals(role))) {
-                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
+                    errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.label(), type.label()));
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     Type playerType = varTypeMap.get(player);
                     if (playerType != null && playerType.plays().noneMatch(plays -> plays.equals(role))) {
-                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.getLabel(), role.getLabel(), type == null? "" : type.getLabel()));
+                        errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.label(), role.label(), type == null? "" : type.label()));
                     }
                 }
             }
@@ -448,7 +448,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
-                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
+                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).label()))
                 .forEach(e -> builder.put(e.getKey(), varTypeMap.get(e.getValue())));
         return builder.build();
     }
@@ -498,7 +498,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
                     rs.removeAll(e.getValue());
-                    return rs.stream().flatMap(Role::playedByTypes);
+                    return rs.stream().flatMap(Role::players);
                 }).collect(Collectors.toSet());
     }
 
@@ -506,7 +506,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @return a map of relationships and corresponding roles that could be played by this atom
      */
     private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
-        Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
+        Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(toSet());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
 
@@ -580,7 +580,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         rs.removeAll(e.getValue());
                         return new Pair<>(
                                 e.getKey(),
-                                rs.stream().flatMap(Role::playedByTypes).filter(typesFromNeighbour::contains).count()
+                                rs.stream().flatMap(Role::players).filter(typesFromNeighbour::contains).count()
                         );
                     })
                     .sorted(Comparator.comparing(p -> -p.getValue()))
@@ -662,7 +662,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
         boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
-                Schema.MetaSchema.isMetaLabel(role.getLabel())
+                Schema.MetaSchema.isMetaLabel(role.label())
         );
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
@@ -715,7 +715,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     RelationPlayer rp = entry.getKey();
                     Var varName = rp.getRolePlayer().var();
                     Role role = Iterables.getOnlyElement(entry.getValue());
-                    VarPatternAdmin rolePattern = Graql.var().label(role.getLabel()).admin();
+                    VarPatternAdmin rolePattern = Graql.var().label(role.label()).admin();
                     inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName.admin()));
                     allocatedRelationPlayers.add(rp);
                 });
@@ -728,8 +728,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     VarPatternAdmin rolePattern = rp.getRole().orElse(null);
 
                     rolePattern = rolePattern != null ?
-                            rolePattern.var().label(metaRole.getLabel()).admin() :
-                            Graql.var().label(metaRole.getLabel()).admin();
+                            rolePattern.var().label(metaRole.label()).admin() :
+                            Graql.var().label(metaRole.label()).admin();
                     inferredRelationPlayers.add(RelationPlayer.of(rolePattern, varName.admin()));
                 });
 
@@ -777,7 +777,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Multimap<Role, Var> roleVarMap = getRoleVarMap();
         List<RelationPlayer> relationPlayers = getRelationPlayers();
         roleVarMap.asMap().forEach((role, value) -> {
-            Label roleLabel = role.getLabel();
+            Label roleLabel = role.label();
             relationPlayers.stream()
                     .filter(rp -> rp.getRole().isPresent())
                     .forEach(rp -> {
@@ -940,7 +940,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Answer substitution = getParentQuery().getSubstitution();
 
         Relationship relationship = RelationshipTypeImpl.from(relationType).addRelationshipInferred();
-        roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.addRolePlayer(key, substitution.get(var).asThing())));
+        roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
 
         Answer relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?

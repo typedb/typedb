@@ -72,27 +72,27 @@ public class DegreeTest {
         EntityType thingy = tx.putEntityType("thingy");
         EntityType anotherThing = tx.putEntityType("another");
 
-        ConceptId entity1 = thingy.addEntity().getId();
-        ConceptId entity2 = thingy.addEntity().getId();
-        ConceptId entity3 = thingy.addEntity().getId();
-        ConceptId entity4 = anotherThing.addEntity().getId();
+        ConceptId entity1 = thingy.create().id();
+        ConceptId entity2 = thingy.create().id();
+        ConceptId entity3 = thingy.create().id();
+        ConceptId entity4 = anotherThing.create().id();
 
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        thingy.plays(role1).plays(role2);
-        anotherThing.plays(role1).plays(role2);
-        RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
+        thingy.play(role1).play(role2);
+        anotherThing.play(role1).play(role2);
+        RelationshipType related = tx.putRelationshipType("related").relate(role1).relate(role2);
 
         // relate them
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity1))
-                .addRolePlayer(role2, tx.getConcept(entity2));
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity2))
-                .addRolePlayer(role2, tx.getConcept(entity3));
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity2))
-                .addRolePlayer(role2, tx.getConcept(entity4));
+        related.create()
+                .assign(role1, tx.getConcept(entity1))
+                .assign(role2, tx.getConcept(entity2));
+        related.create()
+                .assign(role1, tx.getConcept(entity2))
+                .assign(role2, tx.getConcept(entity3));
+        related.create()
+                .assign(role1, tx.getConcept(entity2))
+                .assign(role2, tx.getConcept(entity4));
         tx.commit();
 
         tx = session.transaction(GraknTxType.READ);
@@ -163,16 +163,16 @@ public class DegreeTest {
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
 
-        Entity person = tx.putEntityType("person").plays(owner).addEntity();
+        Entity person = tx.putEntityType("person").play(owner).create();
 
-        EntityType animal = tx.putEntityType("animal").plays(pet);
-        Entity dog = tx.putEntityType("dog").sup(animal).addEntity();
+        EntityType animal = tx.putEntityType("animal").play(pet);
+        Entity dog = tx.putEntityType("dog").sup(animal).create();
 
-        tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner)
-                .addRelationship().addRolePlayer(pet, dog).addRolePlayer(owner, person);
+        tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner)
+                .create().assign(pet, dog).assign(owner, person);
 
         Map<Long, Set<ConceptId>> correctDegrees = new HashMap<>();
-        correctDegrees.put(1L, Sets.newHashSet(person.getId(), dog.getId()));
+        correctDegrees.put(1L, Sets.newHashSet(person.id(), dog.id()));
 
         tx.commit();
 
@@ -191,37 +191,37 @@ public class DegreeTest {
         // create a simple graph
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
-        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner);
 
-        EntityType person = tx.putEntityType("person").plays(owner);
-        EntityType animal = tx.putEntityType("animal").plays(pet);
+        EntityType person = tx.putEntityType("person").play(owner);
+        EntityType animal = tx.putEntityType("animal").play(pet);
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<String> altName =
                 tx.putAttributeType("alternate-name", AttributeType.DataType.STRING);
 
-        animal.attribute(name).attribute(altName);
+        animal.has(name).has(altName);
 
         // add data to the graph
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Attribute coconut = name.putAttribute("coconut");
-        Attribute stinky = altName.putAttribute("stinky");
-        mansBestFriend.addRelationship().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        coco.attribute(coconut).attribute(stinky);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        Attribute coconut = name.create("coconut");
+        Attribute stinky = altName.create("stinky");
+        mansBestFriend.create().assign(owner, dave).assign(pet, coco);
+        coco.has(coconut).has(stinky);
 
         // manually compute the degree for small graph
         Map<Long, Set<ConceptId>> subgraphReferenceDegrees = new HashMap<>();
-        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
+        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id()));
 
         // manually compute degree for almost full graph
         Map<Long, Set<ConceptId>> almostFullReferenceDegrees = new HashMap<>();
-        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.getId()));
-        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId()));
+        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.id()));
+        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.id(), coconut.id()));
 
         // manually compute degrees
         Map<Long, Set<ConceptId>> fullReferenceDegrees = new HashMap<>();
-        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.getId()));
-        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId(), stinky.getId()));
+        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.id()));
+        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.id(), coconut.id(), stinky.id()));
 
         tx.commit();
 
@@ -252,18 +252,18 @@ public class DegreeTest {
         Role owner = tx.putRole("owner");
         Role breeder = tx.putRole("breeder");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
-                .relates(pet).relates(owner).relates(breeder);
-        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
-        EntityType animal = tx.putEntityType("animal").plays(pet);
+                .relate(pet).relate(owner).relate(breeder);
+        EntityType person = tx.putEntityType("person").play(owner).play(breeder);
+        EntityType animal = tx.putEntityType("animal").play(pet);
 
         // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        mansBestFriend.addRelationship().addRolePlayer(pet, coco).addRolePlayer(owner, dave);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        mansBestFriend.create().assign(pet, coco).assign(owner, dave);
 
         // manual degrees
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id()));
 
         tx.commit();
 
@@ -278,31 +278,31 @@ public class DegreeTest {
 
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
-        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner);
 
-        EntityType person = tx.putEntityType("person").plays(owner);
-        EntityType animal = tx.putEntityType("animal").plays(pet);
+        EntityType person = tx.putEntityType("person").play(owner);
+        EntityType animal = tx.putEntityType("animal").play(pet);
 
         Role ownership = tx.putRole("ownership");
         Role ownershipResource = tx.putRole("ownership-resource");
         RelationshipType hasOwnershipResource = tx.putRelationshipType("has-ownership-resource")
-                .relates(ownership).relates(ownershipResource);
+                .relate(ownership).relate(ownershipResource);
 
         AttributeType<String> startDate = tx.putAttributeType("start-date", AttributeType.DataType.STRING);
-        startDate.plays(ownershipResource);
-        mansBestFriend.plays(ownership);
+        startDate.play(ownershipResource);
+        mansBestFriend.play(ownership);
 
         // add instances
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Relationship daveOwnsCoco = mansBestFriend.addRelationship()
-                .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        Attribute aStartDate = startDate.putAttribute("01/01/01");
-        hasOwnershipResource.addRelationship()
-                .addRolePlayer(ownershipResource, aStartDate).addRolePlayer(ownership, daveOwnsCoco);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        Relationship daveOwnsCoco = mansBestFriend.create()
+                .assign(owner, dave).assign(pet, coco);
+        Attribute aStartDate = startDate.create("01/01/01");
+        hasOwnershipResource.create()
+                .assign(ownershipResource, aStartDate).assign(ownership, daveOwnsCoco);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId(), aStartDate.getId(), daveOwnsCoco.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id(), aStartDate.id(), daveOwnsCoco.id()));
 
         tx.commit();
 
@@ -319,26 +319,26 @@ public class DegreeTest {
         Role actor = tx.putRole("actor");
         Role characterBeingPlayed = tx.putRole("character-being-played");
         RelationshipType hasCast = tx.putRelationshipType("has-cast")
-                .relates(productionWithCast)
-                .relates(actor)
-                .relates(characterBeingPlayed);
+                .relate(productionWithCast)
+                .relate(actor)
+                .relate(characterBeingPlayed);
 
-        EntityType movie = tx.putEntityType("movie").plays(productionWithCast);
-        EntityType person = tx.putEntityType("person").plays(actor);
-        EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
+        EntityType movie = tx.putEntityType("movie").play(productionWithCast);
+        EntityType person = tx.putEntityType("person").play(actor);
+        EntityType character = tx.putEntityType("character").play(characterBeingPlayed);
 
-        Entity godfather = movie.addEntity();
-        Entity marlonBrando = person.addEntity();
-        Entity donVitoCorleone = character.addEntity();
+        Entity godfather = movie.create();
+        Entity marlonBrando = person.create();
+        Entity donVitoCorleone = character.create();
 
-        hasCast.addRelationship()
-                .addRolePlayer(productionWithCast, godfather)
-                .addRolePlayer(actor, marlonBrando)
-                .addRolePlayer(characterBeingPlayed, donVitoCorleone);
+        hasCast.create()
+                .assign(productionWithCast, godfather)
+                .assign(actor, marlonBrando)
+                .assign(characterBeingPlayed, donVitoCorleone);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(godfather.getId(), marlonBrando.getId(),
-                donVitoCorleone.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(godfather.id(), marlonBrando.id(),
+                donVitoCorleone.id()));
 
         tx.commit();
 
@@ -355,22 +355,22 @@ public class DegreeTest {
         Role owner = tx.putRole("owner");
         Role breeder = tx.putRole("breeder");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
-                .relates(pet).relates(owner).relates(breeder);
-        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
-        EntityType animal = tx.putEntityType("animal").plays(pet);
+                .relate(pet).relate(owner).relate(breeder);
+        EntityType person = tx.putEntityType("person").play(owner).play(breeder);
+        EntityType animal = tx.putEntityType("animal").play(pet);
 
         // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
+        Entity coco = animal.create();
+        Entity dave = person.create();
 
-        mansBestFriend.addRelationship()
-                .addRolePlayer(pet, coco)
-                .addRolePlayer(owner, dave)
-                .addRolePlayer(breeder, dave);
+        mansBestFriend.create()
+                .assign(pet, coco)
+                .assign(owner, dave)
+                .assign(breeder, dave);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId()));
-        referenceDegrees.put(2L, Collections.singleton(dave.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id()));
+        referenceDegrees.put(2L, Collections.singleton(dave.id()));
 
         tx.commit();
 

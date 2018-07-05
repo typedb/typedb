@@ -190,7 +190,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(roleLabels() == null);
 
         ImmutableSet<Label> newRoleLabels =
-                roles.flatMap(Role::subs).map(SchemaConcept::getLabel).collect(toImmutableSet());
+                roles.flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet());
 
         return new AutoValue_RolePlayerFragmentSet(
                 varProperty(), relation(), edge(), rolePlayer(), null, newRoleLabels, relationshipTypeLabels()

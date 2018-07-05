@@ -48,16 +48,16 @@ public class CastingTest extends TxTestBase {
         role1 = tx.putRole("role1");
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");
-        entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        entityType = tx.putEntityType("Entity Type").play(role1).play(role2).play(role3);
+        relationshipType = tx.putRelationshipType("Relationship Type").relate(role1).relate(role2).relate(role3);
     }
 
     @Test
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
-        Entity e1 = entityType.addEntity();
+        Entity e1 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
-                addRolePlayer(role1, e1);
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+                assign(role1, e1);
 
         Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
 
@@ -71,11 +71,11 @@ public class CastingTest extends TxTestBase {
 
     @Test
     public void whenUpdatingRelation_EnsureRolePlayersAreUpdated(){
-        Entity e1 = entityType.addEntity();
-        Entity e3 = entityType.addEntity();
+        Entity e1 = entityType.create();
+        Entity e3 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
-                addRolePlayer(role1, e1);
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+                assign(role1, e1);
 
         Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
         Set<Role> roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
@@ -83,7 +83,7 @@ public class CastingTest extends TxTestBase {
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
-        relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
+        relation.assign(role2, e1).assign(role3, e3);
 
         things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
         roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());

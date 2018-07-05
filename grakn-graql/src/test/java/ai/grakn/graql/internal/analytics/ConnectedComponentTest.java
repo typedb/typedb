@@ -170,11 +170,11 @@ public class ConnectedComponentTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            graph.getEntityType(anotherThing).attribute(attributeType);
-            Attribute aAttribute = attributeType.putAttribute("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.attribute(aAttribute));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.attribute(aAttribute));
+            graph.getEntityType(thing).has(attributeType);
+            graph.getEntityType(anotherThing).has(attributeType);
+            Attribute aAttribute = attributeType.create("blah");
+            graph.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
             graph.commit();
         }
 
@@ -300,30 +300,30 @@ public class ConnectedComponentTest {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.plays(role1).plays(role2);
-            entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
+            entityType1.play(role1).play(role2);
+            entityType2.play(role1).play(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
 
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId();
+            relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id();
 
             List<AttributeType> attributeTypeList = new ArrayList<>();
             attributeTypeList.add(graph.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE));
@@ -335,8 +335,8 @@ public class ConnectedComponentTest {
             attributeTypeList.add(graph.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
-                entityType1.attribute(attributeType);
-                entityType2.attribute(attributeType);
+                entityType1.has(attributeType);
+                entityType2.has(attributeType);
             });
 
             graph.commit();
@@ -351,28 +351,28 @@ public class ConnectedComponentTest {
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            entity1.attribute(graph.getAttributeType(resourceType1).putAttribute(1.2))
-                    .attribute(graph.getAttributeType(resourceType1).putAttribute(1.5))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(4L))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(-1L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity1.has(graph.getAttributeType(resourceType1).create(1.2))
+                    .has(graph.getAttributeType(resourceType1).create(1.5))
+                    .has(graph.getAttributeType(resourceType2).create(4L))
+                    .has(graph.getAttributeType(resourceType2).create(-1L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity2.attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity2.has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity3.attribute(graph.getAttributeType(resourceType1).putAttribute(1.8));
+            entity3.has(graph.getAttributeType(resourceType1).create(1.8));
 
-            entity4.attribute(graph.getAttributeType(resourceType2).putAttribute(0L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity4.has(graph.getAttributeType(resourceType2).create(0L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
             // some resources in, but not connect them to any instances
-            aDisconnectedAttribute = graph.getAttributeType(resourceType1).putAttribute(2.8).getId();
-            graph.getAttributeType(resourceType2).putAttribute(-5L);
-            graph.getAttributeType(resourceType3).putAttribute(100L);
-            graph.getAttributeType(resourceType5).putAttribute(10L);
-            graph.getAttributeType(resourceType6).putAttribute(0.8);
+            aDisconnectedAttribute = graph.getAttributeType(resourceType1).create(2.8).id();
+            graph.getAttributeType(resourceType2).create(-5L);
+            graph.getAttributeType(resourceType3).create(100L);
+            graph.getAttributeType(resourceType5).create(10L);
+            graph.getAttributeType(resourceType6).create(0.8);
 
             graph.commit();
         }

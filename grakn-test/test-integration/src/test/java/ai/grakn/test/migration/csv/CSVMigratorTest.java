@@ -135,7 +135,7 @@ public class CSVMigratorTest {
             AttributeType<String> name = graph.getAttributeType("name");
             AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
+            Entity fluffy = name.attribute("Fluffy").owners().iterator().next().asEntity();
             assertEquals(1, fluffy.attributes(death).count());
         }
     }

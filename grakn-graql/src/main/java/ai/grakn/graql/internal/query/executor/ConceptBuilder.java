@@ -193,7 +193,7 @@ public class ConceptBuilder {
             concept = executor.tx().getConcept(use(ID));
 
             if (has(LABEL)) {
-                concept.asSchemaConcept().setLabel(use(LABEL));
+                concept.asSchemaConcept().label(use(LABEL));
             }
         } else if (has(LABEL)) {
             concept = executor.tx().getSchemaConcept(use(LABEL));
@@ -377,12 +377,12 @@ public class ConceptBuilder {
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
         validateParam(concept, SUPER_CONCEPT, SchemaConcept.class, SchemaConcept::sup);
-        validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::getLabel);
-        validateParam(concept, ID, Concept.class, Concept::getId);
-        validateParam(concept, VALUE, Attribute.class, Attribute::getValue);
-        validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::getDataType);
-        validateParam(concept, WHEN, Rule.class, Rule::getWhen);
-        validateParam(concept, THEN, Rule.class, Rule::getThen);
+        validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::label);
+        validateParam(concept, ID, Concept.class, Concept::id);
+        validateParam(concept, VALUE, Attribute.class, Attribute::value);
+        validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::dataType);
+        validateParam(concept, WHEN, Rule.class, Rule::when);
+        validateParam(concept, THEN, Rule.class, Rule::then);
     }
 
     /**
@@ -408,12 +408,12 @@ public class ConceptBuilder {
         Type type = use(TYPE);
 
         if (type.isEntityType()) {
-            return type.asEntityType().addEntity();
+            return type.asEntityType().create();
         } else if (type.isRelationshipType()) {
-            return type.asRelationshipType().addRelationship();
+            return type.asRelationshipType().create();
         } else if (type.isAttributeType()) {
-            return type.asAttributeType().putAttribute(use(VALUE));
-        } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
+            return type.asAttributeType().create(use(VALUE));
+        } else if (type.label().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
             throw CommonUtil.unreachableStatement("Can't recognize type " + type);
@@ -434,7 +434,7 @@ public class ConceptBuilder {
             concept = executor.tx().putRole(label);
         } else if (superConcept.isAttributeType()) {
             AttributeType attributeType = superConcept.asAttributeType();
-            AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
+            AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.dataType());
             concept = executor.tx().putAttributeType(label, dataType);
         } else if (superConcept.isRule()) {
             concept = executor.tx().putRule(label, use(WHEN), use(THEN));
@@ -464,7 +464,7 @@ public class ConceptBuilder {
         } else if (superConcept.isRule()) {
             subConcept.asRule().sup(superConcept.asRule());
         } else {
-            throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
+            throw GraqlQueryException.insertMetaType(subConcept.label(), superConcept);
         }
     }
 

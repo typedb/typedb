@@ -237,7 +237,7 @@ public class EngineContext extends CompositeTestRule {
         try(GraknTx systemGraph = factory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
-                        keyspaceNames.add(y.asAttribute().getValue().toString());
+                        keyspaceNames.add(y.asAttribute().value().toString());
                     }));
         }
 

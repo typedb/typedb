@@ -67,17 +67,17 @@ public class TransitivityChainKB extends TestKB {
         Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
+            aInstanceIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).id();
         }
 
-        q.addRelationship()
-                .addRolePlayer(qfrom, aInst)
-                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0]));
+        q.create()
+                .assign(qfrom, aInst)
+                .assign(qto, graph.getConcept(aInstanceIds[0]));
 
         for(int i = 0 ; i < n - 1 ; i++) {
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1]));
+                    q.create()
+                            .assign(qfrom, graph.getConcept(aInstanceIds[i]))
+                            .assign(qto, graph.getConcept(aInstanceIds[i+1]));
         }
     }
 }

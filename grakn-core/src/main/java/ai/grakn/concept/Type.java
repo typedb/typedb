@@ -49,7 +49,7 @@ public interface Type extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Type setLabel(Label label);
+    Type label(Label label);
 
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
@@ -59,7 +59,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
+    Type isAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
@@ -68,7 +68,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-    Type plays(Role role) throws GraknTxOperationException;
+    Type play(Role role) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
@@ -88,7 +88,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
+     Type has(AttributeType attributeType) throws GraknTxOperationException;
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -164,7 +164,7 @@ public interface Type extends SchemaConcept {
      * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
      * @return The {@link Type} itself.
      */
-    Type deletePlays(Role role);
+    Type unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
@@ -172,7 +172,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
      * @return The {@link Type} itself.
      */
-    Type deleteAttribute(AttributeType attributeType);
+    Type unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link Type}
@@ -180,7 +180,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
      * @return The {@link Type} itself.
      */
-    Type deleteKey(AttributeType attributeType);
+    Type unkey(AttributeType attributeType);
 
     @Deprecated
     @CheckReturnValue

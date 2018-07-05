@@ -150,7 +150,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
             if (required()) {
                 entityTypeConcept.key(attributeTypeConcept);
             } else {
-                entityTypeConcept.attribute(attributeTypeConcept);
+                entityTypeConcept.has(attributeTypeConcept);
             }
         };
 
@@ -165,9 +165,9 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (required()) {
-                    type.deleteKey(attributeType);
+                    type.unkey(attributeType);
                 } else {
-                    type.deleteAttribute(attributeType);
+                    type.unhas(attributeType);
                 }
             }
         };
@@ -183,7 +183,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
         Var predicateVar = var().asUserDefined();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null? schemaConcept.getId() : null;
+        ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
         return HasAtom.create(resVar, predicateVar, predicateId, parent);

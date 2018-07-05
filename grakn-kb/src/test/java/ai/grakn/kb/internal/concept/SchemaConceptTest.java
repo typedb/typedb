@@ -54,10 +54,10 @@ public class SchemaConceptTest extends TxTestBase {
         assertEquals(entityType, tx.getType(originalLabel));
 
         //Change The Label
-        entityType.setLabel(newLabel);
+        entityType.label(newLabel);
 
         //Check the label is changes
-        assertEquals(newLabel, entityType.getLabel());
+        assertEquals(newLabel, entityType.label());
         assertEquals(entityType, tx.getType(newLabel));
 
         //Check old label is dead
@@ -75,12 +75,12 @@ public class SchemaConceptTest extends TxTestBase {
         Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
         Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
 
-        entityType.attribute(attributeType);
+        entityType.has(attributeType);
 
         RelationshipType relationshipType = tx.getRelationshipType(hasResourceLabel.getValue());
-        Assert.assertEquals(hasResourceLabel, relationshipType.getLabel());
+        Assert.assertEquals(hasResourceLabel, relationshipType.label());
 
-        Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::label).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceOwnerLabel.getValue())));
@@ -107,6 +107,6 @@ public class SchemaConceptTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
 
-        e1.setLabel(label);
+        e1.label(label);
     }
 }

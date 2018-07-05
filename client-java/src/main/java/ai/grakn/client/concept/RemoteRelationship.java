@@ -50,7 +50,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     }
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
-    public final Map<Role, Set<Thing>> allRolePlayers() {
+    public final Map<Role, Set<Thing>> rolePlayersMap() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRolePlayers(MethodProto.GetRolePlayers.Req.getDefaultInstance()).build();
 
@@ -73,7 +73,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
         return rolePlayerMap;
     }
 
-    @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
+    @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRolePlayersByRoles(MethodProto.GetRolePlayersByRoles.Req.newBuilder()
@@ -88,7 +88,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     }
 
     @Override
-    public final Relationship addRolePlayer(Role role, Thing player) {
+    public final Relationship assign(Role role, Thing player) {
         ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
@@ -102,7 +102,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     }
 
     @Override
-    public final void removeRolePlayer(Role role, Thing player) {
+    public final void unassign(Role role, Thing player) {
         ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))

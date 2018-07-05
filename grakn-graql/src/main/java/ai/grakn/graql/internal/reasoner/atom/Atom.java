@@ -112,14 +112,14 @@ public abstract class Atom extends AtomicBase {
         boolean unboundVariables = varNames.stream()
                 .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
         }
 
         SchemaConcept schemaConcept = getSchemaConcept();
         if (schemaConcept == null){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
         } else if (schemaConcept.isImplicit()){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
         }
         return errors;
     }

@@ -169,6 +169,6 @@ public class SNB {
     }
 
     static <T> T resource(Answer result, Var var) {
-        return result.get(var).<T>asAttribute().getValue();
+        return result.get(var).<T>asAttribute().value();
     }
 }

@@ -104,7 +104,7 @@ public class UndefineQueryTest {
     public void whenUndefiningDataType_DoNothing() {
         qb.undefine(label("name").datatype(STRING)).execute();
 
-        assertEquals(STRING, tx.getAttributeType("name").getDataType());
+        assertEquals(STRING, tx.getAttributeType("name").dataType());
     }
 
     @Test
@@ -157,7 +157,7 @@ public class UndefineQueryTest {
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        qb.undefine(var().id(newType.getId()).sub(ENTITY)).execute();
+        qb.undefine(var().id(newType.id()).sub(ENTITY)).execute();
 
         assertNull(tx.getType(NEW_TYPE));
     }
@@ -210,22 +210,22 @@ public class UndefineQueryTest {
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
         qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         qb.undefine(label(NEW_TYPE).regex("abc")).execute();
 
-        assertNull(tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertNull(tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
         qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         qb.undefine(label(NEW_TYPE).regex("xyz")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
@@ -327,7 +327,7 @@ public class UndefineQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
 
-        qb.undefine(var().id(movie.getId()).isa("movie")).execute();
+        qb.undefine(var().id(movie.id()).isa("movie")).execute();
     }
 
     @Test

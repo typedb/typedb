@@ -63,7 +63,7 @@ public class GraknTxTinkerTest extends TxTestBase {
     }
     private synchronized void addRandomEntity(){
         try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).transaction(GraknTxType.WRITE)){
-            graph.getEntityType("Thing").addEntity();
+            graph.getEntityType("Thing").create();
             graph.commit();
         }
     }

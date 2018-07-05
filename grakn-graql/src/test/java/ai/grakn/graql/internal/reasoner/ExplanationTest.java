@@ -167,8 +167,8 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_QueryingSpecificAnswer(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + europe.getId() + "'; get;";
+                "$x id '" + polibuda.id() + "';" +
+                "$y id '" + europe.id() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -187,8 +187,8 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
-                "$x id '" + polibuda.getId() + "';" +
-                "$z id '" + masovia.getId() + "';" +
+                "$x id '" + polibuda.id() + "';" +
+                "$z id '" + masovia.id() + "';" +
                 "get $y;";
 
         GetQuery query = iqb.parse(queryString);
@@ -201,8 +201,8 @@ public class ExplanationTest {
     public void testExplainingQueryContainingContradiction(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + uw.getId() + "'; get;";
+                "$x id '" + polibuda.id() + "';" +
+                "$y id '" + uw.id() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -227,8 +227,8 @@ public class ExplanationTest {
         Concept a2 = getConcept(expGraph, "name", "a2");
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa baseRelation;" +
-                "$x id '" + a1.getId() + "';" +
-                "$y id '" + a2.getId() + "'; get;";
+                "$x id '" + a1.id() + "';" +
+                "$y id '" + a2.id() + "'; get;";
 
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -308,8 +308,8 @@ public class ExplanationTest {
             testExplanation(answer);
 
             String specificQuery = "match " +
-                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
-                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
             Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());

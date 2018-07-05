@@ -132,7 +132,7 @@ public class Utility {
                     .stream().map(answer -> answer.get("z"))
                     .findFirst();
             if (firstConcept.isPresent()) {
-                return firstConcept.get().getId();
+                return firstConcept.get().id();
             }
         }
         return null;

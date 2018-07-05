@@ -185,7 +185,7 @@ public class KeyspaceStoreTest {
         try(GraknTx tx = graknFactory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
             AttributeType<String> keyspaceName = tx.getAttributeType("keyspace-name");
             return tx.getEntityType("keyspace").instances().
-                    map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).
+                    map(e -> e.attributes(keyspaceName).iterator().next().value().toString()).
                     collect(Collectors.toSet());
         }
     }

@@ -48,18 +48,18 @@ public class RoleTest extends TxTestBase {
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() throws Exception {
-        assertThat(role.relationshipTypes().collect(toSet()), empty());
-        relationshipType.relates(role);
-        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(role.relationships().collect(toSet()), empty());
+        relationshipType.relate(role);
+        assertThat(role.relationships().collect(toSet()), containsInAnyOrder(relationshipType));
     }
 
     @Test
     public void whenGettingTypeEntityTypesAllowedToPlayARole_ReturnTheEntityTypes(){
-        Type type1 = tx.putEntityType("CT1").plays(role);
-        Type type2 = tx.putEntityType("CT2").plays(role);
-        Type type3 = tx.putEntityType("CT3").plays(role);
-        Type type4 = tx.putEntityType("CT4").plays(role);
-        assertThat(role.playedByTypes().collect(toSet()), containsInAnyOrder(type1, type2, type3, type4));
+        Type type1 = tx.putEntityType("CT1").play(role);
+        Type type2 = tx.putEntityType("CT2").play(role);
+        Type type3 = tx.putEntityType("CT3").play(role);
+        Type type4 = tx.putEntityType("CT4").play(role);
+        assertThat(role.players().collect(toSet()), containsInAnyOrder(type1, type2, type3, type4));
     }
 
     @Test
@@ -70,7 +70,7 @@ public class RoleTest extends TxTestBase {
         assertNull(tx.getRole("My Role"));
 
         Role role = tx.putRole("New Role Type");
-        tx.putEntityType("Entity Type").plays(role);
+        tx.putEntityType("Entity Type").play(role);
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role).getMessage());
@@ -81,7 +81,7 @@ public class RoleTest extends TxTestBase {
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
         Role role2 = tx.putRole("New Role Type");
-        tx.putRelationshipType("Thing").relates(role2).relates(role);
+        tx.putRelationshipType("Thing").relate(role2).relate(role);
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role2).getMessage());
@@ -93,13 +93,13 @@ public class RoleTest extends TxTestBase {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        RelationshipType relationshipType = tx.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
-        EntityType entityType = tx.putEntityType("entityType").plays(roleA).plays(roleB);
+        RelationshipType relationshipType = tx.putRelationshipType("relationTypes").relate(roleA).relate(roleB);
+        EntityType entityType = tx.putEntityType("entityType").play(roleA).play(roleB);
 
-        Entity a = entityType.addEntity();
-        Entity b = entityType.addEntity();
+        Entity a = entityType.create();
+        Entity b = entityType.create();
 
-        relationshipType.addRelationship().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
+        relationshipType.create().assign(roleA, a).assign(roleB, b);
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(roleA).getMessage());
@@ -111,12 +111,12 @@ public class RoleTest extends TxTestBase {
     public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidKBException {
         Role roleA = tx.putRole("roleA");
         Role roleB = tx.putRole("roleB");
-        relationshipType.relates(roleA).relates(role);
-        RelationshipType relationshipType2 = tx.putRelationshipType("relationshipType2").relates(roleB).relates(role);
+        relationshipType.relate(roleA).relate(role);
+        RelationshipType relationshipType2 = tx.putRelationshipType("relationshipType2").relate(roleB).relate(role);
         tx.commit();
 
-        assertThat(roleA.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType));
-        assertThat(roleB.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType2));
-        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
+        assertThat(roleA.relationships().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(roleB.relationships().collect(toSet()), containsInAnyOrder(relationshipType2));
+        assertThat(role.relationships().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
     }
 }

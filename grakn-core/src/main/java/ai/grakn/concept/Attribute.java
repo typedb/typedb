@@ -48,7 +48,7 @@ public interface Attribute<D> extends Thing {
      * @return The value itself
      */
     @CheckReturnValue
-    D getValue();
+    D value();
 
     /**
      * Retrieves the type of the {@link Attribute}, that is, the {@link AttributeType} of which this resource is an Thing.
@@ -72,7 +72,7 @@ public interface Attribute<D> extends Thing {
      * @return The list of all Instances that possess this {@link Attribute}.
      */
     @CheckReturnValue
-    Stream<Thing> ownerInstances();
+    Stream<Thing> owners();
 
     /**
      * If the {@link Attribute} is unique, this method retrieves the Thing that possesses it.
@@ -82,7 +82,7 @@ public interface Attribute<D> extends Thing {
     @CheckReturnValue
     @Nullable
     default Thing owner() {
-        Iterator<Thing> owners = ownerInstances().iterator();
+        Iterator<Thing> owners = owners().iterator();
         if(owners.hasNext()) {
             return owners.next();
         } else {
@@ -97,7 +97,7 @@ public interface Attribute<D> extends Thing {
      * @return The instance itself
      */
     @Override
-    Attribute attribute(Attribute attribute);
+    Attribute has(Attribute attribute);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Attribute}
@@ -105,7 +105,7 @@ public interface Attribute<D> extends Thing {
      * @return The {@link Attribute} itself
      */
     @Override
-    Attribute deleteAttribute(Attribute attribute);
+    Attribute unhas(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")

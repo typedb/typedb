@@ -238,17 +238,17 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
         AttributeType.DataType<?> dataType = null;
         for (Type type : targetTypes()) {
             // check if the selected type is a attribute type
-            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
             if (dataType == null) {
                 // check if the attribute type has data-type LONG or DOUBLE
-                dataType = attributeType.getDataType();
+                dataType = attributeType.dataType();
                 if (!dataType.equals(AttributeType.DataType.LONG) && !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.getLabel());
+                    throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.label());
                 }
             } else {
                 // check if all the attribute types have the same data-type
-                if (!dataType.equals(attributeType.getDataType())) {
+                if (!dataType.equals(attributeType.dataType())) {
                     throw GraqlQueryException.attributesWithDifferentDataTypes(query.of().get());
                 }
             }
@@ -397,7 +397,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         return type.subs();
                     })
-                    .map(SchemaConcept::getLabel)
+                    .map(SchemaConcept::label)
                     .collect(Collectors.toSet());
         }
 
@@ -442,7 +442,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                         if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
                         return type.subs();
                     })
-                    .map(SchemaConcept::getLabel)
+                    .map(SchemaConcept::label)
                     .collect(Collectors.toSet());
         }
 
@@ -638,8 +638,8 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
                 .flatMap(RelationshipType::relates)
-                .flatMap(Role::playedByTypes)
-                .map(type -> tx.convertToId(type.getLabel()))
+                .flatMap(Role::players)
+                .map(type -> tx.convertToId(type.label()))
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
@@ -654,7 +654,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
         // If the sub graph contains attributes, we may need to add implicit relations to the path
         return types.stream()
                 .filter(Concept::isAttributeType)
-                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()))
+                .map(attributeType -> Schema.ImplicitType.HAS.getLabel(attributeType.label()))
                 .collect(Collectors.toSet());
     }
 
@@ -672,7 +672,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                 .map((label) -> {
                     Type type = tx.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
                     return type;
                 })
                 .flatMap(Type::subs)
@@ -686,7 +686,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      */
     private Set<Label> targetTypeLabels() {
         return targetTypes().stream()
-                .map(SchemaConcept::getLabel)
+                .map(SchemaConcept::label)
                 .collect(CommonUtil.toImmutableSet());
     }
 
@@ -770,7 +770,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      * @return a set of Concept Type Labels
      */
     private ImmutableSet<Label> scopeTypeLabels() {
-        return scopeTypes().map(SchemaConcept::getLabel).collect(CommonUtil.toImmutableSet());
+        return scopeTypes().map(SchemaConcept::label).collect(CommonUtil.toImmutableSet());
     }
 
 
@@ -796,7 +796,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
     private boolean scopeContainsInstances(ConceptId... ids) {
         for (ConceptId id : ids) {
             Thing thing = tx.getConcept(id);
-            if (thing == null || !scopeTypeLabels().contains(thing.type().getLabel())) return false;
+            if (thing == null || !scopeTypeLabels().contains(thing.type().label())) return false;
         }
         return true;
     }

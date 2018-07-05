@@ -70,25 +70,25 @@ public class LinearTransitivityMatrixKB extends TestKB {
         Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {
             for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).getId();
+                aInstancesIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).id();
             }
         }
 
-        Q.addRelationship()
-                .addRolePlayer(Qfrom, aInst)
-                .addRolePlayer(Qto, graph.getConcept(aInstancesIds[1][1]));
+        Q.create()
+                .assign(Qfrom, aInst)
+                .assign(Qto, graph.getConcept(aInstancesIds[1][1]));
 
         for(int i = 1 ; i <= n ; i++) {
             for (int j = 1; j <= m; j++) {
                 if ( i < n ) {
-                    Q.addRelationship()
-                            .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
-                            .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i+1][j]));
+                    Q.create()
+                            .assign(Qfrom, graph.getConcept(aInstancesIds[i][j]))
+                            .assign(Qto, graph.getConcept(aInstancesIds[i+1][j]));
                 }
                 if ( j < m){
-                    Q.addRelationship()
-                            .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
-                            .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i][j+1]));
+                    Q.create()
+                            .assign(Qfrom, graph.getConcept(aInstancesIds[i][j]))
+                            .assign(Qto, graph.getConcept(aInstancesIds[i][j+1]));
                 }
             }
         }

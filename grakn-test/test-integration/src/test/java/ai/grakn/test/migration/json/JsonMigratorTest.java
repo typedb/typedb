@@ -114,20 +114,20 @@ public class JsonMigratorTest {
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
             Attribute number = getResource(graph, streetAddress, Label.of("number"));
-            assertEquals(21L, number.getValue());
+            assertEquals(21L, number.value());
 
             Attribute street = getResource(graph, streetAddress, Label.of("street"));
-            assertEquals("2nd Street", street.getValue());
+            assertEquals("2nd Street", street.value());
 
             Attribute city = getResource(graph, address, Label.of("city")).asAttribute();
-            assertEquals("New York", city.getValue());
+            assertEquals("New York", city.value());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
             assertEquals(2, phoneNumbers.size());
 
             boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
-                Object location = getResource(graph, phoneNumber, Label.of("location")).getValue();
-                Object code = getResource(graph, phoneNumber, Label.of("code")).getValue();
+                Object location = getResource(graph, phoneNumber, Label.of("location")).value();
+                Object code = getResource(graph, phoneNumber, Label.of("code")).value();
                 return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
             });
 
@@ -158,17 +158,17 @@ public class JsonMigratorTest {
 
             Entity thing = things.iterator().next();
 
-            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(Attribute::getValue).collect(toSet());
+            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(Attribute::value).collect(toSet());
             assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
             Attribute aBoolean = getResource(graph, thing, Label.of("a-boolean"));
-            assertEquals(true, aBoolean.getValue());
+            assertEquals(true, aBoolean.value());
 
             Attribute aNumber = getResource(graph, thing, Label.of("a-number"));
-            assertEquals(42.1, aNumber.getValue());
+            assertEquals(42.1, aNumber.value());
 
             Attribute aString = getResource(graph, thing, Label.of("a-string"));
-            assertEquals("hi", aString.getValue());
+            assertEquals("hi", aString.value());
 
             assertEquals(0, graph.getAttributeType("a-null").instances().count());
         }
@@ -191,7 +191,7 @@ public class JsonMigratorTest {
 
             Stream<Entity> things = theThing.instances();
             boolean thingsCorrect = things.allMatch(thing -> {
-                Object string = getResource(graph, thing, Label.of("a-string")).getValue();
+                Object string = getResource(graph, thing, Label.of("a-string")).value();
                 return string.equals("hello") || string.equals("goodbye");
             });
 

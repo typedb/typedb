@@ -50,7 +50,7 @@ public interface Concept {
      * @return A value the concept's unique id.
      */
     @CheckReturnValue
-    ConceptId getId();
+    ConceptId id();
 
     /**
      * Used for determining which {@link Keyspace} a {@link Concept} was created in and is bound to.

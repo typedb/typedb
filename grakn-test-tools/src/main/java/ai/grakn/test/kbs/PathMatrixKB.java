@@ -59,21 +59,21 @@ public class PathMatrixKB extends AbstractPathKB {
             }
         }
 
-        arc.addRelationship()
-                .addRolePlayer(arcFrom, getInstance(graph, "a0"))
-                .addRolePlayer(arcTo, getInstance(graph, "a0,0"));
+        arc.create()
+                .assign(arcFrom, getInstance(graph, "a0"))
+                .assign(arcTo, getInstance(graph, "a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    arc.addRelationship()
-                            .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
-                            .addRolePlayer(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
+                    arc.create()
+                            .assign(arcFrom, getInstance(graph, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    arc.addRelationship()
-                            .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
-                            .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
+                    arc.create()
+                            .assign(arcFrom, getInstance(graph, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
                 }
             }
         }

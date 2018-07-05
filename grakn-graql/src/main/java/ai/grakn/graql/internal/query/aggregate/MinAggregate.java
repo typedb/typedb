@@ -49,7 +49,7 @@ class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Op
     }
 
     private T getValue(Answer result) {
-        return result.get(varName).<T>asAttribute().getValue();
+        return result.get(varName).<T>asAttribute().value();
     }
 
     @Override

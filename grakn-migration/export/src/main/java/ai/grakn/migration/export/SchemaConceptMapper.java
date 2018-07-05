@@ -77,11 +77,11 @@ public class SchemaConceptMapper {
      * @return {@link VarPattern} containing basic information about the given type
      */
     private static VarPattern formatBase(SchemaConcept schemaConcept) {
-        VarPattern var = var().label(schemaConcept.getLabel());
+        VarPattern var = var().label(schemaConcept.label());
 
         SchemaConcept superType = schemaConcept.sup();
         if (schemaConcept.sup() != null) {
-            var = var.sub(Graql.label(superType.getLabel()));
+            var = var.sub(Graql.label(superType.label()));
         }
 
         if(schemaConcept.isType()) {
@@ -110,7 +110,7 @@ public class SchemaConceptMapper {
      */
     private static VarPattern plays(VarPattern var, Type type) {
         for(Role role:type.plays().collect(Collectors.toSet())){
-            var = var.plays(Graql.label(role.getLabel()));
+            var = var.plays(Graql.label(role.label()));
         }
         return var;
     }
@@ -123,7 +123,7 @@ public class SchemaConceptMapper {
      */
     private static VarPattern relates(VarPattern var, RelationshipType type){
         for(Role role:type.relates().collect(Collectors.toSet())){
-            var = var.relates(Graql.label(role.getLabel()));
+            var = var.relates(Graql.label(role.label()));
         }
         return var;
     }
@@ -135,7 +135,7 @@ public class SchemaConceptMapper {
      * @return var with appropriate datatype
      */
     private static VarPattern datatype(VarPattern var, AttributeType type) {
-        AttributeType.DataType dataType = type.getDataType();
+        AttributeType.DataType dataType = type.dataType();
         if (dataType != null) {
             return var.datatype(dataType);
         } else {

@@ -59,7 +59,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
         return create(createIdVar(varName.asUserDefined(), id), parent);
     }
     public static IdPredicate create(Var varName, Concept con, ReasonerQuery parent) {
-        return create(createIdVar(varName.asUserDefined(), con.getId()), parent);
+        return create(createIdVar(varName.asUserDefined(), con.id()), parent);
     }
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
@@ -76,7 +76,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     private static VarPattern createIdVar(Var varName, Label label, GraknTx graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
-        return varName.id(schemaConcept.getId());
+        return varName.id(schemaConcept.id());
     }
 
     @Override

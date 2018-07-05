@@ -54,11 +54,11 @@ public class MatchBenchmark extends BenchmarkTest {
         EntityType entityType = graphEntity.putEntityType(BENCHMARK_ENTITY_TYPE);
         AttributeType<String> attributeType =
                 graphEntity.putAttributeType(BENCHMARK_ATTRIBUTE_TYPE, AttributeType.DataType.STRING);
-        entityType.attribute(attributeType);
+        entityType.has(attributeType);
 
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++) {
-                entityType.addEntity().attribute(attributeType.putAttribute(String.valueOf(i)));
+                entityType.create().has(attributeType.create(String.valueOf(i)));
             }
         }
         graphEntity.commit();

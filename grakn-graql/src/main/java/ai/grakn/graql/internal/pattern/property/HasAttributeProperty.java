@@ -138,7 +138,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
-            ConceptId relationshipId = thing.attributeRelationship(attributeConcept).getId();
+            ConceptId relationshipId = thing.relhas(attributeConcept).id();
             executor.builder(relationship().var()).id(relationshipId);
         };
 

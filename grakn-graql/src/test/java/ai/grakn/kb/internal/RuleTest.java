@@ -83,7 +83,7 @@ public class RuleTest {
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getLabel(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.label(), "Your-Type"));
 
         graknTx.commit();
     }
@@ -281,7 +281,7 @@ public class RuleTest {
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
-        ConceptId randomId = graknTx.admin().getMetaConcept().getId();
+        ConceptId randomId = graknTx.admin().getMetaConcept().id();
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x id '" + randomId.getValue() + "'"),
@@ -437,7 +437,7 @@ public class RuleTest {
         Rule rule = graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(rule.getLabel()));
+        expectedException.expectMessage(message.getMessage(rule.label()));
         graknTx.commit();
     }
 
@@ -446,7 +446,7 @@ public class RuleTest {
         Rule rule = graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(then.toString(), rule.getLabel()));
+        expectedException.expectMessage(message.getMessage(then.toString(), rule.label()));
         graknTx.commit();
     }
 
@@ -464,19 +464,19 @@ public class RuleTest {
         Role role3 = graph.putRole("role3");
 
         graph.putEntityType("entity1")
-                .attribute(res1)
-                .attribute(res2)
-                .plays(role1)
-                .plays(role2);
+                .has(res1)
+                .has(res2)
+                .play(role1)
+                .play(role2);
 
         graph.putRelationshipType("relation1")
-                .relates(role1)
-                .relates(role2)
-                .relates(role3)
-                .plays(role1)
-                .plays(role2);
+                .relate(role1)
+                .relate(role2)
+                .relate(role3)
+                .play(role1)
+                .play(role2);
         graph.putRelationshipType("relation2")
-                .relates(role3);
+                .relate(role3);
     }
 
     @Test
@@ -488,13 +488,13 @@ public class RuleTest {
         then = graknTx.graql().parser().parsePattern("$x isa type2");
 
         Rule rule = graknTx.putRule("My-Happy-Rule", when, then);
-        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), empty());
-        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), empty());
+        assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
+        assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
 
         graknTx.commit();
 
-        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
-        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
+        assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
+        assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
     }
 
     @Test

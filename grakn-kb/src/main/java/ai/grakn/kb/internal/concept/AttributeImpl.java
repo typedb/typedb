@@ -59,15 +59,15 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
-        Object persistenceValue = castValue(type.getDataType(), value);
+        Object persistenceValue = castValue(type.dataType(), value);
         AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, persistenceValue);
 
         //Generate the index again. Faster than reading
-        String index = Schema.generateAttributeIndex(type.getLabel(), value.toString());
+        String index = Schema.generateAttributeIndex(type.label(), value.toString());
         vertexElement.propertyUnique(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
-        vertexElement.tx().txCache().addNewAttribute(index, attribute.getId());
+        vertexElement.tx().txCache().addNewAttribute(index, attribute.id());
         return attribute;
     }
 
@@ -99,14 +99,14 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public AttributeType.DataType<D> dataType() {
-        return type().getDataType();
+        return type().dataType();
     }
 
     /**
      * @return The list of all Instances which posses this resource
      */
     @Override
-    public Stream<Thing> ownerInstances() {
+    public Stream<Thing> owners() {
         //Get Owner via implicit structure
         Stream<Thing> implicitOwners = getShortcutNeighbours();
         //Get owners via edges
@@ -130,13 +130,13 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      * @return The value casted to the correct type
      */
     @Override
-    public D getValue(){
+    public D value(){
         return dataType().getValue(vertex().property(dataType().getVertexProperty()));
     }
 
     @Override
     public String innerToString(){
-        return super.innerToString() + "- Value [" + getValue() + "] ";
+        return super.innerToString() + "- Value [" + value() + "] ";
     }
 
     public static AttributeImpl from(Attribute attribute){

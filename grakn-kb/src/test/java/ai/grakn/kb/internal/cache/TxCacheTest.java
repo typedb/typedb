@@ -78,17 +78,17 @@ public class TxCacheTest extends TxTestBase {
     public void whenCreatingRelations_EnsureRolePlayersAreCached(){
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
+        EntityType t1 = tx.putEntityType("t1").play(r1).play(r2);
+        RelationshipType rt1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
 
-        Entity e1 = t1.addEntity();
-        Entity e2 = t1.addEntity();
+        Entity e1 = t1.create();
+        Entity e2 = t1.create();
 
         assertThat(tx.txCache().getModifiedCastings(), empty());
 
-        Set<Casting> castings = ((RelationshipImpl) rt1.addRelationship().
-                addRolePlayer(r1, e1).
-                addRolePlayer(r2, e2)).reified().get().
+        Set<Casting> castings = ((RelationshipImpl) rt1.create().
+                assign(r1, e1).
+                assign(r2, e2)).reified().get().
                 castingsRelation().collect(toSet());
 
         assertTrue(tx.txCache().getModifiedCastings().containsAll(castings));
@@ -98,12 +98,12 @@ public class TxCacheTest extends TxTestBase {
     public void whenCreatingSuperTypes_EnsureLogContainsSubTypeCastings() {
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
+        EntityType t1 = tx.putEntityType("t1").play(r1).play(r2);
         EntityType t2 = tx.putEntityType("t2");
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
-        Entity i1 = t1.addEntity();
-        Entity i2 = t1.addEntity();
-        RelationshipImpl relation = (RelationshipImpl) rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
+        RelationshipType rt1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
+        Entity i1 = t1.create();
+        Entity i2 = t1.create();
+        RelationshipImpl relation = (RelationshipImpl) rt1.create().assign(r1, i1).assign(r2, i2);
 
         tx.commit();
         tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
@@ -121,14 +121,14 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
         tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
 
-        Entity i1 = t1.addEntity();
+        Entity i1 = t1.create();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
     }
 
     @Test
     public void whenDeletingAnInstanceWithNoRelations_EnsureLogIsEmpty(){
         EntityType t1 = tx.putEntityType("1");
-        Entity i1 = t1.addEntity();
+        Entity i1 = t1.create();
 
         tx.commit();
         tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
@@ -148,21 +148,21 @@ public class TxCacheTest extends TxTestBase {
         assertThat(txCache.getShardingCount().keySet(), empty());
 
         //Add some instances
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
-        relationshipType.addRelationship();
-        assertEquals(2, (long) txCache.getShardingCount().get(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
+        Entity e1 = entityType.create();
+        Entity e2 = entityType.create();
+        relationshipType.create();
+        assertEquals(2, (long) txCache.getShardingCount().get(entityType.id()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.id()));
 
         //Remove an entity
         e1.delete();
-        assertEquals(1, (long) txCache.getShardingCount().get(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(entityType.id()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.id()));
 
         //Remove another entity
         e2.delete();
-        assertFalse(txCache.getShardingCount().containsKey(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
+        assertFalse(txCache.getShardingCount().containsKey(entityType.id()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.id()));
     }
 
     @Test
@@ -173,14 +173,14 @@ public class TxCacheTest extends TxTestBase {
         AttributeType<String> attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = tx.putRole("role 1");
         Role role2 = tx.putRole("role 2");
-        EntityType entityType = tx.putEntityType("My Type").plays(role1).plays(role2).attribute(attributeType);
-        RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
-        Attribute<String> r1 = attributeType.putAttribute("test");
+        EntityType entityType = tx.putEntityType("My Type").play(role1).play(role2).has(attributeType);
+        RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relate(role1).relate(role2);
+        Entity e1 = entityType.create();
+        Entity e2 = entityType.create();
+        Attribute<String> r1 = attributeType.create("test");
 
-        e1.attribute(r1);
-        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        e1.has(r1);
+        relationshipType.create().assign(role1, e1).assign(role2, e2);
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
@@ -245,34 +245,34 @@ public class TxCacheTest extends TxTestBase {
     public void whenMutatingRoleTypesOfTypeCreatedInAnotherTransaction_EnsureTransactionBoundConceptsAreMutated(){
         Role rol1 = tx.putRole("role1");
         Role rol2 = tx.putRole("role2");
-        EntityType e1 = tx.putEntityType("e1").plays(rol1).plays(rol2);
+        EntityType e1 = tx.putEntityType("e1").play(rol1).play(rol2);
         EntityType e2 = tx.putEntityType("e2");
-        RelationshipType rel = tx.putRelationshipType("rel").relates(rol1).relates(rol2);
+        RelationshipType rel = tx.putRelationshipType("rel").relate(rol1).relate(rol2);
         tx.commit();
 
         //Check concepts match what is in transaction cache
         tx = session.transaction(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
-        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
-        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
-        assertTxBoundConceptMatches(rol1, t -> t.relationshipTypes().collect(toSet()), containsInAnyOrder(rel));
-        assertTxBoundConceptMatches(rol2, t -> t.relationshipTypes().collect(toSet()), containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rol1, t -> t.players().collect(toSet()), containsInAnyOrder(e1));
+        assertTxBoundConceptMatches(rol2, t -> t.players().collect(toSet()), containsInAnyOrder(e1));
+        assertTxBoundConceptMatches(rol1, t -> t.relationships().collect(toSet()), containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rol2, t -> t.relationships().collect(toSet()), containsInAnyOrder(rel));
 
         //Role Type 1 and 2 played by e2 now
-        e2.plays(rol1);
-        e2.plays(rol2);
-        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
-        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
+        e2.play(rol1);
+        e2.play(rol2);
+        assertTxBoundConceptMatches(rol1, t -> t.players().collect(toSet()), containsInAnyOrder(e1, e2));
+        assertTxBoundConceptMatches(rol2, t -> t.players().collect(toSet()), containsInAnyOrder(e1, e2));
 
         //e1 no longer plays role 1
-        e1.deletePlays(rol1);
-        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e2));
-        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
+        e1.unplay(rol1);
+        assertTxBoundConceptMatches(rol1, t -> t.players().collect(toSet()), containsInAnyOrder(e2));
+        assertTxBoundConceptMatches(rol2, t -> t.players().collect(toSet()), containsInAnyOrder(e1, e2));
 
         //Role 2 no longer part of relation type
-        rel.deleteRelates(rol2);
-        assertTxBoundConceptMatches(rol2, t -> t.relationshipTypes().collect(toSet()), empty());
+        rel.unrelate(rol2);
+        assertTxBoundConceptMatches(rol2, t -> t.relationships().collect(toSet()), empty());
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1));
     }
 
@@ -286,6 +286,6 @@ public class TxCacheTest extends TxTestBase {
     @SuppressWarnings("unchecked")
     private <T extends SchemaConcept> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
         assertThat(resultSupplier.apply(type), expectedMatch);
-        assertThat(resultSupplier.apply(tx.txCache().getCachedSchemaConcept(type.getLabel())), expectedMatch);
+        assertThat(resultSupplier.apply(tx.txCache().getCachedSchemaConcept(type.label())), expectedMatch);
     }
 }

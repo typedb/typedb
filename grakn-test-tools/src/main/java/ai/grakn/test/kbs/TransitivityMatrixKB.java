@@ -70,25 +70,25 @@ public class TransitivityMatrixKB extends TestKB {
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                aInstanceIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).getId();
+                aInstanceIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).id();
             }
         }
         
-        q.addRelationship()
-                .addRolePlayer(qfrom, aInst)
-                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
+        q.create()
+                .assign(qfrom, aInst)
+                .assign(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
+                    q.create()
+                            .assign(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .assign(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
+                    q.create()
+                            .assign(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .assign(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }
             }
         }

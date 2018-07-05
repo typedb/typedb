@@ -68,7 +68,7 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
         EntityType entityType = tx.putEntityType("test-name");
-        assertEquals(entityType, tx.getConcept(entityType.getId()));
+        assertEquals(entityType, tx.getConcept(entityType.id()));
     }
 
     @Test
@@ -86,9 +86,9 @@ public class GraknTxTest extends TxTestBase {
         AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.DataType.STRING);
 
-        Attribute<String> r1 = t1.putAttribute(targetValue);
-        Attribute<String> r2 = t2.putAttribute(targetValue);
-        t2.putAttribute("Dragon");
+        Attribute<String> r1 = t1.create(targetValue);
+        Attribute<String> r2 = t2.create(targetValue);
+        t2.create("Dragon");
 
         assertThat(tx.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
     }
@@ -210,8 +210,8 @@ public class GraknTxTest extends TxTestBase {
 
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
-        RelationshipType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
+        EntityType e1 = tx.putEntityType("e1").play(r1).play(r2);
+        RelationshipType rel1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
 
         //Purge the above concepts into the main cache
         tx.commit();
@@ -232,11 +232,11 @@ public class GraknTxTest extends TxTestBase {
             GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).transaction(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             Role role = innerGraph.getRole("r1");
-            entityType.deletePlays(role);
+            entityType.unplay(role);
         }).get();
 
         //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.getLabel());
+        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
         assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
     }
 
@@ -276,22 +276,22 @@ public class GraknTxTest extends TxTestBase {
         tx.close();
         tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
-        entityT.addEntity();
+        entityT.create();
         Role roleT1 = tx.putRole(roleType1);
         Role roleT2 = tx.putRole(roleType2);
-        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
-        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
+        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relate(roleT1);
+        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relate(roleT2);
         AttributeType<String> resourceT = tx.putAttributeType(resourceType, AttributeType.DataType.STRING);
         tx.commit();
 
         //Fail some mutations again
         tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.READ);
-        failMutation(tx, entityT::addEntity);
-        failMutation(tx, () -> resourceT.putAttribute("A resource"));
+        failMutation(tx, entityT::create);
+        failMutation(tx, () -> resourceT.create("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
-        failMutation(tx, () -> entityT.plays(roleT1));
-        failMutation(tx, () -> relationT1.relates(roleT2));
-        failMutation(tx, () -> relationT2.relates(roleT1));
+        failMutation(tx, () -> entityT.play(roleT1));
+        failMutation(tx, () -> relationT1.relate(roleT2));
+        failMutation(tx, () -> relationT2.relate(roleT1));
     }
     private void failMutation(EmbeddedGraknTx<?> graph, Runnable mutator){
         int vertexCount = graph.getTinkerTraversal().V().toList().size();
@@ -346,26 +346,26 @@ public class GraknTxTest extends TxTestBase {
         Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
-        Entity s1_e1 = entityType.addEntity();
-        Entity s1_e2 = entityType.addEntity();
-        Entity s1_e3 = entityType.addEntity();
-        tx.shard(entityType.getId());
+        Entity s1_e1 = entityType.create();
+        Entity s1_e2 = entityType.create();
+        Entity s1_e3 = entityType.create();
+        tx.shard(entityType.id());
 
         Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
-        Entity s2_e1 = entityType.addEntity();
-        Entity s2_e2 = entityType.addEntity();
-        Entity s2_e3 = entityType.addEntity();
-        Entity s2_e4 = entityType.addEntity();
-        Entity s2_e5 = entityType.addEntity();
+        Entity s2_e1 = entityType.create();
+        Entity s2_e2 = entityType.create();
+        Entity s2_e3 = entityType.create();
+        Entity s2_e4 = entityType.create();
+        Entity s2_e5 = entityType.create();
 
-        tx.shard(entityType.getId());
+        tx.shard(entityType.id());
         Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
-        Entity s3_e1 = entityType.addEntity();
-        Entity s3_e2 = entityType.addEntity();
+        Entity s3_e1 = entityType.create();
+        Entity s3_e2 = entityType.create();
 
         //Check Type was sharded correctly
         assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
@@ -388,7 +388,7 @@ public class GraknTxTest extends TxTestBase {
                 AttributeType<Long> int_ = graph.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = graph.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 graph.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
-                graph.putEntityType("FOO").attribute(foo);
+                graph.putEntityType("FOO").has(foo);
 
                 graph.commit();
             }
@@ -396,7 +396,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Relationship Which Has Resources
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-            graph.putEntityType("BAR").attribute(graph.getAttributeType("bar"));
+            graph.putEntityType("BAR").has(graph.getAttributeType("bar"));
             graph.commit();
         }
     }
@@ -406,7 +406,7 @@ public class GraknTxTest extends TxTestBase {
         EntityType entity = tx.putEntityType("my amazing entity type");
         assertEquals(1L, tx.getShardCount(entity));
 
-        tx.shard(entity.getId());
+        tx.shard(entity.id());
         assertEquals(2L, tx.getShardCount(entity));
     }
 

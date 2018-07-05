@@ -75,7 +75,7 @@ public class PhilosophersExampleIT {
     @Test
     public void testAlexanderIsTheOnlyPharaoh() {
         GetQuery pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh'; get;");
-        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().getValue());
+        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().value());
     }
 
     @Test

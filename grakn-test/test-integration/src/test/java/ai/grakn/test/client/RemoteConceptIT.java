@@ -129,17 +129,17 @@ public class RemoteConceptIT {
         tx = session.transaction(GraknTxType.WRITE);
 
         // Attribute Types
-        email = tx.putAttributeType(EMAIL, DataType.STRING).setRegex(EMAIL_REGEX);
+        email = tx.putAttributeType(EMAIL, DataType.STRING).regex(EMAIL_REGEX);
         name = tx.putAttributeType(NAME, DataType.STRING);
         age = tx.putAttributeType(AGE, DataType.INTEGER);
 
         // Entity Types
-        livingThing = tx.putEntityType(LIVING_THING).setAbstract(true);
+        livingThing = tx.putEntityType(LIVING_THING).isAbstract(true);
         person = tx.putEntityType(PERSON);
         person.sup(livingThing);
         person.key(email);
-        person.attribute(name);
-        person.attribute(age);
+        person.has(name);
+        person.has(age);
 
         man = tx.putEntityType(MAN);
         boy = tx.putEntityType(BOY);
@@ -147,29 +147,29 @@ public class RemoteConceptIT {
         // Relationship Types
         husband = tx.putRole(HUSBAND);
         wife = tx.putRole(WIFE);
-        marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
+        marriage = tx.putRelationshipType(MARRIAGE).relate(wife).relate(husband);
 
 
         friend = tx.putRole(FRIEND);
         friendship = tx.putRelationshipType(FRIENDSHIP);
 
-        person.plays(wife).plays(husband);
+        person.play(wife).play(husband);
 
         // Attributes
         EMAIL_COUNTER++;
-        emailAlice = email.putAttribute(ALICE_EMAIL + EMAIL_COUNTER);
-        emailBob = email.putAttribute(BOB_EMAIL + EMAIL_COUNTER);
+        emailAlice = email.create(ALICE_EMAIL + EMAIL_COUNTER);
+        emailBob = email.create(BOB_EMAIL + EMAIL_COUNTER);
 
-        nameAlice = name.putAttribute(ALICE);
-        nameBob = name.putAttribute(BOB);
-        age20 = age.putAttribute(TWENTY);
+        nameAlice = name.create(ALICE);
+        nameBob = name.create(BOB);
+        age20 = age.create(TWENTY);
 
         // Entities
-        alice = person.addEntity().attribute(emailAlice).attribute(nameAlice).attribute(age20);
-        bob = person.addEntity().attribute(emailBob).attribute(nameBob).attribute(age20);
+        alice = person.create().has(emailAlice).has(nameAlice).has(age20);
+        bob = person.create().has(emailBob).has(nameBob).has(age20);
 
         // Relationships
-        aliceAndBob = marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
+        aliceAndBob = marriage.create().assign(wife, alice).assign(husband, bob);
     }
 
     @After
@@ -186,13 +186,13 @@ public class RemoteConceptIT {
 
     @Test
     public void whenGettingLabel_ReturnTheExpectedLabel() {
-        assertEquals(EMAIL, email.getLabel());
-        assertEquals(NAME, name.getLabel());
-        assertEquals(AGE, age.getLabel());
-        assertEquals(PERSON, person.getLabel());
-        assertEquals(HUSBAND, husband.getLabel());
-        assertEquals(WIFE, wife.getLabel());
-        assertEquals(MARRIAGE, marriage.getLabel());
+        assertEquals(EMAIL, email.label());
+        assertEquals(NAME, name.label());
+        assertEquals(AGE, age.label());
+        assertEquals(PERSON, person.label());
+        assertEquals(HUSBAND, husband.label());
+        assertEquals(WIFE, wife.label());
+        assertEquals(MARRIAGE, marriage.label());
     }
 
     @Test
@@ -209,18 +209,18 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingGetValue_GetTheExpectedResult() {
-        assertEquals(ALICE_EMAIL + EMAIL_COUNTER, emailAlice.getValue());
-        assertEquals(BOB_EMAIL + EMAIL_COUNTER, emailBob.getValue());
-        assertEquals(ALICE, nameAlice.getValue());
-        assertEquals(BOB, nameBob.getValue());
-        assertEquals(TWENTY, age20.getValue());
+        assertEquals(ALICE_EMAIL + EMAIL_COUNTER, emailAlice.value());
+        assertEquals(BOB_EMAIL + EMAIL_COUNTER, emailBob.value());
+        assertEquals(ALICE, nameAlice.value());
+        assertEquals(BOB, nameBob.value());
+        assertEquals(TWENTY, age20.value());
     }
 
     @Test
     public void whenCallingGetDataTypeOnAttributeType_GetTheExpectedResult() {
-        assertEquals(DataType.STRING, email.getDataType());
-        assertEquals(DataType.STRING, name.getDataType());
-        assertEquals(DataType.INTEGER, age.getDataType());
+        assertEquals(DataType.STRING, email.dataType());
+        assertEquals(DataType.STRING, name.dataType());
+        assertEquals(DataType.INTEGER, age.dataType());
     }
 
     @Test
@@ -234,23 +234,23 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingGetRegex_GetTheExpectedResult() {
-        assertEquals(EMAIL_REGEX, email.getRegex());
+        assertEquals(EMAIL_REGEX, email.regex());
     }
 
     @Test
     public void whenCallingGetAttribute_GetTheExpectedResult() {
-        assertEquals(emailAlice, email.getAttribute(ALICE_EMAIL + EMAIL_COUNTER));
-        assertEquals(emailBob, email.getAttribute(BOB_EMAIL + EMAIL_COUNTER));
-        assertEquals(nameAlice, name.getAttribute(ALICE));
-        assertEquals(nameBob, name.getAttribute(BOB));
-        assertEquals(age20, age.getAttribute(TWENTY));
+        assertEquals(emailAlice, email.attribute(ALICE_EMAIL + EMAIL_COUNTER));
+        assertEquals(emailBob, email.attribute(BOB_EMAIL + EMAIL_COUNTER));
+        assertEquals(nameAlice, name.attribute(ALICE));
+        assertEquals(nameBob, name.attribute(BOB));
+        assertEquals(age20, age.attribute(TWENTY));
     }
 
     @Test
     public void whenCallingGetAttributeWhenThereIsNoResult_ReturnNull() {
-        assertNull(email.getAttribute("x@x.com"));
-        assertNull(name.getAttribute("random"));
-        assertNull(age.getAttribute(-1));
+        assertNull(email.attribute("x@x.com"));
+        assertNull(name.attribute("random"));
+        assertNull(age.attribute(-1));
     }
 
     @Ignore @Test //TODO: build a more expressive dataset to test this
@@ -261,17 +261,17 @@ public class RemoteConceptIT {
 
     @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        //assertEquals(PATTERN, rule.getWhen());
+        //assertEquals(PATTERN, rule.when());
     }
 
     @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingGetThen_GetTheExpectedResult() {
-        //assertEquals(PATTERN, rule.getThen());
+        //assertEquals(PATTERN, rule.then());
     }
 
     @Test
     public void whenDeletingAConcept_ConceptIsDeleted() {
-        Entity randomPerson = person.addEntity();
+        Entity randomPerson = person.create();
         assertFalse(randomPerson.isDeleted());
 
         randomPerson.delete();
@@ -350,8 +350,8 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingThingPlays_GetTheExpectedResult() {
-        assertThat(alice.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife));
-        assertThat(bob.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(husband));
+        assertThat(alice.roles().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife));
+        assertThat(bob.roles().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(husband));
     }
 
     @Test
@@ -368,14 +368,14 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingRelationshipTypes_GetTheExpectedResult() {
-        assertThat(wife.relationshipTypes().collect(toSet()), containsInAnyOrder(marriage));
-        assertThat(husband.relationshipTypes().collect(toSet()), containsInAnyOrder(marriage));
+        assertThat(wife.relationships().collect(toSet()), containsInAnyOrder(marriage));
+        assertThat(husband.relationships().collect(toSet()), containsInAnyOrder(marriage));
     }
 
     @Test
     public void whenCallingPlayedByTypes_GetTheExpectedResult() {
-        assertThat(wife.playedByTypes().collect(toSet()), containsInAnyOrder(person));
-        assertThat(husband.playedByTypes().collect(toSet()), containsInAnyOrder(person));
+        assertThat(wife.players().collect(toSet()), containsInAnyOrder(person));
+        assertThat(husband.players().collect(toSet()), containsInAnyOrder(person));
     }
 
     @Test
@@ -389,7 +389,7 @@ public class RemoteConceptIT {
                 wife, ImmutableSet.of(alice),
                 husband, ImmutableSet.of(bob)
         );
-        assertEquals(expected, aliceAndBob.allRolePlayers());
+        assertEquals(expected, aliceAndBob.rolePlayersMap());
     }
 
     @Test
@@ -405,11 +405,11 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingOwnerInstances_GetTheExpectedResult() {
-        assertThat(emailAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
-        assertThat(emailBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
-        assertThat(nameAlice.ownerInstances().collect(toSet()), containsInAnyOrder(alice));
-        assertThat(nameBob.ownerInstances().collect(toSet()), containsInAnyOrder(bob));
-        assertThat(age20.ownerInstances().collect(toSet()), containsInAnyOrder(alice, bob));
+        assertThat(emailAlice.owners().collect(toSet()), containsInAnyOrder(alice));
+        assertThat(emailBob.owners().collect(toSet()), containsInAnyOrder(bob));
+        assertThat(nameAlice.owners().collect(toSet()), containsInAnyOrder(alice));
+        assertThat(nameBob.owners().collect(toSet()), containsInAnyOrder(bob));
+        assertThat(age20.owners().collect(toSet()), containsInAnyOrder(alice, bob));
     }
 
     @Test
@@ -438,47 +438,47 @@ public class RemoteConceptIT {
     public void whenSettingTypeLabel_LabelIsSetToType() {
         Label lady = Label.of("lady");
         EntityType type = tx.putEntityType(lady);
-        assertEquals(lady, type.getLabel());
+        assertEquals(lady, type.label());
 
         Label woman = Label.of("woman");
-        type.setLabel(woman);
-        assertEquals(woman, type.getLabel());
+        type.label(woman);
+        assertEquals(woman, type.label());
     }
 
     @Test
     public void whenSettingAndDeletingRelationshipRelatesRole_RoleInRelationshipIsSetAndDeleted() {
-        friendship.relates(friend);
+        friendship.relate(friend);
         assertTrue(friendship.relates().anyMatch(c -> c.equals(friend)));
 
-        friendship.deleteRelates(friend);
+        friendship.unrelate(friend);
         assertFalse(friendship.relates().anyMatch(c -> c.equals(friend)));
     }
 
     @Test
     public void whenSettingAndDeletingEntityPlaysRole_RolePlaysEntityIsSetAndDeleted() {
-        person.plays(friend);
+        person.play(friend);
         assertTrue(person.plays().anyMatch(c -> c.equals(friend)));
 
-        person.deletePlays(friend);
+        person.unplay(friend);
         assertFalse(person.plays().anyMatch(c -> c.equals(friend)));
     }
 
     @Test
     public void whenSettingAndUnsettingAbstractType_TypeAbstractIsSetAndUnset() {
-        livingThing.setAbstract(false);
+        livingThing.isAbstract(false);
         assertFalse(livingThing.isAbstract());
 
-        livingThing.setAbstract(true);
+        livingThing.isAbstract(true);
         assertTrue(livingThing.isAbstract());
     }
 
     @Test
     public void whenSettingAndDeletingAttributeToType_AttributeIsSetAndDeleted() {
         EntityType cat = tx.putEntityType(Label.of("cat"));
-        cat.attribute(name);
+        cat.has(name);
         assertTrue(cat.attributes().anyMatch(c -> c.equals(name)));
 
-        cat.deleteAttribute(name);
+        cat.unhas(name);
         assertFalse(cat.attributes().anyMatch(c -> c.equals(name)));
     }
 
@@ -488,71 +488,71 @@ public class RemoteConceptIT {
         person.key(username);
         assertTrue(person.keys().anyMatch(c -> c.equals(username)));
 
-        person.deleteKey(username);
+        person.unkey(username);
         assertFalse(person.keys().anyMatch(c -> c.equals(username)));
     }
 
     @Test
     public void whenCallingAddEntity_TypeIsCorrect() {
-        Entity newPerson = person.addEntity();
+        Entity newPerson = person.create();
         assertEquals(person, newPerson.type());
     }
 
     @Test
     public void whenCallingAddRelationship_TypeIsCorrect() {
-        Relationship newMarriage = marriage.addRelationship();
+        Relationship newMarriage = marriage.create();
         assertEquals(marriage, newMarriage.type());
     }
 
     @Test
     public void whenCallingPutAttribute_TypeIsCorrect() {
-        Attribute<String> nameCharlie = name.putAttribute("Charlie");
+        Attribute<String> nameCharlie = name.create("Charlie");
         assertEquals(name, nameCharlie.type());
     }
 
     @Test
     public void whenSettingAndUnsettingRegex_RegexIsSetAndUnset() {
-        email.setRegex(null);
-        assertNull((email.getRegex()));
+        email.regex(null);
+        assertNull((email.regex()));
 
-        email.setRegex(EMAIL_REGEX);
-        assertEquals(EMAIL_REGEX, email.getRegex());
+        email.regex(EMAIL_REGEX);
+        assertEquals(EMAIL_REGEX, email.regex());
     }
 
     @Test
     public void whenCallingAddAttributeRelationshipOnThing_RelationshipIsImplicit() {
-        assertTrue(alice.attributeRelationship(emailAlice).type().isImplicit());
-        assertTrue(alice.attributeRelationship(nameAlice).type().isImplicit());
-        assertTrue(alice.attributeRelationship(age20).type().isImplicit());
-        assertTrue(bob.attributeRelationship(emailBob).type().isImplicit());
-        assertTrue(bob.attributeRelationship(nameBob).type().isImplicit());
-        assertTrue(bob.attributeRelationship(age20).type().isImplicit());
+        assertTrue(alice.relhas(emailAlice).type().isImplicit());
+        assertTrue(alice.relhas(nameAlice).type().isImplicit());
+        assertTrue(alice.relhas(age20).type().isImplicit());
+        assertTrue(bob.relhas(emailBob).type().isImplicit());
+        assertTrue(bob.relhas(nameBob).type().isImplicit());
+        assertTrue(bob.relhas(age20).type().isImplicit());
     }
 
     @Test
     public void whenCallingDeleteAttribute_ExecuteAConceptMethod() {
-        Entity charlie = person.addEntity();
-        Attribute<String> nameCharlie = name.putAttribute("Charlie");
-        charlie.attribute(nameCharlie);
+        Entity charlie = person.create();
+        Attribute<String> nameCharlie = name.create("Charlie");
+        charlie.has(nameCharlie);
         assertTrue(charlie.attributes(name).anyMatch(x -> x.equals(nameCharlie)));
 
-        charlie.deleteAttribute(nameCharlie);
+        charlie.unhas(nameCharlie);
         assertFalse(charlie.attributes(name).anyMatch(x -> x.equals(nameCharlie)));
     }
 
     @Test
     public void whenAddingAndRemovingRolePlayer_RolePlayerIsAddedAndRemoved() {
-        Entity dylan = person.addEntity();
-        Entity emily = person.addEntity();
+        Entity dylan = person.create();
+        Entity emily = person.create();
 
-        Relationship dylanAndEmily = friendship.addRelationship()
-                .addRolePlayer(friend, dylan)
-                .addRolePlayer(friend, emily);
+        Relationship dylanAndEmily = friendship.create()
+                .assign(friend, dylan)
+                .assign(friend, emily);
 
         assertThat(dylanAndEmily.rolePlayers().collect(toSet()), containsInAnyOrder(dylan, emily));
 
-        dylanAndEmily.removeRolePlayer(friend, dylan);
-        dylanAndEmily.removeRolePlayer(friend, emily);
+        dylanAndEmily.unassign(friend, dylan);
+        dylanAndEmily.unassign(friend, emily);
 
         assertTrue(dylanAndEmily.rolePlayers().collect(toSet()).isEmpty());
     }

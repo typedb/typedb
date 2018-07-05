@@ -241,8 +241,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseIsCorrect() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -256,8 +256,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseStatusIs200() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -271,8 +271,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseIsNotEmpty() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -283,8 +283,8 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithNoPath_ResponseIsEmptyJson() {
-        String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         when(printer.toString(any())).thenReturn("null");

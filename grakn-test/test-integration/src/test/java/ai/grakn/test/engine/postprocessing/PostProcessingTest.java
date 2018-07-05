@@ -105,7 +105,7 @@ public class PostProcessingTest {
         EmbeddedGraknTx<?> tx = session.transaction(GraknTxType.WRITE);
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
-        Attribute<String> attribute = attributeType.putAttribute(value);
+        Attribute<String> attribute = attributeType.create(value);
         tx.commitSubmitNoLogs();
         tx = session.transaction(GraknTxType.WRITE);
 
@@ -200,15 +200,15 @@ public class PostProcessingTest {
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndUploadCountCommitLog(keyspace, et1.getId(), 99_999L);
-        createAndUploadCountCommitLog(keyspace, et2.getId(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et1.id(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et2.id(), 99_999L);
 
         checkShardCount(keyspace, et1, 1);
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndUploadCountCommitLog(keyspace, et1.getId(), 2L);
-        createAndUploadCountCommitLog(keyspace, et2.getId(), 1L);
+        createAndUploadCountCommitLog(keyspace, et1.id(), 2L);
+        createAndUploadCountCommitLog(keyspace, et2.id(), 1L);
 
         checkShardCount(keyspace, et1, 2);
         checkShardCount(keyspace, et2, 1);
@@ -217,7 +217,7 @@ public class PostProcessingTest {
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
         try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
-                    has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
+                    has(Schema.VertexProperty.ID.name(), concept.id().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 
             assertEquals(expectedValue, shards);

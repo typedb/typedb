@@ -42,7 +42,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
@@ -222,7 +221,7 @@ public class ServerRPCIT {
         try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
             for (Answer answer : answers) {
                 assertThat(answer.vars(), contains(var("x")));
-                assertNotNull(tx.getConcept(answer.get("x").getId()));
+                assertNotNull(tx.getConcept(answer.get("x").id()));
             }
         }
     }
@@ -259,8 +258,8 @@ public class ServerRPCIT {
             testExplanation(answer);
 
             String specificQuery = "match " +
-                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
-                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
 
@@ -347,20 +346,20 @@ public class ServerRPCIT {
         try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             Role pet = tx.putRole("pet");
             Role owner = tx.putRole("owner");
-            EntityType animal = tx.putEntityType("animal").plays(pet);
-            EntityType human = tx.putEntityType("human").plays(owner);
-            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
+            EntityType animal = tx.putEntityType("animal").play(pet);
+            EntityType human = tx.putEntityType("human").play(owner);
+            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relate(pet).relate(owner);
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
-            human.attribute(age);
+            human.has(age);
 
-            Entity coco = animal.addEntity();
-            Entity mike = human.addEntity();
-            Relationship cocoAndMike = petOwnership.addRelationship().addRolePlayer(pet, coco).addRolePlayer(owner, mike);
-            mike.attribute(age.putAttribute(10L));
+            Entity coco = animal.create();
+            Entity mike = human.create();
+            Relationship cocoAndMike = petOwnership.create().assign(pet, coco).assign(owner, mike);
+            mike.has(age.create(10L));
 
-            idCoco = coco.getId();
-            idMike = mike.getId();
-            idCocoAndMike = cocoAndMike.getId();
+            idCoco = coco.id();
+            idMike = mike.id();
+            idCocoAndMike = cocoAndMike.id();
 
             tx.commit();
         }
@@ -428,7 +427,7 @@ public class ServerRPCIT {
 
             for (Answer answer : query) {
                 Concept remoteConcept = answer.get("x");
-                Concept localConcept = localTx.getConcept(remoteConcept.getId());
+                Concept localConcept = localTx.getConcept(remoteConcept.id());
 
                 assertEquals(localConcept.isAttribute(), remoteConcept.isAttribute());
                 assertEquals(localConcept.isAttributeType(), remoteConcept.isAttributeType());
@@ -441,7 +440,7 @@ public class ServerRPCIT {
                 assertEquals(localConcept.isSchemaConcept(), remoteConcept.isSchemaConcept());
                 assertEquals(localConcept.isThing(), remoteConcept.isThing());
                 assertEquals(localConcept.isType(), remoteConcept.isType());
-                assertEquals(localConcept.getId(), remoteConcept.getId());
+                assertEquals(localConcept.id(), remoteConcept.id());
                 assertEquals(localConcept.isDeleted(), remoteConcept.isDeleted());
                 assertEquals(localConcept.keyspace(), remoteConcept.keyspace());
             }
@@ -455,11 +454,11 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
-            SchemaConcept localConcept = localTx.getConcept(remoteConcept.getId()).asSchemaConcept();
+            SchemaConcept localConcept = localTx.getConcept(remoteConcept.id()).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
-            assertEquals(localConcept.getLabel(), remoteConcept.getLabel());
-            assertEquals(localConcept.sup().getId(), remoteConcept.sup().getId());
+            assertEquals(localConcept.label(), remoteConcept.label());
+            assertEquals(localConcept.sup().id(), remoteConcept.sup().id());
             assertEqualConcepts(localConcept, remoteConcept, SchemaConcept::sups);
             assertEqualConcepts(localConcept, remoteConcept, SchemaConcept::subs);
         }
@@ -472,10 +471,10 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").has("name", "crime")).get();
             Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
-            Thing localConcept = localTx.getConcept(remoteConcept.getId()).asThing();
+            Thing localConcept = localTx.getConcept(remoteConcept.id()).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
-            assertEquals(localConcept.type().getId(), remoteConcept.type().getId());
+            assertEquals(localConcept.type().id(), remoteConcept.type().id());
             assertEqualConcepts(localConcept, remoteConcept, Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept, Thing::keys);
 //            assertEqualConcepts(localConcept, remoteConcept, Thing::plays); // TODO: re-enable when #19630 is fixed
@@ -490,7 +489,7 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
             Type remoteConcept = query.stream().findAny().get().get("x").asType();
-            Type localConcept = localTx.getConcept(remoteConcept.getId()).asType();
+            Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
             assertEqualConcepts(localConcept, remoteConcept, Type::plays);
@@ -507,10 +506,10 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
             Role remoteConcept = query.stream().findAny().get().get("x").asRole();
-            Role localConcept = localTx.getConcept(remoteConcept.getId()).asRole();
+            Role localConcept = localTx.getConcept(remoteConcept.id()).asRole();
 
-            assertEqualConcepts(localConcept, remoteConcept, Role::playedByTypes);
-            assertEqualConcepts(localConcept, remoteConcept, Role::relationshipTypes);
+            assertEqualConcepts(localConcept, remoteConcept, Role::players);
+            assertEqualConcepts(localConcept, remoteConcept, Role::relationships);
         }
     }
 
@@ -521,10 +520,10 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
             ai.grakn.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
-            ai.grakn.concept.Rule localConcept = localTx.getConcept(remoteConcept.getId()).asRule();
+            ai.grakn.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
-            assertEquals(localConcept.getWhen(), remoteConcept.getWhen());
-            assertEquals(localConcept.getThen(), remoteConcept.getThen());
+            assertEquals(localConcept.when(), remoteConcept.when());
+            assertEquals(localConcept.then(), remoteConcept.then());
         }
     }
 
@@ -535,10 +534,10 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
             EntityType remoteConcept = query.stream().findAny().get().get("x").asEntityType();
-            EntityType localConcept = localTx.getConcept(remoteConcept.getId()).asEntityType();
+            EntityType localConcept = localTx.getConcept(remoteConcept.id()).asEntityType();
 
             // There actually aren't any new methods on EntityType, but we should still check we can get them
-            assertEquals(localConcept.getId(), remoteConcept.getId());
+            assertEquals(localConcept.id(), remoteConcept.id());
         }
     }
 
@@ -549,7 +548,7 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("has-cast")).get();
             RelationshipType remoteConcept = query.stream().findAny().get().get("x").asRelationshipType();
-            RelationshipType localConcept = localTx.getConcept(remoteConcept.getId()).asRelationshipType();
+            RelationshipType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
 
             assertEqualConcepts(localConcept, remoteConcept, RelationshipType::relates);
         }
@@ -562,13 +561,13 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("title")).get();
             AttributeType<String> remoteConcept = query.stream().findAny().get().get("x").asAttributeType();
-            AttributeType<String> localConcept = localTx.getConcept(remoteConcept.getId()).asAttributeType();
+            AttributeType<String> localConcept = localTx.getConcept(remoteConcept.id()).asAttributeType();
 
-            assertEquals(localConcept.getDataType(), remoteConcept.getDataType());
-            assertEquals(localConcept.getRegex(), remoteConcept.getRegex());
+            assertEquals(localConcept.dataType(), remoteConcept.dataType());
+            assertEquals(localConcept.regex(), remoteConcept.regex());
             assertEquals(
-                    localConcept.getAttribute("The Muppets").getId(),
-                    remoteConcept.getAttribute("The Muppets").getId()
+                    localConcept.attribute("The Muppets").id(),
+                    remoteConcept.attribute("The Muppets").id()
             );
         }
     }
@@ -580,10 +579,10 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("movie")).get();
             Entity remoteConcept = query.stream().findAny().get().get("x").asEntity();
-            Entity localConcept = localTx.getConcept(remoteConcept.getId()).asEntity();
+            Entity localConcept = localTx.getConcept(remoteConcept.id()).asEntity();
 
             // There actually aren't any new methods on Entity, but we should still check we can get them
-            assertEquals(localConcept.getId(), remoteConcept.getId());
+            assertEquals(localConcept.id(), remoteConcept.id());
         }
     }
 
@@ -594,21 +593,21 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
             Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
-            Relationship localConcept = localTx.getConcept(remoteConcept.getId()).asRelationship();
+            Relationship localConcept = localTx.getConcept(remoteConcept.id()).asRelationship();
 
             assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
 
             ImmutableMultimap.Builder<ConceptId, ConceptId> localRolePlayers = ImmutableMultimap.builder();
-            localConcept.allRolePlayers().forEach((role, players) -> {
+            localConcept.rolePlayersMap().forEach((role, players) -> {
                 for (Thing player : players) {
-                    localRolePlayers.put(role.getId(), player.getId());
+                    localRolePlayers.put(role.id(), player.id());
                 }
             });
 
             ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
-            remoteConcept.allRolePlayers().forEach((role, players) -> {
+            remoteConcept.rolePlayersMap().forEach((role, players) -> {
                 for (Thing player : players) {
-                    remoteRolePlayers.put(role.getId(), player.getId());
+                    remoteRolePlayers.put(role.id(), player.id());
                 }
             });
 
@@ -623,12 +622,12 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x").isa("title")).get();
             Attribute<?> remoteConcept = query.stream().findAny().get().get("x").asAttribute();
-            Attribute<?> localConcept = localTx.getConcept(remoteConcept.getId()).asAttribute();
+            Attribute<?> localConcept = localTx.getConcept(remoteConcept.id()).asAttribute();
 
             assertEquals(localConcept.dataType(), remoteConcept.dataType());
-            assertEquals(localConcept.getValue(), remoteConcept.getValue());
-            assertEquals(localConcept.owner().getId(), remoteConcept.owner().getId());
-            assertEqualConcepts(localConcept, remoteConcept, Attribute::ownerInstances);
+            assertEquals(localConcept.value(), remoteConcept.value());
+            assertEquals(localConcept.owner().id(), remoteConcept.owner().id());
+            assertEqualConcepts(localConcept, remoteConcept, Attribute::owners);
         }
     }
 
@@ -662,42 +661,42 @@ public class ServerRPCIT {
             EntityType cat = tx.putEntityType("cat");
             animal.sub(cat);
 
-            cat.setLabel(Label.of("feline"));
-            dog.setAbstract(true).setAbstract(false);
-            cat.setAbstract(true);
+            cat.label(Label.of("feline"));
+            dog.isAbstract(true).isAbstract(false);
+            cat.isAbstract(true);
 
             RelationshipType chases = tx.putRelationshipType("chases");
             Role chased = tx.putRole("chased");
             Role chaser = tx.putRole("chaser");
-            chases.relates(chased).relates(chaser);
+            chases.relate(chased).relate(chaser);
 
             Role pointlessRole = tx.putRole("pointless-role");
-            tx.putRelationshipType("pointless").relates(pointlessRole);
+            tx.putRelationshipType("pointless").relate(pointlessRole);
 
-            chases.relates(pointlessRole).deleteRelates(pointlessRole);
+            chases.relate(pointlessRole).unrelate(pointlessRole);
 
-            dog.plays(chaser);
-            cat.plays(chased);
+            dog.play(chaser);
+            cat.play(chased);
 
             AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
-            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).setRegex("(good|bad)-dog");
+            AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
 
-            animal.attribute(name);
+            animal.has(name);
             animal.key(id);
 
-            dog.attribute(age).deleteAttribute(age);
-            cat.key(age).deleteKey(age);
-            cat.plays(chaser).deletePlays(chaser);
+            dog.has(age).unhas(age);
+            cat.key(age).unkey(age);
+            cat.play(chaser).unplay(chaser);
 
-            Entity dunstan = dog.addEntity();
-            Attribute<String> dunstanId = id.putAttribute("good-dog");
-            assertNotNull(dunstan.attributeRelationship(dunstanId));
+            Entity dunstan = dog.create();
+            Attribute<String> dunstanId = id.create("good-dog");
+            assertNotNull(dunstan.relhas(dunstanId));
 
-            Attribute<String> dunstanName = name.putAttribute("Dunstan");
-            dunstan.attribute(dunstanName).deleteAttribute(dunstanName);
+            Attribute<String> dunstanName = name.create("Dunstan");
+            dunstan.has(dunstanName).unhas(dunstanName);
 
-            chases.addRelationship().addRolePlayer(chaser, dunstan);
+            chases.create().assign(chaser, dunstan);
 
             Set<Attribute> set = dunstan.keys(name).collect(toSet());
             assertEquals(0, set.size());
@@ -733,14 +732,14 @@ public class ServerRPCIT {
             assertEquals(ImmutableSet.of(name, id), cat.attributes().collect(toSet()));
             assertEquals(ImmutableSet.of(id), cat.keys().collect(toSet()));
 
-            assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).getValue());
+            assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());
 
             ImmutableMap<Role, ImmutableSet<?>> expectedRolePlayers =
                     ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
 
-            assertEquals(expectedRolePlayers, aChase.allRolePlayers());
+            assertEquals(expectedRolePlayers, aChase.rolePlayersMap());
 
-            assertEquals("(good|bad)-dog", id.getRegex());
+            assertEquals("(good|bad)-dog", id.regex());
 
             assertFalse(dog.isAbstract());
             assertTrue(cat.isAbstract());
@@ -771,8 +770,8 @@ public class ServerRPCIT {
             T concept1, T concept2, Function<T, Stream<? extends Concept>> function
     ) {
         assertEquals(
-                function.apply(concept1).map(Concept::getId).collect(toSet()),
-                function.apply(concept2).map(Concept::getId).collect(toSet())
+                function.apply(concept1).map(Concept::id).collect(toSet()),
+                function.apply(concept2).map(Concept::id).collect(toSet())
         );
     }
 
@@ -793,13 +792,13 @@ public class ServerRPCIT {
             //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
 
             EntityType company = tx.putEntityType("company-123");
-            company.addEntity();
-            company.addEntity();
+            company.create();
+            company.create();
 
             EntityType person = tx.putEntityType("person-123");
-            person.addEntity();
-            person.addEntity();
-            person.addEntity();
+            person.create();
+            person.create();
+            person.create();
 
             QueryBuilder qb = tx.graql();
             Var x = var("x");
@@ -824,27 +823,27 @@ public class ServerRPCIT {
         AttributeType<String> name1 = tx1.putAttributeType(Label.of("name"), DataType.STRING);
         AttributeType<String> name2 = tx2.putAttributeType(Label.of("name"), DataType.STRING);
 
-        company.attribute(name1);
-        person.attribute(name2);
+        company.has(name1);
+        person.has(name2);
 
-        Entity google = company.addEntity();
-        Entity alice = person.addEntity();
+        Entity google = company.create();
+        Entity alice = person.create();
 
-        google.attribute(name1.putAttribute("Google"));
-        alice.attribute(name2.putAttribute("Alice"));
+        google.has(name1.create("Google"));
+        alice.has(name2.create("Alice"));
 
         assertTrue(company.attributes().anyMatch(a -> a.equals(name1)));
         assertTrue(person.attributes().anyMatch(a -> a.equals(name2)));
 
-        assertTrue(google.attributes(name1).allMatch(n -> n.getValue().equals("Google")));
-        assertTrue(alice.attributes(name2).allMatch(n -> n.getValue().equals("Alice")));
+        assertTrue(google.attributes(name1).allMatch(n -> n.value().equals("Google")));
+        assertTrue(alice.attributes(name2).allMatch(n -> n.value().equals("Alice")));
 
         tx1.close();
 
-        Entity bob = person.addEntity();
-        bob.attribute(name2.putAttribute("Bob"));
+        Entity bob = person.create();
+        bob.has(name2.create("Bob"));
 
-        assertTrue(bob.attributes(name2).allMatch(n -> n.getValue().equals("Bob")));
+        assertTrue(bob.attributes(name2).allMatch(n -> n.value().equals("Bob")));
 
         tx2.close();
     }

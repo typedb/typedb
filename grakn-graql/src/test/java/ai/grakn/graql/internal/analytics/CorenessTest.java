@@ -89,8 +89,8 @@ public class CorenessTest {
     @Test
     public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-            graph.putEntityType(thing).addEntity();
-            graph.putEntityType(anotherThing).addEntity();
+            graph.putEntityType(thing).create();
+            graph.putEntityType(anotherThing).create();
             Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             assertTrue(result.isEmpty());
         }
@@ -100,26 +100,26 @@ public class CorenessTest {
     public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
-            Entity entity1 = entityType.addEntity();
-            Entity entity2 = entityType.addEntity();
+            Entity entity1 = entityType.create();
+            Entity entity2 = entityType.create();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.plays(role1).plays(role2);
+            entityType.play(role1).play(role2);
             graph.putRelationshipType(related)
-                    .relates(role1).relates(role2)
-                    .addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
+                    .relate(role1).relate(role2)
+                    .create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
-            entityType.plays(role3).plays(role4);
+            entityType.play(role3).play(role4);
             graph.putRelationshipType(veryRelated)
-                    .relates(role3).relates(role4)
-                    .addRelationship()
-                    .addRolePlayer(role3, entity1)
-                    .addRolePlayer(role4, entity2);
+                    .relate(role3).relate(role4)
+                    .create()
+                    .assign(role3, entity1)
+                    .assign(role4, entity2);
 
             Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
             assertTrue(result.isEmpty());
@@ -153,19 +153,19 @@ public class CorenessTest {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            graph.getEntityType(anotherThing).attribute(attributeType);
+            graph.getEntityType(thing).has(attributeType);
+            graph.getEntityType(anotherThing).has(attributeType);
 
-            Attribute Attribute1 = attributeType.putAttribute("blah");
-            graph.getConcept(entityId1).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId2).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId3).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId4).asEntity().attribute(Attribute1);
+            Attribute Attribute1 = attributeType.create("blah");
+            graph.getConcept(entityId1).asEntity().has(Attribute1);
+            graph.getConcept(entityId2).asEntity().has(Attribute1);
+            graph.getConcept(entityId3).asEntity().has(Attribute1);
+            graph.getConcept(entityId4).asEntity().has(Attribute1);
 
-            Attribute Attribute2 = attributeType.putAttribute("bah");
-            graph.getConcept(entityId1).asEntity().attribute(Attribute2);
-            graph.getConcept(entityId2).asEntity().attribute(Attribute2);
-            graph.getConcept(entityId3).asEntity().attribute(Attribute2);
+            Attribute Attribute2 = attributeType.create("bah");
+            graph.getConcept(entityId1).asEntity().has(Attribute2);
+            graph.getConcept(entityId2).asEntity().has(Attribute2);
+            graph.getConcept(entityId3).asEntity().has(Attribute2);
 
             graph.commit();
         }
@@ -193,70 +193,70 @@ public class CorenessTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                    .relates(role1).relates(role2);
+                    .relate(role1).relate(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relates(role3).relates(role4);
+                    .relate(role3).relate(role4);
 
-            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
-            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
+            entityType1.play(role1).play(role2).play(role3).play(role4);
+            entityType2.play(role1).play(role2).play(role3).play(role4);
 
-            Entity entity0 = entityType1.addEntity();
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType1.addEntity();
-            Entity entity5 = entityType1.addEntity();
-            Entity entity6 = entityType1.addEntity();
-            Entity entity7 = entityType1.addEntity();
-            Entity entity8 = entityType1.addEntity();
+            Entity entity0 = entityType1.create();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType1.create();
+            Entity entity5 = entityType1.create();
+            Entity entity6 = entityType1.create();
+            Entity entity7 = entityType1.create();
+            Entity entity8 = entityType1.create();
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity3)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity3)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4);
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity5)
-                    .addRolePlayer(role2, entity6);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity5)
-                    .addRolePlayer(role4, entity7);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity5)
-                    .addRolePlayer(role4, entity8);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity6)
-                    .addRolePlayer(role4, entity7);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity6)
-                    .addRolePlayer(role4, entity8);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity7)
-                    .addRolePlayer(role4, entity8);
+            relationshipType1.create()
+                    .assign(role1, entity5)
+                    .assign(role2, entity6);
+            relationshipType2.create()
+                    .assign(role3, entity5)
+                    .assign(role4, entity7);
+            relationshipType2.create()
+                    .assign(role3, entity5)
+                    .assign(role4, entity8);
+            relationshipType2.create()
+                    .assign(role3, entity6)
+                    .assign(role4, entity7);
+            relationshipType2.create()
+                    .assign(role3, entity6)
+                    .assign(role4, entity8);
+            relationshipType2.create()
+                    .assign(role3, entity7)
+                    .assign(role4, entity8);
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity0)
-                    .addRolePlayer(role2, entity1);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity0)
-                    .addRolePlayer(role2, entity8);
+            relationshipType1.create()
+                    .assign(role1, entity0)
+                    .assign(role2, entity1);
+            relationshipType1.create()
+                    .assign(role1, entity0)
+                    .assign(role2, entity8);
 
             graph.commit();
         }
@@ -306,45 +306,45 @@ public class CorenessTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                    .relates(role1).relates(role2);
+                    .relate(role1).relate(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relates(role3).relates(role4);
+                    .relate(role3).relate(role4);
 
-            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
-            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
+            entityType1.play(role1).play(role2).play(role3).play(role4);
+            entityType2.play(role1).play(role2).play(role3).play(role4);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType2.addEntity();
-            Entity entity4 = entityType2.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType2.create();
+            Entity entity4 = entityType2.create();
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity3)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity4)
-                    .addRolePlayer(role2, entity1);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity3)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity4)
+                    .assign(role2, entity1);
 
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity1)
-                    .addRolePlayer(role4, entity3);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity2)
-                    .addRolePlayer(role4, entity4);
+            relationshipType2.create()
+                    .assign(role3, entity1)
+                    .assign(role4, entity3);
+            relationshipType2.create()
+                    .assign(role3, entity2)
+                    .assign(role4, entity4);
 
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             graph.commit();
         }

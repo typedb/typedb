@@ -45,7 +45,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
     @Nullable
     @Override
-    public final String getRegex() {
+    public final String regex() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRegex(MethodProto.GetRegex.Req.getDefaultInstance()).build();
 
@@ -55,7 +55,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     }
 
     @Override
-    public final AttributeType<D> setRegex(String regex) {
+    public final AttributeType<D> regex(String regex) {
         if (regex == null) regex = "";
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetRegex(MethodProto.SetRegex.Req.newBuilder()
@@ -66,7 +66,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     }
 
     @Override
-    public final Attribute<D> putAttribute(D value) {
+    public final Attribute<D> create(D value) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setPutAttribute(MethodProto.PutAttribute.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
@@ -78,7 +78,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
     @Nullable
     @Override
-    public final Attribute<D> getAttribute(D value) {
+    public final Attribute<D> attribute(D value) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetAttribute(MethodProto.GetAttribute.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
@@ -97,7 +97,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
 
     @Nullable
     @Override
-    public final AttributeType.DataType<D> getDataType() {
+    public final AttributeType.DataType<D> dataType() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetDataTypeOfAttributeType(MethodProto.GetDataTypeOfAttributeType.Req.getDefaultInstance()).build();
 

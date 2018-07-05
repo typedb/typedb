@@ -198,7 +198,7 @@ public class TransactionTest {
 
         for (Answer answer : answers) {
             assertEquals(answer.vars(), ImmutableSet.of(var("x")));
-            assertEquals(ConceptId.of("V123"), answer.get(var("x")).getId());
+            assertEquals(ConceptId.of("V123"), answer.get(var("x")).id());
         }
     }
 

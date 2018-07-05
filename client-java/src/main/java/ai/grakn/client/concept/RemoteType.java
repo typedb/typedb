@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extends RemoteSchemaConcept<SomeType> implements Type {
 
     @Override
-    public final SomeType setAbstract(Boolean isAbstract) throws GraknTxOperationException {
+    public final SomeType isAbstract(Boolean isAbstract) throws GraknTxOperationException {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetAbstract(MethodProto.SetAbstract.Req.newBuilder()
                         .setAbstract(isAbstract)).build();
@@ -50,7 +50,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType plays(Role role) throws GraknTxOperationException {
+    public final SomeType play(Role role) throws GraknTxOperationException {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetRolePlayedByType(MethodProto.SetRolePlayedByType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
@@ -70,7 +70,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType attribute(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetAttributeType(MethodProto.SetAttributeType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
@@ -125,7 +125,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType deletePlays(Role role) {
+    public final SomeType unplay(Role role) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setUnsetRolePlayedByType(MethodProto.UnsetRolePlayedByType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
@@ -135,7 +135,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType deleteAttribute(AttributeType attributeType) {
+    public final SomeType unhas(AttributeType attributeType) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setUnsetAttributeType(MethodProto.UnsetAttributeType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
@@ -145,7 +145,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType deleteKey(AttributeType attributeType) {
+    public final SomeType unkey(AttributeType attributeType) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setUnsetKeyType(MethodProto.UnsetKeyType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();

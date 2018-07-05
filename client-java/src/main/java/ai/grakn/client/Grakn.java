@@ -340,7 +340,7 @@ public final class Grakn {
             MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                     .setGetSuperConcepts(MethodProto.GetSuperConcepts.Req.getDefaultInstance()).build();
 
-            SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.getId(), method);
+            SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
             IteratorProto.IteratorId iteratorId = response.getConceptMethod().getResponse().getGetSuperConcepts().getIteratorId();
 
             System.out.println("ooo" + iteratorId);

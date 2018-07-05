@@ -76,9 +76,9 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
-            Attribute<String> attribute = keyspaceName.putAttribute(keyspace.getValue());
+            Attribute<String> attribute = keyspaceName.create(keyspace.getValue());
             if (attribute.owner() == null) {
-                tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
+                tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).create().has(attribute);
             }
             tx.commitSubmitNoLogs();
 
@@ -97,7 +97,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
         }
 
         try (GraknTx graph = session.tx(GraknTxType.READ)) {
-            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null);
+            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if(keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
         }
@@ -111,7 +111,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
         try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.getAttribute(keyspace.getValue());
+            Attribute<String> attribute = keyspaceName.attribute(keyspace.getValue());
 
             if(attribute == null) return false;
             Thing thing = attribute.owner();
@@ -133,7 +133,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
                     .flatMap(keyspace -> keyspace.attributes(keyspaceName))
-                    .map(name -> (String) name.getValue())
+                    .map(name -> (String) name.value())
                     .map(Keyspace::of)
                     .collect(Collectors.toSet());
         }

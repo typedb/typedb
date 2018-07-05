@@ -134,7 +134,7 @@ public class JsonMigratorMainTest {
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
             Attribute number = getResource(graph, streetAddress, Label.of("number"));
-            assertEquals(21L, number.getValue());
+            assertEquals(21L, number.value());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
             assertEquals(2, phoneNumbers.size());

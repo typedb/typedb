@@ -61,143 +61,143 @@ public class GeoKB extends TestKB {
         geoEntity = tx.putRole("geo-entity");
         entityLocation = tx.putRole("entity-location");
         isLocatedIn = tx.putRelationshipType("is-located-in")
-                .relates(geoEntity).relates(entityLocation);
+                .relate(geoEntity).relate(entityLocation);
 
         geographicalObject = tx.putEntityType("geoObject")
-                .plays(geoEntity)
-                .plays(entityLocation);
-        geographicalObject.attribute(key);
+                .play(geoEntity)
+                .play(entityLocation);
+        geographicalObject.has(key);
 
         continent = tx.putEntityType("continent")
                 .sup(geographicalObject)
-                .plays(entityLocation);
+                .play(entityLocation);
         country = tx.putEntityType("country")
                 .sup(geographicalObject)
-                .plays(geoEntity)
-                .plays(entityLocation);
+                .play(geoEntity)
+                .play(entityLocation);
         region = tx.putEntityType("region")
                 .sup(geographicalObject)
-                .plays(geoEntity)
-                .plays(entityLocation);
+                .play(geoEntity)
+                .play(entityLocation);
         city = tx.putEntityType("city")
                 .sup(geographicalObject)
-                .plays(geoEntity)
-                .plays(entityLocation);
+                .play(geoEntity)
+                .play(entityLocation);
         university = tx.putEntityType("university")
-                        .plays(geoEntity);
-        university.attribute(key);
+                        .play(geoEntity);
+        university.has(key);
     }
 
     @Override
     public void buildInstances(GraknTx tx) {
-        Europe = putEntityWithResource(tx, "Europe", continent, key.getLabel());
+        Europe = putEntityWithResource(tx, "Europe", continent, key.label());
 
-        Poland = putEntityWithResource(tx, "Poland", country, key.getLabel());
-        Masovia = putEntityWithResource(tx, "Masovia", region, key.getLabel());
-        Silesia = putEntityWithResource(tx, "Silesia", region, key.getLabel());
-        Warsaw = putEntityWithResource(tx, "Warsaw", city, key.getLabel());
-        Wroclaw = putEntityWithResource(tx, "Wroclaw", city, key.getLabel());
-        UW = putEntityWithResource(tx, "University-of-Warsaw", university, key.getLabel());
-        PW = putEntityWithResource(tx, "Warsaw-Polytechnics", university, key.getLabel());
+        Poland = putEntityWithResource(tx, "Poland", country, key.label());
+        Masovia = putEntityWithResource(tx, "Masovia", region, key.label());
+        Silesia = putEntityWithResource(tx, "Silesia", region, key.label());
+        Warsaw = putEntityWithResource(tx, "Warsaw", city, key.label());
+        Wroclaw = putEntityWithResource(tx, "Wroclaw", city, key.label());
+        UW = putEntityWithResource(tx, "University-of-Warsaw", university, key.label());
+        PW = putEntityWithResource(tx, "Warsaw-Polytechnics", university, key.label());
 
-        England = putEntityWithResource(tx, "England", country, key.getLabel());
-        GreaterLondon = putEntityWithResource(tx, "GreaterLondon", region, key.getLabel());
-        London = putEntityWithResource(tx, "London", city, key.getLabel());
-        Imperial = putEntityWithResource(tx, "Imperial College London", university, key.getLabel());
-        UCL = putEntityWithResource(tx, "University College London", university, key.getLabel());
+        England = putEntityWithResource(tx, "England", country, key.label());
+        GreaterLondon = putEntityWithResource(tx, "GreaterLondon", region, key.label());
+        London = putEntityWithResource(tx, "London", city, key.label());
+        Imperial = putEntityWithResource(tx, "Imperial College London", university, key.label());
+        UCL = putEntityWithResource(tx, "University College London", university, key.label());
 
-        Germany = putEntityWithResource(tx, "Germany", country, key.getLabel());
-        Bavaria = putEntityWithResource(tx, "Bavaria", region, key.getLabel());
-        Munich = putEntityWithResource(tx, "Munich", city, key.getLabel());
-        putEntityWithResource(tx, "University of Munich", university, key.getLabel());
+        Germany = putEntityWithResource(tx, "Germany", country, key.label());
+        Bavaria = putEntityWithResource(tx, "Bavaria", region, key.label());
+        Munich = putEntityWithResource(tx, "Munich", city, key.label());
+        putEntityWithResource(tx, "University of Munich", university, key.label());
 
-        France = putEntityWithResource(tx, "France", country, key.getLabel());
-        IleDeFrance = putEntityWithResource(tx, "IleDeFrance", region, key.getLabel());
-        Paris = putEntityWithResource(tx, "Paris", city, key.getLabel());
+        France = putEntityWithResource(tx, "France", country, key.label());
+        IleDeFrance = putEntityWithResource(tx, "IleDeFrance", region, key.label());
+        Paris = putEntityWithResource(tx, "Paris", city, key.label());
 
-        Italy = putEntityWithResource(tx, "Italy", country, key.getLabel());
-        Lombardy = putEntityWithResource(tx, "Lombardy", region, key.getLabel());
-        Milan = putEntityWithResource(tx, "Milan", city, key.getLabel());
+        Italy = putEntityWithResource(tx, "Italy", country, key.label());
+        Lombardy = putEntityWithResource(tx, "Lombardy", region, key.label());
+        Milan = putEntityWithResource(tx, "Milan", city, key.label());
     }
 
     @Override
     public void buildRelations() {
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Poland)
-                .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.create()
+                .assign(geoEntity, Poland)
+                .assign(entityLocation, Europe);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Masovia)
-                .addRolePlayer(entityLocation, Poland);
+        isLocatedIn.create()
+                .assign(geoEntity, Masovia)
+                .assign(entityLocation, Poland);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Warsaw)
-                .addRolePlayer(entityLocation, Masovia);
+        isLocatedIn.create()
+                .assign(geoEntity, Warsaw)
+                .assign(entityLocation, Masovia);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, PW)
-                .addRolePlayer(entityLocation, Warsaw);
+        isLocatedIn.create()
+                .assign(geoEntity, PW)
+                .assign(entityLocation, Warsaw);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, UW)
-                .addRolePlayer(entityLocation, Warsaw);
+        isLocatedIn.create()
+                .assign(geoEntity, UW)
+                .assign(entityLocation, Warsaw);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Silesia)
-                .addRolePlayer(entityLocation, Poland);
+        isLocatedIn.create()
+                .assign(geoEntity, Silesia)
+                .assign(entityLocation, Poland);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Wroclaw)
-                .addRolePlayer(entityLocation, Silesia);
+        isLocatedIn.create()
+                .assign(geoEntity, Wroclaw)
+                .assign(entityLocation, Silesia);
 
 
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Imperial)
-                .addRolePlayer(entityLocation, London);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, UCL)
-                .addRolePlayer(entityLocation, London);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, London)
-                .addRolePlayer(entityLocation, GreaterLondon);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, GreaterLondon)
-                .addRolePlayer(entityLocation, England);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, England)
-               .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.create()
+                .assign(geoEntity, Imperial)
+                .assign(entityLocation, London);
+        isLocatedIn.create()
+                .assign(geoEntity, UCL)
+                .assign(entityLocation, London);
+        isLocatedIn.create()
+                .assign(geoEntity, London)
+                .assign(entityLocation, GreaterLondon);
+        isLocatedIn.create()
+                .assign(geoEntity, GreaterLondon)
+                .assign(entityLocation, England);
+        isLocatedIn.create()
+                .assign(geoEntity, England)
+               .assign(entityLocation, Europe);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Munich)
-                .addRolePlayer(entityLocation, Bavaria);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Bavaria)
-                .addRolePlayer(entityLocation, Germany);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Germany)
-                .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.create()
+                .assign(geoEntity, Munich)
+                .assign(entityLocation, Bavaria);
+        isLocatedIn.create()
+                .assign(geoEntity, Bavaria)
+                .assign(entityLocation, Germany);
+        isLocatedIn.create()
+                .assign(geoEntity, Germany)
+                .assign(entityLocation, Europe);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Milan)
-                .addRolePlayer(entityLocation, Lombardy);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Lombardy)
-                .addRolePlayer(entityLocation, Italy);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Italy)
-                .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.create()
+                .assign(geoEntity, Milan)
+                .assign(entityLocation, Lombardy);
+        isLocatedIn.create()
+                .assign(geoEntity, Lombardy)
+                .assign(entityLocation, Italy);
+        isLocatedIn.create()
+                .assign(geoEntity, Italy)
+                .assign(entityLocation, Europe);
 
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Paris)
-                .addRolePlayer(entityLocation, IleDeFrance);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, IleDeFrance)
-                .addRolePlayer(entityLocation, France);
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, France)
-                .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.create()
+                .assign(geoEntity, Paris)
+                .assign(entityLocation, IleDeFrance);
+        isLocatedIn.create()
+                .assign(geoEntity, IleDeFrance)
+                .assign(entityLocation, France);
+        isLocatedIn.create()
+                .assign(geoEntity, France)
+                .assign(entityLocation, Europe);
     }
 
     @Override

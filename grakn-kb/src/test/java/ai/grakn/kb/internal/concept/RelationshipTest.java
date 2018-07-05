@@ -71,33 +71,33 @@ public class RelationshipTest extends TxTestBase {
         role2 = (RoleImpl) tx.putRole("Role 2");
         role3 = (RoleImpl) tx.putRole("Role 3");
 
-        type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = tx.putRelationshipType("Main relation type").relates(role1).relates(role2).relates(role3);
+        type = tx.putEntityType("Main concept Type").play(role1).play(role2).play(role3);
+        relationshipType = tx.putRelationshipType("Main relation type").relate(role1).relate(role2).relate(role3);
 
-        rolePlayer1 = (ThingImpl) type.addEntity();
-        rolePlayer2 = (ThingImpl) type.addEntity();
+        rolePlayer1 = (ThingImpl) type.create();
+        rolePlayer2 = (ThingImpl) type.create();
 
-        relation = (RelationshipImpl) relationshipType.addRelationship();
+        relation = (RelationshipImpl) relationshipType.create();
 
-        relation.addRolePlayer(role1, rolePlayer1);
-        relation.addRolePlayer(role2, rolePlayer2);
+        relation.assign(role1, rolePlayer1);
+        relation.assign(role2, rolePlayer2);
     }
 
     @Test
     public void whenAddingRolePlayerToRelation_RelationIsExpanded(){
-        Relationship relationship = relationshipType.addRelationship();
+        Relationship relationship = relationshipType.create();
         Role role = tx.putRole("A role");
-        Entity entity1 = type.addEntity();
+        Entity entity1 = type.create();
 
-        relationship.addRolePlayer(role, entity1);
-        assertThat(relationship.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3, role));
-        assertThat(relationship.allRolePlayers().get(role), containsInAnyOrder(entity1));
+        relationship.assign(role, entity1);
+        assertThat(relationship.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3, role));
+        assertThat(relationship.rolePlayersMap().get(role), containsInAnyOrder(entity1));
     }
 
     @Test
     public void whenCreatingAnInferredRelationship_EnsureMarkedAsInferred(){
         RelationshipTypeImpl rt = RelationshipTypeImpl.from(tx.putRelationshipType("rt"));
-        Relationship relationship = rt.addRelationship();
+        Relationship relationship = rt.create();
         Relationship relationshipInferred = rt.addRelationshipInferred();
         assertFalse(relationship.isInferred());
         assertTrue(relationshipInferred.isInferred());
@@ -109,28 +109,28 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("Role 1");
         Role role2 = tx.putRole("Role 2");
         Role role3 = tx.putRole("Role 3");
-        tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
-        EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
+        tx.putRelationshipType("Rel Type").relate(role1).relate(role2).relate(role3);
+        EntityType entType = tx.putEntityType("Entity Type").play(role1).play(role2).play(role3);
 
         //Data
-        EntityImpl entity1r1 = (EntityImpl) entType.addEntity();
-        EntityImpl entity2r1 = (EntityImpl) entType.addEntity();
-        EntityImpl entity3r2r3 = (EntityImpl) entType.addEntity();
-        EntityImpl entity4r3 = (EntityImpl) entType.addEntity();
-        EntityImpl entity5r1 = (EntityImpl) entType.addEntity();
-        EntityImpl entity6r1r2r3 = (EntityImpl) entType.addEntity();
+        EntityImpl entity1r1 = (EntityImpl) entType.create();
+        EntityImpl entity2r1 = (EntityImpl) entType.create();
+        EntityImpl entity3r2r3 = (EntityImpl) entType.create();
+        EntityImpl entity4r3 = (EntityImpl) entType.create();
+        EntityImpl entity5r1 = (EntityImpl) entType.create();
+        EntityImpl entity6r1r2r3 = (EntityImpl) entType.create();
 
         //Relationship
-        Relationship relationship = relationshipType.addRelationship();
-        relationship.addRolePlayer(role1, entity1r1);
-        relationship.addRolePlayer(role1, entity2r1);
-        relationship.addRolePlayer(role1, entity5r1);
-        relationship.addRolePlayer(role1, entity6r1r2r3);
-        relationship.addRolePlayer(role2, entity3r2r3);
-        relationship.addRolePlayer(role2, entity6r1r2r3);
-        relationship.addRolePlayer(role3, entity3r2r3);
-        relationship.addRolePlayer(role3, entity4r3);
-        relationship.addRolePlayer(role3, entity6r1r2r3);
+        Relationship relationship = relationshipType.create();
+        relationship.assign(role1, entity1r1);
+        relationship.assign(role1, entity2r1);
+        relationship.assign(role1, entity5r1);
+        relationship.assign(role1, entity6r1r2r3);
+        relationship.assign(role2, entity3r2r3);
+        relationship.assign(role2, entity6r1r2r3);
+        relationship.assign(role3, entity3r2r3);
+        relationship.assign(role3, entity4r3);
+        relationship.assign(role3, entity6r1r2r3);
 
         //Check the structure of the NEW role-player edges
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity1r1),
@@ -147,7 +147,7 @@ public class RelationshipTest extends TxTestBase {
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
     private Set<Concept> followRolePlayerEdgesToNeighbours(EmbeddedGraknTx<?> tx, Thing thing) {
-        List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
+        List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.id().getValue()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
@@ -156,7 +156,7 @@ public class RelationshipTest extends TxTestBase {
 
     @Test
     public void whenGettingRolePlayersOfRelation_ReturnsRolesAndInstances() throws Exception {
-        assertThat(relation.allRolePlayers().keySet(), Matchers.containsInAnyOrder(role1, role2, role3));
+        assertThat(relation.rolePlayersMap().keySet(), Matchers.containsInAnyOrder(role1, role2, role3));
         assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
         assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
     }
@@ -165,16 +165,16 @@ public class RelationshipTest extends TxTestBase {
     public void ensureRelationToStringContainsRolePlayerInformation(){
         Role role1 = tx.putRole("role type 1");
         Role role2 = tx.putRole("role type 2");
-        RelationshipType relationshipType = tx.putRelationshipType("A relationship Type").relates(role1).relates(role2);
-        EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
-        Thing thing1 = type.addEntity();
-        Thing thing2 = type.addEntity();
+        RelationshipType relationshipType = tx.putRelationshipType("A relationship Type").relate(role1).relate(role2);
+        EntityType type = tx.putEntityType("concept type").play(role1).play(role2);
+        Thing thing1 = type.create();
+        Thing thing2 = type.create();
 
-        Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
+        Relationship relationship = relationshipType.create().assign(role1, thing1).assign(role2, thing2);
 
-        String mainDescription = "ID [" + relationship.getId() +  "] Type [" + relationship.type().getLabel() + "] Roles and Role Players:";
-        String rolerp1 = "    Role [" + role1.getLabel() + "] played by [" + thing1.getId() + ",]";
-        String rolerp2 = "    Role [" + role2.getLabel() + "] played by [" + thing2.getId() + ",]";
+        String mainDescription = "ID [" + relationship.id() +  "] Type [" + relationship.type().label() + "] Roles and Role Players:";
+        String rolerp1 = "    Role [" + role1.label() + "] played by [" + thing1.id() + ",]";
+        String rolerp2 = "    Role [" + role2.label() + "] played by [" + thing2.id() + ",]";
 
         assertTrue("Relationship toString missing main description", relationship.toString().contains(mainDescription));
         assertTrue("Relationship toString missing role and role player definition", relationship.toString().contains(rolerp1));
@@ -185,17 +185,17 @@ public class RelationshipTest extends TxTestBase {
     public void whenDeletingRelations_EnsureCastingsRemain(){
         Role entityRole = tx.putRole("Entity Role");
         Role degreeRole = tx.putRole("Degree Role");
-        EntityType entityType = tx.putEntityType("Entity Type").plays(entityRole);
-        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
+        EntityType entityType = tx.putEntityType("Entity Type").play(entityRole);
+        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.LONG).play(degreeRole);
 
-        RelationshipType hasDegree = tx.putRelationshipType("Has Degree").relates(entityRole).relates(degreeRole);
+        RelationshipType hasDegree = tx.putRelationshipType("Has Degree").relate(entityRole).relate(degreeRole);
 
-        Entity entity = entityType.addEntity();
-        Attribute<Long> degree1 = degreeType.putAttribute(100L);
-        Attribute<Long> degree2 = degreeType.putAttribute(101L);
+        Entity entity = entityType.create();
+        Attribute<Long> degree1 = degreeType.create(100L);
+        Attribute<Long> degree2 = degreeType.create(101L);
 
-        Relationship relationship1 = hasDegree.addRelationship().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
-        hasDegree.addRelationship().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
+        Relationship relationship1 = hasDegree.create().assign(entityRole, entity).assign(degreeRole, degree1);
+        hasDegree.create().assign(entityRole, entity).assign(degreeRole, degree2);
 
         assertEquals(2, entity.relationships().count());
 
@@ -211,13 +211,13 @@ public class RelationshipTest extends TxTestBase {
         Role roleB = tx.putRole("RoleB");
         Role roleC = tx.putRole("RoleC");
 
-        RelationshipType relation = tx.putRelationshipType("relation type").relates(roleA).relates(roleB).relates(roleC);
-        EntityType type = tx.putEntityType("concept type").plays(roleA).plays(roleB).plays(roleC);
-        Entity a = type.addEntity();
-        Entity b = type.addEntity();
-        Entity c = type.addEntity();
+        RelationshipType relation = tx.putRelationshipType("relation type").relate(roleA).relate(roleB).relate(roleC);
+        EntityType type = tx.putEntityType("concept type").play(roleA).play(roleB).play(roleC);
+        Entity a = type.create();
+        Entity b = type.create();
+        Entity c = type.create();
 
-        ConceptId relationId = relation.addRelationship().addRolePlayer(roleA, a).addRolePlayer(roleB, b).addRolePlayer(roleC, c).getId();
+        ConceptId relationId = relation.create().assign(roleA, a).assign(roleB, b).assign(roleC, c).id();
 
         a.delete();
         assertNotNull(tx.getConcept(relationId));
@@ -230,21 +230,21 @@ public class RelationshipTest extends TxTestBase {
     @Test
     public void whenAddingNullRolePlayerToRelation_Throw(){
         expectedException.expect(NullPointerException.class);
-        relationshipType.addRelationship().addRolePlayer(null, rolePlayer1);
+        relationshipType.create().assign(null, rolePlayer1);
     }
 
     @Test
     public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
         AttributeType<String> attributeType = tx.putAttributeType("what a pain", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putAttribute("a real pain");
+        Attribute<String> attribute = attributeType.create("a real pain");
 
-        EntityType entityType = tx.putEntityType("yay").attribute(attributeType);
-        Relationship implicitRelationship = Iterables.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().collect(Collectors.toSet()));
+        EntityType entityType = tx.putEntityType("yay").has(attributeType);
+        Relationship implicitRelationship = Iterables.getOnlyElement(entityType.create().has(attribute).relationships().collect(Collectors.toSet()));
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.hasNotAllowed(implicitRelationship, attribute).getMessage());
 
-        implicitRelationship.attribute(attribute);
+        implicitRelationship.has(attribute);
     }
 
 
@@ -253,21 +253,21 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.DataType.LONG);
-        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2).key(attributeType);
-        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relate(role1).relate(role2).key(attributeType);
+        EntityType entityType = tx.putEntityType("Dead Guys").play(role1).play(role2);
 
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
+        Entity e1 = entityType.create();
+        Entity e2 = entityType.create();
 
-        Attribute<Long> r1 = attributeType.putAttribute(1000000L);
-        Attribute<Long> r2 = attributeType.putAttribute(2000000L);
+        Attribute<Long> r1 = attributeType.create(1000000L);
+        Attribute<Long> r2 = attributeType.create(2000000L);
 
-        Relationship rel1 = relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
-        Relationship rel2 = relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        Relationship rel1 = relationshipType.create().assign(role1, e1).assign(role2, e2);
+        Relationship rel2 = relationshipType.create().assign(role1, e1).assign(role2, e2);
 
         //Set the keys and commit. Without this step it should fail
-        rel1.attribute(r1);
-        rel2.attribute(r2);
+        rel1.has(r1);
+        rel2.has(r2);
 
         tx.commit();
         tx = session.transaction(GraknTxType.WRITE);
@@ -280,35 +280,35 @@ public class RelationshipTest extends TxTestBase {
     public void whenRemovingRolePlayerFromRelationship_EnsureRolePlayerIsRemoved(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
-        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2);
-        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relate(role1).relate(role2);
+        EntityType entityType = tx.putEntityType("Dead Guys").play(role1).play(role2);
 
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
-        Entity e3 = entityType.addEntity();
-        Entity e4 = entityType.addEntity();
-        Entity e5 = entityType.addEntity();
-        Entity e6 = entityType.addEntity();
+        Entity e1 = entityType.create();
+        Entity e2 = entityType.create();
+        Entity e3 = entityType.create();
+        Entity e4 = entityType.create();
+        Entity e5 = entityType.create();
+        Entity e6 = entityType.create();
 
-        Relationship relationship = relationshipType.addRelationship().
-                addRolePlayer(role1, e1).addRolePlayer(role1, e2).addRolePlayer(role1, e3).
-                addRolePlayer(role2, e4).addRolePlayer(role2, e5).addRolePlayer(role2, e6);
+        Relationship relationship = relationshipType.create().
+                assign(role1, e1).assign(role1, e2).assign(role1, e3).
+                assign(role2, e4).assign(role2, e5).assign(role2, e6);
 
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4, e5, e6));
-        relationship.removeRolePlayer(role1, e2);
-        relationship.removeRolePlayer(role2, e1);
+        relationship.unassign(role1, e2);
+        relationship.unassign(role2, e1);
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
-        relationship.removeRolePlayer(role2, e6);
+        relationship.unassign(role2, e6);
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
     }
 
     @Test
     public void whenAttributeLinkedToRelationshipIsInferred_EnsureItIsMarkedAsInferred(){
         AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.DataType.STRING);
-        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").attribute(attributeType);
+        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").has(attributeType);
 
-        Attribute attribute = attributeType.putAttribute("Things");
-        Relationship relationship = relationshipType.addRelationship();
+        Attribute attribute = attributeType.create("Things");
+        Relationship relationship = relationshipType.create();
 
         RelationshipImpl.from(relationship).attributeInferred(attribute);
         assertTrue(relationship.relationships().findAny().get().isInferred());
@@ -318,11 +318,11 @@ public class RelationshipTest extends TxTestBase {
     public void whenAddingRelationshipWithNoRolePlayers_Throw(){
         Role role1 = tx.putRole("r1");
         Role role2 = tx.putRole("r2");
-        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").relates(role1).relates(role2);
-        Relationship relationship = relationshipType.addRelationship();
+        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").relate(role1).relate(role2);
+        Relationship relationship = relationshipType.create();
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.getId(), relationship.type().getLabel())));
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.id(), relationship.type().label())));
 
         tx.commit();
     }
