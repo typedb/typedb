@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 
 /**
  * A utility class to build RPC Concepts by converting them from Grakn Concepts.
- *
- * @author Grakn Warriors
  */
 public class ConceptBuilder {
 

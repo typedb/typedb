@@ -511,25 +511,6 @@ public class ResponseBuilder {
                 return conceptMethodResponse(response);
             }
         }
-
-//        static SessionProto.Transaction.Res iteratorId(Stream<SessionProto.Transaction.Res> responses, SessionService.Iterators iterators) {
-//            IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-//            MethodProto.Method.Res conceptResponse = MethodProto.Method.Res.newBuilder()
-//                    .setIteratorId(iteratorId).build();
-//            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
-//        }
-
-//        static SessionProto.Transaction.Res conceptResopnseWithConcept(Concept concept) {
-//            MethodProto.Method.Res conceptResponse = MethodProto.Method.Res.newBuilder()
-//                    .setConcept(ConceptBuilder.concept(concept)).build();
-//            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
-//        }
-
-//        static SessionProto.Transaction.Res conceptResponseWithAttributeValue(Object value) {
-//            MethodProto.Method.Res conceptResponse = MethodProto.Method.Res.newBuilder()
-//                    .setAttributeValue(ConceptBuilder.attributeValue(value)).build();
-//            return SessionProto.Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
-//        }
     }
 
     /**

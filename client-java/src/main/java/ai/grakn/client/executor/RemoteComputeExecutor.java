@@ -21,8 +21,6 @@ package ai.grakn.client.executor;
 /**
  * Represents a compute query executing on a gRPC server.
  *
- * @author Felix Chapman
- *
  * @param <T> The returned result of the compute job
  */
 final class RemoteComputeExecutor<T> implements ai.grakn.ComputeExecutor {

@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
 import javax.annotation.Nullable;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.AttributeType}
  *
  * @param <D> The data type of this attribute type
  */

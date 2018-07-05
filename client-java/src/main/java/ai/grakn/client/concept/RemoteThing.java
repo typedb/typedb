@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Thing}
  *
  * @param <SomeThing> The exact type of this class
  * @param <SomeType> the type of an instance of this class

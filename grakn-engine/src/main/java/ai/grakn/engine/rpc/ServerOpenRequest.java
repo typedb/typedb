@@ -24,10 +24,9 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 /**
- * Class used to handle gRPC Open requests. It extracts keyspace and tx type from gRPC request
- * and open new tx using GraknTxFactory
+ * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
+ * to open a new transaction.
  */
-
 public class ServerOpenRequest implements OpenRequest {
 
     private final EngineGraknTxFactory txFactory;
@@ -43,7 +42,9 @@ public class ServerOpenRequest implements OpenRequest {
         return txFactory.tx(keyspace, txType);
     }
 
-
+    /**
+     * An argument object for request transaction opener for RPC Services
+     */
     static class Arguments implements OpenRequest.Arguments {
 
         Keyspace keyspace;

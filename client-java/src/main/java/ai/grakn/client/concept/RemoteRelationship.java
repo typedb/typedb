@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Relationship}
  */
 @AutoValue
 public abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {

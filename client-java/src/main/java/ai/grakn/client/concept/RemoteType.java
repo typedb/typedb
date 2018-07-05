@@ -32,7 +32,7 @@ import ai.grakn.rpc.proto.SessionProto;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Type}
  *
  * @param <SomeType> The exact type of this class
  * @param <SomeThing> the exact type of instances of this class

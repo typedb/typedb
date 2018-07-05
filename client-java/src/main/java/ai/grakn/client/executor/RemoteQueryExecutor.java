@@ -36,8 +36,6 @@ import java.util.stream.StreamSupport;
 
 /**
  * Remote implementation of {@link QueryExecutor} that communicates with a Grakn server using gRPC.
- *
- * @author Grakn Warriors
  */
 public final class RemoteQueryExecutor implements QueryExecutor {
 

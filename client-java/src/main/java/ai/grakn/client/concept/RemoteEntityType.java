@@ -29,7 +29,10 @@ import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 /**
- * @author Felix Chapman
+ * Client implementation of a MetaType, a special type of {@link ai.grakn.concept.Type}
+ *
+ * TODO: This class is not defined in which is not defined in Core API, and at server side implementation.
+ * TODO: we should remove this class, or implement properly on server side.
  */
 @AutoValue
 public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> implements EntityType {

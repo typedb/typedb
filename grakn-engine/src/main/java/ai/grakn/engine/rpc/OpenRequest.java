@@ -30,7 +30,7 @@ public interface OpenRequest {
     EmbeddedGraknTx<?> open(OpenRequest.Arguments arguments);
 
     /**
-     * An argument object for reqeust transacion opener for RPC Services
+     * An argument object for request transaction opener for RPC Services
      */
     interface Arguments {
 

@@ -34,7 +34,7 @@ import com.google.auto.value.AutoValue;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Attribute}
  *
  * @param <D> The data type of this attribute
  */

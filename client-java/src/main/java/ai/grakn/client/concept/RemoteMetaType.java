@@ -26,7 +26,7 @@ import ai.grakn.concept.Type;
 import com.google.auto.value.AutoValue;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Type}
  */
 @AutoValue
 public abstract class RemoteMetaType extends RemoteType<Type, Thing> {

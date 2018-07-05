@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Super class of all Grakn Concepts.
+ * Client implementation of {@link ai.grakn.concept.Concept}
  *
  * @param <SomeConcept> represents the actual class of object to downcast to
  */

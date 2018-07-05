@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.SchemaConcept}
  *
  * @param <SomeType> The exact type of this class
  */

@@ -31,7 +31,7 @@ import com.google.auto.value.AutoValue;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Role}
  */
 @AutoValue
 public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {

@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Rule}
  */
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {

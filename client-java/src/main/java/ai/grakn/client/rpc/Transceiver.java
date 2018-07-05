@@ -32,8 +32,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Wrapper for making Tx calls to a gRPC server - handles sending a stream of {@link Transaction.Req}s and receiving a
- * stream of {@link Transaction.Res}s.
+ * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of {@link Transaction.Req} and
+ * receiving a stream of {@link Transaction.Res}.
  *
  * A request is sent with the {@link #send(Transaction.Req)}} method, and you can block for a response with the
  * {@link #receive()} method.

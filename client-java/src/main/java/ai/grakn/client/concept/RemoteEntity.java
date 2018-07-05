@@ -26,7 +26,7 @@ import ai.grakn.concept.EntityType;
 import com.google.auto.value.AutoValue;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.Entity}
  */
 @AutoValue
 public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {

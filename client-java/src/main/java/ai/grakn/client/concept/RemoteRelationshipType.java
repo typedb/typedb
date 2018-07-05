@@ -33,7 +33,7 @@ import com.google.auto.value.AutoValue;
 import java.util.stream.Stream;
 
 /**
- * @author Felix Chapman
+ * Client implementation of {@link ai.grakn.concept.RelationshipType}
  */
 @AutoValue
 public abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
