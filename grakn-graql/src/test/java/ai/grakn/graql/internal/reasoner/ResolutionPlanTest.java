@@ -32,9 +32,12 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -46,12 +49,17 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class ResolutionPlanTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("resolution-plan-test.gql");
 
+    @BeforeClass
+    public static void onStartup() throws Exception {
+        assumeTrue(GraknTestUtil.usingTinker());
+    }
 
     @Test
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
