@@ -51,7 +51,7 @@
         <project.resource.encoding>UTF-8</project.resource.encoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.2.6</tinkerpop.version>
+        <tinkerpop.version>3.2.9</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <janus.version>0.2.0</janus.version>
         <guava.version>19.0</guava.version>
