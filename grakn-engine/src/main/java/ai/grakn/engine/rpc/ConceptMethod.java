@@ -35,6 +35,8 @@ import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -132,20 +134,16 @@ public abstract class ConceptMethod {
                 return putAttribute(concept, method);
 
             // Thing methods
-
-
             case ISINFERRED:
                 return isInferred(concept);
-            case GETROLEPLAYERS:
-                return getRolePlayers(concept, iterators);
-            case GETROLEPLAYERSBYROLES:
-                return getRolePlayersByRoles(concept, iterators, method, tx);
             case GETDIRECTTYPE:
                 return getDirectType(concept);
-            case UNSETROLEPLAYER:
-                return removeRolePlayer(concept, method, tx);
-            case GETATTRIBUTES:
-                return getAttributes(concept, iterators);
+            case GETKEYS:
+                return getKeys(concept, iterators);
+            case GETKEYSBYTYPES:
+                return getKeysByTypes(concept, iterators, method, tx);
+            case GETATTRIBUTESFORANYTYPE:
+                return getAttributesForAnyType(concept, iterators);
             case GETATTRIBUTESBYTYPES:
                 return getAttributesByTypes(concept, method, iterators, tx);
             case GETRELATIONSHIPS:
@@ -154,17 +152,20 @@ public abstract class ConceptMethod {
                 return getRelationshipsByRoles(concept, iterators, method, tx);
             case GETROLESPLAYEDBYTHING:
                 return getRolesPlayedByThing(concept, iterators);
-            case GETKEYS:
-                return getKeys(concept, iterators);
-            case GETKEYSBYTYPES:
-                return getKeysByTypes(concept, iterators, method, tx);
-            case SETATTRIBUTE:
-                return setAttribute(concept, method, tx);
-            case UNSETATTRIBUTE:
-                return unsetAttribute(concept, method, tx);
+            case SETATTRIBUTERELATIONSHIP:
+                return setAttributeRelationship(concept, method, tx);
+            case UNSETATTRIBUTERELATIONSHIP:
+                return unsetAttributeRelationship(concept, method, tx);
+
+            // Relationship methods
+            case GETROLEPLAYERS:
+                return getRolePlayers(concept, iterators);
+            case GETROLEPLAYERSBYROLES:
+                return getRolePlayersByRoles(concept, iterators, method, tx);
             case SETROLEPLAYER:
                 return setRolePlayer(concept, method, tx);
-
+            case UNSETROLEPLAYER:
+                return unsetRolePlayer(concept, method, tx);
 
             // Attribute Methods
             case GETVALUE:
@@ -185,8 +186,8 @@ public abstract class ConceptMethod {
     private static Transaction.Res delete(Concept concept) {
         concept.delete();
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.delete();
     }
+
 
     // SchemaConcept methods
 
@@ -203,7 +204,6 @@ public abstract class ConceptMethod {
     private static Transaction.Res setLabel(Concept concept, MethodProto.Method.Req method) {
         concept.asSchemaConcept().setLabel(Label.of(method.getSetLabel().getLabel()));
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.setLabel();
     }
 
     private static Transaction.Res getSubConcepts(Concept concept, SessionService.Iterators iterators) {
@@ -244,8 +244,8 @@ public abstract class ConceptMethod {
         }
 
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.setDirectSuperConcept();
     }
+
 
     // Rule methods
 
@@ -256,6 +256,7 @@ public abstract class ConceptMethod {
     private static Transaction.Res getThen(Concept concept) {
         return ResponseBuilder.Transaction.ConceptMethod.getThen(concept.asRule().getThen());
     }
+
 
     // Role methods
 
@@ -268,6 +269,7 @@ public abstract class ConceptMethod {
         Stream<Type> concepts = concept.asRole().playedByTypes();
         return ResponseBuilder.Transaction.ConceptMethod.getTypesThatPlayRole(concepts, iterators);
     }
+
 
     // Type methods
 
@@ -306,14 +308,12 @@ public abstract class ConceptMethod {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getSetAttributeType().getConcept(), tx).asAttributeType();
         concept.asType().attribute(attributeType);
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.setAttributeType();
     }
 
     private static Transaction.Res unsetAttributeType(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
         AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnsetAttributeType().getConcept(), tx).asAttributeType();
         concept.asType().deleteAttribute(attributeType);
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.unsetAttributeType();
     }
 
     private static Transaction.Res setKeyType(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
@@ -340,12 +340,14 @@ public abstract class ConceptMethod {
         return null;
     }
 
+
     // EntityType methods
 
     private static Transaction.Res addEntity(Concept concept) {
         Entity entity = concept.asEntityType().addEntity();
         return ResponseBuilder.Transaction.ConceptMethod.addEntity(entity);
     }
+
 
     // RelationshipType methods
 
@@ -370,6 +372,7 @@ public abstract class ConceptMethod {
         concept.asRelationshipType().deleteRelates(role);
         return null;
     }
+
 
     // AttributeType methods
 
@@ -405,147 +408,126 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.ConceptMethod.putAttribute(attribute);
     }
 
+
     // Thing methods
-
-
-
-
-
-
-
 
     private static Transaction.Res isInferred(Concept concept) {
         Boolean response = concept.asThing().isInferred();
-        MethodProto.Method.Res.Builder conceptResponse = MethodProto.Method.Res.newBuilder()
-                .setIsInferred(response);
-        return Transaction.Res.newBuilder().setConceptResponse(conceptResponse).build();
-    }
-
-
-    private static Transaction.Res getRolePlayers(Concept concept, SessionService.Iterators iterators) {
-        Stream.Builder<Transaction.Res> rolePlayers = Stream.builder();
-        concept.asRelationship().allRolePlayers().forEach(
-                (role, players) -> players.forEach(
-                        player -> rolePlayers.add(ResponseBuilder.Transaction.rolePlayer(role, player))
-                )
-        );
-        return ResponseBuilder.Transaction.iteratorId(rolePlayers.build(), iterators);
-    }
-
-    private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
-                                                    MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRolePlayersByRoles();
-        Role[] roles = rpcRoles.getConceptsList().stream()
-                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
-                .toArray(Role[]::new);
-        Stream<? extends Concept> concepts = concept.asRelationship().rolePlayers(roles);
-        Stream<Transaction.Res> responses = concepts.map(concept1 -> ResponseBuilder.Transaction.concept(concept1));
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.isInferred(response);
     }
 
     private static Transaction.Res getDirectType(Concept concept) {
         Concept type = concept.asThing().type();
-        return ResponseBuilder.Transaction.conceptResopnseWithConcept(type);
-    }
-
-    private static Transaction.Res removeRolePlayer(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRole(), tx).asRole();
-        Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getPlayer(), tx).asThing();
-        concept.asRelationship().removeRolePlayer(role, player);
-        return null;
-    }
-
-    private static Transaction.Res getAttributes(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asThing().attributes();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getAttributesByTypes(Concept concept, MethodProto.Method.Req method,
-                                                   SessionService.Iterators iterators, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes();
-        AttributeType<?>[] attributeTypes = rpcAttributeTypes.getConceptsList().stream()
-                        .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
-                        .toArray(AttributeType[]::new);
-
-        Stream<? extends Concept> concepts = concept.asThing().attributes(attributeTypes);
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getRelationships(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asThing().relationships();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getRelationshipsByRoles(Concept concept, SessionService.Iterators iterators,
-                                                      MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRelationshipsByRoles();
-        Role[] roles = rpcRoles.getConceptsList().stream()
-                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
-                .toArray(Role[]::new);
-        Stream<? extends Concept> concepts = concept.asThing().relationships(roles);
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
-    }
-
-    private static Transaction.Res getRolesPlayedByThing(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asThing().plays();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.getDirectType(type);
     }
 
     private static Transaction.Res getKeys(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asThing().keys();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
+        Stream<Attribute<?>> concepts = concept.asThing().keys();
+        return ResponseBuilder.Transaction.ConceptMethod.getKeys(concepts, iterators);
     }
 
     private static Transaction.Res getKeysByTypes(Concept concept, SessionService.Iterators iterators,
-                                             MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcKeyTypes = method.getGetKeysByTypes();
+                                                  MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        ConceptProto.Concepts rpcKeyTypes = method.getGetKeysByTypes().getConcepts();
         AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList()
                 .stream().map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(AttributeType[]::new);
 
-        Stream<? extends Concept> concepts = concept.asThing().keys(keyTypes);
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
+        Stream<Attribute<?>> concepts = concept.asThing().keys(keyTypes);
+        return ResponseBuilder.Transaction.ConceptMethod.getKeysByTypes(concepts, iterators);
     }
 
-    private static Transaction.Res setAttribute(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        Attribute<?> attribute =  ConceptBuilder.concept(method.getSetAttribute(), tx).asAttribute();
-        Concept relationship = concept.asThing().attributeRelationship(attribute);
-        return ResponseBuilder.Transaction.conceptResopnseWithConcept(relationship);
+    private static Transaction.Res getAttributesForAnyType(Concept concept, SessionService.Iterators iterators) {
+        Stream<Attribute<?>> concepts = concept.asThing().attributes();
+        return ResponseBuilder.Transaction.ConceptMethod.getAttributesForAnyType(concepts, iterators);
     }
 
-    private static Transaction.Res unsetAttribute(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        Attribute<?> attribute = ConceptBuilder.concept(method.getUnsetAttribute(), tx).asAttribute();
+    private static Transaction.Res getAttributesByTypes(Concept concept, MethodProto.Method.Req method,
+                                                        SessionService.Iterators iterators, EmbeddedGraknTx tx) {
+        ConceptProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes().getConcepts();
+        AttributeType<?>[] attributeTypes = rpcAttributeTypes.getConceptsList().stream()
+                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                .toArray(AttributeType[]::new);
+
+        Stream<Attribute<?>> concepts = concept.asThing().attributes(attributeTypes);
+        return ResponseBuilder.Transaction.ConceptMethod.getAttributesByTypes(concepts, iterators);
+    }
+
+    private static Transaction.Res getRelationships(Concept concept, SessionService.Iterators iterators) {
+        Stream<Relationship> concepts = concept.asThing().relationships();
+        return ResponseBuilder.Transaction.ConceptMethod.getRelationships(concepts, iterators);
+    }
+
+    private static Transaction.Res getRelationshipsByRoles(Concept concept, SessionService.Iterators iterators,
+                                                           MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        ConceptProto.Concepts rpcRoles = method.getGetRelationshipsByRoles().getConcepts();
+        Role[] roles = rpcRoles.getConceptsList().stream()
+                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                .toArray(Role[]::new);
+        Stream<Relationship> concepts = concept.asThing().relationships(roles);
+        return ResponseBuilder.Transaction.ConceptMethod.getRelationshipsByRoles(concepts, iterators);
+    }
+
+    private static Transaction.Res getRolesPlayedByThing(Concept concept, SessionService.Iterators iterators) {
+        Stream<Role> concepts = concept.asThing().plays();
+        return ResponseBuilder.Transaction.ConceptMethod.getRolesPlayedByThing(concepts, iterators);
+    }
+
+    private static Transaction.Res setAttributeRelationship(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        Attribute<?> attribute = ConceptBuilder.concept(method.getSetAttributeRelationship().getConcept(), tx).asAttribute();
+        Relationship relationship = concept.asThing().attributeRelationship(attribute);
+        return ResponseBuilder.Transaction.ConceptMethod.setAttributeRelationship(relationship);
+    }
+
+    private static Transaction.Res unsetAttributeRelationship(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        Attribute<?> attribute = ConceptBuilder.concept(method.getUnsetAttributeRelationship().getConcept(), tx).asAttribute();
         concept.asThing().deleteAttribute(attribute);
         return null;
     }
 
+
+    // Relationship methods
+
+    private static Transaction.Res getRolePlayers(Concept concept, SessionService.Iterators iterators) {
+        Map<Role, Set<Thing>> rolePlayers = concept.asRelationship().allRolePlayers();
+        return ResponseBuilder.Transaction.ConceptMethod.getRolePlayers(rolePlayers, iterators);
+    }
+
+    private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
+                                                    MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        ConceptProto.Concepts rpcRoles = method.getGetRolePlayersByRoles().getConcepts();
+        Role[] roles = rpcRoles.getConceptsList().stream()
+                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                .toArray(Role[]::new);
+        Stream<Thing> concepts = concept.asRelationship().rolePlayers(roles);
+        return ResponseBuilder.Transaction.ConceptMethod.getRolePlayersByRoles(concepts, iterators);
+    }
+
     private static Transaction.Res setRolePlayer(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getSetRolePlayer().getRole(), tx).asRole();
-        Thing player = ConceptBuilder.concept(method.getSetRolePlayer().getPlayer(), tx).asThing();
+        Role role = ConceptBuilder.concept(method.getSetRolePlayer().getRolePlayer().getRole(), tx).asRole();
+        Thing player = ConceptBuilder.concept(method.getSetRolePlayer().getRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().addRolePlayer(role, player);
         return null;
     }
 
+    private static Transaction.Res unsetRolePlayer(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRolePlayer().getRole(), tx).asRole();
+        Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getRolePlayer().getPlayer(), tx).asThing();
+        concept.asRelationship().removeRolePlayer(role, player);
+        return null;
+    }
 
 
     // Attribute methods
 
     private static Transaction.Res getValue(Concept concept) {
         Object value = concept.asAttribute().getValue();
-        return ResponseBuilder.Transaction.conceptResponseWithAttributeValue(value);
+        return ResponseBuilder.Transaction.ConceptMethod.getValue(value);
     }
 
     private static Transaction.Res getOwners(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Concept> concepts = concept.asAttribute().ownerInstances();
-        Stream<Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-        return ResponseBuilder.Transaction.iteratorId(responses, iterators);
+        Stream<Thing> concepts = concept.asAttribute().ownerInstances();
+        return ResponseBuilder.Transaction.ConceptMethod.getOwners(concepts, iterators);
     }
 
     private static Transaction.Res getDataTypeOfAttribute(Concept concept) {

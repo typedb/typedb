@@ -70,14 +70,6 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    protected final Stream<? extends Concept> runMethodToConceptStream(MethodProto.Method.Req method) {
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptResponse().getIteratorId();
-        Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
-        );
-
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
     protected final SessionProto.Transaction.Res runMethod(MethodProto.Method.Req method) {
         return runMethod(getId(), method);
     }

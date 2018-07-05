@@ -8,8 +8,6 @@ import "Iterator.proto";
 
 package session;
 
-message Unit {} // Represents a message with no information
-
 message Method {
     message Req {
         oneof req {
@@ -64,28 +62,28 @@ message Method {
             PutAttribute.Req putAttribute = 34;
 
             // Thing methods
-            Unit isInferred = 105; // returns bool
-            Unit getKeys = 1042; // returns IteratorId of Concept
-            Unit getAttributes = 1041; // returns IteratorId of Concept
-            Unit getRelationships = 1039; // returns IteratorId of Concept
-            Unit getRolesPlayedByThing = 1040; // returns IteratorId of Concept
-            Unit getDirectType = 1013; // returns Concept
-            Concept setAttribute = 1043; // returns Unit
-            Concept unsetAttribute = 1044; // returns Unit
-            Concepts getKeysByTypes = 1050; // returns IteratorId of Concept
-            Concepts getAttributesByTypes = 1049; // returns IteratorId of Concept
-            Concepts getRelationshipsByRoles = 1048; // returns IteratorId of Concept
+            IsInferred.Req isInferred = 35;
+            GetDirectType.Req getDirectType = 36;
+            GetKeys.Req getKeys = 37;
+            GetKeysByTypes.Req getKeysByTypes = 38;
+            GetAttributesForAnyType.Req getAttributesForAnyType = 39;
+            GetAttributesByTypes.Req getAttributesByTypes = 40;
+            GetRelationships.Req getRelationships = 41;
+            GetRelationshipsByRoles.Req getRelationshipsByRoles = 42;
+            GetRolesPlayedByThing.Req getRolesPlayedByThing = 43;
+            SetAttributeRelationship.Req setAttributeRelationship = 44;
+            UnsetAttributeRelationship.Req unsetAttributeRelationship = 45;
 
             // Relationship methods
-            Unit getRolePlayers = 1010; // returns IteratorId of RolePlayer
-            RolePlayer setRolePlayer = 1046; // returns Unit
-            RolePlayer unsetRolePlayer = 1015; // returns Unit
-            Concepts getRolePlayersByRoles = 1051; // returns IteratorId of Concept
+            GetRolePlayers.Req getRolePlayers = 46;
+            GetRolePlayersByRoles.Req getRolePlayersByRoles = 47;
+            SetRolePlayer.Req setRolePlayer = 48;
+            UnsetRolePlayer.Req unsetRolePlayer = 49;
 
             // Attribute methods
-            Unit getValue = 101; // returns AttributeValue
-            Unit getOwners = 1047; // returns IteratorId of Concept
-            GetDataTypeOfAttribute.Req getDataTypeOfAttribute = 999;
+            GetValue.Req getValue = 50;
+            GetOwners.Req getOwners = 51;
+            GetDataTypeOfAttribute.Req getDataTypeOfAttribute = 52;
         }
     }
     message Res {
@@ -140,17 +138,33 @@ message Method {
             GetAttribute.Res getAttribute = 33;
             PutAttribute.Res putAttribute = 34;
 
-            // Attribute methods
-            GetDataTypeOfAttribute.Res getDataTypeOfAttribute = 999;
+            // Thing methods
+            IsInferred.Res isInferred = 35;
+            GetDirectType.Res getDirectType = 36;
+            GetKeys.Res getKeys = 37;
+            GetKeysByTypes.Res getKeysByTypes = 38;
+            GetAttributesForAnyType.Res getAttributesForAnyType = 39;
+            GetAttributesByTypes.Res getAttributesByTypes = 40;
+            GetRelationships.Res getRelationships = 41;
+            GetRelationshipsByRoles.Res getRelationshipsByRoles = 42;
+            GetRolesPlayedByThing.Res getRolesPlayedByThing = 43;
+            SetAttributeRelationship.Res setAttributeRelationship = 44;
+            UnsetAttributeRelationship.Res unsetAttributeRelationship = 45;
 
-            bool isInferred = 104;
-            Unit unit = 108;
-            IteratorId iteratorId = 109;
-            Concept concept = 110;
-            AttributeValue attributeValue = 111;
+            // Relationship methods
+            GetRolePlayers.Res getRolePlayers = 46;
+            GetRolePlayersByRoles.Res getRolePlayersByRoles = 47;
+            SetRolePlayer.Res setRolePlayer = 48;
+            UnsetRolePlayer.Res unsetRolePlayer = 49;
+
+            // Attribute methods
+            GetValue.Res getValue = 50;
+            GetOwners.Res getOwners = 51;
+            GetDataTypeOfAttribute.Res getDataTypeOfAttribute = 52;
         }
     }
 }
+
 
 // Concept methods
 
@@ -158,6 +172,7 @@ message Delete {
     message Req {}
     message Res {}
 }
+
 
 // SchemaConcept methods
 
@@ -213,6 +228,7 @@ message SetDirectSuperConcept {
     message Res {}
 }
 
+
 // Rule methods
 
 message GetWhen {
@@ -235,6 +251,7 @@ message GetThen {
     }
 }
 
+
 // Role methods
 
 message GetRelationshipTypesThatRelateRole {
@@ -250,6 +267,7 @@ message GetTypesThatPlayRole {
         IteratorId iteratorId = 1;
     }
 }
+
 
 // Type methods
 
@@ -337,6 +355,7 @@ message UnsetRolePlayedByType {
     message Res {}
 }
 
+
 // EntityType methods
 
 message AddEntity {
@@ -345,6 +364,7 @@ message AddEntity {
         Concept concept = 1;
     }
 }
+
 
 // RelationshipType methods
 
@@ -375,6 +395,7 @@ message UnsetRelatedRole {
     }
     message Res {}
 }
+
 
 // AttributeType methods
 
@@ -424,10 +445,144 @@ message PutAttribute {
 }
 
 
+// Thing methods
+
+message IsInferred {
+    message Req {}
+    message Res {
+        bool inferred = 1;
+    }
+}
+
+message GetDirectType {
+    message Req {}
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message GetKeys {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetKeysByTypes {
+    message Req {
+        Concepts concepts = 1;
+    }
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetAttributesForAnyType {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetAttributesByTypes {
+    message Req {
+        Concepts concepts = 1;
+    }
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRelationships {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRelationshipsByRoles {
+    message Req {
+        Concepts concepts = 1;
+    }
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRolesPlayedByThing {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message SetAttributeRelationship {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {
+        Concept concept = 1;
+    }
+}
+
+message UnsetAttributeRelationship {
+    message Req {
+        Concept concept = 1;
+    }
+    message Res {}
+}
+
+
+// Relationship methods
+
+message GetRolePlayers {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
+
+message GetRolePlayersByRoles {
+     message Req {
+         Concepts concepts = 1;
+     }
+     message Res {
+         IteratorId iteratorId = 1;
+     }
+}
+
+message SetRolePlayer {
+    message Req {
+        RolePlayer rolePlayer = 1;
+    }
+    message Res {}
+}
+
+message UnsetRolePlayer {
+    message Req {
+        RolePlayer rolePlayer = 1;
+    }
+    message Res {}
+}
+
 
 
 
 // Attribute methods
+
+message GetValue {
+    message Req {}
+    message Res {
+        AttributeValue value = 1;
+    }
+}
+
+message GetOwners {
+    message Req {}
+    message Res {
+        IteratorId iteratorId = 1;
+    }
+}
 
 message GetDataTypeOfAttribute {
     message Req {}

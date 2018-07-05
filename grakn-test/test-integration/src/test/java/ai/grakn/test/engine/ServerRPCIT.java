@@ -42,6 +42,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;

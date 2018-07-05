@@ -26,6 +26,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
@@ -46,14 +47,22 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final D getValue() {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
-        method.setGetValue(MethodProto.Unit.getDefaultInstance()).build();
-        SessionProto.Transaction.Res response = runMethod(method.build());
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetValue(MethodProto.GetValue.Req.getDefaultInstance()).build();
 
-        ConceptProto.AttributeValue attributeValue = response.getConceptResponse().getAttributeValue();
-
+        SessionProto.Transaction.Res response = runMethod(method);
+        ConceptProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
+    }
+
+    @Override
+    public final Stream<Thing> ownerInstances() {
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetOwners(MethodProto.GetOwners.Req.getDefaultInstance()).build();
+
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetOwners().getIteratorId();
+        return conceptStream(iteratorId).map(Concept::asThing);
     }
 
     @Override
@@ -62,17 +71,9 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
                 .setGetDataTypeOfAttribute(MethodProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-
         // TODO: Fix this unsafe casting
         return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptMethod().getResponse()
                 .getGetDataTypeOfAttribute().getDataType());
-    }
-
-    @Override
-    public final Stream<Thing> ownerInstances() {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
-        method.setGetOwners(MethodProto.Unit.getDefaultInstance());
-        return runMethodToConceptStream(method.build()).map(Concept::asThing);
     }
 
     @Override

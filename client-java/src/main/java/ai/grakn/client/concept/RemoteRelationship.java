@@ -29,7 +29,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.MethodProto;
-import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -52,12 +51,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> allRolePlayers() {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
-        method.setGetRolePlayers(MethodProto.Unit.getDefaultInstance());
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetRolePlayers(MethodProto.GetRolePlayers.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRolePlayers().getIteratorId();
         Iterable<ConceptProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, SessionProto.Transaction.Res::getRolePlayer
+                tx(), iteratorId, res -> res.getRolePlayer()
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
@@ -76,14 +75,11 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override // TODO: remove (roles.length==0){...} behavior as it is semantically the same as allRolePlayers() above
     public final Stream<Thing> rolePlayers(Role... roles) {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
-        if (roles.length == 0) {
-            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Collections.emptyList()));
-        } else {
-            method.setGetRolePlayersByRoles(ConceptBuilder.concepts(Arrays.asList(roles)));
-        }
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setGetRolePlayersByRoles(MethodProto.GetRolePlayersByRoles.Req.newBuilder()
+                        .setConcepts(ConceptBuilder.concepts(Arrays.asList(roles)))).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method.build()).getConceptResponse().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRolePlayersByRoles().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx()).asThing()
         );
@@ -97,8 +93,11 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setSetRolePlayer(MethodProto.SetRolePlayer.Req.newBuilder()
+                        .setRolePlayer(rolePlayer)).build();
 
-        runMethod(MethodProto.Method.Req.newBuilder().setSetRolePlayer(rolePlayer).build());
+        runMethod(method);
         return asCurrentBaseType(this);
     }
 
@@ -108,8 +107,11 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
+        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
+                .setUnsetRolePlayer(MethodProto.UnsetRolePlayer.Req.newBuilder()
+                        .setRolePlayer(rolePlayer)).build();
 
-        runMethod(MethodProto.Method.Req.newBuilder().setUnsetRolePlayer(rolePlayer).build());
+        runMethod(method);
     }
 
     @Override
