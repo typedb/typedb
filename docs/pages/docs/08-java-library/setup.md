@@ -34,24 +34,6 @@ This dependency will give you access to the Core API as well as an in-memory kno
 If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
 Please see the [Setup Guide](../get-started/setup-guide) on more details on how to set up a Grakn server.
 
-Alternatively, you may include a reference to the snapshot repository, which contains the third-party dependencies. Add the following to your `pom.xml`:
-
-```xml
-<repositories>
-  <!--Snapshot repository for 3rd party libraries -->
-  <repository>
-    <id>grakn-development-snapshots</id>
-    <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
-    <releases>
-      <enabled>false</enabled>
-    </releases>
-    <snapshots>
-      <enabled>true</enabled>
-    </snapshots>
-  </repository>
-</repositories>
-```
-
 Here are some links to guides for adding external jars using different IDEs:
 
 - [IntelliJ](https://www.jetbrains.com/help/idea/2016.1/configuring-module-dependencies-and-libraries.html)
