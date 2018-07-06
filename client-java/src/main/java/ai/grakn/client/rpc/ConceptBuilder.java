@@ -122,10 +122,8 @@ public class ConceptBuilder {
         }
     }
 
-    public static ConceptProto.Concepts concepts(Collection<Concept> concepts) {
-        ConceptProto.Concepts.Builder AnswerProtos = ConceptProto.Concepts.newBuilder();
-        AnswerProtos.addAllConcepts(concepts.stream().map(ConceptBuilder::concept).collect(toList()));
-        return AnswerProtos.build();
+    public static Collection<ConceptProto.Concept> concepts(Collection<Concept> concepts) {
+        return concepts.stream().map(ConceptBuilder::concept).collect(toList());
     }
 
     public static ConceptProto.AttributeValue attributeValue(Object value) {

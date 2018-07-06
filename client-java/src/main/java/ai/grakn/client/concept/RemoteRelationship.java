@@ -76,7 +76,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     public final Stream<Thing> rolePlayers(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setGetRolePlayersByRoles(ConceptProto.GetRolePlayersByRoles.Req.newBuilder()
-                        .setConcepts(ConceptBuilder.concepts(Arrays.asList(roles)))).build();
+                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles)))).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRolePlayersByRoles().getIteratorId();
         Iterable<Thing> rolePlayers = () -> new Grakn.Transaction.Iterator<>(

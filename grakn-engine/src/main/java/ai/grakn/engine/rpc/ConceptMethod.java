@@ -34,6 +34,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -427,9 +428,9 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getKeysByTypes(Concept concept, SessionService.Iterators iterators,
                                                   ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcKeyTypes = method.getGetKeysByTypes().getConcepts();
-        AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList()
-                .stream().map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+        List<ConceptProto.Concept> rpcKeyTypes = method.getGetKeysByTypes().getConceptsList();
+        AttributeType<?>[] keyTypes = rpcKeyTypes.stream()
+                .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(AttributeType[]::new);
 
         Stream<Attribute<?>> concepts = concept.asThing().keys(keyTypes);
@@ -443,8 +444,8 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getAttributesByTypes(Concept concept, ConceptProto.Method.Req method,
                                                         SessionService.Iterators iterators, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes().getConcepts();
-        AttributeType<?>[] attributeTypes = rpcAttributeTypes.getConceptsList().stream()
+        List<ConceptProto.Concept> rpcAttributeTypes = method.getGetAttributesByTypes().getConceptsList();
+        AttributeType<?>[] attributeTypes = rpcAttributeTypes.stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(AttributeType[]::new);
 
@@ -459,8 +460,8 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getRelationshipsByRoles(Concept concept, SessionService.Iterators iterators,
                                                            ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRelationshipsByRoles().getConcepts();
-        Role[] roles = rpcRoles.getConceptsList().stream()
+        List<ConceptProto.Concept> rpcRoles = method.getGetRelationshipsByRoles().getConceptsList();
+        Role[] roles = rpcRoles.stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(Role[]::new);
         Stream<Relationship> concepts = concept.asThing().relationships(roles);
@@ -494,8 +495,8 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
                                                     ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRolePlayersByRoles().getConcepts();
-        Role[] roles = rpcRoles.getConceptsList().stream()
+        List<ConceptProto.Concept> rpcRoles = method.getGetRolePlayersByRoles().getConceptsList();
+        Role[] roles = rpcRoles.stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(Role[]::new);
         Stream<Thing> concepts = concept.asRelationship().rolePlayers(roles);

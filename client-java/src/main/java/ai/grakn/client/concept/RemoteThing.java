@@ -26,8 +26,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.Arrays;
@@ -71,7 +71,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeys().getIteratorId();
         } else {
             method.setGetKeysByTypes(ConceptProto.GetKeysByTypes.Req.newBuilder()
-                    .setConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
+                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeysByTypes().getIteratorId();
         }
 
@@ -89,7 +89,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                     .getConceptMethod().getResponse().getGetAttributesForAnyType().getIteratorId();
         } else {
             method.setGetAttributesByTypes(ConceptProto.GetAttributesByTypes.Req.newBuilder()
-                    .setConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
+                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
             iteratorId = runMethod(method.build())
                     .getConceptMethod().getResponse().getGetAttributesByTypes().getIteratorId();
         }
@@ -107,7 +107,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetRelationships().getIteratorId();
         } else {
             method.setGetRelationshipsByRoles(ConceptProto.GetRelationshipsByRoles.Req.newBuilder()
-                    .setConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
+                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
             iteratorId = runMethod(method.build())
                     .getConceptMethod().getResponse().getGetRelationshipsByRoles().getIteratorId();
         }
