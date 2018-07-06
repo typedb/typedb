@@ -150,7 +150,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res rolePlayer(Role role, Thing player) {
-            ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+            ConceptProto.Relations.RolePlayer rolePlayer = ConceptProto.Relations.RolePlayer.newBuilder()
                     .setRole(ConceptBuilder.concept(role))
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();
@@ -459,7 +459,7 @@ public class ResponseBuilder {
 
             // Relationship methods
 
-            static SessionProto.Transaction.Res getRolePlayers(Map<Role, Set<Thing>> rolePlayers, SessionService.Iterators iterators) {
+            static SessionProto.Transaction.Res rolePlayersMap(Map<Role, Set<Thing>> rolePlayers, SessionService.Iterators iterators) {
                 Stream.Builder<SessionProto.Transaction.Res> responses = Stream.builder();
                 rolePlayers.forEach(
                         (role, players) -> players.forEach(
@@ -471,7 +471,7 @@ public class ResponseBuilder {
                 );
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.build().iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRolePlayers(ConceptProto.GetRolePlayers.Res.newBuilder()
+                        .setRolePlayersMap(ConceptProto.Relations.RolePlayersMap.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return conceptMethodResponse(response);
             }
@@ -480,7 +480,7 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRolePlayersByRoles(ConceptProto.GetRolePlayersByRoles.Res.newBuilder()
+                        .setRolePlayers(ConceptProto.Relations.RolePlayers.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return conceptMethodResponse(response);
             }

@@ -74,10 +74,10 @@ message Method {
             UnsetAttributeRelationship.Req unsetAttributeRelationship = 45;
 
             // Relationship methods
-            GetRolePlayers.Req getRolePlayers = 46;
-            GetRolePlayersByRoles.Req getRolePlayersByRoles = 47;
-            SetRolePlayer.Req setRolePlayer = 48;
-            UnsetRolePlayer.Req unsetRolePlayer = 49;
+            Relations.RolePlayersMap.Req rolePlayersMap = 46;
+            Relations.RolePlayers.Req rolePlayers = 47;
+            Relations.Assign.Req assign = 48;
+            Relations.Unassign.Req unassign = 49;
 
             // Attribute methods
             Attribute.Value.Req value = 50;
@@ -150,10 +150,10 @@ message Method {
             UnsetAttributeRelationship.Res unsetAttributeRelationship = 45;
 
             // Relationship methods
-            GetRolePlayers.Res getRolePlayers = 46;
-            GetRolePlayersByRoles.Res getRolePlayersByRoles = 47;
-            SetRolePlayer.Res setRolePlayer = 48;
-            UnsetRolePlayer.Res unsetRolePlayer = 49;
+            Relations.RolePlayersMap.Res rolePlayersMap = 46;
+            Relations.RolePlayers.Res rolePlayers = 47;
+            Relations.Assign.Res assign = 48;
+            Relations.Unassign.Res unassign = 49;
 
             // Attribute methods
             Attribute.Value.Res value = 50;
@@ -163,11 +163,6 @@ message Method {
 }
 
 message Null {} // Indicates that a request does not yield any result
-
-message RolePlayer {
-    Concept role = 1;
-    Concept player = 2;
-}
 
 enum DataType {
     String = 0;
@@ -564,35 +559,41 @@ message UnsetAttributeRelationship {
 
 // Relationship methods
 
-message GetRolePlayers {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+message Relations {
+    message RolePlayer {
+        Concept role = 1;
+        Concept player = 2;
     }
-}
 
-message GetRolePlayersByRoles {
-     message Req {
-         repeated Concept concepts = 1;
-     }
-     message Res {
-         IteratorId iteratorId = 1;
-     }
-}
-
-message SetRolePlayer {
-    message Req {
-        RolePlayer rolePlayer = 1;
+    message RolePlayersMap {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {}
-}
 
-message UnsetRolePlayer {
-    message Req {
-        RolePlayer rolePlayer = 1;
-        Attribute.Value.Res value = 2;
+    message RolePlayers {
+        message Req {
+            repeated Concept concepts = 1;
+        }
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {}
+
+    message Assign {
+        message Req {
+            RolePlayer rolePlayer = 1;
+        }
+        message Res {}
+    }
+
+    message Unassign {
+        message Req {
+            RolePlayer rolePlayer = 1;
+        }
+        message Res {}
+    }
 }
 
 

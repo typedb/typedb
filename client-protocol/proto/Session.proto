@@ -53,7 +53,7 @@ message Transaction {
             Done done = 2;
             IteratorId iteratorId = 4;
             Concept concept = 5;
-            RolePlayer rolePlayer = 7;
+            Relations.RolePlayer rolePlayer = 7;
             bool noResult = 8;
         }
     }

@@ -158,14 +158,14 @@ public abstract class ConceptMethod {
                 return unsetAttributeRelationship(concept, method, tx);
 
             // Relationship methods
-            case GETROLEPLAYERS:
-                return getRolePlayers(concept, iterators);
-            case GETROLEPLAYERSBYROLES:
-                return getRolePlayersByRoles(concept, iterators, method, tx);
-            case SETROLEPLAYER:
-                return setRolePlayer(concept, method, tx);
-            case UNSETROLEPLAYER:
-                return unsetRolePlayer(concept, method, tx);
+            case ROLEPLAYERSMAP:
+                return rolePlayersMap(concept, iterators);
+            case ROLEPLAYERS:
+                return rolePlayers(concept, iterators, method, tx);
+            case ASSIGN:
+                return assign(concept, method, tx);
+            case UNASSIGN:
+                return unassign(concept, method, tx);
 
             // Attribute Methods
             case VALUE:
@@ -486,14 +486,14 @@ public abstract class ConceptMethod {
 
     // Relationship methods
 
-    private static Transaction.Res getRolePlayers(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res rolePlayersMap(Concept concept, SessionService.Iterators iterators) {
         Map<Role, Set<Thing>> rolePlayers = concept.asRelationship().rolePlayersMap();
-        return ResponseBuilder.Transaction.ConceptMethod.getRolePlayers(rolePlayers, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.rolePlayersMap(rolePlayers, iterators);
     }
 
-    private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
-                                                    ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        List<ConceptProto.Concept> rpcRoles = method.getGetRolePlayersByRoles().getConceptsList();
+    private static Transaction.Res rolePlayers(Concept concept, SessionService.Iterators iterators,
+                                               ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        List<ConceptProto.Concept> rpcRoles = method.getRolePlayers().getConceptsList();
         Role[] roles = rpcRoles.stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(Role[]::new);
@@ -501,16 +501,16 @@ public abstract class ConceptMethod {
         return ResponseBuilder.Transaction.ConceptMethod.getRolePlayersByRoles(concepts, iterators);
     }
 
-    private static Transaction.Res setRolePlayer(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getSetRolePlayer().getRolePlayer().getRole(), tx).asRole();
-        Thing player = ConceptBuilder.concept(method.getSetRolePlayer().getRolePlayer().getPlayer(), tx).asThing();
+    private static Transaction.Res assign(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getAssign().getRolePlayer().getRole(), tx).asRole();
+        Thing player = ConceptBuilder.concept(method.getAssign().getRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().assign(role, player);
         return null;
     }
 
-    private static Transaction.Res unsetRolePlayer(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getUnsetRolePlayer().getRolePlayer().getRole(), tx).asRole();
-        Thing player = ConceptBuilder.concept(method.getUnsetRolePlayer().getRolePlayer().getPlayer(), tx).asThing();
+    private static Transaction.Res unassign(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getUnassign().getRolePlayer().getRole(), tx).asRole();
+        Thing player = ConceptBuilder.concept(method.getUnassign().getRolePlayer().getPlayer(), tx).asThing();
         concept.asRelationship().unassign(role, player);
         return null;
     }
