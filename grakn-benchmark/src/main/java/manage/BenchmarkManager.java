@@ -21,6 +21,9 @@ package manage;
 import executor.QueryExecutor;
 import generator.DataGenerator;
 
+/**
+ *
+ */
 public class BenchmarkManager {
     private DataGenerator dataGenerator;
     private QueryExecutor queryExecutor;

@@ -26,10 +26,14 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Summary;
-import io.prometheus.client.exporter.PushGateway;
+import brave.Span;
+import brave.Tracer;
+import brave.Tracing;
+import brave.opentracing.BraveSpan;
+import brave.opentracing.BraveSpanBuilder;
+import brave.opentracing.BraveTracer;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -90,39 +94,60 @@ public class QueryExecutor {
         GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
-            CollectorRegistry registry = new CollectorRegistry();
-            Summary duration = Summary.build()
-//                    .quantile(0.5, 0.05)
-//                    .quantile(0.9, 0.01)
-//                    .quantile(0.1, 0.01)
-                    .name("grakn_queries_duration_seconds")  // TODO Why does it always fail to find data if this name is changed?!
-                    .help("Duration of my batch job in seconds.")
-                    .labelNames("method", "num_concepts")
-                    .register(registry);
+            // ==============================
+            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+
+            Tracing tracing = Tracing.newBuilder()
+                    .localServiceName("query-benchmark")
+//        .spanReporter(spanReporter)
+                    .spanReporter(reporter)
+                    .build();
+
+//            Tracer tracer = tracing.tracer();
+
+            BraveTracer braveTracer = BraveTracer.create(tracing);
+
+//            Span twoPhase = tracer.newTrace().name("twoPhase").tag().start();
+
+//            Span commit = tracer.newChild(twoPhase.context()).name("phase2").start();
+
+            // ==============================
 
             Iterator<Query> queryIterator = queryStream.iterator();
-            while (queryIterator.hasNext()){
-                for (int i = 0; i <= rand.nextInt(numRepeats); i++) {
 
-                    Query query = queryIterator.next().withTx(tx);
-                    Summary.Timer durationTimer = duration.labels(query.toString(), String.valueOf(numConcepts)).startTimer();
-                        try {
-                            query.execute();
-                        } finally {
-                            durationTimer.observeDuration();
-                        }
+            int counter = 0;
+            while (queryIterator.hasNext()) {
+
+                Query query = queryIterator.next().withTx(tx);
+
+                BraveSpanBuilder queryBatchSpanBuilder = braveTracer.buildSpan("querySpan")
+                        .withTag("numConcepts", numConcepts)
+                        .withTag("query", query.toString());
+
+                BraveSpan queryBatchSpan = queryBatchSpanBuilder.start();
+
+                for (int i = 0; i < numRepeats; i++) {
+
+
+                    BraveSpanBuilder querySpanBuilder = braveTracer.buildSpan("querySpan")
+                            .withTag("repetition", i)
+                            .asChildOf(queryBatchSpan);
+
+                    BraveSpan querySpan = querySpanBuilder.start();
+                    query.execute();
+                    querySpan.finish();
+                    counter ++;
                 }
+                queryBatchSpan.finish();
             }
 
-            // This is only added to the registry after success,
-            // so that a previous success in the Pushgateway is not overwritten on failure.
-            Gauge lastSuccess = Gauge.build()
-                    .name("grakn_queries_duration_seconds_last_success_unixtime")
-                    .help("Last time my batch job succeeded, in unixtime.")
-                    .register(registry);
-            lastSuccess.setToCurrentTime();
-            PushGateway pg = new PushGateway("127.0.0.1:9091");
-            pg.pushAdd(registry, "grakn_queries");
+            BraveSpanBuilder initialiserSpanBuilder = braveTracer.buildSpan("initialiser");
+            BraveSpan initialiserSpan = initialiserSpanBuilder.start();
+            Thread.sleep(2000);
+            initialiserSpan.finish();
+
+            System.out.println(counter);
+            tracing.close();
         }
     }
 
@@ -151,6 +176,7 @@ public class QueryExecutor {
         String uri = "localhost:48555";
         String keyspace = "societal_model";
         QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri);
+//        queryExecutor.processQueriesBrave();
         try {
             queryExecutor.processStaticQueries(100, 400);
         } catch (Exception e) {
