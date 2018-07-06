@@ -284,6 +284,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(query));
     }
 
+    public static GraqlQueryException incompleteResolutionPlan(ReasonerQuery reasonerQuery) {
+        return new GraqlQueryException(ErrorMessage.INCOMPLETE_RESOLUTION_PLAN.getMessage(reasonerQuery));
+    }
+
     public static GraqlQueryException rolePatternAbsent(Atomic relation) {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
