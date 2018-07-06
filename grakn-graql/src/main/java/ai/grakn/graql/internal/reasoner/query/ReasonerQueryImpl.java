@@ -35,7 +35,6 @@ import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -620,7 +619,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
 
@@ -637,10 +636,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             LOG.trace("CQ plan:\n" + queryPlan);
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
-        return new Pair<>(
-                Iterators.concat(dbIterator, subGoalIterator),
-                new MultiUnifierImpl()
-        );
+        return Iterators.concat(dbIterator, subGoalIterator);
     }
 
 

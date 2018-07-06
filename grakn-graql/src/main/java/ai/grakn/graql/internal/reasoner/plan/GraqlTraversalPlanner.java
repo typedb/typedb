@@ -159,16 +159,21 @@ public class GraqlTraversalPlanner {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(queryPattern, tx);
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
-        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
-        builder.addAll(atoms.stream().filter(at -> at instanceof OntologicalAtom).iterator());
-        builder.addAll(fragments.stream()
+        List<Atom> atomList = new ArrayList<>();
+        atoms.stream().filter(at -> at instanceof OntologicalAtom).forEach(atomList::add);
+        fragments.stream()
                 .map(Fragment::varProperty)
                 .filter(Objects::nonNull)
                 .filter(properties::contains)
                 .distinct()
                 .flatMap(p -> propertyMap.get(p).stream())
                 .distinct()
-                .iterator());
-        return builder.build();
+                .forEach(atomList::add);
+
+        //add any unlinked items (disconnected and indexed for instance)
+        propertyMap.values().stream()
+                .filter(at -> !atomList.contains(at))
+                .forEach(atomList::add);
+        return ImmutableList.copyOf(atomList);
     }
 }

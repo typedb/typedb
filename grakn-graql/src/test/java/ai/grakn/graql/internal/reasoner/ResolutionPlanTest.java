@@ -33,11 +33,15 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
 import java.util.Iterator;
 import java.util.List;
+
+import org.junit.BeforeClass;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -52,12 +56,41 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class ResolutionPlanTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("resolution-plan-test.gql");
 
+    @BeforeClass
+    public static void onStartup() throws Exception {
+        assumeTrue(GraknTestUtil.usingTinker());
+    }
+
+    @Test
+    public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedResource() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa someEntity;" +
+                "$y isa resource;$y val 'value';" +
+                "$z isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        new ResolutionPlan(query);
+    }
+
+    @Test
+    public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedEntity() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa someEntity;$x id 'V123';" +
+                "$y isa resource;" +
+                "$z isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        new ResolutionPlan(query);
+    }
 
     @Test
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
@@ -162,8 +195,8 @@ public class ResolutionPlanTest {
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
                 "(someRole:$x, otherRole: $y) isa relation;" +
-                        "$x has resource 'this';" +
-                        "$y has anotherResource 'that';";
+                "$x has resource 'this';" +
+                "$y has anotherResource 'that';";
 
         String xPatternString = "{" +
                 "$x id '" + concept.getId() + "';" +

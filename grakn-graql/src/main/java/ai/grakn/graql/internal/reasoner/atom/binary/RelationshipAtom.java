@@ -132,7 +132,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return new AutoValue_RelationshipAtom(pattern.admin().var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
     }
 
-    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ImmutableList<SchemaConcept> possibleTypes, ReasonerQuery parent) {
+    private static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, @Nullable ImmutableList<SchemaConcept> possibleTypes, ReasonerQuery parent) {
         RelationshipAtom atom = create(pattern, predicateVar, predicateId, parent);
         atom.possibleTypes = possibleTypes;
         return atom;
@@ -192,6 +192,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
+                (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
@@ -268,7 +269,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom that = (RelationshipAtom) obj;
-        return (this. isUserDefined() == that.isUserDefined())
+        return this. isUserDefined() == that.isUserDefined()
+                && this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName()
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
                 //check relation players equivalent
@@ -483,7 +485,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getPossibleTypes(), this.getParentQuery());
+        //NB: do not cache possible types
+        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
     /**

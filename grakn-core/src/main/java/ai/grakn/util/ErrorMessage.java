@@ -195,9 +195,11 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
+    INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of non-role id to a role variable in pattern [%s]."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
+    INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains invalid entry."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),

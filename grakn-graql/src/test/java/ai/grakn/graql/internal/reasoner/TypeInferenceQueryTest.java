@@ -40,12 +40,14 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.GraqlTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -60,6 +62,7 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class TypeInferenceQueryTest {
 
@@ -68,6 +71,11 @@ public class TypeInferenceQueryTest {
 
     @Rule
     public final SampleKBContext testContext = SampleKBContext.load("typeInferenceTest.gql");
+
+    @BeforeClass
+    public static void onStartup() throws Exception {
+        assumeTrue(GraknTestUtil.usingTinker());
+    }
 
     @Test
     public void testTypeInference_singleGuard() {
