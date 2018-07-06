@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,12 +65,12 @@ public class NeqComplementState extends AtomicState {
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);
-        ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(ReasonerQueries.atomic(q, sub).positive());
+
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
         this.neqPredicateSub = getQuery().getSubstitution().merge(sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        complementState = complementQuery.subGoal(sub, u, this, subGoals, cache);
+        complementState = getQuery().positive().subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override
