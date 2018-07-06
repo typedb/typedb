@@ -71,9 +71,9 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     1. Plays Validation which ensures that a {@link Thing} is allowed to play the {@link Role}
  *        it has been assigned to.
  *     2. Relates Validation which ensures that every {@link Role} which is not abstract is
- *        assigned to a {@link RelationshipType} via {@link RelationshipType#relate(Role)}.
+ *        assigned to a {@link RelationshipType} via {@link RelationshipType#relates(Role)}.
  *     3. Minimum Role Validation which ensures that every {@link RelationshipType} has at least 2 {@link Role}
- *        assigned to it via {@link RelationshipType#relate(Role)}.
+ *        assigned to it via {@link RelationshipType#relates(Role)}.
  *     4. {@link Relationship} Structure Validation which ensures that each {@link Relationship} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
@@ -190,7 +190,7 @@ class ValidateGlobalRules {
      * @return An error message if the relationTypes does not have at least 1 role
      */
     static Optional<String> validateHasMinimumRoles(RelationshipType relationshipType) {
-        if(relationshipType.isAbstract() || relationshipType.relates().iterator().hasNext()){
+        if(relationshipType.isAbstract() || relationshipType.roles().iterator().hasNext()){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.label()));
@@ -210,15 +210,15 @@ class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
-        Collection<Role> relates = relationshipType.relates().collect(Collectors.toSet());
+        Collection<Role> superRelates = superRelationType.roles().collect(Collectors.toSet());
+        Collection<Role> relates = relationshipType.roles().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(SchemaConcept::label).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
             Set<Label> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.sups().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.label())));
+            superRelationType.sups().forEach(rel -> rel.roles().forEach(roleType -> allSuperRolesPlayed.add(roleType.label())));
 
             for (Role relate : relates) {
                 boolean validRoleTypeFound = SchemaConceptImpl.from(relate).sups().

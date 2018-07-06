@@ -76,11 +76,11 @@ public class IsaExplicitTest {
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
-        superType1.play(role1).play(role2).play(role3);
-        entityType2.play(role1).play(role2).play(role3);
-        entityType3.play(role1).play(role2).play(role3);
+        superType1.plays(role1).plays(role2).plays(role3);
+        entityType2.plays(role1).plays(role2).plays(role3);
+        entityType3.plays(role1).plays(role2).plays(role3);
         RelationshipType relationshipType = graph.putRelationshipType(related)
-                .relate(role1).relate(role2).relate(role3);
+                .relates(role1).relates(role2).relates(role3);
 
         Entity entity1 = entityType1.create();
         Entity entity2 = entityType2.create();

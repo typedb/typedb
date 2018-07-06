@@ -104,13 +104,13 @@ public class DocTestUtil {
                 bond.has(risk);
 
                 tx.putRelationshipType("located-in")
-                        .relate(tx.putRole("location")).relate(tx.putRole("located"));
+                        .relates(tx.putRole("location")).relates(tx.putRole("located"));
 
                 tx.putRelationshipType("issues")
-                        .relate(tx.putRole("issuer")).relate(tx.putRole("issued"));
+                        .relates(tx.putRole("issuer")).relates(tx.putRole("issued"));
 
                 tx.putRelationshipType("owns")
-                        .relate(tx.putRole("owner")).relate(tx.putRole("owned"));
+                        .relates(tx.putRole("owner")).relates(tx.putRole("owned"));
             })
 
             .put("plants", tx -> {
@@ -136,7 +136,7 @@ public class DocTestUtil {
                 AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
 
                 tx.putRelationshipType("has-type")
-                        .relate(tx.putRole("type-of-pokemon")).relate(tx.putRole("pokemon-with-type"));
+                        .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
                 pokemonType.has(typeId).has(description);
                 pokemon.has(weight).has(height).has(pokedexNo).has(description);

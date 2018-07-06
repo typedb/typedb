@@ -168,15 +168,15 @@ public class BenchmarkIT {
             Role toRole = tx.putRole(toRoleLabel);
             AttributeType<String> index = tx.putAttributeType(attributeLabel, AttributeType.DataType.STRING);
             tx.putEntityType(entityLabel)
-                    .play(fromRole)
-                    .play(toRole)
+                    .plays(fromRole)
+                    .plays(toRole)
                     .has(index);
 
             //define N relation types
             for (int i = 1; i <= N; i++) {
                 tx.putRelationshipType(genericRelationLabel + i)
-                        .relate(fromRole)
-                        .relate(toRole);
+                        .relates(fromRole)
+                        .relates(toRole);
             }
 
             //define N rules

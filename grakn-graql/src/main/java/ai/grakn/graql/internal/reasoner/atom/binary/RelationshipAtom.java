@@ -387,14 +387,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.label())) {
                 //check whether this role can be played in this relation
-                if (type != null && type.asRelationshipType().relates().noneMatch(r -> r.equals(role))) {
+                if (type != null && type.asRelationshipType().roles().noneMatch(r -> r.equals(role))) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.label(), type.label()));
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     Type playerType = varTypeMap.get(player);
-                    if (playerType != null && playerType.plays().noneMatch(plays -> plays.equals(role))) {
+                    if (playerType != null && playerType.playing().noneMatch(plays -> plays.equals(role))) {
                         errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.label(), role.label(), type == null? "" : type.label()));
                     }
                 }
@@ -496,7 +496,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private Set<Type> inferPossibleEntityTypePlayers(Answer sub){
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
-                    Set<Role> rs = e.getKey().relates().collect(toSet());
+                    Set<Role> rs = e.getKey().roles().collect(toSet());
                     rs.removeAll(e.getValue());
                     return rs.stream().flatMap(Role::players);
                 }).collect(Collectors.toSet());
@@ -515,7 +515,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
             metaRelationType.subs()
                     .filter(rt -> !rt.equals(metaRelationType))
-                    .forEach(rt -> compatibleTypes.putAll(rt, rt.relates().collect(toSet())));
+                    .forEach(rt -> compatibleTypes.putAll(rt, rt.roles().collect(toSet())));
             return compatibleTypes;
         }
 
@@ -563,7 +563,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                     //prioritise relations with more allowed roles
                     .sorted(Comparator.comparing(e -> -e.getValue().size()))
                     //prioritise relations with number of roles equal to arity
-                    .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
+                    .sorted(Comparator.comparing(e -> e.getKey().roles().count() != getRelationPlayers().size()))
                     //prioritise relations having more instances
                     .sorted(Comparator.comparing(e -> -tx().getShardCount(e.getKey())))
                     //prioritise relations with highest number of possible types played by untyped role players
@@ -576,7 +576,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                             typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
                         }
 
-                        Set<Role> rs = e.getKey().relates().collect(toSet());
+                        Set<Role> rs = e.getKey().roles().collect(toSet());
                         rs.removeAll(e.getValue());
                         return new Pair<>(
                                 e.getKey(),
@@ -691,11 +691,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
         Set<Role> possibleRoles = relType != null?
-                relType.relates().collect(toSet()) :
+                relType.roles().collect(toSet()) :
                 inferPossibleTypes(sub).stream()
                         .filter(Concept::isRelationshipType)
                         .map(Concept::asRelationshipType)
-                        .flatMap(RelationshipType::relates).collect(toSet());
+                        .flatMap(RelationshipType::roles).collect(toSet());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();

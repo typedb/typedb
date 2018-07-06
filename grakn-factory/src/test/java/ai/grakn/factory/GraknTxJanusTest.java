@@ -279,7 +279,7 @@ public class GraknTxJanusTest extends JanusTestBase {
     public void whenDeletingARelationshipTypeWithRoles_TheRelationshipTypeIsDeleted() {
         Role murderer = graknTx.putRole("murderer");
         Role victim = graknTx.putRole("victim");
-        RelationshipType murder = graknTx.putRelationshipType("murder").relate(murderer).relate(victim);
+        RelationshipType murder = graknTx.putRelationshipType("murder").relates(murderer).relates(victim);
 
         murder.delete();
 

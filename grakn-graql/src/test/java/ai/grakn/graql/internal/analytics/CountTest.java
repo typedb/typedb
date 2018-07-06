@@ -184,13 +184,13 @@ public class CountTest {
             Attribute jason = name.create("jason");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
-            person.play(resourceOwner);
+            person.plays(resourceOwner);
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
-            name.play(resourceValue);
+            name.plays(resourceValue);
 
             RelationshipType relationshipType =
                     graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
-                            .relate(resourceOwner).relate(resourceValue);
+                            .relates(resourceOwner).relates(resourceValue);
             relationshipType.create()
                     .assign(resourceOwner, aPerson)
                     .assign(resourceValue, jason);
@@ -240,13 +240,13 @@ public class CountTest {
             person.has(name);
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
-            person.play(resourceOwner);
+            person.plays(resourceOwner);
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
-            name.play(resourceValue);
+            name.plays(resourceValue);
 
             RelationshipType relationshipType =
                     graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
-                            .relate(resourceOwner).relate(resourceValue);
+                            .relates(resourceOwner).relates(resourceValue);
             // here relationship type is still implicit
             relationshipType.create()
                     .assign(resourceOwner, aPerson)

@@ -79,9 +79,9 @@ public class DegreeTest {
 
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        thingy.play(role1).play(role2);
-        anotherThing.play(role1).play(role2);
-        RelationshipType related = tx.putRelationshipType("related").relate(role1).relate(role2);
+        thingy.plays(role1).plays(role2);
+        anotherThing.plays(role1).plays(role2);
+        RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
 
         // relate them
         related.create()
@@ -163,12 +163,12 @@ public class DegreeTest {
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
 
-        Entity person = tx.putEntityType("person").play(owner).create();
+        Entity person = tx.putEntityType("person").plays(owner).create();
 
-        EntityType animal = tx.putEntityType("animal").play(pet);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
         Entity dog = tx.putEntityType("dog").sup(animal).create();
 
-        tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner)
+        tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner)
                 .create().assign(pet, dog).assign(owner, person);
 
         Map<Long, Set<ConceptId>> correctDegrees = new HashMap<>();
@@ -191,10 +191,10 @@ public class DegreeTest {
         // create a simple graph
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
-        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner);
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
 
-        EntityType person = tx.putEntityType("person").play(owner);
-        EntityType animal = tx.putEntityType("animal").play(pet);
+        EntityType person = tx.putEntityType("person").plays(owner);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<String> altName =
                 tx.putAttributeType("alternate-name", AttributeType.DataType.STRING);
@@ -252,9 +252,9 @@ public class DegreeTest {
         Role owner = tx.putRole("owner");
         Role breeder = tx.putRole("breeder");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
-                .relate(pet).relate(owner).relate(breeder);
-        EntityType person = tx.putEntityType("person").play(owner).play(breeder);
-        EntityType animal = tx.putEntityType("animal").play(pet);
+                .relates(pet).relates(owner).relates(breeder);
+        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
         Entity coco = animal.create();
@@ -278,19 +278,19 @@ public class DegreeTest {
 
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
-        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relate(pet).relate(owner);
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
 
-        EntityType person = tx.putEntityType("person").play(owner);
-        EntityType animal = tx.putEntityType("animal").play(pet);
+        EntityType person = tx.putEntityType("person").plays(owner);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
 
         Role ownership = tx.putRole("ownership");
         Role ownershipResource = tx.putRole("ownership-resource");
         RelationshipType hasOwnershipResource = tx.putRelationshipType("has-ownership-resource")
-                .relate(ownership).relate(ownershipResource);
+                .relates(ownership).relates(ownershipResource);
 
         AttributeType<String> startDate = tx.putAttributeType("start-date", AttributeType.DataType.STRING);
-        startDate.play(ownershipResource);
-        mansBestFriend.play(ownership);
+        startDate.plays(ownershipResource);
+        mansBestFriend.plays(ownership);
 
         // add instances
         Entity coco = animal.create();
@@ -319,13 +319,13 @@ public class DegreeTest {
         Role actor = tx.putRole("actor");
         Role characterBeingPlayed = tx.putRole("character-being-played");
         RelationshipType hasCast = tx.putRelationshipType("has-cast")
-                .relate(productionWithCast)
-                .relate(actor)
-                .relate(characterBeingPlayed);
+                .relates(productionWithCast)
+                .relates(actor)
+                .relates(characterBeingPlayed);
 
-        EntityType movie = tx.putEntityType("movie").play(productionWithCast);
-        EntityType person = tx.putEntityType("person").play(actor);
-        EntityType character = tx.putEntityType("character").play(characterBeingPlayed);
+        EntityType movie = tx.putEntityType("movie").plays(productionWithCast);
+        EntityType person = tx.putEntityType("person").plays(actor);
+        EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
 
         Entity godfather = movie.create();
         Entity marlonBrando = person.create();
@@ -355,9 +355,9 @@ public class DegreeTest {
         Role owner = tx.putRole("owner");
         Role breeder = tx.putRole("breeder");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
-                .relate(pet).relate(owner).relate(breeder);
-        EntityType person = tx.putEntityType("person").play(owner).play(breeder);
-        EntityType animal = tx.putEntityType("animal").play(pet);
+                .relates(pet).relates(owner).relates(breeder);
+        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
         Entity coco = animal.create();

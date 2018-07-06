@@ -199,7 +199,7 @@ public class ConceptBuilder {
                                                           Link selfLink, EmbeddedSchemaConcept sup, Link subs,
                                                           Link plays, Link attributes,
                                                           Link keys, Link instances){
-        Set<Link> relates = relationshipType.relates().
+        Set<Link> relates = relationshipType.roles().
                 map(Link::create).
                 collect(Collectors.toSet());
 

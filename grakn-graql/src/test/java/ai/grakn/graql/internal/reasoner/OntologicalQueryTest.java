@@ -234,7 +234,7 @@ public class OntologicalQueryTest {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
-                tx.getRelationshipType("reifying-relation").relates().collect(Collectors.toSet())
+                tx.getRelationshipType("reifying-relation").roles().collect(Collectors.toSet())
         );
     }
 

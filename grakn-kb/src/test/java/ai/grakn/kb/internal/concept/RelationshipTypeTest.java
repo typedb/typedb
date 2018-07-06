@@ -43,8 +43,8 @@ public class RelationshipTypeTest extends TxTestBase {
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
-        relationshipType.relate(role1).relate(role2).relate(role3);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
+        relationshipType.relates(role1).relates(role2).relates(role3);
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
@@ -52,13 +52,13 @@ public class RelationshipTypeTest extends TxTestBase {
         RelationshipType relationshipType = tx.putRelationshipType("c1");
         Role role1 = tx.putRole("c2");
         Role role2 = tx.putRole("c3");
-        assertThat(relationshipType.relates().collect(toSet()), empty());
+        assertThat(relationshipType.roles().collect(toSet()), empty());
 
-        relationshipType.relate(role1).relate(role2);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2));
+        relationshipType.relates(role1).relates(role2);
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role1, role2));
 
         relationshipType.unrelate(role1);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role2));
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role2));
     }
 
     @Test

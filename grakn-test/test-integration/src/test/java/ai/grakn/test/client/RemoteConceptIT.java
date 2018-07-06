@@ -147,13 +147,13 @@ public class RemoteConceptIT {
         // Relationship Types
         husband = tx.putRole(HUSBAND);
         wife = tx.putRole(WIFE);
-        marriage = tx.putRelationshipType(MARRIAGE).relate(wife).relate(husband);
+        marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
 
 
         friend = tx.putRole(FRIEND);
         friendship = tx.putRelationshipType(FRIENDSHIP);
 
-        person.play(wife).play(husband);
+        person.plays(wife).plays(husband);
 
         // Attributes
         EMAIL_COUNTER++;
@@ -197,9 +197,9 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingIsImplicit_GetTheExpectedResult() {
-        email.plays().forEach(role -> assertTrue(role.isImplicit()));
-        name.plays().forEach(role -> assertTrue(role.isImplicit()));
-        age.plays().forEach(role -> assertTrue(role.isImplicit()));
+        email.playing().forEach(role -> assertTrue(role.isImplicit()));
+        name.playing().forEach(role -> assertTrue(role.isImplicit()));
+        age.playing().forEach(role -> assertTrue(role.isImplicit()));
     }
 
     @Test
@@ -336,7 +336,7 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingPlays_GetTheExpectedResult() {
-        assertThat(person.plays().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife, husband));
+        assertThat(person.playing().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife, husband));
     }
 
     @Test
@@ -380,7 +380,7 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingRelates_GetTheExpectedResult() {
-        assertThat(marriage.relates().collect(toSet()), containsInAnyOrder(wife, husband));
+        assertThat(marriage.roles().collect(toSet()), containsInAnyOrder(wife, husband));
     }
 
     @Test
@@ -447,20 +447,20 @@ public class RemoteConceptIT {
 
     @Test
     public void whenSettingAndDeletingRelationshipRelatesRole_RoleInRelationshipIsSetAndDeleted() {
-        friendship.relate(friend);
-        assertTrue(friendship.relates().anyMatch(c -> c.equals(friend)));
+        friendship.relates(friend);
+        assertTrue(friendship.roles().anyMatch(c -> c.equals(friend)));
 
         friendship.unrelate(friend);
-        assertFalse(friendship.relates().anyMatch(c -> c.equals(friend)));
+        assertFalse(friendship.roles().anyMatch(c -> c.equals(friend)));
     }
 
     @Test
     public void whenSettingAndDeletingEntityPlaysRole_RolePlaysEntityIsSetAndDeleted() {
-        person.play(friend);
-        assertTrue(person.plays().anyMatch(c -> c.equals(friend)));
+        person.plays(friend);
+        assertTrue(person.playing().anyMatch(c -> c.equals(friend)));
 
         person.unplay(friend);
-        assertFalse(person.plays().anyMatch(c -> c.equals(friend)));
+        assertFalse(person.playing().anyMatch(c -> c.equals(friend)));
     }
 
     @Test

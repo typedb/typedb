@@ -57,8 +57,8 @@ public class PostProcessingTest extends TxTestBase {
     public void buildSampleGraph(){
         role1 = tx.putRole("role 1");
         role2 = tx.putRole("role 2");
-        relationshipType = tx.putRelationshipType("rel type").relate(role1).relate(role2);
-        EntityType thing = tx.putEntityType("thingy").play(role1).play(role2);
+        relationshipType = tx.putRelationshipType("rel type").relates(role1).relates(role2);
+        EntityType thing = tx.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.create();
         instance2 = (ThingImpl) thing.create();
         thing.create();
@@ -92,9 +92,9 @@ public class PostProcessingTest extends TxTestBase {
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
         Role roleEntity = tx.putRole("Entity Role");
         Role roleResource = tx.putRole("Attribute Role");
-        RelationshipType relationshipType = tx.putRelationshipType("Relationship Type").relate(roleEntity).relate(roleResource);
-        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING).play(roleResource);
-        EntityType entityType = tx.putEntityType("Entity Type").play(roleEntity).has(resourceType);
+        RelationshipType relationshipType = tx.putRelationshipType("Relationship Type").relates(roleEntity).relates(roleResource);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING).plays(roleResource);
+        EntityType entityType = tx.putEntityType("Entity Type").plays(roleEntity).has(resourceType);
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
         Entity e3 = entityType.create();

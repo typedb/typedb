@@ -311,9 +311,9 @@ public class ConnectedComponentTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.play(role1).play(role2);
-            entityType2.play(role1).play(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
+            entityType1.plays(role1).plays(role2);
+            entityType2.plays(role1).plays(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             relationshipType.create()
                     .assign(role1, entity1)

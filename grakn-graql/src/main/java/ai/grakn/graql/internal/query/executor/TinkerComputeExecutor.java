@@ -637,7 +637,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                 .filter(Concept::isRelationshipType)
                 .map(Concept::asRelationshipType)
                 .filter(RelationshipType::isImplicit)
-                .flatMap(RelationshipType::relates)
+                .flatMap(RelationshipType::roles)
                 .flatMap(Role::players)
                 .map(type -> tx.convertToId(type.label()))
                 .filter(LabelId::isValid)

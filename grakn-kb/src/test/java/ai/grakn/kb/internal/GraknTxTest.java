@@ -210,8 +210,8 @@ public class GraknTxTest extends TxTestBase {
 
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType e1 = tx.putEntityType("e1").play(r1).play(r2);
-        RelationshipType rel1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
+        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
+        RelationshipType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         tx.commit();
@@ -224,7 +224,7 @@ public class GraknTxTest extends TxTestBase {
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
         assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
 
-        assertThat(e1.plays().collect(toSet()), containsInAnyOrder(r1, r2));
+        assertThat(e1.playing().collect(toSet()), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Schema in a separate thread
@@ -237,7 +237,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Check the above mutation did not affect central repo
         SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
-        assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
+        assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
     }
 
     @Test
@@ -279,8 +279,8 @@ public class GraknTxTest extends TxTestBase {
         entityT.create();
         Role roleT1 = tx.putRole(roleType1);
         Role roleT2 = tx.putRole(roleType2);
-        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relate(roleT1);
-        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relate(roleT2);
+        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
+        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
         AttributeType<String> resourceT = tx.putAttributeType(resourceType, AttributeType.DataType.STRING);
         tx.commit();
 
@@ -289,9 +289,9 @@ public class GraknTxTest extends TxTestBase {
         failMutation(tx, entityT::create);
         failMutation(tx, () -> resourceT.create("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
-        failMutation(tx, () -> entityT.play(roleT1));
-        failMutation(tx, () -> relationT1.relate(roleT2));
-        failMutation(tx, () -> relationT2.relate(roleT1));
+        failMutation(tx, () -> entityT.plays(roleT1));
+        failMutation(tx, () -> relationT1.relates(roleT2));
+        failMutation(tx, () -> relationT2.relates(roleT1));
     }
     private void failMutation(EmbeddedGraknTx<?> graph, Runnable mutator){
         int vertexCount = graph.getTinkerTraversal().V().toList().size();

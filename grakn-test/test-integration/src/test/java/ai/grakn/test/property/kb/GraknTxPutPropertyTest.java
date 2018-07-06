@@ -92,7 +92,7 @@ public class GraknTxPutPropertyTest {
     ) {
         Type type = putType.apply(graph, label);
 
-        assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
+        assertThat("Type should not play any roles", type.playing().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 
@@ -223,7 +223,7 @@ public class GraknTxPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknTx graph, @Unused Label label) {
         RelationshipType relationshipType = graph.putRelationshipType(label);
-        assertThat(relationshipType.relates().collect(toSet()), empty());
+        assertThat(relationshipType.roles().collect(toSet()), empty());
     }
 
     @Property

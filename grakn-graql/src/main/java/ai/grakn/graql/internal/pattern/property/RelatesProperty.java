@@ -109,7 +109,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
 
         PropertyExecutor.Method relatesMethod = executor -> {
             Role role = executor.get(roleVar).asRole();
-            executor.get(var).asRelationshipType().relate(role);
+            executor.get(var).asRelationshipType().relates(role);
         };
 
         PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();

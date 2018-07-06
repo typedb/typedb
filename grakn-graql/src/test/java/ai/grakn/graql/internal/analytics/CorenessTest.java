@@ -105,18 +105,18 @@ public class CorenessTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.play(role1).play(role2);
+            entityType.plays(role1).plays(role2);
             graph.putRelationshipType(related)
-                    .relate(role1).relate(role2)
+                    .relates(role1).relates(role2)
                     .create()
                     .assign(role1, entity1)
                     .assign(role2, entity2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
-            entityType.play(role3).play(role4);
+            entityType.plays(role3).plays(role4);
             graph.putRelationshipType(veryRelated)
-                    .relate(role3).relate(role4)
+                    .relates(role3).relates(role4)
                     .create()
                     .assign(role3, entity1)
                     .assign(role4, entity2);
@@ -193,15 +193,15 @@ public class CorenessTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                    .relate(role1).relate(role2);
+                    .relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relate(role3).relate(role4);
+                    .relates(role3).relates(role4);
 
-            entityType1.play(role1).play(role2).play(role3).play(role4);
-            entityType2.play(role1).play(role2).play(role3).play(role4);
+            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
+            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
 
             Entity entity0 = entityType1.create();
             Entity entity1 = entityType1.create();
@@ -306,15 +306,15 @@ public class CorenessTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                    .relate(role1).relate(role2);
+                    .relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relate(role3).relate(role4);
+                    .relates(role3).relates(role4);
 
-            entityType1.play(role1).play(role2).play(role3).play(role4);
-            entityType2.play(role1).play(role2).play(role3).play(role4);
+            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
+            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
 
             Entity entity1 = entityType1.create();
             Entity entity2 = entityType1.create();

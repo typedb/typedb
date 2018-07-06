@@ -63,10 +63,10 @@ public class SchemaMutationTest extends TxTestBase {
         driver = tx.putRole("Driver");
         Role driven = tx.putRole("Driven");
 
-        marriage = tx.putRelationshipType("marriage").relate(husband).relate(wife);
-        tx.putRelationshipType("car being driven by").relate(driven).relate(driver);
+        marriage = tx.putRelationshipType("marriage").relates(husband).relates(wife);
+        tx.putRelationshipType("car being driven by").relates(driven).relates(driver);
 
-        person = tx.putEntityType("Person").play(husband).play(wife);
+        person = tx.putEntityType("Person").plays(husband).plays(wife);
         man = tx.putEntityType("Man").sup(person);
         woman = tx.putEntityType("Woman").sup(person);
         car = tx.putEntityType("Car");
@@ -163,7 +163,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        relationshipType.relate(role);
+        relationshipType.relates(role);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        entityType.play(role);
+        entityType.plays(role);
     }
 
     @Test
@@ -207,7 +207,7 @@ public class SchemaMutationTest extends TxTestBase {
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         Role role = tx.putRole(roleTypeId);
-        tx.putEntityType(entityTypeId).play(role);
+        tx.putEntityType(entityTypeId).plays(role);
 
         EmbeddedGraknTx<?> graknGraphBatch = batchTx();
         role = graknGraphBatch.getRole(roleTypeId);
@@ -224,7 +224,7 @@ public class SchemaMutationTest extends TxTestBase {
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         Role role = tx.putRole(roleTypeId);
-        tx.putRelationshipType(relationTypeId).relate(role);
+        tx.putRelationshipType(relationTypeId).relates(role);
         tx.commit();
 
         EmbeddedGraknTx<?> graknGraphBatch = batchTx();
@@ -256,8 +256,8 @@ public class SchemaMutationTest extends TxTestBase {
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
         Role role = tx.putRole("my wonderful role");
-        RelationshipType relation = tx.putRelationshipType("my wonderful relation").relate(role);
-        relation.relate(role);
+        RelationshipType relation = tx.putRelationshipType("my wonderful relation").relates(role);
+        relation.relates(role);
         tx.commit();
 
         //Now delete the relation

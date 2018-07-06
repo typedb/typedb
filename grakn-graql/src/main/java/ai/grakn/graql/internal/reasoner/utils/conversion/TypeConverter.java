@@ -33,6 +33,6 @@ public class TypeConverter implements SchemaConceptConverter<Type> {
 
     @Override
     public Stream<Role> toCompatibleRoles(Type entryType) {
-        return entryType.subs().flatMap(Type::plays);
+        return entryType.subs().flatMap(Type::playing);
     }
 }

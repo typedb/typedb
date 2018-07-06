@@ -661,7 +661,7 @@ public class MatchTest {
 
             SchemaConcept schemaConcept = tx.getSchemaConcept(type);
             if (schemaConcept.isType()) {
-                graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
+                graphAPIPlays = schemaConcept.asType().playing().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }

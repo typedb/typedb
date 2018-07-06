@@ -98,7 +98,7 @@ public interface RelationshipType extends Type {
      * @return A list of the RoleTypes which make up this {@link RelationshipType}.
      */
     @CheckReturnValue
-    Stream<Role> relates();
+    Stream<Role> roles();
 
     //------------------------------------- Edge Handling ----------------------------------
 
@@ -109,15 +109,15 @@ public interface RelationshipType extends Type {
      * @param role A new role which is part of this relationship.
      * @return The {@link RelationshipType} itself.
      */
-    RelationshipType relate(Role role);
+    RelationshipType relates(Role role);
 
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Delete a Role from this {@link RelationshipType}
+     * Unrelated a Role from this {@link RelationshipType}
      * @see Role
      *
-     * @param role The Role to delete from the {@link RelationshipType}.
+     * @param role The Role to unrelate from the {@link RelationshipType}.
      * @return The {@link RelationshipType} itself.
      */
     RelationshipType unrelate(Role role);
@@ -162,7 +162,7 @@ public interface RelationshipType extends Type {
      * @return  The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType play(Role role);
+    RelationshipType plays(Role role);
 
     /**
      * Removes the ability of this {@link RelationshipType} to play a specific {@link Role}

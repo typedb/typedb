@@ -81,7 +81,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
 
         //We add the role types explicitly so we can return them when there are no roleplayers
-        type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+        type().roles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
         //All castings are used here because we need to iterate over all of them anyway
         castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 

@@ -54,11 +54,11 @@ public class ValidatorTest extends TxTestBase {
         Role role2 = tx.putRole("my role 2");
 
         RelationshipType abstractRelationType = tx.putRelationshipType("my abstract relation type").
-                relate(role1).
+                relates(role1).
                 isAbstract(true);
         tx.putRelationshipType("my relation type").
                 sup(abstractRelationType).
-                relate(role2);
+                relates(role2);
 
         tx.commit();
     }
@@ -79,8 +79,8 @@ public class ValidatorTest extends TxTestBase {
         RelationshipType movieHasGenre = tx.putRelationshipType("Movie Has Genre");
 
         //Construction
-        cast.relate(feature);
-        cast.relate(actor);
+        cast.relates(feature);
+        cast.relates(actor);
 
         cast.create().
                 assign(feature, godfather).assign(actor, pacino);
@@ -88,13 +88,13 @@ public class ValidatorTest extends TxTestBase {
         movieHasGenre.create().
                 assign(movieOfGenre, godfather).assign(movieGenre, crime);
 
-        movieHasGenre.relate(movieOfGenre);
-        movieHasGenre.relate(movieGenre);
+        movieHasGenre.relates(movieOfGenre);
+        movieHasGenre.relates(movieGenre);
 
-        movie.play(movieOfGenre);
-        person.play(actor);
-        movie.play(feature);
-        genre.play(movieGenre);
+        movie.plays(movieOfGenre);
+        person.plays(actor);
+        movie.plays(feature);
+        genre.plays(movieGenre);
 
         tx.commit();
     }
@@ -143,8 +143,8 @@ public class ValidatorTest extends TxTestBase {
     public void whenCreatingRelationWithoutLinkingRelates_Throw(){
         Role hunter = tx.putRole("hunter");
         Role monster = tx.putRole("monster");
-        EntityType stuff = tx.putEntityType("Stuff").play(hunter).play(monster);
-        RelationshipType kills = tx.putRelationshipType("kills").relate(hunter);
+        EntityType stuff = tx.putEntityType("Stuff").plays(hunter).plays(monster);
+        RelationshipType kills = tx.putRelationshipType("kills").relates(hunter);
 
         Entity myHunter = stuff.create();
         Entity myMonster = stuff.create();
@@ -165,9 +165,9 @@ public class ValidatorTest extends TxTestBase {
         RelationshipType cast = tx.putRelationshipType("cast");
         Role feature = tx.putRole("feature");
         Role actor = tx.putRole("actor");
-        cast.relate(feature).relate(actor);
-        person.play(actor);
-        movie.play(feature);
+        cast.relates(feature).relates(actor);
+        person.plays(actor);
+        movie.plays(feature);
 
         // add a single movie
         Thing godfather = movie.create();
@@ -207,10 +207,10 @@ public class ValidatorTest extends TxTestBase {
     public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidKBException {
         Role characterBeingPlayed = tx.putRole("Character being played");
         Role personPlayingCharacter = tx.putRole("Person Playing Char");
-        RelationshipType playsChar = tx.putRelationshipType("Plays Char").relate(characterBeingPlayed).relate(personPlayingCharacter);
+        RelationshipType playsChar = tx.putRelationshipType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
 
-        EntityType person = tx.putEntityType("person").play(characterBeingPlayed).play(personPlayingCharacter);
-        EntityType character = tx.putEntityType("character").play(characterBeingPlayed);
+        EntityType person = tx.putEntityType("person").plays(characterBeingPlayed).plays(personPlayingCharacter);
+        EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
 
         Entity matt = person.create();
         Entity walker = character.create();
@@ -230,14 +230,14 @@ public class ValidatorTest extends TxTestBase {
         Role father = tx.putRole("father").sup(parent);
         Role mother = tx.putRole("mother").sup(parent);
 
-        EntityType person = tx.putEntityType("person").play(relative).play(parent);
-        tx.putEntityType("man").sup(person).play(father);
-        tx.putEntityType("woman").sup(person).play(mother);
+        EntityType person = tx.putEntityType("person").plays(relative).plays(parent);
+        tx.putEntityType("man").sup(person).plays(father);
+        tx.putEntityType("woman").sup(person).plays(mother);
 
         Role child = tx.putRole("child");
 
         //Padding to make it valid
-        tx.putRelationshipType("filler").relate(parent).relate(child).relate(father).relate(relative).relate(mother);
+        tx.putRelationshipType("filler").relates(parent).relates(child).relates(father).relates(relative).relates(mother);
 
         tx.commit();
     }
@@ -247,12 +247,12 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType company = tx.putEntityType("company").play(parent);
-        tx.putEntityType("companySub").sup(company).play(child);
-        tx.putEntityType("person").play(parent).play(child);
+        EntityType company = tx.putEntityType("company").plays(parent);
+        tx.putEntityType("companySub").sup(company).plays(child);
+        tx.putEntityType("person").plays(parent).plays(child);
 
         //Padding to make it valid
-        tx.putRelationshipType("filler").relate(parent).relate(child);
+        tx.putRelationshipType("filler").relates(parent).relates(child);
 
         tx.commit();
     }
@@ -263,11 +263,11 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType person = tx.putEntityType("person").play(parent).play(child);
+        EntityType person = tx.putEntityType("person").plays(parent).plays(child);
         EntityType man = tx.putEntityType("man").sup(person);
         EntityType oneEyedMan = tx.putEntityType("oneEyedMan").sup(man);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(child);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = oneEyedMan.create();
         Entity y = person.create();
@@ -281,10 +281,10 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType person = tx.putEntityType("person").play(parent).play(child);
-        EntityType company = tx.putEntityType("company").play(parent);
+        EntityType person = tx.putEntityType("person").plays(parent).plays(child);
+        EntityType company = tx.putEntityType("company").plays(parent);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(child);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = company.create();
         Entity y = person.create();
@@ -298,10 +298,10 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType person = tx.putEntityType("person").play(parent).play(child);
+        EntityType person = tx.putEntityType("person").plays(parent).plays(child);
         EntityType man = tx.putEntityType("man");
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(child);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = man.create();
         Entity y = person.create();
@@ -319,9 +319,9 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType person = tx.putEntityType("person").play(child);
+        EntityType person = tx.putEntityType("person").plays(child);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(child);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.create();
         Entity y = person.create();
@@ -339,10 +339,10 @@ public class ValidatorTest extends TxTestBase {
         Role parent = tx.putRole("parent");
         Role child = tx.putRole("child");
 
-        EntityType person = tx.putEntityType("person").play(child);
-        tx.putEntityType("man").play(child);
+        EntityType person = tx.putEntityType("person").plays(child);
+        tx.putEntityType("man").plays(child);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(child);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.create();
         Entity y = person.create();
@@ -367,20 +367,20 @@ public class ValidatorTest extends TxTestBase {
         Role mChild = tx.putRole("mChild").sup(pChild);
 
         //This is to bypass a specific validation rule
-        tx.putRelationshipType("filler").relate(relative);
+        tx.putRelationshipType("filler").relates(relative);
 
         tx.putEntityType("animal").
-                play(relative).
-                play(parent).
-                play(father).
-                play(mother).
-                play(pChild).
-                play(fChild).
-                play(mChild);
+                plays(relative).
+                plays(parent).
+                plays(father).
+                plays(mother).
+                plays(pChild).
+                plays(fChild).
+                plays(mChild);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(pChild);
-        tx.putRelationshipType("fatherhood").sup(parenthood).relate(father).relate(fChild);
-        tx.putRelationshipType("motherhood").sup(parenthood).relate(mother).relate(mChild);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+        tx.putRelationshipType("motherhood").sup(parenthood).relates(mother).relates(mChild);
 
         tx.commit();
     }
@@ -395,18 +395,18 @@ public class ValidatorTest extends TxTestBase {
         Role fmChild = tx.putRole("fChild").sup(pChild);
 
         //This is to bypass a specific validation rule
-        tx.putRelationshipType("filler").relate(relative);
+        tx.putRelationshipType("filler").relates(relative);
 
         tx.putEntityType("animal").
-                play(relative).
-                play(parent).
-                play(father).
-                play(mother).
-                play(pChild).
-                play(fmChild);
+                plays(relative).
+                plays(parent).
+                plays(father).
+                plays(mother).
+                plays(pChild).
+                plays(fmChild);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(pChild);
-        tx.putRelationshipType("fathermotherhood").sup(parenthood).relate(father).relate(mother).relate(fmChild);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        tx.putRelationshipType("fathermotherhood").sup(parenthood).relates(father).relates(mother).relates(fmChild);
 
         tx.commit();
     }
@@ -419,16 +419,16 @@ public class ValidatorTest extends TxTestBase {
         Role fChild = tx.putRole("fChild").sup(pChild);
 
         tx.putEntityType("animal").
-                play(relative).
-                play(parent).
-                play(father).
-                play(pChild).
-                play(fChild);
+                plays(relative).
+                plays(parent).
+                plays(father).
+                plays(pChild).
+                plays(fChild);
 
         RelationshipType parentrelativehood = tx.putRelationshipType("parentrelativehood").
-                relate(relative).relate(parent).relate(pChild);
+                relates(relative).relates(parent).relates(pChild);
         tx.putRelationshipType("fatherhood").sup(parentrelativehood).
-                relate(father).relate(fChild);
+                relates(father).relates(fChild);
 
         tx.commit();
     }
@@ -441,11 +441,11 @@ public class ValidatorTest extends TxTestBase {
         Role father = tx.putRole("father").sup(parent);
         Role inContext = tx.putRole("in-context");
 
-        tx.putEntityType("animal").play(parent).play(father).play(pChild).play(fChild);
-        tx.putEntityType("context").play(inContext);
+        tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
+        tx.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(pChild);
-        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relate(father).relate(fChild).relate(inContext);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -462,11 +462,11 @@ public class ValidatorTest extends TxTestBase {
         Role fChild = tx.putRole("fChild").sup(pChild);
         Role inContext = tx.putRole("in-context");
 
-        tx.putEntityType("animal").play(parent).play(father).play(pChild).play(fChild);
-        tx.putEntityType("context").play(inContext);
+        tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
+        tx.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = tx.putRelationshipType("parenthood").relate(parent).relate(pChild).relate(inContext);
-        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relate(father).relate(fChild);
+        RelationshipType parenthood = tx.putRelationshipType("parenthood").relates(parent).relates(pChild).relates(inContext);
+        RelationshipType fatherhood = tx.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -480,8 +480,8 @@ public class ValidatorTest extends TxTestBase {
         Role insurer = tx.putRole("insurer");
         Role monoline = tx.putRole("monoline").sup(insurer);
         Role insured = tx.putRole("insured");
-        RelationshipType insure = tx.putRelationshipType("insure").relate(insurer).relate(insured);
-        tx.putRelationshipType("monoline-insure").relate(monoline).relate(insured).sup(insure);
+        RelationshipType insure = tx.putRelationshipType("insure").relates(insurer).relates(insured);
+        tx.putRelationshipType("monoline-insure").relates(monoline).relates(insured).sup(insure);
         tx.commit();
     }
 
@@ -489,9 +489,9 @@ public class ValidatorTest extends TxTestBase {
     public void whenARoleInARelationIsNotPlayed_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relation").relate(role1).relate(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("my-relation").relates(role1).relates(role2);
 
-        Thing thing = tx.putEntityType("my-entity").play(role1).create();
+        Thing thing = tx.putEntityType("my-entity").plays(role1).create();
 
         relationshipType.create().assign(role1, thing);
 
@@ -502,9 +502,9 @@ public class ValidatorTest extends TxTestBase {
     public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relate(role1).relate(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
-        EntityType entityType = tx.putEntityType("my-entity").play(role1);
+        EntityType entityType = tx.putEntityType("my-entity").plays(role1);
         Thing thing1 = entityType.create();
         Thing thing2 = entityType.create();
 
@@ -521,9 +521,9 @@ public class ValidatorTest extends TxTestBase {
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
-        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relate(role1).relate(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
-        EntityType entityType = tx.putEntityType("my-entity").play(role1);
+        EntityType entityType = tx.putEntityType("my-entity").plays(role1);
 
         Relationship relationship = relationshipType.create();
 
@@ -544,7 +544,7 @@ public class ValidatorTest extends TxTestBase {
     @Test
     public void whenARelationTypeHasOnlyOneRole_TheGraphIsValid() {
         Role role = tx.putRole("role-1");
-        tx.putRelationshipType("my-relation").relate(role);
+        tx.putRelationshipType("my-relation").relates(role);
 
         tx.commit();
     }
@@ -554,9 +554,9 @@ public class ValidatorTest extends TxTestBase {
     public void whenRemovingInvalidRolePlayers_EnsureValidationPasses(){
         Role chased = tx.putRole("chased");
         Role chaser = tx.putRole("chaser");
-        RelationshipType chases = tx.putRelationshipType("chases").relate(chased).relate(chaser);
+        RelationshipType chases = tx.putRelationshipType("chases").relates(chased).relates(chaser);
 
-        EntityType puppy = tx.putEntityType("puppy").play(chaser);
+        EntityType puppy = tx.putEntityType("puppy").plays(chaser);
         Entity dunstan = puppy.create();
 
         Relationship rel = chases.create();

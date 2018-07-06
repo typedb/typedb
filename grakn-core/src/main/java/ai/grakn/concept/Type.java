@@ -68,7 +68,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-    Type play(Role role) throws GraknTxOperationException;
+    Type plays(Role role) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
@@ -96,7 +96,7 @@ public interface Type extends SchemaConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Stream<Role> plays();
+    Stream<Role> playing();
 
     /**
      *

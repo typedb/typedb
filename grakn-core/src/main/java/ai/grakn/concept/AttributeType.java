@@ -91,7 +91,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> play(Role role);
+    AttributeType<D> plays(Role role);
 
     /**
      * Removes the ability of this {@link AttributeType} to play a specific {@link Role}

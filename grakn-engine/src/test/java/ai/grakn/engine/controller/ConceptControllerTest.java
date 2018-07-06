@@ -132,11 +132,11 @@ public class ConceptControllerTest {
             ai.grakn.concept.AttributeType attributeTypeKey = tx.putAttributeType("My Key Attribute Type", ai.grakn.concept.AttributeType.DataType.STRING);
             ai.grakn.concept.Attribute key = attributeTypeKey.create("An attribute Key 1");
 
-            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").play(role1).play(role2).has(attributeType).key(attributeTypeKey);
+            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).has(attributeType).key(attributeTypeKey);
             ai.grakn.concept.EntityType entityTypeSub = tx.putEntityType("My Special Sub Entity Type").sup(entityType);
             entity = entityType.create().has(attribute1).has(attribute2).has(key);
 
-            ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relate(role1).relate(role2);
+            ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.create().assign(role1, entity).assign(role2, entity);
 
             Pattern when = tx.graql().parser().parsePattern("$x isa \"My Relationship Type\"");

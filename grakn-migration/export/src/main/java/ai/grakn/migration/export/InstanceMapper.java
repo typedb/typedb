@@ -147,7 +147,7 @@ public class InstanceMapper {
         AttributeType attributeType = attribute.type();
 
         // TODO: Make sure this is tested
-        boolean plays = attributeType.plays().map(Role::label)
+        boolean plays = attributeType.playing().map(Role::label)
                 .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.label())));
         return attribute.owners().findAny().isPresent() && plays;
     }

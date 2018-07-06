@@ -69,28 +69,28 @@ public class MovieKB extends TestKB {
     public void buildSchema(GraknTx tx) {
         work = tx.putRole("work");
         author = tx.putRole("author");
-        authoredBy = tx.putRelationshipType("authored-by").relate(work).relate(author);
+        authoredBy = tx.putRelationshipType("authored-by").relates(work).relates(author);
 
         productionBeingDirected = tx.putRole("production-being-directed").sup(work);
         director = tx.putRole("director").sup(author);
         directedBy = tx.putRelationshipType("directed-by").sup(authoredBy)
-                .relate(productionBeingDirected).relate(director);
+                .relates(productionBeingDirected).relates(director);
 
         productionWithCast = tx.putRole("production-with-cast");
         actor = tx.putRole("actor");
         characterBeingPlayed = tx.putRole("character-being-played");
         hasCast = tx.putRelationshipType("has-cast")
-                .relate(productionWithCast).relate(actor).relate(characterBeingPlayed);
+                .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
         genreOfProduction = tx.putRole("genre-of-production");
         productionWithGenre = tx.putRole("production-with-genre");
         hasGenre = tx.putRelationshipType("has-genre")
-                .relate(genreOfProduction).relate(productionWithGenre);
+                .relates(genreOfProduction).relates(productionWithGenre);
 
         clusterOfProduction = tx.putRole("cluster-of-production");
         productionWithCluster = tx.putRole("production-with-cluster");
         hasCluster = tx.putRelationshipType("has-cluster")
-                .relate(clusterOfProduction).relate(productionWithCluster);
+                .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = tx.putAttributeType("title", AttributeType.DataType.STRING);
         title.has(title);
@@ -105,8 +105,8 @@ public class MovieKB extends TestKB {
         provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
 
         production = tx.putEntityType("production")
-                .play(productionWithCluster).play(productionBeingDirected).play(productionWithCast)
-                .play(productionWithGenre);
+                .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
+                .plays(productionWithGenre);
 
         production.has(title);
         production.has(tmdbVoteCount);
@@ -119,17 +119,17 @@ public class MovieKB extends TestKB {
         tx.putEntityType("tv-show").sup(production);
 
         person = tx.putEntityType("person")
-                .play(director).play(actor).play(characterBeingPlayed);
+                .plays(director).plays(actor).plays(characterBeingPlayed);
 
         person.has(gender);
         person.has(name);
         person.has(realName);
 
-        genre = tx.putEntityType("genre").play(genreOfProduction);
+        genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
 
         character = tx.putEntityType("character")
-                .play(characterBeingPlayed);
+                .plays(characterBeingPlayed);
 
         character.has(name);
 
@@ -138,7 +138,7 @@ public class MovieKB extends TestKB {
 
         language.has(name);
 
-        cluster = tx.putEntityType("cluster").play(clusterOfProduction);
+        cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.has(name);
 
         tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);

@@ -75,7 +75,7 @@ public class TypePropertyTest {
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
-        type.play(role);
+        type.plays(role);
     }
 
     @Property
@@ -136,20 +136,20 @@ public class TypePropertyTest {
     @Property
     public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
         assumeNotNull(type.sup());
-        assertTrue(type.plays().collect(toSet()).containsAll(type.sup().plays().collect(toSet())));
+        assertTrue(type.playing().collect(toSet()).containsAll(type.sup().playing().collect(toSet())));
     }
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromTx Role role) {
-        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.players().collect(toSet()).contains(type));
+        assertEquals(type.playing().anyMatch(r -> r.equals(role)), role.players().collect(toSet()).contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
             @NonMeta Type type, @FromTx Role role) {
-        Set<Role> previousPlays = type.plays().collect(toSet());
-        type.play(role);
-        Set<Role> newPlays = type.plays().collect(toSet());
+        Set<Role> previousPlays = type.playing().collect(toSet());
+        type.plays(role);
+        Set<Role> newPlays = type.playing().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -163,9 +163,9 @@ public class TypePropertyTest {
 
         Type superType = superConcept.asType();
 
-        Set<Role> previousPlays = type.plays().collect(toSet());
-        superType.play(role);
-        Set<Role> newPlays = type.plays().collect(toSet());
+        Set<Role> previousPlays = type.playing().collect(toSet());
+        superType.plays(role);
+        Set<Role> newPlays = type.playing().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -173,17 +173,17 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @NonMeta Type type, @FromTx Role role) {
-        assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
+        assumeThat(type.sup().playing().collect(toSet()), not(hasItem(role)));
         type.unplay(role);
-        assertThat(type.plays().collect(toSet()), not(hasItem(role)));
+        assertThat(type.playing().collect(toSet()), not(hasItem(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @NonMeta Type type, long seed) {
-        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays().collect(toSet()), seed);
+        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().playing().collect(toSet()), seed);
         type.unplay(role);
-        assertThat(type.plays().collect(toSet()), hasItem(role));
+        assertThat(type.playing().collect(toSet()), hasItem(role));
     }
 
     // TODO: Tests for `resource` and `key`

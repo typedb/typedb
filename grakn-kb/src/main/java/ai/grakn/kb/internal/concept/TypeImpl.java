@@ -149,7 +149,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Stream<Role> plays() {
+    public Stream<Role> playing() {
         //Get the immediate plays which may be cached
         Stream<Role> allRoles = directPlays().keySet().stream();
 
@@ -179,7 +179,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         String suffix = "-" + implicitIdentifiers[1];
 
         //A traversal is not used in this so that caching can be taken advantage of.
-        return plays().map(role -> role.label().getValue()).
+        return playing().map(role -> role.label().getValue()).
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
@@ -260,7 +260,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
-    public T play(Role role) {
+    public T plays(Role role) {
         return play(role, false);
     }
 
@@ -278,7 +278,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
         if(changingSuperAllowed && oldSuperType != null && !Schema.MetaSchema.isMetaLabel(oldSuperType.label())) {
             //noinspection unchecked
-            Set<Role> superPlays = oldSuperType.plays().collect(Collectors.toSet());
+            Set<Role> superPlays = oldSuperType.playing().collect(Collectors.toSet());
 
             //Get everything that this can play bot including the supers
             Set<Role> plays = new HashSet<>(directPlays().keySet());
@@ -392,8 +392,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
         Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
         RelationshipType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
-                relate(ownerRole).
-                relate(valueRole);
+                relates(ownerRole).
+                relates(valueRole);
 
         //Linking with ako structure if present
         AttributeType attributeTypeSuper = attributeType.sup();
@@ -402,7 +402,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
             RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
-                    relate(ownerRoleSuper).relate(valueRoleSuper);
+                    relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.sup(ownerRoleSuper);
@@ -410,7 +410,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             relationshipType.sup(relationshipTypeSuper);
 
             //Make sure the supertype attribute is linked with the role as well
-            ((AttributeTypeImpl) attributeTypeSuper).play(valueRoleSuper);
+            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
         }
 
         this.play(ownerRole, required);

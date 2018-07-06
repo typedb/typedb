@@ -99,11 +99,11 @@ public class EntityTypeTest extends TxTestBase {
         Role animal = tx.putRole("animal");
         Role monsterEvil = tx.putRole("evil monster").sup(monster);
 
-        EntityType creature = tx.putEntityType("creature").play(monster).play(animal);
-        EntityType creatureMysterious = tx.putEntityType("mysterious creature").sup(creature).play(monsterEvil);
+        EntityType creature = tx.putEntityType("creature").plays(monster).plays(animal);
+        EntityType creatureMysterious = tx.putEntityType("mysterious creature").sup(creature).plays(monsterEvil);
 
-        assertThat(creature.plays().collect(toSet()), containsInAnyOrder(monster, animal));
-        assertThat(creatureMysterious.plays().collect(toSet()), containsInAnyOrder(monster, animal, monsterEvil));
+        assertThat(creature.playing().collect(toSet()), containsInAnyOrder(monster, animal));
+        assertThat(creatureMysterious.playing().collect(toSet()), containsInAnyOrder(monster, animal, monsterEvil));
     }
 
     @Test
@@ -181,11 +181,11 @@ public class EntityTypeTest extends TxTestBase {
     public void whenRemovingRoleFromEntityType_TheRoleCanNoLongerBePlayed(){
         Role role1 = tx.putRole("A Role 1");
         Role role2 = tx.putRole("A Role 2");
-        EntityType type = tx.putEntityType("A Concept Type").play(role1).play(role2);
+        EntityType type = tx.putEntityType("A Concept Type").plays(role1).plays(role2);
 
-        assertThat(type.plays().collect(toSet()), containsInAnyOrder(role1, role2));
+        assertThat(type.playing().collect(toSet()), containsInAnyOrder(role1, role2));
         type.unplay(role1);
-        assertThat(type.plays().collect(toSet()), containsInAnyOrder( role2));
+        assertThat(type.playing().collect(toSet()), containsInAnyOrder( role2));
     }
 
     @Test
@@ -246,7 +246,7 @@ public class EntityTypeTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
 
-        meta.play(role);
+        meta.plays(role);
     }
 
     @Test
@@ -264,10 +264,10 @@ public class EntityTypeTest extends TxTestBase {
         entityType2.has(rt);
 
         //Check role types are only built explicitly
-        assertThat(entityType1.plays().collect(toSet()),
+        assertThat(entityType1.playing().collect(toSet()),
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
 
-        assertThat(entityType2.plays().collect(toSet()),
+        assertThat(entityType2.playing().collect(toSet()),
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure

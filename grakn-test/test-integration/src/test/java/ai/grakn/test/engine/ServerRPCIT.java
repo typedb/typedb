@@ -346,9 +346,9 @@ public class ServerRPCIT {
         try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             Role pet = tx.putRole("pet");
             Role owner = tx.putRole("owner");
-            EntityType animal = tx.putEntityType("animal").play(pet);
-            EntityType human = tx.putEntityType("human").play(owner);
-            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relate(pet).relate(owner);
+            EntityType animal = tx.putEntityType("animal").plays(pet);
+            EntityType human = tx.putEntityType("human").plays(owner);
+            RelationshipType petOwnership = tx.putRelationshipType("pet-ownership").relates(pet).relates(owner);
             AttributeType<Long> age = tx.putAttributeType("age", DataType.LONG);
             human.has(age);
 
@@ -492,7 +492,7 @@ public class ServerRPCIT {
             Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
-            assertEqualConcepts(localConcept, remoteConcept, Type::plays);
+            assertEqualConcepts(localConcept, remoteConcept, Type::playing);
             assertEqualConcepts(localConcept, remoteConcept, Type::instances);
             assertEqualConcepts(localConcept, remoteConcept, Type::attributes);
             assertEqualConcepts(localConcept, remoteConcept, Type::keys);
@@ -550,7 +550,7 @@ public class ServerRPCIT {
             RelationshipType remoteConcept = query.stream().findAny().get().get("x").asRelationshipType();
             RelationshipType localConcept = localTx.getConcept(remoteConcept.id()).asRelationshipType();
 
-            assertEqualConcepts(localConcept, remoteConcept, RelationshipType::relates);
+            assertEqualConcepts(localConcept, remoteConcept, RelationshipType::roles);
         }
     }
 
@@ -668,15 +668,15 @@ public class ServerRPCIT {
             RelationshipType chases = tx.putRelationshipType("chases");
             Role chased = tx.putRole("chased");
             Role chaser = tx.putRole("chaser");
-            chases.relate(chased).relate(chaser);
+            chases.relates(chased).relates(chaser);
 
             Role pointlessRole = tx.putRole("pointless-role");
-            tx.putRelationshipType("pointless").relate(pointlessRole);
+            tx.putRelationshipType("pointless").relates(pointlessRole);
 
-            chases.relate(pointlessRole).unrelate(pointlessRole);
+            chases.relates(pointlessRole).unrelate(pointlessRole);
 
-            dog.play(chaser);
-            cat.play(chased);
+            dog.plays(chaser);
+            cat.plays(chased);
 
             AttributeType<String> name = tx.putAttributeType("name", DataType.STRING);
             AttributeType<String> id = tx.putAttributeType("id", DataType.STRING).regex("(good|bad)-dog");
@@ -687,7 +687,7 @@ public class ServerRPCIT {
 
             dog.has(age).unhas(age);
             cat.key(age).unkey(age);
-            cat.play(chaser).unplay(chaser);
+            cat.plays(chaser).unplay(chaser);
 
             Entity dunstan = dog.create();
             Attribute<String> dunstanId = id.create("good-dog");
@@ -719,9 +719,9 @@ public class ServerRPCIT {
             assertEquals(animal, dog.sup());
             assertEquals(animal, cat.sup());
 
-            assertEquals(ImmutableSet.of(chased, chaser), chases.relates().collect(toSet()));
-            assertEquals(ImmutableSet.of(chaser), dog.plays().filter(role -> !role.isImplicit()).collect(toSet()));
-            assertEquals(ImmutableSet.of(chased), cat.plays().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chased, chaser), chases.roles().collect(toSet()));
+            assertEquals(ImmutableSet.of(chaser), dog.playing().filter(role -> !role.isImplicit()).collect(toSet()));
+            assertEquals(ImmutableSet.of(chased), cat.playing().filter(role -> !role.isImplicit()).collect(toSet()));
 
             assertEquals(ImmutableSet.of(name, id), animal.attributes().collect(toSet()));
             assertEquals(ImmutableSet.of(id), animal.keys().collect(toSet()));

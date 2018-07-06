@@ -466,17 +466,17 @@ public class RuleTest {
         graph.putEntityType("entity1")
                 .has(res1)
                 .has(res2)
-                .play(role1)
-                .play(role2);
+                .plays(role1)
+                .plays(role2);
 
         graph.putRelationshipType("relation1")
-                .relate(role1)
-                .relate(role2)
-                .relate(role3)
-                .play(role1)
-                .play(role2);
+                .relates(role1)
+                .relates(role2)
+                .relates(role3)
+                .plays(role1)
+                .plays(role2);
         graph.putRelationshipType("relation2")
-                .relate(role3);
+                .relates(role3);
     }
 
     @Test

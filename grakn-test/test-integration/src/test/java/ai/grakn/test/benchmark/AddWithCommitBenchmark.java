@@ -51,8 +51,8 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
         try(GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             role1 = tx.putRole("benchmark_role1");
             role2 = tx.putRole("benchmark_role2");
-            entityType = tx.putEntityType("benchmark_Entitytype").play(role1).play(role2);
-            relationshipType = tx.putRelationshipType("benchmark_relationshipType").relate(role1).relate(role2);
+            entityType = tx.putEntityType("benchmark_Entitytype").plays(role1).plays(role2);
+            relationshipType = tx.putRelationshipType("benchmark_relationshipType").relates(role1).relates(role2);
             tx.commit();
         }
     }

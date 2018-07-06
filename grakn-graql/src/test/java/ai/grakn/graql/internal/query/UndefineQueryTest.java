@@ -188,22 +188,22 @@ public class UndefineQueryTest {
     public void whenUndefiningPlays_TheTypeNoLongerPlaysTheRole() {
         qb.define(label(NEW_TYPE).sub(ENTITY).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("actor")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("actor")));
 
         qb.undefine(label(NEW_TYPE).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), not(hasItemInArray(tx.getRole("actor"))));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
     public void whenUndefiningPlaysWhichDoesntExist_DoNothing() {
         qb.define(label(NEW_TYPE).sub(ENTITY).plays("production-with-cast")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
 
         qb.undefine(label(NEW_TYPE).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
     }
 
     @Test
@@ -232,11 +232,11 @@ public class UndefineQueryTest {
     public void whenUndefiningRelatesProperty_TheRelationshipTypeNoLongerRelatesTheRole() {
         qb.define(label(NEW_TYPE).sub(RELATIONSHIP).relates("actor")).execute();
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).relates().toArray(), hasItemInArray(tx.getRole("actor")));
+        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
 
         qb.undefine(label(NEW_TYPE).relates("actor")).execute();
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).relates().toArray(), not(hasItemInArray(tx.getRole("actor"))));
+        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
@@ -280,8 +280,8 @@ public class UndefineQueryTest {
         Role descendant = tx.getRole("descendant");
 
         assertThat(pokemon.attributes().toArray(), arrayContaining(pokedexNo));
-        assertThat(evolution.relates().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
-        assertThat(pokemon.plays().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 
         qb.undefine(schema).execute();
 

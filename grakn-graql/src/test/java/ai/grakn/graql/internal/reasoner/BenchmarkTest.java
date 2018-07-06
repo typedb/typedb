@@ -78,17 +78,17 @@ public class BenchmarkTest {
             Role toRole = tx.putRole("toRole");
 
             RelationshipType relation0 = tx.putRelationshipType("relation0")
-                    .relate(fromRole)
-                    .relate(toRole);
+                    .relates(fromRole)
+                    .relates(toRole);
 
             for (int i = 1; i <= N; i++) {
                 tx.putRelationshipType("relation" + i)
-                        .relate(fromRole)
-                        .relate(toRole);
+                        .relates(fromRole)
+                        .relates(toRole);
             }
             EntityType genericEntity = tx.putEntityType("genericEntity")
-                    .play(fromRole)
-                    .play(toRole);
+                    .plays(fromRole)
+                    .plays(toRole);
 
             Entity fromEntity = genericEntity.create();
             Entity toEntity = genericEntity.create();

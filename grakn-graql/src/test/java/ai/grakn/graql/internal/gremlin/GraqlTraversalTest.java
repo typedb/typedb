@@ -93,7 +93,7 @@ public class GraqlTraversalTest {
     @ClassRule
     public static final SampleKBContext context = SampleKBContext.load(graph -> {
         Role wife = graph.putRole("wife");
-        graph.putRelationshipType("marriage").relate(wife);
+        graph.putRelationshipType("marriage").relates(wife);
     });
 
     @Before

@@ -85,7 +85,7 @@ public interface EntityType extends Type{
      * @return The EntityType itself
      */
     @Override
-    EntityType play(Role role);
+    EntityType plays(Role role);
 
     /**
      * Removes the ability of this {@link EntityType} to play a specific {@link Role}

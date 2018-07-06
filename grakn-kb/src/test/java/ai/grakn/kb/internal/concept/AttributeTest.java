@@ -68,7 +68,7 @@ public class AttributeTest extends TxTestBase {
         Thing bob = randomThing.create();
         Thing alice = randomThing.create();
         Attribute<String> birthDate = attributeType.create("10/10/10");
-        hasResource.relate(resourceRole).relate(actorRole);
+        hasResource.relates(resourceRole).relates(actorRole);
 
         assertThat(birthDate.owners().collect(toSet()), empty());
 
@@ -201,8 +201,8 @@ public class AttributeTest extends TxTestBase {
 
         //Expand Schema to allow new role
         Role newRole = tx.putRole("My New Role");
-        entityType.play(newRole);
-        relation.type().relate(newRole);
+        entityType.plays(newRole);
+        relation.type().relates(newRole);
         Entity newEntity = entityType.create();
 
         //Now actually add the new role player

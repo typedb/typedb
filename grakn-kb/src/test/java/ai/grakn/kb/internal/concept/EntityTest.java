@@ -70,9 +70,9 @@ public class EntityTest extends TxTestBase {
         ThingImpl<?, ?> rolePlayer2 = (ThingImpl) type.create();
         ThingImpl<?, ?> rolePlayer3 = (ThingImpl) type.create();
 
-        relationshipType.relate(role1);
-        relationshipType.relate(role2);
-        relationshipType.relate(role3);
+        relationshipType.relates(role1);
+        relationshipType.relates(role2);
+        relationshipType.relates(role3);
 
         //Check Structure is in order
         RelationshipImpl relation = (RelationshipImpl) relationshipType.create().

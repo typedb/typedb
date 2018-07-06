@@ -202,7 +202,7 @@ public class DefineQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").stream().map(ans -> ans.get("n")).findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
+        assertTrue(newType.playing().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
 
         assertExists(qb, var().isa("new-type"));
     }
@@ -458,7 +458,7 @@ public class DefineQueryTest {
         RelationshipType marriage = movies.tx().getRelationshipType("marriage");
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
     }
 
     @Test
@@ -473,7 +473,7 @@ public class DefineQueryTest {
         RelationshipType marriage = movies.tx().getRelationshipType("fatherhood");
         Role father = movies.tx().getRole("father");
         Role son = movies.tx().getRole("son");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(father, son));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
         assertEquals(movies.tx().getRole("parent"), father.sup());
         assertEquals(movies.tx().getRole("child"), son.sup());
     }
@@ -499,9 +499,9 @@ public class DefineQueryTest {
         EntityType person = movies.tx().getEntityType("person");
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
-        assertThat(person.plays().toArray(), hasItemInArray(wife));
-        assertThat(person.plays().toArray(), hasItemInArray(husband));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(person.playing().toArray(), hasItemInArray(wife));
+        assertThat(person.playing().toArray(), hasItemInArray(husband));
     }
 
     @Test

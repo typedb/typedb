@@ -50,8 +50,8 @@ public class AddBenchmark extends BenchmarkTest {
         graph = session.transaction(GraknTxType.WRITE);
         role1 = graph.putRole("benchmark_role1");
         role2 = graph.putRole("benchmark_role2");
-        entityType = graph.putEntityType("benchmarkEntitytype").play(role1).play(role2);
-        relationshipType = graph.putRelationshipType("benchmark_relationshipType").relate(role1).relate(role2);
+        entityType = graph.putEntityType("benchmarkEntitytype").plays(role1).plays(role2);
+        relationshipType = graph.putRelationshipType("benchmark_relationshipType").relates(role1).relates(role2);
     }
 
     @TearDown

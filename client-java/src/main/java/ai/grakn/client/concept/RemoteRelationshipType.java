@@ -54,7 +54,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     }
 
     @Override
-    public final Stream<Role> relates() {
+    public final Stream<Role> roles() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRelatedRoles(MethodProto.GetRelatedRoles.Req.getDefaultInstance()).build();
 
@@ -63,7 +63,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     }
 
     @Override
-    public final RelationshipType relate(Role role) {
+    public final RelationshipType relates(Role role) {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetRelatedRole(MethodProto.SetRelatedRole.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();

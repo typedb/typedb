@@ -61,30 +61,30 @@ public class GeoKB extends TestKB {
         geoEntity = tx.putRole("geo-entity");
         entityLocation = tx.putRole("entity-location");
         isLocatedIn = tx.putRelationshipType("is-located-in")
-                .relate(geoEntity).relate(entityLocation);
+                .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = tx.putEntityType("geoObject")
-                .play(geoEntity)
-                .play(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         geographicalObject.has(key);
 
         continent = tx.putEntityType("continent")
                 .sup(geographicalObject)
-                .play(entityLocation);
+                .plays(entityLocation);
         country = tx.putEntityType("country")
                 .sup(geographicalObject)
-                .play(geoEntity)
-                .play(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         region = tx.putEntityType("region")
                 .sup(geographicalObject)
-                .play(geoEntity)
-                .play(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         city = tx.putEntityType("city")
                 .sup(geographicalObject)
-                .play(geoEntity)
-                .play(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         university = tx.putEntityType("university")
-                        .play(geoEntity);
+                        .plays(geoEntity);
         university.has(key);
     }
 

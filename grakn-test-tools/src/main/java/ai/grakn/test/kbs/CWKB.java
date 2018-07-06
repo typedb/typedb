@@ -83,8 +83,8 @@ public class CWKB extends TestKB {
         //Entitites
         person = tx.putEntityType("person")
                 .sup(baseEntity)
-                .play(seller)
-                .play(payee)
+                .plays(seller)
+                .plays(payee)
                 .has(nationality);
 
         tx.putEntityType("criminal")
@@ -92,8 +92,8 @@ public class CWKB extends TestKB {
 
         EntityType weapon = tx.putEntityType("weapon")
                 .sup(baseEntity)
-                .play(transactionItem)
-                .play(ownedItem);
+                .plays(transactionItem)
+                .plays(ownedItem);
 
         rocket = tx.putEntityType("rocket")
                 .sup(weapon)
@@ -105,30 +105,30 @@ public class CWKB extends TestKB {
 
         country = tx.putEntityType("country")
                 .sup(baseEntity)
-                .play(buyer)
-                .play(owner)
-                .play(enemyTarget)
-                .play(payer)
-                .play(enemySource)
+                .plays(buyer)
+                .plays(owner)
+                .plays(enemyTarget)
+                .plays(payer)
+                .plays(enemySource)
                 .has(alignment);
 
         //Relations
         owns = tx.putRelationshipType("owns")
-                .relate(owner)
-                .relate(ownedItem);
+                .relates(owner)
+                .relates(ownedItem);
 
         isEnemyOf = tx.putRelationshipType("is-enemy-of")
-                .relate(enemySource)
-                .relate(enemyTarget);
+                .relates(enemySource)
+                .relates(enemyTarget);
 
         tx.putRelationshipType("transaction")
-                .relate(seller)
-                .relate(buyer)
-                .relate(transactionItem);
+                .relates(seller)
+                .relates(buyer)
+                .relates(transactionItem);
 
         isPaidBy = tx.putRelationshipType("is-paid-by")
-                .relate(payee)
-                .relate(payer);
+                .relates(payee)
+                .relates(payer);
     }
 
     @Override

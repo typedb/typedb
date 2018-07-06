@@ -86,21 +86,21 @@ public class QueryPlannerTest {
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
-        superType1.play(role1).play(role2).play(role3);
-        entityType2.play(role1).play(role2).play(role3);
-        entityType3.play(role1).play(role2).play(role3);
+        superType1.plays(role1).plays(role2).plays(role3);
+        entityType2.plays(role1).plays(role2).plays(role3);
+        entityType3.plays(role1).plays(role2).plays(role3);
         RelationshipType relationshipType1 = graph.putRelationshipType(related)
-                .relate(role1).relate(role2).relate(role3);
+                .relates(role1).relates(role2).relates(role3);
         graph.putRelationshipType(sameAsRelated)
-                .relate(role1).relate(role2).relate(role3);
+                .relates(role1).relates(role2).relates(role3);
 
         Role role4 = graph.putRole("role4");
         Role role5 = graph.putRole("role5");
-        entityType1.play(role4).play(role5);
-        entityType2.play(role4).play(role5);
-        entityType4.play(role4);
+        entityType1.plays(role4).plays(role5);
+        entityType2.plays(role4).plays(role5);
+        entityType4.plays(role4);
         graph.putRelationshipType(veryRelated)
-                .relate(role4).relate(role5);
+                .relates(role4).relates(role5);
 
         Entity entity1 = entityType1.create();
         Entity entity2 = entityType2.create();

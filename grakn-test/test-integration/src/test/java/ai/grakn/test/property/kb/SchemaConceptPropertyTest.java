@@ -156,7 +156,7 @@ public class SchemaConceptPropertyTest {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
         //Check if the mutation can be performed in a valid manner
-        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().plays().collect(Collectors.toSet()), is(empty()));
+        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().playing().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
@@ -194,7 +194,7 @@ public class SchemaConceptPropertyTest {
         SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
 
         //Check if the mutation can be performed in a valid manner
-        if(concept.isType()) assumeThat(concept.asType().plays().collect(Collectors.toSet()), is(empty()));
+        if(concept.isType()) assumeThat(concept.asType().playing().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());

@@ -109,7 +109,7 @@ public class SchemaConceptMapper {
      * @return var with appropriate plays edges
      */
     private static VarPattern plays(VarPattern var, Type type) {
-        for(Role role:type.plays().collect(Collectors.toSet())){
+        for(Role role:type.playing().collect(Collectors.toSet())){
             var = var.plays(Graql.label(role.label()));
         }
         return var;
@@ -122,7 +122,7 @@ public class SchemaConceptMapper {
      * @return var with appropriate relates edges
      */
     private static VarPattern relates(VarPattern var, RelationshipType type){
-        for(Role role:type.relates().collect(Collectors.toSet())){
+        for(Role role:type.roles().collect(Collectors.toSet())){
             var = var.relates(Graql.label(role.label()));
         }
         return var;

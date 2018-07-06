@@ -287,7 +287,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role hasAttributeOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
         Role hasAttributeValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
 
-        if(hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().plays().noneMatch(play -> play.equals(hasAttributeOwner))){
+        if(hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))){
             throw GraknTxOperationException.hasNotAllowed(this, attribute);
         }
 

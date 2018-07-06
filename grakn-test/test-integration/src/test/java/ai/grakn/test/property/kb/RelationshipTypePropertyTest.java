@@ -109,22 +109,22 @@ public class RelationshipTypePropertyTest {
     @Property
     public void relationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
             RelationshipType relationshipType, @FromTx Role role) {
-        assertEquals(relationshipType.relates().collect(toSet()).contains(role), role.relationships().collect(toSet()).contains(relationshipType));
+        assertEquals(relationshipType.roles().collect(toSet()).contains(role), role.relationships().collect(toSet()).contains(relationshipType));
     }
 
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(@Meta RelationshipType relationshipType, @FromTx Role role) {
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.metaTypeImmutable(relationshipType.label()).getMessage());
-        relationshipType.relate(role);
+        relationshipType.relates(role);
     }
 
     @Property
     public void whenRelatingARole_TheTypeRelatesThatRoleAndNoOtherNewRoles(
             @NonMeta RelationshipType relationshipType, @FromTx Role role) {
-        Set<Role> previousHasRoles = relationshipType.relates().collect(toSet());
-        relationshipType.relate(role);
-        Set<Role> newHasRoles = relationshipType.relates().collect(toSet());
+        Set<Role> previousHasRoles = relationshipType.roles().collect(toSet());
+        relationshipType.relates(role);
+        Set<Role> newHasRoles = relationshipType.roles().collect(toSet());
 
         assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
@@ -134,9 +134,9 @@ public class RelationshipTypePropertyTest {
             @NonMeta RelationshipType subType, @FromTx Role role) {
         RelationshipType superType = subType.sup();
 
-        Set<Role> previousHasRoles = superType.relates().collect(toSet());
-        subType.relate(role);
-        Set<Role> newHasRoles = superType.relates().collect(toSet());
+        Set<Role> previousHasRoles = superType.roles().collect(toSet());
+        subType.relates(role);
+        Set<Role> newHasRoles = superType.roles().collect(toSet());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
@@ -147,9 +147,9 @@ public class RelationshipTypePropertyTest {
         RelationshipType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.label()));
 
-        Set<Role> previousHasRoles = subType.relates().collect(toSet());
-        superType.relate(role);
-        Set<Role> newHasRoles = subType.relates().collect(toSet());
+        Set<Role> previousHasRoles = subType.roles().collect(toSet());
+        superType.relates(role);
+        Set<Role> newHasRoles = subType.roles().collect(toSet());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
@@ -165,9 +165,9 @@ public class RelationshipTypePropertyTest {
     @Property
     public void whenDeletingARelatedRole_TheTypeLosesThatRoleAndNoOtherRoles(
             @NonMeta RelationshipType relationshipType, @FromTx Role role) {
-        Set<Role> previousHasRoles = relationshipType.relates().collect(toSet());
+        Set<Role> previousHasRoles = relationshipType.roles().collect(toSet());
         relationshipType.unrelate(role);
-        Set<Role> newHasRoles = relationshipType.relates().collect(toSet());
+        Set<Role> newHasRoles = relationshipType.roles().collect(toSet());
 
         assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
@@ -177,9 +177,9 @@ public class RelationshipTypePropertyTest {
             @NonMeta RelationshipType subType, @FromTx Role role) {
         RelationshipType superType = subType.sup();
 
-        Set<Role> previousHasRoles = superType.relates().collect(toSet());
+        Set<Role> previousHasRoles = superType.roles().collect(toSet());
         subType.unrelate(role);
-        Set<Role> newHasRoles = superType.relates().collect(toSet());
+        Set<Role> newHasRoles = superType.roles().collect(toSet());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
@@ -190,9 +190,9 @@ public class RelationshipTypePropertyTest {
         RelationshipType superType = subType.sup();
         assumeFalse(isMetaLabel(superType.label()));
 
-        Set<Role> previousHasRoles = subType.relates().collect(toSet());
+        Set<Role> previousHasRoles = subType.roles().collect(toSet());
         superType.unrelate(role);
-        Set<Role> newHasRoles = subType.relates().collect(toSet());
+        Set<Role> newHasRoles = subType.roles().collect(toSet());
 
         assertEquals(previousHasRoles, newHasRoles);
     }

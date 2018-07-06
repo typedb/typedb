@@ -54,7 +54,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         assertion.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        hunter.play(witcher);
+        hunter.plays(witcher);
 
         boolean [] flags = {false, false};
         int count = 0;
@@ -66,7 +66,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         assertTrue(flags[0] && flags[1]);
 
         wolf.sup(creature);
-        creature.play(monster);
+        creature.plays(monster);
 
         for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
             assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty());
@@ -77,7 +77,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
     public void testValidatePlaysStructureUnique() {
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
-        RelationshipType relationshipType = tx.putRelationshipType("rt").relate(role1).relate(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("rt").relates(role1).relates(role2);
 
         EntityType entityType = tx.putEntityType("et");
 
@@ -118,7 +118,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         RelationshipType kills = tx.putRelationshipType("kills");
 
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-        kills.relate(hunter);
+        kills.relates(hunter);
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 

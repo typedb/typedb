@@ -195,7 +195,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 Type type = type();
                 Role role = role();
-                type.play(role);
+                type.plays(role);
                 summary(type, "plays", role);
             },
             () -> {
@@ -247,7 +247,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 RelationshipType relationshipType = relationType();
                 Role role = role();
-                relationshipType.relate(role);
+                relationshipType.relates(role);
                 summary(relationshipType, "relates", role);
             },
             () -> {

@@ -190,8 +190,8 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.play(role1).play(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
+            entityType.plays(role1).plays(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -244,13 +244,13 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.play(role1).play(role2);
-            RelationshipType relationshipType1 = graph.putRelationshipType(related).relate(role1).relate(role2);
+            entityType.plays(role1).plays(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
-            entityType.play(role3).play(role4);
-            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relate(role3).relate(role4);
+            entityType.plays(role3).plays(role4);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -304,15 +304,15 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType.play(role1).play(role2);
-            RelationshipType relationshipType1 = graph.putRelationshipType(related).relate(role1).relate(role2);
+            entityType.plays(role1).plays(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             Role role5 = graph.putRole("role5");
-            entityType.play(role3).play(role4).play(role5);
+            entityType.plays(role3).plays(role4).plays(role5);
             RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
-                    .relate(role3).relate(role4).relate(role5);
+                    .relates(role3).relates(role4).relates(role5);
 
             Entity start = entityType.create();
             Entity end = entityType.create();
@@ -479,8 +479,8 @@ public class PathTest {
             // finally add a relation between persons to make it more interesting
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
-            person.play(role1).play(role2);
-            RelationshipType relationTypePerson = tx.putRelationshipType(related).relate(role1).relate(role2);
+            person.plays(role1).plays(role2);
+            RelationshipType relationTypePerson = tx.putRelationshipType(related).relates(role1).relates(role2);
             idRelationPerson1Person3 = relationTypePerson.create()
                     .assign(role1, person1)
                     .assign(role2, person3).id();
@@ -565,9 +565,9 @@ public class PathTest {
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
-            entityType1.play(role1).play(role2);
-            entityType2.play(role1).play(role2);
-            RelationshipType relationshipType = graph.putRelationshipType(related).relate(role1).relate(role2);
+            entityType1.plays(role1).plays(role2);
+            entityType2.plays(role1).plays(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             relationId12 = relationshipType.create()
                     .assign(role1, entity1)

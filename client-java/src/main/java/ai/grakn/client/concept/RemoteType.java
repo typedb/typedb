@@ -50,7 +50,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType play(Role role) throws GraknTxOperationException {
+    public final SomeType plays(Role role) throws GraknTxOperationException {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setSetRolePlayedByType(MethodProto.SetRolePlayedByType.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
@@ -80,7 +80,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final Stream<Role> plays() {
+    public final Stream<Role> playing() {
         MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
                 .setGetRolesPlayedByType(MethodProto.GetRolesPlayedByType.Req.getDefaultInstance()).build();
 

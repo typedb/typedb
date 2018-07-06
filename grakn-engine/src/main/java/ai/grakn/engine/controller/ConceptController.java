@@ -119,7 +119,7 @@ public class ConceptController implements HttpController {
     }
 
     private String getTypePlays(Request request, Response response) throws JsonProcessingException {
-        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.playing().map(ConceptBuilder::build);
         return getConceptCollection(request, response, "plays", buildTypeGetter(request), collector);
     }
 

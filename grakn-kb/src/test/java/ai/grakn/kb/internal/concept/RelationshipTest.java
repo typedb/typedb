@@ -71,8 +71,8 @@ public class RelationshipTest extends TxTestBase {
         role2 = (RoleImpl) tx.putRole("Role 2");
         role3 = (RoleImpl) tx.putRole("Role 3");
 
-        type = tx.putEntityType("Main concept Type").play(role1).play(role2).play(role3);
-        relationshipType = tx.putRelationshipType("Main relation type").relate(role1).relate(role2).relate(role3);
+        type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
+        relationshipType = tx.putRelationshipType("Main relation type").relates(role1).relates(role2).relates(role3);
 
         rolePlayer1 = (ThingImpl) type.create();
         rolePlayer2 = (ThingImpl) type.create();
@@ -109,8 +109,8 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("Role 1");
         Role role2 = tx.putRole("Role 2");
         Role role3 = tx.putRole("Role 3");
-        tx.putRelationshipType("Rel Type").relate(role1).relate(role2).relate(role3);
-        EntityType entType = tx.putEntityType("Entity Type").play(role1).play(role2).play(role3);
+        tx.putRelationshipType("Rel Type").relates(role1).relates(role2).relates(role3);
+        EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
         EntityImpl entity1r1 = (EntityImpl) entType.create();
@@ -165,8 +165,8 @@ public class RelationshipTest extends TxTestBase {
     public void ensureRelationToStringContainsRolePlayerInformation(){
         Role role1 = tx.putRole("role type 1");
         Role role2 = tx.putRole("role type 2");
-        RelationshipType relationshipType = tx.putRelationshipType("A relationship Type").relate(role1).relate(role2);
-        EntityType type = tx.putEntityType("concept type").play(role1).play(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("A relationship Type").relates(role1).relates(role2);
+        EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
         Thing thing1 = type.create();
         Thing thing2 = type.create();
 
@@ -185,10 +185,10 @@ public class RelationshipTest extends TxTestBase {
     public void whenDeletingRelations_EnsureCastingsRemain(){
         Role entityRole = tx.putRole("Entity Role");
         Role degreeRole = tx.putRole("Degree Role");
-        EntityType entityType = tx.putEntityType("Entity Type").play(entityRole);
-        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.LONG).play(degreeRole);
+        EntityType entityType = tx.putEntityType("Entity Type").plays(entityRole);
+        AttributeType<Long> degreeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
 
-        RelationshipType hasDegree = tx.putRelationshipType("Has Degree").relate(entityRole).relate(degreeRole);
+        RelationshipType hasDegree = tx.putRelationshipType("Has Degree").relates(entityRole).relates(degreeRole);
 
         Entity entity = entityType.create();
         Attribute<Long> degree1 = degreeType.create(100L);
@@ -211,8 +211,8 @@ public class RelationshipTest extends TxTestBase {
         Role roleB = tx.putRole("RoleB");
         Role roleC = tx.putRole("RoleC");
 
-        RelationshipType relation = tx.putRelationshipType("relation type").relate(roleA).relate(roleB).relate(roleC);
-        EntityType type = tx.putEntityType("concept type").play(roleA).play(roleB).play(roleC);
+        RelationshipType relation = tx.putRelationshipType("relation type").relates(roleA).relates(roleB).relates(roleC);
+        EntityType type = tx.putEntityType("concept type").plays(roleA).plays(roleB).plays(roleC);
         Entity a = type.create();
         Entity b = type.create();
         Entity c = type.create();
@@ -253,8 +253,8 @@ public class RelationshipTest extends TxTestBase {
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
         AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.DataType.LONG);
-        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relate(role1).relate(role2).key(attributeType);
-        EntityType entityType = tx.putEntityType("Dead Guys").play(role1).play(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2).key(attributeType);
+        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
@@ -280,8 +280,8 @@ public class RelationshipTest extends TxTestBase {
     public void whenRemovingRolePlayerFromRelationship_EnsureRolePlayerIsRemoved(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
-        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relate(role1).relate(role2);
-        EntityType entityType = tx.putEntityType("Dead Guys").play(role1).play(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2);
+        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
@@ -318,7 +318,7 @@ public class RelationshipTest extends TxTestBase {
     public void whenAddingRelationshipWithNoRolePlayers_Throw(){
         Role role1 = tx.putRole("r1");
         Role role2 = tx.putRole("r2");
-        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").relate(role1).relate(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").relates(role1).relates(role2);
         Relationship relationship = relationshipType.create();
 
         expectedException.expect(InvalidKBException.class);

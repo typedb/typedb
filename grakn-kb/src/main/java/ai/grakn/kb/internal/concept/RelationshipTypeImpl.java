@@ -85,12 +85,12 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
 
     @Override
-    public Stream<Role> relates() {
+    public Stream<Role> roles() {
         return cachedRelates.get().stream();
     }
 
     @Override
-    public RelationshipType relate(Role role) {
+    public RelationshipType relates(Role role) {
         checkSchemaMutationAllowed();
         putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
@@ -168,7 +168,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
-        return relates().
+        return roles().
                 flatMap(Role::players).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index

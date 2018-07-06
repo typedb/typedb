@@ -78,8 +78,8 @@ public class TxCacheTest extends TxTestBase {
     public void whenCreatingRelations_EnsureRolePlayersAreCached(){
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").play(r1).play(r2);
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
+        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
+        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
 
         Entity e1 = t1.create();
         Entity e2 = t1.create();
@@ -98,9 +98,9 @@ public class TxCacheTest extends TxTestBase {
     public void whenCreatingSuperTypes_EnsureLogContainsSubTypeCastings() {
         Role r1 = tx.putRole("r1");
         Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").play(r1).play(r2);
+        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
         EntityType t2 = tx.putEntityType("t2");
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relate(r1).relate(r2);
+        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
         Entity i1 = t1.create();
         Entity i2 = t1.create();
         RelationshipImpl relation = (RelationshipImpl) rt1.create().assign(r1, i1).assign(r2, i2);
@@ -173,8 +173,8 @@ public class TxCacheTest extends TxTestBase {
         AttributeType<String> attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = tx.putRole("role 1");
         Role role2 = tx.putRole("role 2");
-        EntityType entityType = tx.putEntityType("My Type").play(role1).play(role2).has(attributeType);
-        RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relate(role1).relate(role2);
+        EntityType entityType = tx.putEntityType("My Type").plays(role1).plays(role2).has(attributeType);
+        RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
         Entity e1 = entityType.create();
         Entity e2 = entityType.create();
         Attribute<String> r1 = attributeType.create("test");
@@ -245,23 +245,23 @@ public class TxCacheTest extends TxTestBase {
     public void whenMutatingRoleTypesOfTypeCreatedInAnotherTransaction_EnsureTransactionBoundConceptsAreMutated(){
         Role rol1 = tx.putRole("role1");
         Role rol2 = tx.putRole("role2");
-        EntityType e1 = tx.putEntityType("e1").play(rol1).play(rol2);
+        EntityType e1 = tx.putEntityType("e1").plays(rol1).plays(rol2);
         EntityType e2 = tx.putEntityType("e2");
-        RelationshipType rel = tx.putRelationshipType("rel").relate(rol1).relate(rol2);
+        RelationshipType rel = tx.putRelationshipType("rel").relates(rol1).relates(rol2);
         tx.commit();
 
         //Check concepts match what is in transaction cache
         tx = session.transaction(GraknTxType.WRITE);
-        assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
-        assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
+        assertTxBoundConceptMatches(e1, t -> t.playing().collect(toSet()), containsInAnyOrder(rol1, rol2));
+        assertTxBoundConceptMatches(rel, t -> t.roles().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rol1, t -> t.players().collect(toSet()), containsInAnyOrder(e1));
         assertTxBoundConceptMatches(rol2, t -> t.players().collect(toSet()), containsInAnyOrder(e1));
         assertTxBoundConceptMatches(rol1, t -> t.relationships().collect(toSet()), containsInAnyOrder(rel));
         assertTxBoundConceptMatches(rol2, t -> t.relationships().collect(toSet()), containsInAnyOrder(rel));
 
         //Role Type 1 and 2 played by e2 now
-        e2.play(rol1);
-        e2.play(rol2);
+        e2.plays(rol1);
+        e2.plays(rol2);
         assertTxBoundConceptMatches(rol1, t -> t.players().collect(toSet()), containsInAnyOrder(e1, e2));
         assertTxBoundConceptMatches(rol2, t -> t.players().collect(toSet()), containsInAnyOrder(e1, e2));
 
@@ -273,7 +273,7 @@ public class TxCacheTest extends TxTestBase {
         //Role 2 no longer part of relation type
         rel.unrelate(rol2);
         assertTxBoundConceptMatches(rol2, t -> t.relationships().collect(toSet()), empty());
-        assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1));
+        assertTxBoundConceptMatches(rel, t -> t.roles().collect(toSet()), containsInAnyOrder(rol1));
     }
 
     /**

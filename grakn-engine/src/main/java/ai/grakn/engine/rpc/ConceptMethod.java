@@ -300,7 +300,7 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res getRolesPlayedByType(Concept concept, SessionService.Iterators iterators) {
-        Stream<Role> concepts = concept.asType().plays();
+        Stream<Role> concepts = concept.asType().playing();
         return ResponseBuilder.Transaction.ConceptMethod.getRolesPlayedByType(concepts, iterators);
     }
 
@@ -330,7 +330,7 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res setRolePlayedByType(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getSetRolePlayedByType().getConcept(), tx).asRole();
-        concept.asType().play(role);
+        concept.asType().plays(role);
         return null;
     }
 
@@ -357,13 +357,13 @@ public abstract class ConceptMethod {
     }
 
     private static Transaction.Res getRelatedRoles(Concept concept, SessionService.Iterators iterators) {
-        Stream<Role> roles = concept.asRelationshipType().relates();
+        Stream<Role> roles = concept.asRelationshipType().roles();
         return ResponseBuilder.Transaction.ConceptMethod.getRelatedRoles(roles, iterators);
     }
 
     private static Transaction.Res setRelatedRole(Concept concept, MethodProto.Method.Req method, EmbeddedGraknTx tx) {
         Role role = ConceptBuilder.concept(method.getSetRelatedRole().getConcept(), tx).asRole();
-        concept.asRelationshipType().relate(role);
+        concept.asRelationshipType().relates(role);
         return null;
     }
 
