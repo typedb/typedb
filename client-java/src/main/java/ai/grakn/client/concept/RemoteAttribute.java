@@ -19,7 +19,6 @@
 package ai.grakn.client.concept;
 
 import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
