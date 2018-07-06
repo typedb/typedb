@@ -14,10 +14,6 @@ This section will discuss how to start developing with Grakn using the Java API.
 All Grakn applications require the following Maven dependency:
 
 ```xml
-<properties>
-  <grakn.version>1.2.0</grakn.version>
-</properties>
-
 <repositories>
   <repository>
     <id>releases</id>
