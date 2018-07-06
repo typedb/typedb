@@ -18,6 +18,13 @@ All Grakn applications require the following Maven dependency:
   <grakn.version>1.2.0</grakn.version>
 </properties>
 
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
+
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
