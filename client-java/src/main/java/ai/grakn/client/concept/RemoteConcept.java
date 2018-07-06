@@ -25,7 +25,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
@@ -50,8 +50,8 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
 
     @Override
     public final void delete() throws GraknTxOperationException {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setDelete(MethodProto.Concept.Delete.Req.getDefaultInstance())
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setDelete(ConceptProto.Concept.Delete.Req.getDefaultInstance())
                 .build();
 
         runMethod(method);
@@ -70,11 +70,11 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(MethodProto.Method.Req method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptProto.Method.Req method) {
         return runMethod(id(), method);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(ConceptId id, MethodProto.Method.Req method) {
+    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptProto.Method.Req method) {
         return tx().runConceptMethod(id, method);
     }
 

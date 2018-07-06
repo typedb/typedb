@@ -25,7 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -42,16 +42,16 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
 
     @Override
     public final Stream<RelationshipType> relationships() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetRelationshipTypesThatRelateRole(MethodProto.GetRelationshipTypesThatRelateRole.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetRelationshipTypesThatRelateRole(ConceptProto.GetRelationshipTypesThatRelateRole.Req.getDefaultInstance()).build();
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRelationshipTypesThatRelateRole().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRelationshipType);
     }
 
     @Override
     public final Stream<Type> players() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetTypesThatPlayRole(MethodProto.GetTypesThatPlayRole.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetTypesThatPlayRole(ConceptProto.GetTypesThatPlayRole.Req.getDefaultInstance()).build();
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetTypesThatPlayRole().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asType);
     }

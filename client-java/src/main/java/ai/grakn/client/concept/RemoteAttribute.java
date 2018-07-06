@@ -25,9 +25,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -47,19 +47,19 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final D value() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetValue(MethodProto.GetValue.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetValue(ConceptProto.GetValue.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        MethodProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
+        ConceptProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
     }
 
     @Override
     public final Stream<Thing> owners() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetOwners(MethodProto.GetOwners.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetOwners(ConceptProto.GetOwners.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetOwners().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asThing);
@@ -67,8 +67,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetDataTypeOfAttribute(MethodProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetDataTypeOfAttribute(ConceptProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         // TODO: Fix this unsafe casting

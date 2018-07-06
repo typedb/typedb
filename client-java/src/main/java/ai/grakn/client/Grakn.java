@@ -48,7 +48,7 @@ import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
@@ -337,8 +337,8 @@ public final class Grakn {
 
         @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-            MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                    .setGetSuperConcepts(MethodProto.GetSuperConcepts.Req.getDefaultInstance()).build();
+            ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                    .setGetSuperConcepts(ConceptProto.GetSuperConcepts.Req.getDefaultInstance()).build();
 
             SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
             IteratorProto.IteratorId iteratorId = response.getConceptMethod().getResponse().getGetSuperConcepts().getIteratorId();
@@ -353,7 +353,7 @@ public final class Grakn {
             return Objects.requireNonNull(sups).map(Concept::asSchemaConcept);
         }
 
-        public SessionProto.Transaction.Res runConceptMethod(ConceptId id, MethodProto.Method.Req method) {
+        public SessionProto.Transaction.Res runConceptMethod(ConceptId id, ConceptProto.Method.Req method) {
             SessionProto.ConceptMethod.Req conceptMethod = SessionProto.ConceptMethod.Req.newBuilder()
                     .setId(id.getValue()).setMethod(method).build();
             SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethod(conceptMethod).build();

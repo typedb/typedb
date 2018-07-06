@@ -25,7 +25,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -46,11 +46,11 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern when() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetWhen(MethodProto.GetWhen.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetWhen(ConceptProto.GetWhen.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
 
-        MethodProto.GetWhen.Res whenResponse = response.getConceptMethod().getResponse().getGetWhen();
+        ConceptProto.GetWhen.Res whenResponse = response.getConceptMethod().getResponse().getGetWhen();
         switch (whenResponse.getResCase()) {
             case NULL:
                 return null;
@@ -64,11 +64,11 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Nullable
     @Override
     public final Pattern then() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetThen(MethodProto.GetThen.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetThen(ConceptProto.GetThen.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
 
-        MethodProto.GetThen.Res thenResponse = response.getConceptMethod().getResponse().getGetThen();
+        ConceptProto.GetThen.Res thenResponse = response.getConceptMethod().getResponse().getGetThen();
         switch (thenResponse.getResCase()) {
             case NULL:
                 return null;

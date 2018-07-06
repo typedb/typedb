@@ -4,8 +4,8 @@ option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "SessionProto";
 
 import "Iterator.proto";
-import "Method.proto";
 import "Concept.proto";
+import "Answer.proto";
 
 package session;
 

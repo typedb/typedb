@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.Arrays;
@@ -44,8 +44,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final boolean isInferred() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setIsInferred(MethodProto.IsInferred.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setIsInferred(ConceptProto.IsInferred.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         return response.getConceptMethod().getResponse().getIsInferred().getInferred();
@@ -53,8 +53,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeType type() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetDirectType(MethodProto.GetDirectType.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetDirectType(ConceptProto.GetDirectType.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getGetDirectType().getConcept(), tx());
@@ -63,14 +63,14 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         IteratorProto.IteratorId iteratorId;
 
         if (attributeTypes.length == 0) {
-            method.setGetKeys(MethodProto.GetKeys.Req.getDefaultInstance());
+            method.setGetKeys(ConceptProto.GetKeys.Req.getDefaultInstance());
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeys().getIteratorId();
         } else {
-            method.setGetKeysByTypes(MethodProto.GetKeysByTypes.Req.newBuilder()
+            method.setGetKeysByTypes(ConceptProto.GetKeysByTypes.Req.newBuilder()
                     .setConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeysByTypes().getIteratorId();
         }
@@ -80,15 +80,15 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         IteratorProto.IteratorId iteratorId;
 
         if (attributeTypes.length == 0) {
-            method.setGetAttributesForAnyType(MethodProto.GetAttributesForAnyType.Req.getDefaultInstance());
+            method.setGetAttributesForAnyType(ConceptProto.GetAttributesForAnyType.Req.getDefaultInstance());
             iteratorId = runMethod(method.build())
                     .getConceptMethod().getResponse().getGetAttributesForAnyType().getIteratorId();
         } else {
-            method.setGetAttributesByTypes(MethodProto.GetAttributesByTypes.Req.newBuilder()
+            method.setGetAttributesByTypes(ConceptProto.GetAttributesByTypes.Req.newBuilder()
                     .setConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
             iteratorId = runMethod(method.build())
                     .getConceptMethod().getResponse().getGetAttributesByTypes().getIteratorId();
@@ -99,14 +99,14 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        MethodProto.Method.Req.Builder method = MethodProto.Method.Req.newBuilder();
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
         IteratorProto.IteratorId iteratorId;
 
         if (roles.length == 0) {
-            method.setGetRelationships(MethodProto.GetRelationships.Req.getDefaultInstance());
+            method.setGetRelationships(ConceptProto.GetRelationships.Req.getDefaultInstance());
             iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetRelationships().getIteratorId();
         } else {
-            method.setGetRelationshipsByRoles(MethodProto.GetRelationshipsByRoles.Req.newBuilder()
+            method.setGetRelationshipsByRoles(ConceptProto.GetRelationshipsByRoles.Req.newBuilder()
                     .setConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
             iteratorId = runMethod(method.build())
                     .getConceptMethod().getResponse().getGetRelationshipsByRoles().getIteratorId();
@@ -117,8 +117,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final Stream<Role> roles() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetRolesPlayedByThing(MethodProto.GetRolesPlayedByThing.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetRolesPlayedByThing(ConceptProto.GetRolesPlayedByThing.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method)
                 .getConceptMethod().getResponse().getGetRolesPlayedByThing().getIteratorId();
@@ -135,8 +135,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Relationship relhas(Attribute attribute) {
         // TODO: remove usage of this method as a getter, and replace with relationships(Attribute attribute)
         // TODO: remove this method altogether and just use has(Attribute attribute)
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setSetAttributeRelationship(MethodProto.SetAttributeRelationship.Req.newBuilder()
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetAttributeRelationship(ConceptProto.SetAttributeRelationship.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
@@ -149,8 +149,8 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override
     public final SomeThing unhas(Attribute attribute) {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setUnsetAttributeRelationship(MethodProto.UnsetAttributeRelationship.Req.newBuilder()
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setUnsetAttributeRelationship(ConceptProto.UnsetAttributeRelationship.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();
 
         runMethod(method);

@@ -44,10 +44,10 @@ import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Open;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -309,19 +309,19 @@ public class ServerRPCTest {
             tx.send(next(iterator));
             Transaction.Res response1 = tx.receive().ok();
 
-            MethodProto.Concept rpcX =
-                    MethodProto.Concept.newBuilder().setId(V123).setBaseType(MethodProto.Concept.BaseType.RELATIONSHIP).build();
-            ConceptProto.QueryAnswer.Builder answerX = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            ConceptProto.Answer.Builder resultX = ConceptProto.Answer.newBuilder().setQueryAnswer(answerX);
+            ConceptProto.Concept rpcX =
+                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BaseType.RELATIONSHIP).build();
+            AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
+            AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(Transaction.Res.newBuilder().setAnswer(resultX).build(), response1);
 
             tx.send(next(iterator));
             Transaction.Res response2 = tx.receive().ok();
 
-            MethodProto.Concept rpcY =
-                    MethodProto.Concept.newBuilder().setId(V456).setBaseType(MethodProto.Concept.BaseType.ATTRIBUTE).build();
-            ConceptProto.QueryAnswer.Builder answerY = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            ConceptProto.Answer.Builder resultY = ConceptProto.Answer.newBuilder().setQueryAnswer(answerY);
+            ConceptProto.Concept rpcY =
+                    ConceptProto.Concept.newBuilder().setId(V456).setBaseType(ConceptProto.Concept.BaseType.ATTRIBUTE).build();
+            AnswerProto.QueryAnswer.Builder answerY = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
+            AnswerProto.Answer.Builder resultY = AnswerProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(Transaction.Res.newBuilder().setAnswer(resultY).build(), response2);
 
             tx.send(next(iterator));
@@ -391,7 +391,7 @@ public class ServerRPCTest {
             tx.send(query(COUNT_QUERY, false));
 
             Transaction.Res expected =
-                    Transaction.Res.newBuilder().setAnswer(ConceptProto.Answer.newBuilder().setOtherResult("100")).build();
+                    Transaction.Res.newBuilder().setAnswer(AnswerProto.Answer.newBuilder().setOtherResult("100")).build();
 
             assertEquals(expected, tx.receive().ok());
         }
@@ -605,10 +605,10 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            MethodProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
+            ConceptProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
 
             assertEquals(id.getValue(), response.getId());
-            assertEquals(MethodProto.Concept.BaseType.RELATIONSHIP, response.getBaseType());
+            assertEquals(ConceptProto.Concept.BaseType.RELATIONSHIP, response.getBaseType());
         }
     }
 

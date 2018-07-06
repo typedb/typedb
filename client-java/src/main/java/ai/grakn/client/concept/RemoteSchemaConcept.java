@@ -25,7 +25,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.MethodProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 
@@ -40,8 +40,8 @@ import java.util.stream.Stream;
 abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends RemoteConcept<SomeType> implements SchemaConcept {
 
     public final SomeType sup(SomeType type) {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setSetDirectSuperConcept(MethodProto.SetDirectSuperConcept.Req.newBuilder()
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetDirectSuperConcept(ConceptProto.SetDirectSuperConcept.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(type))).build();
 
         runMethod(method);
@@ -49,8 +49,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     public final SomeType sub(SomeType type) {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setSetDirectSuperConcept(MethodProto.SetDirectSuperConcept.Req.newBuilder()
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetDirectSuperConcept(ConceptProto.SetDirectSuperConcept.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(this))).build();
 
         runMethod(type.id(), method);
@@ -59,8 +59,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Label label() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetLabel(MethodProto.GetLabel.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetLabel(ConceptProto.GetLabel.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         return Label.of(response.getConceptMethod().getResponse().getGetLabel().getLabel());
@@ -68,8 +68,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Boolean isImplicit() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setIsImplicit(MethodProto.IsImplicit.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setIsImplicit(ConceptProto.IsImplicit.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         return response.getConceptMethod().getResponse().getIsImplicit().getImplicit();
@@ -77,8 +77,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final SomeType label(Label label) {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setSetLabel(MethodProto.SetLabel.Req.newBuilder()
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetLabel(ConceptProto.SetLabel.Req.newBuilder()
                         .setLabel(label.getValue())).build();
 
         runMethod(method);
@@ -88,11 +88,11 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Nullable
     @Override
     public final SomeType sup() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetDirectSuperConcept(MethodProto.GetDirectSuperConcept.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetDirectSuperConcept(ConceptProto.GetDirectSuperConcept.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        MethodProto.GetDirectSuperConcept.Res responseConcept = response.getConceptMethod().getResponse().getGetDirectSuperConcept();
+        ConceptProto.GetDirectSuperConcept.Res responseConcept = response.getConceptMethod().getResponse().getGetDirectSuperConcept();
 
         switch (responseConcept.getResCase()) {
             case NULL:
@@ -113,8 +113,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Override
     public final Stream<SomeType> subs() {
-        MethodProto.Method.Req method = MethodProto.Method.Req.newBuilder()
-                .setGetSubConcepts(MethodProto.GetSubConcepts.Req.getDefaultInstance()).build();
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetSubConcepts(ConceptProto.GetSubConcepts.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetSubConcepts().getIteratorId();
         return conceptStream(iteratorId).map(this::asCurrentBaseType);
