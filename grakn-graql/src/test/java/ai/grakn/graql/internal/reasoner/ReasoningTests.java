@@ -493,8 +493,6 @@ public class ReasoningTests {
         assertTrue(answers.containsAll(requeriedAnswers));
     }
 
-    //TODO will be fixed in another PR
-    @Ignore
     @Test
     public void resourcesAsRolePlayers() {
         QueryBuilder qb = testSet17.tx().graql().infer(true);
