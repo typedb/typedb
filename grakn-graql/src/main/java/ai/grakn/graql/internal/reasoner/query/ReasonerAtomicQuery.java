@@ -120,7 +120,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerAtomicQuery positive(){
-        return new ReasonerAtomicQuery(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+        return new ReasonerAtomicQuery(
+                getAtoms().stream()
+                        .filter(at -> !(at instanceof NeqPredicate))
+                        .filter(at -> !Sets.intersection(at.getVarNames(), getAtom().getVarNames()).isEmpty())
+                        .collect(Collectors.toSet()),
+                tx());
     }
 
     @Override
@@ -314,9 +319,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
-        MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.getExplanation().setQuery(this)))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
@@ -333,10 +337,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
-        return new Pair<>(
-                Iterators.concat(dbIterator, subGoalIterator),
-                cacheUnifier
-        );
+        return Iterators.concat(dbIterator, subGoalIterator);
     }
 
     /**

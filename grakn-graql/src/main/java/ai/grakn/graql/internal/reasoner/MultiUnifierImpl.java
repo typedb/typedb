@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 /**
  *
@@ -66,10 +67,14 @@ public class MultiUnifierImpl implements MultiUnifier{
     }
 
     @Override
+    public String toString(){ return multiUnifier.toString(); }
+
+    @Override
     public Stream<Unifier> stream() {
         return multiUnifier.stream();
     }
 
+    @Nonnull
     @Override
     public Iterator<Unifier> iterator() {
         return multiUnifier.iterator();

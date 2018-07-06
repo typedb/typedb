@@ -192,6 +192,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
+                (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
@@ -268,7 +269,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom that = (RelationshipAtom) obj;
-        return (this. isUserDefined() == that.isUserDefined())
+        return this. isUserDefined() == that.isUserDefined()
+                && this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName()
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
                 //check relation players equivalent

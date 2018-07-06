@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -27,10 +29,12 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -76,17 +80,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
      * @return recorded answer
      */
     public Answer recordAnswer(Q query, Answer answer){
-        if(answer.isEmpty()) return answer;
-        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
-        if (match != null) {
-            Q equivalentQuery = match.query();
-            QueryAnswers answers = match.cachedElement();
-            MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
-            answer.unify(multiUnifier).forEach(answers::add);
-        } else {
-            this.putEntry(query, new QueryAnswers(answer));
-        }
-        return answer;
+        return recordAnswer(query, answer, null);
     }
 
     /**
@@ -96,12 +90,23 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
      * @param unifier between the cached and input query
      * @return recorded answer
      */
-    public Answer recordAnswerWithUnifier(Q query, Answer answer, MultiUnifier unifier){
+    public Answer recordAnswer(Q query, Answer answer, @Nullable MultiUnifier unifier){
         if(answer.isEmpty()) return answer;
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
+            Q equivalentQuery = match.query();
             QueryAnswers answers = match.cachedElement();
-            answer.unify(unifier).forEach(answers::add);
+            MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery) : unifier;
+
+            Set<Var> cacheVars = answers.isEmpty()? new HashSet<>() : answers.iterator().next().vars();
+            multiUnifier.stream()
+                    .map(answer::unify)
+                    .peek(ans -> {
+                        if (!ans.vars().containsAll(cacheVars)){
+                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery);
+                        }
+                    })
+                    .forEach(answers::add);
         } else {
             this.putEntry(query, new QueryAnswers(answer));
         }
