@@ -24,10 +24,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
-import com.codahale.metrics.MetricRegistry;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
@@ -36,8 +34,8 @@ import io.prometheus.client.exporter.PushGateway;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
 
 import static ai.grakn.graql.Graql.count;
 
@@ -46,8 +44,8 @@ import static ai.grakn.graql.Graql.count;
  */
 public class QueryExecutor {
 
-    private static String uri = "localhost:48555";
-    private static String keyspace = "societal_model";
+    private final String uri;
+    private final String keyspace;
 
     static final ArrayList<Query> queries = new ArrayList<>();
 
@@ -73,159 +71,22 @@ public class QueryExecutor {
         queries.add(Graql.match(Graql.var("x").isa("name").has("rating", 5)).aggregate(count()));
     }
 
-    private long total;
+    public QueryExecutor(String keyspace, String uri) {
+        this.keyspace = keyspace;
+        this.uri = uri;
+    }
 
-    //    static final Summary requestLatency = Summary.build()
-//            .name("requests_latency_seconds").help("Request latency in seconds.").register();
-//
-    public void processStaticQueries() {
+    public void processStaticQueries(int numRepeats, int numConcepts) {
         try {
-            this.processQueries(queries.stream());
+            this.processQueries(queries.stream(), numRepeats, numConcepts);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-//
-//    //TODO name runExecute?
-//    private Stream<Answer> processQueries(Stream<Query> queryStream) {
-//
-//        // Needs to take a stream of queries, execute them, and also pass the results back to the source of the stream
-//
-////        CollectorRegistry registry = new CollectorRegistry();
-//
-////        Summary requestLatency = Summary.build()
-////                .name("requests_latency_seconds")
-////                .help("Request latency in seconds.")
-////                .register(registry);
-//
-//        GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
-//
-//        Iterator<Query> it = queryStream.iterator();
-////        while (it.hasNext()) {
-//            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-//                Query query = it.next().withTx(tx);
-//                System.out.println("Processing query " + query);
-//
-//                // Start the timer
-//                Summary.Timer requestTimer = requestLatency.startTimer();
-//                try {
-//                    // Code to time
-//                    query.execute();
-//                } finally {
-//                    // Stop the timer
-//                    requestTimer.observeDuration();
-//                }
-//            }
-////        }
-//        return null;
-//    }
 
-    //TODO name runExecute?
-    private Stream<Answer> processQueries(Stream<Query> queryStream) throws Exception {
-
-        // Needs to take a stream of queries, execute them, and also pass the results back to the source of the stream
-
-        CollectorRegistry registry = new CollectorRegistry();
-
-        Summary requestLatency = Summary.build()
-                .name("request_latency_seconds")
-                .help("Request latency in seconds.")
-                .register(registry);
-
-
-        GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
-
-        Iterator<Query> it = queryStream.iterator();
-//        while (it.hasNext()) {
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-            Query query = it.next().withTx(tx);
-            System.out.println("Processing query " + query);
-
-            // Start the timer
-            Summary.Timer requestTimer = requestLatency.startTimer();
-            try {
-                // Code to time
-                query.execute();
-
-                Gauge lastSuccess = Gauge.build()
-                        .name("request_latency_seconds_batch_unixtime")
-                        .help("Last time my batch job succeeded, in unixtime.")
-                        .register(registry);
-                lastSuccess.setToCurrentTime();
-
-            } finally {
-                // Stop the timer
-                requestTimer.observeDuration();
-                // Push the batch of results to the server
-                PushGateway pg = new PushGateway("127.0.0.1:9091");
-                pg.pushAdd(registry, "grakn_queries");
-            }
-        }
-//        }
-        return null;
-    }
-
-//    void executeBatchJob() throws Exception {
-//
-//        Random rand = new Random();
-//        // Your code here.
-//        GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
-//        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-//
-//            CollectorRegistry registry = new CollectorRegistry();
-//            Summary duration = Summary.build()
-//                    .quantile(0.5, 0.05)
-//                    .quantile(0.9, 0.01)
-//                    .quantile(0.1, 0.01)
-//                    .name("grakn_queries_duration_seconds")  // TODO Why does it always fail to find data if this name is changed?!
-//                    .help("Duration of my batch job in seconds.")
-//                    .labelNames("method")
-//                    .register(registry);
-//            this.total = 0;
-//            for (int i = 0; i <= rand.nextInt(100); i++) {
-//
-//                long j = rand.nextInt(10);
-//                duration.labels(String.valueOf(j)).time(() -> {
-//                    // Your code here.
-////                    Query query = queries.get(4).withTx(tx);
-////                    query.execute();
-//                    try {
-//                        this.total += j;
-//                        TimeUnit.MILLISECONDS.sleep(j);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                });
-//            }
-//            System.out.println("Total: " + total);
-//
-//
-////            Summary.Timer durationTimer = duration.startTimer();
-////            try {
-////                Query query = queries.get(4).withTx(tx);
-////                query.execute();
-////
-////            } finally {
-////                durationTimer.observeDuration();
-////            }
-////            }
-//            // This is only added to the registry after success,
-//            // so that a previous success in the Pushgateway is not overwritten on failure.
-//            Gauge lastSuccess = Gauge.build()
-//                    .name("grakn_queries_duration_seconds_last_success_unixtime")
-//                    .help("Last time my batch job succeeded, in unixtime.")
-//                    .register(registry);
-//            lastSuccess.setToCurrentTime();
-//            PushGateway pg = new PushGateway("127.0.0.1:9091");
-//            pg.pushAdd(registry, "grakn_queries");
-//        }
-//    }
-
-
-    void executeBatchJob() throws Exception {
+    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts) throws Exception {
 
         Random rand = new Random();
-        // Your code here.
         GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
@@ -239,37 +100,17 @@ public class QueryExecutor {
                     .labelNames("method", "num_concepts")
                     .register(registry);
 
-            for (Query query : queries) {
-                for (int i = 0; i <= rand.nextInt(100); i++) {
+            Iterator<Query> queryIterator = queryStream.iterator();
+            while (queryIterator.hasNext()){
+                for (int i = 0; i <= rand.nextInt(numRepeats); i++) {
 
-                    query = query.withTx(tx);
-                    Summary.Timer durationTimer = duration.labels(query.toString(), "400").startTimer();
+                    Query query = queryIterator.next().withTx(tx);
+                    Summary.Timer durationTimer = duration.labels(query.toString(), String.valueOf(numConcepts)).startTimer();
                         try {
                             query.execute();
                         } finally {
                             durationTimer.observeDuration();
                         }
-                }
-            }
-            
-            for (Query query : queries) {
-                for (int i = 0; i <= rand.nextInt(100); i++) {
-
-                    query = query.withTx(tx);
-                    Summary.Timer durationTimer = duration.labels(query.toString(), "1000").startTimer();
-//                    duration.labels(query.toString()).time(() -> {
-                        // Your code here.
-                        try {
-                            TimeUnit.MILLISECONDS.sleep(50);
-                            query.execute();
-                        } finally {
-                            durationTimer.observeDuration();
-                        }
-
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                    });
                 }
             }
 
@@ -285,11 +126,33 @@ public class QueryExecutor {
         }
     }
 
+    void processQueriesBrave() {
+
+//        reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+//
+//// Schedules the span to be sent, and won't block the calling thread on I/O
+//        reporter.report(span);
+
+
+        // Start a new trace or a span within an existing trace representing an operation
+        Span span = tracer.nextSpan().name("encode").start();
+// Put the span in "scope" so that downstream code such as loggers can see trace IDs
+        try (SpanInScope ws = tracer.withSpanInScope(span)) {
+            return encoder.encode();
+        } catch (RuntimeException | Error e) {
+            span.error(e); // Unless you handle exceptions, you might not know the operation failed!
+            throw e;
+        } finally {
+            span.finish(); // note the scope is independent of the span. Always finish a span.
+        }
+    }
+
     public static void main(String[] args) {
-        QueryExecutor queryExecutor = new QueryExecutor();
-//        queryExecutor.processStaticQueries();
+        String uri = "localhost:48555";
+        String keyspace = "societal_model";
+        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri);
         try {
-            queryExecutor.executeBatchJob();
+            queryExecutor.processStaticQueries(100, 400);
         } catch (Exception e) {
             e.printStackTrace();
         }

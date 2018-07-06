@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-import ai.grakn.GraknSession;
+package generator;import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -31,8 +31,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
-import generator.GeneratorFactory;
-import generator.GeneratorInterface;
 import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
@@ -68,8 +66,8 @@ import java.util.List;
  */
 public class DataGenerator {
 
-    private static String uri = "localhost:48555";
-    private static String keyspace = "societal_model";
+    private final String uri;
+    private final String keyspace;
     private static String schemaRelativeDirPath = "/grakn-benchmark/src/main/resources/societal_model.gql";
 
     public static final int RANDOM_SEED = 1;
@@ -90,7 +88,9 @@ public class DataGenerator {
 
     private ConceptStore storage;
 
-    public DataGenerator() {
+    public DataGenerator(String keyspace, String uri) {
+        this.keyspace = keyspace;
+        this.uri = uri;
         this.reset();
         this.rand = new Random(RANDOM_SEED);
         entityStrategies = new RouletteWheelCollection<>(this.rand);
@@ -379,7 +379,9 @@ public class DataGenerator {
     }
 
     public static void main(String[] args) {
-        DataGenerator dg = new DataGenerator();
+        String uri = "localhost:48555";
+        String keyspace = "societal_model";
+        DataGenerator dg = new DataGenerator(keyspace, uri);
         System.out.print("Generating data...\n");
 
         long startTime = System.nanoTime();
