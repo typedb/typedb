@@ -26,9 +26,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.AnswerProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;

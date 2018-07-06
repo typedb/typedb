@@ -25,9 +25,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.AnswerProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 

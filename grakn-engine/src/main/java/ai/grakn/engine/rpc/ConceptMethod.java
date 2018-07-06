@@ -31,7 +31,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
