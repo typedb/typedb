@@ -97,8 +97,8 @@ public class ConceptBuilder {
         }
     }
 
-    static ConceptProto.Attribute.Value attributeValue(Object value) {
-        ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
+    static ConceptProto.Attribute.Value.Res attributeValue(Object value) {
+        ConceptProto.Attribute.Value.Res.Builder builder = ConceptProto.Attribute.Value.Res.newBuilder();
         if (value instanceof String) {
             builder.setString((String) value);
         } else if (value instanceof Boolean) {

@@ -46,10 +46,10 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     @Override
     public final D value() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setValue(ConceptProto.Attribute.GetValue.Req.getDefaultInstance()).build();
+                .setValue(ConceptProto.Attribute.Value.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.Attribute.Value value = response.getConceptMethod().getResponse().getValue().getValue();
+        ConceptProto.Attribute.Value.Res value = response.getConceptMethod().getResponse().getValue();
         // TODO: Fix this unsafe casting
         return (D) value.getAllFields().values().iterator().next();
     }

@@ -80,7 +80,7 @@ message Method {
             UnsetRolePlayer.Req unsetRolePlayer = 49;
 
             // Attribute methods
-            Attribute.GetValue.Req value = 50;
+            Attribute.Value.Req value = 50;
             Attribute.Owners.Req owners = 51;
         }
     }
@@ -156,7 +156,7 @@ message Method {
             UnsetRolePlayer.Res unsetRolePlayer = 49;
 
             // Attribute methods
-            Attribute.GetValue.Res value = 50;
+            Attribute.Value.Res value = 50;
             Attribute.Owners.Res owners = 51;
         }
     }
@@ -454,7 +454,7 @@ message GetDataTypeOfAttributeType {
 
 message GetAttribute {
     message Req {
-        Attribute.Value value = 1;
+        Attribute.Value.Res value = 1;
     }
     message Res {
         oneof res {
@@ -466,7 +466,7 @@ message GetAttribute {
 
 message PutAttribute {
     message Req {
-        Attribute.Value value = 1;
+        Attribute.Value.Res value = 1;
     }
     message Res {
         Concept concept = 1;
@@ -590,7 +590,7 @@ message SetRolePlayer {
 message UnsetRolePlayer {
     message Req {
         RolePlayer rolePlayer = 1;
-        Attribute.Value value = 2;
+        Attribute.Value.Res value = 2;
     }
     message Res {}
 }
@@ -600,21 +600,17 @@ message UnsetRolePlayer {
 
 message Attribute {
     message Value {
-        oneof val {
-            string string = 1;
-            bool boolean = 2;
-            int32 integer = 3;
-            int64 long = 4;
-            float float = 5;
-            double double = 6;
-            int64 date = 7; // time since epoch in milliseconds
-        }
-    }
-
-    message GetValue {
         message Req {}
         message Res {
-            Value value = 1;
+            oneof value {
+                string string = 1;
+                bool boolean = 2;
+                int32 integer = 3;
+                int64 long = 4;
+                float float = 5;
+                double double = 6;
+                int64 date = 7; // time since epoch in milliseconds
+            }
         }
     }
 

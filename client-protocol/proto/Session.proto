@@ -116,7 +116,7 @@ message GetConcept {
 
 message GetAttributes {
     message Req {
-        Attribute.Value value = 1;
+        Attribute.Value.Res value = 1;
     }
     message Res {
         IteratorId iteratorId = 1;

@@ -489,8 +489,7 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res getValue(Object value) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setValue(ConceptProto.Attribute.GetValue.Res.newBuilder()
-                                .setValue(ConceptBuilder.attributeValue(value))).build();
+                        .setValue(ConceptBuilder.attributeValue(value)).build();
                 return conceptMethodResponse(response);
             }
 
