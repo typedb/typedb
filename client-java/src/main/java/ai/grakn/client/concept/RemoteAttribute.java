@@ -51,7 +51,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
                 .setGetValue(MethodProto.GetValue.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
+        MethodProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
         // TODO: Fix this unsafe casting
         return (D) attributeValue.getAllFields().values().iterator().next();
     }

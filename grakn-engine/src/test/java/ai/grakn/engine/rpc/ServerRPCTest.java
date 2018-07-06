@@ -47,6 +47,7 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Open;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -308,8 +309,8 @@ public class ServerRPCTest {
             tx.send(next(iterator));
             Transaction.Res response1 = tx.receive().ok();
 
-            ConceptProto.Concept rpcX =
-                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.BaseType.RELATIONSHIP).build();
+            MethodProto.Concept rpcX =
+                    MethodProto.Concept.newBuilder().setId(V123).setBaseType(MethodProto.Concept.BaseType.RELATIONSHIP).build();
             ConceptProto.QueryAnswer.Builder answerX = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             ConceptProto.Answer.Builder resultX = ConceptProto.Answer.newBuilder().setQueryAnswer(answerX);
             assertEquals(Transaction.Res.newBuilder().setAnswer(resultX).build(), response1);
@@ -317,8 +318,8 @@ public class ServerRPCTest {
             tx.send(next(iterator));
             Transaction.Res response2 = tx.receive().ok();
 
-            ConceptProto.Concept rpcY =
-                    ConceptProto.Concept.newBuilder().setId(V456).setBaseType(ConceptProto.BaseType.ATTRIBUTE).build();
+            MethodProto.Concept rpcY =
+                    MethodProto.Concept.newBuilder().setId(V456).setBaseType(MethodProto.Concept.BaseType.ATTRIBUTE).build();
             ConceptProto.QueryAnswer.Builder answerY = ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
             ConceptProto.Answer.Builder resultY = ConceptProto.Answer.newBuilder().setQueryAnswer(answerY);
             assertEquals(Transaction.Res.newBuilder().setAnswer(resultY).build(), response2);
@@ -604,10 +605,10 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            ConceptProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
+            MethodProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
 
             assertEquals(id.getValue(), response.getId());
-            assertEquals(ConceptProto.BaseType.RELATIONSHIP, response.getBaseType());
+            assertEquals(MethodProto.Concept.BaseType.RELATIONSHIP, response.getBaseType());
         }
     }
 

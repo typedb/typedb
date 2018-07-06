@@ -3,9 +3,9 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "SessionProto";
 
-import "Concept.proto";
-import "Method.proto";
 import "Iterator.proto";
+import "Method.proto";
+import "Concept.proto";
 
 package session;
 
@@ -59,7 +59,7 @@ message Transaction {
     }
 }
 
-
+message Done {} // Indicates that a request is completedk
 
 message Open { // Opening a transaction on a keyspace, which must be the first message sent
     message Req {

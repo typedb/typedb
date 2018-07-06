@@ -51,6 +51,7 @@ import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -160,7 +161,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Query.Res.newBuilder().setNull(ConceptProto.Null.getDefaultInstance()))
+                .setQuery(SessionProto.Query.Res.newBuilder().setNull(MethodProto.Null.getDefaultInstance()))
                 .build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
@@ -179,7 +180,7 @@ public class TransactionTest {
 
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
-        ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
+        MethodProto.Concept v123 = MethodProto.Concept.newBuilder().setId(V123).build();
         Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(ConceptProto.Answer.newBuilder()
                 .setQueryAnswer(ConceptProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
 
@@ -408,7 +409,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
-                            .setNull(ConceptProto.Null.getDefaultInstance()))
+                            .setNull(MethodProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -444,7 +445,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
-                            .setNull(ConceptProto.Null.getDefaultInstance()))
+                            .setNull(MethodProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 

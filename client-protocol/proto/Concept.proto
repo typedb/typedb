@@ -3,59 +3,9 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "ConceptProto";
 
+import "Method.proto";
+
 package session;
-
-message Done {} // Indicates that a request is completedk
-message Null {} // Indicates that a request does not yield any result
-
-
-enum BaseType {
-    META_TYPE = 0; // This represents the top-level meta type only
-    ENTITY_TYPE = 1;
-    RELATIONSHIP_TYPE = 3;
-    ATTRIBUTE_TYPE = 4;
-    ENTITY = 5;
-    RELATIONSHIP = 6;
-    ATTRIBUTE = 7;
-    ROLE = 8;
-    RULE = 9;
-}
-
-message Concept {
-    string id = 1;
-    BaseType baseType = 2;
-}
-
-message Concepts {
-    repeated Concept concepts = 1;
-}
-
-message RolePlayer {
-    Concept role = 1;
-    Concept player = 2;
-}
-
-message AttributeValue {
-    oneof value {
-        string string = 1;
-        bool boolean = 2;
-        int32 integer = 3;
-        int64 long = 4;
-        float float = 5;
-        double double = 6;
-        int64 date = 7; // time since epoch in milliseconds
-    }
-}
-
-enum DataType {
-    String = 0;
-    Boolean = 1;
-    Integer = 2;
-    Long = 3;
-    Float = 4;
-    Double = 5;
-    Date = 6;
-}
 
 message Answer {
     oneof answer {

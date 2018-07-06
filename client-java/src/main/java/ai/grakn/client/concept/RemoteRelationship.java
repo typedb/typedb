@@ -55,12 +55,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setGetRolePlayers(MethodProto.GetRolePlayers.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRolePlayers().getIteratorId();
-        Iterable<ConceptProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
+        Iterable<MethodProto.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> res.getRolePlayer()
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
-        for (ConceptProto.RolePlayer rolePlayer : rolePlayers) {
+        for (MethodProto.RolePlayer rolePlayer : rolePlayers) {
             Role role = ConceptBuilder.concept(rolePlayer.getRole(), tx()).asRole();
             Thing player = ConceptBuilder.concept(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
@@ -89,7 +89,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final Relationship assign(Role role, Thing player) {
-        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+        MethodProto.RolePlayer rolePlayer = MethodProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
@@ -103,7 +103,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final void unassign(Role role, Thing player) {
-        ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+        MethodProto.RolePlayer rolePlayer = MethodProto.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();

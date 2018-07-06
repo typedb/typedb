@@ -3,7 +3,6 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "MethodProto";
 
-import "Concept.proto";
 import "Iterator.proto";
 
 package session;
@@ -12,7 +11,7 @@ message Method {
     message Req {
         oneof req {
             // Concept methods
-            Delete.Req delete = 1;
+            Concept.Delete.Req delete = 1;
 
             // SchemaConcept methods
             IsImplicit.Req isImplicit = 2;
@@ -89,7 +88,7 @@ message Method {
     message Res {
         oneof res {
             // Concept methods
-            Delete.Res delete = 1;
+            Concept.Delete.Res delete = 1;
 
             // SchemaConcept methods
             IsImplicit.Res isImplicit = 2;
@@ -165,14 +164,62 @@ message Method {
     }
 }
 
+message Null {} // Indicates that a request does not yield any result
+
+message RolePlayer {
+    Concept role = 1;
+    Concept player = 2;
+}
+
+message AttributeValue {
+    oneof value {
+        string string = 1;
+        bool boolean = 2;
+        int32 integer = 3;
+        int64 long = 4;
+        float float = 5;
+        double double = 6;
+        int64 date = 7; // time since epoch in milliseconds
+    }
+}
+
+enum DataType {
+    String = 0;
+    Boolean = 1;
+    Integer = 2;
+    Long = 3;
+    Float = 4;
+    Double = 5;
+    Date = 6;
+}
 
 // Concept methods
 
-message Delete {
-    message Req {}
-    message Res {}
+message Concept {
+    string id = 1;
+    BaseType baseType = 2;
+
+    message Delete {
+        message Req {}
+        message Res {}
+    }
+
+    enum BaseType {
+        META_TYPE = 0; // This represents the top-level meta type only
+        ENTITY_TYPE = 1;
+        RELATIONSHIP_TYPE = 3;
+        ATTRIBUTE_TYPE = 4;
+        ENTITY = 5;
+        RELATIONSHIP = 6;
+        ATTRIBUTE = 7;
+        ROLE = 8;
+        RULE = 9;
+    }
 }
 
+message Concepts {
+    repeated Concept concepts = 1;
+}
 
 // SchemaConcept methods
 

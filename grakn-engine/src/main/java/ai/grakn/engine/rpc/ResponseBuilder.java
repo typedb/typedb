@@ -75,7 +75,7 @@ public class ResponseBuilder {
         static SessionProto.Transaction.Res query(@Nullable IteratorProto.IteratorId iteratorId) {
             SessionProto.Query.Res.Builder res = SessionProto.Query.Res.newBuilder();
             if (iteratorId == null) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
+                res.setNull(MethodProto.Null.getDefaultInstance());
             } else {
                 res.setIteratorId(iteratorId);
             }
@@ -85,7 +85,7 @@ public class ResponseBuilder {
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable Concept concept) {
             SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
+                res.setNull(MethodProto.Null.getDefaultInstance());
             } else {
                 res.setConcept(ConceptBuilder.concept(concept));
             }
@@ -95,7 +95,7 @@ public class ResponseBuilder {
         static SessionProto.Transaction.Res getConcept(@Nullable Concept concept) {
             SessionProto.GetConcept.Res.Builder res = SessionProto.GetConcept.Res.newBuilder();
             if (concept == null) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
+                res.setNull(MethodProto.Null.getDefaultInstance());
             } else {
                 res.setConcept(ConceptBuilder.concept(concept));
             }
@@ -143,7 +143,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res done() {
-            return SessionProto.Transaction.Res.newBuilder().setDone(ConceptProto.Done.getDefaultInstance()).build();
+            return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
         }
 
         static SessionProto.Transaction.Res concept(Concept concept) {
@@ -151,7 +151,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res rolePlayer(Role role, Thing player) {
-            ConceptProto.RolePlayer rolePlayer = ConceptProto.RolePlayer.newBuilder()
+            MethodProto.RolePlayer rolePlayer = MethodProto.RolePlayer.newBuilder()
                     .setRole(ConceptBuilder.concept(role))
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();
@@ -211,7 +211,7 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res getDirectSuperConcept(Concept concept) {
                 MethodProto.GetDirectSuperConcept.Res.Builder responseConcept = MethodProto.GetDirectSuperConcept.Res.newBuilder();
-                if (concept == null) responseConcept.setNull(ConceptProto.Null.getDefaultInstance());
+                if (concept == null) responseConcept.setNull(MethodProto.Null.getDefaultInstance());
                 else responseConcept.setConcept(ConceptBuilder.concept(concept));
 
                 MethodProto.Method.Res response = MethodProto.Method.Res.newBuilder()
@@ -347,7 +347,7 @@ public class ResponseBuilder {
                 MethodProto.GetDataTypeOfAttributeType.Res.Builder methodResponse =
                         MethodProto.GetDataTypeOfAttributeType.Res.newBuilder();
 
-                if (dataType == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
+                if (dataType == null) methodResponse.setNull(MethodProto.Null.getDefaultInstance()).build();
                 else methodResponse.setDataType(ConceptBuilder.dataType(dataType)).build();
 
                 MethodProto.Method.Res response = MethodProto.Method.Res.newBuilder()
@@ -357,7 +357,7 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res getAttribute(Attribute<?> attribute) {
                 MethodProto.GetAttribute.Res.Builder methodResponse = MethodProto.GetAttribute.Res.newBuilder();
-                if (attribute == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
+                if (attribute == null) methodResponse.setNull(MethodProto.Null.getDefaultInstance()).build();
                 else methodResponse.setConcept(ConceptBuilder.concept(attribute)).build();
 
                 MethodProto.Method.Res response = MethodProto.Method.Res.newBuilder()

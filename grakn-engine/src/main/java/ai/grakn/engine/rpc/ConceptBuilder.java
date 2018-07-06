@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.MethodProto;
 import ai.grakn.util.CommonUtil;
 
 import java.time.LocalDateTime;
@@ -41,63 +42,63 @@ import java.util.stream.Collectors;
  */
 public class ConceptBuilder {
 
-    public static Concept concept(ConceptProto.Concept ConceptProto, EmbeddedGraknTx tx) {
+    public static Concept concept(MethodProto.Concept ConceptProto, EmbeddedGraknTx tx) {
         return tx.getConcept(ConceptId.of(ConceptProto.getId()));
     }
 
-    public static ConceptProto.Concept concept(Concept concept) {
-        return ConceptProto.Concept.newBuilder()
+    public static MethodProto.Concept concept(Concept concept) {
+        return MethodProto.Concept.newBuilder()
                 .setId(concept.id().getValue())
                 .setBaseType(getBaseType(concept))
                 .build();
     }
 
-    private static ConceptProto.BaseType getBaseType(Concept concept) {
+    private static MethodProto.Concept.BaseType getBaseType(Concept concept) {
         if (concept.isEntityType()) {
-            return ConceptProto.BaseType.ENTITY_TYPE;
+            return MethodProto.Concept.BaseType.ENTITY_TYPE;
         } else if (concept.isRelationshipType()) {
-            return ConceptProto.BaseType.RELATIONSHIP_TYPE;
+            return MethodProto.Concept.BaseType.RELATIONSHIP_TYPE;
         } else if (concept.isAttributeType()) {
-            return ConceptProto.BaseType.ATTRIBUTE_TYPE;
+            return MethodProto.Concept.BaseType.ATTRIBUTE_TYPE;
         } else if (concept.isEntity()) {
-            return ConceptProto.BaseType.ENTITY;
+            return MethodProto.Concept.BaseType.ENTITY;
         } else if (concept.isRelationship()) {
-            return ConceptProto.BaseType.RELATIONSHIP;
+            return MethodProto.Concept.BaseType.RELATIONSHIP;
         } else if (concept.isAttribute()) {
-            return ConceptProto.BaseType.ATTRIBUTE;
+            return MethodProto.Concept.BaseType.ATTRIBUTE;
         } else if (concept.isRole()) {
-            return ConceptProto.BaseType.ROLE;
+            return MethodProto.Concept.BaseType.ROLE;
         } else if (concept.isRule()) {
-            return ConceptProto.BaseType.RULE;
+            return MethodProto.Concept.BaseType.RULE;
         } else if (concept.isType()) {
-            return ConceptProto.BaseType.META_TYPE;
+            return MethodProto.Concept.BaseType.META_TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 
-    static ConceptProto.DataType dataType(AttributeType.DataType<?> dataType) {
+    static MethodProto.DataType dataType(AttributeType.DataType<?> dataType) {
         if (dataType.equals(AttributeType.DataType.STRING)) {
-            return ConceptProto.DataType.String;
+            return MethodProto.DataType.String;
         } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return ConceptProto.DataType.Boolean;
+            return MethodProto.DataType.Boolean;
         } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return ConceptProto.DataType.Integer;
+            return MethodProto.DataType.Integer;
         } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return ConceptProto.DataType.Long;
+            return MethodProto.DataType.Long;
         } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return ConceptProto.DataType.Float;
+            return MethodProto.DataType.Float;
         } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return ConceptProto.DataType.Double;
+            return MethodProto.DataType.Double;
         } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return ConceptProto.DataType.Date;
+            return MethodProto.DataType.Date;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
     }
 
-    static ConceptProto.AttributeValue attributeValue(Object value) {
-        ConceptProto.AttributeValue.Builder builder = ConceptProto.AttributeValue.newBuilder();
+    static MethodProto.AttributeValue attributeValue(Object value) {
+        MethodProto.AttributeValue.Builder builder = MethodProto.AttributeValue.newBuilder();
         if (value instanceof String) {
             builder.setString((String) value);
         } else if (value instanceof Boolean) {
@@ -137,7 +138,7 @@ public class ConceptBuilder {
     static ConceptProto.QueryAnswer queryAnswer(Answer answer) {
         ConceptProto.QueryAnswer.Builder queryAnswerRPC = ConceptProto.QueryAnswer.newBuilder();
         answer.forEach((var, concept) -> {
-            ConceptProto.Concept conceptRps = concept(concept);
+            MethodProto.Concept conceptRps = concept(concept);
             queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
         });
 

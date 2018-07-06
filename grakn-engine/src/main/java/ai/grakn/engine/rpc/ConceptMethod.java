@@ -225,7 +225,7 @@ public abstract class ConceptMethod {
         // Make the second argument the super of the first argument
         // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
 
-        ConceptProto.Concept setDirectSuperConcept = method.getSetDirectSuperConcept().getConcept();
+        MethodProto.Concept setDirectSuperConcept = method.getSetDirectSuperConcept().getConcept();
         SchemaConcept superConcept = ConceptBuilder.concept(setDirectSuperConcept, tx).asSchemaConcept();
         SchemaConcept subConcept = concept.asSchemaConcept();
 
@@ -428,7 +428,7 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getKeysByTypes(Concept concept, SessionService.Iterators iterators,
                                                   MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcKeyTypes = method.getGetKeysByTypes().getConcepts();
+        MethodProto.Concepts rpcKeyTypes = method.getGetKeysByTypes().getConcepts();
         AttributeType<?>[] keyTypes = rpcKeyTypes.getConceptsList()
                 .stream().map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(AttributeType[]::new);
@@ -444,7 +444,7 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getAttributesByTypes(Concept concept, MethodProto.Method.Req method,
                                                         SessionService.Iterators iterators, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes().getConcepts();
+        MethodProto.Concepts rpcAttributeTypes = method.getGetAttributesByTypes().getConcepts();
         AttributeType<?>[] attributeTypes = rpcAttributeTypes.getConceptsList().stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(AttributeType[]::new);
@@ -460,7 +460,7 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getRelationshipsByRoles(Concept concept, SessionService.Iterators iterators,
                                                            MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRelationshipsByRoles().getConcepts();
+        MethodProto.Concepts rpcRoles = method.getGetRelationshipsByRoles().getConcepts();
         Role[] roles = rpcRoles.getConceptsList().stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(Role[]::new);
@@ -495,7 +495,7 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res getRolePlayersByRoles(Concept concept, SessionService.Iterators iterators,
                                                     MethodProto.Method.Req method, EmbeddedGraknTx tx) {
-        ConceptProto.Concepts rpcRoles = method.getGetRolePlayersByRoles().getConcepts();
+        MethodProto.Concepts rpcRoles = method.getGetRolePlayersByRoles().getConcepts();
         Role[] roles = rpcRoles.getConceptsList().stream()
                 .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
                 .toArray(Role[]::new);
