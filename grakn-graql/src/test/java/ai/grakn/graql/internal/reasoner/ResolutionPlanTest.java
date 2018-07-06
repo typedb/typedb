@@ -174,6 +174,19 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    public void doNotPrioritiseNonSpecificResources(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa derivedRelation;" +
+                "$x has resource $xr;" +
+                "$y has resource $yr;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        assertEquals(new ResolutionPlan(query).plan().get(0), getAtom(query, "derivedRelation", testTx));
+        checkPlanSanity(query);
+    }
+
+    @Test
     public void makeSureIndirectTypeAtomsAreNotLostWhenPlanning(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
