@@ -174,8 +174,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case PUTRULE:
                     putRule(request.getPutRule());
                     break;
-                case RUNCONCEPTMETHOD:
-                    runConceptMethod(request.getRunConceptMethod());
+                case CONCEPTMETHOD:
+                    conceptMethod(request.getConceptMethod());
                     break;
                 default:
                 case REQ_NOT_SET:
@@ -334,9 +334,9 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             }
         }
 
-        private void runConceptMethod(SessionProto.RunConceptMethod runConceptMethod) {
-            Concept concept = nonNull(tx().getConcept(ConceptId.of(runConceptMethod.getId())));
-            Transaction.Res response = ConceptMethod.run(concept, runConceptMethod.getMethod(), iterators, tx());
+        private void conceptMethod(SessionProto.ConceptMethod.Req request) {
+            Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
+            Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
             responseSender.onNext(response);
         }
 

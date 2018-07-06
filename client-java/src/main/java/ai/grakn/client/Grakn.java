@@ -354,12 +354,11 @@ public final class Grakn {
         }
 
         public SessionProto.Transaction.Res runConceptMethod(ConceptId id, MethodProto.Method.Req method) {
-            SessionProto.RunConceptMethod.Builder runConceptMethod = SessionProto.RunConceptMethod.newBuilder();
-            runConceptMethod.setId(id.getValue());
-            runConceptMethod.setMethod(method);
-            SessionProto.Transaction.Req conceptMethodRequest = SessionProto.Transaction.Req.newBuilder().setRunConceptMethod(runConceptMethod).build();
+            SessionProto.ConceptMethod.Req conceptMethod = SessionProto.ConceptMethod.Req.newBuilder()
+                    .setId(id.getValue()).setMethod(method).build();
+            SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethod(conceptMethod).build();
 
-            transceiver.send(conceptMethodRequest);
+            transceiver.send(request);
             return responseOrThrow();
         }
 

@@ -31,8 +31,7 @@ message Transaction {
             PutRelationshipType.Req putRelationshipType = 11;
             PutRole.Req putRole = 12;
             PutRule.Req putRule = 13;
-            RunConceptMethod runConceptMethod = 14; // returns ConceptResponse
-            //ConceptMethod.Req conceptMethod = 15;
+            ConceptMethod.Req conceptMethod = 15;
         }
     }
     message Res {
@@ -172,16 +171,11 @@ message PutRule {
     }
 }
 
-message RunConceptMethod { // Calling a method on a concept
-    string id = 1;
-    Method.Req method = 2;
-}
-
 message ConceptMethod {
-//    message Req {
-//        string conceptId = 1;
-//        Method.Req method = 2;
-//    }
+    message Req {
+        string id = 1;
+        Method.Req method = 2;
+    }
     message Res {
         Method.Res response = 1;
     }
