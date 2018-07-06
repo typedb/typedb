@@ -276,12 +276,12 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
-    public static GraqlQueryException nonAtomicQuery(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
+    public static GraqlQueryException nonAtomicQuery(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(query));
     }
 
-    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
+    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(query));
     }
 
     public static GraqlQueryException incompleteResolutionPlan(ReasonerQuery reasonerQuery) {
@@ -308,8 +308,12 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
-    public static GraqlQueryException noAtomsSelected(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
+    public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString()));
+    }
+
+    public static GraqlQueryException noAtomsSelected(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(query.toString()));
     }
 
     public static GraqlQueryException conceptNotAThing(Object value) {
