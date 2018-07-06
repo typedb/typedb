@@ -489,7 +489,7 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res getValue(Object value) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetValue(ConceptProto.GetValue.Res.newBuilder()
+                        .setValue(ConceptProto.Attribute.GetValue.Res.newBuilder()
                                 .setValue(ConceptBuilder.attributeValue(value))).build();
                 return conceptMethodResponse(response);
             }
@@ -498,15 +498,8 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetOwners(ConceptProto.GetOwners.Res.newBuilder()
+                        .setOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return conceptMethodResponse(response);
-            }
-
-            static SessionProto.Transaction.Res getDataTypeOfAttribute(AttributeType.DataType<?> dataType) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetDataTypeOfAttribute(ConceptProto.GetDataTypeOfAttribute.Res.newBuilder()
-                                .setDataType(ConceptBuilder.dataType(dataType))).build();
                 return conceptMethodResponse(response);
             }
         }

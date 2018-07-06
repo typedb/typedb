@@ -47,32 +47,26 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     @Override
     public final D value() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetValue(ConceptProto.GetValue.Req.getDefaultInstance()).build();
+                .setValue(ConceptProto.Attribute.GetValue.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.AttributeValue attributeValue = response.getConceptMethod().getResponse().getGetValue().getValue();
+        ConceptProto.Attribute.Value value = response.getConceptMethod().getResponse().getValue().getValue();
         // TODO: Fix this unsafe casting
-        return (D) attributeValue.getAllFields().values().iterator().next();
+        return (D) value.getAllFields().values().iterator().next();
     }
 
     @Override
     public final Stream<Thing> owners() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetOwners(ConceptProto.GetOwners.Req.getDefaultInstance()).build();
+                .setOwners(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetOwners().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getOwners().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asThing);
     }
 
     @Override
     public final AttributeType.DataType<D> dataType() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetDataTypeOfAttribute(ConceptProto.GetDataTypeOfAttribute.Req.getDefaultInstance()).build();
-
-        SessionProto.Transaction.Res response = runMethod(method);
-        // TODO: Fix this unsafe casting
-        return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getConceptMethod().getResponse()
-                .getGetDataTypeOfAttribute().getDataType());
+        return type().dataType();
     }
 
     @Override

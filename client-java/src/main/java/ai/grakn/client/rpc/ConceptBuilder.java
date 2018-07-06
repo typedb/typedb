@@ -126,8 +126,8 @@ public class ConceptBuilder {
         return concepts.stream().map(ConceptBuilder::concept).collect(toList());
     }
 
-    public static ConceptProto.AttributeValue attributeValue(Object value) {
-        ConceptProto.AttributeValue.Builder builder = ConceptProto.AttributeValue.newBuilder();
+    public static ConceptProto.Attribute.Value attributeValue(Object value) {
+        ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
         if (value instanceof String) {
             builder.setString((String) value);
         } else if (value instanceof Boolean) {

@@ -168,12 +168,10 @@ public abstract class ConceptMethod {
                 return unsetRolePlayer(concept, method, tx);
 
             // Attribute Methods
-            case GETVALUE:
-                return getValue(concept);
-            case GETOWNERS:
-                return getOwners(concept, iterators);
-            case GETDATATYPEOFATTRIBUTE:
-                return getDataTypeOfAttribute(concept);
+            case VALUE:
+                return value(concept);
+            case OWNERS:
+                return owners(concept, iterators);
 
             default:
             case REQ_NOT_SET:
@@ -520,18 +518,13 @@ public abstract class ConceptMethod {
 
     // Attribute methods
 
-    private static Transaction.Res getValue(Concept concept) {
+    private static Transaction.Res value(Concept concept) {
         Object value = concept.asAttribute().value();
         return ResponseBuilder.Transaction.ConceptMethod.getValue(value);
     }
 
-    private static Transaction.Res getOwners(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res owners(Concept concept, SessionService.Iterators iterators) {
         Stream<Thing> concepts = concept.asAttribute().owners();
         return ResponseBuilder.Transaction.ConceptMethod.getOwners(concepts, iterators);
-    }
-
-    private static Transaction.Res getDataTypeOfAttribute(Concept concept) {
-        AttributeType.DataType<?> dataType = concept.asAttribute().dataType();
-        return ResponseBuilder.Transaction.ConceptMethod.getDataTypeOfAttribute(dataType);
     }
 }

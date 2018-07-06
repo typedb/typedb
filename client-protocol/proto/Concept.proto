@@ -80,9 +80,8 @@ message Method {
             UnsetRolePlayer.Req unsetRolePlayer = 49;
 
             // Attribute methods
-            GetValue.Req getValue = 50;
-            GetOwners.Req getOwners = 51;
-            GetDataTypeOfAttribute.Req getDataTypeOfAttribute = 52;
+            Attribute.GetValue.Req value = 50;
+            Attribute.Owners.Req owners = 51;
         }
     }
     message Res {
@@ -157,9 +156,8 @@ message Method {
             UnsetRolePlayer.Res unsetRolePlayer = 49;
 
             // Attribute methods
-            GetValue.Res getValue = 50;
-            GetOwners.Res getOwners = 51;
-            GetDataTypeOfAttribute.Res getDataTypeOfAttribute = 52;
+            Attribute.GetValue.Res value = 50;
+            Attribute.Owners.Res owners = 51;
         }
     }
 }
@@ -169,18 +167,6 @@ message Null {} // Indicates that a request does not yield any result
 message RolePlayer {
     Concept role = 1;
     Concept player = 2;
-}
-
-message AttributeValue {
-    oneof value {
-        string string = 1;
-        bool boolean = 2;
-        int32 integer = 3;
-        int64 long = 4;
-        float float = 5;
-        double double = 6;
-        int64 date = 7; // time since epoch in milliseconds
-    }
 }
 
 enum DataType {
@@ -468,7 +454,7 @@ message GetDataTypeOfAttributeType {
 
 message GetAttribute {
     message Req {
-        AttributeValue value = 1;
+        Attribute.Value value = 1;
     }
     message Res {
         oneof res {
@@ -480,7 +466,7 @@ message GetAttribute {
 
 message PutAttribute {
     message Req {
-        AttributeValue value = 1;
+        Attribute.Value value = 1;
     }
     message Res {
         Concept concept = 1;
@@ -604,32 +590,38 @@ message SetRolePlayer {
 message UnsetRolePlayer {
     message Req {
         RolePlayer rolePlayer = 1;
+        Attribute.Value value = 2;
     }
     message Res {}
 }
 
 
-
-
 // Attribute methods
 
-message GetValue {
-    message Req {}
-    message Res {
-        AttributeValue value = 1;
+message Attribute {
+    message Value {
+        oneof val {
+            string string = 1;
+            bool boolean = 2;
+            int32 integer = 3;
+            int64 long = 4;
+            float float = 5;
+            double double = 6;
+            int64 date = 7; // time since epoch in milliseconds
+        }
     }
-}
 
-message GetOwners {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message GetValue {
+        message Req {}
+        message Res {
+            Value value = 1;
+        }
     }
-}
 
-message GetDataTypeOfAttribute {
-    message Req {}
-    message Res {
-        DataType dataType = 1;
+    message Owners {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
 }
