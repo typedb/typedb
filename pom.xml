@@ -50,7 +50,7 @@
         <project.resource.encoding>UTF-8</project.resource.encoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.2.5-grakn-SNAPSHOT</tinkerpop.version>
+        <tinkerpop.version>3.2.9</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <janus.version>0.2.0</janus.version>
         <guava.version>19.0</guava.version>
@@ -932,11 +932,11 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>snapshots</id>
-            <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
         <repository>
             <id>releases</id>
-            <url>https://maven.grakn.ai/content/repositories/releases/</url>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
 
@@ -994,6 +994,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.7</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -1218,7 +1223,6 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.7</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
@@ -1236,18 +1240,6 @@
                 <repository>
                     <id>ossrh</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>internal-releases</id>
-            <properties>
-                <skip.deploy.dist>false</skip.deploy.dist>
-            </properties>
-            <distributionManagement>
-                <repository>
-                    <id>internal-releases</id>
-                    <url>https://maven.grakn.ai/content/repositories/internal-releases/</url>
                 </repository>
             </distributionManagement>
         </profile>
