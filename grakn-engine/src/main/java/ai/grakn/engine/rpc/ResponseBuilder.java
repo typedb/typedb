@@ -18,15 +18,9 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -35,18 +29,13 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * A utility class to build RPC Responses from a provided set of Grakn concepts.
@@ -154,133 +143,6 @@ public class ResponseBuilder {
                     .setPlayer(ConceptBuilder.concept(player))
                     .build();
             return SessionProto.Transaction.Res.newBuilder().setRolePlayer(rolePlayer).build();
-        }
-
-        /**
-         * An RPC Response Builder class for Concept Methods
-         */
-        public static class ConceptMethod {
-
-            private static SessionProto.Transaction.Res transactionRes(ConceptProto.Method.Res response) {
-                return SessionProto.Transaction.Res.newBuilder()
-                        .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
-                                .setResponse(response)).build();
-            }
-
-            // Thing methods
-
-            static SessionProto.Transaction.Res isInferred(boolean inferred) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingIsInferred(ConceptProto.Thing.IsInferred.Res.newBuilder()
-                                .setInferred(inferred)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res type(Concept concept) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingType(ConceptProto.Thing.Type.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(concept))).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res getKeysByTypes(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingKeys(ConceptProto.Thing.Keys.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res getAttributesByTypes(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingAttributes(ConceptProto.Thing.Attributes.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res getRelationshipsByRoles(Stream<Relationship> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelations(ConceptProto.Thing.Relations.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res getRolesPlayedByThing(Stream<Role> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRoles(ConceptProto.Thing.Roles.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res relhas(Relationship concept) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelhas(ConceptProto.Thing.Relhas.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(concept))).build();
-                return transactionRes(response);
-            }
-
-            // Relationship methods
-
-            static SessionProto.Transaction.Res rolePlayersMap(Map<Role, Set<Thing>> rolePlayers, SessionService.Iterators iterators) {
-                Stream.Builder<SessionProto.Transaction.Res> responses = Stream.builder();
-                rolePlayers.forEach(
-                        (role, players) -> players.forEach(
-                                player -> {
-                                    System.out.print(role.toString() + " - " + player);
-                                    responses.add(ResponseBuilder.Transaction.rolePlayer(role, player));
-                                }
-                        )
-                );
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.build().iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res getRolePlayersByRoles(Stream<Thing> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map((Thing concept) -> Transaction.concept(concept));
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-
-            // Attribute methods
-
-            static SessionProto.Transaction.Res value(Object value) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setValue(ConceptProto.Attribute.Value.Res.newBuilder()
-                                .setValue(ConceptBuilder.attributeValue(value))).build();
-                return transactionRes(response);
-            }
-
-            static SessionProto.Transaction.Res owners(Stream<Thing> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return transactionRes(response);
-            }
-        }
-    }
-
-    /**
-     * An RPC Response Builder class for Keyspace Service
-     */
-    public static class Keyspace {
-
-        static KeyspaceProto.Delete.Res delete() {
-            return KeyspaceProto.Delete.Res.getDefaultInstance();
         }
     }
 
