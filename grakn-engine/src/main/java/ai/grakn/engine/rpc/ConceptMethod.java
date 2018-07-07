@@ -60,26 +60,26 @@ public abstract class ConceptMethod {
                 return getLabel(concept);
             case SETLABEL:
                 return setLabel(concept, method);
-            case GETSUBCONCEPTS:
-                return getSubConcepts(concept, iterators);
-            case GETSUPERCONCEPTS:
-                return getSuperConcepts(concept, iterators);
-            case GETDIRECTSUPERCONCEPT:
-                return getDirectSuperConcept(concept);
-            case SETDIRECTSUPERCONCEPT:
-                return setDirectSuperConcept(concept, method, tx);
+            case GETSUP:
+                return getSup(concept);
+            case SETSUP:
+                return setSup(concept, method, tx);
+            case SUPS:
+                return sups(concept, iterators);
+            case SUBS:
+                return subs(concept, iterators);
 
             // Rule methods
-            case GETWHEN:
-                return getWhen(concept);
-            case GETTHEN:
-                return getThen(concept);
+            case WHEN:
+                return when(concept);
+            case THEN:
+                return then(concept);
 
             // Role methods
-            case GETRELATIONSHIPTYPESTHATRELATEROLE:
-                return getRelationshipTypesThatRelateRole(concept, iterators);
-            case GETTYPESTHATPLAYROLE:
-                return getTypesThatPlayRole(concept, iterators);
+            case RELATIONS:
+                return relations(concept, iterators);
+            case PLAYERS:
+                return players(concept, iterators);
 
             // Type methods
             case ISABSTRACT:
@@ -204,26 +204,16 @@ public abstract class ConceptMethod {
         return null;
     }
 
-    private static Transaction.Res getSubConcepts(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().subs();
-        return ResponseBuilder.Transaction.ConceptMethod.getSubConcepts(concepts, iterators);
-    }
-
-    private static Transaction.Res getSuperConcepts(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().sups();
-        return ResponseBuilder.Transaction.ConceptMethod.getSuperConcepts(concepts, iterators);
-    }
-
-    private static Transaction.Res getDirectSuperConcept(Concept concept) {
+    private static Transaction.Res getSup(Concept concept) {
         Concept superConcept = concept.asSchemaConcept().sup();
-        return ResponseBuilder.Transaction.ConceptMethod.getDirectSuperConcept(superConcept);
+        return ResponseBuilder.Transaction.ConceptMethod.getSup(superConcept);
     }
 
-    private static Transaction.Res setDirectSuperConcept(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+    private static Transaction.Res setSup(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
         // Make the second argument the super of the first argument
         // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
 
-        ConceptProto.Concept setDirectSuperConcept = method.getSetDirectSuperConcept().getConcept();
+        ConceptProto.Concept setDirectSuperConcept = method.getSetSup().getConcept();
         SchemaConcept superConcept = ConceptBuilder.concept(setDirectSuperConcept, tx).asSchemaConcept();
         SchemaConcept subConcept = concept.asSchemaConcept();
 
@@ -244,28 +234,38 @@ public abstract class ConceptMethod {
         return null;
     }
 
+    private static Transaction.Res sups(Concept concept, SessionService.Iterators iterators) {
+        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().sups();
+        return ResponseBuilder.Transaction.ConceptMethod.sups(concepts, iterators);
+    }
+
+    private static Transaction.Res subs(Concept concept, SessionService.Iterators iterators) {
+        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().subs();
+        return ResponseBuilder.Transaction.ConceptMethod.subs(concepts, iterators);
+    }
+
 
     // Rule methods
 
-    private static Transaction.Res getWhen(Concept concept) {
-        return ResponseBuilder.Transaction.ConceptMethod.getWhen(concept.asRule().when());
+    private static Transaction.Res when(Concept concept) {
+        return ResponseBuilder.Transaction.ConceptMethod.when(concept.asRule().when());
     }
 
-    private static Transaction.Res getThen(Concept concept) {
-        return ResponseBuilder.Transaction.ConceptMethod.getThen(concept.asRule().then());
+    private static Transaction.Res then(Concept concept) {
+        return ResponseBuilder.Transaction.ConceptMethod.then(concept.asRule().then());
     }
 
 
     // Role methods
 
-    private static Transaction.Res getRelationshipTypesThatRelateRole(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res relations(Concept concept, SessionService.Iterators iterators) {
         Stream<RelationshipType> concepts = concept.asRole().relationships();
-        return ResponseBuilder.Transaction.ConceptMethod.getRelationshipTypesThatRelateRole(concepts, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.relations(concepts, iterators);
     }
 
-    private static Transaction.Res getTypesThatPlayRole(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res players(Concept concept, SessionService.Iterators iterators) {
         Stream<Type> concepts = concept.asRole().players();
-        return ResponseBuilder.Transaction.ConceptMethod.getTypesThatPlayRole(concepts, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.players(concepts, iterators);
     }
 
 

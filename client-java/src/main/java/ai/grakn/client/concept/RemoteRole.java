@@ -43,16 +43,16 @@ public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Ro
     @Override
     public final Stream<RelationshipType> relationships() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetRelationshipTypesThatRelateRole(ConceptProto.GetRelationshipTypesThatRelateRole.Req.getDefaultInstance()).build();
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRelationshipTypesThatRelateRole().getIteratorId();
+                .setRelations(ConceptProto.Role.Relations.Req.getDefaultInstance()).build();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getRelations().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRelationshipType);
     }
 
     @Override
     public final Stream<Type> players() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetTypesThatPlayRole(ConceptProto.GetTypesThatPlayRole.Req.getDefaultInstance()).build();
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetTypesThatPlayRole().getIteratorId();
+                .setPlayers(ConceptProto.Role.Players.Req.getDefaultInstance()).build();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getPlayers().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asType);
     }
 

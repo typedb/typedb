@@ -14,21 +14,21 @@ message Method {
             Concept.Delete.Req delete = 1;
 
             // SchemaConcept methods
-            IsImplicit.Req isImplicit = 2;
-            GetLabel.Req getLabel = 3;
-            SetLabel.Req setLabel = 4;
-            GetSubConcepts.Req getSubConcepts = 5;
-            GetSuperConcepts.Req getSuperConcepts = 6;
-            GetDirectSuperConcept.Req getDirectSuperConcept = 7;
-            SetDirectSuperConcept.Req setDirectSuperConcept = 8;
+            SchemaConcept.IsImplicit.Req isImplicit = 2;
+            SchemaConcept.GetLabel.Req getLabel = 3;
+            SchemaConcept.SetLabel.Req setLabel = 4;
+            SchemaConcept.GetSup.Req getSup = 5;
+            SchemaConcept.SetSup.Req setSup = 6;
+            SchemaConcept.Sups.Req sups = 7;
+            SchemaConcept.Subs.Req subs = 8;
 
             // Rule methods
-            GetWhen.Req getWhen = 9;
-            GetThen.Req getThen = 10;
+            Rule.When.Req when = 9;
+            Rule.Then.Req then = 10;
 
             // Role methods
-            GetRelationshipTypesThatRelateRole.Req getRelationshipTypesThatRelateRole = 11;
-            GetTypesThatPlayRole.Req getTypesThatPlayRole = 12;
+            Role.Relations.Req relations = 11;
+            Role.Players.Req players = 12;
 
             // Type methods
             IsAbstract.Req isAbstract = 13;
@@ -90,21 +90,21 @@ message Method {
             Concept.Delete.Res delete = 1;
 
             // SchemaConcept methods
-            IsImplicit.Res isImplicit = 2;
-            GetLabel.Res getLabel = 3;
-            SetLabel.Res setLabel = 4;
-            GetSubConcepts.Res getSubConcepts = 5;
-            GetSuperConcepts.Res getSuperConcepts = 6;
-            GetDirectSuperConcept.Res getDirectSuperConcept = 7;
-            SetDirectSuperConcept.Res setDirectSuperConcept = 8;
+            SchemaConcept.IsImplicit.Res isImplicit = 2;
+            SchemaConcept.GetLabel.Res getLabel = 3;
+            SchemaConcept.SetLabel.Res setLabel = 4;
+            SchemaConcept.GetSup.Res getSup = 5;
+            SchemaConcept.SetSup.Res setSup = 6;
+            SchemaConcept.Sups.Res sups = 7;
+            SchemaConcept.Subs.Res subs = 8;
 
             // Rule methods
-            GetWhen.Res getWhen = 9;
-            GetThen.Res getThen = 10;
+            Rule.When.Res when = 9;
+            Rule.Then.Res then = 10;
 
             // Role methods
-            GetRelationshipTypesThatRelateRole.Res getRelationshipTypesThatRelateRole = 11;
-            GetTypesThatPlayRole.Res getTypesThatPlayRole = 12;
+            Role.Relations.Res relations = 11;
+            Role.Players.Res players = 12;
 
             // Type methods
             IsAbstract.Res isAbstract = 13;
@@ -190,77 +190,83 @@ message Concept {
 
 // SchemaConcept methods
 
-message GetLabel {
-    message Req {}
-    message Res {
-        string label = 1;
-    }
-}
+message SchemaConcept {
 
-message SetLabel {
-    message Req {
-        string label = 1;
-    }
-    message Res {}
-}
-
-message IsImplicit {
-    message Req{}
-    message Res{
-        bool implicit = 1;
-    }
-}
-
-message GetSubConcepts {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
-
-message GetSuperConcepts {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
-
-message GetDirectSuperConcept {
-    message Req {}
-    message Res {
-        oneof res {
-            Concept concept = 1;
-            Null null = 2;
+    message GetLabel {
+        message Req {}
+        message Res {
+            string label = 1;
         }
     }
-}
 
-message SetDirectSuperConcept {
-    message Req {
-        Concept concept = 1;
+    message SetLabel {
+        message Req {
+            string label = 1;
+        }
+        message Res {}
     }
-    message Res {}
+
+    message IsImplicit {
+        message Req{}
+        message Res{
+            bool implicit = 1;
+        }
+    }
+
+    message Subs {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
+    }
+
+    message Sups {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
+    }
+
+    message GetSup {
+        message Req {}
+        message Res {
+            oneof res {
+                Concept concept = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message SetSup {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
+    }
 }
 
 
 // Rule methods
 
-message GetWhen {
-    message Req {}
-    message Res {
-        oneof res {
-            string pattern = 1;
-            Null null = 2;
+message Rule {
+
+    message When {
+        message Req {}
+        message Res {
+            oneof res {
+                string pattern = 1;
+                Null null = 2;
+            }
         }
     }
-}
 
-message GetThen {
-    message Req {}
-    message Res {
-        oneof res {
-            string pattern = 1;
-            Null null = 2;
+    message Then {
+        message Req {}
+        message Res {
+            oneof res {
+                string pattern = 1;
+                Null null = 2;
+            }
         }
     }
 }
@@ -268,17 +274,20 @@ message GetThen {
 
 // Role methods
 
-message GetRelationshipTypesThatRelateRole {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
+message Role {
 
-message GetTypesThatPlayRole {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Relations {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
+    }
+
+    message Players {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
 }
 
@@ -569,6 +578,7 @@ message UnsetAttributeRelationship {
 // Relationship methods
 
 message Relation {
+
     message RolePlayer {
         Concept role = 1;
         Concept player = 2;
@@ -608,6 +618,7 @@ message Relation {
 // Attribute methods
 
 message Attribute {
+
     message Value {
         message Req {}
         message Res {
