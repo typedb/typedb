@@ -375,24 +375,15 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res isInferred(boolean inferred) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setIsInferred(ConceptProto.IsInferred.Res.newBuilder()
+                        .setThingIsInferred(ConceptProto.Thing.IsInferred.Res.newBuilder()
                                 .setInferred(inferred)).build();
                 return response(response);
             }
 
-            static SessionProto.Transaction.Res getDirectType(Concept concept) {
+            static SessionProto.Transaction.Res type(Concept concept) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetDirectType(ConceptProto.GetDirectType.Res.newBuilder()
+                        .setThingType(ConceptProto.Thing.Type.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(concept))).build();
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res getKeys(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetKeys(ConceptProto.GetKeys.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
                 return response(response);
             }
 
@@ -400,16 +391,7 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetKeysByTypes(ConceptProto.GetKeysByTypes.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res getAttributesForAnyType(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetAttributesForAnyType(ConceptProto.GetAttributesForAnyType.Res.newBuilder()
+                        .setThingKeys(ConceptProto.Thing.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return response(response);
             }
@@ -418,16 +400,7 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetAttributesByTypes(ConceptProto.GetAttributesByTypes.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res getRelationships(Stream<Relationship> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRelationships(ConceptProto.GetRelationships.Res.newBuilder()
+                        .setThingAttributes(ConceptProto.Thing.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return response(response);
             }
@@ -436,7 +409,7 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRelationshipsByRoles(ConceptProto.GetRelationshipsByRoles.Res.newBuilder()
+                        .setThingRelations(ConceptProto.Thing.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return response(response);
             }
@@ -445,14 +418,14 @@ public class ResponseBuilder {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRolesPlayedByThing(ConceptProto.GetRolesPlayedByThing.Res.newBuilder()
+                        .setThingRoles(ConceptProto.Thing.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
                 return response(response);
             }
 
-            static SessionProto.Transaction.Res setAttributeRelationship(Relationship concept) {
+            static SessionProto.Transaction.Res relhas(Relationship concept) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSetAttributeRelationship(ConceptProto.SetAttributeRelationship.Res.newBuilder()
+                        .setThingRelhas(ConceptProto.Thing.Relhas.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(concept))).build();
                 return response(response);
             }
@@ -477,7 +450,7 @@ public class ResponseBuilder {
             }
 
             static SessionProto.Transaction.Res getRolePlayersByRoles(Stream<Thing> concepts, SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
+                Stream<SessionProto.Transaction.Res> responses = concepts.map((Thing concept) -> Transaction.concept(concept));
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()

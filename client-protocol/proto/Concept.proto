@@ -61,27 +61,24 @@ message Method {
             AttributeType.SetRegex.Req setRegex = 34;
 
             // Thing methods
-            IsInferred.Req isInferred = 35;
-            GetDirectType.Req getDirectType = 36;
-            GetKeys.Req getKeys = 37;
-            GetKeysByTypes.Req getKeysByTypes = 38;
-            GetAttributesForAnyType.Req getAttributesForAnyType = 39;
-            GetAttributesByTypes.Req getAttributesByTypes = 40;
-            GetRelationships.Req getRelationships = 41;
-            GetRelationshipsByRoles.Req getRelationshipsByRoles = 42;
-            GetRolesPlayedByThing.Req getRolesPlayedByThing = 43;
-            SetAttributeRelationship.Req setAttributeRelationship = 44;
-            UnsetAttributeRelationship.Req unsetAttributeRelationship = 45;
+            Thing.Type.Req thing_type = 35;
+            Thing.IsInferred.Req thing_isInferred = 36;
+            Thing.Keys.Req thing_keys = 37;
+            Thing.Attributes.Req thing_attributes = 38;
+            Thing.Relations.Req thing_relations = 39;
+            Thing.Roles.Req thing_roles = 40;
+            Thing.Relhas.Req thing_relhas = 41;
+            Thing.Unhas.Req thing_unhas = 42;
 
             // Relationship methods
-            Relation.RolePlayersMap.Req rolePlayersMap = 46;
-            Relation.RolePlayers.Req rolePlayers = 47;
-            Relation.Assign.Req assign = 48;
-            Relation.Unassign.Req unassign = 49;
+            Relation.RolePlayersMap.Req rolePlayersMap = 43;
+            Relation.RolePlayers.Req rolePlayers = 44;
+            Relation.Assign.Req assign = 45;
+            Relation.Unassign.Req unassign = 46;
 
             // Attribute methods
-            Attribute.Value.Req value = 50;
-            Attribute.Owners.Req owners = 51;
+            Attribute.Value.Req value = 47;
+            Attribute.Owners.Req owners = 48;
         }
     }
     message Res {
@@ -137,27 +134,24 @@ message Method {
             AttributeType.SetRegex.Res setRegex = 34;
 
             // Thing methods
-            IsInferred.Res isInferred = 35;
-            GetDirectType.Res getDirectType = 36;
-            GetKeys.Res getKeys = 37;
-            GetKeysByTypes.Res getKeysByTypes = 38;
-            GetAttributesForAnyType.Res getAttributesForAnyType = 39;
-            GetAttributesByTypes.Res getAttributesByTypes = 40;
-            GetRelationships.Res getRelationships = 41;
-            GetRelationshipsByRoles.Res getRelationshipsByRoles = 42;
-            GetRolesPlayedByThing.Res getRolesPlayedByThing = 43;
-            SetAttributeRelationship.Res setAttributeRelationship = 44;
-            UnsetAttributeRelationship.Res unsetAttributeRelationship = 45;
+            Thing.Type.Res thing_type = 35;
+            Thing.IsInferred.Res thing_isInferred = 36;
+            Thing.Keys.Res thing_keys = 37;
+            Thing.Attributes.Res thing_attributes = 38;
+            Thing.Relations.Res thing_relations = 39;
+            Thing.Roles.Res thing_roles = 40;
+            Thing.Relhas.Res thing_relhas = 41;
+            Thing.Unhas.Res thing_unhas = 42;
 
             // Relationship methods
-            Relation.RolePlayersMap.Res rolePlayersMap = 46;
-            Relation.RolePlayers.Res rolePlayers = 47;
-            Relation.Assign.Res assign = 48;
-            Relation.Unassign.Res unassign = 49;
+            Relation.RolePlayersMap.Res rolePlayersMap = 43;
+            Relation.RolePlayers.Res rolePlayers = 44;
+            Relation.Assign.Res assign = 45;
+            Relation.Unassign.Res unassign = 46;
 
             // Attribute methods
-            Attribute.Value.Res value = 50;
-            Attribute.Owners.Res owners = 51;
+            Attribute.Value.Res value = 47;
+            Attribute.Owners.Res owners = 48;
         }
     }
 }
@@ -492,89 +486,71 @@ message AttributeType {
 
 // Thing methods
 
-message IsInferred {
-    message Req {}
-    message Res {
-        bool inferred = 1;
-    }
-}
+message Thing {
 
-message GetDirectType {
-    message Req {}
-    message Res {
-        Concept concept = 1;
+    message IsInferred {
+        message Req {}
+        message Res {
+            bool inferred = 1;
+        }
     }
-}
 
-message GetKeys {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Type {
+        message Req {}
+        message Res {
+            Concept concept = 1;
+        }
     }
-}
 
-message GetKeysByTypes {
-    message Req {
-        repeated Concept concepts = 1;
+    message Keys {
+        message Req {
+            repeated Concept concepts = 1;
+        }
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
 
-message GetAttributesForAnyType {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Attributes {
+        message Req {
+            repeated Concept concepts = 1;
+        }
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-}
 
-message GetAttributesByTypes {
-    message Req {
-        repeated Concept concepts = 1;
+    message Relations {
+        message Req {
+            repeated Concept concepts = 1;
+        }
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
 
-message GetRelationships {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Roles {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-}
 
-message GetRelationshipsByRoles {
-    message Req {
-        repeated Concept concepts = 1;
+    message Relhas {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {
+            Concept concept = 1;
+        }
     }
-    message Res {
-        IteratorId iteratorId = 1;
-    }
-}
 
-message GetRolesPlayedByThing {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Unhas {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-}
-
-message SetAttributeRelationship {
-    message Req {
-        Concept concept = 1;
-    }
-    message Res {
-        Concept concept = 1;
-    }
-}
-
-message UnsetAttributeRelationship {
-    message Req {
-        Concept concept = 1;
-    }
-    message Res {}
 }
 
 

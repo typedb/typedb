@@ -41,87 +41,65 @@ import java.util.stream.Stream;
  */
 abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> extends RemoteConcept<SomeThing> implements Thing {
 
-
-    @Override
-    public final boolean isInferred() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setIsInferred(ConceptProto.IsInferred.Req.getDefaultInstance()).build();
-
-        SessionProto.Transaction.Res response = runMethod(method);
-        return response.getConceptMethod().getResponse().getIsInferred().getInferred();
-    }
-
     @Override
     public final SomeType type() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetDirectType(ConceptProto.GetDirectType.Req.getDefaultInstance()).build();
+                .setThingType(ConceptProto.Thing.Type.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getGetDirectType().getConcept(), tx());
+        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getThingType().getConcept(), tx());
         return asCurrentType(concept);
     }
 
     @Override
+    public final boolean isInferred() {
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setThingIsInferred(ConceptProto.Thing.IsInferred.Req.getDefaultInstance()).build();
+
+        SessionProto.Transaction.Res response = runMethod(method);
+        return response.getConceptMethod().getResponse().getThingIsInferred().getInferred();
+    }
+
+    @Override
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        IteratorProto.IteratorId iteratorId;
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder()
+                .setThingKeys(ConceptProto.Thing.Keys.Req.newBuilder()
+                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
 
-        if (attributeTypes.length == 0) {
-            method.setGetKeys(ConceptProto.GetKeys.Req.getDefaultInstance());
-            iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeys().getIteratorId();
-        } else {
-            method.setGetKeysByTypes(ConceptProto.GetKeysByTypes.Req.newBuilder()
-                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
-            iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetKeysByTypes().getIteratorId();
-        }
-
+        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+                .getConceptMethod().getResponse().getThingKeys().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttribute);
     }
 
     @Override
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        IteratorProto.IteratorId iteratorId;
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder()
+                .setThingAttributes(ConceptProto.Thing.Attributes.Req.newBuilder()
+                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
 
-        if (attributeTypes.length == 0) {
-            method.setGetAttributesForAnyType(ConceptProto.GetAttributesForAnyType.Req.getDefaultInstance());
-            iteratorId = runMethod(method.build())
-                    .getConceptMethod().getResponse().getGetAttributesForAnyType().getIteratorId();
-        } else {
-            method.setGetAttributesByTypes(ConceptProto.GetAttributesByTypes.Req.newBuilder()
-                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
-            iteratorId = runMethod(method.build())
-                    .getConceptMethod().getResponse().getGetAttributesByTypes().getIteratorId();
-        }
-
+        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+                .getConceptMethod().getResponse().getThingAttributes().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttribute);
     }
 
     @Override
     public final Stream<Relationship> relationships(Role... roles) {
-        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder();
-        IteratorProto.IteratorId iteratorId;
+        ConceptProto.Method.Req.Builder method = ConceptProto.Method.Req.newBuilder()
+                .setThingRelations(ConceptProto.Thing.Relations.Req.newBuilder()
+                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
 
-        if (roles.length == 0) {
-            method.setGetRelationships(ConceptProto.GetRelationships.Req.getDefaultInstance());
-            iteratorId = runMethod(method.build()).getConceptMethod().getResponse().getGetRelationships().getIteratorId();
-        } else {
-            method.setGetRelationshipsByRoles(ConceptProto.GetRelationshipsByRoles.Req.newBuilder()
-                    .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
-            iteratorId = runMethod(method.build())
-                    .getConceptMethod().getResponse().getGetRelationshipsByRoles().getIteratorId();
-        }
-
+        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+                .getConceptMethod().getResponse().getThingRelations().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRelationship);
     }
 
     @Override
     public final Stream<Role> roles() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetRolesPlayedByThing(ConceptProto.GetRolesPlayedByThing.Req.getDefaultInstance()).build();
+                .setThingRoles(ConceptProto.Thing.Roles.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method)
-                .getConceptMethod().getResponse().getGetRolesPlayedByThing().getIteratorId();
+                .getConceptMethod().getResponse().getThingRoles().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRole);
     }
 
@@ -133,15 +111,15 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
 
     @Override @Deprecated
     public final Relationship relhas(Attribute attribute) {
-        // TODO: remove usage of this method as a getter, and replace with relationships(Attribute attribute)
-        // TODO: remove this method altogether and just use has(Attribute attribute)
+        // TODO: replace usage of this method as a getter, with relationships(Attribute attribute)
+        // TODO: then remove this method altogether and just use has(Attribute attribute)
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetAttributeRelationship(ConceptProto.SetAttributeRelationship.Req.newBuilder()
+                .setThingRelhas(ConceptProto.Thing.Relhas.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
         Concept concept = ConceptBuilder.concept(
-                response.getConceptMethod().getResponse().getSetAttributeRelationship().getConcept(),
+                response.getConceptMethod().getResponse().getThingRelhas().getConcept(),
                 tx()
         );
         return concept.asRelationship();
@@ -150,7 +128,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     @Override
     public final SomeThing unhas(Attribute attribute) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnsetAttributeRelationship(ConceptProto.UnsetAttributeRelationship.Req.newBuilder()
+                .setThingUnhas(ConceptProto.Thing.Unhas.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attribute))).build();
 
         runMethod(method);
