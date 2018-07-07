@@ -24,8 +24,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 

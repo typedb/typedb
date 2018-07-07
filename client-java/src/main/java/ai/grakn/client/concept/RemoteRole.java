@@ -24,8 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
