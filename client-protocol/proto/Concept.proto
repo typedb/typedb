@@ -45,20 +45,20 @@ message Method {
             UnsetRolePlayedByType.Req unsetRolePlayedByType = 24;
 
             // EntityType methods
-            AddEntity.Req addEntity = 25;
+            EntityType.Create.Req createEntity = 25;
 
             // RelationshipType methods
-            AddRelationship.Req addRelationship = 26;
-            GetRelatedRoles.Req getRelatedRoles = 27;
-            SetRelatedRole.Req setRelatedRole = 28;
-            UnsetRelatedRole.Req unsetRelatedRole = 29;
+            RelationType.Create.Req createRelation = 26;
+            RelationType.Roles.Req roles = 27;
+            RelationType.Relates.Req relates = 28;
+            RelationType.Unrelate.Req unrelate = 29;
 
             // AttributeType methods
-            GetRegex.Req getRegex = 30;
-            SetRegex.Req setRegex = 31;
-            GetDataTypeOfAttributeType.Req getDataTypeOfAttributeType = 32;
-            GetAttribute.Req getAttribute = 33;
-            PutAttribute.Req putAttribute = 34;
+            AttributeType.Create.Req createAttribute = 30;
+            AttributeType.Attribute.Req attribute = 31;
+            AttributeType.DataType.Req dataType = 32;
+            AttributeType.GetRegex.Req getRegex = 33;
+            AttributeType.SetRegex.Req setRegex = 34;
 
             // Thing methods
             IsInferred.Req isInferred = 35;
@@ -74,10 +74,10 @@ message Method {
             UnsetAttributeRelationship.Req unsetAttributeRelationship = 45;
 
             // Relationship methods
-            Relations.RolePlayersMap.Req rolePlayersMap = 46;
-            Relations.RolePlayers.Req rolePlayers = 47;
-            Relations.Assign.Req assign = 48;
-            Relations.Unassign.Req unassign = 49;
+            Relation.RolePlayersMap.Req rolePlayersMap = 46;
+            Relation.RolePlayers.Req rolePlayers = 47;
+            Relation.Assign.Req assign = 48;
+            Relation.Unassign.Req unassign = 49;
 
             // Attribute methods
             Attribute.Value.Req value = 50;
@@ -121,20 +121,20 @@ message Method {
             UnsetRolePlayedByType.Res unsetRolePlayedByType = 24;
 
             // EntityType methods
-            AddEntity.Res addEntity = 25;
+            EntityType.Create.Res createEntity = 25;
 
             // Relationship type
-            AddRelationship.Res addRelationship = 26;
-            GetRelatedRoles.Res getRelatedRoles = 27;
-            SetRelatedRole.Res setRelatedRole = 28;
-            UnsetRelatedRole.Res unsetRelatedRole = 29;
+            RelationType.Create.Res createRelation = 26;
+            RelationType.Roles.Res roles = 27;
+            RelationType.Relates.Res relates = 28;
+            RelationType.Unrelate.Res unrelate = 29;
 
             // Attribute type
-            GetRegex.Res getRegex = 30;
-            SetRegex.Res setRegex = 31;
-            GetDataTypeOfAttributeType.Res getDataTypeOfAttributeType = 32;
-            GetAttribute.Res getAttribute = 33;
-            PutAttribute.Res putAttribute = 34;
+            AttributeType.Create.Res createAttribute = 30;
+            AttributeType.Attribute.Res attribute = 31;
+            AttributeType.DataType.Res dataType = 32;
+            AttributeType.GetRegex.Res getRegex = 33;
+            AttributeType.SetRegex.Res setRegex = 34;
 
             // Thing methods
             IsInferred.Res isInferred = 35;
@@ -150,10 +150,10 @@ message Method {
             UnsetAttributeRelationship.Res unsetAttributeRelationship = 45;
 
             // Relationship methods
-            Relations.RolePlayersMap.Res rolePlayersMap = 46;
-            Relations.RolePlayers.Res rolePlayers = 47;
-            Relations.Assign.Res assign = 48;
-            Relations.Unassign.Res unassign = 49;
+            Relation.RolePlayersMap.Res rolePlayersMap = 46;
+            Relation.RolePlayers.Res rolePlayers = 47;
+            Relation.Assign.Res assign = 48;
+            Relation.Unassign.Res unassign = 49;
 
             // Attribute methods
             Attribute.Value.Res value = 50;
@@ -164,28 +164,13 @@ message Method {
 
 message Null {} // Indicates that a request does not yield any result
 
-enum DataType {
-    String = 0;
-    Boolean = 1;
-    Integer = 2;
-    Long = 3;
-    Float = 4;
-    Double = 5;
-    Date = 6;
-}
-
 // Concept methods
 
 message Concept {
     string id = 1;
-    BaseType baseType = 2;
+    BASE_TYPE baseType = 2;
 
-    message Delete {
-        message Req {}
-        message Res {}
-    }
-
-    enum BaseType {
+    enum BASE_TYPE {
         META_TYPE = 0; // This represents the top-level meta type only
         ENTITY_TYPE = 1;
         RELATIONSHIP_TYPE = 3;
@@ -195,6 +180,11 @@ message Concept {
         ATTRIBUTE = 7;
         ROLE = 8;
         RULE = 9;
+    }
+
+    message Delete {
+        message Req {}
+        message Res {}
     }
 }
 
@@ -382,89 +372,108 @@ message UnsetRolePlayedByType {
 
 // EntityType methods
 
-message AddEntity {
-    message Req {}
-    message Res {
-        Concept concept = 1;
+message EntityType {
+
+    message Create {
+        message Req {}
+        message Res {
+            Concept concept = 1;
+        }
     }
 }
 
 
 // RelationshipType methods
 
-message AddRelationship {
-    message Req {}
-    message Res {
-        Concept concept = 1;
-    }
-}
+message RelationType {
 
-message GetRelatedRoles {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Create {
+        message Req {}
+        message Res {
+            Concept concept = 1;
+        }
     }
-}
 
-message SetRelatedRole {
-    message Req {
-        Concept concept = 1;
+    message Roles {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {}
-}
 
-message UnsetRelatedRole {
-    message Req {
-        Concept concept = 1;
+    message Relates {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
+
+    message Unrelate {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
+    }
 }
 
 
 // AttributeType methods
 
-message GetRegex {
-    message Req {}
-    message Res {
-        string regex = 1;
-    }
-}
+message AttributeType {
 
-message SetRegex {
-    message Req {
-        string regex = 1;
+    enum DATA_TYPE {
+        String = 0;
+        Boolean = 1;
+        Integer = 2;
+        Long = 3;
+        Float = 4;
+        Double = 5;
+        Date = 6;
     }
-    message Res {}
-}
 
-message GetDataTypeOfAttributeType {
-    message Req {}
-    message Res {
-        oneof res {
-            DataType dataType = 1;
-            Null null = 2;
+    message Create {
+        message Req {
+            ValueObject value = 1;
         }
-    }
-}
-
-message GetAttribute {
-    message Req {
-        Attribute.Value.Res value = 1;
-    }
-    message Res {
-        oneof res {
+        message Res {
             Concept concept = 1;
-            Null null = 2;
         }
     }
-}
 
-message PutAttribute {
-    message Req {
-        Attribute.Value.Res value = 1;
+    message Attribute {
+        message Req {
+            ValueObject value = 1;
+        }
+        message Res {
+            oneof res {
+                Concept concept = 1;
+                Null null = 2;
+            }
+        }
     }
-    message Res {
-        Concept concept = 1;
+
+    message DataType {
+        message Req {}
+        message Res {
+            oneof res {
+                DATA_TYPE dataType = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message GetRegex {
+        message Req {}
+        message Res {
+            string regex = 1;
+        }
+    }
+
+    message SetRegex {
+        message Req {
+            string regex = 1;
+        }
+        message Res {}
     }
 }
 
@@ -559,7 +568,7 @@ message UnsetAttributeRelationship {
 
 // Relationship methods
 
-message Relations {
+message Relation {
     message RolePlayer {
         Concept role = 1;
         Concept player = 2;
@@ -596,22 +605,13 @@ message Relations {
     }
 }
 
-
 // Attribute methods
 
 message Attribute {
     message Value {
         message Req {}
         message Res {
-            oneof value {
-                string string = 1;
-                bool boolean = 2;
-                int32 integer = 3;
-                int64 long = 4;
-                float float = 5;
-                double double = 6;
-                int64 date = 7; // time since epoch in milliseconds
-            }
+            ValueObject value = 1;
         }
     }
 
@@ -620,5 +620,19 @@ message Attribute {
         message Res {
             IteratorId iteratorId = 1;
         }
+    }
+}
+
+// Attribute Value object
+
+message ValueObject {
+    oneof value {
+        string string = 1;
+        bool boolean = 2;
+        int32 integer = 3;
+        int64 long = 4;
+        float float = 5;
+        double double = 6;
+        int64 date = 7; // time since epoch in milliseconds
     }
 }

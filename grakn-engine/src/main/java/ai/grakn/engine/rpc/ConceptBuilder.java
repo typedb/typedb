@@ -53,52 +53,74 @@ public class ConceptBuilder {
                 .build();
     }
 
-    private static ConceptProto.Concept.BaseType getBaseType(Concept concept) {
+    private static ConceptProto.Concept.BASE_TYPE getBaseType(Concept concept) {
         if (concept.isEntityType()) {
-            return ConceptProto.Concept.BaseType.ENTITY_TYPE;
+            return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
         } else if (concept.isRelationshipType()) {
-            return ConceptProto.Concept.BaseType.RELATIONSHIP_TYPE;
+            return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE;
         } else if (concept.isAttributeType()) {
-            return ConceptProto.Concept.BaseType.ATTRIBUTE_TYPE;
+            return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
         } else if (concept.isEntity()) {
-            return ConceptProto.Concept.BaseType.ENTITY;
+            return ConceptProto.Concept.BASE_TYPE.ENTITY;
         } else if (concept.isRelationship()) {
-            return ConceptProto.Concept.BaseType.RELATIONSHIP;
+            return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP;
         } else if (concept.isAttribute()) {
-            return ConceptProto.Concept.BaseType.ATTRIBUTE;
+            return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;
         } else if (concept.isRole()) {
-            return ConceptProto.Concept.BaseType.ROLE;
+            return ConceptProto.Concept.BASE_TYPE.ROLE;
         } else if (concept.isRule()) {
-            return ConceptProto.Concept.BaseType.RULE;
+            return ConceptProto.Concept.BASE_TYPE.RULE;
         } else if (concept.isType()) {
-            return ConceptProto.Concept.BaseType.META_TYPE;
+            return ConceptProto.Concept.BASE_TYPE.META_TYPE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 
-    static ConceptProto.DataType dataType(AttributeType.DataType<?> dataType) {
+    static ConceptProto.AttributeType.DATA_TYPE DATA_TYPE(AttributeType.DataType<?> dataType) {
         if (dataType.equals(AttributeType.DataType.STRING)) {
-            return ConceptProto.DataType.String;
+            return ConceptProto.AttributeType.DATA_TYPE.String;
         } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return ConceptProto.DataType.Boolean;
+            return ConceptProto.AttributeType.DATA_TYPE.Boolean;
         } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return ConceptProto.DataType.Integer;
+            return ConceptProto.AttributeType.DATA_TYPE.Integer;
         } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return ConceptProto.DataType.Long;
+            return ConceptProto.AttributeType.DATA_TYPE.Long;
         } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return ConceptProto.DataType.Float;
+            return ConceptProto.AttributeType.DATA_TYPE.Float;
         } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return ConceptProto.DataType.Double;
+            return ConceptProto.AttributeType.DATA_TYPE.Double;
         } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return ConceptProto.DataType.Date;
+            return ConceptProto.AttributeType.DATA_TYPE.Date;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
         }
     }
 
-    static ConceptProto.Attribute.Value.Res attributeValue(Object value) {
-        ConceptProto.Attribute.Value.Res.Builder builder = ConceptProto.Attribute.Value.Res.newBuilder();
+    public static AttributeType.DataType<?> DATA_TYPE(ConceptProto.AttributeType.DATA_TYPE dataType) {
+        switch (dataType) {
+            case String:
+                return AttributeType.DataType.STRING;
+            case Boolean:
+                return AttributeType.DataType.BOOLEAN;
+            case Integer:
+                return AttributeType.DataType.INTEGER;
+            case Long:
+                return AttributeType.DataType.LONG;
+            case Float:
+                return AttributeType.DataType.FLOAT;
+            case Double:
+                return AttributeType.DataType.DOUBLE;
+            case Date:
+                return AttributeType.DataType.DATE;
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + dataType);
+        }
+    }
+
+    static ConceptProto.ValueObject attributeValue(Object value) {
+        ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
         if (value instanceof String) {
             builder.setString((String) value);
         } else if (value instanceof Boolean) {

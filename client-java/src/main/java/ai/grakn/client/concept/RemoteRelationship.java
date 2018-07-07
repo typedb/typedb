@@ -51,15 +51,15 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     @Override // TODO: Weird. Why is this not a stream, while other collections are returned as stream
     public final Map<Role, Set<Thing>> rolePlayersMap() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setRolePlayersMap(ConceptProto.Relations.RolePlayersMap.Req.getDefaultInstance()).build();
+                .setRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Req.getDefaultInstance()).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getRolePlayersMap().getIteratorId();
-        Iterable<ConceptProto.Relations.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
+        Iterable<ConceptProto.Relation.RolePlayer> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
                 tx(), iteratorId, res -> res.getRolePlayer()
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
-        for (ConceptProto.Relations.RolePlayer rolePlayer : rolePlayers) {
+        for (ConceptProto.Relation.RolePlayer rolePlayer : rolePlayers) {
             Role role = ConceptBuilder.concept(rolePlayer.getRole(), tx()).asRole();
             Thing player = ConceptBuilder.concept(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
@@ -75,7 +75,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     @Override
     public final Stream<Thing> rolePlayers(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setRolePlayers(ConceptProto.Relations.RolePlayers.Req.newBuilder()
+                .setRolePlayers(ConceptProto.Relation.RolePlayers.Req.newBuilder()
                         .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles)))).build();
 
         IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getRolePlayers().getIteratorId();
@@ -88,12 +88,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final Relationship assign(Role role, Thing player) {
-        ConceptProto.Relations.RolePlayer rolePlayer = ConceptProto.Relations.RolePlayer.newBuilder()
+        ConceptProto.Relation.RolePlayer rolePlayer = ConceptProto.Relation.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAssign(ConceptProto.Relations.Assign.Req.newBuilder()
+                .setAssign(ConceptProto.Relation.Assign.Req.newBuilder()
                         .setRolePlayer(rolePlayer)).build();
 
         runMethod(method);
@@ -102,12 +102,12 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
     @Override
     public final void unassign(Role role, Thing player) {
-        ConceptProto.Relations.RolePlayer rolePlayer = ConceptProto.Relations.RolePlayer.newBuilder()
+        ConceptProto.Relation.RolePlayer rolePlayer = ConceptProto.Relation.RolePlayer.newBuilder()
                 .setRole(ConceptBuilder.concept(role))
                 .setPlayer(ConceptBuilder.concept(player))
                 .build();
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnassign(ConceptProto.Relations.Unassign.Req.newBuilder()
+                .setUnassign(ConceptProto.Relation.Unassign.Req.newBuilder()
                         .setRolePlayer(rolePlayer)).build();
 
         runMethod(method);

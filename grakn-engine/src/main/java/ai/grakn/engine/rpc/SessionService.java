@@ -36,7 +36,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
@@ -283,7 +282,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
         private void putAttributeType(SessionProto.PutAttributeType.Req request) {
             Label label = Label.of(request.getLabel());
-            AttributeType.DataType<?> dataType = dataType(request.getDataType());
+            AttributeType.DataType<?> dataType = ConceptBuilder.DATA_TYPE(request.getDataType());
 
             AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
             responseSender.onNext(ResponseBuilder.Transaction.putAttributeType(attributeType));
@@ -310,28 +309,6 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
         private EmbeddedGraknTx<?> tx() {
             return nonNull(tx);
-        }
-
-        public static AttributeType.DataType<?> dataType(ConceptProto.DataType dataType) {
-            switch (dataType) {
-                case String:
-                    return AttributeType.DataType.STRING;
-                case Boolean:
-                    return AttributeType.DataType.BOOLEAN;
-                case Integer:
-                    return AttributeType.DataType.INTEGER;
-                case Long:
-                    return AttributeType.DataType.LONG;
-                case Float:
-                    return AttributeType.DataType.FLOAT;
-                case Double:
-                    return AttributeType.DataType.DOUBLE;
-                case Date:
-                    return AttributeType.DataType.DATE;
-                default:
-                case UNRECOGNIZED:
-                    throw new IllegalArgumentException("Unrecognised " + dataType);
-            }
         }
 
         private void conceptMethod(SessionProto.ConceptMethod.Req request) {

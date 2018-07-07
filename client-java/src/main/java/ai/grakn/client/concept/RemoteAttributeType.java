@@ -43,36 +43,14 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
         return new AutoValue_RemoteAttributeType<>(tx, id);
     }
 
-    @Nullable
-    @Override
-    public final String regex() {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetRegex(ConceptProto.GetRegex.Req.getDefaultInstance()).build();
-
-        SessionProto.Transaction.Res response = runMethod(method);
-        String regex = response.getConceptMethod().getResponse().getGetRegex().getRegex();
-        return regex.isEmpty() ? null : regex;
-    }
-
-    @Override
-    public final AttributeType<D> regex(String regex) {
-        if (regex == null) regex = "";
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetRegex(ConceptProto.SetRegex.Req.newBuilder()
-                        .setRegex(regex)).build();
-
-        runMethod(method);
-        return asCurrentBaseType(this);
-    }
-
     @Override
     public final Attribute<D> create(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setPutAttribute(ConceptProto.PutAttribute.Req.newBuilder()
+                .setCreateAttribute(ConceptProto.AttributeType.Create.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getPutAttribute().getConcept(), tx());
+        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getCreateAttribute().getConcept(), tx());
         return asInstance(concept);
     }
 
@@ -80,11 +58,11 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final Attribute<D> attribute(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetAttribute(ConceptProto.GetAttribute.Req.newBuilder()
+                .setAttribute(ConceptProto.AttributeType.Attribute.Req.newBuilder()
                         .setValue(ConceptBuilder.attributeValue(value))).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.GetAttribute.Res methodResponse = response.getConceptMethod().getResponse().getGetAttribute();
+        ConceptProto.AttributeType.Attribute.Res methodResponse = response.getConceptMethod().getResponse().getAttribute();
         switch (methodResponse.getResCase()) {
             case NULL:
                 return null;
@@ -99,10 +77,10 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final AttributeType.DataType<D> dataType() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetDataTypeOfAttributeType(ConceptProto.GetDataTypeOfAttributeType.Req.getDefaultInstance()).build();
+                .setDataType(ConceptProto.AttributeType.DataType.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.GetDataTypeOfAttributeType.Res methodResponse = response.getConceptMethod().getResponse().getGetDataTypeOfAttributeType();
+        ConceptProto.AttributeType.DataType.Res methodResponse = response.getConceptMethod().getResponse().getDataType();
         switch (methodResponse.getResCase()) {
             case NULL:
                 return null;
@@ -111,6 +89,28 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }
+    }
+
+    @Nullable
+    @Override
+    public final String regex() {
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setGetRegex(ConceptProto.AttributeType.GetRegex.Req.getDefaultInstance()).build();
+
+        SessionProto.Transaction.Res response = runMethod(method);
+        String regex = response.getConceptMethod().getResponse().getGetRegex().getRegex();
+        return regex.isEmpty() ? null : regex;
+    }
+
+    @Override
+    public final AttributeType<D> regex(String regex) {
+        if (regex == null) regex = "";
+        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
+                .setSetRegex(ConceptProto.AttributeType.SetRegex.Req.newBuilder()
+                        .setRegex(regex)).build();
+
+        runMethod(method);
+        return asCurrentBaseType(this);
     }
 
     @Override

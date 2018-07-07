@@ -53,7 +53,7 @@ message Transaction {
             Done done = 2;
             IteratorId iteratorId = 4;
             Concept concept = 5;
-            Relations.RolePlayer rolePlayer = 7;
+            Relation.RolePlayer rolePlayer = 7;
             bool noResult = 8;
         }
     }
@@ -116,7 +116,7 @@ message GetConcept {
 
 message GetAttributes {
     message Req {
-        Attribute.Value.Res value = 1;
+        ValueObject value = 1;
     }
     message Res {
         IteratorId iteratorId = 1;
@@ -135,7 +135,7 @@ message PutEntityType {
 message PutAttributeType {
     message Req {
         string label = 1;
-        DataType dataType = 2;
+        AttributeType.DATA_TYPE dataType = 2;
     }
     message Res {
         Concept concept = 1;

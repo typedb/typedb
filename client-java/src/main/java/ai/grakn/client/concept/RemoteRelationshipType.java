@@ -25,8 +25,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -45,10 +45,10 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     @Override
     public final Relationship create() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAddRelationship(ConceptProto.AddRelationship.Req.getDefaultInstance()).build();
+                .setCreateRelation(ConceptProto.RelationType.Create.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getAddRelationship().getConcept(), tx());
+        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getCreateRelation().getConcept(), tx());
 
         return asInstance(concept);
     }
@@ -56,16 +56,16 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     @Override
     public final Stream<Role> roles() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetRelatedRoles(ConceptProto.GetRelatedRoles.Req.getDefaultInstance()).build();
+                .setRoles(ConceptProto.RelationType.Roles.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getGetRelatedRoles().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getRoles().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetRelatedRole(ConceptProto.SetRelatedRole.Req.newBuilder()
+                .setRelates(ConceptProto.RelationType.Relates.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
 
         runMethod(method);
@@ -75,7 +75,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     @Override
     public final RelationshipType unrelate(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnsetRelatedRole(ConceptProto.UnsetRelatedRole.Req.newBuilder()
+                .setUnrelate(ConceptProto.RelationType.Unrelate.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
 
         runMethod(method);

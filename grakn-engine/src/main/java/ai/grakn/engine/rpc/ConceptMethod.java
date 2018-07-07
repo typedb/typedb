@@ -108,30 +108,30 @@ public abstract class ConceptMethod {
                 return unsetRolePlayedByType(concept, method, tx);
 
             // EntityType methods
-            case ADDENTITY:
-                return addEntity(concept);
+            case CREATEENTITY:
+                return createEntity(concept);
 
             // RelationshipType methods
-            case ADDRELATIONSHIP:
-                return addRelationship(concept);
-            case GETRELATEDROLES:
-                return getRelatedRoles(concept, iterators);
-            case SETRELATEDROLE:
-                return setRelatedRole(concept, method, tx);
-            case UNSETRELATEDROLE:
-                return unsetRelatedRole(concept, method, tx);
+            case CREATERELATION:
+                return createRelation(concept);
+            case ROLES:
+                return roles(concept, iterators);
+            case RELATES:
+                return relates(concept, method, tx);
+            case UNRELATE:
+                return unrelate(concept, method, tx);
 
             // AttributeType methods
+            case CREATEATTRIBUTE:
+                return createAttribute(concept, method);
+            case ATTRIBUTE:
+                return attribute(concept, method);
+            case DATATYPE:
+                return dataType(concept);
             case GETREGEX:
                 return getRegex(concept);
             case SETREGEX:
                 return setRegex(concept, method);
-            case GETDATATYPEOFATTRIBUTETYPE:
-                return getDataTypeOfAttributeType(concept);
-            case GETATTRIBUTE:
-                return getAttribute(concept, method);
-            case PUTATTRIBUTE:
-                return putAttribute(concept, method);
 
             // Thing methods
             case ISINFERRED:
@@ -341,38 +341,55 @@ public abstract class ConceptMethod {
 
     // EntityType methods
 
-    private static Transaction.Res addEntity(Concept concept) {
+    private static Transaction.Res createEntity(Concept concept) {
         Entity entity = concept.asEntityType().create();
-        return ResponseBuilder.Transaction.ConceptMethod.addEntity(entity);
+        return ResponseBuilder.Transaction.ConceptMethod.createEntity(entity);
     }
 
 
     // RelationshipType methods
 
-    private static Transaction.Res addRelationship(Concept concept) {
+    private static Transaction.Res createRelation(Concept concept) {
         Relationship relationship = concept.asRelationshipType().create();
-        return ResponseBuilder.Transaction.ConceptMethod.addRelationship(relationship);
+        return ResponseBuilder.Transaction.ConceptMethod.createRelation(relationship);
     }
 
-    private static Transaction.Res getRelatedRoles(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res roles(Concept concept, SessionService.Iterators iterators) {
         Stream<Role> roles = concept.asRelationshipType().roles();
-        return ResponseBuilder.Transaction.ConceptMethod.getRelatedRoles(roles, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.roles(roles, iterators);
     }
 
-    private static Transaction.Res setRelatedRole(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getSetRelatedRole().getConcept(), tx).asRole();
+    private static Transaction.Res relates(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getRelates().getConcept(), tx).asRole();
         concept.asRelationshipType().relates(role);
         return null;
     }
 
-    private static Transaction.Res unsetRelatedRole(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getUnsetRelatedRole().getConcept(), tx).asRole();
+    private static Transaction.Res unrelate(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getUnrelate().getConcept(), tx).asRole();
         concept.asRelationshipType().unrelate(role);
         return null;
     }
 
 
     // AttributeType methods
+
+    private static Transaction.Res createAttribute(Concept concept, ConceptProto.Method.Req method) {
+        Object value = method.getCreateAttribute().getValue().getAllFields().values().iterator().next();
+        Attribute<?> attribute = concept.asAttributeType().create(value);
+        return ResponseBuilder.Transaction.ConceptMethod.createAttribute(attribute);
+    }
+
+    private static Transaction.Res attribute(Concept concept, ConceptProto.Method.Req method) {
+        Object value = method.getAttribute().getValue().getAllFields().values().iterator().next();
+        Attribute<?> attribute = concept.asAttributeType().attribute(value);
+        return ResponseBuilder.Transaction.ConceptMethod.attribute(attribute);
+    }
+
+    private static Transaction.Res dataType(Concept concept) {
+        AttributeType.DataType<?> dataType = concept.asAttributeType().dataType();
+        return ResponseBuilder.Transaction.ConceptMethod.dataType(dataType);
+    }
 
     private static Transaction.Res getRegex(Concept concept) {
         String regex = concept.asAttributeType().regex();
@@ -387,23 +404,6 @@ public abstract class ConceptMethod {
             concept.asAttributeType().regex(regex);
         }
         return null;
-    }
-
-    private static Transaction.Res getDataTypeOfAttributeType(Concept concept) {
-        AttributeType.DataType<?> dataType = concept.asAttributeType().dataType();
-        return ResponseBuilder.Transaction.ConceptMethod.getDataTypeOfAttributeType(dataType);
-    }
-
-    private static Transaction.Res getAttribute(Concept concept, ConceptProto.Method.Req method) {
-        Object value = method.getGetAttribute().getValue().getAllFields().values().iterator().next();
-        Attribute<?> attribute = concept.asAttributeType().attribute(value);
-        return ResponseBuilder.Transaction.ConceptMethod.getAttribute(attribute);
-    }
-
-    private static Transaction.Res putAttribute(Concept concept, ConceptProto.Method.Req method) {
-        Object value = method.getPutAttribute().getValue().getAllFields().values().iterator().next();
-        Attribute<?> attribute = concept.asAttributeType().create(value);
-        return ResponseBuilder.Transaction.ConceptMethod.putAttribute(attribute);
     }
 
 
@@ -520,11 +520,11 @@ public abstract class ConceptMethod {
 
     private static Transaction.Res value(Concept concept) {
         Object value = concept.asAttribute().value();
-        return ResponseBuilder.Transaction.ConceptMethod.getValue(value);
+        return ResponseBuilder.Transaction.ConceptMethod.value(value);
     }
 
     private static Transaction.Res owners(Concept concept, SessionService.Iterators iterators) {
         Stream<Thing> concepts = concept.asAttribute().owners();
-        return ResponseBuilder.Transaction.ConceptMethod.getOwners(concepts, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.owners(concepts, iterators);
     }
 }
