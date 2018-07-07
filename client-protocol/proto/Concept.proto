@@ -31,18 +31,18 @@ message Method {
             Role.Players.Req players = 12;
 
             // Type methods
-            IsAbstract.Req isAbstract = 13;
-            SetAbstract.Req setAbstract = 14;
-            GetInstances.Req getInstances = 15;
-            GetAttributeTypes.Req getAttributeTypes = 16;
-            GetKeyTypes.Req getKeyTypes = 17;
-            GetRolesPlayedByType.Req getRolesPlayedByType = 18;
-            SetAttributeType.Req setAttributeType = 19;
-            UnsetAttributeType.Req unsetAttributeType = 20;
-            SetKeyType.Req setKeyType = 21;
-            UnsetKeyType.Req unsetKeyType = 22;
-            SetRolePlayedByType.Req setRolePlayedByType = 23;
-            UnsetRolePlayedByType.Req unsetRolePlayedByType = 24;
+            Type.Instances.Req instances = 13;
+            Type.IsAbstract.Req isAbstract = 14;
+            Type.SetAbstract.Req setAbstract = 15;
+            Type.Keys.Req keys = 16;
+            Type.Attributes.Req attributes = 17;
+            Type.Playing.Req playing = 18;
+            Type.Has.Req has = 19;
+            Type.Key.Req key = 20;
+            Type.Plays.Req plays = 21;
+            Type.Unhas.Req unhas = 22;
+            Type.Unkey.Req unkey = 23;
+            Type.Unplay.Req unplay = 24;
 
             // EntityType methods
             EntityType.Create.Req createEntity = 25;
@@ -107,18 +107,18 @@ message Method {
             Role.Players.Res players = 12;
 
             // Type methods
-            IsAbstract.Res isAbstract = 13;
-            SetAbstract.Res setAbstract = 14;
-            GetInstances.Res getInstances = 15;
-            GetAttributeTypes.Res getAttributeTypes = 16;
-            GetKeyTypes.Res getKeyTypes = 17;
-            GetRolesPlayedByType.Res getRolesPlayedByType = 18;
-            SetAttributeType.Res setAttributeType = 19;
-            UnsetAttributeType.Res unsetAttributeType = 20;
-            SetKeyType.Res setKeyType = 21;
-            UnsetKeyType.Res unsetKeyType = 22;
-            SetRolePlayedByType.Res setRolePlayedByType = 23;
-            UnsetRolePlayedByType.Res unsetRolePlayedByType = 24;
+            Type.Instances.Res instances = 13;
+            Type.IsAbstract.Res isAbstract = 14;
+            Type.SetAbstract.Res setAbstract = 15;
+            Type.Keys.Res keys = 16;
+            Type.Attributes.Res attributes = 17;
+            Type.Playing.Res playing = 18;
+            Type.Has.Res has = 19;
+            Type.Key.Res key = 20;
+            Type.Plays.Res plays = 21;
+            Type.Unhas.Res unhas = 22;
+            Type.Unkey.Res unkey = 23;
+            Type.Unplay.Res unplay = 24;
 
             // EntityType methods
             EntityType.Create.Res createEntity = 25;
@@ -294,88 +294,91 @@ message Role {
 
 // Type methods
 
-message IsAbstract {
-    message Req {}
-    message Res {
-        bool abstract = 1;
-    }
-}
+message Type {
 
-message SetAbstract {
-    message Req {
-        bool abstract = 1;
+    message IsAbstract {
+        message Req {}
+        message Res {
+            bool abstract = 1;
+        }
     }
-    message Res {}
-}
 
-message GetInstances {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message SetAbstract {
+        message Req {
+            bool abstract = 1;
+        }
+        message Res {}
     }
-}
 
-message GetAttributeTypes {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Instances {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-}
 
-message GetKeyTypes {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Attributes {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-}
 
-message GetRolesPlayedByType {
-    message Req {}
-    message Res {
-        IteratorId iteratorId = 1;
+    message Keys {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-}
 
-message SetAttributeType {
-    message Req {
-        Concept concept = 1;
+    message Playing {
+        message Req {}
+        message Res {
+            IteratorId iteratorId = 1;
+        }
     }
-    message Res {}
-}
 
-message UnsetAttributeType {
-    message Req {
-        Concept concept = 1;
+    message Has {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
-}
 
-message SetKeyType {
-    message Req {
-        Concept concept = 1;
+    message Unhas {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
-}
 
-message UnsetKeyType {
-    message Req {
-        Concept concept = 1;
+    message Key {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
-}
 
-message SetRolePlayedByType {
-    message Req {
-        Concept concept = 1;
+    message Unkey {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
-}
 
-message UnsetRolePlayedByType {
-    message Req {
-        Concept concept = 1;
+    message Plays {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
     }
-    message Res {}
+
+    message Unplay {
+        message Req {
+            Concept concept = 1;
+        }
+        message Res {}
+    }
 }
 
 

@@ -46,9 +46,9 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptMethod {
 
-    public static Transaction.Res run(Concept concept, ConceptProto.Method.Req method,
+    public static Transaction.Res run(Concept concept, ConceptProto.Method.Req req,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
-        switch (method.getReqCase()) {
+        switch (req.getReqCase()) {
             // Concept methods
             case DELETE:
                 return delete(concept);
@@ -59,11 +59,11 @@ public abstract class ConceptMethod {
             case GETLABEL:
                 return getLabel(concept);
             case SETLABEL:
-                return setLabel(concept, method);
+                return setLabel(concept, req);
             case GETSUP:
                 return getSup(concept);
             case SETSUP:
-                return setSup(concept, method, tx);
+                return setSup(concept, req, tx);
             case SUPS:
                 return sups(concept, iterators);
             case SUBS:
@@ -82,30 +82,30 @@ public abstract class ConceptMethod {
                 return players(concept, iterators);
 
             // Type methods
+            case INSTANCES:
+                return instances(concept, iterators);
             case ISABSTRACT:
                 return isAbstract(concept);
             case SETABSTRACT:
-                return setAbstract(concept, method);
-            case GETINSTANCES:
-                return getInstances(concept, iterators);
-            case GETATTRIBUTETYPES:
-                return getAttributeTypes(concept, iterators);
-            case GETKEYTYPES:
-                return getKeyTypes(concept, iterators);
-            case GETROLESPLAYEDBYTYPE:
-                return getRolesPlayedByType(concept, iterators);
-            case SETATTRIBUTETYPE:
-                return setAttributeType(concept, method, tx);
-            case UNSETATTRIBUTETYPE:
-                return unsetAttributeType(concept, method, tx);
-            case SETKEYTYPE:
-                return setKeyType(concept, method, tx);
-            case UNSETKEYTYPE:
-                return unsetKeyType(concept, method, tx);
-            case SETROLEPLAYEDBYTYPE:
-                return setRolePlayedByType(concept, method, tx);
-            case UNSETROLEPLAYEDBYTYPE:
-                return unsetRolePlayedByType(concept, method, tx);
+                return setAbstract(concept, req);
+            case KEYS:
+                return keys(concept, iterators);
+            case ATTRIBUTES:
+                return attributes(concept, iterators);
+            case PLAYING:
+                return playing(concept, iterators);
+            case KEY:
+                return key(concept, req, tx);
+            case HAS:
+                return has(concept, req, tx);
+            case PLAYS:
+                return plays(concept, req, tx);
+            case UNKEY:
+                return unkey(concept, req, tx);
+            case UNHAS:
+                return unhas(concept, req, tx);
+            case UNPLAY:
+                return unplay(concept, req, tx);
 
             // EntityType methods
             case CREATEENTITY:
@@ -117,21 +117,21 @@ public abstract class ConceptMethod {
             case ROLES:
                 return roles(concept, iterators);
             case RELATES:
-                return relates(concept, method, tx);
+                return relates(concept, req, tx);
             case UNRELATE:
-                return unrelate(concept, method, tx);
+                return unrelate(concept, req, tx);
 
             // AttributeType methods
             case CREATEATTRIBUTE:
-                return createAttribute(concept, method);
+                return createAttribute(concept, req);
             case ATTRIBUTE:
-                return attribute(concept, method);
+                return attribute(concept, req);
             case DATATYPE:
                 return dataType(concept);
             case GETREGEX:
                 return getRegex(concept);
             case SETREGEX:
-                return setRegex(concept, method);
+                return setRegex(concept, req);
 
             // Thing methods
             case ISINFERRED:
@@ -141,31 +141,31 @@ public abstract class ConceptMethod {
             case GETKEYS:
                 return getKeys(concept, iterators);
             case GETKEYSBYTYPES:
-                return getKeysByTypes(concept, iterators, method, tx);
+                return getKeysByTypes(concept, iterators, req, tx);
             case GETATTRIBUTESFORANYTYPE:
                 return getAttributesForAnyType(concept, iterators);
             case GETATTRIBUTESBYTYPES:
-                return getAttributesByTypes(concept, method, iterators, tx);
+                return getAttributesByTypes(concept, req, iterators, tx);
             case GETRELATIONSHIPS:
                 return getRelationships(concept, iterators);
             case GETRELATIONSHIPSBYROLES:
-                return getRelationshipsByRoles(concept, iterators, method, tx);
+                return getRelationshipsByRoles(concept, iterators, req, tx);
             case GETROLESPLAYEDBYTHING:
                 return getRolesPlayedByThing(concept, iterators);
             case SETATTRIBUTERELATIONSHIP:
-                return setAttributeRelationship(concept, method, tx);
+                return setAttributeRelationship(concept, req, tx);
             case UNSETATTRIBUTERELATIONSHIP:
-                return unsetAttributeRelationship(concept, method, tx);
+                return unsetAttributeRelationship(concept, req, tx);
 
             // Relationship methods
             case ROLEPLAYERSMAP:
                 return rolePlayersMap(concept, iterators);
             case ROLEPLAYERS:
-                return rolePlayers(concept, iterators, method, tx);
+                return rolePlayers(concept, iterators, req, tx);
             case ASSIGN:
-                return assign(concept, method, tx);
+                return assign(concept, req, tx);
             case UNASSIGN:
-                return unassign(concept, method, tx);
+                return unassign(concept, req, tx);
 
             // Attribute Methods
             case VALUE:
@@ -175,7 +175,7 @@ public abstract class ConceptMethod {
 
             default:
             case REQ_NOT_SET:
-                throw new IllegalArgumentException("Unrecognised " + method);
+                throw new IllegalArgumentException("Unrecognised " + req);
         }
     }
 
@@ -271,6 +271,11 @@ public abstract class ConceptMethod {
 
     // Type methods
 
+    private static Transaction.Res instances(Concept concept, SessionService.Iterators iterators) {
+        Stream<? extends Thing> concepts = concept.asType().instances();
+        return ResponseBuilder.Transaction.ConceptMethod.instances(concepts, iterators);
+    }
+
     private static Transaction.Res isAbstract(Concept concept) {
         Boolean response = concept.asType().isAbstract();
         return ResponseBuilder.Transaction.ConceptMethod.isAbstract(response);
@@ -279,61 +284,55 @@ public abstract class ConceptMethod {
     private static Transaction.Res setAbstract(Concept concept, ConceptProto.Method.Req method) {
         concept.asType().isAbstract(method.getSetAbstract().getAbstract());
         return null;
-        //return ResponseBuilder.Transaction.ConceptMethod.isAbstract();
     }
 
-    private static Transaction.Res getInstances(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends Thing> concepts = concept.asType().instances();
-        return ResponseBuilder.Transaction.ConceptMethod.getInstances(concepts, iterators);
-    }
-
-    private static Transaction.Res getAttributeTypes(Concept concept, SessionService.Iterators iterators) {
-        Stream<AttributeType> concepts = concept.asType().attributes();
-        return ResponseBuilder.Transaction.ConceptMethod.getAttributeTypes(concepts, iterators);
-    }
-
-    private static Transaction.Res getKeyTypes(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res keys(Concept concept, SessionService.Iterators iterators) {
         Stream<AttributeType> concepts = concept.asType().keys();
-        return ResponseBuilder.Transaction.ConceptMethod.getKeyTypes(concepts, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.keys(concepts, iterators);
     }
 
-    private static Transaction.Res getRolesPlayedByType(Concept concept, SessionService.Iterators iterators) {
+    private static Transaction.Res attributes(Concept concept, SessionService.Iterators iterators) {
+        Stream<AttributeType> concepts = concept.asType().attributes();
+        return ResponseBuilder.Transaction.ConceptMethod.attributes(concepts, iterators);
+    }
+
+    private static Transaction.Res playing(Concept concept, SessionService.Iterators iterators) {
         Stream<Role> concepts = concept.asType().playing();
-        return ResponseBuilder.Transaction.ConceptMethod.getRolesPlayedByType(concepts, iterators);
+        return ResponseBuilder.Transaction.ConceptMethod.playing(concepts, iterators);
     }
 
-    private static Transaction.Res setAttributeType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        AttributeType<?> attributeType = ConceptBuilder.concept(method.getSetAttributeType().getConcept(), tx).asAttributeType();
+    private static Transaction.Res has(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        AttributeType<?> attributeType = ConceptBuilder.concept(method.getHas().getConcept(), tx).asAttributeType();
         concept.asType().has(attributeType);
         return null;
     }
 
-    private static Transaction.Res unsetAttributeType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnsetAttributeType().getConcept(), tx).asAttributeType();
-        concept.asType().unhas(attributeType);
-        return null;
-    }
-
-    private static Transaction.Res setKeyType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        AttributeType<?> attributeType = ConceptBuilder.concept(method.getSetKeyType().getConcept(), tx).asAttributeType();
+    private static Transaction.Res key(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        AttributeType<?> attributeType = ConceptBuilder.concept(method.getKey().getConcept(), tx).asAttributeType();
         concept.asType().key(attributeType);
         return null;
     }
 
-    private static Transaction.Res unsetKeyType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnsetKeyType().getConcept(), tx).asAttributeType();
-        concept.asType().unkey(attributeType);
-        return null;
-    }
-
-    private static Transaction.Res setRolePlayedByType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getSetRolePlayedByType().getConcept(), tx).asRole();
+    private static Transaction.Res plays(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getPlays().getConcept(), tx).asRole();
         concept.asType().plays(role);
         return null;
     }
 
-    private static Transaction.Res unsetRolePlayedByType(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        Role role = ConceptBuilder.concept(method.getUnsetRolePlayedByType().getConcept(), tx).asRole();
+    private static Transaction.Res unkey(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnkey().getConcept(), tx).asAttributeType();
+        concept.asType().unkey(attributeType);
+        return null;
+    }
+
+    private static Transaction.Res unhas(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        AttributeType<?> attributeType = ConceptBuilder.concept(method.getUnhas().getConcept(), tx).asAttributeType();
+        concept.asType().unhas(attributeType);
+        return null;
+    }
+
+    private static Transaction.Res unplay(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
+        Role role = ConceptBuilder.concept(method.getUnplay().getConcept(), tx).asRole();
         concept.asType().unplay(role);
         return null;
     }
