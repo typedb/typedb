@@ -25,7 +25,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknBackendException;
@@ -162,61 +161,10 @@ public class ResponseBuilder {
          */
         public static class ConceptMethod {
 
-            private static SessionProto.Transaction.Res response(ConceptProto.Method.Res response) {
+            private static SessionProto.Transaction.Res transactionRes(ConceptProto.Method.Res response) {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
                                 .setResponse(response)).build();
-            }
-
-            // SchemaConcept methods
-
-            static SessionProto.Transaction.Res isImplicit(boolean implicit) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
-                                .setImplicit(implicit)).build();
-
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res getLabel(String label) {
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetLabel(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
-                                .setLabel(label)).build();
-
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res getSup(Concept concept) {
-                ConceptProto.SchemaConcept.GetSup.Res.Builder responseConcept = ConceptProto.SchemaConcept.GetSup.Res.newBuilder();
-                if (concept == null) responseConcept.setNull(ConceptProto.Null.getDefaultInstance());
-                else responseConcept.setConcept(ConceptBuilder.concept(concept));
-
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetSup(responseConcept).build();
-
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res sups(Stream<? extends SchemaConcept> concepts,
-                                                     SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSups(ConceptProto.SchemaConcept.Sups.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-
-                return response(response);
-            }
-
-            static SessionProto.Transaction.Res subs(Stream<? extends SchemaConcept> concepts,
-                                                     SessionService.Iterators iterators) {
-                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
-                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSubs(ConceptProto.SchemaConcept.Subs.Res.newBuilder()
-                                .setIteratorId(iteratorId)).build();
-
-                return response(response);
             }
 
             // Rule methods
@@ -225,14 +173,14 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setWhen(ConceptProto.Rule.When.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res then(Pattern pattern) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThen(ConceptProto.Rule.Then.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // Role methods
@@ -244,7 +192,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelations(ConceptProto.Role.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res players(Stream<Type> concepts,
@@ -254,7 +202,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setPlayers(ConceptProto.Role.Players.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // Type methods
@@ -266,14 +214,14 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setInstances(ConceptProto.Type.Instances.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res isAbstract(boolean isAbstract) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setIsAbstract(ConceptProto.Type.IsAbstract.Res.newBuilder()
                                 .setAbstract(isAbstract)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res keys(Stream<AttributeType> concepts,
@@ -283,7 +231,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setKeys(ConceptProto.Type.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res attributes(Stream<AttributeType> concepts,
@@ -293,7 +241,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributes(ConceptProto.Type.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res playing(Stream<Role> concepts,
@@ -303,7 +251,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setPlaying(ConceptProto.Type.Playing.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // EntityType methods
@@ -312,7 +260,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setCreateEntity(ConceptProto.EntityType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(entity))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // RelationshipType methods
@@ -321,7 +269,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setCreateRelation(ConceptProto.RelationType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(relationship))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res roles(Stream<Role> roles, SessionService.Iterators iterators) {
@@ -330,7 +278,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRoles(ConceptProto.RelationType.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // AttributeType methods
@@ -339,7 +287,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setGetRegex(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
                                 .setRegex((regex != null) ? regex : "")).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res dataType(AttributeType.DataType<?> dataType) {
@@ -351,7 +299,7 @@ public class ResponseBuilder {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setDataType(methodResponse).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res attribute(Attribute<?> attribute) {
@@ -361,14 +309,14 @@ public class ResponseBuilder {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttribute(methodResponse).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res createAttribute(Attribute<?> attribute) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setCreateAttribute(ConceptProto.AttributeType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(attribute))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // Thing methods
@@ -377,14 +325,14 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingIsInferred(ConceptProto.Thing.IsInferred.Res.newBuilder()
                                 .setInferred(inferred)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res type(Concept concept) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingType(ConceptProto.Thing.Type.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(concept))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res getKeysByTypes(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
@@ -393,7 +341,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingKeys(ConceptProto.Thing.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res getAttributesByTypes(Stream<Attribute<?>> concepts, SessionService.Iterators iterators) {
@@ -402,7 +350,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingAttributes(ConceptProto.Thing.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res getRelationshipsByRoles(Stream<Relationship> concepts, SessionService.Iterators iterators) {
@@ -411,7 +359,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelations(ConceptProto.Thing.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res getRolesPlayedByThing(Stream<Role> concepts, SessionService.Iterators iterators) {
@@ -420,14 +368,14 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRoles(ConceptProto.Thing.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res relhas(Relationship concept) {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelhas(ConceptProto.Thing.Relhas.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(concept))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // Relationship methods
@@ -446,7 +394,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res getRolePlayersByRoles(Stream<Thing> concepts, SessionService.Iterators iterators) {
@@ -455,7 +403,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             // Attribute methods
@@ -464,7 +412,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setValue(ConceptProto.Attribute.Value.Res.newBuilder()
                                 .setValue(ConceptBuilder.attributeValue(value))).build();
-                return response(response);
+                return transactionRes(response);
             }
 
             static SessionProto.Transaction.Res owners(Stream<Thing> concepts, SessionService.Iterators iterators) {
@@ -473,7 +421,7 @@ public class ResponseBuilder {
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
-                return response(response);
+                return transactionRes(response);
             }
         }
     }

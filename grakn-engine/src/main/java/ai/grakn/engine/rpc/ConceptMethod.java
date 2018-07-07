@@ -26,12 +26,13 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto;
+import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
 import java.util.List;
@@ -44,30 +45,31 @@ import java.util.stream.Stream;
  * This unifies client and server behaviour for each possible method on a concept.
  * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.proto.ConceptProto.Method.Req}.
  */
-public abstract class ConceptMethod {
+public class ConceptMethod {
 
     public static Transaction.Res run(Concept concept, ConceptProto.Method.Req req,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
+        ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
             case DELETE:
-                return delete(concept);
+                return con.asConcept().delete();
 
             // SchemaConcept methods
             case ISIMPLICIT:
-                return isImplicit(concept);
+                return con.asSchemaConcept().isImplicit();
             case GETLABEL:
-                return getLabel(concept);
+                return con.asSchemaConcept().label();
             case SETLABEL:
-                return setLabel(concept, req);
+                return con.asSchemaConcept().label(req.getSetLabel().getLabel());
             case GETSUP:
-                return getSup(concept);
+                return con.asSchemaConcept().sup();
             case SETSUP:
-                return setSup(concept, req, tx);
+                return con.asSchemaConcept().sup(req.getSetSup().getConcept());
             case SUPS:
-                return sups(concept, iterators);
+                return con.asSchemaConcept().sups();
             case SUBS:
-                return subs(concept, iterators);
+                return con.asSchemaConcept().subs();
 
             // Rule methods
             case WHEN:
@@ -173,71 +175,129 @@ public abstract class ConceptMethod {
         }
     }
 
-    // Concept methods
+    public static class ConceptHolder {
 
-    private static Transaction.Res delete(Concept concept) {
-        concept.delete();
-        return null;
-    }
+        private ai.grakn.concept.Concept concept;
+        private EmbeddedGraknTx tx;
+        private SessionService.Iterators iterators;
 
-
-    // SchemaConcept methods
-
-    private static Transaction.Res isImplicit(Concept concept) {
-        Boolean response = concept.asSchemaConcept().isImplicit();
-        return ResponseBuilder.Transaction.ConceptMethod.isImplicit(response);
-    }
-
-    private static Transaction.Res getLabel(Concept concept) {
-        Label label = concept.asSchemaConcept().label();
-        return ResponseBuilder.Transaction.ConceptMethod.getLabel(label.getValue());
-    }
-
-    private static Transaction.Res setLabel(Concept concept, ConceptProto.Method.Req method) {
-        concept.asSchemaConcept().label(Label.of(method.getSetLabel().getLabel()));
-        return null;
-    }
-
-    private static Transaction.Res getSup(Concept concept) {
-        Concept superConcept = concept.asSchemaConcept().sup();
-        return ResponseBuilder.Transaction.ConceptMethod.getSup(superConcept);
-    }
-
-    private static Transaction.Res setSup(Concept concept, ConceptProto.Method.Req method, EmbeddedGraknTx tx) {
-        // Make the second argument the super of the first argument
-        // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
-
-        ConceptProto.Concept setDirectSuperConcept = method.getSetSup().getConcept();
-        SchemaConcept superConcept = ConceptBuilder.concept(setDirectSuperConcept, tx).asSchemaConcept();
-        SchemaConcept subConcept = concept.asSchemaConcept();
-
-        if (superConcept.isEntityType()) {
-            subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationshipType()) {
-            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
-        } else if (superConcept.isRole()) {
-            subConcept.asRole().sup(superConcept.asRole());
-        } else if (superConcept.isAttributeType()) {
-            subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (superConcept.isRule()) {
-            subConcept.asRule().sup(superConcept.asRule());
-        } else {
-            throw GraqlQueryException.insertMetaType(subConcept.label(), superConcept);
+        ConceptHolder(ai.grakn.concept.Concept concept, EmbeddedGraknTx tx, SessionService.Iterators iterators) {
+            this.concept = concept;
+            this.tx = tx;
+            this.iterators = iterators;
         }
 
-        return null;
-    }
+        Concept asConcept() {
+            return new Concept();
+        }
+        
+        SchemaConcept asSchemaConcept() {
+            return new SchemaConcept();
+        }
 
-    private static Transaction.Res sups(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().sups();
-        return ResponseBuilder.Transaction.ConceptMethod.sups(concepts, iterators);
-    }
+        private static SessionProto.Transaction.Res transactionRes(ConceptProto.Method.Res response) {
+            return SessionProto.Transaction.Res.newBuilder()
+                    .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
+                            .setResponse(response)).build();
+        }
 
-    private static Transaction.Res subs(Concept concept, SessionService.Iterators iterators) {
-        Stream<? extends SchemaConcept> concepts = concept.asSchemaConcept().subs();
-        return ResponseBuilder.Transaction.ConceptMethod.subs(concepts, iterators);
-    }
+        private class Concept {
 
+            private Transaction.Res delete() {
+                concept.delete();
+                return null;
+            }
+        }
+        
+        private class SchemaConcept {
+
+            private Transaction.Res isImplicit() {
+                Boolean implicit = concept.asSchemaConcept().isImplicit();
+
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
+                                .setImplicit(implicit)).build();
+
+                return transactionRes(response);
+            }
+
+            private Transaction.Res label() {
+                Label label = concept.asSchemaConcept().label();
+
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setGetLabel(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                                .setLabel(label.getValue())).build();
+
+                return transactionRes(response);
+            }
+
+            private Transaction.Res label(String label) {
+                concept.asSchemaConcept().label(Label.of(label));
+                return null;
+            }
+
+            private Transaction.Res sup() {
+                ai.grakn.concept.Concept superConcept = concept.asSchemaConcept().sup();
+
+                ConceptProto.SchemaConcept.GetSup.Res.Builder responseConcept = ConceptProto.SchemaConcept.GetSup.Res.newBuilder();
+                if (superConcept == null) responseConcept.setNull(ConceptProto.Null.getDefaultInstance());
+                else responseConcept.setConcept(ConceptBuilder.concept(superConcept));
+
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setGetSup(responseConcept).build();
+
+                return transactionRes(response);
+            }
+
+            private Transaction.Res sup(ConceptProto.Concept superConcept) {
+                // Make the second argument the super of the first argument
+                // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+
+                ai.grakn.concept.SchemaConcept sup = ConceptBuilder.concept(superConcept, tx).asSchemaConcept();
+                ai.grakn.concept.SchemaConcept sub = concept.asSchemaConcept();
+
+                if (sup.isEntityType()) {
+                    sub.asEntityType().sup(sup.asEntityType());
+                } else if (sup.isRelationshipType()) {
+                    sub.asRelationshipType().sup(sup.asRelationshipType());
+                } else if (sup.isRole()) {
+                    sub.asRole().sup(sup.asRole());
+                } else if (sup.isAttributeType()) {
+                    sub.asAttributeType().sup(sup.asAttributeType());
+                } else if (sup.isRule()) {
+                    sub.asRule().sup(sup.asRule());
+                } else {
+                    throw GraqlQueryException.insertMetaType(sub.label(), sup);
+                }
+
+                return null;
+            }
+
+            private Transaction.Res sups() {
+                Stream<? extends ai.grakn.concept.SchemaConcept> concepts = concept.asSchemaConcept().sups();
+
+                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
+                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setSups(ConceptProto.SchemaConcept.Sups.Res.newBuilder()
+                                .setIteratorId(iteratorId)).build();
+
+                return transactionRes(response);
+            }
+
+            private Transaction.Res subs() {
+                Stream<? extends ai.grakn.concept.SchemaConcept> concepts = concept.asSchemaConcept().subs();
+
+                Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
+                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setSubs(ConceptProto.SchemaConcept.Subs.Res.newBuilder()
+                                .setIteratorId(iteratorId)).build();
+
+                return transactionRes(response);
+            }
+        }
+    }
 
     // Rule methods
 
