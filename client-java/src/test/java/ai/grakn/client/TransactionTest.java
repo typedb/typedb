@@ -107,10 +107,6 @@ public class TransactionTest {
         when(session.transaction(any())).thenCallRealMethod();
     }
     
-    private static SessionProto.Transaction.Res response(Concept concept) {
-        return SessionProto.Transaction.Res.newBuilder().setConcept(ConceptBuilder.concept(concept)).build();
-    }
-    
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
@@ -181,11 +177,13 @@ public class TransactionTest {
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
-        Transaction.Res iteratorNext = Transaction.Res.newBuilder().setAnswer(AnswerProto.Answer.newBuilder()
-                .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))).build();
+        Transaction.Res iteratorNext = Transaction.Res.newBuilder()
+                .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setAnswer(AnswerProto.Answer.newBuilder()
+                                .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123)))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
-        server.setResponse(RequestBuilder.Transaction.next(ITERATOR), iteratorNext);
+        server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);
 
         List<Answer> answers;
         int numAnswers = 10;

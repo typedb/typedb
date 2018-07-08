@@ -83,7 +83,7 @@ public class ResponseBuilder {
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
-                res.setConcept(Concept.concept(concept));
+                res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetSchemaConcept(res).build();
         }
@@ -93,7 +93,7 @@ public class ResponseBuilder {
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
-                res.setConcept(Concept.concept(concept));
+                res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetConcept(res).build();
         }
@@ -106,52 +106,67 @@ public class ResponseBuilder {
 
         static SessionProto.Transaction.Res putEntityType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutEntityType.Res.Builder res = SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setConcept(Concept.concept(concept));
+                    .setConcept(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutEntityType(res).build();
         }
 
         static SessionProto.Transaction.Res putAttributeType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutAttributeType.Res.Builder res = SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                    .setConcept(Concept.concept(concept));
+                    .setConcept(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutAttributeType(res).build();
         }
 
         static SessionProto.Transaction.Res putRelationshipType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRelationshipType.Res.Builder res = SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
-                    .setConcept(Concept.concept(concept));
+                    .setConcept(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRelationshipType(res).build();
         }
 
         static SessionProto.Transaction.Res putRole(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRole.Res.Builder res = SessionProto.Transaction.PutRole.Res.newBuilder()
-                    .setConcept(Concept.concept(concept));
+                    .setConcept(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRole(res).build();
         }
 
         static SessionProto.Transaction.Res putRule(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRule.Res.Builder res = SessionProto.Transaction.PutRule.Res.newBuilder()
-                    .setConcept(Concept.concept(concept));
+                    .setConcept(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRule(res).build();
         }
 
-        static SessionProto.Transaction.Res answer(Object object) {
-            return SessionProto.Transaction.Res.newBuilder().setAnswer(Answer.answer(object)).build();
-        }
+        /**
+         * An RPC Response Builder class for Transaction Iterator responses
+         */
+        public static class Iter {
+            
+            static SessionProto.Transaction.Res answer(Object object) {
+                return SessionProto.Transaction.Res.newBuilder()
+                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setAnswer(Answer.answer(object))).build();
+            }
 
-        static SessionProto.Transaction.Res done() {
-            return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Transaction.Done.getDefaultInstance()).build();
-        }
+            static SessionProto.Transaction.Res done() {
+                return SessionProto.Transaction.Res.newBuilder()
+                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setDone(true)).build();
+            }
 
-        static SessionProto.Transaction.Res concept(ai.grakn.concept.Concept concept) {
-            return SessionProto.Transaction.Res.newBuilder().setConcept(Concept.concept(concept)).build();
-        }
+            static SessionProto.Transaction.Res concept(ai.grakn.concept.Concept concept) {
+                return SessionProto.Transaction.Res.newBuilder()
+                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setConcept(ResponseBuilder.Concept.concept(concept))).build();
+            }
 
-        static SessionProto.Transaction.Res rolePlayer(ai.grakn.concept.Role role, ai.grakn.concept.Thing player) {
-            ConceptProto.Relation.RolePlayer rolePlayer = ConceptProto.Relation.RolePlayer.newBuilder()
-                    .setRole(Concept.concept(role))
-                    .setPlayer(Concept.concept(player))
-                    .build();
-            return SessionProto.Transaction.Res.newBuilder().setRolePlayer(rolePlayer).build();
+            static SessionProto.Transaction.Res rolePlayer(ai.grakn.concept.Role role, ai.grakn.concept.Thing player) {
+                ConceptProto.Relation.RolePlayer rolePlayer = ConceptProto.Relation.RolePlayer.newBuilder()
+                        .setRole(ResponseBuilder.Concept.concept(role))
+                        .setPlayer(ResponseBuilder.Concept.concept(player))
+                        .build();
+
+                return SessionProto.Transaction.Res.newBuilder()
+                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setRolePlayer(rolePlayer)).build();
+            }
         }
     }
 
@@ -260,7 +275,7 @@ public class ResponseBuilder {
     /**
      * An RPC Response Builder class for Answer responses
      */
-    private static class Answer {
+    public static class Answer {
 
         public static AnswerProto.Answer answer(Object object) {
             AnswerProto.Answer answer;
@@ -280,7 +295,7 @@ public class ResponseBuilder {
         public static AnswerProto.QueryAnswer queryAnswer(ai.grakn.graql.admin.Answer answer) {
             AnswerProto.QueryAnswer.Builder queryAnswerRPC = AnswerProto.QueryAnswer.newBuilder();
             answer.forEach((var, concept) -> {
-                ConceptProto.Concept conceptRps = Concept.concept(concept);
+                ConceptProto.Concept conceptRps = ResponseBuilder.Concept.concept(concept);
                 queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
             });
 

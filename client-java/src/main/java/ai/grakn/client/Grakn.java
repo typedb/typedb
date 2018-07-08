@@ -46,7 +46,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
@@ -360,23 +359,23 @@ public final class Grakn {
             return responseOrThrow();
         }
 
-        private SessionProto.Transaction.Res next(int iteratorId) {
-            transceiver.send(RequestBuilder.Transaction.next(iteratorId));
-            return responseOrThrow();
+        private SessionProto.Transaction.Iter.Res iterate(int iteratorId) {
+            transceiver.send(RequestBuilder.Transaction.iterate(iteratorId));
+            return responseOrThrow().getIterate();
         }
 
         /**
-         * A client-side iterator over gRPC messages. Will send {@link IteratorProto.Next} messages until it receives a
-         * {@link SessionProto.Transaction.Done} message.
+         * A client-side iterator over gRPC messages. Will send {@link SessionProto.Transaction.Iter.Req} messages until
+         * {@link SessionProto.Transaction.Iter.Res} returns done as a message.
          *
          * @param <T> class type of objects being iterated
          */
         public static class Iterator<T> extends AbstractIterator<T> {
             private final int iteratorId;
             private Transaction tx;
-            private Function<SessionProto.Transaction.Res, T> responseReader;
+            private Function<SessionProto.Transaction.Iter.Res, T> responseReader;
 
-            public Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Res, T> responseReader) {
+            public Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;
@@ -384,7 +383,7 @@ public final class Grakn {
 
             @Override
             protected final T computeNext() {
-                SessionProto.Transaction.Res response = tx.next(iteratorId);
+                SessionProto.Transaction.Iter.Res response = tx.iterate(iteratorId);
 
                 switch (response.getResCase()) {
                     case DONE:

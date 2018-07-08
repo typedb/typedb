@@ -36,7 +36,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -143,8 +142,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case QUERY:
                     query(request.getQuery());
                     break;
-                case NEXT:
-                    next(request.getNext());
+                case ITERATE:
+                    next(request.getIterate());
                     break;
                 case GETSCHEMACONCEPT:
                     getSchemaConcept(request.getGetSchemaConcept());
@@ -236,14 +235,14 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             int iteratorId;
             Transaction.Res response;
             if (query instanceof Streamable) {
-                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
+                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction.Iter::answer);
                 iteratorId = iterators.add(responseStream.iterator());
             } else {
                 Object result = query.execute();
                 if (result == null) {
                     iteratorId = -1;
                 } else {
-                    responseStream = Stream.of(ResponseBuilder.Transaction.answer(result));
+                    responseStream = Stream.of(ResponseBuilder.Transaction.Iter.answer(result));
                     iteratorId = iterators.add(responseStream.iterator());
                 }
             }
@@ -266,7 +265,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
-            Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
+            Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction.Iter::concept).iterator();
             int iteratorId = iterators.add(iterator);
 
             responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
@@ -314,8 +313,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(response);
         }
 
-        private void next(IteratorProto.Next next) {
-            int iteratorId = next.getIteratorId();
+        private void next(SessionProto.Transaction.Iter.Req iterate) {
+            int iteratorId = iterate.getId();
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
@@ -348,7 +347,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             if (iterator.hasNext()) {
                 response = iterator.next();
             } else {
-                response = ResponseBuilder.Transaction.done();
+                response = ResponseBuilder.Transaction.Iter.done();
                 stop(iteratorId);
             }
 

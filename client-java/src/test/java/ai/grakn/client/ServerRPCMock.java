@@ -192,7 +192,7 @@ public final class ServerRPCMock extends CompositeTestRule {
 
             Transaction.Req request = args.getArgument(0);
 
-            Optional<Transaction.Res> next = rpcIterators.next(request.getNext().getIteratorId());
+            Optional<Transaction.Res> next = rpcIterators.next(request.getIterate().getId());
             serverResponses.onNext(next.orElse(done()));
 
             return null;
@@ -223,7 +223,9 @@ public final class ServerRPCMock extends CompositeTestRule {
     }
 
     private static SessionProto.Transaction.Res done() {
-        return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Transaction.Done.getDefaultInstance()).build();
+        return SessionProto.Transaction.Res.newBuilder()
+                .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setDone(true)).build();
     }
 
     /**
@@ -254,7 +256,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         /**
-         * Return the next response from an iterator. Will return a {@link SessionProto.Transaction.Done} response if the iterator is exhausted.
+         * Return the next response from an iterator. {@link SessionProto.Transaction.Iter.Res} response will return
+         * done if the iterator is exhausted.
          */
         public Optional<Transaction.Res> next(int iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {

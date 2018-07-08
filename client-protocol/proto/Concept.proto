@@ -3,8 +3,6 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "ConceptProto";
 
-import "Iterator.proto";
-
 package session;
 
 message Method {

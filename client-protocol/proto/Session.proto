@@ -3,7 +3,6 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "SessionProto";
 
-import "Iterator.proto";
 import "Concept.proto";
 import "Answer.proto";
 
@@ -21,7 +20,7 @@ message Transaction {
             Open.Req open = 1;
             Commit.Req commit = 2;
             Query.Req query = 3;
-            Next next = 4;
+            Iter.Req iterate = 4;
             GetSchemaConcept.Req getSchemaConcept = 6;
             GetConcept.Req getConcept = 7;
             GetAttributes.Req getAttributes = 8;
@@ -35,26 +34,35 @@ message Transaction {
     }
     message Res {
         oneof res {
-            Open.Res open = 10;
-            Commit.Res commit = 11;
-            Query.Res query = 12;
-            GetSchemaConcept.Res getSchemaConcept = 13;
-            GetConcept.Res getConcept = 14;
-            GetAttributes.Res getAttributes = 15;
-            PutEntityType.Res putEntityType = 16;
-            PutAttributeType.Res putAttributeType = 17;
-            PutRelationshipType.Res putRelationshipType = 18;
-            PutRole.Res putRole = 19;
-            PutRule.Res putRule = 20;
-            ConceptMethod.Res conceptMethod = 21;
-            Answer answer = 1;
-            Done done = 2;
-            Concept concept = 5;
-            Relation.RolePlayer rolePlayer = 7;
+            Open.Res open = 1;
+            Commit.Res commit = 2;
+            Query.Res query = 3;
+            Iter.Res iterate = 4;
+            GetSchemaConcept.Res getSchemaConcept = 5;
+            GetConcept.Res getConcept = 6;
+            GetAttributes.Res getAttributes = 7;
+            PutEntityType.Res putEntityType = 8;
+            PutAttributeType.Res putAttributeType = 9;
+            PutRelationshipType.Res putRelationshipType = 10;
+            PutRole.Res putRole = 11;
+            PutRule.Res putRule = 12;
+            ConceptMethod.Res conceptMethod = 13;
         }
     }
 
-    message Done {}
+    message Iter {
+        message Req {
+            int32 id = 1;
+        }
+        message Res {
+            oneof res {
+                bool done = 1;
+                Answer answer = 2;
+                Concept concept = 3;
+                Relation.RolePlayer rolePlayer = 4;
+            }
+        }
+    }
 
     message Open {
         message Req {
