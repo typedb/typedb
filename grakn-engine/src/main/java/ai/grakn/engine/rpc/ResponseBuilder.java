@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 public class ResponseBuilder {
 
     /**
-     * An RPC Response Builder class for Transaction Service
+     * An RPC Response Builder class for Transaction responses
      */
     public static class Transaction {
 
@@ -155,7 +155,10 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setRolePlayer(rolePlayer).build();
         }
     }
-    
+
+    /**
+     * An RPC Response Builder class for Concept responses
+     */
     public static class Concept {
 
         public static ConceptProto.Concept concept(ai.grakn.concept.Concept concept) {
@@ -255,6 +258,9 @@ public class ResponseBuilder {
         }
     }
 
+    /**
+     * An RPC Response Builder class for Answer responses
+     */
     private static class Answer {
 
         public static AnswerProto.Answer answer(Object object) {

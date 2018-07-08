@@ -48,7 +48,6 @@ message Transaction {
             PutRole.Res putRole = 19;
             PutRule.Res putRule = 20;
             ConceptMethod.Res conceptMethod = 21;
-            Method.Res conceptResponse = 9;
             Answer answer = 1;
             Done done = 2;
             IteratorId iteratorId = 4;
