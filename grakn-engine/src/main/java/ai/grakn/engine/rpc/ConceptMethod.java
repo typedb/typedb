@@ -229,7 +229,7 @@ public class ConceptMethod {
 
         private static SessionProto.Transaction.Res transactionRes(ConceptProto.Method.Res response) {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setConceptMethod(SessionProto.ConceptMethod.Res.newBuilder()
+                    .setConceptMethod(SessionProto.Transaction.ConceptMethod.Res.newBuilder()
                             .setResponse(response)).build();
         }
 

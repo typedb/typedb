@@ -213,7 +213,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             }
         }
 
-        private void open(SessionProto.Open.Req request) {
+        private void open(SessionProto.Transaction.Open.Req request) {
             if (tx != null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
@@ -232,7 +232,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
 
-        private void query(SessionProto.Query.Req request) {
+        private void query(SessionProto.Transaction.Query.Req request) {
             Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
 
             Stream<Transaction.Res> responseStream;
@@ -255,17 +255,17 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(response);
         }
 
-        private void getSchemaConcept(SessionProto.GetSchemaConcept.Req request) {
+        private void getSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Req request) {
             Concept concept = tx().getSchemaConcept(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.getSchemaConcept(concept));
         }
 
-        private void getConcept(SessionProto.GetConcept.Req request) {
+        private void getConcept(SessionProto.Transaction.GetConcept.Req request) {
             Concept concept = tx().getConcept(ConceptId.of(request.getId()));
             responseSender.onNext(ResponseBuilder.Transaction.getConcept(concept));
         }
 
-        private void getAttributes(SessionProto.GetAttributes.Req request) {
+        private void getAttributes(SessionProto.Transaction.GetAttributes.Req request) {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
@@ -275,12 +275,12 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
         }
 
-        private void putEntityType(SessionProto.PutEntityType.Req request) {
+        private void putEntityType(SessionProto.Transaction.PutEntityType.Req request) {
             EntityType entityType = tx().putEntityType(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.putEntityType(entityType));
         }
 
-        private void putAttributeType(SessionProto.PutAttributeType.Req request) {
+        private void putAttributeType(SessionProto.Transaction.PutAttributeType.Req request) {
             Label label = Label.of(request.getLabel());
             AttributeType.DataType<?> dataType = ConceptBuilder.DATA_TYPE(request.getDataType());
 
@@ -288,17 +288,17 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.putAttributeType(attributeType));
         }
 
-        private void putRelationshipType(SessionProto.PutRelationshipType.Req request) {
+        private void putRelationshipType(SessionProto.Transaction.PutRelationshipType.Req request) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.putRelationshipType(relationshipType));
         }
 
-        private void putRole(SessionProto.PutRole.Req request) {
+        private void putRole(SessionProto.Transaction.PutRole.Req request) {
             Role role = tx().putRole(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.putRole(role));
         }
 
-        private void putRule(SessionProto.PutRule.Req request) {
+        private void putRule(SessionProto.Transaction.PutRule.Req request) {
             Label label = Label.of(request.getLabel());
             Pattern when = Graql.parser().parsePattern(request.getWhen());
             Pattern then = Graql.parser().parsePattern(request.getThen());
@@ -311,7 +311,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             return nonNull(tx);
         }
 
-        private void conceptMethod(SessionProto.ConceptMethod.Req request) {
+        private void conceptMethod(SessionProto.Transaction.ConceptMethod.Req request) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
             Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
             responseSender.onNext(response);

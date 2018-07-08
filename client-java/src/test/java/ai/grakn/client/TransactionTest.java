@@ -161,7 +161,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Query.Res.newBuilder().setNull(ConceptProto.Null.getDefaultInstance()))
+                .setQuery(SessionProto.Transaction.Query.Res.newBuilder().setNull(ConceptProto.Null.getDefaultInstance()))
                 .build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
@@ -175,7 +175,7 @@ public class TransactionTest {
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Transaction.Res queryIterator = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Query.Res.newBuilder().setIteratorId(ITERATOR))
+                .setQuery(SessionProto.Transaction.Query.Res.newBuilder().setIteratorId(ITERATOR))
                 .build();
 
         Query<?> query = match(var("x").sub("thing")).get();
@@ -299,7 +299,7 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             Concept concept = RemoteEntityType.create(tx, id);
-            Transaction.Res response = Transaction.Res.newBuilder().setPutEntityType(SessionProto.PutEntityType.Res.newBuilder()
+            Transaction.Res response = Transaction.Res.newBuilder().setPutEntityType(SessionProto.Transaction.PutEntityType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
@@ -317,7 +317,7 @@ public class TransactionTest {
 
             Concept concept = RemoteRelationshipType.create(tx, id);
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRelationshipType(SessionProto.PutRelationshipType.Res.newBuilder()
+                    .setPutRelationshipType(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
@@ -336,7 +336,7 @@ public class TransactionTest {
 
             Concept concept = RemoteAttributeType.create(tx, id);
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutAttributeType(SessionProto.PutAttributeType.Res.newBuilder()
+                    .setPutAttributeType(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
@@ -354,7 +354,7 @@ public class TransactionTest {
 
             Concept concept = RemoteRole.create(tx, id);
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRole(SessionProto.PutRole.Res.newBuilder()
+                    .setPutRole(SessionProto.Transaction.PutRole.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
@@ -374,7 +374,7 @@ public class TransactionTest {
 
             Concept concept = RemoteRule.create(tx, id);
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRule(SessionProto.PutRule.Res.newBuilder()
+                    .setPutRule(SessionProto.Transaction.PutRule.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
@@ -392,7 +392,7 @@ public class TransactionTest {
             Concept concept = RemoteEntity.create(tx, id);
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
+                    .setGetConcept(SessionProto.Transaction.GetConcept.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept))).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -408,7 +408,7 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetConcept(SessionProto.GetConcept.Res.newBuilder()
+                    .setGetConcept(SessionProto.Transaction.GetConcept.Res.newBuilder()
                             .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
@@ -427,7 +427,7 @@ public class TransactionTest {
 
             Concept concept = RemoteAttributeType.create(tx, id);
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
+                    .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
                             .setConcept(ConceptBuilder.concept(concept)))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
@@ -444,7 +444,7 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Res.newBuilder()
+                    .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
                             .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);

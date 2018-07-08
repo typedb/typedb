@@ -49,18 +49,18 @@ public class ResponseBuilder {
 
         static SessionProto.Transaction.Res open() {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setOpen(SessionProto.Open.Res.getDefaultInstance())
+                    .setOpen(SessionProto.Transaction.Open.Res.getDefaultInstance())
                     .build();
         }
 
         static SessionProto.Transaction.Res commit() {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setCommit(SessionProto.Commit.Res.getDefaultInstance())
+                    .setCommit(SessionProto.Transaction.Commit.Res.getDefaultInstance())
                     .build();
         }
 
         static SessionProto.Transaction.Res query(@Nullable IteratorProto.IteratorId iteratorId) {
-            SessionProto.Query.Res.Builder res = SessionProto.Query.Res.newBuilder();
+            SessionProto.Transaction.Query.Res.Builder res = SessionProto.Transaction.Query.Res.newBuilder();
             if (iteratorId == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
@@ -70,7 +70,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable Concept concept) {
-            SessionProto.GetSchemaConcept.Res.Builder res = SessionProto.GetSchemaConcept.Res.newBuilder();
+            SessionProto.Transaction.GetSchemaConcept.Res.Builder res = SessionProto.Transaction.GetSchemaConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
@@ -80,7 +80,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res getConcept(@Nullable Concept concept) {
-            SessionProto.GetConcept.Res.Builder res = SessionProto.GetConcept.Res.newBuilder();
+            SessionProto.Transaction.GetConcept.Res.Builder res = SessionProto.Transaction.GetConcept.Res.newBuilder();
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
@@ -90,37 +90,37 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res getAttributes(IteratorProto.IteratorId iteratorId) {
-            SessionProto.GetAttributes.Res.Builder res = SessionProto.GetAttributes.Res.newBuilder()
+            SessionProto.Transaction.GetAttributes.Res.Builder res = SessionProto.Transaction.GetAttributes.Res.newBuilder()
                     .setIteratorId(iteratorId);
             return SessionProto.Transaction.Res.newBuilder().setGetAttributes(res).build();
         }
 
         static SessionProto.Transaction.Res putEntityType(Concept concept) {
-            SessionProto.PutEntityType.Res.Builder res = SessionProto.PutEntityType.Res.newBuilder()
+            SessionProto.Transaction.PutEntityType.Res.Builder res = SessionProto.Transaction.PutEntityType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutEntityType(res).build();
         }
 
         static SessionProto.Transaction.Res putAttributeType(Concept concept) {
-            SessionProto.PutAttributeType.Res.Builder res = SessionProto.PutAttributeType.Res.newBuilder()
+            SessionProto.Transaction.PutAttributeType.Res.Builder res = SessionProto.Transaction.PutAttributeType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutAttributeType(res).build();
         }
 
         static SessionProto.Transaction.Res putRelationshipType(Concept concept) {
-            SessionProto.PutRelationshipType.Res.Builder res = SessionProto.PutRelationshipType.Res.newBuilder()
+            SessionProto.Transaction.PutRelationshipType.Res.Builder res = SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRelationshipType(res).build();
         }
 
         static SessionProto.Transaction.Res putRole(Concept concept) {
-            SessionProto.PutRole.Res.Builder res = SessionProto.PutRole.Res.newBuilder()
+            SessionProto.Transaction.PutRole.Res.Builder res = SessionProto.Transaction.PutRole.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRole(res).build();
         }
 
         static SessionProto.Transaction.Res putRule(Concept concept) {
-            SessionProto.PutRule.Res.Builder res = SessionProto.PutRule.Res.newBuilder()
+            SessionProto.Transaction.PutRule.Res.Builder res = SessionProto.Transaction.PutRule.Res.newBuilder()
                     .setConcept(ConceptBuilder.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRule(res).build();
         }
@@ -130,7 +130,7 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res done() {
-            return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Done.getDefaultInstance()).build();
+            return SessionProto.Transaction.Res.newBuilder().setDone(SessionProto.Transaction.Done.getDefaultInstance()).build();
         }
 
         static SessionProto.Transaction.Res concept(Concept concept) {

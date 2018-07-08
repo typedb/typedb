@@ -47,8 +47,8 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
@@ -352,7 +352,7 @@ public final class Grakn {
         }
 
         public SessionProto.Transaction.Res runConceptMethod(ConceptId id, ConceptProto.Method.Req method) {
-            SessionProto.ConceptMethod.Req conceptMethod = SessionProto.ConceptMethod.Req.newBuilder()
+            SessionProto.Transaction.ConceptMethod.Req conceptMethod = SessionProto.Transaction.ConceptMethod.Req.newBuilder()
                     .setId(id.getValue()).setMethod(method).build();
             SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethod(conceptMethod).build();
 
@@ -366,7 +366,8 @@ public final class Grakn {
         }
 
         /**
-         * A client-side iterator over gRPC messages. Will send {@link IteratorProto.Next} messages until it receives a {@link SessionProto.Done} message.
+         * A client-side iterator over gRPC messages. Will send {@link IteratorProto.Next} messages until it receives a
+         * {@link SessionProto.Transaction.Done} message.
          *
          * @param <T> class type of objects being iterated
          */

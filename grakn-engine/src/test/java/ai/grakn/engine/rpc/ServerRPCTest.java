@@ -49,7 +49,7 @@ import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionGrpc;
-import ai.grakn.rpc.proto.SessionProto.Open;
+import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

@@ -41,7 +41,7 @@ public class RequestBuilder {
     public static class Transaction {
 
         public static SessionProto.Transaction.Req open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
-            SessionProto.Open.Req openRequest = SessionProto.Open.Req.newBuilder()
+            SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
                     .setTxType(txType.getId())
                     .build();
@@ -51,7 +51,7 @@ public class RequestBuilder {
 
         public static SessionProto.Transaction.Req commit() {
             return SessionProto.Transaction.Req.newBuilder()
-                    .setCommit(SessionProto.Commit.Req.getDefaultInstance())
+                    .setCommit(SessionProto.Transaction.Commit.Req.getDefaultInstance())
                     .build();
         }
 
@@ -60,7 +60,7 @@ public class RequestBuilder {
         }
 
         public static SessionProto.Transaction.Req query(String queryString, boolean infer) {
-            SessionProto.Query.Req request = SessionProto.Query.Req.newBuilder()
+            SessionProto.Transaction.Query.Req request = SessionProto.Transaction.Query.Req.newBuilder()
                     .setQuery(queryString)
                     .setInfer(infer)
                     .build();
@@ -69,32 +69,32 @@ public class RequestBuilder {
 
         public static SessionProto.Transaction.Req getSchemaConcept(Label label) {
             return SessionProto.Transaction.Req.newBuilder()
-                    .setGetSchemaConcept(SessionProto.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
+                    .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Req.newBuilder().setLabel(label.getValue()))
                     .build();
         }
 
         public static SessionProto.Transaction.Req getConcept(ConceptId id) {
             return SessionProto.Transaction.Req.newBuilder()
-                    .setGetConcept(SessionProto.GetConcept.Req.newBuilder().setId(id.getValue()))
+                    .setGetConcept(SessionProto.Transaction.GetConcept.Req.newBuilder().setId(id.getValue()))
                     .build();
         }
 
 
         public static SessionProto.Transaction.Req getAttributes(Object value) {
             return SessionProto.Transaction.Req.newBuilder()
-                    .setGetAttributes(SessionProto.GetAttributes.Req.newBuilder()
+                    .setGetAttributes(SessionProto.Transaction.GetAttributes.Req.newBuilder()
                             .setValue(ConceptBuilder.attributeValue(value))
                     ).build();
         }
 
         public static SessionProto.Transaction.Req putEntityType(Label label) {
             return SessionProto.Transaction.Req.newBuilder()
-                    .setPutEntityType(SessionProto.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
+                    .setPutEntityType(SessionProto.Transaction.PutEntityType.Req.newBuilder().setLabel(label.getValue()))
                     .build();
         }
 
         public static SessionProto.Transaction.Req putAttributeType(Label label, AttributeType.DataType<?> dataType) {
-            SessionProto.PutAttributeType.Req request = SessionProto.PutAttributeType.Req.newBuilder()
+            SessionProto.Transaction.PutAttributeType.Req request = SessionProto.Transaction.PutAttributeType.Req.newBuilder()
                     .setLabel(label.getValue())
                     .setDataType(ConceptBuilder.dataType(dataType))
                     .build();
@@ -103,21 +103,21 @@ public class RequestBuilder {
         }
 
         public static SessionProto.Transaction.Req putRelationshipType(Label label) {
-            SessionProto.PutRelationshipType.Req request = SessionProto.PutRelationshipType.Req.newBuilder()
+            SessionProto.Transaction.PutRelationshipType.Req request = SessionProto.Transaction.PutRelationshipType.Req.newBuilder()
                     .setLabel(label.getValue())
                     .build();
             return SessionProto.Transaction.Req.newBuilder().setPutRelationshipType(request).build();
         }
 
         public static SessionProto.Transaction.Req putRole(Label label) {
-            SessionProto.PutRole.Req request = SessionProto.PutRole.Req.newBuilder()
+            SessionProto.Transaction.PutRole.Req request = SessionProto.Transaction.PutRole.Req.newBuilder()
                     .setLabel(label.getValue())
                     .build();
             return SessionProto.Transaction.Req.newBuilder().setPutRole(request).build();
         }
 
         public static SessionProto.Transaction.Req putRule(Label label, Pattern when, Pattern then) {
-            SessionProto.PutRule.Req request = SessionProto.PutRule.Req.newBuilder()
+            SessionProto.Transaction.PutRule.Req request = SessionProto.Transaction.PutRule.Req.newBuilder()
                     .setLabel(label.getValue())
                     .setWhen(when.toString())
                     .setThen(then.toString())
