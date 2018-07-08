@@ -22,7 +22,6 @@ message Transaction {
             Commit.Req commit = 2;
             Query.Req query = 3;
             Next next = 4;
-            Stop stop = 5;
             GetSchemaConcept.Req getSchemaConcept = 6;
             GetConcept.Req getConcept = 7;
             GetAttributes.Req getAttributes = 8;

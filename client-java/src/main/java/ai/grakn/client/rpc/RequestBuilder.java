@@ -26,7 +26,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.IteratorProto.Next;
-import ai.grakn.rpc.proto.IteratorProto.Stop;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
 
@@ -127,10 +126,6 @@ public class RequestBuilder {
 
         public static SessionProto.Transaction.Req next(IteratorId iteratorId) {
             return SessionProto.Transaction.Req.newBuilder().setNext(Next.newBuilder().setIteratorId(iteratorId)).build();
-        }
-
-        public static SessionProto.Transaction.Req stop(IteratorId iteratorId) {
-            return SessionProto.Transaction.Req.newBuilder().setStop(Stop.newBuilder().setIteratorId(iteratorId)).build();
         }
     }
 

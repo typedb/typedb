@@ -45,12 +45,12 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionGrpc;
-import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -75,7 +75,6 @@ import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.next;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.query;
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.stop;
 import static ai.grakn.engine.rpc.ResponseBuilder.Transaction.done;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static org.junit.Assert.assertEquals;
@@ -89,7 +88,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -329,8 +327,6 @@ public class ServerRPCTest {
 
             Transaction.Res expected = done();
             assertEquals(expected, response3);
-
-            tx.send(stop(iterator));
         }
     }
 
@@ -366,12 +362,6 @@ public class ServerRPCTest {
 
             tx.send(next(iterator));
             tx.receive().ok();
-
-            tx.send(stop(iterator));
-
-            Transaction.Res response = tx.receive().ok();
-
-            assertEquals(done(), response);
         }
     }
 
@@ -414,20 +404,6 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore //TODO this test needs to be removed as it is no longer needed
-    public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() throws InterruptedException {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
-
-            tx.send(next(iterator));
-            tx.send(stop(iterator));
-        }
-
-        verify(tx.graql(), times(0)).infer(anyBoolean());
-    }
-
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
@@ -436,7 +412,6 @@ public class ServerRPCTest {
             IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
-            tx.send(stop(iterator));
         }
 
         verify(tx.graql()).infer(false);
@@ -450,7 +425,6 @@ public class ServerRPCTest {
             IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
-            tx.send(stop(iterator));
         }
 
         verify(tx.graql()).infer(true);
@@ -743,37 +717,6 @@ public class ServerRPCTest {
     }
 
     @Test
-    public void whenSendingStopWithNonExistentIterator_IgnoreRequest() throws Throwable {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.receive();
-
-            tx.send(stop(IteratorId.getDefaultInstance()));
-            assertEquals(ResponseBuilder.Transaction.done(), tx.receive().ok());
-        }
-    }
-
-    @Test
-    public void whenSendingNextAfterStop_Throw() throws Throwable {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
-            tx.receive();
-
-            tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
-
-            tx.send(stop(iterator));
-            tx.receive();
-
-            tx.send(next(iterator));
-
-            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
-
-            throw tx.receive().error();
-        }
-    }
-
-    @Test
     public void whenSendingAnotherQueryDuringQueryExecution_ReturnResultsForBothQueries() throws Throwable {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -789,12 +732,6 @@ public class ServerRPCTest {
             tx.receive().ok();
 
             tx.send(next(iterator2));
-            tx.receive().ok();
-
-            tx.send(stop(iterator1));
-            tx.receive().ok();
-
-            tx.send(stop(iterator2));
             tx.receive().ok();
         }
     }

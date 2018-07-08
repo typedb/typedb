@@ -13,14 +13,6 @@ message Next {
     IteratorId iteratorId = 1;
 }
 
-/*
-    Tell the server we have finished executing a query.
-    After this message, the server will send a `Done` message and then accept a command message.
-*/
-message Stop {
-    IteratorId iteratorId = 1;
-}
-
 message IteratorId {
     int32 id = 1;
 }

@@ -146,9 +146,6 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case NEXT:
                     next(request.getNext());
                     break;
-                case STOP:
-                    stop(request.getStop());
-                    break;
                 case GETSCHEMACONCEPT:
                     getSchemaConcept(request.getGetSchemaConcept());
                     break;
@@ -322,12 +319,6 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
-        }
-
-        private void stop(IteratorProto.Stop stop) {
-            IteratorProto.IteratorId iteratorId = stop.getIteratorId();
-            iterators.stop(iteratorId);
-            responseSender.onNext(ResponseBuilder.Transaction.done());
         }
     }
 
