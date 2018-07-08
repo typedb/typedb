@@ -49,7 +49,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
@@ -97,7 +96,7 @@ public class TransactionTest {
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
     private static final String V123 = "V123";
-    private static final IteratorId ITERATOR = IteratorId.newBuilder().setId(100).build();
+    private static final int ITERATOR = 100;
 
     @Before
     public void setUp() {

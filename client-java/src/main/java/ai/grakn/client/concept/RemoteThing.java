@@ -27,7 +27,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.Arrays;
@@ -66,7 +65,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                 .setThingKeys(ConceptProto.Thing.Keys.Req.newBuilder()
                         .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
 
-        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+        int iteratorId = runMethod(method.build())
                 .getConceptMethod().getResponse().getThingKeys().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttribute);
     }
@@ -77,7 +76,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                 .setThingAttributes(ConceptProto.Thing.Attributes.Req.newBuilder()
                         .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes))));
 
-        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+        int iteratorId = runMethod(method.build())
                 .getConceptMethod().getResponse().getThingAttributes().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttribute);
     }
@@ -88,7 +87,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                 .setThingRelations(ConceptProto.Thing.Relations.Req.newBuilder()
                         .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles))));
 
-        IteratorProto.IteratorId iteratorId = runMethod(method.build())
+        int iteratorId = runMethod(method.build())
                 .getConceptMethod().getResponse().getThingRelations().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRelationship);
     }
@@ -98,7 +97,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRoles(ConceptProto.Thing.Roles.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method)
+        int iteratorId = runMethod(method)
                 .getConceptMethod().getResponse().getThingRoles().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRole);
     }

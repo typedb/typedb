@@ -210,14 +210,14 @@ message SchemaConcept {
     message Subs {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Sups {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -273,14 +273,14 @@ message Role {
     message Relations {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Players {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 }
@@ -307,28 +307,28 @@ message Type {
     message Instances {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Attributes {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Keys {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Playing {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -403,7 +403,7 @@ message RelationType {
     message Roles {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -507,7 +507,7 @@ message Thing {
             repeated Concept concepts = 1;
         }
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -516,7 +516,7 @@ message Thing {
             repeated Concept concepts = 1;
         }
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -525,14 +525,14 @@ message Thing {
             repeated Concept concepts = 1;
         }
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
     message Roles {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -566,7 +566,7 @@ message Relation {
     message RolePlayersMap {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -575,7 +575,7 @@ message Relation {
             repeated Concept concepts = 1;
         }
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 
@@ -608,7 +608,7 @@ message Attribute {
     message Owners {
         message Req {}
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 }

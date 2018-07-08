@@ -233,7 +233,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
 
             Stream<Transaction.Res> responseStream;
-            IteratorProto.IteratorId iteratorId;
+            int iteratorId;
             Transaction.Res response;
             if (query instanceof Streamable) {
                 responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction::answer);
@@ -241,7 +241,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             } else {
                 Object result = query.execute();
                 if (result == null) {
-                    iteratorId = null;
+                    iteratorId = -1;
                 } else {
                     responseStream = Stream.of(ResponseBuilder.Transaction.answer(result));
                     iteratorId = iterators.add(responseStream.iterator());
@@ -267,7 +267,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
             Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction::concept).iterator();
-            IteratorProto.IteratorId iteratorId = iterators.add(iterator);
+            int iteratorId = iterators.add(iterator);
 
             responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
         }
@@ -315,7 +315,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
         }
 
         private void next(IteratorProto.Next next) {
-            IteratorProto.IteratorId iteratorId = next.getIteratorId();
+            int iteratorId = next.getIteratorId();
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             responseSender.onNext(response);
@@ -328,19 +328,19 @@ public class SessionService extends SessionGrpc.SessionImplBase {
      */
     public static class Iterators {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
-        private final Map<IteratorProto.IteratorId, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
+        private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         public static Iterators create() {
             return new Iterators();
         }
 
-        public IteratorProto.IteratorId add(Iterator<Transaction.Res> iterator) {
-            IteratorProto.IteratorId iteratorId = IteratorProto.IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        public int add(Iterator<Transaction.Res> iterator) {
+            int iteratorId = iteratorIdCounter.getAndIncrement();
             iterators.put(iteratorId, iterator);
             return iteratorId;
         }
 
-        public Transaction.Res next(IteratorProto.IteratorId iteratorId) {
+        public Transaction.Res next(int iteratorId) {
             Iterator<Transaction.Res> iterator = iterators.get(iteratorId);
             if (iterator == null) return null;
 
@@ -355,7 +355,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             return response;
         }
 
-        public void stop(IteratorProto.IteratorId iteratorId) {
+        public void stop(int iteratorId) {
             iterators.remove(iteratorId);
         }
     }

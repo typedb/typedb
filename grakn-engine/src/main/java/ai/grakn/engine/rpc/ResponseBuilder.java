@@ -32,7 +32,6 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 import io.grpc.Status;
@@ -69,9 +68,9 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res query(@Nullable IteratorProto.IteratorId iteratorId) {
+        static SessionProto.Transaction.Res query(@Nullable int iteratorId) {
             SessionProto.Transaction.Query.Res.Builder res = SessionProto.Transaction.Query.Res.newBuilder();
-            if (iteratorId == null) {
+            if (iteratorId == -1) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
                 res.setIteratorId(iteratorId);
@@ -99,7 +98,7 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setGetConcept(res).build();
         }
 
-        static SessionProto.Transaction.Res getAttributes(IteratorProto.IteratorId iteratorId) {
+        static SessionProto.Transaction.Res getAttributes(int iteratorId) {
             SessionProto.Transaction.GetAttributes.Res.Builder res = SessionProto.Transaction.GetAttributes.Res.newBuilder()
                     .setIteratorId(iteratorId);
             return SessionProto.Transaction.Res.newBuilder().setGetAttributes(res).build();

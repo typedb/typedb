@@ -49,7 +49,7 @@ message Transaction {
             ConceptMethod.Res conceptMethod = 21;
             Answer answer = 1;
             Done done = 2;
-            IteratorId iteratorId = 4;
+            int32 iteratorId = 4;
             Concept concept = 5;
             Relation.RolePlayer rolePlayer = 7;
             bool noResult = 8;
@@ -81,7 +81,7 @@ message Transaction {
         }
         message Res {
             oneof res {
-                IteratorId iteratorId = 1;
+                int32 iteratorId = 1;
                 Null null = 2;
             }
         }
@@ -116,7 +116,7 @@ message Transaction {
             ValueObject value = 1;
         }
         message Res {
-            IteratorId iteratorId = 1;
+            int32 iteratorId = 1;
         }
     }
 

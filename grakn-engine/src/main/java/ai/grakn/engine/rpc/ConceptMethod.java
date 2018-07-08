@@ -25,7 +25,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 
@@ -320,7 +319,7 @@ public class ConceptMethod {
                 Stream<? extends ai.grakn.concept.SchemaConcept> concepts = concept.asSchemaConcept().sups();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -332,7 +331,7 @@ public class ConceptMethod {
                 Stream<? extends ai.grakn.concept.SchemaConcept> concepts = concept.asSchemaConcept().subs();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -376,7 +375,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.RelationshipType> concepts = concept.asRole().relationships();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRoleRelations(ConceptProto.Role.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -388,7 +387,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Type> concepts = concept.asRole().players();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRolePlayers(ConceptProto.Role.Players.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -406,7 +405,7 @@ public class ConceptMethod {
                 Stream<? extends ai.grakn.concept.Thing> concepts = concept.asType().instances();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setTypeInstances(ConceptProto.Type.Instances.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -433,7 +432,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.AttributeType> concepts = concept.asType().keys();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setTypeKeys(ConceptProto.Type.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -445,7 +444,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.AttributeType> concepts = concept.asType().attributes();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setTypeAttributes(ConceptProto.Type.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -457,7 +456,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Role> concepts = concept.asType().playing();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setTypePlaying(ConceptProto.Type.Playing.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -537,7 +536,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Role> roles = concept.asRelationshipType().roles();
 
                 Stream<SessionProto.Transaction.Res> responses = roles.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationTypeRoles(ConceptProto.RelationType.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -655,7 +654,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Attribute<?>> concepts = concept.asThing().keys(keyTypes);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingKeys(ConceptProto.Thing.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -670,7 +669,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Attribute<?>> concepts = concept.asThing().attributes(attributeTypes);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingAttributes(ConceptProto.Thing.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -685,7 +684,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Relationship> concepts = concept.asThing().relationships(roles);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelations(ConceptProto.Thing.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -697,7 +696,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Role> concepts = concept.asThing().roles();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRoles(ConceptProto.Thing.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -740,7 +739,7 @@ public class ConceptMethod {
                                 }
                         )
                 );
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.build().iterator());
+                int iteratorId = iterators.add(responses.build().iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -755,7 +754,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Thing> concepts = concept.asRelationship().rolePlayers(roles);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
@@ -797,7 +796,7 @@ public class ConceptMethod {
                 Stream<ai.grakn.concept.Thing> concepts = concept.asAttribute().owners();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
-                IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
+                int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();

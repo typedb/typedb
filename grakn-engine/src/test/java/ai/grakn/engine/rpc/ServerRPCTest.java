@@ -46,7 +46,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -302,7 +301,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
+            int iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             Transaction.Res response1 = tx.receive().ok();
@@ -355,7 +354,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
+            int iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
             tx.receive().ok();
@@ -400,7 +399,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
-            assertEquals(ResponseBuilder.Transaction.query(null), tx.receive().ok());
+            assertEquals(ResponseBuilder.Transaction.query(-1), tx.receive().ok());
         }
     }
 
@@ -409,7 +408,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
+            int iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
         }
@@ -422,7 +421,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, true));
-            IteratorId iterator = tx.receive().ok().getQuery().getIteratorId();
+            int iterator = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator));
         }
@@ -708,7 +707,7 @@ public class ServerRPCTest {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
-            tx.send(next(IteratorId.getDefaultInstance()));
+            tx.send(next(0));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -723,10 +722,10 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator1 = tx.receive().ok().getQuery().getIteratorId();
+            int iterator1 = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(query(QUERY, false));
-            IteratorId iterator2 = tx.receive().ok().getQuery().getIteratorId();
+            int iterator2 = tx.receive().ok().getQuery().getIteratorId();
 
             tx.send(next(iterator1));
             tx.receive().ok();

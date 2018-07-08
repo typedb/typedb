@@ -225,7 +225,7 @@ public final class Grakn {
                 case NULL:
                     return Collections.emptyIterator();
                 case ITERATORID:
-                    IteratorProto.IteratorId iteratorId = txResponse.getQuery().getIteratorId();
+                    int iteratorId = txResponse.getQuery().getIteratorId();
                     return new Iterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
@@ -297,7 +297,7 @@ public final class Grakn {
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
-            IteratorProto.IteratorId iteratorId = responseOrThrow().getIteratorId();
+            int iteratorId = responseOrThrow().getIteratorId();
             Iterable<Concept> iterable = () -> new Iterator<>(
                     this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
             );
@@ -341,7 +341,7 @@ public final class Grakn {
                     .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Req.getDefaultInstance()).build();
 
             SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
-            IteratorProto.IteratorId iteratorId = response.getConceptMethod().getResponse().getSchemaConceptSups().getIteratorId();
+            int iteratorId = response.getConceptMethod().getResponse().getSchemaConceptSups().getIteratorId();
 
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
                     this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
@@ -360,7 +360,7 @@ public final class Grakn {
             return responseOrThrow();
         }
 
-        private SessionProto.Transaction.Res next(IteratorProto.IteratorId iteratorId) {
+        private SessionProto.Transaction.Res next(int iteratorId) {
             transceiver.send(RequestBuilder.Transaction.next(iteratorId));
             return responseOrThrow();
         }
@@ -372,11 +372,11 @@ public final class Grakn {
          * @param <T> class type of objects being iterated
          */
         public static class Iterator<T> extends AbstractIterator<T> {
-            private final IteratorProto.IteratorId iteratorId;
+            private final int iteratorId;
             private Transaction tx;
             private Function<SessionProto.Transaction.Res, T> responseReader;
 
-            public Iterator(Transaction tx, IteratorProto.IteratorId iteratorId, Function<SessionProto.Transaction.Res, T> responseReader) {
+            public Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;

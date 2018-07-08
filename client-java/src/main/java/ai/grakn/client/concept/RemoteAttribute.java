@@ -25,7 +25,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.IteratorProto;
 import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
@@ -59,7 +58,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeOwners(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getAttributeOwners().getIteratorId();
+        int iteratorId = runMethod(method).getConceptMethod().getResponse().getAttributeOwners().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asThing);
     }
 

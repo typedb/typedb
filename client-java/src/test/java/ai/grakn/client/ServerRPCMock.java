@@ -19,7 +19,6 @@
 package ai.grakn.client;
 
 import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
@@ -155,7 +154,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         }
 
         static TxResponseHandler sequence(ServerRPCMock server, Transaction.Res... responses) {
-            IteratorId iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
+            int iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
 
             return streamObserver -> {
                 List<Transaction.Res> responsesList =
@@ -238,7 +237,7 @@ public final class ServerRPCMock extends CompositeTestRule {
      */
     public static class ServerIteratorsMock {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger();
-        private final Map<IteratorId, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
+        private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 
         private ServerIteratorsMock() {
         }
@@ -250,8 +249,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         /**
          * Register a new iterator and return the ID of the iterator
          */
-        public IteratorId add(Iterator<Transaction.Res> iterator) {
-            IteratorId iteratorId = IteratorId.newBuilder().setId(iteratorIdCounter.getAndIncrement()).build();
+        public int add(Iterator<Transaction.Res> iterator) {
+            int iteratorId = iteratorIdCounter.getAndIncrement();
 
             iterators.put(iteratorId, iterator);
             return iteratorId;
@@ -260,7 +259,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         /**
          * Return the next response from an iterator. Will return a {@link SessionProto.Transaction.Done} response if the iterator is exhausted.
          */
-        public Optional<Transaction.Res> next(IteratorId iteratorId) {
+        public Optional<Transaction.Res> next(int iteratorId) {
             return Optional.ofNullable(iterators.get(iteratorId)).map(iterator -> {
                 Transaction.Res response;
 
@@ -278,7 +277,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         /**
          * Stop an iterator
          */
-        public void stop(IteratorId iteratorId) {
+        public void stop(int iteratorId) {
             iterators.remove(iteratorId);
         }
     }
