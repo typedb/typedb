@@ -352,7 +352,7 @@ public final class Grakn {
         }
 
         public SessionProto.Transaction.Res runConceptMethod(ConceptId id, ConceptProto.Method.Req method) {
-            SessionProto.ConceptMethod.Req conceptMethod = SessionProto.ConceptMethod.Req.newBu§ilder()
+            SessionProto.ConceptMethod.Req conceptMethod = SessionProto.ConceptMethod.Req.newBuilder()
                     .setId(id.getValue()).setMethod(method).build();
             SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethod(conceptMethod).build();
 
