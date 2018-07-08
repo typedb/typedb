@@ -46,7 +46,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Open;
@@ -121,7 +121,7 @@ public class ServerRPCTest {
     // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
     private final SessionGrpc.SessionStub stub = SessionGrpc.newStub(channel);
-    private final KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub = KeyspaceGrpc.newBlockingStub(channel);
+    private final KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
 
     @Before
     public void setUp() throws IOException {

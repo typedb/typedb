@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.IteratorProto;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
@@ -102,8 +102,8 @@ public final class Grakn {
             return SessionGrpc.newStub(channel);
         }
 
-        KeyspaceGrpc.KeyspaceBlockingStub keyspaceBlockingStub() {
-            return KeyspaceGrpc.newBlockingStub(channel);
+        KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub() {
+            return KeyspaceServiceGrpc.newBlockingStub(channel);
         }
 
         @Override
@@ -181,8 +181,8 @@ public final class Grakn {
 
         @Override // TODO: Move out of Transaction class
         public void delete() {
-            KeyspaceProto.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
-            KeyspaceGrpc.KeyspaceBlockingStub stub = session.keyspaceBlockingStub();
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
+            KeyspaceServiceGrpc.KeyspaceServiceBlockingStub stub = session.keyspaceBlockingStub();
             stub.delete(request);
             close();
         }

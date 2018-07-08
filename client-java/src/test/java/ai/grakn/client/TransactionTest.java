@@ -48,10 +48,10 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.rpc.proto.AnswerProto;
-import ai.grakn.rpc.proto.IteratorProto.IteratorId;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
-import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.IteratorProto.IteratorId;
+import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -102,7 +102,7 @@ public class TransactionTest {
     @Before
     public void setUp() {
         when(session.sessionStub()).thenReturn(SessionGrpc.newStub(server.channel()));
-        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceGrpc.newBlockingStub(server.channel()));
+        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
     }
@@ -490,7 +490,7 @@ public class TransactionTest {
 
     @Test
     public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
-        KeyspaceProto.Delete.Req request = RequestBuilder.Keyspace.delete(KEYSPACE.getValue());
+        KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(KEYSPACE.getValue());
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
             tx.admin().delete();

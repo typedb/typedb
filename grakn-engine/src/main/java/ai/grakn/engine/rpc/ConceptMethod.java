@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
@@ -35,13 +34,13 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
+ * Wrapper for describing methods on {@link ai.grakn.concept.Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
  * This class maps one-to-one with the gRPC message {@link ai.grakn.rpc.proto.ConceptProto.Method.Req}.
  */
 public class ConceptMethod {
 
-    public static Transaction.Res run(Concept concept, ConceptProto.Method.Req req,
+    public static Transaction.Res run(ai.grakn.concept.Concept concept, ConceptProto.Method.Req req,
                                  SessionService.Iterators iterators, EmbeddedGraknTx tx) {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {

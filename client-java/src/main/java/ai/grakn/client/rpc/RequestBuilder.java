@@ -139,8 +139,8 @@ public class RequestBuilder {
      */
     public static class Keyspace {
 
-        public static KeyspaceProto.Delete.Req delete(String name) {
-            return KeyspaceProto.Delete.Req.newBuilder().setName(name).build();
+        public static KeyspaceProto.Keyspace.Delete.Req delete(String name) {
+            return KeyspaceProto.Keyspace.Delete.Req.newBuilder().setName(name).build();
         }
     }
 }

@@ -21,7 +21,7 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -30,7 +30,7 @@ import io.grpc.stub.StreamObserver;
 /**
  * Grakn RPC Keyspace Service
  */
-public class KeyspaceService extends KeyspaceGrpc.KeyspaceImplBase {
+public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
     private final OpenRequest requestOpener;
 
@@ -39,23 +39,23 @@ public class KeyspaceService extends KeyspaceGrpc.KeyspaceImplBase {
     }
 
     @Override
-    public void create(KeyspaceProto.Create.Req request, StreamObserver<KeyspaceProto.Create.Res> response) {
+    public void create(KeyspaceProto.Keyspace.Create.Req request, StreamObserver<KeyspaceProto.Keyspace.Create.Res> response) {
         response.onError(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override
-    public void retrieve(KeyspaceProto.Retrieve.Req request, StreamObserver<KeyspaceProto.Retrieve.Res> response) {
+    public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         response.onError(new StatusRuntimeException(Status.UNIMPLEMENTED));
     }
 
     @Override
-    public void delete(KeyspaceProto.Delete.Req request, StreamObserver<KeyspaceProto.Delete.Res> response) {
+    public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
             try (GraknTx tx = requestOpener.open(args)) {
                 tx.admin().delete();
 
-                response.onNext(KeyspaceProto.Delete.Res.getDefaultInstance());
+                response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
                 response.onCompleted();
             }
         } catch (RuntimeException e) {

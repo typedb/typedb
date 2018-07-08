@@ -5,29 +5,31 @@ option java_outer_classname = "KeyspaceProto";
 
 package keyspace;
 
-service Keyspace {
-    rpc create (Create.Req) returns (Create.Res);
-    rpc retrieve (Retrieve.Req) returns (Retrieve.Res);
-    rpc delete (Delete.Req) returns (Delete.Res);
+service KeyspaceService {
+    rpc create (Keyspace.Create.Req) returns (Keyspace.Create.Res);
+    rpc retrieve (Keyspace.Retrieve.Req) returns (Keyspace.Retrieve.Res);
+    rpc delete (Keyspace.Delete.Req) returns (Keyspace.Delete.Res);
 }
 
-message Retrieve {
-    message Req {}
-    message Res {
-        repeated string names = 1;
+message Keyspace {
+    message Retrieve {
+        message Req {}
+        message Res {
+            repeated string names = 1;
+        }
     }
-}
 
-message Create {
-    message Req {
-        string name = 1;
+    message Create {
+        message Req {
+            string name = 1;
+        }
+        message Res {}
     }
-    message Res {}
-}
 
-message Delete {
-    message Req {
-        string name = 1;
+    message Delete {
+        message Req {
+            string name = 1;
+        }
+        message Res {}
     }
-    message Res {}
 }

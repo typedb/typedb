@@ -20,13 +20,12 @@ package ai.grakn.client;
 
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.proto.IteratorProto.IteratorId;
-import ai.grakn.rpc.proto.KeyspaceGrpc;
-import ai.grakn.rpc.proto.KeyspaceGrpc.KeyspaceImplBase;
 import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
 import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -76,7 +75,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
     private final SessionImplBase sessionService = mock(SessionImplBase.class);
-    private final KeyspaceImplBase keyspaceService = mock(KeyspaceGrpc.KeyspaceImplBase.class);
+    private final KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
 
     private @Nullable StreamObserver<Transaction.Res> serverResponses = null;
 
@@ -98,7 +97,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return sessionService;
     }
 
-    KeyspaceImplBase keyspaceService() {
+    KeyspaceServiceImplBase keyspaceService() {
         return keyspaceService;
     }
 
@@ -183,8 +182,8 @@ public final class ServerRPCMock extends CompositeTestRule {
         }).when(sessionService).transaction(any());
 
         doAnswer(args -> {
-            StreamObserver<KeyspaceProto.Delete.Res> response = args.getArgument(1);
-            response.onNext(KeyspaceProto.Delete.Res.newBuilder().build());
+            StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response = args.getArgument(1);
+            response.onNext(KeyspaceProto.Keyspace.Delete.Res.newBuilder().build());
             response.onCompleted();
             return null;
         }).when(keyspaceService).delete(any(), any());
