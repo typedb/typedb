@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
@@ -183,6 +184,10 @@ public class ConceptMethod {
             this.iterators = iterators;
         }
 
+        private ai.grakn.concept.Concept convert(ConceptProto.Concept protoConcept) {
+            return tx.getConcept(ConceptId.of(protoConcept.getId()));
+        }
+
         Concept asConcept() {
             return new Concept();
         }
@@ -279,7 +284,7 @@ public class ConceptMethod {
 
                 ConceptProto.SchemaConcept.GetSup.Res.Builder responseConcept = ConceptProto.SchemaConcept.GetSup.Res.newBuilder();
                 if (superConcept == null) responseConcept.setNull(ConceptProto.Null.getDefaultInstance());
-                else responseConcept.setConcept(ConceptBuilder.concept(superConcept));
+                else responseConcept.setConcept(ResponseBuilder.Concept.concept(superConcept));
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setSchemaConceptGetSup(responseConcept).build();
@@ -291,7 +296,7 @@ public class ConceptMethod {
                 // Make the second argument the super of the first argument
                 // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
 
-                ai.grakn.concept.SchemaConcept sup = ConceptBuilder.concept(superConcept, tx).asSchemaConcept();
+                ai.grakn.concept.SchemaConcept sup = convert(superConcept).asSchemaConcept();
                 ai.grakn.concept.SchemaConcept sub = concept.asSchemaConcept();
 
                 if (sup.isEntityType()) {
@@ -461,37 +466,37 @@ public class ConceptMethod {
             }
 
             private Transaction.Res key(ConceptProto.Concept protoKey) {
-                ai.grakn.concept.AttributeType<?> attributeType = ConceptBuilder.concept(protoKey, tx).asAttributeType();
+                ai.grakn.concept.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
                 concept.asType().key(attributeType);
                 return null;
             }
 
             private Transaction.Res has(ConceptProto.Concept protoAttribute) {
-                ai.grakn.concept.AttributeType<?> attributeType = ConceptBuilder.concept(protoAttribute, tx).asAttributeType();
+                ai.grakn.concept.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
                 concept.asType().has(attributeType);
                 return null;
             }
 
             private Transaction.Res plays(ConceptProto.Concept protoRole) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRole, tx).asRole();
+                ai.grakn.concept.Role role = convert(protoRole).asRole();
                 concept.asType().plays(role);
                 return null;
             }
 
             private Transaction.Res unkey(ConceptProto.Concept protoKey) {
-                ai.grakn.concept.AttributeType<?> attributeType = ConceptBuilder.concept(protoKey, tx).asAttributeType();
+                ai.grakn.concept.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
                 concept.asType().unkey(attributeType);
                 return null;
             }
 
             private Transaction.Res unhas(ConceptProto.Concept protoAttribute) {
-                ai.grakn.concept.AttributeType<?> attributeType = ConceptBuilder.concept(protoAttribute, tx).asAttributeType();
+                ai.grakn.concept.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
                 concept.asType().unhas(attributeType);
                 return null;
             }
 
             private Transaction.Res unplay(ConceptProto.Concept protoRole) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRole, tx).asRole();
+                ai.grakn.concept.Role role = convert(protoRole).asRole();
                 concept.asType().unplay(role);
                 return null;
             }
@@ -507,7 +512,7 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setEntityTypeCreate(ConceptProto.EntityType.Create.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(entity))).build();
+                                .setConcept(ResponseBuilder.Concept.concept(entity))).build();
 
                 return transactionRes(response);
             }
@@ -523,7 +528,7 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationTypeCreate(ConceptProto.RelationType.Create.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(relationship))).build();
+                                .setConcept(ResponseBuilder.Concept.concept(relationship))).build();
 
                 return transactionRes(response);
             }
@@ -541,13 +546,13 @@ public class ConceptMethod {
             }
 
             private Transaction.Res relates(ConceptProto.Concept protoRole) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRole, tx).asRole();
+                ai.grakn.concept.Role role = convert(protoRole).asRole();
                 concept.asRelationshipType().relates(role);
                 return null;
             }
 
             private Transaction.Res unrelate(ConceptProto.Concept protoRole) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRole, tx).asRole();
+                ai.grakn.concept.Role role = convert(protoRole).asRole();
                 concept.asRelationshipType().unrelate(role);
                 return null;
             }
@@ -564,7 +569,7 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeCreate(ConceptProto.AttributeType.Create.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(attribute))).build();
+                                .setConcept(ResponseBuilder.Concept.concept(attribute))).build();
 
                 return transactionRes(response);
             }
@@ -575,7 +580,7 @@ public class ConceptMethod {
 
                 ConceptProto.AttributeType.Attribute.Res.Builder methodResponse = ConceptProto.AttributeType.Attribute.Res.newBuilder();
                 if (attribute == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
-                else methodResponse.setConcept(ConceptBuilder.concept(attribute)).build();
+                else methodResponse.setConcept(ResponseBuilder.Concept.concept(attribute)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeAttribute(methodResponse).build();
@@ -590,7 +595,7 @@ public class ConceptMethod {
                         ConceptProto.AttributeType.DataType.Res.newBuilder();
 
                 if (dataType == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
-                else methodResponse.setDataType(ConceptBuilder.DATA_TYPE(dataType)).build();
+                else methodResponse.setDataType(ResponseBuilder.Concept.DATA_TYPE(dataType)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeDataType(methodResponse).build();
@@ -638,14 +643,14 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingType(ConceptProto.Thing.Type.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(type))).build();
+                                .setConcept(ResponseBuilder.Concept.concept(type))).build();
 
                 return transactionRes(response);
             }
 
             private Transaction.Res keys(List<ConceptProto.Concept> protoTypes) {
                 ai.grakn.concept.AttributeType<?>[] keyTypes = protoTypes.stream()
-                        .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                        .map(rpcConcept -> convert(rpcConcept))
                         .toArray(ai.grakn.concept.AttributeType[]::new);
                 Stream<ai.grakn.concept.Attribute<?>> concepts = concept.asThing().keys(keyTypes);
 
@@ -660,7 +665,7 @@ public class ConceptMethod {
 
             private Transaction.Res attributes(List<ConceptProto.Concept> protoTypes) {
                 ai.grakn.concept.AttributeType<?>[] attributeTypes = protoTypes.stream()
-                        .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                        .map(rpcConcept -> convert(rpcConcept))
                         .toArray(ai.grakn.concept.AttributeType[]::new);
                 Stream<ai.grakn.concept.Attribute<?>> concepts = concept.asThing().attributes(attributeTypes);
 
@@ -675,7 +680,7 @@ public class ConceptMethod {
 
             private Transaction.Res relations(List<ConceptProto.Concept> protoRoles) {
                 ai.grakn.concept.Role[] roles = protoRoles.stream()
-                        .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                        .map(rpcConcept -> convert(rpcConcept))
                         .toArray(ai.grakn.concept.Role[]::new);
                 Stream<ai.grakn.concept.Relationship> concepts = concept.asThing().relationships(roles);
 
@@ -701,18 +706,18 @@ public class ConceptMethod {
             }
 
             private Transaction.Res relhas(ConceptProto.Concept protoAttribute) {
-                ai.grakn.concept.Attribute<?> attribute = ConceptBuilder.concept(protoAttribute, tx).asAttribute();
+                ai.grakn.concept.Attribute<?> attribute = convert(protoAttribute).asAttribute();
                 ai.grakn.concept.Relationship relationship = ConceptHolder.this.concept.asThing().relhas(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelhas(ConceptProto.Thing.Relhas.Res.newBuilder()
-                                .setConcept(ConceptBuilder.concept(relationship))).build();
+                                .setConcept(ResponseBuilder.Concept.concept(relationship))).build();
 
                 return transactionRes(response);
             }
 
             private Transaction.Res unhas(ConceptProto.Concept protoAttribute) {
-                ai.grakn.concept.Attribute<?> attribute = ConceptBuilder.concept(protoAttribute, tx).asAttribute();
+                ai.grakn.concept.Attribute<?> attribute = convert(protoAttribute).asAttribute();
                 concept.asThing().unhas(attribute);
                 return null;
             }
@@ -745,7 +750,7 @@ public class ConceptMethod {
 
             private Transaction.Res rolePlayers(List<ConceptProto.Concept> protoRoles) {
                 ai.grakn.concept.Role[] roles = protoRoles.stream()
-                        .map(rpcConcept -> ConceptBuilder.concept(rpcConcept, tx))
+                        .map(rpcConcept -> convert(rpcConcept))
                         .toArray(ai.grakn.concept.Role[]::new);
                 Stream<ai.grakn.concept.Thing> concepts = concept.asRelationship().rolePlayers(roles);
 
@@ -759,15 +764,15 @@ public class ConceptMethod {
             }
 
             private Transaction.Res assign(ConceptProto.Relation.RolePlayer protoRolePlayer) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRolePlayer.getRole(), tx).asRole();
-                ai.grakn.concept.Thing player = ConceptBuilder.concept(protoRolePlayer.getPlayer(), tx).asThing();
+                ai.grakn.concept.Role role = convert(protoRolePlayer.getRole()).asRole();
+                ai.grakn.concept.Thing player = convert(protoRolePlayer.getPlayer()).asThing();
                 concept.asRelationship().assign(role, player);
                 return null;
             }
 
             private Transaction.Res unassign(ConceptProto.Relation.RolePlayer protoRolePlayer) {
-                ai.grakn.concept.Role role = ConceptBuilder.concept(protoRolePlayer.getRole(), tx).asRole();
-                ai.grakn.concept.Thing player = ConceptBuilder.concept(protoRolePlayer.getPlayer(), tx).asThing();
+                ai.grakn.concept.Role role = convert(protoRolePlayer.getRole()).asRole();
+                ai.grakn.concept.Thing player = convert(protoRolePlayer.getPlayer()).asThing();
                 concept.asRelationship().unassign(role, player);
                 return null;
             }
@@ -783,7 +788,7 @@ public class ConceptMethod {
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeValue(ConceptProto.Attribute.Value.Res.newBuilder()
-                                .setValue(ConceptBuilder.attributeValue(value))).build();
+                                .setValue(ResponseBuilder.Concept.attributeValue(value))).build();
 
                 return transactionRes(response);
             }
