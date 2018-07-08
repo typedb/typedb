@@ -297,7 +297,7 @@ public final class Grakn {
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
-            int iteratorId = responseOrThrow().getIteratorId();
+            int iteratorId = responseOrThrow().getGetAttributes().getIteratorId();
             Iterable<Concept> iterable = () -> new Iterator<>(
                     this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
             );

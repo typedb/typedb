@@ -18,7 +18,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
@@ -28,7 +27,6 @@ import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
@@ -37,7 +35,6 @@ import org.junit.rules.TestRule;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -112,9 +109,9 @@ public final class ServerRPCMock extends CompositeTestRule {
         setResponse(request, Arrays.asList(responses));
     }
 
-    public void setResponseSequence(Transaction.Req request, Transaction.Res... responses) {
-        setResponseHandlers(request, Collections.singletonList(TxResponseHandler.sequence(this, responses)));
-    }
+//    public void setResponseSequence(Transaction.Req request, Transaction.Res... responses) {
+//        setResponseHandlers(request, Collections.singletonList(TxResponseHandler.sequence(this, responses)));
+//    }
 
     public void setResponse(Transaction.Req request, Throwable throwable) {
         setResponseHandlers(request, ImmutableList.of(TxResponseHandler.onError(throwable)));
@@ -153,17 +150,17 @@ public final class ServerRPCMock extends CompositeTestRule {
             return streamObserver -> streamObserver.onError(throwable);
         }
 
-        static TxResponseHandler sequence(ServerRPCMock server, Transaction.Res... responses) {
-            int iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
-
-            return streamObserver -> {
-                List<Transaction.Res> responsesList =
-                        ImmutableList.<Transaction.Res>builder().add(responses).add(done()).build();
-
-                server.setResponse(RequestBuilder.Transaction.next(iteratorId), responsesList);
-                streamObserver.onNext(SessionProto.Transaction.Res.newBuilder().setIteratorId(iteratorId).build());
-            };
-        }
+//        static TxResponseHandler sequence(ServerRPCMock server, Transaction.Res... responses) {
+//            int iteratorId = server.IteratorProtos().add(Iterators.forArray(responses));
+//
+//            return streamObserver -> {
+//                List<Transaction.Res> responsesList =
+//                        ImmutableList.<Transaction.Res>builder().add(responses).add(done()).build();
+//
+//                server.setResponse(RequestBuilder.Transaction.next(iteratorId), responsesList);
+//                streamObserver.onNext(SessionProto.Transaction.Res.newBuilder().setIteratorId(iteratorId).build());
+//            };
+//        }
 
         void handle(StreamObserver<Transaction.Res> streamObserver);
     }

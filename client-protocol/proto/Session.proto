@@ -49,10 +49,8 @@ message Transaction {
             ConceptMethod.Res conceptMethod = 21;
             Answer answer = 1;
             Done done = 2;
-            int32 iteratorId = 4;
             Concept concept = 5;
             Relation.RolePlayer rolePlayer = 7;
-            bool noResult = 8;
         }
     }
 
