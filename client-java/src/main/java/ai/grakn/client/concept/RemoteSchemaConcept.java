@@ -41,7 +41,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sup(SomeType type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
+                .setSchemaConceptSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(type))).build();
 
         runMethod(method);
@@ -50,7 +50,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     public final SomeType sub(SomeType type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
+                .setSchemaConceptSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(this))).build();
 
         runMethod(type.id(), method);
@@ -60,25 +60,25 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Override
     public final Label label() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetLabel(ConceptProto.SchemaConcept.GetLabel.Req.getDefaultInstance()).build();
+                .setSchemaConceptGetLabel(ConceptProto.SchemaConcept.GetLabel.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        return Label.of(response.getConceptMethod().getResponse().getGetLabel().getLabel());
+        return Label.of(response.getConceptMethod().getResponse().getSchemaConceptGetLabel().getLabel());
     }
 
     @Override
     public final Boolean isImplicit() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Req.getDefaultInstance()).build();
+                .setSchemaConceptIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        return response.getConceptMethod().getResponse().getIsImplicit().getImplicit();
+        return response.getConceptMethod().getResponse().getSchemaConceptIsImplicit().getImplicit();
     }
 
     @Override
     public final SomeType label(Label label) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetLabel(ConceptProto.SchemaConcept.SetLabel.Req.newBuilder()
+                .setSchemaConceptSetLabel(ConceptProto.SchemaConcept.SetLabel.Req.newBuilder()
                         .setLabel(label.getValue())).build();
 
         runMethod(method);
@@ -89,10 +89,10 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Override
     public final SomeType sup() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setGetSup(ConceptProto.SchemaConcept.GetSup.Req.getDefaultInstance()).build();
+                .setSchemaConceptGetSup(ConceptProto.SchemaConcept.GetSup.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.SchemaConcept.GetSup.Res methodResponse = response.getConceptMethod().getResponse().getGetSup();
+        ConceptProto.SchemaConcept.GetSup.Res methodResponse = response.getConceptMethod().getResponse().getSchemaConceptGetSup();
 
         switch (methodResponse.getResCase()) {
             case NULL:
@@ -114,9 +114,9 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     @Override
     public final Stream<SomeType> subs() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSubs(ConceptProto.SchemaConcept.Subs.Req.getDefaultInstance()).build();
+                .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getSubs().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getSchemaConceptSubs().getIteratorId();
         return conceptStream(iteratorId).map(this::asCurrentBaseType);
     }
 

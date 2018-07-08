@@ -59,9 +59,9 @@ message Transaction {
     }
 }
 
-message Done {} // Indicates that a request is completedk
+message Done {}
 
-message Open { // Opening a transaction on a keyspace, which must be the first message sent
+message Open {
     message Req {
         string keyspace = 1;
         int32 txType = 2;
@@ -72,14 +72,14 @@ message Open { // Opening a transaction on a keyspace, which must be the first m
     message Res {}
 }
 
-message Commit { // Command to commit a transaction
+message Commit {
     message Req {}
     message Res {}
 }
 
-message Query { // Graql query to be executed on the database
+message Query {
     message Req {
-        string query = 1; // query string
+        string query = 1;
         bool infer = 2; // If this is not present, leave at server default.
     }
     message Res {

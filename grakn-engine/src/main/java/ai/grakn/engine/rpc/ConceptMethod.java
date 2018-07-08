@@ -46,88 +46,88 @@ public class ConceptMethod {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
-            case DELETE:
+            case CONCEPT_DELETE:
                 return con.asConcept().delete();
 
             // SchemaConcept methods
-            case ISIMPLICIT:
+            case SCHEMACONCEPT_ISIMPLICIT:
                 return con.asSchemaConcept().isImplicit();
-            case GETLABEL:
+            case SCHEMACONCEPT_GETLABEL:
                 return con.asSchemaConcept().label();
-            case SETLABEL:
-                return con.asSchemaConcept().label(req.getSetLabel().getLabel());
-            case GETSUP:
+            case SCHEMACONCEPT_SETLABEL:
+                return con.asSchemaConcept().label(req.getSchemaConceptSetLabel().getLabel());
+            case SCHEMACONCEPT_GETSUP:
                 return con.asSchemaConcept().sup();
-            case SETSUP:
-                return con.asSchemaConcept().sup(req.getSetSup().getConcept());
-            case SUPS:
+            case SCHEMACONCEPT_SETSUP:
+                return con.asSchemaConcept().sup(req.getSchemaConceptSetSup().getConcept());
+            case SCHEMACONCEPT_SUPS:
                 return con.asSchemaConcept().sups();
-            case SUBS:
+            case SCHEMACONCEPT_SUBS:
                 return con.asSchemaConcept().subs();
 
             // Rule methods
-            case WHEN:
+            case RULE_WHEN:
                 return con.asRule().when();
-            case THEN:
+            case RULE_THEN:
                 return con.asRule().then();
 
             // Role methods
-            case RELATIONS:
+            case ROLE_RELATIONS:
                 return con.asRole().relations();
-            case PLAYERS:
+            case ROLE_PLAYERS:
                 return con.asRole().players();
 
             // Type methods
-            case INSTANCES:
+            case TYPE_INSTANCES:
                 return con.asType().instances();
-            case ISABSTRACT:
+            case TYPE_ISABSTRACT:
                 return con.asType().isAbstract();
-            case SETABSTRACT:
-                return con.asType().isAbstract(req.getSetAbstract().getAbstract());
-            case KEYS:
+            case TYPE_SETABSTRACT:
+                return con.asType().isAbstract(req.getTypeSetAbstract().getAbstract());
+            case TYPE_KEYS:
                 return con.asType().keys();
-            case ATTRIBUTES:
+            case TYPE_ATTRIBUTES:
                 return con.asType().attributes();
-            case PLAYING:
+            case TYPE_PLAYING:
                 return con.asType().playing();
-            case KEY:
-                return con.asType().key(req.getKey().getConcept());
-            case HAS:
-                return con.asType().has(req.getHas().getConcept());
-            case PLAYS:
-                return con.asType().plays(req.getPlays().getConcept());
-            case UNKEY:
-                return con.asType().unkey(req.getUnkey().getConcept());
-            case UNHAS:
-                return con.asType().unhas(req.getUnhas().getConcept());
-            case UNPLAY:
-                return con.asType().unplay(req.getUnplay().getConcept());
+            case TYPE_KEY:
+                return con.asType().key(req.getTypeKey().getConcept());
+            case TYPE_HAS:
+                return con.asType().has(req.getTypeHas().getConcept());
+            case TYPE_PLAYS:
+                return con.asType().plays(req.getTypePlays().getConcept());
+            case TYPE_UNKEY:
+                return con.asType().unkey(req.getTypeUnkey().getConcept());
+            case TYPE_UNHAS:
+                return con.asType().unhas(req.getTypeUnhas().getConcept());
+            case TYPE_UNPLAY:
+                return con.asType().unplay(req.getTypeUnplay().getConcept());
 
             // EntityType methods
-            case CREATEENTITY:
+            case ENTITYTYPE_CREATE:
                 return con.asEntityType().create();
 
             // RelationshipType methods
-            case CREATERELATION:
+            case RELATIONTYPE_CREATE:
                 return con.asRelationshipType().create();
-            case ROLES:
+            case RELATIONTYPE_ROLES:
                 return con.asRelationshipType().roles();
-            case RELATES:
-                return con.asRelationshipType().relates(req.getRelates().getConcept());
-            case UNRELATE:
-                return con.asRelationshipType().unrelate(req.getUnrelate().getConcept());
+            case RELATIONTYPE_RELATES:
+                return con.asRelationshipType().relates(req.getRelationTypeRelates().getConcept());
+            case RELATIONTYPE_UNRELATE:
+                return con.asRelationshipType().unrelate(req.getRelationTypeUnrelate().getConcept());
 
             // AttributeType methods
-            case CREATEATTRIBUTE:
-                return con.asAttributeType().create(req.getCreateAttribute().getValue());
-            case ATTRIBUTE:
-                return con.asAttributeType().attribute(req.getAttribute().getValue());
-            case DATATYPE:
+            case ATTRIBUTETYPE_CREATE:
+                return con.asAttributeType().create(req.getAttributeTypeCreate().getValue());
+            case ATTRIBUTETYPE_ATTRIBUTE:
+                return con.asAttributeType().attribute(req.getAttributeTypeAttribute().getValue());
+            case ATTRIBUTETYPE_DATATYPE:
                 return con.asAttributeType().dataType();
-            case GETREGEX:
+            case ATTRIBUTETYPE_GETREGEX:
                 return con.asAttributeType().regex();
-            case SETREGEX:
-                return con.asAttributeType().regex(req.getSetRegex().getRegex());
+            case ATTRIBUTETYPE_SETREGEX:
+                return con.asAttributeType().regex(req.getAttributeTypeSetRegex().getRegex());
 
             // Thing methods
             case THING_ISINFERRED:
@@ -148,19 +148,19 @@ public class ConceptMethod {
                 return con.asThing().unhas(req.getThingUnhas().getConcept());
 
             // Relationship methods
-            case ROLEPLAYERSMAP:
+            case RELATION_ROLEPLAYERSMAP:
                 return con.asRelationship().rolePlayersMap();
-            case ROLEPLAYERS:
-                return con.asRelationship().rolePlayers(req.getRolePlayers().getConceptsList());
-            case ASSIGN:
-                return con.asRelationship().assign(req.getAssign().getRolePlayer());
-            case UNASSIGN:
-                return con.asRelationship().unassign(req.getUnassign().getRolePlayer());
+            case RELATION_ROLEPLAYERS:
+                return con.asRelationship().rolePlayers(req.getRelationRolePlayers().getConceptsList());
+            case RELATION_ASSIGN:
+                return con.asRelationship().assign(req.getRelationAssign().getRolePlayer());
+            case RELATION_UNASSIGN:
+                return con.asRelationship().unassign(req.getRelationUnassign().getRolePlayer());
 
             // Attribute Methods
-            case VALUE:
+            case ATTRIBUTE_VALUE:
                 return con.asAttribute().value();
-            case OWNERS:
+            case ATTRIBUTE_OWNERS:
                 return con.asAttribute().owners();
 
             default:
@@ -169,6 +169,9 @@ public class ConceptMethod {
         }
     }
 
+    /**
+     * A utility class to hold on to the concept in the method request will be applied to
+     */
     public static class ConceptHolder {
 
         private ai.grakn.concept.Concept concept;
@@ -231,6 +234,9 @@ public class ConceptMethod {
                             .setResponse(response)).build();
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Concept}
+         */
         private class Concept {
 
             private Transaction.Res delete() {
@@ -238,14 +244,17 @@ public class ConceptMethod {
                 return null;
             }
         }
-        
+
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.SchemaConcept}
+         */
         private class SchemaConcept {
 
             private Transaction.Res isImplicit() {
                 Boolean implicit = concept.asSchemaConcept().isImplicit();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
+                        .setSchemaConceptIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
                                 .setImplicit(implicit)).build();
 
                 return transactionRes(response);
@@ -255,7 +264,7 @@ public class ConceptMethod {
                 Label label = concept.asSchemaConcept().label();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetLabel(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                        .setSchemaConceptGetLabel(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
                                 .setLabel(label.getValue())).build();
 
                 return transactionRes(response);
@@ -274,7 +283,7 @@ public class ConceptMethod {
                 else responseConcept.setConcept(ConceptBuilder.concept(superConcept));
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetSup(responseConcept).build();
+                        .setSchemaConceptGetSup(responseConcept).build();
 
                 return transactionRes(response);
             }
@@ -309,7 +318,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSups(ConceptProto.SchemaConcept.Sups.Res.newBuilder()
+                        .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -321,20 +330,23 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSubs(ConceptProto.SchemaConcept.Subs.Res.newBuilder()
+                        .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Rule}
+         */
         private class Rule {
 
             private Transaction.Res when() {
                 Pattern pattern = concept.asRule().when();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setWhen(ConceptProto.Rule.When.Res.newBuilder()
+                        .setRuleWhen(ConceptProto.Rule.When.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
 
                 return transactionRes(response);
@@ -344,13 +356,16 @@ public class ConceptMethod {
                 Pattern pattern = concept.asRule().then();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThen(ConceptProto.Rule.Then.Res.newBuilder()
+                        .setRuleThen(ConceptProto.Rule.Then.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
 
                 return transactionRes(response);
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Role}
+         */
         private class Role {
 
             private Transaction.Res relations() {
@@ -359,7 +374,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRelations(ConceptProto.Role.Relations.Res.newBuilder()
+                        .setRoleRelations(ConceptProto.Role.Relations.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -371,21 +386,25 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setPlayers(ConceptProto.Role.Players.Res.newBuilder()
+                        .setRolePlayers(ConceptProto.Role.Players.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Type}
+         */
         private class Type {
+
             private Transaction.Res instances() {
                 Stream<? extends ai.grakn.concept.Thing> concepts = concept.asType().instances();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setInstances(ConceptProto.Type.Instances.Res.newBuilder()
+                        .setTypeInstances(ConceptProto.Type.Instances.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -395,7 +414,7 @@ public class ConceptMethod {
                 Boolean isAbstract = concept.asType().isAbstract();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setIsAbstract(ConceptProto.Type.IsAbstract.Res.newBuilder()
+                        .setTypeIsAbstract(ConceptProto.Type.IsAbstract.Res.newBuilder()
                                 .setAbstract(isAbstract)).build();
 
                 return transactionRes(response);
@@ -412,7 +431,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setKeys(ConceptProto.Type.Keys.Res.newBuilder()
+                        .setTypeKeys(ConceptProto.Type.Keys.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -424,7 +443,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributes(ConceptProto.Type.Attributes.Res.newBuilder()
+                        .setTypeAttributes(ConceptProto.Type.Attributes.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -436,7 +455,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setPlaying(ConceptProto.Type.Playing.Res.newBuilder()
+                        .setTypePlaying(ConceptProto.Type.Playing.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -479,26 +498,32 @@ public class ConceptMethod {
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.EntityType}
+         */
         private class EntityType {
 
             private Transaction.Res create() {
                 Entity entity = concept.asEntityType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setCreateEntity(ConceptProto.EntityType.Create.Res.newBuilder()
+                        .setEntityTypeCreate(ConceptProto.EntityType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(entity))).build();
 
                 return transactionRes(response);
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.RelationshipType}
+         */
         private class RelationshipType {
 
             private Transaction.Res create() {
                 ai.grakn.concept.Relationship relationship = concept.asRelationshipType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setCreateRelation(ConceptProto.RelationType.Create.Res.newBuilder()
+                        .setRelationTypeCreate(ConceptProto.RelationType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(relationship))).build();
 
                 return transactionRes(response);
@@ -510,7 +535,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = roles.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRoles(ConceptProto.RelationType.Roles.Res.newBuilder()
+                        .setRelationTypeRoles(ConceptProto.RelationType.Roles.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -529,6 +554,9 @@ public class ConceptMethod {
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.AttributeType}
+         */
         private class AttributeType {
 
             private Transaction.Res create(ConceptProto.ValueObject protoValue) {
@@ -536,7 +564,7 @@ public class ConceptMethod {
                 ai.grakn.concept.Attribute<?> attribute = concept.asAttributeType().create(value);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setCreateAttribute(ConceptProto.AttributeType.Create.Res.newBuilder()
+                        .setAttributeTypeCreate(ConceptProto.AttributeType.Create.Res.newBuilder()
                                 .setConcept(ConceptBuilder.concept(attribute))).build();
 
                 return transactionRes(response);
@@ -551,7 +579,7 @@ public class ConceptMethod {
                 else methodResponse.setConcept(ConceptBuilder.concept(attribute)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttribute(methodResponse).build();
+                        .setAttributeTypeAttribute(methodResponse).build();
 
                 return transactionRes(response);
             }
@@ -566,7 +594,7 @@ public class ConceptMethod {
                 else methodResponse.setDataType(ConceptBuilder.DATA_TYPE(dataType)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setDataType(methodResponse).build();
+                        .setAttributeTypeDataType(methodResponse).build();
 
                 return transactionRes(response);
             }
@@ -575,7 +603,7 @@ public class ConceptMethod {
                 String regex = concept.asAttributeType().regex();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setGetRegex(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
+                        .setAttributeTypeGetRegex(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
                                 .setRegex((regex != null) ? regex : "")).build();
 
                 return transactionRes(response);
@@ -591,6 +619,9 @@ public class ConceptMethod {
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Thing}
+         */
         private class Thing {
 
             private Transaction.Res isInferred() {
@@ -688,6 +719,9 @@ public class ConceptMethod {
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Relationship}
+         */
         private class Relationship {
 
             private Transaction.Res rolePlayersMap() {
@@ -704,7 +738,7 @@ public class ConceptMethod {
                 );
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.build().iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Res.newBuilder()
+                        .setRelationRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -719,7 +753,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()
+                        .setRelationRolePlayers(ConceptProto.Relation.RolePlayers.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -740,13 +774,16 @@ public class ConceptMethod {
             }
         }
 
+        /**
+         * A utility class to execute methods on {@link ai.grakn.concept.Attribute}
+         */
         private class Attribute {
 
             private Transaction.Res value() {
                 Object value = concept.asAttribute().value();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setValue(ConceptProto.Attribute.Value.Res.newBuilder()
+                        .setAttributeValue(ConceptProto.Attribute.Value.Res.newBuilder()
                                 .setValue(ConceptBuilder.attributeValue(value))).build();
 
                 return transactionRes(response);
@@ -758,7 +795,7 @@ public class ConceptMethod {
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(ResponseBuilder.Transaction::concept);
                 IteratorProto.IteratorId iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
+                        .setAttributeOwners(ConceptProto.Attribute.Owners.Res.newBuilder()
                                 .setIteratorId(iteratorId)).build();
 
                 return transactionRes(response);

@@ -47,10 +47,10 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Override
     public final Pattern when() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setWhen(ConceptProto.Rule.When.Req.getDefaultInstance()).build();
+                .setRuleWhen(ConceptProto.Rule.When.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
 
-        ConceptProto.Rule.When.Res whenResponse = response.getConceptMethod().getResponse().getWhen();
+        ConceptProto.Rule.When.Res whenResponse = response.getConceptMethod().getResponse().getRuleWhen();
         switch (whenResponse.getResCase()) {
             case NULL:
                 return null;
@@ -65,10 +65,10 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     @Override
     public final Pattern then() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setThen(ConceptProto.Rule.Then.Req.getDefaultInstance()).build();
+                .setRuleThen(ConceptProto.Rule.Then.Req.getDefaultInstance()).build();
         SessionProto.Transaction.Res response = runMethod(method);
 
-        ConceptProto.Rule.Then.Res thenResponse = response.getConceptMethod().getResponse().getThen();
+        ConceptProto.Rule.Then.Res thenResponse = response.getConceptMethod().getResponse().getRuleThen();
         switch (thenResponse.getResCase()) {
             case NULL:
                 return null;

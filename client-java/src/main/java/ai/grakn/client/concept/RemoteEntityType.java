@@ -44,10 +44,10 @@ public abstract class RemoteEntityType extends RemoteType<EntityType, Entity> im
     @Override
     public final Entity create() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setCreateEntity(ConceptProto.EntityType.Create.Req.getDefaultInstance()).build();
+                .setEntityTypeCreate(ConceptProto.EntityType.Create.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getCreateEntity().getConcept(), tx());
+        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getEntityTypeCreate().getConcept(), tx());
         return asInstance(concept);
     }
 

@@ -46,10 +46,10 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     @Override
     public final D value() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setValue(ConceptProto.Attribute.Value.Req.getDefaultInstance()).build();
+                .setAttributeValue(ConceptProto.Attribute.Value.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.ValueObject value = response.getConceptMethod().getResponse().getValue().getValue();
+        ConceptProto.ValueObject value = response.getConceptMethod().getResponse().getAttributeValue().getValue();
         // TODO: Fix this unsafe casting
         return (D) value.getAllFields().values().iterator().next();
     }
@@ -57,9 +57,9 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
     @Override
     public final Stream<Thing> owners() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setOwners(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
+                .setAttributeOwners(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getOwners().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getAttributeOwners().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asThing);
     }
 

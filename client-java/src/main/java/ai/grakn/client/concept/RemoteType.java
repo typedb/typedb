@@ -42,25 +42,25 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final Stream<SomeThing> instances() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setInstances(ConceptProto.Type.Instances.Req.getDefaultInstance()).build();
+                .setTypeInstances(ConceptProto.Type.Instances.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getInstances().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeInstances().getIteratorId();
         return conceptStream(iteratorId).map(this::asInstance);
     }
 
     @Override
     public final Boolean isAbstract() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setIsAbstract(ConceptProto.Type.IsAbstract.Req.getDefaultInstance()).build();
+                .setTypeIsAbstract(ConceptProto.Type.IsAbstract.Req.getDefaultInstance()).build();
 
         SessionProto.Transaction.Res response = runMethod(method);
-        return response.getConceptMethod().getResponse().getIsAbstract().getAbstract();
+        return response.getConceptMethod().getResponse().getTypeIsAbstract().getAbstract();
     }
 
     @Override
     public final SomeType isAbstract(Boolean isAbstract) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSetAbstract(ConceptProto.Type.SetAbstract.Req.newBuilder()
+                .setTypeSetAbstract(ConceptProto.Type.SetAbstract.Req.newBuilder()
                         .setAbstract(isAbstract)).build();
 
         runMethod(method);
@@ -70,34 +70,34 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final Stream<AttributeType> keys() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setKeys(ConceptProto.Type.Keys.Req.getDefaultInstance()).build();
+                .setTypeKeys(ConceptProto.Type.Keys.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getKeys().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeKeys().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<AttributeType> attributes() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributes(ConceptProto.Type.Attributes.Req.getDefaultInstance()).build();
+                .setTypeAttributes(ConceptProto.Type.Attributes.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getAttributes().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeAttributes().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asAttributeType);
     }
 
     @Override
     public final Stream<Role> playing() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setPlaying(ConceptProto.Type.Playing.Req.getDefaultInstance()).build();
+                .setTypePlaying(ConceptProto.Type.Playing.Req.getDefaultInstance()).build();
 
-        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getPlaying().getIteratorId();
+        IteratorProto.IteratorId iteratorId = runMethod(method).getConceptMethod().getResponse().getTypePlaying().getIteratorId();
         return conceptStream(iteratorId).map(Concept::asRole);
     }
 
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setKey(ConceptProto.Type.Key.Req.newBuilder()
+                .setTypeKey(ConceptProto.Type.Key.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
 
         runMethod(method);
@@ -107,7 +107,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setHas(ConceptProto.Type.Has.Req.newBuilder()
+                .setTypeHas(ConceptProto.Type.Has.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
 
         runMethod(method);
@@ -117,7 +117,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType plays(Role role) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setPlays(ConceptProto.Type.Plays.Req.newBuilder()
+                .setTypePlays(ConceptProto.Type.Plays.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
 
         runMethod(method);
@@ -127,7 +127,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType unkey(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnkey(ConceptProto.Type.Unkey.Req.newBuilder()
+                .setTypeUnkey(ConceptProto.Type.Unkey.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
 
         runMethod(method);
@@ -137,7 +137,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType unhas(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnhas(ConceptProto.Type.Unhas.Req.newBuilder()
+                .setTypeUnhas(ConceptProto.Type.Unhas.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(attributeType))).build();
 
         runMethod(method);
@@ -147,7 +147,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     @Override
     public final SomeType unplay(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setUnplay(ConceptProto.Type.Unplay.Req.newBuilder()
+                .setTypeUnplay(ConceptProto.Type.Unplay.Req.newBuilder()
                         .setConcept(ConceptBuilder.concept(role))).build();
 
         runMethod(method);
