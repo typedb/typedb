@@ -16,6 +16,10 @@ All Grakn applications require the following Maven dependency:
 ```xml
 <repositories>
   <repository>
+    <id>snapshots</id>
+    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots/</url>
+  </repository>
+  <repository>
     <id>releases</id>
     <url>https://oss.sonatype.org/content/repositories/releases</url>
   </repository>
