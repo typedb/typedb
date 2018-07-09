@@ -25,8 +25,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,20 +61,22 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
         return tx().getConcept(id()) == null;
     }
 
-    protected final Stream<? extends Concept> conceptStream(int iteratorId) {
-        Iterable<? extends Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(res.getConcept(), tx())
+    protected final Stream<? extends Concept> conceptStream
+            (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
+
+        Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
+                tx(), iteratorId, res -> ConceptBuilder.concept(conceptGetter.apply(res.getConceptMethod()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(ConceptProto.Method.Req method) {
+    protected final ConceptProto.Method.Res runMethod(ConceptProto.Method.Req method) {
         return runMethod(id(), method);
     }
 
-    protected final SessionProto.Transaction.Res runMethod(ConceptId id, ConceptProto.Method.Req method) {
-        return tx().runConceptMethod(id, method);
+    protected final ConceptProto.Method.Res runMethod(ConceptId id, ConceptProto.Method.Req method) {
+        return tx().runConceptMethod(id, method).getConceptMethod().getResponse();
     }
 
     abstract SomeConcept asCurrentBaseType(Concept other);

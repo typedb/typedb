@@ -157,8 +157,8 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Transaction.Query.Res.newBuilder().setNull(ConceptProto.Null.getDefaultInstance()))
-                .build();
+                .setQuery(SessionProto.Transaction.Query.Iter.newBuilder()
+                        .setNull(ConceptProto.Null.getDefaultInstance())).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
 
@@ -171,7 +171,7 @@ public class TransactionTest {
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Transaction.Res queryIterator = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Transaction.Query.Res.newBuilder().setIteratorId(ITERATOR))
+                .setQuery(SessionProto.Transaction.Query.Iter.newBuilder().setId(ITERATOR))
                 .build();
 
         Query<?> query = match(var("x").sub("thing")).get();
@@ -179,8 +179,9 @@ public class TransactionTest {
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         Transaction.Res iteratorNext = Transaction.Res.newBuilder()
                 .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                        .setAnswer(AnswerProto.Answer.newBuilder()
-                                .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123)))).build();
+                        .setQuery(SessionProto.Transaction.Query.Iter.Res.newBuilder()
+                                .setAnswer(AnswerProto.Answer.newBuilder()
+                                        .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);

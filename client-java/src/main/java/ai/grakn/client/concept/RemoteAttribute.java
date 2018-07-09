@@ -25,7 +25,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -47,8 +46,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeValue(ConceptProto.Attribute.Value.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.ValueObject value = response.getConceptMethod().getResponse().getAttributeValue().getValue();
+        ConceptProto.ValueObject value = runMethod(method).getAttributeValue().getValue();
         // TODO: Fix this unsafe casting
         return (D) value.getAllFields().values().iterator().next();
     }
@@ -58,8 +56,8 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeOwners(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getAttributeOwners().getIteratorId();
-        return conceptStream(iteratorId).map(Concept::asThing);
+        int iteratorId = runMethod(method).getAttributeOwners().getId();
+        return conceptStream(iteratorId, res -> res.getAttributeOwners().getConcept()).map(Concept::asThing);
     }
 
     @Override

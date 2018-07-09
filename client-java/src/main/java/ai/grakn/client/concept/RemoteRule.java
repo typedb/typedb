@@ -26,7 +26,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
@@ -48,14 +47,13 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     public final Pattern when() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRuleWhen(ConceptProto.Rule.When.Req.getDefaultInstance()).build();
-        SessionProto.Transaction.Res response = runMethod(method);
 
-        ConceptProto.Rule.When.Res whenResponse = response.getConceptMethod().getResponse().getRuleWhen();
-        switch (whenResponse.getResCase()) {
+        ConceptProto.Rule.When.Res response = runMethod(method).getRuleWhen();
+        switch (response.getResCase()) {
             case NULL:
                 return null;
             case PATTERN:
-                return Graql.parser().parsePattern(whenResponse.getPattern());
+                return Graql.parser().parsePattern(response.getPattern());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }
@@ -66,14 +64,13 @@ public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Ru
     public final Pattern then() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRuleThen(ConceptProto.Rule.Then.Req.getDefaultInstance()).build();
-        SessionProto.Transaction.Res response = runMethod(method);
 
-        ConceptProto.Rule.Then.Res thenResponse = response.getConceptMethod().getResponse().getRuleThen();
-        switch (thenResponse.getResCase()) {
+        ConceptProto.Rule.Then.Res response = runMethod(method).getRuleThen();
+        switch (response.getResCase()) {
             case NULL:
                 return null;
             case PATTERN:
-                return Graql.parser().parsePattern(thenResponse.getPattern());
+                return Graql.parser().parsePattern(response.getPattern());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }

@@ -25,7 +25,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
 
 import javax.annotation.Nullable;
@@ -61,8 +60,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptGetLabel(ConceptProto.SchemaConcept.GetLabel.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        return Label.of(response.getConceptMethod().getResponse().getSchemaConceptGetLabel().getLabel());
+        return Label.of(runMethod(method).getSchemaConceptGetLabel().getLabel());
     }
 
     @Override
@@ -70,8 +68,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        return response.getConceptMethod().getResponse().getSchemaConceptIsImplicit().getImplicit();
+        return runMethod(method).getSchemaConceptIsImplicit().getImplicit();
     }
 
     @Override
@@ -90,14 +87,13 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptGetSup(ConceptProto.SchemaConcept.GetSup.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        ConceptProto.SchemaConcept.GetSup.Res methodResponse = response.getConceptMethod().getResponse().getSchemaConceptGetSup();
+        ConceptProto.SchemaConcept.GetSup.Res response = runMethod(method).getSchemaConceptGetSup();
 
-        switch (methodResponse.getResCase()) {
+        switch (response.getResCase()) {
             case NULL:
                 return null;
             case CONCEPT:
-                Concept concept = ConceptBuilder.concept(methodResponse.getConcept(), tx());
+                Concept concept = ConceptBuilder.concept(response.getConcept(), tx());
                 return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
@@ -115,8 +111,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getSchemaConceptSubs().getIteratorId();
-        return conceptStream(iteratorId).map(this::asCurrentBaseType);
+        int iteratorId = runMethod(method).getSchemaConceptSubs().getId();
+        return conceptStream(iteratorId, res -> res.getSchemaConceptSubs().getConcept()).map(this::asCurrentBaseType);
     }
 
     @Override

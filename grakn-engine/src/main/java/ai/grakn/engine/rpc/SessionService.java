@@ -235,19 +235,19 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             int iteratorId;
             Transaction.Res response;
             if (query instanceof Streamable) {
-                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction.Iter::answer);
+                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction.Iter::query);
                 iteratorId = iterators.add(responseStream.iterator());
             } else {
                 Object result = query.execute();
                 if (result == null) {
                     iteratorId = -1;
                 } else {
-                    responseStream = Stream.of(ResponseBuilder.Transaction.Iter.answer(result));
+                    responseStream = Stream.of(ResponseBuilder.Transaction.Iter.query(result));
                     iteratorId = iterators.add(responseStream.iterator());
                 }
             }
 
-            response = ResponseBuilder.Transaction.query(iteratorId);
+            response = ResponseBuilder.Transaction.queryIterator(iteratorId);
             responseSender.onNext(response);
         }
 
@@ -265,10 +265,10 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             Object value = request.getValue().getAllFields().values().iterator().next();
             Collection<Attribute<Object>> attributes = tx().getAttributesByValue(value);
 
-            Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction.Iter::concept).iterator();
+            Iterator<Transaction.Res> iterator = attributes.stream().map(ResponseBuilder.Transaction.Iter::getAttributes).iterator();
             int iteratorId = iterators.add(iterator);
 
-            responseSender.onNext(ResponseBuilder.Transaction.getAttributes(iteratorId));
+            responseSender.onNext(ResponseBuilder.Transaction.getAttributesIterator(iteratorId));
         }
 
         private void putEntityType(SessionProto.Transaction.PutEntityType.Req request) {
@@ -347,7 +347,9 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             if (iterator.hasNext()) {
                 response = iterator.next();
             } else {
-                response = ResponseBuilder.Transaction.Iter.done();
+                response = SessionProto.Transaction.Res.newBuilder()
+                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setDone(true)).build();
                 stop(iteratorId);
             }
 

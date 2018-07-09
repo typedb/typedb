@@ -68,14 +68,14 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res query(@Nullable int iteratorId) {
-            SessionProto.Transaction.Query.Res.Builder res = SessionProto.Transaction.Query.Res.newBuilder();
+        static SessionProto.Transaction.Res queryIterator(@Nullable int iteratorId) {
+            SessionProto.Transaction.Query.Iter.Builder iterator = SessionProto.Transaction.Query.Iter.newBuilder();
             if (iteratorId == -1) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
+                iterator.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
-                res.setIteratorId(iteratorId);
+                iterator.setId(iteratorId);
             }
-            return SessionProto.Transaction.Res.newBuilder().setQuery(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setQuery(iterator).build();
         }
 
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable ai.grakn.concept.Concept concept) {
@@ -98,9 +98,9 @@ public class ResponseBuilder {
             return SessionProto.Transaction.Res.newBuilder().setGetConcept(res).build();
         }
 
-        static SessionProto.Transaction.Res getAttributes(int iteratorId) {
-            SessionProto.Transaction.GetAttributes.Res.Builder res = SessionProto.Transaction.GetAttributes.Res.newBuilder()
-                    .setIteratorId(iteratorId);
+        static SessionProto.Transaction.Res getAttributesIterator(int iteratorId) {
+            SessionProto.Transaction.GetAttributes.Iter.Builder res = SessionProto.Transaction.GetAttributes.Iter.newBuilder()
+                    .setId(iteratorId);
             return SessionProto.Transaction.Res.newBuilder().setGetAttributes(res).build();
         }
 
@@ -135,37 +135,28 @@ public class ResponseBuilder {
         }
 
         /**
-         * An RPC Response Builder class for Transaction Iterator responses
+         * An RPC Response Builder class for Transaction iterator responses
          */
-        public static class Iter {
-            
-            static SessionProto.Transaction.Res answer(Object object) {
+        static class Iter {
+
+            static SessionProto.Transaction.Res query(Object object) {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setAnswer(Answer.answer(object))).build();
+                                .setQuery(SessionProto.Transaction.Query.Iter.Res.newBuilder()
+                                        .setAnswer(Answer.answer(object)))).build();
             }
 
-            static SessionProto.Transaction.Res done() {
+            static SessionProto.Transaction.Res getAttributes(ai.grakn.concept.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setDone(true)).build();
+                                .setGetAttributes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
+                                        .setConcept(Concept.concept(concept)))).build();
             }
 
-            static SessionProto.Transaction.Res concept(ai.grakn.concept.Concept concept) {
+            static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setConcept(ResponseBuilder.Concept.concept(concept))).build();
-            }
-
-            static SessionProto.Transaction.Res rolePlayer(ai.grakn.concept.Role role, ai.grakn.concept.Thing player) {
-                ConceptProto.Relation.RolePlayer rolePlayer = ConceptProto.Relation.RolePlayer.newBuilder()
-                        .setRole(ResponseBuilder.Concept.concept(role))
-                        .setPlayer(ResponseBuilder.Concept.concept(player))
-                        .build();
-
-                return SessionProto.Transaction.Res.newBuilder()
-                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setRolePlayer(rolePlayer)).build();
+                                .setConceptMethod(methodResponse)).build();
             }
         }
     }

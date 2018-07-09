@@ -26,7 +26,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 
 import java.util.stream.Stream;
 
@@ -43,8 +42,8 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeInstances(ConceptProto.Type.Instances.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeInstances().getIteratorId();
-        return conceptStream(iteratorId).map(this::asInstance);
+        int iteratorId = runMethod(method).getTypeInstances().getId();
+        return conceptStream(iteratorId, res -> res.getTypeInstances().getConcept()).map(this::asInstance);
     }
 
     @Override
@@ -52,8 +51,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeIsAbstract(ConceptProto.Type.IsAbstract.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        return response.getConceptMethod().getResponse().getTypeIsAbstract().getAbstract();
+        return runMethod(method).getTypeIsAbstract().getAbstract();
     }
 
     @Override
@@ -71,8 +69,8 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKeys(ConceptProto.Type.Keys.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeKeys().getIteratorId();
-        return conceptStream(iteratorId).map(Concept::asAttributeType);
+        int iteratorId = runMethod(method).getTypeKeys().getId();
+        return conceptStream(iteratorId, res -> res.getTypeKeys().getConcept()).map(Concept::asAttributeType);
     }
 
     @Override
@@ -80,8 +78,8 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeAttributes(ConceptProto.Type.Attributes.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getTypeAttributes().getIteratorId();
-        return conceptStream(iteratorId).map(Concept::asAttributeType);
+        int iteratorId = runMethod(method).getTypeAttributes().getId();
+        return conceptStream(iteratorId, res -> res.getTypeAttributes().getConcept()).map(Concept::asAttributeType);
     }
 
     @Override
@@ -89,8 +87,8 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlaying(ConceptProto.Type.Playing.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getTypePlaying().getIteratorId();
-        return conceptStream(iteratorId).map(Concept::asRole);
+        int iteratorId = runMethod(method).getTypePlaying().getId();
+        return conceptStream(iteratorId, res -> res.getTypePlaying().getConcept()).map(Concept::asRole);
     }
 
     @Override

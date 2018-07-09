@@ -36,11 +36,11 @@ message Transaction {
         oneof res {
             Open.Res open = 1;
             Commit.Res commit = 2;
-            Query.Res query = 3;
+            Query.Iter query = 3;
             Iter.Res iterate = 4;
             GetSchemaConcept.Res getSchemaConcept = 5;
             GetConcept.Res getConcept = 6;
-            GetAttributes.Res getAttributes = 7;
+            GetAttributes.Iter getAttributes = 7;
             PutEntityType.Res putEntityType = 8;
             PutAttributeType.Res putAttributeType = 9;
             PutRelationshipType.Res putRelationshipType = 10;
@@ -57,9 +57,9 @@ message Transaction {
         message Res {
             oneof res {
                 bool done = 1;
-                Answer answer = 2;
-                Concept concept = 3;
-                Relation.RolePlayer rolePlayer = 4;
+                Query.Iter.Res query = 2;
+                GetAttributes.Iter.Res getAttributes = 3;
+                Method.Iter.Res conceptMethod = 4;
             }
         }
     }
@@ -85,10 +85,13 @@ message Transaction {
             string query = 1;
             bool infer = 2; // If this is not present, leave at server default.
         }
-        message Res {
-            oneof res {
-                int32 iteratorId = 1;
+        message Iter {
+            oneof iter {
+                int32 id = 1;
                 Null null = 2;
+            }
+            message Res {
+                Answer answer = 1;
             }
         }
     }
@@ -121,8 +124,11 @@ message Transaction {
         message Req {
             ValueObject value = 1;
         }
-        message Res {
-            int32 iteratorId = 1;
+        message Iter {
+            int32 id = 1;
+            message Res {
+                Concept concept = 1;
+            }
         }
     }
 

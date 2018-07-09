@@ -220,12 +220,12 @@ public final class Grakn {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
 
-            switch (txResponse.getQuery().getResCase()) {
+            switch (txResponse.getQuery().getIterCase()) {
                 case NULL:
                     return Collections.emptyIterator();
-                case ITERATORID:
-                    int iteratorId = txResponse.getQuery().getIteratorId();
-                    return new Iterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getAnswer(), this));
+                case ID:
+                    int iteratorId = txResponse.getQuery().getId();
+                    return new Iterator<>(this, iteratorId, response -> ConceptBuilder.answer(response.getQuery().getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }
@@ -296,9 +296,9 @@ public final class Grakn {
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
-            int iteratorId = responseOrThrow().getGetAttributes().getIteratorId();
+            int iteratorId = responseOrThrow().getGetAttributes().getId();
             Iterable<Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, response -> ConceptBuilder.concept(response.getConcept(), this)
+                    this, iteratorId, response -> ConceptBuilder.concept(response.getGetAttributes().getConcept(), this)
             );
 
             return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
@@ -340,10 +340,10 @@ public final class Grakn {
                     .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Req.getDefaultInstance()).build();
 
             SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
-            int iteratorId = response.getConceptMethod().getResponse().getSchemaConceptSups().getIteratorId();
+            int iteratorId = response.getConceptMethod().getResponse().getSchemaConceptSups().getId();
 
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, res -> ConceptBuilder.concept(res.getConcept(), this)
+                    this, iteratorId, res -> ConceptBuilder.concept(res.getConceptMethod().getSchemaConceptSups().getConcept(), this)
             );
 
             Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);

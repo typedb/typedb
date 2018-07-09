@@ -26,7 +26,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.SessionProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
@@ -46,8 +45,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeCreate(ConceptProto.RelationType.Create.Req.getDefaultInstance()).build();
 
-        SessionProto.Transaction.Res response = runMethod(method);
-        Concept concept = ConceptBuilder.concept(response.getConceptMethod().getResponse().getRelationTypeCreate().getConcept(), tx());
+        Concept concept = ConceptBuilder.concept(runMethod(method).getRelationTypeCreate().getConcept(), tx());
 
         return asInstance(concept);
     }
@@ -57,8 +55,8 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeRoles(ConceptProto.RelationType.Roles.Req.getDefaultInstance()).build();
 
-        int iteratorId = runMethod(method).getConceptMethod().getResponse().getRelationTypeRoles().getIteratorId();
-        return conceptStream(iteratorId).map(Concept::asRole);
+        int iteratorId = runMethod(method).getRelationTypeRoles().getId();
+        return conceptStream(iteratorId, res -> res.getRelationTypeRoles().getConcept()).map(Concept::asRole);
     }
 
     @Override
