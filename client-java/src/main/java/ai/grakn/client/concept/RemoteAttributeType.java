@@ -45,10 +45,10 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final Attribute<D> create(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributeTypeCreate(ConceptProto.AttributeType.Create.Req.newBuilder()
+                .setAttributeTypeCreateReq(ConceptProto.AttributeType.Create.Req.newBuilder()
                         .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
-        Concept concept = ConceptReader.concept(runMethod(method).getAttributeTypeCreate().getConcept(), tx());
+        Concept concept = ConceptReader.concept(runMethod(method).getAttributeTypeCreateRes().getConcept(), tx());
         return asInstance(concept);
     }
 
@@ -56,10 +56,10 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final Attribute<D> attribute(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributeTypeAttribute(ConceptProto.AttributeType.Attribute.Req.newBuilder()
+                .setAttributeTypeAttributeReq(ConceptProto.AttributeType.Attribute.Req.newBuilder()
                         .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
-        ConceptProto.AttributeType.Attribute.Res response = runMethod(method).getAttributeTypeAttribute();
+        ConceptProto.AttributeType.Attribute.Res response = runMethod(method).getAttributeTypeAttributeRes();
         switch (response.getResCase()) {
             case NULL:
                 return null;
@@ -74,9 +74,9 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final AttributeType.DataType<D> dataType() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributeTypeDataType(ConceptProto.AttributeType.DataType.Req.getDefaultInstance()).build();
+                .setAttributeTypeDataTypeReq(ConceptProto.AttributeType.DataType.Req.getDefaultInstance()).build();
 
-        ConceptProto.AttributeType.DataType.Res response = runMethod(method).getAttributeTypeDataType();
+        ConceptProto.AttributeType.DataType.Res response = runMethod(method).getAttributeTypeDataTypeRes();
         switch (response.getResCase()) {
             case NULL:
                 return null;
@@ -91,9 +91,9 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     @Override
     public final String regex() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributeTypeGetRegex(ConceptProto.AttributeType.GetRegex.Req.getDefaultInstance()).build();
+                .setAttributeTypeGetRegexReq(ConceptProto.AttributeType.GetRegex.Req.getDefaultInstance()).build();
 
-        String regex = runMethod(method).getAttributeTypeGetRegex().getRegex();
+        String regex = runMethod(method).getAttributeTypeGetRegexRes().getRegex();
         return regex.isEmpty() ? null : regex;
     }
 
@@ -101,7 +101,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final AttributeType<D> regex(String regex) {
         if (regex == null) regex = "";
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setAttributeTypeSetRegex(ConceptProto.AttributeType.SetRegex.Req.newBuilder()
+                .setAttributeTypeSetRegexReq(ConceptProto.AttributeType.SetRegex.Req.newBuilder()
                         .setRegex(regex)).build();
 
         runMethod(method);

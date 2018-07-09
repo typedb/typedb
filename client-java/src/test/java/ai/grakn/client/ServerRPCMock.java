@@ -192,7 +192,7 @@ public final class ServerRPCMock extends CompositeTestRule {
 
             Transaction.Req request = args.getArgument(0);
 
-            Optional<Transaction.Res> next = rpcIterators.next(request.getIterate().getId());
+            Optional<Transaction.Res> next = rpcIterators.next(request.getIterateReq().getId());
             serverResponses.onNext(next.orElse(done()));
 
             return null;
@@ -224,7 +224,7 @@ public final class ServerRPCMock extends CompositeTestRule {
 
     private static SessionProto.Transaction.Res done() {
         return SessionProto.Transaction.Res.newBuilder()
-                .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                         .setDone(true)).build();
     }
 

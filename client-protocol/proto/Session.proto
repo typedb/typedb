@@ -17,36 +17,36 @@ service Session {
 message Transaction {
     message Req {
         oneof req {
-            Open.Req open = 1;
-            Commit.Req commit = 2;
-            Query.Req query = 3;
-            Iter.Req iterate = 4;
-            GetSchemaConcept.Req getSchemaConcept = 6;
-            GetConcept.Req getConcept = 7;
-            GetAttributes.Req getAttributes = 8;
-            PutEntityType.Req putEntityType = 9;
-            PutAttributeType.Req putAttributeType = 10;
-            PutRelationshipType.Req putRelationshipType = 11;
-            PutRole.Req putRole = 12;
-            PutRule.Req putRule = 13;
-            ConceptMethod.Req conceptMethod = 15;
+            Open.Req open_req = 1;
+            Commit.Req commit_req = 2;
+            Query.Req query_req = 3;
+            Iter.Req iterate_req = 4;
+            GetSchemaConcept.Req getSchemaConcept_req = 5;
+            GetConcept.Req getConcept_req = 6;
+            GetAttributes.Req getAttributes_req = 7;
+            PutEntityType.Req putEntityType_req = 8;
+            PutAttributeType.Req putAttributeType_req = 9;
+            PutRelationshipType.Req putRelationshipType_req = 10;
+            PutRole.Req putRole_req = 11;
+            PutRule.Req putRule_req = 12;
+            ConceptMethod.Req conceptMethod_req = 13;
         }
     }
     message Res {
         oneof res {
-            Open.Res open = 1;
-            Commit.Res commit = 2;
-            Query.Iter query = 3;
-            Iter.Res iterate = 4;
-            GetSchemaConcept.Res getSchemaConcept = 5;
-            GetConcept.Res getConcept = 6;
-            GetAttributes.Iter getAttributes = 7;
-            PutEntityType.Res putEntityType = 8;
-            PutAttributeType.Res putAttributeType = 9;
-            PutRelationshipType.Res putRelationshipType = 10;
-            PutRole.Res putRole = 11;
-            PutRule.Res putRule = 12;
-            ConceptMethod.Res conceptMethod = 13;
+            Open.Res open_res = 1;
+            Commit.Res commit_res = 2;
+            Query.Iter query_iter = 3;
+            Iter.Res iterate_res = 4;
+            GetSchemaConcept.Res getSchemaConcept_res = 5;
+            GetConcept.Res getConcept_res = 6;
+            GetAttributes.Iter getAttributes_iter = 7;
+            PutEntityType.Res putEntityType_res = 8;
+            PutAttributeType.Res putAttributeType_res = 9;
+            PutRelationshipType.Res putRelationshipType_res = 10;
+            PutRole.Res putRole_res = 11;
+            PutRule.Res putRule_res = 12;
+            ConceptMethod.Res conceptMethod_res = 13;
         }
     }
 
@@ -57,9 +57,9 @@ message Transaction {
         message Res {
             oneof res {
                 bool done = 1;
-                Query.Iter.Res query = 2;
-                GetAttributes.Iter.Res getAttributes = 3;
-                Method.Iter.Res conceptMethod = 4;
+                Query.Iter.Res query_iter_res = 2;
+                GetAttributes.Iter.Res getAttributes_iter_res = 3;
+                Method.Iter.Res conceptMethod_iter_res = 4;
             }
         }
     }

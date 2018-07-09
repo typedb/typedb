@@ -58,13 +58,13 @@ public class ResponseBuilder {
 
         static SessionProto.Transaction.Res open() {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setOpen(SessionProto.Transaction.Open.Res.getDefaultInstance())
+                    .setOpenRes(SessionProto.Transaction.Open.Res.getDefaultInstance())
                     .build();
         }
 
         static SessionProto.Transaction.Res commit() {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setCommit(SessionProto.Transaction.Commit.Res.getDefaultInstance())
+                    .setCommitRes(SessionProto.Transaction.Commit.Res.getDefaultInstance())
                     .build();
         }
 
@@ -75,7 +75,7 @@ public class ResponseBuilder {
             } else {
                 iterator.setId(iteratorId);
             }
-            return SessionProto.Transaction.Res.newBuilder().setQuery(iterator).build();
+            return SessionProto.Transaction.Res.newBuilder().setQueryIter(iterator).build();
         }
 
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable ai.grakn.concept.Concept concept) {
@@ -85,7 +85,7 @@ public class ResponseBuilder {
             } else {
                 res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
-            return SessionProto.Transaction.Res.newBuilder().setGetSchemaConcept(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetSchemaConceptRes(res).build();
         }
 
         static SessionProto.Transaction.Res getConcept(@Nullable ai.grakn.concept.Concept concept) {
@@ -95,43 +95,43 @@ public class ResponseBuilder {
             } else {
                 res.setConcept(ResponseBuilder.Concept.concept(concept));
             }
-            return SessionProto.Transaction.Res.newBuilder().setGetConcept(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetConceptRes(res).build();
         }
 
         static SessionProto.Transaction.Res getAttributesIterator(int iteratorId) {
             SessionProto.Transaction.GetAttributes.Iter.Builder res = SessionProto.Transaction.GetAttributes.Iter.newBuilder()
                     .setId(iteratorId);
-            return SessionProto.Transaction.Res.newBuilder().setGetAttributes(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setGetAttributesIter(res).build();
         }
 
         static SessionProto.Transaction.Res putEntityType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutEntityType.Res.Builder res = SessionProto.Transaction.PutEntityType.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutEntityType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putAttributeType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutAttributeType.Res.Builder res = SessionProto.Transaction.PutAttributeType.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutAttributeType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRelationshipType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRelationshipType.Res.Builder res = SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutRelationshipType(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRelationshipTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRole(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRole.Res.Builder res = SessionProto.Transaction.PutRole.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutRole(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRoleRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRule(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRule.Res.Builder res = SessionProto.Transaction.PutRule.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutRule(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
         }
 
         /**
@@ -141,22 +141,22 @@ public class ResponseBuilder {
 
             static SessionProto.Transaction.Res query(Object object) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setQuery(SessionProto.Transaction.Query.Iter.Res.newBuilder()
+                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                         .setAnswer(Answer.answer(object)))).build();
             }
 
             static SessionProto.Transaction.Res getAttributes(ai.grakn.concept.Concept concept) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setGetAttributes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
+                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
                                         .setConcept(Concept.concept(concept)))).build();
             }
 
             static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
                 return SessionProto.Transaction.Res.newBuilder()
-                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethod(methodResponse)).build();
+                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodIterRes(methodResponse)).build();
             }
         }
     }

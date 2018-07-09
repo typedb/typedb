@@ -236,7 +236,7 @@ public class ServerRPCTest {
         Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(GraknTxType.WRITE.getId()).build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(Transaction.Req.newBuilder().setOpen(openRequest).build());
+            tx.send(Transaction.Req.newBuilder().setOpenReq(openRequest).build());
             exception.expect(hasStatus(Status.INVALID_ARGUMENT));
             throw tx.receive().error();
         }
@@ -300,7 +300,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            int iterator = tx.receive().ok().getQuery().getId();
+            int iterator = tx.receive().ok().getQueryIter().getId();
 
             tx.send(iterate(iterator));
             Transaction.Res response1 = tx.receive().ok();
@@ -310,8 +310,8 @@ public class ServerRPCTest {
             AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
             Transaction.Res resX = Transaction.Res.newBuilder()
-                    .setIterate(Transaction.Iter.Res.newBuilder()
-                            .setQuery(Transaction.Query.Iter.Res.newBuilder()
+                    .setIterateRes(Transaction.Iter.Res.newBuilder()
+                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
                                     .setAnswer(resultX))).build();
             assertEquals(resX, response1);
 
@@ -323,15 +323,15 @@ public class ServerRPCTest {
             AnswerProto.QueryAnswer.Builder answerY = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
             AnswerProto.Answer.Builder resultY = AnswerProto.Answer.newBuilder().setQueryAnswer(answerY);
             Transaction.Res resY = Transaction.Res.newBuilder()
-                    .setIterate(Transaction.Iter.Res.newBuilder()
-                            .setQuery(Transaction.Query.Iter.Res.newBuilder()
+                    .setIterateRes(Transaction.Iter.Res.newBuilder()
+                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
                                     .setAnswer(resultY))).build();
             assertEquals(resY, response2);
 
             tx.send(iterate(iterator));
             Transaction.Res response3 = tx.receive().ok();
 
-            Transaction.Res expected = Transaction.Res.newBuilder().setIterate(Transaction.Iter.Res.newBuilder().setDone(true)).build();
+            Transaction.Res expected = Transaction.Res.newBuilder().setIterateRes(Transaction.Iter.Res.newBuilder().setDone(true)).build();
             assertEquals(expected, response3);
         }
     }
@@ -361,7 +361,7 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            int iterator = tx.receive().ok().getQuery().getId();
+            int iterator = tx.receive().ok().getQueryIter().getId();
 
             tx.send(iterate(iterator));
             tx.receive().ok();
@@ -387,8 +387,8 @@ public class ServerRPCTest {
             tx.send(query(COUNT_QUERY, false));
 
             Transaction.Res expected = Transaction.Res.newBuilder()
-                    .setIterate(Transaction.Iter.Res.newBuilder()
-                            .setQuery(Transaction.Query.Iter.Res.newBuilder()
+                    .setIterateRes(Transaction.Iter.Res.newBuilder()
+                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
                                     .setAnswer(AnswerProto.Answer.newBuilder().setOtherResult("100")))).build();
 
             assertEquals(expected, tx.receive().ok());
@@ -417,7 +417,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, false));
-            int iterator = tx.receive().ok().getQuery().getId();
+            int iterator = tx.receive().ok().getQueryIter().getId();
 
             tx.send(iterate(iterator));
         }
@@ -430,7 +430,7 @@ public class ServerRPCTest {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.send(query(QUERY, true));
-            int iterator = tx.receive().ok().getQuery().getId();
+            int iterator = tx.receive().ok().getQueryIter().getId();
 
             tx.send(iterate(iterator));
         }
@@ -587,7 +587,7 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            ConceptProto.Concept response = tx.receive().ok().getGetConcept().getConcept();
+            ConceptProto.Concept response = tx.receive().ok().getGetConceptRes().getConcept();
 
             assertEquals(id.getValue(), response.getId());
             assertEquals(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP, response.getBaseType());
@@ -606,7 +606,7 @@ public class ServerRPCTest {
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
 
-            assertTrue(tx.receive().ok().getGetConcept().getNull().isInitialized());
+            assertTrue(tx.receive().ok().getGetConceptRes().getNull().isInitialized());
         }
     }
 
@@ -731,10 +731,10 @@ public class ServerRPCTest {
             tx.receive();
 
             tx.send(query(QUERY, false));
-            int iterator1 = tx.receive().ok().getQuery().getId();
+            int iterator1 = tx.receive().ok().getQueryIter().getId();
 
             tx.send(query(QUERY, false));
-            int iterator2 = tx.receive().ok().getQuery().getId();
+            int iterator2 = tx.receive().ok().getQueryIter().getId();
 
             tx.send(iterate(iterator1));
             tx.receive().ok();

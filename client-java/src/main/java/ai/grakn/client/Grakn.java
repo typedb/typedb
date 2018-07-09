@@ -23,8 +23,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
-import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
@@ -220,12 +220,12 @@ public final class Grakn {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
 
-            switch (txResponse.getQuery().getIterCase()) {
+            switch (txResponse.getQueryIter().getIterCase()) {
                 case NULL:
                     return Collections.emptyIterator();
                 case ID:
-                    int iteratorId = txResponse.getQuery().getId();
-                    return new Iterator<>(this, iteratorId, response -> RequestBuilder.Answer.answer(response.getQuery().getAnswer(), this));
+                    int iteratorId = txResponse.getQueryIter().getId();
+                    return new Iterator<>(this, iteratorId, response -> RequestBuilder.Answer.answer(response.getQueryIterRes().getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }
@@ -272,11 +272,11 @@ public final class Grakn {
         public <T extends SchemaConcept> T getSchemaConcept(Label label) {
             transceiver.send(RequestBuilder.Transaction.getSchemaConcept(label));
             SessionProto.Transaction.Res response = responseOrThrow();
-            switch (response.getGetSchemaConcept().getResCase()) {
+            switch (response.getGetSchemaConceptRes().getResCase()) {
                 case NULL:
                     return null;
                 default:
-                    return (T) ConceptReader.concept(response.getGetSchemaConcept().getConcept(), this);
+                    return (T) ConceptReader.concept(response.getGetSchemaConceptRes().getConcept(), this);
             }
         }
 
@@ -285,20 +285,20 @@ public final class Grakn {
         public <T extends Concept> T getConcept(ConceptId id) {
             transceiver.send(RequestBuilder.Transaction.getConcept(id));
             SessionProto.Transaction.Res response = responseOrThrow();
-            switch (response.getGetConcept().getResCase()) {
+            switch (response.getGetConceptRes().getResCase()) {
                 case NULL:
                     return null;
                 default:
-                    return (T) ConceptReader.concept(response.getGetConcept().getConcept(), this);
+                    return (T) ConceptReader.concept(response.getGetConceptRes().getConcept(), this);
             }
         }
 
         @Override
         public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
-            int iteratorId = responseOrThrow().getGetAttributes().getId();
+            int iteratorId = responseOrThrow().getGetAttributesIter().getId();
             Iterable<Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, response -> ConceptReader.concept(response.getGetAttributes().getConcept(), this)
+                    this, iteratorId, response -> ConceptReader.concept(response.getGetAttributesIterRes().getConcept(), this)
             );
 
             return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
@@ -307,43 +307,43 @@ public final class Grakn {
         @Override
         public EntityType putEntityType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putEntityType(label));
-            return ConceptReader.concept(responseOrThrow().getPutEntityType().getConcept(), this).asEntityType();
+            return ConceptReader.concept(responseOrThrow().getPutEntityTypeRes().getConcept(), this).asEntityType();
         }
 
         @Override
         public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
             transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
-            return ConceptReader.concept(responseOrThrow().getPutAttributeType().getConcept(), this).asAttributeType();
+            return ConceptReader.concept(responseOrThrow().getPutAttributeTypeRes().getConcept(), this).asAttributeType();
         }
 
         @Override
         public RelationshipType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptReader.concept(responseOrThrow().getPutRelationshipType().getConcept(), this).asRelationshipType();
+            return ConceptReader.concept(responseOrThrow().getPutRelationshipTypeRes().getConcept(), this).asRelationshipType();
         }
 
         @Override
         public Role putRole(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRole(label));
-            return ConceptReader.concept(responseOrThrow().getPutRole().getConcept(), this).asRole();
+            return ConceptReader.concept(responseOrThrow().getPutRoleRes().getConcept(), this).asRole();
         }
 
         @Override
         public Rule putRule(Label label, Pattern when, Pattern then) {
             transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
-            return ConceptReader.concept(responseOrThrow().getPutRule().getConcept(), this).asRule();
+            return ConceptReader.concept(responseOrThrow().getPutRuleRes().getConcept(), this).asRule();
         }
 
         @Override
         public Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
             ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                    .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Req.getDefaultInstance()).build();
+                    .setSchemaConceptSupsReq(ConceptProto.SchemaConcept.Sups.Req.getDefaultInstance()).build();
 
             SessionProto.Transaction.Res response = runConceptMethod(schemaConcept.id(), method);
-            int iteratorId = response.getConceptMethod().getResponse().getSchemaConceptSups().getId();
+            int iteratorId = response.getConceptMethodRes().getResponse().getSchemaConceptSupsIter().getId();
 
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, res -> ConceptReader.concept(res.getConceptMethod().getSchemaConceptSups().getConcept(), this)
+                    this, iteratorId, res -> ConceptReader.concept(res.getConceptMethodIterRes().getSchemaConceptSupsIterRes().getConcept(), this)
             );
 
             Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);
@@ -353,7 +353,7 @@ public final class Grakn {
         public SessionProto.Transaction.Res runConceptMethod(ConceptId id, ConceptProto.Method.Req method) {
             SessionProto.Transaction.ConceptMethod.Req conceptMethod = SessionProto.Transaction.ConceptMethod.Req.newBuilder()
                     .setId(id.getValue()).setMethod(method).build();
-            SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethod(conceptMethod).build();
+            SessionProto.Transaction.Req request = SessionProto.Transaction.Req.newBuilder().setConceptMethodReq(conceptMethod).build();
 
             transceiver.send(request);
             return responseOrThrow();
@@ -361,7 +361,7 @@ public final class Grakn {
 
         private SessionProto.Transaction.Iter.Res iterate(int iteratorId) {
             transceiver.send(RequestBuilder.Transaction.iterate(iteratorId));
-            return responseOrThrow().getIterate();
+            return responseOrThrow().getIterateRes();
         }
 
         /**

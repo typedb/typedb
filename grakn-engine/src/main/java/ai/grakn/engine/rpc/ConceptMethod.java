@@ -45,121 +45,121 @@ public class ConceptMethod {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
-            case CONCEPT_DELETE:
+            case CONCEPT_DELETE_REQ:
                 return con.asConcept().delete();
 
             // SchemaConcept methods
-            case SCHEMACONCEPT_ISIMPLICIT:
+            case SCHEMACONCEPT_ISIMPLICIT_REQ:
                 return con.asSchemaConcept().isImplicit();
-            case SCHEMACONCEPT_GETLABEL:
+            case SCHEMACONCEPT_GETLABEL_REQ:
                 return con.asSchemaConcept().label();
-            case SCHEMACONCEPT_SETLABEL:
-                return con.asSchemaConcept().label(req.getSchemaConceptSetLabel().getLabel());
-            case SCHEMACONCEPT_GETSUP:
+            case SCHEMACONCEPT_SETLABEL_REQ:
+                return con.asSchemaConcept().label(req.getSchemaConceptSetLabelReq().getLabel());
+            case SCHEMACONCEPT_GETSUP_REQ:
                 return con.asSchemaConcept().sup();
-            case SCHEMACONCEPT_SETSUP:
-                return con.asSchemaConcept().sup(req.getSchemaConceptSetSup().getConcept());
-            case SCHEMACONCEPT_SUPS:
+            case SCHEMACONCEPT_SETSUP_REQ:
+                return con.asSchemaConcept().sup(req.getSchemaConceptSetSupReq().getConcept());
+            case SCHEMACONCEPT_SUPS_REQ:
                 return con.asSchemaConcept().sups();
-            case SCHEMACONCEPT_SUBS:
+            case SCHEMACONCEPT_SUBS_REQ:
                 return con.asSchemaConcept().subs();
 
             // Rule methods
-            case RULE_WHEN:
+            case RULE_WHEN_REQ:
                 return con.asRule().when();
-            case RULE_THEN:
+            case RULE_THEN_REQ:
                 return con.asRule().then();
 
             // Role methods
-            case ROLE_RELATIONS:
+            case ROLE_RELATIONS_REQ:
                 return con.asRole().relations();
-            case ROLE_PLAYERS:
+            case ROLE_PLAYERS_REQ:
                 return con.asRole().players();
 
             // Type methods
-            case TYPE_INSTANCES:
+            case TYPE_INSTANCES_REQ:
                 return con.asType().instances();
-            case TYPE_ISABSTRACT:
+            case TYPE_ISABSTRACT_REQ:
                 return con.asType().isAbstract();
-            case TYPE_SETABSTRACT:
-                return con.asType().isAbstract(req.getTypeSetAbstract().getAbstract());
-            case TYPE_KEYS:
+            case TYPE_SETABSTRACT_REQ:
+                return con.asType().isAbstract(req.getTypeSetAbstractReq().getAbstract());
+            case TYPE_KEYS_REQ:
                 return con.asType().keys();
-            case TYPE_ATTRIBUTES:
+            case TYPE_ATTRIBUTES_REQ:
                 return con.asType().attributes();
-            case TYPE_PLAYING:
+            case TYPE_PLAYING_REQ:
                 return con.asType().playing();
-            case TYPE_KEY:
-                return con.asType().key(req.getTypeKey().getConcept());
-            case TYPE_HAS:
-                return con.asType().has(req.getTypeHas().getConcept());
-            case TYPE_PLAYS:
-                return con.asType().plays(req.getTypePlays().getConcept());
-            case TYPE_UNKEY:
-                return con.asType().unkey(req.getTypeUnkey().getConcept());
-            case TYPE_UNHAS:
-                return con.asType().unhas(req.getTypeUnhas().getConcept());
-            case TYPE_UNPLAY:
-                return con.asType().unplay(req.getTypeUnplay().getConcept());
+            case TYPE_KEY_REQ:
+                return con.asType().key(req.getTypeKeyReq().getConcept());
+            case TYPE_HAS_REQ:
+                return con.asType().has(req.getTypeHasReq().getConcept());
+            case TYPE_PLAYS_REQ:
+                return con.asType().plays(req.getTypePlaysReq().getConcept());
+            case TYPE_UNKEY_REQ:
+                return con.asType().unkey(req.getTypeUnkeyReq().getConcept());
+            case TYPE_UNHAS_REQ:
+                return con.asType().unhas(req.getTypeUnhasReq().getConcept());
+            case TYPE_UNPLAY_REQ:
+                return con.asType().unplay(req.getTypeUnplayReq().getConcept());
 
             // EntityType methods
-            case ENTITYTYPE_CREATE:
+            case ENTITYTYPE_CREATE_REQ:
                 return con.asEntityType().create();
 
             // RelationshipType methods
-            case RELATIONTYPE_CREATE:
+            case RELATIONTYPE_CREATE_REQ:
                 return con.asRelationshipType().create();
-            case RELATIONTYPE_ROLES:
+            case RELATIONTYPE_ROLES_REQ:
                 return con.asRelationshipType().roles();
-            case RELATIONTYPE_RELATES:
-                return con.asRelationshipType().relates(req.getRelationTypeRelates().getConcept());
-            case RELATIONTYPE_UNRELATE:
-                return con.asRelationshipType().unrelate(req.getRelationTypeUnrelate().getConcept());
+            case RELATIONTYPE_RELATES_REQ:
+                return con.asRelationshipType().relates(req.getRelationTypeRelatesReq().getConcept());
+            case RELATIONTYPE_UNRELATE_REQ:
+                return con.asRelationshipType().unrelate(req.getRelationTypeUnrelateReq().getConcept());
 
             // AttributeType methods
-            case ATTRIBUTETYPE_CREATE:
-                return con.asAttributeType().create(req.getAttributeTypeCreate().getValue());
-            case ATTRIBUTETYPE_ATTRIBUTE:
-                return con.asAttributeType().attribute(req.getAttributeTypeAttribute().getValue());
-            case ATTRIBUTETYPE_DATATYPE:
+            case ATTRIBUTETYPE_CREATE_REQ:
+                return con.asAttributeType().create(req.getAttributeTypeCreateReq().getValue());
+            case ATTRIBUTETYPE_ATTRIBUTE_REQ:
+                return con.asAttributeType().attribute(req.getAttributeTypeAttributeReq().getValue());
+            case ATTRIBUTETYPE_DATATYPE_REQ:
                 return con.asAttributeType().dataType();
-            case ATTRIBUTETYPE_GETREGEX:
+            case ATTRIBUTETYPE_GETREGEX_REQ:
                 return con.asAttributeType().regex();
-            case ATTRIBUTETYPE_SETREGEX:
-                return con.asAttributeType().regex(req.getAttributeTypeSetRegex().getRegex());
+            case ATTRIBUTETYPE_SETREGEX_REQ:
+                return con.asAttributeType().regex(req.getAttributeTypeSetRegexReq().getRegex());
 
             // Thing methods
-            case THING_ISINFERRED:
+            case THING_ISINFERRED_REQ:
                 return con.asThing().isInferred();
-            case THING_TYPE:
+            case THING_TYPE_REQ:
                 return con.asThing().type();
-            case THING_KEYS:
-                return con.asThing().keys(req.getThingKeys().getConceptsList());
-            case THING_ATTRIBUTES:
-                return con.asThing().attributes(req.getThingAttributes().getConceptsList());
-            case THING_RELATIONS:
-                return con.asThing().relations(req.getThingRelations().getConceptsList());
-            case THING_ROLES:
+            case THING_KEYS_REQ:
+                return con.asThing().keys(req.getThingKeysReq().getConceptsList());
+            case THING_ATTRIBUTES_REQ:
+                return con.asThing().attributes(req.getThingAttributesReq().getConceptsList());
+            case THING_RELATIONS_REQ:
+                return con.asThing().relations(req.getThingRelationsReq().getConceptsList());
+            case THING_ROLES_REQ:
                 return con.asThing().roles();
-            case THING_RELHAS:
-                return con.asThing().relhas(req.getThingRelhas().getConcept());
-            case THING_UNHAS:
-                return con.asThing().unhas(req.getThingUnhas().getConcept());
+            case THING_RELHAS_REQ:
+                return con.asThing().relhas(req.getThingRelhasReq().getConcept());
+            case THING_UNHAS_REQ:
+                return con.asThing().unhas(req.getThingUnhasReq().getConcept());
 
             // Relationship methods
-            case RELATION_ROLEPLAYERSMAP:
+            case RELATION_ROLEPLAYERSMAP_REQ:
                 return con.asRelationship().rolePlayersMap();
-            case RELATION_ROLEPLAYERS:
-                return con.asRelationship().rolePlayers(req.getRelationRolePlayers().getConceptsList());
-            case RELATION_ASSIGN:
-                return con.asRelationship().assign(req.getRelationAssign());
-            case RELATION_UNASSIGN:
-                return con.asRelationship().unassign(req.getRelationUnassign());
+            case RELATION_ROLEPLAYERS_REQ:
+                return con.asRelationship().rolePlayers(req.getRelationRolePlayersReq().getConceptsList());
+            case RELATION_ASSIGN_REQ:
+                return con.asRelationship().assign(req.getRelationAssignReq());
+            case RELATION_UNASSIGN_REQ:
+                return con.asRelationship().unassign(req.getRelationUnassignReq());
 
             // Attribute Methods
-            case ATTRIBUTE_VALUE:
+            case ATTRIBUTE_VALUE_REQ:
                 return con.asAttribute().value();
-            case ATTRIBUTE_OWNERS:
+            case ATTRIBUTE_OWNERS_REQ:
                 return con.asAttribute().owners();
 
             default:
@@ -233,7 +233,7 @@ public class ConceptMethod {
 
         private static SessionProto.Transaction.Res transactionRes(ConceptProto.Method.Res response) {
             return SessionProto.Transaction.Res.newBuilder()
-                    .setConceptMethod(SessionProto.Transaction.ConceptMethod.Res.newBuilder()
+                    .setConceptMethodRes(SessionProto.Transaction.ConceptMethod.Res.newBuilder()
                             .setResponse(response)).build();
         }
 
@@ -257,7 +257,7 @@ public class ConceptMethod {
                 Boolean implicit = concept.asSchemaConcept().isImplicit();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptIsImplicit(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
+                        .setSchemaConceptIsImplicitRes(ConceptProto.SchemaConcept.IsImplicit.Res.newBuilder()
                                 .setImplicit(implicit)).build();
 
                 return transactionRes(response);
@@ -267,7 +267,7 @@ public class ConceptMethod {
                 Label label = concept.asSchemaConcept().label();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptGetLabel(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
+                        .setSchemaConceptGetLabelRes(ConceptProto.SchemaConcept.GetLabel.Res.newBuilder()
                                 .setLabel(label.getValue())).build();
 
                 return transactionRes(response);
@@ -286,7 +286,7 @@ public class ConceptMethod {
                 else responseConcept.setConcept(ResponseBuilder.Concept.concept(superConcept));
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptGetSup(responseConcept).build();
+                        .setSchemaConceptGetSupRes(responseConcept).build();
 
                 return transactionRes(response);
             }
@@ -320,14 +320,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Iter.Res.newBuilder()
+                            .setSchemaConceptSupsIterRes(ConceptProto.SchemaConcept.Sups.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptSups(ConceptProto.SchemaConcept.Sups.Iter.newBuilder()
+                        .setSchemaConceptSupsIter(ConceptProto.SchemaConcept.Sups.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -338,14 +338,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Iter.Res.newBuilder()
+                            .setSchemaConceptSubsIterRes(ConceptProto.SchemaConcept.Subs.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setSchemaConceptSubs(ConceptProto.SchemaConcept.Subs.Iter.newBuilder()
+                        .setSchemaConceptSubsIter(ConceptProto.SchemaConcept.Subs.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -361,7 +361,7 @@ public class ConceptMethod {
                 Pattern pattern = concept.asRule().when();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleWhen(ConceptProto.Rule.When.Res.newBuilder()
+                        .setRuleWhenRes(ConceptProto.Rule.When.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
 
                 return transactionRes(response);
@@ -371,7 +371,7 @@ public class ConceptMethod {
                 Pattern pattern = concept.asRule().then();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleThen(ConceptProto.Rule.Then.Res.newBuilder()
+                        .setRuleThenRes(ConceptProto.Rule.Then.Res.newBuilder()
                                 .setPattern(pattern.toString())).build();
 
                 return transactionRes(response);
@@ -388,14 +388,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setRoleRelations(ConceptProto.Role.Relations.Iter.Res.newBuilder()
+                            .setRoleRelationsIterRes(ConceptProto.Role.Relations.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRoleRelations(ConceptProto.Role.Relations.Iter.newBuilder()
+                        .setRoleRelationsIter(ConceptProto.Role.Relations.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -406,14 +406,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setRolePlayers(ConceptProto.Role.Players.Iter.Res.newBuilder()
+                            .setRolePlayersIterRes(ConceptProto.Role.Players.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRolePlayers(ConceptProto.Role.Players.Iter.newBuilder()
+                        .setRolePlayersIter(ConceptProto.Role.Players.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -430,14 +430,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setTypeInstances(ConceptProto.Type.Instances.Iter.Res.newBuilder()
+                            .setTypeInstancesIterRes(ConceptProto.Type.Instances.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setTypeInstances(ConceptProto.Type.Instances.Iter.newBuilder()
+                        .setTypeInstancesIter(ConceptProto.Type.Instances.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -447,7 +447,7 @@ public class ConceptMethod {
                 Boolean isAbstract = concept.asType().isAbstract();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setTypeIsAbstract(ConceptProto.Type.IsAbstract.Res.newBuilder()
+                        .setTypeIsAbstractRes(ConceptProto.Type.IsAbstract.Res.newBuilder()
                                 .setAbstract(isAbstract)).build();
 
                 return transactionRes(response);
@@ -463,14 +463,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setTypeKeys(ConceptProto.Type.Keys.Iter.Res.newBuilder()
+                            .setTypeKeysIterRes(ConceptProto.Type.Keys.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setTypeKeys(ConceptProto.Type.Keys.Iter.newBuilder()
+                        .setTypeKeysIter(ConceptProto.Type.Keys.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -481,14 +481,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setTypeAttributes(ConceptProto.Type.Attributes.Iter.Res.newBuilder()
+                            .setTypeAttributesIterRes(ConceptProto.Type.Attributes.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setTypeAttributes(ConceptProto.Type.Attributes.Iter.newBuilder()
+                        .setTypeAttributesIter(ConceptProto.Type.Attributes.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -499,14 +499,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setTypePlaying(ConceptProto.Type.Playing.Iter.Res.newBuilder()
+                            .setTypePlayingIterRes(ConceptProto.Type.Playing.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setTypePlaying(ConceptProto.Type.Playing.Iter.newBuilder()
+                        .setTypePlayingIter(ConceptProto.Type.Playing.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -558,7 +558,7 @@ public class ConceptMethod {
                 Entity entity = concept.asEntityType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setEntityTypeCreate(ConceptProto.EntityType.Create.Res.newBuilder()
+                        .setEntityTypeCreateRes(ConceptProto.EntityType.Create.Res.newBuilder()
                                 .setConcept(ResponseBuilder.Concept.concept(entity))).build();
 
                 return transactionRes(response);
@@ -574,7 +574,7 @@ public class ConceptMethod {
                 ai.grakn.concept.Relationship relationship = concept.asRelationshipType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRelationTypeCreate(ConceptProto.RelationType.Create.Res.newBuilder()
+                        .setRelationTypeCreateRes(ConceptProto.RelationType.Create.Res.newBuilder()
                                 .setConcept(ResponseBuilder.Concept.concept(relationship))).build();
 
                 return transactionRes(response);
@@ -585,14 +585,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = roles.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setRelationTypeRoles(ConceptProto.RelationType.Roles.Iter.Res.newBuilder()
+                            .setRelationTypeRolesIterRes(ConceptProto.RelationType.Roles.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRelationTypeRoles(ConceptProto.RelationType.Roles.Iter.newBuilder()
+                        .setRelationTypeRolesIter(ConceptProto.RelationType.Roles.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -621,7 +621,7 @@ public class ConceptMethod {
                 ai.grakn.concept.Attribute<?> attribute = concept.asAttributeType().create(value);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeCreate(ConceptProto.AttributeType.Create.Res.newBuilder()
+                        .setAttributeTypeCreateRes(ConceptProto.AttributeType.Create.Res.newBuilder()
                                 .setConcept(ResponseBuilder.Concept.concept(attribute))).build();
 
                 return transactionRes(response);
@@ -636,7 +636,7 @@ public class ConceptMethod {
                 else methodResponse.setConcept(ResponseBuilder.Concept.concept(attribute)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeAttribute(methodResponse).build();
+                        .setAttributeTypeAttributeRes(methodResponse).build();
 
                 return transactionRes(response);
             }
@@ -651,7 +651,7 @@ public class ConceptMethod {
                 else methodResponse.setDataType(ResponseBuilder.Concept.DATA_TYPE(dataType)).build();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeDataType(methodResponse).build();
+                        .setAttributeTypeDataTypeRes(methodResponse).build();
 
                 return transactionRes(response);
             }
@@ -660,7 +660,7 @@ public class ConceptMethod {
                 String regex = concept.asAttributeType().regex();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeTypeGetRegex(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
+                        .setAttributeTypeGetRegexRes(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
                                 .setRegex((regex != null) ? regex : "")).build();
 
                 return transactionRes(response);
@@ -685,7 +685,7 @@ public class ConceptMethod {
                 Boolean inferred = concept.asThing().isInferred();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingIsInferred(ConceptProto.Thing.IsInferred.Res.newBuilder()
+                        .setThingIsInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
                                 .setInferred(inferred)).build();
 
                 return transactionRes(response);
@@ -695,7 +695,7 @@ public class ConceptMethod {
                 ai.grakn.concept.Concept type = concept.asThing().type();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingType(ConceptProto.Thing.Type.Res.newBuilder()
+                        .setThingTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
                                 .setConcept(ResponseBuilder.Concept.concept(type))).build();
 
                 return transactionRes(response);
@@ -709,14 +709,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setThingKeys(ConceptProto.Thing.Keys.Iter.Res.newBuilder()
+                            .setThingKeysIterRes(ConceptProto.Thing.Keys.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingKeys(ConceptProto.Thing.Keys.Iter.newBuilder()
+                        .setThingKeysIter(ConceptProto.Thing.Keys.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -730,14 +730,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setThingAttributes(ConceptProto.Thing.Attributes.Iter.Res.newBuilder()
+                            .setThingAttributesIterRes(ConceptProto.Thing.Attributes.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingAttributes(ConceptProto.Thing.Attributes.Iter.newBuilder()
+                        .setThingAttributesIter(ConceptProto.Thing.Attributes.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -751,14 +751,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setThingRelations(ConceptProto.Thing.Relations.Iter.Res.newBuilder()
+                            .setThingRelationsIterRes(ConceptProto.Thing.Relations.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelations(ConceptProto.Thing.Relations.Iter.newBuilder()
+                        .setThingRelationsIter(ConceptProto.Thing.Relations.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -769,14 +769,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setThingRoles(ConceptProto.Thing.Roles.Iter.Res.newBuilder()
+                            .setThingRolesIterRes(ConceptProto.Thing.Roles.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRoles(ConceptProto.Thing.Roles.Iter.newBuilder()
+                        .setThingRolesIter(ConceptProto.Thing.Roles.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -787,7 +787,7 @@ public class ConceptMethod {
                 ai.grakn.concept.Relationship relationship = ConceptHolder.this.concept.asThing().relhas(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setThingRelhas(ConceptProto.Thing.Relhas.Res.newBuilder()
+                        .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
                                 .setConcept(ResponseBuilder.Concept.concept(relationship))).build();
 
                 return transactionRes(response);
@@ -812,7 +812,7 @@ public class ConceptMethod {
                 for (Map.Entry<ai.grakn.concept.Role, Set<ai.grakn.concept.Thing>> rolePlayers : rolePlayersMap.entrySet()) {
                     for (ai.grakn.concept.Thing player : rolePlayers.getValue()) {
                         ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                                .setRelationRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Iter.Res.newBuilder()
+                                .setRelationRolePlayersMapIterRes(ConceptProto.Relation.RolePlayersMap.Iter.Res.newBuilder()
                                         .setRole(ResponseBuilder.Concept.concept(rolePlayers.getKey()))
                                         .setPlayer(ResponseBuilder.Concept.concept(player))).build();
 
@@ -822,7 +822,7 @@ public class ConceptMethod {
 
                 int iteratorId = iterators.add(responses.build().iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRelationRolePlayersMap(ConceptProto.Relation.RolePlayersMap.Iter.newBuilder()
+                        .setRelationRolePlayersMapIter(ConceptProto.Relation.RolePlayersMap.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -836,14 +836,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setRelationRolePlayers(ConceptProto.Relation.RolePlayers.Iter.Res.newBuilder()
+                            .setRelationRolePlayersIterRes(ConceptProto.Relation.RolePlayers.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRelationRolePlayers(ConceptProto.Relation.RolePlayers.Iter.newBuilder()
+                        .setRelationRolePlayersIter(ConceptProto.Relation.RolePlayers.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);
@@ -873,7 +873,7 @@ public class ConceptMethod {
                 Object value = concept.asAttribute().value();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeValue(ConceptProto.Attribute.Value.Res.newBuilder()
+                        .setAttributeValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
                                 .setValue(ResponseBuilder.Concept.attributeValue(value))).build();
 
                 return transactionRes(response);
@@ -884,14 +884,14 @@ public class ConceptMethod {
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setAttributeOwners(ConceptProto.Attribute.Owners.Iter.Res.newBuilder()
+                            .setAttributeOwnersIterRes(ConceptProto.Attribute.Owners.Iter.Res.newBuilder()
                                     .setConcept(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
                 int iteratorId = iterators.add(responses.iterator());
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setAttributeOwners(ConceptProto.Attribute.Owners.Iter.newBuilder()
+                        .setAttributeOwnersIter(ConceptProto.Attribute.Owners.Iter.newBuilder()
                                 .setId(iteratorId)).build();
 
                 return transactionRes(response);

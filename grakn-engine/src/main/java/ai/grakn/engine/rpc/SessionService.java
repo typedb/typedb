@@ -133,44 +133,44 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
         private void handleRequest(Transaction.Req request) {
             switch (request.getReqCase()) {
-                case OPEN:
-                    open(request.getOpen());
+                case OPEN_REQ:
+                    open(request.getOpenReq());
                     break;
-                case COMMIT:
+                case COMMIT_REQ:
                     commit();
                     break;
-                case QUERY:
-                    query(request.getQuery());
+                case QUERY_REQ:
+                    query(request.getQueryReq());
                     break;
-                case ITERATE:
-                    next(request.getIterate());
+                case ITERATE_REQ:
+                    next(request.getIterateReq());
                     break;
-                case GETSCHEMACONCEPT:
-                    getSchemaConcept(request.getGetSchemaConcept());
+                case GETSCHEMACONCEPT_REQ:
+                    getSchemaConcept(request.getGetSchemaConceptReq());
                     break;
-                case GETCONCEPT:
-                    getConcept(request.getGetConcept());
+                case GETCONCEPT_REQ:
+                    getConcept(request.getGetConceptReq());
                     break;
-                case GETATTRIBUTES:
-                    getAttributes(request.getGetAttributes());
+                case GETATTRIBUTES_REQ:
+                    getAttributes(request.getGetAttributesReq());
                     break;
-                case PUTENTITYTYPE:
-                    putEntityType(request.getPutEntityType());
+                case PUTENTITYTYPE_REQ:
+                    putEntityType(request.getPutEntityTypeReq());
                     break;
-                case PUTATTRIBUTETYPE:
-                    putAttributeType(request.getPutAttributeType());
+                case PUTATTRIBUTETYPE_REQ:
+                    putAttributeType(request.getPutAttributeTypeReq());
                     break;
-                case PUTRELATIONSHIPTYPE:
-                    putRelationshipType(request.getPutRelationshipType());
+                case PUTRELATIONSHIPTYPE_REQ:
+                    putRelationshipType(request.getPutRelationshipTypeReq());
                     break;
-                case PUTROLE:
-                    putRole(request.getPutRole());
+                case PUTROLE_REQ:
+                    putRole(request.getPutRoleReq());
                     break;
-                case PUTRULE:
-                    putRule(request.getPutRule());
+                case PUTRULE_REQ:
+                    putRule(request.getPutRuleReq());
                     break;
-                case CONCEPTMETHOD:
-                    conceptMethod(request.getConceptMethod());
+                case CONCEPTMETHOD_REQ:
+                    conceptMethod(request.getConceptMethodReq());
                     break;
                 default:
                 case REQ_NOT_SET:
@@ -348,7 +348,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 response = iterator.next();
             } else {
                 response = SessionProto.Transaction.Res.newBuilder()
-                        .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setDone(true)).build();
                 stop(iteratorId);
             }

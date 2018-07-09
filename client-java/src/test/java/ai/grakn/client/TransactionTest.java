@@ -148,7 +148,7 @@ public class TransactionTest {
         String queryString = query.toString();
 
         Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Transaction.Query.Iter.newBuilder()
+                .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder()
                         .setNull(ConceptProto.Null.getDefaultInstance())).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), response);
@@ -162,15 +162,15 @@ public class TransactionTest {
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Transaction.Res queryIterator = SessionProto.Transaction.Res.newBuilder()
-                .setQuery(SessionProto.Transaction.Query.Iter.newBuilder().setId(ITERATOR))
+                .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(ITERATOR))
                 .build();
 
         Query<?> query = match(var("x").sub("thing")).get();
         String queryString = query.toString();
         ConceptProto.Concept v123 = ConceptProto.Concept.newBuilder().setId(V123).build();
         Transaction.Res iteratorNext = Transaction.Res.newBuilder()
-                .setIterate(SessionProto.Transaction.Iter.Res.newBuilder()
-                        .setQuery(SessionProto.Transaction.Query.Iter.Res.newBuilder()
+                .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
+                        .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                 .setAnswer(AnswerProto.Answer.newBuilder()
                                         .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))))).build();
 
@@ -291,7 +291,7 @@ public class TransactionTest {
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE).build();
 
-            Transaction.Res response = Transaction.Res.newBuilder().setPutEntityType(SessionProto.Transaction.PutEntityType.Res.newBuilder()
+            Transaction.Res response = Transaction.Res.newBuilder().setPutEntityTypeRes(SessionProto.Transaction.PutEntityType.Res.newBuilder()
                     .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
@@ -311,7 +311,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRelationshipType(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
+                    .setPutRelationshipTypeRes(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
@@ -332,7 +332,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutAttributeType(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
+                    .setPutAttributeTypeRes(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
@@ -352,7 +352,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ROLE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRole(SessionProto.Transaction.PutRole.Res.newBuilder()
+                    .setPutRoleRes(SessionProto.Transaction.PutRole.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
@@ -374,7 +374,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RULE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRule(SessionProto.Transaction.PutRule.Res.newBuilder()
+                    .setPutRuleRes(SessionProto.Transaction.PutRule.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
@@ -393,7 +393,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY).build();
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetConcept(SessionProto.Transaction.GetConcept.Res.newBuilder()
+                    .setGetConceptRes(SessionProto.Transaction.GetConcept.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
@@ -409,7 +409,7 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetConcept(SessionProto.Transaction.GetConcept.Res.newBuilder()
+                    .setGetConceptRes(SessionProto.Transaction.GetConcept.Res.newBuilder()
                             .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
@@ -430,7 +430,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE).build();
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
+                    .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
                             .setConcept(protoConcept))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
@@ -447,7 +447,7 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                    .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
+                    .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
                             .setNull(ConceptProto.Null.getDefaultInstance()))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);

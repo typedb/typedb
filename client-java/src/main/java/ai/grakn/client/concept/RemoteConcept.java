@@ -49,7 +49,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     @Override
     public final void delete() throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setConceptDelete(ConceptProto.Concept.Delete.Req.getDefaultInstance())
+                .setConceptDeleteReq(ConceptProto.Concept.Delete.Req.getDefaultInstance())
                 .build();
 
         runMethod(method);
@@ -64,7 +64,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
         Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptReader.concept(conceptGetter.apply(res.getConceptMethod()), tx())
+                tx(), iteratorId, res -> ConceptReader.concept(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);
@@ -75,7 +75,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     }
 
     protected final ConceptProto.Method.Res runMethod(ConceptId id, ConceptProto.Method.Req method) {
-        return tx().runConceptMethod(id, method).getConceptMethod().getResponse();
+        return tx().runConceptMethod(id, method).getConceptMethodRes().getResponse();
     }
 
     abstract SomeConcept asCurrentBaseType(Concept other);
