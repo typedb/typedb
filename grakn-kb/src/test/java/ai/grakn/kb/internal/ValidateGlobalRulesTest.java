@@ -46,11 +46,11 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         RelationshipType hunts = tx.putRelationshipType("hunts");
         RoleImpl witcher = (RoleImpl) tx.putRole("witcher");
         RoleImpl monster = (RoleImpl) tx.putRole("monster");
-        Thing geralt = hunter.addEntity();
-        ThingImpl werewolf = (ThingImpl) wolf.addEntity();
+        Thing geralt = hunter.create();
+        ThingImpl werewolf = (ThingImpl) wolf.create();
 
-        RelationshipImpl assertion = (RelationshipImpl) hunts.addRelationship().
-                addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
+        RelationshipImpl assertion = (RelationshipImpl) hunts.create().
+                assign(witcher, geralt).assign(monster, werewolf);
         assertion.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
@@ -81,23 +81,23 @@ public class ValidateGlobalRulesTest extends TxTestBase {
 
         EntityType entityType = tx.putEntityType("et");
 
-        ((EntityTypeImpl) entityType).plays(role1, true);
-        ((EntityTypeImpl) entityType).plays(role2, false);
+        ((EntityTypeImpl) entityType).play(role1, true);
+        ((EntityTypeImpl) entityType).play(role2, false);
 
-        Entity other1 = entityType.addEntity();
-        Entity other2 = entityType.addEntity();
+        Entity other1 = entityType.create();
+        Entity other2 = entityType.create();
 
-        EntityImpl entity = (EntityImpl) entityType.addEntity();
+        EntityImpl entity = (EntityImpl) entityType.create();
 
-        RelationshipImpl relation1 = (RelationshipImpl) relationshipType.addRelationship()
-                .addRolePlayer(role2, other1).addRolePlayer(role1, entity);
+        RelationshipImpl relation1 = (RelationshipImpl) relationshipType.create()
+                .assign(role2, other1).assign(role1, entity);
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        RelationshipImpl relation2 = (RelationshipImpl) relationshipType.addRelationship()
-                .addRolePlayer(role2, other2).addRolePlayer(role1, entity);
+        RelationshipImpl relation2 = (RelationshipImpl) relationshipType.create()
+                .assign(role2, other2).assign(role1, entity);
 
         // Invalid with multiple relations
         relation1.reified().get().castingsRelation().forEach(rolePlayer -> {
@@ -131,7 +131,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());
 
-        relationshipType.setAbstract(true);
+        relationshipType.isAbstract(true);
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(role).isPresent());
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationshipType).isPresent());

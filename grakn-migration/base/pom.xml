@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-client</artifactId>
+            <artifactId>client-java</artifactId>
         </dependency>
     </dependencies>
 

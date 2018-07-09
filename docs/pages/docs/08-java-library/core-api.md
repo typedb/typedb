@@ -84,7 +84,7 @@ Role spouse2 = tx.putRole("spouse2");
 RelationshipType marriage = tx.putRelationshipType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
-marriage.attribute(picture);
+marriage.has(picture);
 
 Role parent = tx.putRole("parent");
 Role child = tx.putRole("child");
@@ -123,15 +123,15 @@ EntityType person = tx.putEntityType("person")
                         .plays(spouse1)
                         .plays(spouse2);
 
-person.attribute(identifier);
-person.attribute(firstname);
-person.attribute(surname);
-person.attribute(middlename);
-person.attribute(picture);
-person.attribute(age);
-person.attribute(birthDate);
-person.attribute(deathDate);
-person.attribute(gender);
+person.has(identifier);
+person.has(firstname);
+person.has(surname);
+person.has(middlename);
+person.has(picture);
+person.has(age);
+person.has(birthDate);
+person.has(deathDate);
+person.has(gender);
 ```
 
 Now to commit the schema using the Core API:
@@ -163,7 +163,7 @@ Now the equivalent Core API:
 tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute
-person.addEntity().attribute(johnName); //Link it to an entity
+person.create().has(johnName); //Link it to an entity
 ```   
 
 What if we want to create a relationship between some entities?
@@ -181,15 +181,15 @@ With the Core API this would be:
 
 ```java-test-ignore
 //Create the attributes
-johnName = firstname.putAttribute("John");
-Attribute maryName = firstname.putAttribute("Mary");
+johnName = firstname.create("John");
+Attribute maryName = firstname.create("Mary");
 
 //Create the entities
-Entity john = person.addEntity();
-Entity mary = person.addEntity();
+Entity john = person.create();
+Entity mary = person.create();
 
 //Create the actual relationships
-Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
+Relationship theMarriage = marriage.create().assign(spouse1, john).assign(spouse2, mary);
 ```
 
 Add a picture, first using Graql:
@@ -206,8 +206,8 @@ insert
 Now the equivalent using the Core API:
 
 ```java-test-ignore
-Attribute weddingPicture = picture.putAttribute("www.LocationOfMyPicture.com");
-theMarriage.attribute(weddingPicture);
+Attribute weddingPicture = picture.create("www.LocationOfMyPicture.com");
+theMarriage.has(weddingPicture);
 ```
 
 

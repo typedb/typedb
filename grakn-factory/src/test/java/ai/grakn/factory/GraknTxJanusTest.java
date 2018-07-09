@@ -99,7 +99,7 @@ public class GraknTxJanusTest extends JanusTestBase {
     }
     private void addEntity(EntityType type){
         GraknTxJanus graph = janusGraphFactory.open(GraknTxType.WRITE);
-        type.addEntity();
+        type.create();
         graph.commit();
     }
 
@@ -146,23 +146,23 @@ public class GraknTxJanusTest extends JanusTestBase {
         GraknTxJanus graph = new TxFactoryJanus(session).open(GraknTxType.WRITE);
         AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
-        Attribute<LocalDateTime> date = dateType.putAttribute(now);
-        assertEquals(now, date.getValue());
+        Attribute<LocalDateTime> date = dateType.create(now);
+        assertEquals(now, date.value());
     }
 
     @Test
     public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
         AttributeType<String> attributeType = graknTx.putAttributeType("Looky a attribute type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
+        Attribute<String> attribute = attributeType.create("A Attribute Thing");
 
-        EntityType entityType = graknTx.putEntityType("My entity").attribute(attributeType);
-        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().iterator());
+        EntityType entityType = graknTx.putEntityType("My entity").has(attributeType);
+        Relationship relationship = Iterators.getOnlyElement(entityType.create().has(attribute).relationships().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();
         graknTx = janusGraphFactory.open(GraknTxType.WRITE);
 
-        assertEquals(relationship, graknTx.getConcept(relationship.getId()));
+        assertEquals(relationship, graknTx.getConcept(relationship.id()));
     }
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
@@ -202,7 +202,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     private void addThingToBatch(TxFactoryJanus factory){
         try(GraknTx graphBatchLoading = factory.open(GraknTxType.WRITE)) {
-            graphBatchLoading.getEntityType("thingy").addEntity();
+            graphBatchLoading.getEntityType("thingy").create();
             graphBatchLoading.commit();
         } catch (Exception e){
             throw new RuntimeException(e);
@@ -252,7 +252,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         String label = "An Abstract thingy";
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)){
-            graph.putEntityType(label).setAbstract(true);
+            graph.putEntityType(label).isAbstract(true);
             graph.commit();
         }
 
@@ -260,7 +260,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)){
-            graph.getEntityType(label).addEntity();
+            graph.getEntityType(label).create();
         }
     }
 
@@ -284,8 +284,8 @@ public class GraknTxJanusTest extends JanusTestBase {
         murder.delete();
 
         assertTrue(murder.isDeleted());
-        assertThat(murderer.relationshipTypes().toArray(), emptyArray());
-        assertThat(victim.relationshipTypes().toArray(), emptyArray());
+        assertThat(murderer.relationships().toArray(), emptyArray());
+        assertThat(victim.relationships().toArray(), emptyArray());
     }
 
     @Test

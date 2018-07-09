@@ -20,7 +20,7 @@ package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.client.Client;
+import ai.grakn.batch.Client;
 import ai.grakn.engine.bootup.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
@@ -48,7 +48,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Start a GraknEngineServer from the packaged distribution Zip.
+ * Start a Grakn Server from the packaged distribution Zip.
  * The class is responsible for unzipping and starting the distribution.
  * The location of the distribution must be at $GRAKN_HOME/grakn-dist/target/grakn-dist-$GRAKN_VERSION.zip
  *

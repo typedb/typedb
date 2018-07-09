@@ -47,6 +47,6 @@ public class ThingPropertyTest {
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(@WithResource Thing thing, long seed) {
         Attribute<?> attribute = PropertyUtil.choose(thing.attributes(), seed);
-        assertTrue("[" + thing + "] is connected to attribute [" + attribute + "] but is not in it's owner set", attribute.ownerInstances().collect(toSet()).contains(thing));
+        assertTrue("[" + thing + "] is connected to attribute [" + attribute + "] but is not in it's owner set", attribute.owners().collect(toSet()).contains(thing));
     }
 }

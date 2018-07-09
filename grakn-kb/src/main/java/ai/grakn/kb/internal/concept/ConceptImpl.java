@@ -165,13 +165,13 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
      * @return A string representing the concept's unique id.
      */
     @Override
-    public ConceptId getId(){
+    public ConceptId id(){
         return conceptId.get();
     }
 
     @Override
     public int hashCode() {
-        return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
+        return id().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
     @Override
@@ -182,7 +182,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
         ConceptImpl concept = (ConceptImpl) object;
 
         //based on id because vertex comparisons are equivalent
-        return getId().equals(concept.getId());
+        return id().equals(concept.id());
     }
 
     @Override
@@ -197,8 +197,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
 
     String innerToString() {
         String message = "Base Type [" + baseType() + "] ";
-        if(getId() != null) {
-            message = message + "- Id [" + getId() + "] ";
+        if(id() != null) {
+            message = message + "- Id [" + id() + "] ";
         }
 
         return message;

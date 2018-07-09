@@ -96,7 +96,7 @@ public class GenealogyTest {
                 .iterator().next()
                 .entrySet()
                 .iterator().next().getValue();
-        String genderOfSpecificPerson = "match $x id '" + concept.getId() + "' has gender $g; get;";
+        String genderOfSpecificPerson = "match $x id '" + concept.id() + "' has gender $g; get;";
 
         List<Answer> females = iqb.<GetQuery>parse(specificGender).execute();
         List<Answer> allPeople = iqb.<GetQuery>parse(generalGender).execute();
@@ -309,7 +309,7 @@ public class GenealogyTest {
         Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
             Concept c = it.next().get(Graql.var(var));
-            isOk = c.asAttribute().getValue().equals(value);
+            isOk = c.asAttribute().value().equals(value);
         }
         return isOk;
     }

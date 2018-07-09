@@ -209,11 +209,11 @@ public class ResolutionPlanTest {
                 "$y has anotherResource 'that';";
 
         String xPatternString = "{" +
-                "$x id '" + concept.getId() + "';" +
+                "$x id '" + concept.id() + "';" +
                 basePatternString +
                 "}";
         String yPatternString = "{" +
-                "$y id '" + concept.getId() + "';" +
+                "$y id '" + concept.id() + "';" +
                 basePatternString +
                 "}";
         ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString, testTx), testTx);
@@ -224,7 +224,7 @@ public class ResolutionPlanTest {
 
     private Atom getAtom(ReasonerQueryImpl query, String typeString, GraknTx tx){
         Type type = tx.getType(Label.of(typeString));
-        return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.getId())).findFirst().orElse(null);
+        return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){

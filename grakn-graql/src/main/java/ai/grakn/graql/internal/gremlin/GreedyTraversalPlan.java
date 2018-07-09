@@ -226,7 +226,7 @@ public class GreedyTraversalPlan {
             if (possibleRelationshipTypes.size() == 1) {
 
                 Type relationshipType = possibleRelationshipTypes.iterator().next();
-                Label label = relationshipType.getLabel();
+                Label label = relationshipType.label();
 
                 // add label fragment if this label has not been inferred
                 if (!inferredLabels.containsKey(label)) {
@@ -317,7 +317,7 @@ public class GreedyTraversalPlan {
     }
 
     private static void addAllPossibleRelationships(Multimap<Type, RelationshipType> relationshipMap, Type metaType) {
-        metaType.subs().forEach(type -> type.plays().flatMap(Role::relationshipTypes)
+        metaType.subs().forEach(type -> type.playing().flatMap(Role::relationships)
                 .forEach(relationshipType -> relationshipMap.put(type, relationshipType)));
     }
 

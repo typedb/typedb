@@ -376,7 +376,7 @@ public class InsertQueryTest {
         Answer result = Iterables.getOnlyElement(query);
         assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
-        assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
+        assertEquals(result.get(type).asType().label(), Label.of("movie"));
     }
 
     @Test
@@ -465,7 +465,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingId() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -475,7 +475,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -485,7 +485,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingResourceId() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -495,7 +495,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -625,7 +625,7 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        movieKB.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").id(aMovie.id()).isa("person")).execute();
     }
 
     @Test

@@ -71,26 +71,26 @@ public class SchemaMutationTest extends TxTestBase {
         woman = tx.putEntityType("Woman").sup(person);
         car = tx.putEntityType("Car");
 
-        alice = woman.addEntity();
-        bob = man.addEntity();
-        marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
+        alice = woman.create();
+        bob = man.create();
+        marriage.create().assign(wife, alice).assign(husband, bob);
         tx.commit();
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
     }
 
     @Test
     public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidKBException {
-        person.deletePlays(wife);
+        person.unplay(wife);
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getLabel(), alice.getId(), wife.getLabel()));
+        expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.label(), alice.id(), wife.label()));
 
         tx.commit();
     }
 
     @Test
     public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidKBException {
-        marriage.deleteRelates(husband);
+        marriage.unrelate(husband);
         expectedException.expect(InvalidKBException.class);
         tx.commit();
     }
@@ -105,12 +105,12 @@ public class SchemaMutationTest extends TxTestBase {
 
     @Test
     public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidKBException {
-        man.addEntity();
+        man.create();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(IS_ABSTRACT.getMessage(man.getLabel()));
+        expectedException.expectMessage(IS_ABSTRACT.getMessage(man.label()));
 
-        man.setAbstract(true);
+        man.isAbstract(true);
     }
 
     @Test
@@ -216,7 +216,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        entityType.deletePlays(role);
+        entityType.unplay(role);
     }
 
     @Test
@@ -234,22 +234,22 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        relationshipType.deleteRelates(role);
+        relationshipType.unrelate(role);
     }
 
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
         //Create initial Schema
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        EntityType person = tx.putEntityType("perspn").attribute(name);
+        EntityType person = tx.putEntityType("perspn").has(name);
         EntityType animal = tx.putEntityType("animal").sup(person);
-        Attribute bob = name.putAttribute("Bob");
-        person.addEntity().attribute(bob);
+        Attribute bob = name.create("Bob");
+        person.create().has(bob);
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
-        animal.attribute(name);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        animal.has(name);
         tx.commit();
     }
 
@@ -261,11 +261,11 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel())));
+        expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label())));
 
         tx.commit();
     }
@@ -275,15 +275,15 @@ public class SchemaMutationTest extends TxTestBase {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Create a person and allow person to have a name
-        EntityType person = tx.putEntityType("person").attribute(name);
+        EntityType person = tx.putEntityType("person").has(name);
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = tx.putEntityType("man").sup(person);
         RelationshipType has_name = tx.getRelationshipType("@has-name");
 
         //Create a Man and name him Bob
-        Attribute<String> nameBob = name.putAttribute("Bob");
-        man.addEntity().attribute(nameBob);
+        Attribute<String> nameBob = name.create("Bob");
+        man.create().has(nameBob);
 
         //Get The Relationship which says that our man is name bob
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));

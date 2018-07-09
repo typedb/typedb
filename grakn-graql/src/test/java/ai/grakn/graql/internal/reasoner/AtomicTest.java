@@ -362,7 +362,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y);}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
@@ -370,7 +370,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y) isa relationship;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //missing role is ambiguous without cardinality constraints
@@ -422,7 +422,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
@@ -492,7 +492,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         assertEquals(2, relation.getApplicableRules().count());
     }
 
@@ -606,7 +606,7 @@ public class AtomicTest {
 
         assertEquals(RuleUtils.getRules(graph).count(), type.getApplicableRules().count());
         assertThat(type2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
+        assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
     }
 
     @Test
@@ -618,7 +618,7 @@ public class AtomicTest {
         Atom type2 = ReasonerQueries.create(conjunction(typeString2, graph), graph).getAtoms(IsaAtom.class).findFirst().orElse(null);
         assertThat(type.getApplicableRules().collect(toSet()), empty());
         assertEquals(
-                RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().anyMatch(c -> c.getLabel().equals(Label.of("binary")))).count(),
+                RuleUtils.getRules(graph).filter(r -> r.thenTypes().anyMatch(c -> c.label().equals(Label.of("binary")))).count(),
                 type2.getApplicableRules().count()
         );
     }
@@ -673,10 +673,10 @@ public class AtomicTest {
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
         assertEquals(5, relation.getApplicableRules().count());
-        assertEquals(RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
+        assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
 
         //TODO not filtered correctly
-        //assertEquals(RuleUtils.getRules(graph).filter(r -> r.getConclusionTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
+        //assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
     }
 
     @Test
@@ -755,7 +755,7 @@ public class AtomicTest {
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y) isa ternary;" +
-                "$x id '" + concept.getId().getValue() + "';" +
+                "$x id '" + concept.id().getValue() + "';" +
                 "}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
@@ -767,7 +767,7 @@ public class AtomicTest {
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y);" +
-                "$x id '" + concept.getId().getValue() + "';" +
+                "$x id '" + concept.id().getValue() + "';" +
                 "}";
 
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -1022,9 +1022,9 @@ public class AtomicTest {
     public void testUnification_RelationWithMetaRolesAndIds(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
-        String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.getId().getValue() + "';}";
-        String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.getId().getValue() + "';}";
-        String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.getId().getValue() + "';}";
+        String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
+        String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
+        String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "';}";
 
         exactUnification(relation, relation2, true, true, graph);
         exactUnification(relation, relation3, true, true, graph);
@@ -1216,7 +1216,7 @@ public class AtomicTest {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").id().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 

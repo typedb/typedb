@@ -74,13 +74,13 @@ public class TailRecursionKB extends TestKB {
         }
 
         for (int j = 1; j <= n; j++) {
-            q.addRelationship()
-                    .addRolePlayer(qfrom, getInstance(graph, "a0"))
-                    .addRolePlayer(qto, getInstance(graph, "b1" + "," + j));
+            q.create()
+                    .assign(qfrom, getInstance(graph, "a0"))
+                    .assign(qto, getInstance(graph, "b1" + "," + j));
             for(int i = 1 ; i <= m ;i++) {
-                q.addRelationship()
-                        .addRolePlayer(qfrom, getInstance(graph, "b" + i + "," + j))
-                        .addRolePlayer(qto, getInstance(graph, "b" + (i + 1) + "," + j));
+                q.create()
+                        .assign(qfrom, getInstance(graph, "b" + i + "," + j))
+                        .assign(qto, getInstance(graph, "b" + (i + 1) + "," + j));
             }
         }
     }

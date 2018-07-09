@@ -63,7 +63,7 @@ public class SampleKBLoaderTest {
 
         try (GraknTx graph = loader.tx()){
             Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
-                    map(Type::getLabel).collect(Collectors.toSet());
+                    map(Type::label).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));
         }

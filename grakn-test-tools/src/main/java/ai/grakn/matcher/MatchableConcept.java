@@ -58,21 +58,21 @@ public class MatchableConcept {
     @Override
     public String toString() {
         if (concept.isAttribute()) {
-            return "hasValue(" + valueToString(concept.asAttribute().getValue()) + ")";
+            return "hasValue(" + valueToString(concept.asAttribute().value()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
             Stream<Attribute<?>> resources = thing.attributes();
             Optional<?> value = resources
-                    .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
-                    .map(Attribute::getValue).findFirst();
+                    .filter(resource -> NAME_TYPES.contains(resource.type().label()))
+                    .map(Attribute::value).findFirst();
 
-            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().getLabel();
+            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().label();
         } else if (concept.isType()) {
-            return "type(" + concept.asType().getLabel() + ")";
+            return "type(" + concept.asType().label() + ")";
         } else if (concept.isRole()) {
-            return "role(" + concept.asRole().getLabel() + ")";
+            return "role(" + concept.asRole().label() + ")";
         } else if (concept.isRule()) {
-            return "rule(" + concept.asRule().getLabel() + ")";
+            return "rule(" + concept.asRule().label() + ")";
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }

@@ -36,8 +36,16 @@ import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
  * @author fppt
  */
 public class GraqlSyntaxException extends GraknException {
+
+    private final String NAME = "GraqlSyntaxException";
+
     private GraqlSyntaxException(String error) {
         super(error);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     /**

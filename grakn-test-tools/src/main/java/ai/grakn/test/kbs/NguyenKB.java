@@ -72,45 +72,45 @@ public class NguyenKB extends TestKB {
         RelationshipType p = graph.getRelationshipType("P");
         RelationshipType q = graph.getRelationshipType("Q");
 
-        ConceptId cId = putEntityWithResource(graph, "c", entity, key).getId();
-        ConceptId dId = putEntityWithResource(graph, "d", entity, key).getId();
-        ConceptId eId = putEntityWithResource(graph, "e", entity, key).getId();
+        ConceptId cId = putEntityWithResource(graph, "c", entity, key).id();
+        ConceptId dId = putEntityWithResource(graph, "d", entity, key).id();
+        ConceptId eId = putEntityWithResource(graph, "e", entity, key).id();
 
         ConceptId[] aInstancesIds = new ConceptId[n+2];
         ConceptId[] bInstancesIds = new ConceptId[n+2];
 
-        aInstancesIds[n+1] = putEntityWithResource(graph, "a" + (n+1), aEntity, key).getId();
+        aInstancesIds[n+1] = putEntityWithResource(graph, "a" + (n+1), aEntity, key).id();
         for(int i = 0 ; i <= n ;i++) {
-            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
-            bInstancesIds[i] = putEntityWithResource(graph, "b" + i, bEntity, key).getId();
+            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).id();
+            bInstancesIds[i] = putEntityWithResource(graph, "b" + i, bEntity, key).id();
         }
 
 
-        p.addRelationship()
-                .addRolePlayer(Pfrom, graph.getConcept(cId))
-                .addRolePlayer(Pto, graph.getConcept(dId));
+        p.create()
+                .assign(Pfrom, graph.getConcept(cId))
+                .assign(Pto, graph.getConcept(dId));
 
-        r.addRelationship()
-                .addRolePlayer(Rfrom, graph.getConcept(dId))
-                .addRolePlayer(Rto, graph.getConcept(eId));
+        r.create()
+                .assign(Rfrom, graph.getConcept(dId))
+                .assign(Rto, graph.getConcept(eId));
 
-        q.addRelationship()
-                .addRolePlayer(qfrom, graph.getConcept(eId))
-                .addRolePlayer(qto, graph.getConcept(aInstancesIds[0]));
+        q.create()
+                .assign(qfrom, graph.getConcept(eId))
+                .assign(qto, graph.getConcept(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
-            p.addRelationship()
-                    .addRolePlayer(Pfrom, graph.getConcept(bInstancesIds[i]))
-                    .addRolePlayer(Pto, graph.getConcept(cId));
-            p.addRelationship()
-                    .addRolePlayer(Pfrom, graph.getConcept(cId))
-                    .addRolePlayer(Pto, graph.getConcept(bInstancesIds[i]));
-            q.addRelationship()
-                    .addRolePlayer(qfrom, graph.getConcept(aInstancesIds[i]))
-                    .addRolePlayer(qto, graph.getConcept(bInstancesIds[i]));
-            q.addRelationship()
-                    .addRolePlayer(qfrom, graph.getConcept(bInstancesIds[i]))
-                    .addRolePlayer(qto, graph.getConcept(aInstancesIds[i+1]));
+            p.create()
+                    .assign(Pfrom, graph.getConcept(bInstancesIds[i]))
+                    .assign(Pto, graph.getConcept(cId));
+            p.create()
+                    .assign(Pfrom, graph.getConcept(cId))
+                    .assign(Pto, graph.getConcept(bInstancesIds[i]));
+            q.create()
+                    .assign(qfrom, graph.getConcept(aInstancesIds[i]))
+                    .assign(qto, graph.getConcept(bInstancesIds[i]));
+            q.create()
+                    .assign(qfrom, graph.getConcept(bInstancesIds[i]))
+                    .assign(qto, graph.getConcept(aInstancesIds[i+1]));
         }
     }
 }

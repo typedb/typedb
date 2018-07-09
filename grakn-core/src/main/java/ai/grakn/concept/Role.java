@@ -42,7 +42,7 @@ public interface Role extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Role setLabel(Label label);
+    Role label(Label label);
 
     /**
      * Sets the super of this Role.
@@ -91,7 +91,7 @@ public interface Role extends SchemaConcept {
      * @return The {@link RelationshipType} which this {@link Role} takes part in.
      */
     @CheckReturnValue
-    Stream<RelationshipType> relationshipTypes();
+    Stream<RelationshipType> relationships();
 
     /**
      * Returns a collection of the {@link Type}s that can play this {@link Role}.
@@ -100,7 +100,7 @@ public interface Role extends SchemaConcept {
      * @return A list of all the {@link Type}s which can play this {@link Role}.
      */
     @CheckReturnValue
-    Stream<Type> playedByTypes();
+    Stream<Type> players();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

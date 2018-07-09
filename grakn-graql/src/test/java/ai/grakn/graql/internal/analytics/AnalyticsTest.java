@@ -77,13 +77,13 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
             AttributeType<Long> attribute = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
-            thingy.attribute(attribute);
+            thingy.has(attribute);
 
             Role degreeOwner = graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
             Role degreeValue = graph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
@@ -92,14 +92,14 @@ public class AnalyticsTest {
                     .relates(degreeValue);
             thingy.plays(degreeOwner);
 
-            Entity thisThing = thingy.addEntity();
-            relationshipType.addRelationship().addRolePlayer(degreeOwner, thisThing);
+            Entity thisThing = thingy.create();
+            relationshipType.create().assign(degreeOwner, thisThing);
 
             graph.commit();
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CENTRALITY).using(DEGREE).execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -111,7 +111,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(COUNT).in("rule", "thing").execute();
         }
     }
@@ -120,7 +120,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(COUNT).in("role").execute();
         }
     }
@@ -140,7 +140,7 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
 
         List<?> result = queryList.parallelStream().map(query -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().parse(query).execute().toString();
             }
         }).collect(Collectors.toList());
@@ -148,19 +148,19 @@ public class AnalyticsTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
 
-            entityId1 = entity1.getId().getValue();
-            entityId2 = entity2.getId().getValue();
-            entityId3 = entity3.getId().getValue();
-            entityId4 = entity4.getId().getValue();
+            entityId1 = entity1.id().getValue();
+            entityId2 = entity2.id().getValue();
+            entityId3 = entity3.id().getValue();
+            entityId4 = entity4.id().getValue();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
@@ -168,12 +168,12 @@ public class AnalyticsTest {
             entityType2.plays(role1).plays(role2);
             RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId().getValue();
+            relationId12 = relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id().getValue();
+            relationId24 = relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id().getValue();
 
             graph.commit();
         }

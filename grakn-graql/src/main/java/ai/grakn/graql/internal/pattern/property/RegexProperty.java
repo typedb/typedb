@@ -72,7 +72,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     @Override
     public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            executor.get(var).asAttributeType().setRegex(regex());
+            executor.get(var).asAttributeType().regex(regex());
         };
 
         return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
@@ -82,8 +82,8 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             AttributeType<Object> attributeType = executor.get(var).asAttributeType();
-            if (!attributeType.isDeleted() && regex().equals(attributeType.getRegex())) {
-                attributeType.setRegex(null);
+            if (!attributeType.isDeleted() && regex().equals(attributeType.regex())) {
+                attributeType.regex(null);
             }
         };
 

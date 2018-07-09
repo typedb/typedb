@@ -95,7 +95,7 @@ public class StringPrinterTest {
     public void testResourceOutputNoResources() {
         Printer<?> printer = Printer.stringPrinter(true);
 
-        Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
+        Thing godfather = rule.tx().getAttributeType("title").attribute("Godfather").owner();
 
         String repr = printer.toString(godfather);
 
@@ -113,7 +113,7 @@ public class StringPrinterTest {
                 true, rule.tx().getAttributeType("title"), rule.tx().getAttributeType("tmdb-vote-count"), rule.tx().getAttributeType("name")
         );
 
-        Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
+        Thing godfather = rule.tx().getAttributeType("title").attribute("Godfather").owner();
 
         String repr = printer.toString(godfather);
 

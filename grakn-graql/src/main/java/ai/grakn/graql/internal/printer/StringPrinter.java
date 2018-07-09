@@ -66,7 +66,7 @@ class StringPrinter extends Printer<StringBuilder> {
 
         // Display values for resources and ids for everything else
         if (concept.isAttribute()) {
-            output.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().getValue()));
+            output.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().value()));
         } else if (concept.isSchemaConcept()) {
             SchemaConcept ontoConcept = concept.asSchemaConcept();
             output.append(colorKeyword("label ")).append(colorType(ontoConcept));
@@ -77,17 +77,17 @@ class StringPrinter extends Printer<StringBuilder> {
                 output.append(colorKeyword(" sub ")).append(colorType(superConcept));
             }
         } else {
-            output.append(colorKeyword("id ")).append(idToString(concept.getId()));
+            output.append(colorKeyword("id ")).append(idToString(concept.id()));
         }
 
         if (concept.isRelationship()) {
             List<String> rolePlayerList = new LinkedList<>();
-            for (Map.Entry<Role, Set<Thing>> rolePlayers : concept.asRelationship().allRolePlayers().entrySet()) {
+            for (Map.Entry<Role, Set<Thing>> rolePlayers : concept.asRelationship().rolePlayersMap().entrySet()) {
                 Role role = rolePlayers.getKey();
                 Set<Thing> things = rolePlayers.getValue();
 
                 for (Thing thing : things) {
-                    rolePlayerList.add(colorType(role) + ": id " + idToString(thing.getId()));
+                    rolePlayerList.add(colorType(role) + ": id " + idToString(thing.id()));
                 }
             }
 
@@ -103,15 +103,15 @@ class StringPrinter extends Printer<StringBuilder> {
 
         // Display when and then for rules
         if (concept.isRule()) {
-            output.append(colorKeyword(" when ")).append("{ ").append(concept.asRule().getWhen()).append(" }");
-            output.append(colorKeyword(" then ")).append("{ ").append(concept.asRule().getThen()).append(" }");
+            output.append(colorKeyword(" when ")).append("{ ").append(concept.asRule().when()).append(" }");
+            output.append(colorKeyword(" then ")).append("{ ").append(concept.asRule().then()).append(" }");
         }
 
         // Display any requested resources
         if (concept.isThing() && attributeTypes.length > 0) {
             concept.asThing().attributes(attributeTypes).forEach(resource -> {
                 String resourceType = colorType(resource.type());
-                String value = StringUtil.valueToString(resource.getValue());
+                String value = StringUtil.valueToString(resource.value());
                 output.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
             });
         }
@@ -221,9 +221,9 @@ class StringPrinter extends Printer<StringBuilder> {
      */
     private String colorType(SchemaConcept schemaConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(schemaConcept.getLabel()), ANSI.PURPLE);
+            return ANSI.color(typeLabelToString(schemaConcept.label()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(schemaConcept.getLabel());
+            return typeLabelToString(schemaConcept.label());
         }
     }
 }

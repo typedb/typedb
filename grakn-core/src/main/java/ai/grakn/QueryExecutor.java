@@ -54,5 +54,5 @@ public interface QueryExecutor {
 
     <T> T run(AggregateQuery<T> query);
 
-    ComputeJob<ComputeQuery.Answer> run(ComputeQuery query);
+    ComputeExecutor<ComputeQuery.Answer> run(ComputeQuery query);
 }

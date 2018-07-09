@@ -52,7 +52,7 @@ public class RelationshipPropertyTest {
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
             Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
@@ -61,7 +61,7 @@ public class RelationshipPropertyTest {
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
             Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
     }
@@ -72,7 +72,7 @@ public class RelationshipPropertyTest {
 
         Thing[] rolePlayers = relationship.rolePlayers(role).toArray(Thing[]::new);
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
     }
@@ -86,8 +86,8 @@ public class RelationshipPropertyTest {
 
     @Property
     public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relationship relationship) {
-        Role[] allRoles = new Role[relationship.allRolePlayers().size()];
-        relationship.allRolePlayers().keySet().toArray(allRoles);
+        Role[] allRoles = new Role[relationship.rolePlayersMap().size()];
+        relationship.rolePlayersMap().keySet().toArray(allRoles);
 
         assertEquals(relationship.rolePlayers().collect(toSet()), relationship.rolePlayers(allRoles).collect(toSet()));
     }

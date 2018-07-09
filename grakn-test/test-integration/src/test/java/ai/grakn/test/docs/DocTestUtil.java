@@ -96,12 +96,12 @@ public class DocTestUtil {
                 AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
                 AttributeType<Double> risk = tx.putAttributeType("risk", AttributeType.DataType.DOUBLE);
 
-                company.attribute(name);
-                country.attribute(name);
-                article.attribute(subject);
-                region.attribute(name);
-                oilPlatform.attribute(distanceFromCoast).attribute(platformId);
-                bond.attribute(risk);
+                company.has(name);
+                country.has(name);
+                article.has(subject);
+                region.has(name);
+                oilPlatform.has(distanceFromCoast).has(platformId);
+                bond.has(risk);
 
                 tx.putRelationshipType("located-in")
                         .relates(tx.putRole("location")).relates(tx.putRole("located"));
@@ -121,7 +121,7 @@ public class DocTestUtil {
                 AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
                 AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
                 AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
-                plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
+                plant.has(common).has(botanical).has(zone).has(light).has(availability);
             })
 
             .put("pokemon", tx -> {
@@ -138,14 +138,14 @@ public class DocTestUtil {
                 tx.putRelationshipType("has-type")
                         .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
-                pokemonType.attribute(typeId).attribute(description);
-                pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
+                pokemonType.has(typeId).has(description);
+                pokemon.has(weight).has(height).has(pokedexNo).has(description);
             })
 
             .put("genealogy-plus", GenealogyKB.get().andThen(tx -> {
                 // TODO: Remove custom genealogy schema when not used
                 AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-                tx.getEntityType("person").attribute(age);
+                tx.getEntityType("person").has(age);
                 tx.putAttributeType("nickname", AttributeType.DataType.STRING);
             }))
 
@@ -159,7 +159,7 @@ public class DocTestUtil {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         GraknSession session = Grakn.session(uri, keyspace);
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);
 
             if (loader == null) {

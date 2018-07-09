@@ -34,7 +34,7 @@ class EntityConverter implements ConceptConverter<Entity>{
     public Pattern pattern(Entity concept) {
         Var entityVar = Graql.var().asUserDefined();
         return entityVar
-                .isa(Graql.label(concept.type().getLabel()))
-                .id(concept.getId());
+                .isa(Graql.label(concept.type().label()))
+                .id(concept.id());
     }
 }

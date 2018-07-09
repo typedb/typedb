@@ -92,7 +92,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
         //Transfer relationships
         rolePlayers.forEach((role, things) -> {
             Thing thing = Iterables.getOnlyElement(things);
-            addRolePlayer(role, thing);
+            assign(role, thing);
         });
 
         return relationshipStructure.reify();
@@ -103,14 +103,14 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public Relationship attribute(Attribute attribute) {
-        attributeRelationship(attribute);
+    public Relationship has(Attribute attribute) {
+        relhas(attribute);
         return this;
     }
 
     @Override
-    public Relationship attributeRelationship(Attribute attribute) {
-        return reify().attributeRelationship(attribute);
+    public Relationship relhas(Attribute attribute) {
+        return reify().relhas(attribute);
     }
 
     @Override
@@ -134,8 +134,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public Stream<Role> plays() {
-        return readFromReified(ThingImpl::plays);
+    public Stream<Role> roles() {
+        return readFromReified(ThingImpl::roles);
     }
 
     /**
@@ -153,7 +153,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
      * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relationship}.
      */
     @Override
-    public Map<Role, Set<Thing>> allRolePlayers(){
+    public Map<Role, Set<Thing>> rolePlayersMap(){
        return structure().allRolePlayers();
     }
 
@@ -165,18 +165,18 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     /**
      * Expands this {@link Relationship} to include a new role player which is playing a specific {@link Role}.
      * @param role The role of the new role player.
-     * @param thing The new role player.
+     * @param player The new role player.
      * @return The {@link Relationship} itself
      */
     @Override
-    public Relationship addRolePlayer(Role role, Thing thing) {
-        reify().addRolePlayer(role, thing);
+    public Relationship assign(Role role, Thing player) {
+        reify().addRolePlayer(role, player);
         return this;
     }
 
     @Override
-    public Relationship deleteAttribute(Attribute attribute) {
-        reified().ifPresent(rel -> rel.deleteAttribute(attribute));
+    public Relationship unhas(Attribute attribute) {
+        reified().ifPresent(rel -> rel.unhas(attribute));
         return this;
     }
 
@@ -186,8 +186,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public void removeRolePlayer(Role role, Thing thing) {
-        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
+    public void unassign(Role role, Thing player) {
+        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, player));
     }
 
     /**
@@ -195,7 +195,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
      */
     void cleanUp() {
         Stream<Thing> rolePlayers = rolePlayers();
-        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.getId() != null);
+        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.id() != null);
         if(performDeletion) delete();
     }
 
@@ -203,12 +203,12 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        return getId().equals(((RelationshipImpl) object).getId());
+        return id().equals(((RelationshipImpl) object).id());
     }
 
     @Override
     public int hashCode() {
-        return getId().hashCode();
+        return id().hashCode();
     }
 
     @Override
@@ -217,8 +217,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
-    public ConceptId getId() {
-        return structure().getId();
+    public ConceptId id() {
+        return structure().id();
     }
 
     @Override

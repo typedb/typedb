@@ -21,7 +21,7 @@ All Grakn applications require the following Maven dependency:
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn-client</artifactId>
+    <artifactId>client-java</artifactId>
     <version>1.2.0</version>
   </dependency>
 </dependencies>

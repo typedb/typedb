@@ -41,9 +41,8 @@
         <module>grakn-core</module>
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
-        <module>grakn-client</module>
+        <module>client-java</module>
         <module>grakn-test-tools</module>
-        <module>grakn-grpc</module>
     </modules>
 
     <properties>
@@ -239,7 +238,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-client</artifactId>
+                <artifactId>client-java</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
@@ -262,11 +261,6 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.3.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-grpc</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
@@ -1165,6 +1159,7 @@
                         <!-- Skip generated classes, we only care about code we write -->
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
                         <exclude>**/ai/grakn/rpc/generated/*.java</exclude>
+                        <exclude>**/ai/grakn/rpc/proto/*.java</exclude>
                         <exclude>**/**AutoValue_**.java</exclude>
 
                         <!-- Following controllers contain duplicate annotations for documentation -->

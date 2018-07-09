@@ -19,9 +19,9 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.GraknKeyspaceStore;
-import ai.grakn.engine.GraknKeyspaceStoreImpl;
+import ai.grakn.engine.KeyspaceStore;
+import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
+import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.internal.printer.Printer;
@@ -72,7 +72,7 @@ public class GraqlControllerReadOnlyTest {
     private static EmbeddedGraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
-    private static GraknKeyspaceStore mockGraknKeyspaceStore = mock(GraknKeyspaceStoreImpl.class);
+    private static KeyspaceStore mockKeyspaceStore = mock(KeyspaceStoreImpl.class);
     private static final Printer printer = mock(Printer.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
@@ -83,7 +83,7 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new GraknEngineStatus(), metricRegistry).start(spark);
+        new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new ServerStatus(), metricRegistry).start(spark);
         new GraqlController(mockFactory, mock(PostProcessor.class), printer, metricRegistry).start(spark);
     });
 
@@ -107,7 +107,7 @@ public class GraqlControllerReadOnlyTest {
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
-        when(mockFactory.keyspaceStore()).thenReturn(mockGraknKeyspaceStore);
+        when(mockFactory.keyspaceStore()).thenReturn(mockKeyspaceStore);
         when(mockFactory.config()).thenReturn(sparkContext.config());
     }
 
@@ -241,8 +241,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseIsCorrect() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -256,8 +256,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseStatusIs200() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -271,8 +271,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePath_ResponseIsNotEmpty() {
         assumeTrue(GraknTestUtil.usingJanus());
 
-        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         Response response = sendRequest(query);
@@ -283,8 +283,8 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithNoPath_ResponseIsEmptyJson() {
-        String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
-        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().id().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().id().getValue();
 
         String query = String.format("compute path from \"%s\", to \"%s\";", fromId, toId);
         when(printer.toString(any())).thenReturn("null");

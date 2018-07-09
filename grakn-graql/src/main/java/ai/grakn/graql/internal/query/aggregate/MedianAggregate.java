@@ -42,7 +42,7 @@ class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
     @Override
     public Optional<Number> apply(Stream<? extends Answer> stream) {
         List<Number> results = stream
-                .map(result -> ((Number) result.get(varName).asAttribute().getValue()))
+                .map(result -> ((Number) result.get(varName).asAttribute().value()))
                 .sorted()
                 .collect(toList());
 

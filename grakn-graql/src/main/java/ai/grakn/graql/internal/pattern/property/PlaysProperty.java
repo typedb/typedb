@@ -104,7 +104,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
             Role role = executor.get(this.role().var()).asRole();
 
             if (!type.isDeleted() && !role.isDeleted()) {
-                type.deletePlays(role);
+                type.unplay(role);
             }
         };
 

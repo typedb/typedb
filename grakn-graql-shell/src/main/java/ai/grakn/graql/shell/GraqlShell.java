@@ -22,10 +22,9 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraknException;
-import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Streamable;
+import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import jline.console.ConsoleReader;
@@ -116,7 +115,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -275,7 +274,7 @@ public class GraqlShell implements AutoCloseable {
     private void handleGraknExceptions(RunnableThrowsIO runnable) throws IOException {
         try {
             runnable.run();
-        } catch (GraknException e) {
+        } catch (RuntimeException e) {
             serr.println(e.getMessage());
             errorOccurred = true;
             reopenTx();
@@ -288,7 +287,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void reopenTx() {
         if (!tx.isClosed()) tx.close();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public boolean errorOccurred() {

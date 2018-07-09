@@ -50,8 +50,8 @@ public class ExplanationBuilderTest {
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
                 .forEach(answer -> {
-            String cousin1 = answer.get("x").getId().getValue();
-            String cousin2 = answer.get("y").getId().getValue();
+            String cousin1 = answer.get("x").id().getValue();
+            String cousin2 = answer.get("y").id().getValue();
 
             String specificQuery = "match " +
                     "$x id " + cousin1 + ";" +
@@ -63,7 +63,7 @@ public class ExplanationBuilderTest {
 
             Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
                     .flatMap(ans -> ans.concepts().stream())
-                    .map(ai.grakn.concept.Concept::getId)
+                    .map(ai.grakn.concept.Concept::id)
                     .collect(Collectors.toSet());
 
             List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);
