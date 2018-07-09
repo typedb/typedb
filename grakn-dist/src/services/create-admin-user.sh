@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Defaults
 DEFAULT_ENGINE_HOST="http://localhost:4567"

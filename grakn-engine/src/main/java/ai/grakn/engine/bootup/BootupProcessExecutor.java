@@ -42,7 +42,8 @@ import java.util.concurrent.TimeoutException;
 public class BootupProcessExecutor {
 
     public static final long WAIT_INTERVAL_SECOND = 2;
-    public static final String SH = "/bin/sh";
+    public static final String ENV = "/usr/bin/env";
+    public static final String SHELL = "sh";
 
     public CompletableFuture<BootupProcessResult> executeAsync(List<String> command, File workingDirectory) {
         return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
@@ -73,7 +74,7 @@ public class BootupProcessExecutor {
 
     public String getPidFromPsOf(String processName) {
         return executeAndWait(
-                Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).stdout();
+                Arrays.asList(ENV, SHELL, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).stdout();
     }
 
     public int retrievePid(Path pidFile) {
@@ -117,7 +118,7 @@ public class BootupProcessExecutor {
                     return false;
                 }
                 BootupProcessResult command =
-                        executeAndWait(Arrays.asList(SH, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
+                    executeAndWait(Arrays.asList(ENV, SHELL, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
                 return Integer.parseInt(command.stdout().trim())>0;
             } catch (NumberFormatException | IOException e) {
                 return false;
@@ -154,10 +155,10 @@ public class BootupProcessExecutor {
     }
 
     private void kill(int pid) {
-        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
+        executeAndWait(Arrays.asList(ENV, SHELL, "-c", "kill " + pid), null);
     }
 
     private BootupProcessResult kill(int pid, String signal) {
-        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
+        return executeAndWait(Arrays.asList(ENV, SHELL, "-c", "kill -" + signal + " " + pid), null);
     }
 }

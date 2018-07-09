@@ -123,7 +123,7 @@ public class EngineBootup {
     private void start() {
         //  /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
         //    -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
-        List<String> startEngineCmd_EscapeWhitespace = Arrays.asList("/bin/sh", "-c", "java " + JAVA_OPTS +
+        List<String> startEngineCmd_EscapeWhitespace = Arrays.asList("/usr/bin/env","sh", "-c", "java " + JAVA_OPTS +
                 " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
                 " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
                 " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +

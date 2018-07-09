@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source snb-env.sh
 
@@ -136,4 +136,3 @@ do
         echo graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE_REST} -d
         time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE_REST} -d
 done < ${SCRIPTPATH}/migrationsToRun.txt
-
