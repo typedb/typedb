@@ -18,7 +18,7 @@
 
 package ai.grakn.client.concept;
 
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
@@ -95,7 +95,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKey(ConceptProto.Type.Key.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attributeType))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -105,7 +105,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeHas(ConceptProto.Type.Has.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attributeType))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -115,7 +115,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType plays(Role role) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlays(ConceptProto.Type.Plays.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(role))).build();
+                        .setConcept(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -125,7 +125,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unkey(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnkey(ConceptProto.Type.Unkey.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attributeType))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -135,7 +135,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unhas(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnhas(ConceptProto.Type.Unhas.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attributeType))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -145,7 +145,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unplay(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnplay(ConceptProto.Type.Unplay.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(role))).build();
+                        .setConcept(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

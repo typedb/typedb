@@ -19,13 +19,40 @@
 package ai.grakn.client.rpc;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.client.Grakn;
+import ai.grakn.client.concept.ConceptReader;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.ComputeQueryImpl;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.rpc.proto.AnswerProto;
+import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.util.CommonUtil;
+import com.google.common.collect.ImmutableMap;
+import mjson.Json;
+
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * A utility class to build RPC Requests from a provided set of Grakn concepts.
@@ -80,7 +107,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req getAttributes(Object value) {
             return SessionProto.Transaction.Req.newBuilder()
                     .setGetAttributes(SessionProto.Transaction.GetAttributes.Req.newBuilder()
-                            .setValue(ConceptBuilder.attributeValue(value))
+                            .setValue(Concept.attributeValue(value))
                     ).build();
         }
 
@@ -93,7 +120,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req putAttributeType(Label label, AttributeType.DataType<?> dataType) {
             SessionProto.Transaction.PutAttributeType.Req request = SessionProto.Transaction.PutAttributeType.Req.newBuilder()
                     .setLabel(label.getValue())
-                    .setDataType(ConceptBuilder.dataType(dataType))
+                    .setDataType(Concept.dataType(dataType))
                     .build();
 
             return SessionProto.Transaction.Req.newBuilder().setPutAttributeType(request).build();
@@ -126,6 +153,212 @@ public class RequestBuilder {
             return SessionProto.Transaction.Req.newBuilder()
                     .setIterate(SessionProto.Transaction.Iter.Req.newBuilder()
                             .setId(iteratorId)).build();
+        }
+    }
+
+    /**
+     * An RPC Request Builder class for Concept messages
+     */
+    public static class Concept {
+
+        public static ConceptProto.Concept concept(ai.grakn.concept.Concept concept) {
+            return ConceptProto.Concept.newBuilder()
+                    .setId(concept.id().getValue())
+                    .setBaseType(getBaseType(concept))
+                    .build();
+        }
+
+        private static ConceptProto.Concept.BASE_TYPE getBaseType(ai.grakn.concept.Concept concept) {
+            if (concept.isEntityType()) {
+                return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
+            } else if (concept.isRelationshipType()) {
+                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE;
+            } else if (concept.isAttributeType()) {
+                return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
+            } else if (concept.isEntity()) {
+                return ConceptProto.Concept.BASE_TYPE.ENTITY;
+            } else if (concept.isRelationship()) {
+                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP;
+            } else if (concept.isAttribute()) {
+                return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;
+            } else if (concept.isRole()) {
+                return ConceptProto.Concept.BASE_TYPE.ROLE;
+            } else if (concept.isRule()) {
+                return ConceptProto.Concept.BASE_TYPE.RULE;
+            } else if (concept.isType()) {
+                return ConceptProto.Concept.BASE_TYPE.META_TYPE;
+            } else {
+                throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
+            }
+        }
+
+        public static Collection<ConceptProto.Concept> concepts(Collection<ai.grakn.concept.Concept> concepts) {
+            return concepts.stream().map(Concept::concept).collect(toList());
+        }
+
+        public static ConceptProto.ValueObject attributeValue(Object value) {
+            ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
+            if (value instanceof String) {
+                builder.setString((String) value);
+            } else if (value instanceof Boolean) {
+                builder.setBoolean((boolean) value);
+            } else if (value instanceof Integer) {
+                builder.setInteger((int) value);
+            } else if (value instanceof Long) {
+                builder.setLong((long) value);
+            } else if (value instanceof Float) {
+                builder.setFloat((float) value);
+            } else if (value instanceof Double) {
+                builder.setDouble((double) value);
+            } else if (value instanceof LocalDateTime) {
+                builder.setDate(((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+            } else {
+                throw CommonUtil.unreachableStatement("Unrecognised " + value);
+            }
+
+            return builder.build();
+        }
+
+        public static AttributeType.DataType<?> dataType(ConceptProto.AttributeType.DATA_TYPE dataType) {
+            switch (dataType) {
+                case String:
+                    return AttributeType.DataType.STRING;
+                case Boolean:
+                    return AttributeType.DataType.BOOLEAN;
+                case Integer:
+                    return AttributeType.DataType.INTEGER;
+                case Long:
+                    return AttributeType.DataType.LONG;
+                case Float:
+                    return AttributeType.DataType.FLOAT;
+                case Double:
+                    return AttributeType.DataType.DOUBLE;
+                case Date:
+                    return AttributeType.DataType.DATE;
+                default:
+                case UNRECOGNIZED:
+                    throw new IllegalArgumentException("Unrecognised " + dataType);
+            }
+        }
+
+        static ConceptProto.AttributeType.DATA_TYPE dataType(AttributeType.DataType<?> dataType) {
+            if (dataType.equals(AttributeType.DataType.STRING)) {
+                return ConceptProto.AttributeType.DATA_TYPE.String;
+            } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Boolean;
+            } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Integer;
+            } else if (dataType.equals(AttributeType.DataType.LONG)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Long;
+            } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Float;
+            } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Double;
+            } else if (dataType.equals(AttributeType.DataType.DATE)) {
+                return ConceptProto.AttributeType.DATA_TYPE.Date;
+            } else {
+                throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
+            }
+        }
+    }
+
+    /**
+     * An RPC Request Builder class for Answer messages
+     */
+    public static class Answer {
+
+        public static Object answer(AnswerProto.Answer answer, Grakn.Transaction tx) {
+            switch (answer.getAnswerCase()) {
+                case QUERYANSWER:
+                    return queryAnswer(answer.getQueryAnswer(), tx);
+                case COMPUTEANSWER:
+                    return computeAnswer(answer.getComputeAnswer());
+                case OTHERRESULT:
+                    return Json.read(answer.getOtherResult()).getValue();
+                default:
+                case ANSWER_NOT_SET:
+                    throw new IllegalArgumentException("Unexpected " + answer);
+            }
+        }
+
+        public static ai.grakn.graql.admin.Answer queryAnswer(AnswerProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
+            ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
+
+            queryAnswer.getQueryAnswerMap().forEach((grpcVar, AnswerProto) -> {
+                map.put(Graql.var(grpcVar), ConceptReader.concept(AnswerProto, tx));
+            });
+
+            return new QueryAnswer(map.build());
+        }
+
+        public static ComputeQuery.Answer computeAnswer(AnswerProto.ComputeAnswer computeAnswerRPC) {
+            switch (computeAnswerRPC.getComputeAnswerCase()) {
+                case NUMBER:
+                    try {
+                        Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber());
+                        return new ComputeQueryImpl.AnswerImpl().setNumber(result);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                case PATHS:
+                    return new ComputeQueryImpl.AnswerImpl().setPaths(paths(computeAnswerRPC.getPaths()));
+                case CENTRALITY:
+                    return new ComputeQueryImpl.AnswerImpl().setCentrality(centrality(computeAnswerRPC.getCentrality()));
+                case CLUSTERS:
+                    return new ComputeQueryImpl.AnswerImpl().setClusters(clusters(computeAnswerRPC.getClusters()));
+                case CLUSTERSIZES:
+                    return new ComputeQueryImpl.AnswerImpl().setClusterSizes(clusterSizes(computeAnswerRPC.getClusterSizes()));
+                default:
+                case COMPUTEANSWER_NOT_SET:
+                    throw new IllegalArgumentException("Unexpected " + computeAnswerRPC);
+            }
+        }
+
+        public static List<List<ConceptId>> paths(AnswerProto.Paths pathsRPC) {
+            List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
+
+            for (AnswerProto.ConceptIds conceptIds : pathsRPC.getPathsList()) {
+                paths.add(
+                        conceptIds.getIdsList().stream()
+                                .map(ConceptId::of)
+                                .collect(toList())
+                );
+            }
+
+            return paths;
+        }
+
+        public static Map<Long, Set<ConceptId>> centrality(AnswerProto.Centrality centralityRPC) {
+            Map<Long, Set<ConceptId>> centrality = new HashMap<>();
+
+            for (Map.Entry<Long, AnswerProto.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
+                centrality.put(
+                        entry.getKey(),
+                        entry.getValue().getIdsList().stream()
+                                .map(ConceptId::of)
+                                .collect(Collectors.toSet())
+                );
+            }
+
+            return centrality;
+        }
+
+        public static Set<Set<ConceptId>> clusters(AnswerProto.Clusters clustersRPC) {
+            Set<Set<ConceptId>> clusters = new HashSet<>();
+
+            for (AnswerProto.ConceptIds conceptIds : clustersRPC.getClustersList()) {
+                clusters.add(
+                        conceptIds.getIdsList().stream()
+                                .map(ConceptId::of)
+                                .collect(Collectors.toSet())
+                );
+            }
+
+            return clusters;
+        }
+
+        public static Set<Long> clusterSizes(AnswerProto.ClusterSizes clusterSizesRPC) {
+            return new HashSet<>(clusterSizesRPC.getClusterSizesList());
         }
     }
 

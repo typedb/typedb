@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {
 
-    public static RemoteRule create(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRule construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRule(tx, id);
     }
 

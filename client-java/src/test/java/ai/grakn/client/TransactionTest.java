@@ -21,18 +21,9 @@ package ai.grakn.client;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.concept.RemoteAttribute;
-import ai.grakn.client.concept.RemoteAttributeType;
-import ai.grakn.client.concept.RemoteEntity;
-import ai.grakn.client.concept.RemoteEntityType;
-import ai.grakn.client.concept.RemoteRelationshipType;
-import ai.grakn.client.concept.RemoteRole;
-import ai.grakn.client.concept.RemoteRule;
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.concept.ConceptReader;
 import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraknBackendException;
@@ -297,12 +288,14 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteEntityType.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE).build();
+
             Transaction.Res response = Transaction.Res.newBuilder().setPutEntityType(SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setConcept(ConceptBuilder.concept(concept))).build();
+                    .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
-            assertEquals(concept, tx.putEntityType(label));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putEntityType(label));
         }
     }
 
@@ -314,13 +307,15 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteRelationshipType.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE).build();
+
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRelationshipType(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept))).build();
+                            .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
-            assertEquals(concept, tx.putRelationshipType(label));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRelationshipType(label));
         }
     }
 
@@ -333,13 +328,15 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteAttributeType.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE).build();
+
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutAttributeType(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept))).build();
+                            .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
-            assertEquals(concept, tx.putAttributeType(label, dataType));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putAttributeType(label, dataType));
         }
     }
 
@@ -351,13 +348,15 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteRole.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ROLE).build();
+
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRole(SessionProto.Transaction.PutRole.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept))).build();
+                            .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
-            assertEquals(concept, tx.putRole(label));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRole(label));
         }
     }
 
@@ -371,13 +370,15 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteRule.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RULE).build();
+
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRule(SessionProto.Transaction.PutRule.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept))).build();
+                            .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
-            assertEquals(concept, tx.putRule(label, when, then));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRule(label, when, then));
         }
     }
 
@@ -388,14 +389,15 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteEntity.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY).build();
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetConcept(SessionProto.Transaction.GetConcept.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept))).build();
+                            .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
-            assertEquals(concept, tx.getConcept(id));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getConcept(id));
         }
     }
 
@@ -424,14 +426,16 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Concept concept = RemoteAttributeType.create(tx, id);
+            ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE).build();
+
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConcept(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
-                            .setConcept(ConceptBuilder.concept(concept)))
+                            .setConcept(protoConcept))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
-            assertEquals(concept, tx.getSchemaConcept(label));
+            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getSchemaConcept(label));
         }
     }
 
@@ -459,8 +463,10 @@ public class TransactionTest {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
             verify(server.requestListener()).onNext(any()); // The open request
 
-            Attribute<?> attribute1 = RemoteAttribute.create(tx, ConceptId.of("A"));
-            Attribute<?> attribute2 = RemoteAttribute.create(tx, ConceptId.of("B"));
+            ConceptProto.Concept attribute1 = ConceptProto.Concept.newBuilder()
+                    .setId("A").setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE).build();
+            ConceptProto.Concept attribute2 = ConceptProto.Concept.newBuilder()
+                    .setId("B").setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE).build();
 
 //            server.setResponseSequence(
 //                    RequestBuilder.Transaction.getAttributes(value),

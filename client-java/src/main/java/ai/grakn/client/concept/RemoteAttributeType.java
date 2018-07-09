@@ -19,7 +19,7 @@
 package ai.grakn.client.concept;
 
 import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
 
-    public static <D> RemoteAttributeType<D> create(Grakn.Transaction tx, ConceptId id) {
+    static <D> RemoteAttributeType<D> construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteAttributeType<>(tx, id);
     }
 
@@ -46,9 +46,9 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> create(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeTypeCreate(ConceptProto.AttributeType.Create.Req.newBuilder()
-                        .setValue(ConceptBuilder.attributeValue(value))).build();
+                        .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
-        Concept concept = ConceptBuilder.concept(runMethod(method).getAttributeTypeCreate().getConcept(), tx());
+        Concept concept = ConceptReader.concept(runMethod(method).getAttributeTypeCreate().getConcept(), tx());
         return asInstance(concept);
     }
 
@@ -57,14 +57,14 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
     public final Attribute<D> attribute(D value) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setAttributeTypeAttribute(ConceptProto.AttributeType.Attribute.Req.newBuilder()
-                        .setValue(ConceptBuilder.attributeValue(value))).build();
+                        .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
         ConceptProto.AttributeType.Attribute.Res response = runMethod(method).getAttributeTypeAttribute();
         switch (response.getResCase()) {
             case NULL:
                 return null;
             case CONCEPT:
-                return ConceptBuilder.concept(response.getConcept(), tx()).asAttribute();
+                return ConceptReader.concept(response.getConcept(), tx()).asAttribute();
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }
@@ -81,7 +81,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
             case NULL:
                 return null;
             case DATATYPE:
-                return (AttributeType.DataType<D>) ConceptBuilder.dataType(response.getDataType());
+                return (AttributeType.DataType<D>) RequestBuilder.Concept.dataType(response.getDataType());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }

@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, AttributeType<D>> implements Attribute<D> {
 
-    public static <D> RemoteAttribute<D> create(Grakn.Transaction tx, ConceptId id) {
+    static <D> RemoteAttribute<D> construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteAttribute<>(tx, id);
     }
 

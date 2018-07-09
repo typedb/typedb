@@ -18,7 +18,7 @@
 
 package ai.grakn.client.concept;
 
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -40,7 +40,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final SomeType sup(SomeType type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(type))).build();
+                        .setConcept(RequestBuilder.Concept.concept(type))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -49,7 +49,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     public final SomeType sub(SomeType type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetSup(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(this))).build();
+                        .setConcept(RequestBuilder.Concept.concept(this))).build();
 
         runMethod(type.id(), method);
         return asCurrentBaseType(this);
@@ -93,7 +93,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
             case NULL:
                 return null;
             case CONCEPT:
-                Concept concept = ConceptBuilder.concept(response.getConcept(), tx());
+                Concept concept = ConceptReader.concept(response.getConcept(), tx());
                 return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);

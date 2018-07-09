@@ -20,7 +20,6 @@ package ai.grakn.client.concept;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.ConceptBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
@@ -65,7 +64,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
         Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptBuilder.concept(conceptGetter.apply(res.getConceptMethod()), tx())
+                tx(), iteratorId, res -> ConceptReader.concept(conceptGetter.apply(res.getConceptMethod()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

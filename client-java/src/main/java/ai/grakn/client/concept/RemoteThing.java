@@ -18,7 +18,7 @@
 
 package ai.grakn.client.concept;
 
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingType(ConceptProto.Thing.Type.Req.getDefaultInstance()).build();
 
-        Concept concept = ConceptBuilder.concept(runMethod(method).getThingType().getConcept(), tx());
+        Concept concept = ConceptReader.concept(runMethod(method).getThingType().getConcept(), tx());
         return asCurrentType(concept);
     }
 
@@ -60,7 +60,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Attribute<?>> keys(AttributeType... attributeTypes) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingKeys(ConceptProto.Thing.Keys.Req.newBuilder()
-                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes)))).build();
+                        .addAllConcepts(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
 
         int iteratorId = runMethod(method).getThingKeys().getId();
         return conceptStream(iteratorId, res -> res.getThingKeys().getConcept()).map(Concept::asAttribute);
@@ -70,7 +70,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingAttributes(ConceptProto.Thing.Attributes.Req.newBuilder()
-                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(attributeTypes)))).build();
+                        .addAllConcepts(RequestBuilder.Concept.concepts(Arrays.asList(attributeTypes)))).build();
 
         int iteratorId = runMethod(method).getThingAttributes().getId();
         return conceptStream(iteratorId, res -> res.getThingAttributes().getConcept()).map(Concept::asAttribute);
@@ -80,7 +80,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final Stream<Relationship> relationships(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelations(ConceptProto.Thing.Relations.Req.newBuilder()
-                        .addAllConcepts(ConceptBuilder.concepts(Arrays.asList(roles)))).build();
+                        .addAllConcepts(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
 
         int iteratorId = runMethod(method).getThingRelations().getId();
         return conceptStream(iteratorId, res -> res.getThingRelations().getConcept()).map(Concept::asRelationship);
@@ -107,9 +107,9 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         // TODO: then remove this method altogether and just use has(Attribute attribute)
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingRelhas(ConceptProto.Thing.Relhas.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attribute))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attribute))).build();
 
-        Concept concept = ConceptBuilder.concept(runMethod(method).getThingRelhas().getConcept(), tx());
+        Concept concept = ConceptReader.concept(runMethod(method).getThingRelhas().getConcept(), tx());
         return concept.asRelationship();
     }
 
@@ -117,7 +117,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
     public final SomeThing unhas(Attribute attribute) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingUnhas(ConceptProto.Thing.Unhas.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(attribute))).build();
+                        .setConcept(RequestBuilder.Concept.concept(attribute))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

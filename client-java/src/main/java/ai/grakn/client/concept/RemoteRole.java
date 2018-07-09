@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {
 
-    public static RemoteRole create(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRole construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRole(tx, id);
     }
 

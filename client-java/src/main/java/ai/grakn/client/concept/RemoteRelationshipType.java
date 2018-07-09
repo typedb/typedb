@@ -19,7 +19,7 @@
 package ai.grakn.client.concept;
 
 import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.ConceptBuilder;
+import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class RemoteRelationshipType extends RemoteType<RelationshipType, Relationship> implements RelationshipType {
 
-    public static RemoteRelationshipType create(Grakn.Transaction tx, ConceptId id) {
+    static RemoteRelationshipType construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteRelationshipType(tx, id);
     }
 
@@ -45,7 +45,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeCreate(ConceptProto.RelationType.Create.Req.getDefaultInstance()).build();
 
-        Concept concept = ConceptBuilder.concept(runMethod(method).getRelationTypeCreate().getConcept(), tx());
+        Concept concept = ConceptReader.concept(runMethod(method).getRelationTypeCreate().getConcept(), tx());
 
         return asInstance(concept);
     }
@@ -63,7 +63,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     public final RelationshipType relates(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeRelates(ConceptProto.RelationType.Relates.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(role))).build();
+                        .setConcept(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -73,7 +73,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     public final RelationshipType unrelate(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeUnrelate(ConceptProto.RelationType.Unrelate.Req.newBuilder()
-                        .setConcept(ConceptBuilder.concept(role))).build();
+                        .setConcept(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

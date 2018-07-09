@@ -31,7 +31,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RemoteMetaType extends RemoteType<Type, Thing> {
 
-    public static RemoteMetaType create(Grakn.Transaction tx, ConceptId id) {
+    static RemoteMetaType construct(Grakn.Transaction tx, ConceptId id) {
         return new AutoValue_RemoteMetaType(tx, id);
     }
 
