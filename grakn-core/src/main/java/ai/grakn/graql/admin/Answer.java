@@ -80,7 +80,7 @@ public interface Answer {
     @CheckReturnValue
     int size();
 
-    void forEach(BiConsumer<? super Var, ? super Concept> consumer);
+    void forEach(BiConsumer<Var, Concept> consumer);
 
     /**
      * perform an answer merge without explanation
