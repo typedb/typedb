@@ -14,9 +14,16 @@ This section will discuss how to start developing with Grakn using the Java API.
 All Grakn applications require the following Maven dependency:
 
 ```xml
-<properties>
-  <grakn.version>1.2.0</grakn.version>
-</properties>
+<repositories>
+  <repository>
+    <id>snapshots</id>
+    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots/</url>
+  </repository>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
 
 <dependencies>
   <dependency>
@@ -43,7 +50,20 @@ Here are some links to guides for adding external jars using different IDEs:
 
 ## Connecting to Grakn
 
-First, make sure that Grakn is running. Otherwise, boot it up with `grakn server start`. Now, connect to Grakn with:
+{% include note.html content="Before proceeding, make sure that Grakn has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai)." %}
+
+First, make sure to import the following classes:
+```java-test-ignore
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.remote.RemoteGrakn;
+import ai.grakn.util.SimpleURI;
+```
+
+
+Now, connect to Grakn with:
 
 ```java-test-ignore
 GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
