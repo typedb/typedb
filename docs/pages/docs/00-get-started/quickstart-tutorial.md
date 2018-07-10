@@ -193,7 +193,7 @@ commit
 
 ## Using the Grakn Visualiser
 
-You can open the [Grakn visualiser](../visualisation-dashboard/visualiser) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the knowledge graph. The screenshot below shows a basic query (`match $x isa person; offset 0; limit 100;`) typed into the form at the top of the main pane, and visualised by pressing ">":
+You can open the [Grakn visualiser](../visualisation-dashboard/visualiser) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the knowledge graph. The screenshot below shows a basic query typed into the form at the top of the main pane, and visualised by pressing ">":
 
 ![Person query](/images/match-$x-isa-person.png)
 

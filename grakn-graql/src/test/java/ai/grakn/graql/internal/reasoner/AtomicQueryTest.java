@@ -1030,6 +1030,8 @@ public class AtomicQueryTest {
                 "{($x, $y) isa binary;}",
                 "{(role1: $x, role2: $y) isa binary;}",
                 "{(role: $y, role2: $z) isa binary;}",
+                "{(role: $y, role2: $z) isa $type;}",
+                "{(role: $y, role2: $z) isa $type; $type label binary;}",
                 "{(role: $x, role: $x, role2: $z) isa binary;}",
 
                 "{$x ($y, $z) isa binary;}",
