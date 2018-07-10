@@ -283,17 +283,31 @@ public class ResponseBuilder {
             return answer;
         }
 
-        public static AnswerProto.QueryAnswer queryAnswer(ai.grakn.graql.admin.Answer answer) {
-            AnswerProto.QueryAnswer.Builder queryAnswerRPC = AnswerProto.QueryAnswer.newBuilder();
+        static AnswerProto.QueryAnswer queryAnswer(ai.grakn.graql.admin.Answer answer) {
+            AnswerProto.QueryAnswer.Builder queryAnswerProto = AnswerProto.QueryAnswer.newBuilder();
             answer.forEach((var, concept) -> {
                 ConceptProto.Concept conceptRps = ResponseBuilder.Concept.concept(concept);
-                queryAnswerRPC.putQueryAnswer(var.getValue(), conceptRps);
+                queryAnswerProto.putQueryAnswer(var.getValue(), conceptRps);
             });
 
-            return queryAnswerRPC.build();
+            // TODO: answer.getExplanation should return null, rather than an instance where .getQuery() returns null
+            if (answer.getExplanation() != null && answer.getExplanation().getQuery() != null) {
+                queryAnswerProto.setExplanation(explanation(answer.getExplanation()));
+            }
+
+            return queryAnswerProto.build();
         }
 
-        public static AnswerProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
+        static AnswerProto.Explanation explanation(ai.grakn.graql.admin.AnswerExplanation explanation) {
+            return AnswerProto.Explanation.newBuilder()
+                    .setQueryPattern(explanation.getQuery().getPattern().toString())
+                    .addAllQueryAnswer(explanation.getAnswers().stream()
+                            .map(Answer::queryAnswer)
+                            .collect(Collectors.toList()))
+                    .build();
+        }
+
+        static AnswerProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
             AnswerProto.ComputeAnswer.Builder computeAnswerRPC = AnswerProto.ComputeAnswer.newBuilder();
 
             if (computeAnswer.getNumber().isPresent()) {
