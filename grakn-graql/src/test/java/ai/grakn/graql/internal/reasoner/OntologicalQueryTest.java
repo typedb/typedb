@@ -26,9 +26,11 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +39,7 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
 
 public class OntologicalQueryTest {
 
@@ -48,6 +51,11 @@ public class OntologicalQueryTest {
 
     @Rule
     public final SampleKBContext matchingTypesContext = SampleKBContext.load("matchingTypesTest.gql");
+
+    @BeforeClass
+    public static void onStartup() throws Exception {
+        assumeTrue(GraknTestUtil.usingTinker());
+    }
 
     @Test
     public void instancePairsRelatedToSameTypeOfEntity(){
@@ -83,8 +91,8 @@ public class OntologicalQueryTest {
         GraknTx tx = testContext.tx();
         String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
 
-        List<Answer> answers = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
-        List<Answer> answersInferred = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answers = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answersInferred = tx.graql().infer(true).<GetQuery>parse(queryString).execute();
 
         assertFalse(answers.isEmpty());
         assertCollectionsEqual(answers, answersInferred);
@@ -282,6 +290,13 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa relationship;get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+
+        //TODO? doesn't pick up attribute relations
+        //one implicit,
+        //3 x binary,
+        //2 x ternary,
+        //7 (3 reflexive) x reifying-relation
+        //3 x has-description resource relation
         assertEquals(answers.size(), 13);
     }
 
