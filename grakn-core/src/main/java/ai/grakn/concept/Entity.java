@@ -51,7 +51,7 @@ public interface Entity extends Thing {
      * @return The instance itself
      */
     @Override
-    Entity attribute(Attribute attribute);
+    Entity has(Attribute attribute);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Entity}
@@ -59,7 +59,7 @@ public interface Entity extends Thing {
      * @return The {@link Entity} itself
      */
     @Override
-    Entity deleteAttribute(Attribute attribute);
+    Entity unhas(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

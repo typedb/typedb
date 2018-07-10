@@ -75,10 +75,10 @@ public class InferenceRule {
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = rule.getId();
+        this.ruleId = rule.id();
         //TODO simplify once changes propagated to rule objects
-        this.body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), tx);
-        this.head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), tx);
+        this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
+        this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
     private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){

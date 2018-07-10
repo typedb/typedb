@@ -50,7 +50,7 @@ public interface Concept {
      * @return A value the concept's unique id.
      */
     @CheckReturnValue
-    ConceptId getId();
+    ConceptId id();
 
     /**
      * Used for determining which {@link Keyspace} a {@link Concept} was created in and is bound to.
@@ -121,9 +121,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * Return as a {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      *
-     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * @return A {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType(){

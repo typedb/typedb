@@ -62,6 +62,6 @@ public abstract class EmbeddedAttribute implements Jacksonisable {
     }
 
     public static EmbeddedAttribute create(ai.grakn.concept.Attribute attribute){
-        return create(attribute.getId(), Link.create(attribute), EmbeddedSchemaConcept.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
+        return create(attribute.id(), Link.create(attribute), EmbeddedSchemaConcept.create(attribute.type()), attribute.value().toString(), attribute.dataType().getName());
     }
 }

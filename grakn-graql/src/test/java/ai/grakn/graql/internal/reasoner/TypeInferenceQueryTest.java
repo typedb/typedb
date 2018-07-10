@@ -396,7 +396,7 @@ public class TypeInferenceQueryTest {
     }
 
     private ConceptId conceptId(EmbeddedGraknTx<?> graph, String type){
-        return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
+        return graph.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> graph){

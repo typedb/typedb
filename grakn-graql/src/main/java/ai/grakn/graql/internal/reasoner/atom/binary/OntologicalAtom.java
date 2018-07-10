@@ -56,7 +56,7 @@ public abstract class OntologicalAtom extends TypeAtom {
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.then(), rule.label()));
     }
 
     @Override

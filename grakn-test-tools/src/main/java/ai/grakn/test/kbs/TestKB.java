@@ -60,19 +60,19 @@ public abstract class TestKB {
     }
 
     public static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
-        Thing inst = type.addEntity();
+        Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;
     }
 
     public static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
-        Attribute attributeInstance = attributeType.putAttribute(resource);
-        thing.attribute(attributeInstance);
+        Attribute attributeInstance = attributeType.create(resource);
+        thing.has(attributeInstance);
     }
 
     public static Thing getInstance(GraknTx tx, String id){
         Set<Thing> things = tx.getAttributesByValue(id)
-                .stream().flatMap(Attribute::ownerInstances).collect(toSet());
+                .stream().flatMap(Attribute::owners).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");
         }

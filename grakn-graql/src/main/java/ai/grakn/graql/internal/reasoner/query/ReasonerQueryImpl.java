@@ -258,7 +258,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
-        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return getAtoms(RelationshipAtom.class)
@@ -266,9 +266,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
                         .filter(e -> e.getValue().equals(typedVar))
-                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().label()))
                         //check if it can play it
-                        .anyMatch(e -> e.getKey().playedByTypes().noneMatch(parentTypes::contains)));
+                        .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
 
     @Override

@@ -34,9 +34,9 @@ class AttributeConverter implements ConceptConverter<Attribute> {
 
     public Pattern pattern(Attribute concept) {
         Var owner = Graql.var().asUserDefined();
-        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.getValue());
+        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.value());
         return owner
-                .has(concept.type().getLabel(),resourceVar)
-                .id(concept.owner().getId());
+                .has(concept.type().label(),resourceVar)
+                .id(concept.owner().id());
     }
 }

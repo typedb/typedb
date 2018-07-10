@@ -119,13 +119,13 @@ public class ConceptController implements HttpController {
     }
 
     private String getTypePlays(Request request, Response response) throws JsonProcessingException {
-        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.playing().map(ConceptBuilder::build);
         return getConceptCollection(request, response, "plays", buildTypeGetter(request), collector);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
         //TODO: Figure out how to incorporate offset and limit
-        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.plays().flatMap(role -> {
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.roles().flatMap(role -> {
             Link roleWrapper = Link.create(role);
             return thing.relationships(role).map(relationship -> {
                 Link relationshipWrapper = Link.create(relationship);

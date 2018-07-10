@@ -39,15 +39,15 @@ public class EdgeTest extends TxTestBase {
     @Before
     public void createEdge(){
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
-        entity = (EntityImpl) entityType.addEntity();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.getId().getValue()).outE().next();
+        entity = (EntityImpl) entityType.create();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
         edge = new EdgeElement(tx, tinkerEdge);
     }
 
     @Test
     public void checkEqualityBetweenEdgesBasedOnID(){
-        Entity entity2 = entityType.addEntity();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.getId().getValue()).outE().next();
+        Entity entity2 = entityType.create();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.id().getValue()).outE().next();
         EdgeElement edge2 = new EdgeElement(tx, tinkerEdge);
 
         assertEquals(edge, edge);

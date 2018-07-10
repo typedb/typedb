@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.HttpHandler.configureSpark;
+import static ai.grakn.engine.ServerHTTP.configureSpark;
 
 /**
  * Context that starts spark

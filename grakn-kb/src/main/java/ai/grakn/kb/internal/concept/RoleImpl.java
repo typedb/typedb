@@ -71,7 +71,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationshipType> relationshipTypes() {
+    public Stream<RelationshipType> relationships() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -100,7 +100,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return A list of all the Concept Types which can play this role.
      */
     @Override
-    public Stream<Type> playedByTypes() {
+    public Stream<Type> players() {
         return cachedDirectPlayedByTypes.get().stream().flatMap(Type::subs);
     }
 
@@ -117,7 +117,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
-        return relationshipTypes().
+        return relationships().
                 flatMap(RelationshipType::instances).
                 map(relation -> RelationshipImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).

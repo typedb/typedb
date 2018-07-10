@@ -46,8 +46,8 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
     public static RuleImpl get(VertexElement vertexElement){
@@ -66,22 +66,22 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     }
 
     @Override
-    public Pattern getWhen() {
+    public Pattern when() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_WHEN));
     }
 
     @Override
-    public Pattern getThen() {
+    public Pattern then() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_THEN));
     }
 
     @Override
-    public Stream<Type> getHypothesisTypes() {
+    public Stream<Type> whenTypes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     @Override
-    public Stream<Type> getConclusionTypes() {
+    public Stream<Type> thenTypes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
     }
 

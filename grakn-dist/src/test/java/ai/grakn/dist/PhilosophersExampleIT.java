@@ -42,7 +42,7 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx tx = Grakn.session("in-memory", "mygraph").open(GraknTxType.WRITE);
+        GraknTx tx = Grakn.session("in-memory", "mygraph").transaction(GraknTxType.WRITE);
         qb = tx.graql();
         runQueries("src/examples/philosophers.gql");
     }
@@ -75,7 +75,7 @@ public class PhilosophersExampleIT {
     @Test
     public void testAlexanderIsTheOnlyPharaoh() {
         GetQuery pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh'; get;");
-        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().getValue());
+        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().value());
     }
 
     @Test

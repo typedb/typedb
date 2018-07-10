@@ -20,10 +20,11 @@
 
     <!-- Exclude generated ANTLR and protobuffer classes -->
     <Match>
-        <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
-    </Match>
-    <Match>
-        <Class name="~ai\.grakn\.rpc\.generated\..*"/>
+        <or>
+            <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
+            <Class name="~ai\.grakn\.rpc\.generated\..*"/>
+            <Class name="~ai\.grakn\.rpc\.proto\..*"/>
+        </or>
     </Match>
 
     <!-- Exclude mocked tasks in engine-->
@@ -43,7 +44,7 @@
             <Class name="ai.grakn.concept.Label"/>
             <Class name="ai.grakn.concept.LabelId"/>
             <Class name="ai.grakn.Keyspace"/>
-            <Class name="ai.grakn.remote.concept.RemoteConcept"/>
+            <Class name="ai.grakn.client.concept.RemoteConcept"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>

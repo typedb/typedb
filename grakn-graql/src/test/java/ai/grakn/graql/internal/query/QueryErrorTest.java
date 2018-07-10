@@ -230,6 +230,6 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));
 
-        qb.match(var("x").id(movie.getId())).insert(var("x").isa(label(person.getLabel()))).execute();
+        qb.match(var("x").id(movie.id())).insert(var("x").isa(label(person.label()))).execute();
     }
 }

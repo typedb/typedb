@@ -1253,7 +1253,7 @@ public class ReasoningTest {
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         GraknTx graph = test29.tx();
         QueryBuilder qb = graph.graql().infer(true);
-        final int arity = (int) graph.getRelationshipType(label).relates().count();
+        final int arity = (int) graph.getRelationshipType(label).roles().count();
 
         VarPattern resourcePattern = var("a1").has("name", "a");
 

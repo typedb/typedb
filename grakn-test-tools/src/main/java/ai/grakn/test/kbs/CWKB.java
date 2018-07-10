@@ -78,14 +78,14 @@ public class CWKB extends TestKB {
         Role transactionItem = tx.putRole("transaction-item");
 
         EntityType baseEntity = tx.putEntityType("baseEntity")
-                .attribute(key);
+                .has(key);
 
         //Entitites
         person = tx.putEntityType("person")
                 .sup(baseEntity)
                 .plays(seller)
                 .plays(payee)
-                .attribute(nationality);
+                .has(nationality);
 
         tx.putEntityType("criminal")
                 .sup(person);
@@ -97,11 +97,11 @@ public class CWKB extends TestKB {
 
         rocket = tx.putEntityType("rocket")
                 .sup(weapon)
-                .attribute(propulsion);
+                .has(propulsion);
 
         tx.putEntityType("missile")
                 .sup(weapon) //sup(rocket)?
-                .attribute(propulsion);
+                .has(propulsion);
 
         country = tx.putEntityType("country")
                 .sup(baseEntity)
@@ -110,7 +110,7 @@ public class CWKB extends TestKB {
                 .plays(enemyTarget)
                 .plays(payer)
                 .plays(enemySource)
-                .attribute(alignment);
+                .has(alignment);
 
         //Relations
         owns = tx.putRelationshipType("owns")
@@ -133,10 +133,10 @@ public class CWKB extends TestKB {
 
     @Override
     protected void buildInstances(GraknTx tx) {
-        colonelWest =  putEntityWithResource(tx, "colonelWest", person, key.getLabel());
-        Nono =  putEntityWithResource(tx, "Nono", country, key.getLabel());
-        America =  putEntityWithResource(tx, "America", country, key.getLabel());
-        Tomahawk =  putEntityWithResource(tx, "Tomahawk", rocket, key.getLabel());
+        colonelWest =  putEntityWithResource(tx, "colonelWest", person, key.label());
+        Nono =  putEntityWithResource(tx, "Nono", country, key.label());
+        America =  putEntityWithResource(tx, "America", country, key.label());
+        Tomahawk =  putEntityWithResource(tx, "Tomahawk", rocket, key.label());
 
         putResource(colonelWest, nationality, "American");
         putResource(Tomahawk, propulsion, "gsp");
@@ -145,19 +145,19 @@ public class CWKB extends TestKB {
     @Override
     protected void buildRelations() {
         //Enemy(Nono, America)
-        isEnemyOf.addRelationship()
-                .addRolePlayer(enemySource, Nono)
-                .addRolePlayer(enemyTarget, America);
+        isEnemyOf.create()
+                .assign(enemySource, Nono)
+                .assign(enemyTarget, America);
 
         //Owns(Nono, Missile)
-        owns.addRelationship()
-                .addRolePlayer(owner, Nono)
-                .addRolePlayer(ownedItem, Tomahawk);
+        owns.create()
+                .assign(owner, Nono)
+                .assign(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
-        isPaidBy.addRelationship()
-                .addRolePlayer(payee, colonelWest)
-                .addRolePlayer(payer, Nono);
+        isPaidBy.create()
+                .assign(payee, colonelWest)
+                .assign(payer, Nono);
     }
 
     @Override

@@ -55,7 +55,7 @@ public class ConceptTest extends TxTestBase {
 
         assertEquals(v1_1, v1_2);
         assertNotEquals(v1_1, v2_1);
-        assertNotEquals(v1_1.getId(), v2_1.getId());
+        assertNotEquals(v1_1.id(), v2_1.id());
 
         HashSet<Concept> concepts = new HashSet<>();
         concepts.add(v1_1);
@@ -70,10 +70,10 @@ public class ConceptTest extends TxTestBase {
     @Test
     public void checkToStringHasMinimalInformation() {
         EntityType concept = tx.putEntityType("a");
-        Thing entity = concept.addEntity();
+        Thing entity = concept.create();
 
         assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
-        assertTrue(entity.toString().contains(entity.getId().getValue()));
+        assertTrue(entity.toString().contains(entity.id().getValue()));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class ConceptTest extends TxTestBase {
     @Test
     public void whenCastingToInCorrectType_Throw(){
         EntityType thingType = tx.putEntityType("thing type");
-        Entity thing = thingType.addEntity();
+        Entity thing = thingType.create();
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.invalidCasting(thing, Type.class).getMessage());

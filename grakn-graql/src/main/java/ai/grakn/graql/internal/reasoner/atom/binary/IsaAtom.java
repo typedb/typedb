@@ -82,7 +82,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         return create(var.isa(predicateVar).admin(), predicateVar, predicateId, parent);
     }
     public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
-        return create(var, predicateVar, type.getId(), parent);
+        return create(var, predicateVar, type.id(), parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
         IsaAtom atom = create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
@@ -120,7 +120,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public String toString(){
-        String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
+        String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
         return typeString +
                 (isDirect()? "!" : "") +
                 getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
@@ -132,8 +132,8 @@ public abstract class IsaAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 getVarName().isa(getPredicateVariable()) :
                 isDirect()?
-                        getVarName().isaExplicit(getSchemaConcept().getLabel().getValue()) :
-                        getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
+                        getVarName().isaExplicit(getSchemaConcept().label().getValue()) :
+                        getVarName().isa(getSchemaConcept().label().getValue()) ;
     }
 
     @Override
@@ -159,7 +159,7 @@ public abstract class IsaAtom extends IsaAtomBase {
                 .flatMap(r -> r.getRoleVarMap().entries().stream()
                         .filter(e -> e.getValue().equals(getVarName()))
                         .map(Map.Entry::getKey))
-                .map(role -> role.playedByTypes().collect(Collectors.toSet()))
+                .map(role -> role.players().collect(Collectors.toSet()))
                 .reduce(Sets::intersection)
                 .orElse(Sets.newHashSet());
 

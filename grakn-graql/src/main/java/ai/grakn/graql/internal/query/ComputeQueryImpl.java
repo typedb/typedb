@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.ComputeJob;
+import ai.grakn.ComputeExecutor;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -88,7 +88,7 @@ import static java.util.stream.Collectors.joining;
 public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, ComputeQuery.Answer> implements ComputeQuery {
 
     private GraknTx tx;
-    private Set<ComputeJob<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
+    private Set<ComputeExecutor<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
     private boolean includeAttributes;
@@ -135,7 +135,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         Optional<GraqlQueryException> exception = getException();
         if (exception.isPresent()) throw exception.get();
 
-        ComputeJob<Answer> job = executor().run(this);
+        ComputeExecutor<Answer> job = executor().run(this);
 
         runningJobs.add(job);
 
@@ -148,7 +148,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
 
     @Override
     public final void kill() {
-        runningJobs.forEach(ComputeJob::kill);
+        runningJobs.forEach(ComputeExecutor::kill);
     }
 
     @Override

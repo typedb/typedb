@@ -44,7 +44,7 @@ public class RelationshipTypeTest extends TxTestBase {
         Role role2 = tx.putRole("role2");
         Role role3 = tx.putRole("role3");
         relationshipType.relates(role1).relates(role2).relates(role3);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
@@ -52,29 +52,29 @@ public class RelationshipTypeTest extends TxTestBase {
         RelationshipType relationshipType = tx.putRelationshipType("c1");
         Role role1 = tx.putRole("c2");
         Role role2 = tx.putRole("c3");
-        assertThat(relationshipType.relates().collect(toSet()), empty());
+        assertThat(relationshipType.roles().collect(toSet()), empty());
 
         relationshipType.relates(role1).relates(role2);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2));
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role1, role2));
 
-        relationshipType.deleteRelates(role1);
-        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role2));
+        relationshipType.unrelate(role1);
+        assertThat(relationshipType.roles().collect(toSet()), containsInAnyOrder(role2));
     }
 
     @Test
     public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
         AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putAttribute("Ad thing");
+        Attribute<String> attribute = attributeType.create("Ad thing");
 
-        EntityType entityType = tx.putEntityType("My Special Entity Type").attribute(attributeType);
-        Entity entity = entityType.addEntity();
+        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
+        Entity entity = entityType.create();
 
-        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         assertNotNull(implicitRelationshipType);
         assertThat(implicitRelationshipType.instances().collect(toSet()), empty());
 
-        entity.attribute(attribute);
+        entity.has(attribute);
 
         assertEquals(1, implicitRelationshipType.instances().count());
     }
@@ -82,16 +82,16 @@ public class RelationshipTypeTest extends TxTestBase {
     @Test
     public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
         AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putAttribute("Ad thing");
+        Attribute<String> attribute = attributeType.create("Ad thing");
 
-        EntityType entityType = tx.putEntityType("My Special Entity Type").attribute(attributeType);
-        entityType.addEntity().attribute(attribute);
+        EntityType entityType = tx.putEntityType("My Special Entity Type").has(attributeType);
+        entityType.create().has(attribute);
 
-        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());
 
-        implicitRelationshipType.setAbstract(true);
+        implicitRelationshipType.isAbstract(true);
     }
 }

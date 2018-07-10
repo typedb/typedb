@@ -88,12 +88,12 @@ public class ConnectedComponentTest {
 
     @Test
     public void testNullSourceIdIsIgnored() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(null)).execute();
         }
 
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(null)).execute();
         }
     }
@@ -101,14 +101,14 @@ public class ConnectedComponentTest {
     @Test(expected = GraqlQueryException.class)
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4)).execute();
         }
     }
 
     @Test
     public void testConnectedComponentOnEmptyGraph() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             List<Long> sizeList =
                     Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
@@ -128,7 +128,7 @@ public class ConnectedComponentTest {
 
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             sizeList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
                     .includeAttributes(true).where(size(1L)).execute().getClusterSizes().get();
             assertEquals(0, sizeList.size());
@@ -140,7 +140,7 @@ public class ConnectedComponentTest {
 
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .includeAttributes(true).where(size(1L)).execute().getClusterSizes().get();
             assertEquals(5, sizeList.size());
@@ -167,18 +167,18 @@ public class ConnectedComponentTest {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            graph.getEntityType(anotherThing).attribute(attributeType);
-            Attribute aAttribute = attributeType.putAttribute("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.attribute(aAttribute));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.attribute(aAttribute));
+            graph.getEntityType(thing).has(attributeType);
+            graph.getEntityType(anotherThing).has(attributeType);
+            Attribute aAttribute = attributeType.create("blah");
+            graph.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
                     .where(members(true)).execute()
@@ -207,7 +207,7 @@ public class ConnectedComponentTest {
 
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             sizeList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).includeAttributes(true).execute()
                     .getClusterSizes().get();
             assertEquals(1, sizeList.size());
@@ -234,7 +234,7 @@ public class ConnectedComponentTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).execute()
                     .getClusterSizes().get();
             Map<Long, Integer> populationCount00 = new HashMap<>();
@@ -284,7 +284,7 @@ public class ConnectedComponentTest {
         }
 
         Set<List<Long>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).execute().getClusterSizes().get();
             }
         }).collect(Collectors.toSet());
@@ -295,19 +295,19 @@ public class ConnectedComponentTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
@@ -315,15 +315,15 @@ public class ConnectedComponentTest {
             entityType2.plays(role1).plays(role2);
             RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId();
+            relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id();
 
             List<AttributeType> attributeTypeList = new ArrayList<>();
             attributeTypeList.add(graph.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE));
@@ -335,8 +335,8 @@ public class ConnectedComponentTest {
             attributeTypeList.add(graph.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
-                entityType1.attribute(attributeType);
-                entityType2.attribute(attributeType);
+                entityType1.has(attributeType);
+                entityType2.has(attributeType);
             });
 
             graph.commit();
@@ -344,35 +344,35 @@ public class ConnectedComponentTest {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            entity1.attribute(graph.getAttributeType(resourceType1).putAttribute(1.2))
-                    .attribute(graph.getAttributeType(resourceType1).putAttribute(1.5))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(4L))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(-1L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity1.has(graph.getAttributeType(resourceType1).create(1.2))
+                    .has(graph.getAttributeType(resourceType1).create(1.5))
+                    .has(graph.getAttributeType(resourceType2).create(4L))
+                    .has(graph.getAttributeType(resourceType2).create(-1L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity2.attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity2.has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity3.attribute(graph.getAttributeType(resourceType1).putAttribute(1.8));
+            entity3.has(graph.getAttributeType(resourceType1).create(1.8));
 
-            entity4.attribute(graph.getAttributeType(resourceType2).putAttribute(0L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity4.has(graph.getAttributeType(resourceType2).create(0L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
             // some resources in, but not connect them to any instances
-            aDisconnectedAttribute = graph.getAttributeType(resourceType1).putAttribute(2.8).getId();
-            graph.getAttributeType(resourceType2).putAttribute(-5L);
-            graph.getAttributeType(resourceType3).putAttribute(100L);
-            graph.getAttributeType(resourceType5).putAttribute(10L);
-            graph.getAttributeType(resourceType6).putAttribute(0.8);
+            aDisconnectedAttribute = graph.getAttributeType(resourceType1).create(2.8).id();
+            graph.getAttributeType(resourceType2).create(-5L);
+            graph.getAttributeType(resourceType3).create(100L);
+            graph.getAttributeType(resourceType5).create(10L);
+            graph.getAttributeType(resourceType6).create(0.8);
 
             graph.commit();
         }

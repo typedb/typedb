@@ -52,7 +52,7 @@ public class AttributeTypePropertyTest {
         Collection previousResources = (Collection) type.instances().collect(toSet());
 
         try {
-            type.putAttribute(value);
+            type.create(value);
             assumeTrue("Assumed putResource would throw", false);
         } catch (GraknTxOperationException e) {
             // This is expected to throw

@@ -126,7 +126,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteAllRolePlayers() {
-        ConceptId id = kurtzCastRelation.get("a").stream().map(ans -> ans.get("a")).findFirst().get().getId();
+        ConceptId id = kurtzCastRelation.get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
         Match relation = qb.match(var().id(id));
 
         assertExists(kurtz);
@@ -161,7 +161,7 @@ public class DeleteQueryTest {
         ConceptId id = qb.match(
                 x.has("title", "Godfather"),
                 var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-        ).get("a").stream().map(ans -> ans.get("a")).findFirst().get().getId();
+        ).get("a").stream().map(ans -> ans.get("a")).findFirst().get().id();
 
         assertExists(qb, var().has("title", "Godfather"));
         assertExists(qb, var().id(id));

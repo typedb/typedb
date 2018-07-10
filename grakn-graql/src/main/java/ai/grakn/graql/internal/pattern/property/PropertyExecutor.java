@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.executor.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 

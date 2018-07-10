@@ -19,8 +19,8 @@
 package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.engine.GraknEngineServerFactory;
-import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.Server;
+import ai.grakn.engine.ServerFactory;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +33,8 @@ import java.util.Optional;
 /**
  * The main class of the 'grakn' command. This class is not a class responsible
  * for booting up the real command, but rather the command itself.
- * <p>
- * Please keep the class name "Grakn" as it is what will be displayed to the user.
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
+ * Please keep the class name "Grakn" as it is what will be displayed to the user.
  */
 public class Grakn {
 
@@ -62,8 +59,8 @@ public class Grakn {
             enginePidManager.trackGraknPid();
 
             // Start Engine
-            GraknEngineServer graknEngineServer = GraknEngineServerFactory.createGraknEngineServer();
-            graknEngineServer.start();
+            Server server = ServerFactory.createServer();
+            server.start();
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
         }

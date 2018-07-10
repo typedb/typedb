@@ -63,7 +63,7 @@ public class MigratorTestUtils {
     }
 
     public static void load(GraknSession factory, File schema) {
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {
             graph.graql()
                     .parse(Files.readLines(schema, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
@@ -77,7 +77,7 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknTx graph, Thing thing1, Thing thing2, Label relation){
         RelationshipType relationshipType = graph.getSchemaConcept(relation);
 
-        Role role1 = thing1.plays().filter(r -> r.relationshipTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
+        Role role1 = thing1.roles().filter(r -> r.relationships().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
         assertTrue(thing1.relationships(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
@@ -117,7 +117,7 @@ public class MigratorTestUtils {
      * Check that the pet graph has been loaded correctly
      */
     public static void assertPetGraphCorrect(GraknSession session){
-        try(GraknTx graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
@@ -130,10 +130,10 @@ public class MigratorTestUtils {
             AttributeType<String> name = graph.getAttributeType("name");
             AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity puffball = name.getAttribute("Puffball").ownerInstances().iterator().next().asEntity();
+            Entity puffball = name.attribute("Puffball").owners().iterator().next().asEntity();
             assertEquals(0, puffball.attributes(death).count());
 
-            Entity bowser = name.getAttribute("Bowser").ownerInstances().iterator().next().asEntity();
+            Entity bowser = name.attribute("Bowser").owners().iterator().next().asEntity();
             assertEquals(1, bowser.attributes(death).count());
         }
     }
@@ -142,24 +142,24 @@ public class MigratorTestUtils {
      * Check that the pokemon graph has been loaded correctly
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
-        try(GraknTx graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.transaction(GraknTxType.READ)){
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
             AttributeType<String> typeid = graph.getAttributeType("type-id");
             AttributeType<String> pokedexno = graph.getAttributeType("pokedex-no");
 
-            Entity grass = typeid.getAttribute("12").ownerInstances().iterator().next().asEntity();
-            Entity poison = typeid.getAttribute("4").ownerInstances().iterator().next().asEntity();
-            Entity bulbasaur = pokedexno.getAttribute("1").ownerInstances().iterator().next().asEntity();
+            Entity grass = typeid.attribute("12").owners().iterator().next().asEntity();
+            Entity poison = typeid.attribute("4").owners().iterator().next().asEntity();
+            Entity bulbasaur = pokedexno.attribute("1").owners().iterator().next().asEntity();
             RelationshipType relation = graph.getRelationshipType("has-type");
 
             assertNotNull(grass);
             assertNotNull(poison);
             assertNotNull(bulbasaur);
 
-            assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.getLabel());
-            assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.getLabel());
+            assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.label());
+            assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.label());
         }
     }
 }

@@ -44,28 +44,28 @@ class JsonPrinter extends Printer<Json> {
 
     @Override
     public Json concept(Concept concept) {
-        Json json = Json.object("id", concept.getId().getValue());
+        Json json = Json.object("id", concept.id().getValue());
 
         if (concept.isSchemaConcept()) {
-            json.set("name", concept.asSchemaConcept().getLabel().getValue());
+            json.set("name", concept.asSchemaConcept().label().getValue());
             SchemaConcept superConcept = concept.asSchemaConcept().sup();
-            if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
+            if (superConcept != null) json.set("sub", superConcept.label().getValue());
         } else if (concept.isThing()) {
-            json.set("isa", concept.asThing().type().getLabel().getValue());
+            json.set("isa", concept.asThing().type().label().getValue());
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
 
         if (concept.isAttribute()) {
-            json.set("value", concept.asAttribute().getValue());
+            json.set("value", concept.asAttribute().value());
         }
 
         if (concept.isRule()) {
-            Pattern when = concept.asRule().getWhen();
+            Pattern when = concept.asRule().when();
             if (when != null) {
                 json.set("when", when.toString());
             }
-            Pattern then = concept.asRule().getThen();
+            Pattern then = concept.asRule().then();
             if (then != null) {
                 json.set("then", then.toString());
             }

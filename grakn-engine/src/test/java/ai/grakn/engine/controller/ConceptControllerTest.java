@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.engine.GraknKeyspaceStoreFake;
+import ai.grakn.engine.KeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
 import ai.grakn.engine.controller.response.Concept;
@@ -108,7 +108,7 @@ public class ConceptControllerTest {
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
-        factory = EngineGraknTxFactory.create(mockLockProvider, config, GraknKeyspaceStoreFake.of());
+        factory = EngineGraknTxFactory.create(mockLockProvider, config, KeyspaceStoreFake.of());
         factory.keyspaceStore().loadSystemSchema();
         new ConceptController(factory, new MetricRegistry()).start(spark);
     });
@@ -126,18 +126,18 @@ public class ConceptControllerTest {
             ai.grakn.concept.Role role2 = tx.putRole("My Special Role 2");
 
             ai.grakn.concept.AttributeType attributeType = tx.putAttributeType("My Attribute Type", ai.grakn.concept.AttributeType.DataType.STRING);
-            ai.grakn.concept.Attribute attribute1 = attributeType.putAttribute("An attribute 1");
-            ai.grakn.concept.Attribute attribute2 = attributeType.putAttribute("An attribute 2");
+            ai.grakn.concept.Attribute attribute1 = attributeType.create("An attribute 1");
+            ai.grakn.concept.Attribute attribute2 = attributeType.create("An attribute 2");
 
             ai.grakn.concept.AttributeType attributeTypeKey = tx.putAttributeType("My Key Attribute Type", ai.grakn.concept.AttributeType.DataType.STRING);
-            ai.grakn.concept.Attribute key = attributeTypeKey.putAttribute("An attribute Key 1");
+            ai.grakn.concept.Attribute key = attributeTypeKey.create("An attribute Key 1");
 
-            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType).key(attributeTypeKey);
+            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).has(attributeType).key(attributeTypeKey);
             ai.grakn.concept.EntityType entityTypeSub = tx.putEntityType("My Special Sub Entity Type").sup(entityType);
-            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2).attribute(key);
+            entity = entityType.create().has(attribute1).has(attribute2).has(key);
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
-            ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
+            ai.grakn.concept.Relationship relationship = relationshipType.create().assign(role1, entity).assign(role2, entity);
 
             Pattern when = tx.graql().parser().parsePattern("$x isa \"My Relationship Type\"");
             Pattern then = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
@@ -170,7 +170,7 @@ public class ConceptControllerTest {
         //Get Expected Relationships
         Set<RolePlayer> relationshipsExpected = new HashSet<>();
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
-            entity.plays().forEach(role -> {
+            entity.roles().forEach(role -> {
                 Link roleWrapper = Link.create(role);
                 entity.relationships(role).forEach(relationship -> {
                     Link relationshipWrapper = Link.create(relationship);
@@ -307,7 +307,7 @@ public class ConceptControllerTest {
     public void whenCallingConceptEndpointAndRequestingJSON_ReturnJSON() {
         ConceptId id;
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
-            id = tx.admin().getMetaConcept().getId();
+            id = tx.admin().getMetaConcept().id();
         }
 
         given().accept(ContentType.JSON).pathParam("keyspace", keyspace.getValue()).pathParam("id", id.getValue())
@@ -367,7 +367,7 @@ public class ConceptControllerTest {
     public void whenCallingRelationshipsEndpoint_ReturnIdLinkToSelf() {
         ConceptId id;
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
-            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+            id = tx.admin().getMetaConcept().instances().findAny().get().id();
         }
 
         String relationshipsLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";
@@ -379,7 +379,7 @@ public class ConceptControllerTest {
     public void whenCallingAttributesEndpoint_ReturnIdLinkToSelf() {
         ConceptId id;
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
-            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+            id = tx.admin().getMetaConcept().instances().findAny().get().id();
         }
 
         String attributesLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";
@@ -391,7 +391,7 @@ public class ConceptControllerTest {
     public void whenCallingKeysEndpoint_ReturnIdLinkToSelf() {
         ConceptId id;
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
-            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+            id = tx.admin().getMetaConcept().instances().findAny().get().id();
         }
 
         String keysLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";

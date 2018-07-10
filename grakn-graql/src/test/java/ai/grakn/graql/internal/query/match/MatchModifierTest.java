@@ -167,7 +167,7 @@ public class MatchModifierTest {
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(
             Streamable<Answer> streamable, Var var, boolean asc) {
-        Stream<T> values = streamable.stream().map(result -> result.get(var).<T>asAttribute().getValue());
+        Stream<T> values = streamable.stream().map(result -> result.get(var).<T>asAttribute().value());
         assertResultsOrdered(values, asc);
     }
 

@@ -43,8 +43,15 @@ import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
  */
 public class GraknBackendException extends GraknException {
 
+    private final String NAME = "GraknBackendException";
+
     protected GraknBackendException(String error, Exception e) {
         super(error, e);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     GraknBackendException(String error){

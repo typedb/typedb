@@ -125,7 +125,7 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        try(GraknTx graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 
@@ -134,7 +134,7 @@ public class JsonMigratorMainTest {
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
             Attribute number = getResource(graph, streetAddress, Label.of("number"));
-            assertEquals(21L, number.getValue());
+            assertEquals(21L, number.value());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
             assertEquals(2, phoneNumbers.size());

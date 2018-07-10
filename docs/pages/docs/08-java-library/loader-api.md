@@ -20,7 +20,7 @@ To use the loader client API, add the following to your pom.xml:
 ```xml
 <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn-client</artifactId>
+    <artifactId>client-java</artifactId>
     <version>${grakn.version}</version>
 </dependency>
 ```

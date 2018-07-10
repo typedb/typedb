@@ -52,7 +52,7 @@ public class ConceptBuilderTest {
         Entity entityWrapper = ConceptBuilder.build(entity);
 
         //Check internal data
-        assertEquals(entity.getId(), entityWrapper.id());
+        assertEquals(entity.id(), entityWrapper.id());
 
         //Check Links to other concepts
         Link attributes = Link.createAttributesLink(entity);
@@ -75,8 +75,8 @@ public class ConceptBuilderTest {
         EntityType entityTypeWrapper = ConceptBuilder.build(entityType);
 
         //Check internal data
-        assertEquals(entityType.getId(), entityTypeWrapper.id());
-        assertEquals(entityType.getLabel(), entityTypeWrapper.label());
+        assertEquals(entityType.id(), entityTypeWrapper.id());
+        assertEquals(entityType.label(), entityTypeWrapper.label());
         assertEquals(entityType.isAbstract(), entityTypeWrapper.isAbstract());
         assertEquals(entityType.isImplicit(), entityTypeWrapper.implicit());
 
