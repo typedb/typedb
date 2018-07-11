@@ -49,7 +49,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
-import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
@@ -75,7 +75,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -254,9 +253,24 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @return true if this query contains disconnected atoms that are unbounded
+     */
+    public boolean isBoundlesslyDisconnected(){
+        return !isAtomic()
+                && selectAtoms().stream()
+                .filter(at -> !at.isBounded())
+                .anyMatch(Atom::isDisconnected);
+    }
+
+    /**
+     * @return true if the query requires direct schema lookups
+     */
+    public boolean requiresSchema(){ return selectAtoms().stream().anyMatch(Atom::requiresSchema);}
+
+    /**
      * @return true if this query is atomic
      */
-    boolean isAtomic() {
+    public boolean isAtomic() {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
@@ -617,14 +631,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             subGoalIterator = Collections.emptyIterator();
         } else {
             dbIterator = Collections.emptyIterator();
-            LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
 
-            LOG.trace("CQ plan:\n" + subQueries.stream()
-                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
-                    .collect(Collectors.joining("\n"))
-            );
-
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
+            LOG.trace("CQ plan:\n" + queryPlan);
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }
