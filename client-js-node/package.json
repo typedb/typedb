@@ -1,0 +1,29 @@
+{
+  "name": "grakn",
+  "version": "1.2.3",
+  "graknVersion": "1.2.0",
+  "description": "Grakn Node.js Client",
+  "main": "dist/Grakn.js",
+  "author": "Grakn Labs",
+  "license": "Apache-2.0",
+  "homepage": "https://grakn.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/graknlabs/grakn-node"
+  },
+  "scripts": {
+    "test": "./node_modules/jest/bin/jest.js",
+    "build": "rm -rf dist/ && babel src -d dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "google-protobuf": "^3.6.0",
+    "grpc": "^1.12.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-minify": "^0.4.3",
+    "jest": "^23.0.0"
+  }
+}
