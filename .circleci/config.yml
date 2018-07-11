@@ -255,7 +255,7 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
+#      - build
 #      - unit-it-test-1:
 #          requires:
 #            - build
@@ -265,9 +265,9 @@ workflows:
 #      - distribution-e2e:
 #          requires:
 #            - build
-      - snb-e2e:
-          requires:
-            - build
+      - snb-e2e
+#          requires:
+#            - build
 #      - biomed-e2e:
 #          requires:
 #            - build
