@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 /**
  *
@@ -39,6 +40,7 @@ public class QueryAnswers implements Iterable<Answer>{
 
     private final HashSet<Answer> set = new HashSet<>();
 
+    @Nonnull
     @Override
     public Iterator<Answer> iterator() { return set.iterator();}
 
@@ -53,12 +55,15 @@ public class QueryAnswers implements Iterable<Answer>{
     @Override
     public int hashCode(){return set.hashCode();}
 
+    @Override
+    public String toString(){ return set.toString();}
+
     public Stream<Answer> stream(){ return set.stream();}
 
     public QueryAnswers(){}
     public QueryAnswers(Answer ans){ set.add(ans);}
     public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
-    public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
+    private QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
     public boolean add(Answer a){ return set.add(a);}
     public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
@@ -66,6 +71,7 @@ public class QueryAnswers implements Iterable<Answer>{
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
 
     public boolean contains(Answer a){ return set.contains(a);}
+    public boolean isEmpty(){ return set.isEmpty();}
 
     /**
      * unify the answers by applying unifier to variable set

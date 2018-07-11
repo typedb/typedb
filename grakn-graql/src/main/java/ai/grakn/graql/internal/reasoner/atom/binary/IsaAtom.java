@@ -122,6 +122,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
         return typeString +
+                (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
