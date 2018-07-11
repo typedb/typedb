@@ -235,7 +235,7 @@ jobs:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-2
       - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
-      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/load.sh
+#      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/load.sh
       - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-dist-test PACKAGE=./grakn-dist/target/grakn-dist-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/validate.sh
 
   biomed-e2e:
@@ -256,18 +256,18 @@ workflows:
   run-all-tests:
     jobs:
       - build
-      - unit-it-test-1:
-          requires:
-            - build
-      - unit-it-test-2:
-          requires:
-            - build
-      - distribution-e2e:
-          requires:
-            - build
+#      - unit-it-test-1:
+#          requires:
+#            - build
+#      - unit-it-test-2:
+#          requires:
+#            - build
+#      - distribution-e2e:
+#          requires:
+#            - build
       - snb-e2e:
           requires:
             - build
-      - biomed-e2e:
-          requires:
-            - build
+#      - biomed-e2e:
+#          requires:
+#            - build
