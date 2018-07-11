@@ -21,11 +21,14 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.rpc.proto.KeyspaceProto;
+import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+
+import java.util.stream.Collectors;
 
 /**
  * Grakn RPC Keyspace Service
@@ -33,9 +36,11 @@ import io.grpc.stub.StreamObserver;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
     private final OpenRequest requestOpener;
+    private final KeyspaceStore keyspaceStore;
 
-    public KeyspaceService(OpenRequest requestOpener) {
+    public KeyspaceService(OpenRequest requestOpener, KeyspaceStore keyspaceStore) {
         this.requestOpener = requestOpener;
+        this.keyspaceStore = keyspaceStore;
     }
 
     @Override
@@ -45,7 +50,14 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
 
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
-        response.onError(new StatusRuntimeException(Status.UNIMPLEMENTED));
+        try {
+            Iterable<String> list = keyspaceStore.keyspaces().stream().map(Keyspace::getValue)
+                    .collect(Collectors.toSet());
+            response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
+            response.onCompleted();
+        } catch (RuntimeException e) {
+            response.onError(ResponseBuilder.exception(e));
+        }
     }
 
     @Override
