@@ -1,13 +1,29 @@
 {
-    "presets": [
-        [
-            "env",
-            {
-                "targets": {
-                    "node": "6.5.0"
-                }
-            }
-        ],
-        "minify"
-    ]
+    "env": {
+        "production": {
+            "presets": [
+                [
+                    "env",
+                    {
+                        "targets": {
+                            "node": "6.5.0"
+                        }
+                    }
+                ],
+                "minify"
+            ]
+        },
+        "development": {
+            "presets": [
+                [
+                    "env",
+                    {
+                        "targets": {
+                            "node": "current"
+                        }
+                    }
+                ]
+            ]
+        }
+    }
 }

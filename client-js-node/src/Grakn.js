@@ -12,13 +12,13 @@ module.exports = {
  * List of available dataTypes for Grakn Attributes
  */
 module.exports.dataType = {
-    STRING: messages.AttributeType.DATA_TYPE.String,
-    BOOLEAN: messages.AttributeType.DATA_TYPE.Boolean,
-    INTEGER: messages.AttributeType.DATA_TYPE.Integer,
-    LONG: messages.AttributeType.DATA_TYPE.Long,
-    FLOAT: messages.AttributeType.DATA_TYPE.Float,
-    DOUBLE: messages.AttributeType.DATA_TYPE.Double,
-    DATE: messages.AttributeType.DATA_TYPE.Date
+    STRING: messages.AttributeType.DATA_TYPE.STRING,
+    BOOLEAN: messages.AttributeType.DATA_TYPE.BOOLEAN,
+    INTEGER: messages.AttributeType.DATA_TYPE.INTEGER,
+    LONG: messages.AttributeType.DATA_TYPE.LONG,
+    FLOAT: messages.AttributeType.DATA_TYPE.FLOAT,
+    DOUBLE: messages.AttributeType.DATA_TYPE.DOUBLE,
+    DATE: messages.AttributeType.DATA_TYPE.DATE
 };
 
 /**

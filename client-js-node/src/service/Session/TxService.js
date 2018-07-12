@@ -171,10 +171,10 @@ TxService.prototype.unsetRelatedRole = function (id, role) {
 TxService.prototype.putAttribute = async function (id, value) {
     const dataTypeTxRequest = TxRequestBuilder.getDataTypeOfType(id);
     const resp = await this.communicator.send(dataTypeTxRequest);
-    const dataType = resp.getConceptresponse().getOptionaldatatype().getPresent();
+    const dataType = resp.getConceptmethodRes().getResponse().getAttributetypeDatatypeRes().getDatatype();
     const txRequest = TxRequestBuilder.putAttribute(id, dataType, value);
     return this.communicator.send(txRequest)
-        .then(response => this.respConverter.conceptFromResponse(response));
+        .then(resp => this.respConverter.putAttribute(resp));
 };
 TxService.prototype.getAttribute = async function (id, value) {
     const dataTypeTxRequest = TxRequestBuilder.getDataTypeOfType(id);
@@ -277,7 +277,7 @@ TxService.prototype.unsetRolePlayer = function (id, role, thing) {
 TxService.prototype.getValue = function (id) {
     const txRequest = TxRequestBuilder.getValue(id);
     return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getAttributeValueFromResponse(response));
+        .then(response => this.respConverter.getValue(response));
 };
 TxService.prototype.getOwners = function (id) {
     const txRequest = TxRequestBuilder.getOwners(id);
@@ -332,7 +332,7 @@ TxService.prototype.putRule = function (label, when, then) {
 TxService.prototype.putAttributeType = function (label, dataType) {
     const txRequest = TxRequestBuilder.putAttributeType(label, dataType);
     return this.communicator.send(txRequest)
-        .then(response => this.respConverter.conceptFromResponse(response));
+        .then(response => this.respConverter.putAttributeType(response));
 }
 
 TxService.prototype.getAttributesByValue = function (value, dataType) {

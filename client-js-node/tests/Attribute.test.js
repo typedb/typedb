@@ -4,7 +4,6 @@ let tx;
 
 beforeAll(() => {
     session = env.session();
-    debugger;
 });
 
 afterAll(async () => {
@@ -13,7 +12,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
     tx = await session.transaction(env.txType().WRITE);
-    debugger;
 })
 
 afterEach(() => {
@@ -21,12 +19,6 @@ afterEach(() => {
 });
 
 describe("Attribute methods", () => {
-
-    test("dataType", async () => {
-        const attributeType = await tx.putAttributeType("firstname", env.dataType().STRING);
-        const attribute = await attributeType.putAttribute('Marco');
-        expect(await attribute.dataType()).toBe('String');
-    });
 
     test("getValue", async () => {
         const doubleAttributeType = await tx.putAttributeType("length", env.dataType().DOUBLE);

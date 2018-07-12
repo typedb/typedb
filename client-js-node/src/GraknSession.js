@@ -1,4 +1,3 @@
-const grpc = require("grpc");
 const GraknTx = require("./GraknTx");
 const RemoteSession = require("./service/Session");
 
@@ -22,7 +21,7 @@ function GraknSession(uri, keyspace, credentials) {
  * @returns GraknTx
  */
 GraknSession.prototype.transaction = async function (txType) {
-  const remoteTx = await this.remoteSession.createRemoteTx(txType);
+  const remoteTx = await this.remoteSession.createRemoteTx(txType).catch(e => { throw e; });
   return new GraknTx(remoteTx);
 }
 
