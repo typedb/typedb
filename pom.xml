@@ -932,7 +932,7 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
             <id>releases</id>
