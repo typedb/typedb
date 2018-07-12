@@ -93,7 +93,7 @@ abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> exte
             case NULL:
                 return null;
             case SCHEMACONCEPT:
-                Concept concept = ConceptReader.concept(response.getSchemaConcept(), tx());
+                Concept concept = RemoteConcept.of(response.getSchemaConcept(), tx());
                 return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);

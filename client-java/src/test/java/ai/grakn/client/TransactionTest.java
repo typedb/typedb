@@ -21,7 +21,7 @@ package ai.grakn.client;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
@@ -295,7 +295,7 @@ public class TransactionTest {
                     .setEntityType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putEntityType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putEntityType(label));
         }
     }
 
@@ -315,7 +315,7 @@ public class TransactionTest {
                             .setRelationType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRelationshipType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationshipType(label));
         }
     }
 
@@ -336,7 +336,7 @@ public class TransactionTest {
                             .setAttributeType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putAttributeType(label, dataType));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putAttributeType(label, dataType));
         }
     }
 
@@ -356,7 +356,7 @@ public class TransactionTest {
                             .setRole(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRole(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRole(label));
         }
     }
 
@@ -378,7 +378,7 @@ public class TransactionTest {
                             .setRule(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRule(label, when, then));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRule(label, when, then));
         }
     }
 
@@ -397,7 +397,7 @@ public class TransactionTest {
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getConcept(id));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.getConcept(id));
         }
     }
 
@@ -435,7 +435,7 @@ public class TransactionTest {
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getSchemaConcept(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.getSchemaConcept(label));
         }
     }
 

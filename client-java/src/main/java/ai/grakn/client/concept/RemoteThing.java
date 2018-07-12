@@ -44,7 +44,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setThingTypeReq(ConceptProto.Thing.Type.Req.getDefaultInstance()).build();
 
-        Concept concept = ConceptReader.concept(runMethod(method).getThingTypeRes().getType(), tx());
+        Concept concept = RemoteConcept.of(runMethod(method).getThingTypeRes().getType(), tx());
         return asCurrentType(concept);
     }
 
@@ -109,7 +109,7 @@ abstract class RemoteThing<SomeThing extends Thing, SomeType extends Type> exten
                 .setThingRelhasReq(ConceptProto.Thing.Relhas.Req.newBuilder()
                         .setAttribute(RequestBuilder.Concept.concept(attribute))).build();
 
-        Concept concept = ConceptReader.concept(runMethod(method).getThingRelhasRes().getRelation(), tx());
+        Concept concept = RemoteConcept.of(runMethod(method).getThingRelhasRes().getRelation(), tx());
         return concept.asRelationship();
     }
 

@@ -20,7 +20,7 @@ package ai.grakn.client.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Grakn;
-import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -285,7 +285,7 @@ public class RequestBuilder {
             ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
 
             queryAnswer.getQueryAnswerMap().forEach((grpcVar, AnswerProto) -> {
-                map.put(Graql.var(grpcVar), ConceptReader.concept(AnswerProto, tx));
+                map.put(Graql.var(grpcVar), RemoteConcept.of(AnswerProto, tx));
             });
 
             return new QueryAnswer(map.build());

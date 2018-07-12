@@ -48,7 +48,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
                 .setAttributeTypeCreateReq(ConceptProto.AttributeType.Create.Req.newBuilder()
                         .setValue(RequestBuilder.Concept.attributeValue(value))).build();
 
-        Concept concept = ConceptReader.concept(runMethod(method).getAttributeTypeCreateRes().getAttribute(), tx());
+        Concept concept = RemoteConcept.of(runMethod(method).getAttributeTypeCreateRes().getAttribute(), tx());
         return asInstance(concept);
     }
 
@@ -64,7 +64,7 @@ public abstract class RemoteAttributeType<D> extends RemoteType<AttributeType<D>
             case NULL:
                 return null;
             case ATTRIBUTE:
-                return ConceptReader.concept(response.getAttribute(), tx()).asAttribute();
+                return RemoteConcept.of(response.getAttribute(), tx()).asAttribute();
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
         }

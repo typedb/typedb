@@ -188,7 +188,7 @@ message Method {
     }
 }
 
-message Null {} // Indicates that a request does not yield any result
+message Null {}
 
 // Concept methods
 
@@ -197,15 +197,15 @@ message Concept {
     BASE_TYPE baseType = 2;
 
     enum BASE_TYPE {
-        META_TYPE = 0; // This represents the top-level meta type only
+        META_TYPE = 0;
         ENTITY_TYPE = 1;
-        RELATION_TYPE = 3;
-        ATTRIBUTE_TYPE = 4;
-        ENTITY = 5;
-        RELATION = 6;
-        ATTRIBUTE = 7;
-        ROLE = 8;
-        RULE = 9;
+        RELATION_TYPE = 2;
+        ATTRIBUTE_TYPE = 3;
+        ROLE = 4;
+        RULE = 5;
+        ENTITY = 6;
+        RELATION = 7;
+        ATTRIBUTE = 8;
     }
 
     message Delete {
