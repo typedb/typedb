@@ -265,7 +265,7 @@ public class ReasonerUtils {
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Var childVarName = childType.getVarName();
-            Var parentVarName = unifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+            Var parentVarName = childParentUnifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);

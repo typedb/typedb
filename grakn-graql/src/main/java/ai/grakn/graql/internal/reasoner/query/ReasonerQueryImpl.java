@@ -542,6 +542,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return join.filter(a -> nonEqualsFilter(a, neqPredicates));
     }
 
+    /**
+     * //TODO
+     * @return
+     */
+    public ReasonerQueryImpl rewrite(){
+        return new ReasonerQueryImpl(
+                this.selectAtoms().stream()
+                        .flatMap(at -> at.rewriteToAtoms().stream())
+                        .collect(Collectors.toList()),
+                tx()
+        );
+    }
+
     @Override
     public Stream<Answer> resolve(boolean materialise) {
         if (materialise) {

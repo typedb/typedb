@@ -319,6 +319,8 @@ public abstract class Atom extends AtomicBase {
 
     public Stream<Answer> materialise(){ return Stream.empty();}
 
+    public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
+
     public abstract Atom rewriteWithTypeVariable();
 
     /**
