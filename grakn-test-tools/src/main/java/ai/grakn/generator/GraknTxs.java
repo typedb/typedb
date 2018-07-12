@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.generator;
@@ -124,9 +124,9 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         closeGraph(lastGeneratedGraph);
 
         // Clear tx before retrieving
-        tx = factory.open(GraknTxType.WRITE);
+        tx = factory.transaction(GraknTxType.WRITE);
         tx.admin().delete();
-        tx = factory.open(GraknTxType.WRITE);
+        tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
             mutateOnce();
@@ -201,7 +201,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 Type type = type();
                 AttributeType attributeType = resourceType();
-                type.attribute(attributeType);
+                type.has(attributeType);
                 summary(type, "resource", attributeType);
             },
             () -> {
@@ -213,8 +213,8 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 Type type = type();
                 boolean isAbstract = random.nextBoolean();
-                type.setAbstract(isAbstract);
-                summary(type, "setAbstract", isAbstract);
+                type.isAbstract(isAbstract);
+                summary(type, "isAbstract", isAbstract);
             },
             () -> {
                 EntityType entityType1 = entityType();
@@ -224,8 +224,8 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             },
             () -> {
                 EntityType entityType = entityType();
-                Entity entity = entityType.addEntity();
-                summaryAssign(entity, entityType, "addEntity");
+                Entity entity = entityType.create();
+                summaryAssign(entity, entityType, "create");
             },
             () -> {
                 Role role1 = role();
@@ -241,8 +241,8 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             },
             () -> {
                 RelationshipType relationshipType = relationType();
-                Relationship relationship = relationshipType.addRelationship();
-                summaryAssign(relationship, relationshipType, "addRelationship");
+                Relationship relationship = relationshipType.create();
+                summaryAssign(relationship, relationshipType, "create");
             },
             () -> {
                 RelationshipType relationshipType = relationType();
@@ -259,10 +259,10 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 AttributeType attributeType = resourceType();
                 Object value = gen().make(ResourceValues.class).generate(random, status);
-                Attribute attribute = attributeType.putAttribute(value);
+                Attribute attribute = attributeType.create(value);
                 summaryAssign(attribute, attributeType, "putResource", valueToString(value));
             },
-            // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
+            // () -> resourceType().regex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
                 Rule rule1 = ruleType();
                 Rule rule2 = ruleType();
@@ -278,15 +278,15 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             () -> {
                 Thing thing = instance();
                 Attribute attribute = resource();
-                thing.attribute(attribute);
+                thing.has(attribute);
                 summary(thing, "resource", attribute);
             },
             () -> {
                 Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();
-                relationship.addRolePlayer(role, thing);
-                summary(relationship, "addRolePlayer", role, thing);
+                relationship.assign(role, thing);
+                summary(relationship, "assign", role, thing);
             }
     );
 
@@ -306,10 +306,10 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
     private String summaryFormat(Object object) {
         if (object instanceof SchemaConcept) {
-            return ((SchemaConcept) object).getLabel().getValue().replaceAll("-", "_");
+            return ((SchemaConcept) object).label().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
-            return summaryFormat(thing.type()) + thing.getId().getValue();
+            return summaryFormat(thing.type()) + thing.id().getValue();
         } else if (object instanceof Label) {
             return valueToString(((Label) object).getValue());
         } else {

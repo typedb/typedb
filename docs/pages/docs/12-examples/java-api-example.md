@@ -53,7 +53,7 @@ First we need a [knowledge graph](../java-library/setup#initialising-a-transacti
 
 ```java
 GraknSession session = Grakn.session(uri, keyspace);
-GraknTx tx = session.open(GraknTxType.WRITE)
+GraknTx tx = session.transaction(GraknTxType.WRITE)
 ```
 
 
@@ -86,7 +86,7 @@ Then to add the relationship types, `putRelationshipType()`, which is followed b
 ```java
 marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
-marriage.attribute(eventDate);
+marriage.has(eventDate);
 parentship = tx.putRelationshipType("parentship");
 parentship.relates(parent).relates(child);
 ```
@@ -96,13 +96,13 @@ Finally, entity types are added using `putEntityType()`, `plays()` and `attribut
 ```java
 person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
-person.attribute(gender);
-person.attribute(birthDate);
-person.attribute(deathDate);
-person.attribute(identifier);
-person.attribute(firstname);
-person.attribute(middlename);
-person.attribute(surname);
+person.has(gender);
+person.has(birthDate);
+person.has(deathDate);
+person.has(identifier);
+person.has(firstname);
+person.has(middlename);
+person.has(surname);
 ```
 
 Now to commit the schema:
@@ -118,18 +118,18 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 
 ```java
 // After committing we need to open a new transaction
-tx = session.open(GraknTxType.WRITE)
+tx = session.transaction(GraknTxType.WRITE)
 
 // Define the attributes
-Attribute<String> firstNameJohn = firstname.putAttribute("John");
-Attribute<String> surnameNiesz = surname.putAttribute("Niesz");
-Attribute<String> male = gender.putAttribute("male");
+Attribute<String> firstNameJohn = firstname.create("John");
+Attribute<String> surnameNiesz = surname.create("Niesz");
+Attribute<String> male = gender.create("male");
 //Now we can create the actual husband entity
-Entity johnNiesz = person.addEntity();
+Entity johnNiesz = person.create();
 //Add the attributes
-johnNiesz.attribute(firstNameJohn);
-johnNiesz.attribute(surnameNiesz);
-johnNiesz.attribute(male);
+johnNiesz.has(firstNameJohn);
+johnNiesz.has(surnameNiesz);
+johnNiesz.has(male);
 ```
 
 We can compare how a Graql statement maps to the Java API. This is the equivalent in Graql:
@@ -141,11 +141,11 @@ insert $x isa person has firstname "John", has surname "Niesz" has gender "male"
 The code goes on to create another `person` entity, named `maryYoung`, and then marries them:
 
 ```java
-Entity maryYoung = person.addEntity();
+Entity maryYoung = person.create();
 
-Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Attribute marriageDate = eventDate.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
-theMarriage.attribute(marriageDate);
+Relationship theMarriage = marriage.create().assign(spouse1, johnNiesz).assign(spouse2, maryYoung);
+Attribute marriageDate = eventDate.create(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
+theMarriage.has(marriageDate);
 ```
 
 ## Querying the Knowledge Graph Using GraknTx

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn.migration.export;
 
@@ -46,7 +46,7 @@ public class Main {
             throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
-        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.READ)) {
             KBWriter graphWriter = new KBWriter(graph);
 
             if (options.exportSchema()) {

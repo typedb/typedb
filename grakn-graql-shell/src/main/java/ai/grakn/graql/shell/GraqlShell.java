@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.shell;
@@ -22,9 +22,9 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraknException;
-import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.Streamable;
+import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import jline.console.ConsoleReader;
@@ -47,32 +47,6 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 
-/* uncover the secret
-
-\u002a\u002f\u0069\u006d\u0070\u006f\u0072\u0074
-\u0073\u0074\u0061\u0074\u0069\u0063
-\u0061\u0069
-\u002e
-\u0067\u0072\u0061\u006b\u006e
-\u002e
-\u0067\u0072\u0061\u0071\u006c
-\u002e
-\u0069\u006e\u0074\u0065\u0072\u006e\u0061\u006c           /*        ,_,                   \u002a\u002f
-\u002e                                                     /*       (0_0)_----------_      \u002a\u002f
-\u0073\u0068\u0065\u006c\u006c                             /*      (_____)           |~'   \u002a\u002f
-\u002e                                                     /*      `-'-'-'           /     \u002a\u002f
-\u0061\u006e\u0069\u006d\u0061\u006c\u0069\u0061           /*        `|__|~-----~|__|      \u002a\u002f
-\u002e
-\u0063\u0068\u006f\u0072\u0064\u0061\u0074\u0061
-\u002e
-\u006d\u0061\u006d\u006d\u0061\u006c\u0069\u0061
-\u002e
-\u0061\u0072\u0074\u0069\u006f\u0064\u0061\u0063\u0074\u0079\u006c\u0061
-\u002e
-\u0068\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0069\u0064\u0061\u0065
-\u002e
-\u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079
-\u002e \u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070 \u003b\u002f\u002a */
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -141,7 +115,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -205,15 +179,6 @@ public class GraqlShell implements AutoCloseable {
                     case "":
                         // Ignore empty command
                         continue;
-                    /*
-                    \u002a\u002f\u0063\u0061\u0073\u0065\u0020
-
-                    "HIPPO"
-
-                    \u003a\u0020\u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070\u0028
-                    \u0063\u006f\u006e\u0073\u006f\u006c\u0065\u0029\u003b
-                    \u0020\u0063\u006f\u006e\u0074\u0069\u006e\u0075\u0065\u003b\u002f\u002a
-                    */
                 }
             }
 
@@ -250,12 +215,24 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
-        GraqlConverter<?, String> converter = outputFormat.getConverter(displayAttributes);
+        Printer<?> printer = outputFormat.getPrinter(displayAttributes);
 
         handleGraknExceptions(() -> {
-            Stream<Query<?>> queries = tx.graql().infer(infer).parser().parseList(queryString);
+            Stream<Query<?>> queries = tx
+                    .graql()
+                    .infer(infer)
+                    .parser()
+                    .parseList(queryString);
 
-            Iterable<String> results = () -> queries.flatMap(query -> query.results(converter)).iterator();
+            Iterable<String> results = () -> queries
+                    .flatMap(query -> {
+                        //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
+                        if (query instanceof Streamable) {
+                            return printer.toStream(((Streamable<?>) query).stream());
+                        } else {
+                            return Stream.of(printer.toString(query.execute()));
+                        }
+                    }).iterator();
 
             for (String result : results) {
                 console.println(result);
@@ -297,7 +274,7 @@ public class GraqlShell implements AutoCloseable {
     private void handleGraknExceptions(RunnableThrowsIO runnable) throws IOException {
         try {
             runnable.run();
-        } catch (GraknException e) {
+        } catch (RuntimeException e) {
             serr.println(e.getMessage());
             errorOccurred = true;
             reopenTx();
@@ -310,7 +287,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void reopenTx() {
         if (!tx.isClosed()) tx.close();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     public boolean errorOccurred() {

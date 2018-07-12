@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -28,19 +28,18 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Implementation for {@link DefineQuery}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
 
     static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
-        return new AutoValue_DefineQueryImpl(Optional.ofNullable(tx), ImmutableList.copyOf(varPatterns));
+        return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
@@ -50,7 +49,7 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
 
     @Override
     public final Answer execute() {
-        return queryRunner().run(this);
+        return executor().run(this);
     }
 
     @Override
@@ -63,9 +62,8 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implement
         return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
-    @Nullable
     @Override
     public Boolean inferring() {
-        return null;
+        return false;
     }
 }

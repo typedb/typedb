@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -71,7 +71,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationshipType> relationshipTypes() {
+    public Stream<RelationshipType> relationships() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -100,7 +100,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return A list of all the Concept Types which can play this role.
      */
     @Override
-    public Stream<Type> playedByTypes() {
+    public Stream<Type> players() {
         return cachedDirectPlayedByTypes.get().stream().flatMap(Type::subs);
     }
 
@@ -117,7 +117,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
-        return relationshipTypes().
+        return relationships().
                 flatMap(RelationshipType::instances).
                 map(relation -> RelationshipImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).

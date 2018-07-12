@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query.match;
@@ -42,7 +42,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -60,14 +59,14 @@ abstract class AbstractMatch implements MatchAdmin {
 
     /**
      * Execute the query using the given graph.
-     * @param graph the graph to use to execute the query
+     * @param tx the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph);
+    public abstract Stream<Answer> stream(EmbeddedGraknTx<?> tx);
 
     @Override
     public final Stream<Answer> stream() {
-        return stream(Optional.empty());
+        return stream(null);
     }
 
     /**

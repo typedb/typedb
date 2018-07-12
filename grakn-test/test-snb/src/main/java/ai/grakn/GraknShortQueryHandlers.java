@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn;
 
@@ -141,7 +141,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 Optional<Answer> answer = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -161,14 +161,14 @@ public class GraknShortQueryHandlers {
 
                     LdbcShortQuery1PersonProfileResult result =
                             new LdbcShortQuery1PersonProfileResult(
-                                    fres.get($firstName).<String>asAttribute().getValue(),
-                                    fres.get($lastName).<String>asAttribute().getValue(),
-                                    toEpoch(fres.get($birthday).<LocalDateTime>asAttribute().getValue()),
-                                    fres.get($locationIp).<String>asAttribute().getValue(),
-                                    fres.get($browserUsed).<String>asAttribute().getValue(),
-                                    fres.get($placeId).<Long>asAttribute().getValue(),
-                                    fres.get($gender).<String>asAttribute().getValue(),
-                                    toEpoch(fres.get($creationDate).<LocalDateTime>asAttribute().getValue()));
+                                    fres.get($firstName).<String>asAttribute().value(),
+                                    fres.get($lastName).<String>asAttribute().value(),
+                                    toEpoch(fres.get($birthday).<LocalDateTime>asAttribute().value()),
+                                    fres.get($locationIp).<String>asAttribute().value(),
+                                    fres.get($browserUsed).<String>asAttribute().value(),
+                                    fres.get($placeId).<Long>asAttribute().value(),
+                                    fres.get($gender).<String>asAttribute().value(),
+                                    toEpoch(fres.get($creationDate).<LocalDateTime>asAttribute().value()));
 
                     resultReporter.report(0, result, operation);
 
@@ -191,7 +191,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> messageResults = graph.graql().match(
                         $person.isa(PERSON).has(PERSON_ID, operation.personId()),
@@ -204,7 +204,7 @@ public class GraknShortQueryHandlers {
                 messageResults.forEach(a -> {
 
                     List<Answer> results = graph.graql().infer(true).match(
-                            $message.id(a.get($message).getId()),
+                            $message.id(a.get($message).id()),
                             var().rel($message).rel($date).isa(has(CREATION_DATE)),
                             var().rel($message).rel($messageId).isa(key(MESSAGE_ID)),
                             (var().rel($message).rel($content).isa(has(CONTENT))).or(var().rel($message).rel($content).isa(has(IMAGE_FILE))),
@@ -250,7 +250,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -284,7 +284,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -323,7 +323,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -362,7 +362,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
                 List<Answer> results = graph.graql().infer(true).match(
                         $message.has(MESSAGE_ID, operation.messageId()),
@@ -403,7 +403,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
 
                 List<Answer> results = graph.graql().match(
@@ -444,7 +444,7 @@ public class GraknShortQueryHandlers {
         }
 
         private ConceptId conceptId(Answer result, Var var) {
-            return result.get(var).getId();
+            return result.get(var).id();
         }
     }
 }

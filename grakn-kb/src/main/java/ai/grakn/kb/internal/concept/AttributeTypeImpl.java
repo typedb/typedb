@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -55,7 +55,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::getName);
     }
 
     public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement){
@@ -72,7 +72,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     @Override
     public AttributeType<D> sup(AttributeType<D> superType){
-        ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
+        ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.regex()));
         return super.sup(superType);
     }
 
@@ -81,8 +81,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @return The {@link AttributeType} itself.
      */
     @Override
-    public AttributeType<D> setRegex(String regex) {
-        if(getDataType() == null || !getDataType().equals(DataType.STRING)) {
+    public AttributeType<D> regex(String regex) {
+        if(dataType() == null || !dataType().equals(DataType.STRING)) {
             throw GraknTxOperationException.cannotSetRegex(this);
         }
 
@@ -101,7 +101,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
             instances().forEach(resource -> {
-                String value = (String) resource.getValue();
+                String value = (String) resource.value();
                 Matcher matcher = pattern.matcher(value);
                 if(!matcher.matches()){
                     throw GraknTxOperationException.regexFailure(this, value, regex);
@@ -112,7 +112,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     @SuppressWarnings("unchecked")
     @Override
-    public Attribute<D> putAttribute(D value) {
+    public Attribute<D> create(D value) {
         return putAttribute(value, false);
     }
 
@@ -124,12 +124,12 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
-            if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
+            if(dataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> getAttribute(value), instanceBuilder, isInferred);
+                () -> attribute(value), instanceBuilder, isInferred);
     }
 
     /**
@@ -141,7 +141,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
         this.sups().forEach(sup -> {
-            String regex = sup.getRegex();
+            String regex = sup.regex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
                 throw GraknTxOperationException.regexFailure(this, (String) value, regex);
             }
@@ -149,8 +149,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     }
 
     @Override
-    public Attribute<D> getAttribute(D value) {
-        String index = Schema.generateAttributeIndex(getLabel(), value.toString());
+    public Attribute<D> attribute(D value) {
+        String index = Schema.generateAttributeIndex(label(), value.toString());
         return vertex().tx().<Attribute<D>>getConcept(Schema.VertexProperty.INDEX, index).orElse(null);
     }
 
@@ -160,7 +160,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     @Override
-    public DataType<D> getDataType() {
+    public DataType<D> dataType() {
         return (DataType<D>) DataType.SUPPORTED_TYPES.get(vertex().property(Schema.VertexProperty.DATA_TYPE));
     }
 
@@ -168,7 +168,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      * @return The regular expression which instances of this resource must conform to.
      */
     @Override
-    public String getRegex() {
+    public String regex() {
         return vertex().property(Schema.VertexProperty.REGEX);
     }
 

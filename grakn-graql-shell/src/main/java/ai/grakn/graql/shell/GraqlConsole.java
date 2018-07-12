@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.shell;
@@ -28,7 +28,6 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 
 import java.io.IOException;
@@ -121,13 +120,13 @@ public class GraqlConsole {
             // Start shell
             shell.start(queries);
             return !shell.errorOccurred();
-        } catch (StatusRuntimeException e) {
-            if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
+        } catch (RuntimeException e) {
+            if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
                 serr.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
-                return false;
             } else {
-                throw e;
+                serr.println(e.getMessage());
             }
+            return false;
         }
     }
 

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.graql.shell;
@@ -84,6 +84,10 @@ public class GraqlShellIT {
     private static boolean showStdOutAndErr = true;
 
     private final static int NUM_METATYPES = 4;
+
+    private final static String analyticsDataset = "define obj sub entity, plays rel; relation sub relationship, relates rel; " +
+            "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
+            "(rel: $a, rel: $b) isa relation; (rel: $a, rel: $c) isa relation; (rel: $a, rel: $d) isa relation; ";
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -332,12 +336,12 @@ public class GraqlShellIT {
     @Test
     public void testComputeCount() throws Exception {
         assertShellMatches(
-                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
+                analyticsDataset,
                 anything(),
                 anything(),
                 "commit",
                 "compute count;",
-                is("3")
+                is("7")
         );
     }
 
@@ -399,7 +403,6 @@ public class GraqlShellIT {
     @Test
     public void whenEngineIsNotRunning_ShowAnError() throws Exception {
         ShellResponse response = runShell("", "-r", "localhost:7654");
-
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
@@ -430,7 +433,7 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             assertShellMatches(
-                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
+                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert isa X == '" + value + "';",
                     anything(),
                     anything(),
                     "match $x isa X; get;",
@@ -451,7 +454,7 @@ public class GraqlShellIT {
 
             // Query has a syntax error
             ShellResponse response = runShell(
-                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
+                    "define X sub attribute datatype string; insert isa X value '" + value + "' ;\n"
             );
 
             assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));

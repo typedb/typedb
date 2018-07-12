@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.pattern.property;
@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.runner.ConceptBuilder;
+import ai.grakn.graql.internal.query.executor.ConceptBuilder;
 import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;

@@ -215,9 +215,9 @@ And finally, assign attributes and roles appropriately.
 
 ```java
 // attribute and relationship assignments
-tweetType.attribute(idType);
-tweetType.attribute(textType);
-userType.attribute(screenNameType);
+tweetType.has(idType);
+tweetType.has(textType);
+userType.has(screenNameType);
 userType.plays(postsType);
 tweetType.plays(postedByType);
 ```
@@ -352,10 +352,10 @@ public static Entity insertTweet(GraknTx tx, String tweet) {
     EntityType tweetEntityType = tx.getEntityType("tweet");
     AttributeType tweetResouceType = tx.getAttributeType("text");
 
-    Entity tweetEntity = tweetEntityType.addEntity();
-    Attribute tweetAttribute = tweetResouceType.putAttribute(tweet);
+    Entity tweetEntity = tweetEntityType.create();
+    Attribute tweetAttribute = tweetResouceType.create(tweet);
 
-    return tweetEntity.attribute(tweetAttribute);
+    return tweetEntity.has(tweetAttribute);
   }
 ```
 
@@ -383,9 +383,9 @@ And the following method for inserting a user. This one is quite similar to the 
 public static Entity insertUser(GraknTx tx, String user) {
   EntityType userEntityType = tx.getEntityType("user");
   AttributeType userAttributeType = tx.getAttributeType("screen_name");
-  Entity userEntity = userEntityType.addEntity();
-  Attribute userAttribute = userAttributeType.putAttribute(user);
-  return userEntity.attribute(userAttribute);
+  Entity userEntity = userEntityType.create();
+  Attribute userAttribute = userAttributeType.create(user);
+  return userEntity.has(userAttribute);
 }
 ```
 
@@ -410,9 +410,9 @@ public static Relationship insertUserTweetRelation(GraknTx tx, Entity user, Enti
   RoleType postsType = tx.getRoleType("posts");
   RoleType postedByType = tx.getRoleType("posted_by");
 
-  Relationship userTweetRelation = userTweetRelationType.addRelationship()
-      .addRolePlayer(postsType, user)
-      .addRolePlayer(postedByType, tweet);
+  Relationship userTweetRelation = userTweetRelationType.create()
+      .assign(postsType, user)
+      .assign(postedByType, tweet);
 
   return userTweetRelation;
 }
@@ -490,9 +490,9 @@ qb.match(
   AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
-    Concept key = entry.getKey();
-    Long value = entry.getValue();
-    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
+    Concept key = entry.key();
+    Long value = entry.value();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().value();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 ```
@@ -516,9 +516,9 @@ public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknTx
   AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
-    Concept key = entry.getKey();
-    Long value = entry.getValue();
-    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
+    Concept key = entry.key();
+    Long value = entry.value();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().value();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 
@@ -556,7 +556,7 @@ public class Main {
 
   public static void prettyPrintQueryResult(Stream<Map.Entry<String, Long>> result) {
     System.out.println("------");
-    result.forEach(e -> System.out.println("-- user " + e.getKey() + " tweeted " + e.getValue() + " time(s)."));
+    result.forEach(e -> System.out.println("-- user " + e.key() + " tweeted " + e.value() + " time(s)."));
     System.out.println("------");
   }
 }

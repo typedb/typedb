@@ -57,10 +57,10 @@ To find out whether something is in the knowledge graph, you just need to use th
 ## Compute queries
 The aggregates effectively do their computations on the results of a match query. This means that before doing your calculations, Grakn first has to execute the query and return the results. If you want to do your statistics on large result graphs you would use a lot of resources. To stay efficient you need something more powerful, namely Grakn analytics.
 
-To use Analytics you run `compute` queries, that have a slightly different syntax. A `compute` query has the form `compute SOMETHING of ATTRIBUTE in SUBTYPES;` where `SOMETHING` stands for the metric you want to compute (like `min`), `ATTRIBUTE` is the numeric variable on which you want to perform your computation and `SUBTYPES` is just a list of entities and relationships that have that attribute. For example
+To use Analytics, you run `compute` queries, that have a slightly different syntax: a `compute` query has the form `compute <method> <conditions>?;` where `<method>` the type of analytics functions you want to compute, `<conditions>` are the set of conditions you would like to provide to control the computation. The expected conditions for each compute method will vary depending on the method (you can find out more through the [Graql Analytics documentation](../docs/distributed-analytics/overview)), for example:
 
 ```graql
-compute min of risk in bond;
+compute min of risk, in bond;
 ```
 
 Apart from the basic statistics which can be performed with aggregate queries as well, you will be able to use `compute` queries to run powerful graph analytics on your whole knowledge graph. The topic definitely deserves more attention than this brief example, so we will dedicate a whole module to it later in the series.

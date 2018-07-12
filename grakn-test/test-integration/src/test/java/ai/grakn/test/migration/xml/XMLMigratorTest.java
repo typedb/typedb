@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.migration.xml;
@@ -62,7 +62,7 @@ public class XMLMigratorTest {
 
     @After
     public void clearGraph(){
-        try(GraknTx graph = session.open(GraknTxType.WRITE)){
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)){
             AttributeType<String> nameType = graph.getAttributeType("name");
             nameType.instances().forEach(Concept::delete);
 
@@ -106,7 +106,7 @@ public class XMLMigratorTest {
     }
 
     private static void assertThingHasName(String name){
-        try(GraknTx graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.transaction(GraknTxType.READ)){
 
             EntityType thingType = graph.getEntityType("thingy");
             AttributeType nameType = graph.getAttributeType("name");
@@ -114,7 +114,7 @@ public class XMLMigratorTest {
             assertEquals(1, thingType.instances().count());
             thingType.instances().forEach(thing ->{
                 assertEquals(1, thing.attributes(nameType).count());
-                assertEquals(name, thing.attributes(nameType).iterator().next().getValue());
+                assertEquals(name, thing.attributes(nameType).iterator().next().value());
             });
         }
     }

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.pattern.property;
@@ -150,7 +150,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
             if (required()) {
                 entityTypeConcept.key(attributeTypeConcept);
             } else {
-                entityTypeConcept.attribute(attributeTypeConcept);
+                entityTypeConcept.has(attributeTypeConcept);
             }
         };
 
@@ -165,9 +165,9 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
             if (!type.isDeleted() && !attributeType.isDeleted()) {
                 if (required()) {
-                    type.deleteKey(attributeType);
+                    type.unkey(attributeType);
                 } else {
-                    type.deleteAttribute(attributeType);
+                    type.unhas(attributeType);
                 }
             }
         };
@@ -183,7 +183,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
 
         Var predicateVar = var().asUserDefined();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
-        ConceptId predicateId = schemaConcept != null? schemaConcept.getId() : null;
+        ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
         return HasAtom.create(resVar, predicateVar, predicateId, parent);

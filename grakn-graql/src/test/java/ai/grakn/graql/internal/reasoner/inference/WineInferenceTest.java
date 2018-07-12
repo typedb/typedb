@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
@@ -40,19 +40,18 @@ public class WineInferenceTest {
 
     @Test
     public void testRecommendation() {
-        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW; get;";
+        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $wineName; get;";
         QueryBuilder qb = wineGraph.tx().graql().infer(false);
         QueryBuilder iqb = wineGraph.tx().graql().infer(true);
 
-        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
-                            "{$nameP val 'Bob';$nameW val 'White Champagne';} or" +
-                        "{$nameP val 'Alice';$nameW val 'Cabernet Sauvignion';} or" +
-                        "{$nameP val 'Charlie';$nameW val 'Pinot Grigio Rose';} or" +
-                        "{$nameP val 'Denis';$nameW val 'Busuioaca Romaneasca';} or" +
-                        "{$nameP val 'Eva';$nameW val 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; get $x, $y, $nameW;";
+        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $wineName;" +
+                            "{$nameP == 'Bob';$wineName == 'White Champagne';} or" +
+                        "{$nameP == 'Alice';$wineName == 'Cabernet Sauvignion';} or" +
+                        "{$nameP == 'Charlie';$wineName == 'Pinot Grigio Rose';} or" +
+                        "{$nameP == 'Denis';$wineName == 'Busuioaca Romaneasca';} or" +
+                        "{$nameP == 'Eva';$wineName == 'Tamaioasa Romaneasca';} or" +
+                        "{$nameP == 'Frank';$wineName == 'Riojo Blanco CVNE 2003';}; get $x, $y, $wineName;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 }

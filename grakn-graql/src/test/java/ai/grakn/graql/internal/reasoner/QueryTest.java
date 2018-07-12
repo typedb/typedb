@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -149,7 +149,7 @@ public class QueryTest {
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
-        String polandId = getConcept(graph, "name", "Poland").getId().getValue();
+        String polandId = getConcept(graph, "name", "Poland").id().getValue();
         String patternString = "{$y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in;}";
         String patternString2 = "{$x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2), isa is-located-in;}";
         String patternString3 = "{$y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;}";

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
+import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
@@ -140,14 +140,14 @@ public abstract class Atom extends AtomicBase {
         boolean unboundVariables = varNames.stream()
                 .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
         }
 
         SchemaConcept schemaConcept = getSchemaConcept();
         if (schemaConcept == null){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
         } else if (schemaConcept.isImplicit()){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.then(), rule.label()));
         }
         return errors;
     }
@@ -179,7 +179,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     protected Stream<Rule> getPotentialRules(){
-        boolean isDirect = getPattern().admin().getProperties(DirectIsaProperty.class).findFirst().isPresent();
+        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
                 .distinct();
@@ -288,11 +288,6 @@ public abstract class Atom extends AtomicBase {
                 getTypeConstraints().filter(at -> !at.isSelectable())
         );
     }
-
-    /**
-     * @return set of type atoms that describe specific role players or resource owner
-     */
-    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     @Override
     public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }

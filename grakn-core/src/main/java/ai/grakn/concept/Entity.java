@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.concept;
@@ -51,7 +51,7 @@ public interface Entity extends Thing {
      * @return The instance itself
      */
     @Override
-    Entity attribute(Attribute attribute);
+    Entity has(Attribute attribute);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Entity}
@@ -59,7 +59,7 @@ public interface Entity extends Thing {
      * @return The {@link Entity} itself
      */
     @Override
-    Entity deleteAttribute(Attribute attribute);
+    Entity unhas(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn.migration.export;
 
@@ -95,7 +95,7 @@ public class InstanceMapper {
         }
 
         VarPattern var = base(attribute);
-        var = var.val(attribute.getValue());
+        var = var.val(attribute.value());
         return var;
     }
 
@@ -107,7 +107,7 @@ public class InstanceMapper {
      */
     private static VarPattern hasResources(VarPattern var, Thing thing){
         for(Attribute attribute : thing.attributes().collect(Collectors.toSet())){
-           var = var.has(attribute.type().getLabel(), var().val(attribute.getValue()));
+           var = var.has(attribute.type().label(), var().val(attribute.value()));
         }
         return var;
     }
@@ -119,10 +119,10 @@ public class InstanceMapper {
      * @return var pattern with roleplayers
      */
     private static VarPattern roleplayers(VarPattern var, Relationship relationship){
-        for(Map.Entry<Role, Set<Thing>> entry: relationship.allRolePlayers().entrySet()){
+        for(Map.Entry<Role, Set<Thing>> entry: relationship.rolePlayersMap().entrySet()){
             Role role = entry.getKey();
             for (Thing thing : entry.getValue()) {
-                var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());
+                var = var.rel(Graql.label(role.label()), thing.id().getValue());
             }
         }
         return var;
@@ -134,7 +134,7 @@ public class InstanceMapper {
      * @return var patterns representing given thing
      */
     private static VarPattern base(Thing thing){
-        VarPattern var = var(thing.getId().getValue()).isa(Graql.label(thing.type().getLabel()));
+        VarPattern var = var(thing.id().getValue()).isa(Graql.label(thing.type().label()));
         return hasResources(var, thing);
     }
 
@@ -147,8 +147,8 @@ public class InstanceMapper {
         AttributeType attributeType = attribute.type();
 
         // TODO: Make sure this is tested
-        boolean plays = attributeType.plays().map(Role::getLabel)
-                .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.getLabel())));
-        return attribute.ownerInstances().findAny().isPresent() && plays;
+        boolean plays = attributeType.playing().map(Role::label)
+                .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.label())));
+        return attribute.owners().findAny().isPresent() && plays;
     }
 }

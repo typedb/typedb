@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.docs;
@@ -120,7 +120,7 @@ public class GraqlDocsTest {
 
         String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
 
-        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).open(GraknTxType.WRITE)) {
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
 
             // TODO: Fix issue with this test when template expects data in a certain format

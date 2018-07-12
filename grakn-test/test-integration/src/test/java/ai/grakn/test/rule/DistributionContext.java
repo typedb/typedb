@@ -10,18 +10,18 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.client.Client;
-import ai.grakn.bootup.graknengine.Grakn;
+import ai.grakn.batch.Client;
+import ai.grakn.engine.bootup.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
@@ -48,7 +48,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Start a GraknEngineServer from the packaged distribution Zip.
+ * Start a Grakn Server from the packaged distribution Zip.
  * The class is responsible for unzipping and starting the distribution.
  * The location of the distribution must be at $GRAKN_HOME/grakn-dist/target/grakn-dist-$GRAKN_VERSION.zip
  *

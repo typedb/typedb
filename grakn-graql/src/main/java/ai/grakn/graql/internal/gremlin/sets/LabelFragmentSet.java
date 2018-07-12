@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.gremlin.sets;
@@ -65,7 +65,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
         SchemaConcept concept = tx.getSchemaConcept(oldLabel);
         if (concept == null) return null;
 
-        Set<Label> newLabels = concept.subs().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> newLabels = concept.subs().map(SchemaConcept::label).collect(toSet());
 
         return new AutoValue_LabelFragmentSet(varProperty(), typeVar, ImmutableSet.copyOf(newLabels));
     }

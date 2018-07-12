@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.utils.conversion;
@@ -34,9 +34,9 @@ class AttributeConverter implements ConceptConverter<Attribute> {
 
     public Pattern pattern(Attribute concept) {
         Var owner = Graql.var().asUserDefined();
-        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.getValue());
+        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.value());
         return owner
-                .has(concept.type().getLabel(),resourceVar)
-                .id(concept.owner().getId());
+                .has(concept.type().label(),resourceVar)
+                .id(concept.owner().id());
     }
 }

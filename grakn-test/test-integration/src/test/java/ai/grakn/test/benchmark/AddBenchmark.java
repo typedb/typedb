@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.benchmark;
@@ -47,7 +47,7 @@ public class AddBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         session = sessionContext.newSession();
-        graph = session.open(GraknTxType.WRITE);
+        graph = session.transaction(GraknTxType.WRITE);
         role1 = graph.putRole("benchmark_role1");
         role2 = graph.putRole("benchmark_role2");
         entityType = graph.putEntityType("benchmarkEntitytype").plays(role1).plays(role2);
@@ -61,13 +61,13 @@ public class AddBenchmark extends BenchmarkTest {
 
     @Benchmark
     public void addEntity() {
-        entityType.addEntity();
+        entityType.create();
     }
 
     @Benchmark
     public void addRelation() {
-            Entity entity1 = entityType.addEntity();
-            Entity entity2 = entityType.addEntity();
-            relationshipType.addRelationship().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
+            Entity entity1 = entityType.create();
+            Entity entity2 = entityType.create();
+            relationshipType.create().assign(role1, entity1).assign(role2, entity2);
     }
 }

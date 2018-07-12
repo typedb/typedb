@@ -10,17 +10,17 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.bootup;
 
-import ai.grakn.bootup.config.ConfigProcessor;
-import ai.grakn.bootup.config.QueueConfig;
-import ai.grakn.bootup.config.StorageConfig;
+import ai.grakn.engine.bootup.config.ConfigProcessor;
+import ai.grakn.engine.bootup.config.QueueConfig;
+import ai.grakn.engine.bootup.config.StorageConfig;
 import ai.grakn.engine.GraknConfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;

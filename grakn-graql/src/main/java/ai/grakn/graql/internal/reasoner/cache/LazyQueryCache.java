@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.cache;
@@ -26,8 +26,6 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -131,15 +129,8 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return new Pair<>(answerStream, new MultiUnifierImpl());
     }
 
-
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
-    }
-
-    public long answerSize(Set<Q> queries){
-        return this.entries().stream()
-                .filter(p -> queries.contains(p.query()))
-                .map(v -> v.cachedElement().size()).mapToLong(Long::longValue).sum();
     }
 
     @Override
@@ -153,19 +144,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
                     s.removeAll(c2.getAnswerStream(q).collect(Collectors.toSet()));
                     this.putEntry(match.query(), new LazyAnswerIterator(s.stream()));
                 });
-    }
-
-    /**
-     * force stream consumption and reload cache
-     */
-    public void reload(){
-        Map<Q, CacheEntry<Q, LazyAnswerIterator>> newCache = new HashMap<>();
-        this.entries().forEach(entry ->
-                newCache.put(entry.query(), new CacheEntry<>(
-                        entry.query(),
-                        new LazyAnswerIterator(entry.cachedElement().stream().collect(Collectors.toSet()).stream()))));
-        this.clear();
-        this.putAll(newCache);
     }
 
 }

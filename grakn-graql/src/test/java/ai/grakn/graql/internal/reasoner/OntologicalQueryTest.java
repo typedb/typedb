@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -110,22 +110,29 @@ public class OntologicalQueryTest {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
-    //TODO need another PR to fix that
-    @Ignore
-    @Test
+    @Test @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
+        String relationString = "match $x isa relationship;get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
         GetQuery rolePlayerQuery = qb.parse(rolePlayerPairString);
         List<Answer> rolePlayerPairs = rolePlayerQuery.execute();
         //TODO doesn't include THING and RELATIONSHIP
         //25 relation variants + 2 x 3 resource relation instances
-        assertEquals(rolePlayerPairs.size(), 31);
+        assertEquals(31, rolePlayerPairs.size());
 
         //TODO
         //rolePlayerPairs.forEach(ans -> assertEquals(ans.vars(), rolePlayerQuery.vars()));
+
+        List<Answer> relations = qb.<GetQuery>parse(relationString).execute();
+        //one implicit,
+        //3 x binary,
+        //2 x ternary,
+        //7 (3 reflexive) x reifying-relation
+        //3 x has-description resource relation
+        assertEquals(16, relations.size());
     }
 
     /** HasAtom **/
@@ -235,7 +242,7 @@ public class OntologicalQueryTest {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
-                tx.getRelationshipType("reifying-relation").relates().collect(Collectors.toSet())
+                tx.getRelationshipType("reifying-relation").roles().collect(Collectors.toSet())
         );
     }
 

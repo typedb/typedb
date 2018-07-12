@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine;
@@ -34,7 +34,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -128,7 +127,7 @@ public class GraknConfig {
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
-        return key.parse(Optional.ofNullable(prop.getProperty(key.name())), CONFIG_FILE_PATH);
+        return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
     }
 
     public SimpleURI uri() {

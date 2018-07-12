@@ -10,17 +10,17 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.shell;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
@@ -55,7 +55,7 @@ final class BatchLoader {
             batchExecutorClient.onNext(queryResponse -> queriesExecuted.incrementAndGet());
             batchExecutorClient.onError(serr::println);
 
-            Graql.parser().parseList(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
+            Graql.parser().parseReader(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
         }
 
         sout.println("Statements executed: " + queriesExecuted.get());

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.migration.base;
@@ -21,7 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.client.Client;
+import ai.grakn.batch.Client;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.io.Files;
@@ -139,7 +139,7 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE);
+            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.WRITE);
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();

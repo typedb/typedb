@@ -10,18 +10,16 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GraqlConverter;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 
 import javax.annotation.CheckReturnValue;
@@ -33,24 +31,15 @@ import java.util.stream.Stream;
  * @param <T> The type of the result to return
  * @param <S> The type of streaming results to return
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 abstract class AbstractQuery<T, S> implements Query<T> {
 
     @CheckReturnValue
     protected abstract Stream<S> stream();
 
-    @Override
-    public final Stream<String> resultsString(Printer<?> printer) {
-        return results(printer);
-    }
-
-    @Override
-    public final <U> Stream<U> results(GraqlConverter<?, U> converter) {
-        return stream().map(converter::convert);
-    }
-
-    protected final QueryRunner queryRunner() {
-        return tx().orElseThrow(GraqlQueryException::noTx).admin().queryRunner();
+    protected final QueryExecutor executor() {
+        if (tx() == null) throw GraqlQueryException.noTx();
+        return tx().admin().queryExecutor();
     }
 }

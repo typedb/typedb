@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.gremlin.fragment;
@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
@@ -42,7 +41,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A fragment representing traversing a label.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 
 @AutoValue
@@ -82,12 +81,12 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
-        return Optional.of(labels().stream()
+    public Long getShardCount(EmbeddedGraknTx<?> tx) {
+        return labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .flatMap(SchemaConcept::subs)
                 .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
-                .sum());
+                .sum();
     }
 }

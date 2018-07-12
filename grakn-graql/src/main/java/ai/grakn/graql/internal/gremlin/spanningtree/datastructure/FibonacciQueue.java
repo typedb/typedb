@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
@@ -23,14 +23,13 @@ import com.google.common.collect.Iterators;
 import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
  * A PriorityQueue built on top of a FibonacciHeap
  *
  * @param <E> the type of the values stored
- * @author Jason Liu
+ * @author Grakn Warriors
  */
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;
@@ -57,18 +56,17 @@ public class FibonacciQueue<E> extends AbstractQueue<E> {
 
     @Override
     public E peek() {
-        Optional<FibonacciHeap<E, E>.Entry> first = heap.peekOption();
-        return first.map(entry -> entry.value).orElse(null);
+        return heap.peek().value;
     }
 
     @Override
     public boolean offer(E e) {
-        return heap.add(e, e).isPresent();
+        return heap.add(e, e) != null;
     }
 
     @Override
     public E poll() {
-        return heap.pollOption().orElse(null);
+        return heap.poll();
     }
 
     @Override

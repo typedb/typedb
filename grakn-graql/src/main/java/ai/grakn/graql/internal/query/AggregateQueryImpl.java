@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -24,9 +24,6 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
 
 /**
  * Implementation of AggregateQuery
@@ -46,7 +43,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
 
     @Override
     public final T execute() {
-        return queryRunner().run(this);
+        return executor().run(this);
     }
 
     @Override
@@ -56,7 +53,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final Optional<GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
@@ -65,7 +62,6 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
         return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

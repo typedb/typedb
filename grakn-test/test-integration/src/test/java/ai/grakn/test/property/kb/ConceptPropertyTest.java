@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.property.kb;
@@ -101,19 +101,19 @@ public class ConceptPropertyTest {
             @Open GraknTx graph, @FromTx @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
-        assertThat(concept.toString(), containsString(concept.getId().getValue()));
+        assertThat(concept.toString(), containsString(concept.id().getValue()));
     }
 
     @Property
     public void whenCallingGetId_TheResultIsUnique(Concept concept1, @FromTx Concept concept2) {
         assumeThat(concept1, not(is(concept2)));
-        assertNotEquals(concept1.getId(), concept2.getId());
+        assertNotEquals(concept1.id(), concept2.id());
     }
 
     @Property
     public void whenCallingGetId_TheResultCanBeUsedToRetrieveTheSameConcept(
             @Open GraknTx graph, @FromTx Concept concept) {
-        ConceptId id = concept.getId();
+        ConceptId id = concept.id();
         assertEquals(concept, graph.getConcept(id));
     }
 
@@ -265,19 +265,19 @@ public class ConceptPropertyTest {
             if(schemaConcept.isType()) {
                 Type type = schemaConcept.asType();
                 assumeThat(type.instances().collect(toSet()), empty());
-                assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
-                assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
+                assumeThat(type.whenRules().collect(toSet()), empty());
+                assumeThat(type.thenRules().collect(toSet()), empty());
             }
 
             if (schemaConcept.isRole()) {
                 Role role = schemaConcept.asRole();
-                assumeThat(role.playedByTypes().collect(toSet()), empty());
-                assumeThat(role.relationshipTypes().collect(toSet()), empty());
+                assumeThat(role.players().collect(toSet()), empty());
+                assumeThat(role.relationships().collect(toSet()), empty());
                 Stream<Relationship> allRelations = graph.admin().getMetaRelationType().instances();
-                Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
+                Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.rolePlayersMap().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
             } else if (schemaConcept.isRelationshipType()) {
-                assumeThat(schemaConcept.asRelationshipType().relates().collect(toSet()), empty());
+                assumeThat(schemaConcept.asRelationshipType().roles().collect(toSet()), empty());
             }
         }
     }

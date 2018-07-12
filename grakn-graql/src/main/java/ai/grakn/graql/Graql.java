@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql;
@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
  * Main class containing static methods for creating Graql queries.
  *
@@ -134,12 +135,9 @@ public class Graql {
         return withoutGraph().undefine(varPatterns);
     }
 
-    /**
-     * @return a compute query builder without a specified graph
-     */
     @CheckReturnValue
-    public static ComputeQueryBuilder compute() {
-        return withoutGraph().compute();
+    public static ComputeQuery compute(Method method) {
+        return withoutGraph().compute(method);
     }
 
     /**

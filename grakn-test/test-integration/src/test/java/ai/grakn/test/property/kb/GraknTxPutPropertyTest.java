@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.property.kb;
@@ -69,7 +69,7 @@ public class GraknTxPutPropertyTest {
             @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putSchemaConcept
     ) {
         SchemaConcept type = putSchemaConcept.apply(graph, label);
-        assertEquals(label, type.getLabel());
+        assertEquals(label, type.label());
     }
 
     @Property
@@ -81,8 +81,8 @@ public class GraknTxPutPropertyTest {
 
         assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
-        assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis().collect(toSet()), empty());
-        assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion().collect(toSet()), empty());
+        assertThat("Rules of hypotheses should be empty", concept.whenRules().collect(toSet()), empty());
+        assertThat("Rules of conclusion should be empty", concept.thenRules().collect(toSet()), empty());
     }
 
     @Property
@@ -92,7 +92,7 @@ public class GraknTxPutPropertyTest {
     ) {
         Type type = putType.apply(graph, label);
 
-        assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
+        assertThat("Type should not play any roles", type.playing().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 
@@ -106,7 +106,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeLabel_ItReturnsThatType(
             @Open GraknTx graph, @FromTx EntityType entityType) {
-        EntityType newType = graph.putEntityType(entityType.getLabel());
+        EntityType newType = graph.putEntityType(entityType.label());
         assertEquals(entityType, newType);
     }
 
@@ -116,12 +116,12 @@ public class GraknTxPutPropertyTest {
         assumeFalse(type.isEntityType());
 
         exception.expect(GraknTxOperationException.class);
-        if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
-            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
+        if(Schema.MetaSchema.isMetaLabel(type.label())){
+            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.label().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.label()).getMessage());
         }
-        graph.putEntityType(type.getLabel());
+        graph.putEntityType(type.label());
     }
 
     @Property
@@ -136,8 +136,8 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
         AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
 
-        assertEquals("The data-type should be as specified", dataType, attributeType.getDataType());
-        assertNull("The resource type should have no regex constraint", attributeType.getRegex());
+        assertEquals("The data-type should be as specified", dataType, attributeType.dataType());
+        assertNull("The resource type should have no regex constraint", attributeType.regex());
     }
 
     @Property
@@ -145,8 +145,8 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @FromTx AttributeType<?> attributeType) {
         assumeFalse(attributeType.equals(graph.admin().getMetaAttributeType()));
 
-        Label label = attributeType.getLabel();
-        AttributeType.DataType<?> dataType = attributeType.getDataType();
+        Label label = attributeType.label();
+        AttributeType.DataType<?> dataType = attributeType.dataType();
 
         AttributeType<?> newType = graph.putAttributeType(label, dataType);
 
@@ -159,26 +159,26 @@ public class GraknTxPutPropertyTest {
         assumeFalse(type.isAttributeType());
 
         exception.expect(GraknTxOperationException.class);
-        if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
-            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
+        if(Schema.MetaSchema.isMetaLabel(type.label())){
+            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.label().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.label()).getMessage());
         }
-        graph.putAttributeType(type.getLabel(), dataType);
+        graph.putAttributeType(type.label(), dataType);
     }
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeLabelButADifferentDataType_Throw(
             @Open GraknTx graph, @FromTx AttributeType<?> attributeType,
             AttributeType.DataType<?> dataType) {
-        assumeThat(dataType, not(is(attributeType.getDataType())));
-        Label label = attributeType.getLabel();
+        assumeThat(dataType, not(is(attributeType.dataType())));
+        Label label = attributeType.label();
 
         exception.expect(GraknTxOperationException.class);
         if(isMetaLabel(label)) {
             exception.expectMessage(GraknTxOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
+            exception.expectMessage(GraknTxOperationException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putAttributeType(label, dataType);
@@ -193,7 +193,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutRuleWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknTx tx, @FromTx Rule rule) {
-        Rule newType = tx.putRule(rule.getLabel(), tx.graql().parser().parsePattern("$x"), tx.graql().parser().parsePattern("$x"));
+        Rule newType = tx.putRule(rule.label(), tx.graql().parser().parsePattern("$x"), tx.graql().parser().parsePattern("$x"));
         assertEquals(rule, newType);
     }
 
@@ -203,13 +203,13 @@ public class GraknTxPutPropertyTest {
         assumeFalse(type.isRule());
 
         exception.expect(GraknTxOperationException.class);
-        if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
-            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
+        if(Schema.MetaSchema.isMetaLabel(type.label())){
+            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.label().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.label()).getMessage());
         }
 
-        tx.putRule(type.getLabel(), tx.graql().parser().parsePattern("$x"), tx.graql().parser().parsePattern("$x"));
+        tx.putRule(type.label(), tx.graql().parser().parsePattern("$x"), tx.graql().parser().parsePattern("$x"));
     }
 
     @Property
@@ -223,13 +223,13 @@ public class GraknTxPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknTx graph, @Unused Label label) {
         RelationshipType relationshipType = graph.putRelationshipType(label);
-        assertThat(relationshipType.relates().collect(toSet()), empty());
+        assertThat(relationshipType.roles().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
             @Open GraknTx graph, @FromTx RelationshipType relationshipType) {
-        RelationshipType newType = graph.putRelationshipType(relationshipType.getLabel());
+        RelationshipType newType = graph.putRelationshipType(relationshipType.label());
         assertEquals(relationshipType, newType);
     }
 
@@ -239,12 +239,12 @@ public class GraknTxPutPropertyTest {
         assumeFalse(type.isRelationshipType());
 
         exception.expect(GraknTxOperationException.class);
-        if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
-            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
+        if(Schema.MetaSchema.isMetaLabel(type.label())){
+            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.label().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.label()).getMessage());
         }
-        graph.putRelationshipType(type.getLabel());
+        graph.putRelationshipType(type.label());
     }
 
     @Property
@@ -258,14 +258,14 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @Unused Label label) {
         Role role = graph.putRole(label);
 
-        assertThat("The role should be played by no types", role.playedByTypes().collect(toSet()), empty());
-        assertThat("The role should be owned by no relation types", role.relationshipTypes().collect(toSet()), empty());
+        assertThat("The role should be played by no types", role.players().collect(toSet()), empty());
+        assertThat("The role should be owned by no relation types", role.relationships().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRoleWithAnExistingRoleLabel_ItReturnsThatRole(
             @Open GraknTx graph, @FromTx Role role) {
-        Role newType = graph.putRole(role.getLabel());
+        Role newType = graph.putRole(role.label());
         assertEquals(role, newType);
     }
 
@@ -273,11 +273,11 @@ public class GraknTxPutPropertyTest {
     public void whenCallingPutRoleWithAnExistingTypeLabel_Throw(
             @Open GraknTx graph, @FromTx Type type) {
         exception.expect(GraknTxOperationException.class);
-        if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
-            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
+        if(Schema.MetaSchema.isMetaLabel(type.label())){
+            exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.label().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.label()).getMessage());
         }
-        graph.putRole(type.getLabel());
+        graph.putRole(type.label());
     }
 }

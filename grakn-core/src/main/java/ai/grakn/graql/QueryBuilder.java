@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql;
@@ -22,6 +22,8 @@ import ai.grakn.concept.SchemaConcept;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
  * Starting point for creating queries
@@ -90,7 +92,7 @@ public interface QueryBuilder {
      * @return a compute query builder for building analytics query
      */
     @CheckReturnValue
-    ComputeQueryBuilder compute();
+    ComputeQuery compute(Method method);
 
     /**
      * Get a {@link QueryParser} for parsing queries from strings
@@ -108,9 +110,4 @@ public interface QueryBuilder {
      * Enable or disable inference
      */
     QueryBuilder infer(boolean infer);
-
-    /**
-     * Enable or disable materialisation
-     */
-    QueryBuilder materialise(boolean materialise);
 }

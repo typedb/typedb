@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -273,11 +273,11 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingAResourceWithMultipleValues_Throw() {
         VarPattern varPattern = var().val("123").val("456").isa("title");
-
+        
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties(varPattern, "val", "123", "456").getMessage(),
-                GraqlQueryException.insertMultipleProperties(varPattern, "val", "456", "123").getMessage()
+                GraqlQueryException.insertMultipleProperties(varPattern, "", "123", "456").getMessage(),
+                GraqlQueryException.insertMultipleProperties(varPattern, "", "456", "123").getMessage()
         ));
 
         qb.insert(varPattern).execute();
@@ -376,7 +376,7 @@ public class InsertQueryTest {
         Answer result = Iterables.getOnlyElement(query);
         assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
-        assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
+        assertEquals(result.get(type).asType().label(), Label.of("movie"));
     }
 
     @Test
@@ -438,7 +438,7 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingAResourceWithoutAValue_Throw() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("name"), containsString("val")));
+        exception.expectMessage(allOf(containsString("name")));
         qb.insert(var("x").isa("name")).execute();
     }
 
@@ -465,7 +465,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingId() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -475,7 +475,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -485,7 +485,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingResourceId() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -495,7 +495,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
-                .stream().map(ans -> ans.get("x")).findAny().get().getId();
+                .stream().map(ans -> ans.get("x")).findAny().get().id();
 
         assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -625,7 +625,7 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        movieKB.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").id(aMovie.id()).isa("person")).execute();
     }
 
     @Test

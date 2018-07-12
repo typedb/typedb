@@ -136,13 +136,20 @@ function onGraphResponse(resp: string) {
   // Load relationship types' roles - this will work only if loading schema concepts i.e. relationship types
   linkRelationshipTypesToRoles(filteredNodes);
 
-  // If we have 0 edges to display (e.g. when user clicks on Types -> Relationships -> one type of relationship type)
-  // force to load relationships role players.
-  // This to avoid floating points representing relationships without any roleplayer attached to any of them
-  if (parsedResponse.edges.length === 0) {
+  // Get load Role-Players status from local storage
+  const rolePlayers = localStorage.getItem('load_role_players');
+
+  // Check if user has set loading of Role-Players
+  if(rolePlayers === "true"){
+
+    // If we have 0 edges to display (e.g. when user clicks on Types -> Relationships -> one type of relationship type)
+    // force to load relationships role players.
+    // This to avoid floating points representing relationships without any roleplayer attached to any of them
+    if (parsedResponse.edges.length === 0) {
     filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
       .forEach((rel) => { loadRelationshipRolePlayers(rel); });
-  }
+    }
+  }  
   visualiser.fitGraphToWindow();
 }
 
@@ -164,7 +171,11 @@ function getId(str) {
 }
 
 function loadRelationshipRolePlayers(rel) {
-  const promises = rel.roleplayers.map(x => EngineClient.request({ url: x.thing }));
+
+  // Get Limit set by user on Role-Players shown
+  const rolePlayersLimit = localStorage.getItem('role_players_limit');
+
+  const promises = rel.roleplayers.slice(0,rolePlayersLimit).map(x => EngineClient.request({ url: x.thing }));
   Promise.all(promises)
     .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }); })
     .then(() => {
@@ -203,7 +214,6 @@ function loadRoleRolePlayers(role, relId) {
         });
     });
 }
-
 
 function addAttributeAndEdgeToInstance(instanceId, res) {
   onGraphResponse(res);

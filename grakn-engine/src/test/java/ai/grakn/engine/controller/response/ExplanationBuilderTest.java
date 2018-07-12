@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.controller.response;
@@ -50,8 +50,8 @@ public class ExplanationBuilderTest {
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
                 .forEach(answer -> {
-            String cousin1 = answer.get("x").getId().getValue();
-            String cousin2 = answer.get("y").getId().getValue();
+            String cousin1 = answer.get("x").id().getValue();
+            String cousin2 = answer.get("y").id().getValue();
 
             String specificQuery = "match " +
                     "$x id " + cousin1 + ";" +
@@ -63,7 +63,7 @@ public class ExplanationBuilderTest {
 
             Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
                     .flatMap(ans -> ans.concepts().stream())
-                    .map(ai.grakn.concept.Concept::getId)
+                    .map(ai.grakn.concept.Concept::id)
                     .collect(Collectors.toSet());
 
             List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);

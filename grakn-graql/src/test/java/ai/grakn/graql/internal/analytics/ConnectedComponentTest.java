@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.analytics;
@@ -47,6 +47,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.contains;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.size;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -82,73 +88,75 @@ public class ConnectedComponentTest {
 
     @Test
     public void testNullSourceIdIsIgnored() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().of(null).execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(null)).execute();
         }
 
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().in(thing).of(null).execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(null)).execute();
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().cluster().usingConnectedComponent().in(thing).of(entityId4).execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4)).execute();
         }
     }
 
     @Test
     public void testConnectedComponentOnEmptyGraph() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
-            Map<String, Long> sizeMap =
-                    Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                            .includeAttribute().execute();
-            assertTrue(sizeMap.isEmpty());
-            Map<String, Set<String>> memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .membersOn().execute();
-            assertTrue(memberMap.isEmpty());
-            assertEquals(0L, graph.graql().compute().count().execute().longValue());
+            List<Long> sizeList =
+                    Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
+                            .includeAttributes(true).execute().getClusterSizes().get();
+            assertTrue(sizeList.isEmpty());
+            Set<Set<ConceptId>> membersList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true)).execute().getClusters().get();
+            assertTrue(membersList.isEmpty());
+            assertEquals(0L, graph.graql().compute(COUNT).execute().getNumber().get().longValue());
         }
     }
 
     @Test
     public void testConnectedComponentSize() {
-        Map<String, Long> sizeMap;
-        Map<String, Set<String>> memberMap;
+        List<Long> sizeList;
+        Set<Set<ConceptId>> membersSet;
 
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            sizeMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).execute();
-            assertEquals(0, sizeMap.size());
-            memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .membersOn().clusterSize(1L).execute();
-            assertEquals(0, memberMap.size());
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            sizeList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
+                    .includeAttributes(true).where(size(1L)).execute().getClusterSizes().get();
+            assertEquals(0, sizeList.size());
+
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true)).where(size(1L)).execute().getClusters().get();
+            assertEquals(0, membersSet.size());
         }
 
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).execute();
-            assertEquals(5, sizeMap.size());
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .includeAttributes(true).where(size(1L)).execute().getClusterSizes().get();
+            assertEquals(5, sizeList.size());
 
-            sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .includeAttribute().clusterSize(1L).of(entityId1).execute();
-            assertEquals(0, sizeMap.size());
+            sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .includeAttributes(true).where(size(1L), contains(entityId1)).execute().getClusterSizes().get();
+            assertEquals(0, sizeList.size());
 
-            memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .membersOn().clusterSize(1L).execute();
-            assertEquals(0, memberMap.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(members(true), size(1L)).execute().getClusters().get();
+            assertEquals(0, membersSet.size());
 
-            memberMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .of(entityId4).membersOn().clusterSize(1L).execute();
-            assertEquals(0, memberMap.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(contains(entityId4), members(true), size(1L)).execute()
+                    .getClusters().get();
+            assertEquals(0, membersSet.size());
         }
     }
 
@@ -159,89 +167,93 @@ public class ConnectedComponentTest {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            graph.getEntityType(anotherThing).attribute(attributeType);
-            Attribute aAttribute = attributeType.putAttribute("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.attribute(aAttribute));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.attribute(aAttribute));
+            graph.getEntityType(thing).has(attributeType);
+            graph.getEntityType(anotherThing).has(attributeType);
+            Attribute aAttribute = attributeType.create("blah");
+            graph.getEntityType(thing).instances().forEach(instance -> instance.has(aAttribute));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.has(aAttribute));
             graph.commit();
         }
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result = graph.graql().compute()
-                    .cluster().usingConnectedComponent().in(thing, anotherThing, aResourceTypeLabel,
-                            Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .membersOn().execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
+                    .where(members(true)).execute()
+                    .getClusters().get();
             assertEquals(1, result.size());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(5, result.iterator().next().size());
 
-            result = graph.graql().compute()
-                    .cluster().usingConnectedComponent().in(thing, anotherThing, aResourceTypeLabel,
-                            Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .membersOn().of(entityId2).execute();
+            result = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
+                    .where(members(true), contains(entityId2)).execute()
+                    .getClusters().get();
             assertEquals(1, result.size());
-            assertEquals(entityId2.getValue(), result.keySet().iterator().next());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(5, result.iterator().next().size());
 
-            assertEquals(1, graph.graql().compute().cluster().usingConnectedComponent().includeAttribute()
-                    .in(thing, anotherThing, aResourceTypeLabel,
-                            Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
-                    .includeAttribute().membersOn().execute().size());
+            assertEquals(1, graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true)
+                    .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
+                    .includeAttributes(true).where(members(true)).execute()
+                    .getClusters().get().size());
         }
     }
 
     @Test
     public void testConnectedComponent() {
-        Map<String, Long> sizeMap;
-        Map<String, Set<String>> memberMap;
+        List<Long> sizeList;
+        Set<Set<ConceptId>> membersSet;
 
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            sizeMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent().includeAttribute().execute();
-            assertEquals(1, sizeMap.size());
-            assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            sizeList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).includeAttributes(true).execute()
+                    .getClusterSizes().get();
+            assertEquals(1, sizeList.size());
+            assertEquals(7L, sizeList.iterator().next().longValue()); // 4 entities, 3 assertions
 
-            sizeMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .of(entityId1).includeAttribute().execute();
-            assertEquals(1, sizeMap.size());
-            assertEquals(7L, sizeMap.values().iterator().next().longValue());
-            assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
+            sizeList = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
+                    .where(contains(entityId1)).includeAttributes(true).execute()
+                    .getClusterSizes().get();
+            assertEquals(1, sizeList.size());
+            assertEquals(7L, sizeList.iterator().next().longValue());
 
-            memberMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent().in().membersOn().execute();
-            assertEquals(1, memberMap.size());
-            assertEquals(7, memberMap.values().iterator().next().size());
+            membersSet = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).where(members(true)).execute()
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
+            assertEquals(7, membersSet.iterator().next().size());
 
-            memberMap = Graql.compute().withTx(graph).cluster().usingConnectedComponent()
-                    .of(entityId4).in().membersOn().execute();
-            assertEquals(1, memberMap.size());
-            assertEquals(7, memberMap.values().iterator().next().size());
-            assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
+            membersSet = Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT)
+                    .where(contains(entityId4), members(true)).execute()
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
+            assertEquals(7, membersSet.iterator().next().size());
         }
 
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            sizeMap = graph.graql().compute().cluster().usingConnectedComponent().includeAttribute().execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).execute()
+                    .getClusterSizes().get();
             Map<Long, Integer> populationCount00 = new HashMap<>();
-            sizeMap.values().forEach(value -> populationCount00.put(value,
+            sizeList.forEach(value -> populationCount00.put(value,
                     populationCount00.containsKey(value) ? populationCount00.get(value) + 1 : 1));
             // 5 resources are not connected to anything
             assertEquals(5, populationCount00.get(1L).intValue());
             assertEquals(1, populationCount00.get(15L).intValue());
 
-            sizeMap = graph.graql().compute().cluster().usingConnectedComponent()
-                    .of(aDisconnectedAttribute).includeAttribute().execute();
-            assertEquals(1, sizeMap.size());
+            sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .where(contains(aDisconnectedAttribute)).includeAttributes(true).execute()
+                    .getClusterSizes().get();
+            assertEquals(1, sizeList.size());
 
-            memberMap = graph.graql().compute().cluster().usingConnectedComponent().membersOn().execute();
-            assertEquals(1, memberMap.size());
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).execute()
+                    .getClusters().get();
+            assertEquals(1, membersSet.size());
             Map<Integer, Integer> populationCount1 = new HashMap<>();
-            memberMap.values().forEach(value -> populationCount1.put(value.size(),
+            membersSet.forEach(value -> populationCount1.put(value.size(),
                     populationCount1.containsKey(value.size()) ? populationCount1.get(value.size()) + 1 : 1));
             assertEquals(1, populationCount1.get(7).intValue());
 
@@ -249,10 +261,12 @@ public class ConnectedComponentTest {
             Set<Label> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6)
                     .stream().map(Label::of).collect(Collectors.toSet());
-            sizeMap = graph.graql().compute().cluster().usingConnectedComponent().in(subTypes).execute();
-            assertEquals(17, sizeMap.size()); // No relationships, so this is the entity count;
-            memberMap = graph.graql().compute().cluster().usingConnectedComponent().membersOn().in(subTypes).execute();
-            assertEquals(17, memberMap.size());
+            sizeList = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(subTypes).execute()
+                    .getClusterSizes().get();
+            assertEquals(17, sizeList.size()); // No relationships, so this is the entity count;
+            membersSet = graph.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(members(true)).in(subTypes).execute()
+                    .getClusters().get();
+            assertEquals(17, membersSet.size());
         }
     }
 
@@ -269,31 +283,31 @@ public class ConnectedComponentTest {
             list.add(i);
         }
 
-        Set<Map<String, Long>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).cluster().usingConnectedComponent().execute();
+        Set<List<Long>> result = list.parallelStream().map(i -> {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+                return Graql.compute(CLUSTER).withTx(graph).using(CONNECTED_COMPONENT).execute().getClusterSizes().get();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(7L, map.values().iterator().next().longValue());
+            assertEquals(7L, map.iterator().next().longValue());
         });
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType2.addEntity();
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType2.create();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
@@ -301,15 +315,15 @@ public class ConnectedComponentTest {
             entityType2.plays(role1).plays(role2);
             RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3).getId();
-            relationshipType.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4).getId();
+            relationshipType.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3).id();
+            relationshipType.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4).id();
 
             List<AttributeType> attributeTypeList = new ArrayList<>();
             attributeTypeList.add(graph.putAttributeType(resourceType1, AttributeType.DataType.DOUBLE));
@@ -321,8 +335,8 @@ public class ConnectedComponentTest {
             attributeTypeList.add(graph.putAttributeType(resourceType7, AttributeType.DataType.DOUBLE));
 
             attributeTypeList.forEach(attributeType -> {
-                entityType1.attribute(attributeType);
-                entityType2.attribute(attributeType);
+                entityType1.has(attributeType);
+                entityType2.has(attributeType);
             });
 
             graph.commit();
@@ -330,35 +344,35 @@ public class ConnectedComponentTest {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            entity1.attribute(graph.getAttributeType(resourceType1).putAttribute(1.2))
-                    .attribute(graph.getAttributeType(resourceType1).putAttribute(1.5))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(4L))
-                    .attribute(graph.getAttributeType(resourceType2).putAttribute(-1L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity1.has(graph.getAttributeType(resourceType1).create(1.2))
+                    .has(graph.getAttributeType(resourceType1).create(1.5))
+                    .has(graph.getAttributeType(resourceType2).create(4L))
+                    .has(graph.getAttributeType(resourceType2).create(-1L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity2.attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity2.has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
-            entity3.attribute(graph.getAttributeType(resourceType1).putAttribute(1.8));
+            entity3.has(graph.getAttributeType(resourceType1).create(1.8));
 
-            entity4.attribute(graph.getAttributeType(resourceType2).putAttribute(0L))
-                    .attribute(graph.getAttributeType(resourceType5).putAttribute(-7L))
-                    .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
+            entity4.has(graph.getAttributeType(resourceType2).create(0L))
+                    .has(graph.getAttributeType(resourceType5).create(-7L))
+                    .has(graph.getAttributeType(resourceType6).create(7.5));
 
             // some resources in, but not connect them to any instances
-            aDisconnectedAttribute = graph.getAttributeType(resourceType1).putAttribute(2.8).getId();
-            graph.getAttributeType(resourceType2).putAttribute(-5L);
-            graph.getAttributeType(resourceType3).putAttribute(100L);
-            graph.getAttributeType(resourceType5).putAttribute(10L);
-            graph.getAttributeType(resourceType6).putAttribute(0.8);
+            aDisconnectedAttribute = graph.getAttributeType(resourceType1).create(2.8).id();
+            graph.getAttributeType(resourceType2).create(-5L);
+            graph.getAttributeType(resourceType3).create(100L);
+            graph.getAttributeType(resourceType5).create(10L);
+            graph.getAttributeType(resourceType6).create(0.8);
 
             graph.commit();
         }

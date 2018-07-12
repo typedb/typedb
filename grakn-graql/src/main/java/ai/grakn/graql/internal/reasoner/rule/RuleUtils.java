@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.rule;
@@ -59,7 +59,7 @@ public class RuleUtils {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().anyMatch(rule -> !rule.getLabel().equals(Schema.MetaSchema.RULE.getLabel()));
+        return graph.admin().getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
     }
 
     /**
@@ -70,8 +70,8 @@ public class RuleUtils {
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
         if (type == null) return getRules(graph);
         Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(graph.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.getLabel())));
-        return types.stream().flatMap(SchemaConcept::getRulesOfConclusion);
+        if (type.isImplicit()) types.add(graph.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
+        return types.stream().flatMap(SchemaConcept::thenRules);
     }
 
     /**
@@ -91,8 +91,8 @@ public class RuleUtils {
             while(!rulesToVisit.isEmpty() && !cyclical) {
                 Rule rule = rulesToVisit.pop();
                 if (!visitedRules.contains(rule)){
-                    rule.getConclusionTypes()
-                            .flatMap(SchemaConcept::getRulesOfHypothesis)
+                    rule.thenTypes()
+                            .flatMap(SchemaConcept::whenRules)
                             .forEach(rulesToVisit::add);
                     visitedRules.add(rule);
                 } else {

@@ -20,6 +20,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <template>
 <div class="wrapper">
   <signup-modal></signup-modal>
+  <commands-modal></commands-modal>
 
     <div class="navigation">
         <nav-bar :componentCenterLeft="componentCenterLeft" :componentCenter="componentCenter" :componentCenterRight="componentCenterRight" v-on:toogle-sidebar="showSideBar=!showSideBar"></nav-bar>
@@ -53,6 +54,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 // Sub-components
 import NavBar from './navbar.vue';
 import SignupModal from './signupModal.vue';
+import CommandsModal from './commandsModal.vue';
 import SideBar from './sidebar.vue';
 import User from '../../js/User';
 
@@ -88,6 +90,7 @@ export default {
   components: {
     NavBar,
     SignupModal,
+    CommandsModal,
     SideBar,
   },
   beforeRouteEnter(to, from, next) {

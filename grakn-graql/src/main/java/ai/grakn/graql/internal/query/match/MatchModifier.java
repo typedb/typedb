@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query.match;
@@ -25,8 +25,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,6 +33,8 @@ import java.util.Set;
  * This class behaves like a singly-linked list, referencing another {@link Match} until it reaches a {@link MatchBase}.
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
+ *
+ * @author Grakn Warriors
  */
 abstract class MatchModifier extends AbstractMatch {
 
@@ -55,7 +55,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
+    public GraknTx tx() {
         return inner.tx();
     }
 
@@ -74,7 +74,6 @@ abstract class MatchModifier extends AbstractMatch {
      */
     protected abstract String modifierString();
 
-    @Nullable
     @Override
     public Boolean inferring() {
         return inner.inferring();

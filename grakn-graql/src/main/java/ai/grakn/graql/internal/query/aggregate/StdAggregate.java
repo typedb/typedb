@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query.aggregate;
@@ -40,7 +40,7 @@ class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
     @Override
     public Optional<Double> apply(Stream<? extends Answer> stream) {
-        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().getValue().doubleValue());
+        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().value().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
 

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn;
@@ -41,15 +41,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").transaction(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknTx test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknTx test1 = Grakn.session(Grakn.IN_MEMORY, "test1").transaction(GraknTxType.WRITE);
         test1.close();
-        GraknTx test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
-        GraknTx test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
+        GraknTx test11 = Grakn.session(Grakn.IN_MEMORY, "test1").transaction(GraknTxType.WRITE);
+        GraknTx test2 = Grakn.session(Grakn.IN_MEMORY, "test2").transaction(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -57,9 +57,9 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "default").transaction(GraknTxType.WRITE);
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, "default").transaction(GraknTxType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
@@ -73,10 +73,10 @@ public class GraknTest {
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).transaction(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).transaction(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());

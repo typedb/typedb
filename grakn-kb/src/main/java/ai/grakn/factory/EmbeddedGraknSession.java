@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.factory;
@@ -39,12 +39,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,19 +54,11 @@ import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static mjson.Json.read;
 
 /**
- * <p>
- *     Builds a {@link TxFactory}
- * </p>
+ * Builds a {@link TxFactory}. This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
+ * It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by retrieving the factory definition from engine.
+ * The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  *
- * <p>
- *     This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
- *     It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by
- *     retrieving the factory definition from engine.
- *
- *     The deployment of engine decides on the backend and this class will handle producing the correct graphs.
- * </p>
- *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class EmbeddedGraknSession implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);
@@ -167,7 +158,7 @@ public class EmbeddedGraknSession implements GraknSession {
 
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD)).asMap());
+        properties.putAll(read(contactEngine(keyspaceUri, REST.HttpConn.PUT_METHOD)).asMap());
 
         GraknConfig config = GraknConfig.of(properties);
 
@@ -194,7 +185,7 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
     @Override
-    public EmbeddedGraknTx open(GraknTxType transactionType) {
+    public EmbeddedGraknTx transaction(GraknTxType transactionType) {
         switch (transactionType){
             case READ:
             case WRITE:

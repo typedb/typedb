@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal.structure;
@@ -39,15 +39,15 @@ public class EdgeTest extends TxTestBase {
     @Before
     public void createEdge(){
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
-        entity = (EntityImpl) entityType.addEntity();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.getId().getValue()).outE().next();
+        entity = (EntityImpl) entityType.create();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
         edge = new EdgeElement(tx, tinkerEdge);
     }
 
     @Test
     public void checkEqualityBetweenEdgesBasedOnID(){
-        Entity entity2 = entityType.addEntity();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.getId().getValue()).outE().next();
+        Entity entity2 = entityType.create();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.id().getValue()).outE().next();
         EdgeElement edge2 = new EdgeElement(tx, tinkerEdge);
 
         assertEquals(edge, edge);

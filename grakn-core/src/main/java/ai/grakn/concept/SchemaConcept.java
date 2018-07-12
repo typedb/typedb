@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.concept;
@@ -47,7 +47,7 @@ public interface SchemaConcept extends Concept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    SchemaConcept setLabel(Label label);
+    SchemaConcept label(Label label);
 
     //------------------------------------- Accessors ---------------------------------
     /**
@@ -56,7 +56,7 @@ public interface SchemaConcept extends Concept {
      * @return The unique id of this type
      */
     @CheckReturnValue
-    LabelId getLabelId();
+    LabelId labelId();
 
     /**
      * Returns the unique label of this Type.
@@ -64,7 +64,7 @@ public interface SchemaConcept extends Concept {
      * @return The unique label of this type
      */
     @CheckReturnValue
-    Label getLabel();
+    Label label();
 
     /**
      *
@@ -113,7 +113,7 @@ public interface SchemaConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @CheckReturnValue
-    Stream<Rule> getRulesOfHypothesis();
+    Stream<Rule> whenRules();
 
     /**
      * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion.
@@ -122,7 +122,7 @@ public interface SchemaConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @CheckReturnValue
-    Stream<Rule> getRulesOfConclusion();
+    Stream<Rule> thenRules();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

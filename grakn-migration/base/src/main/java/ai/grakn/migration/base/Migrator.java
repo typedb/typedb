@@ -10,18 +10,18 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.migration.base;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
-import ai.grakn.client.GraknClientException;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
+import ai.grakn.batch.GraknClientException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;

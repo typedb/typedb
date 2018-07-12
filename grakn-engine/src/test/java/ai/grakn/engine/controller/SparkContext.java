@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.controller;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.HttpHandler.configureSpark;
+import static ai.grakn.engine.ServerHTTP.configureSpark;
 
 /**
  * Context that starts spark

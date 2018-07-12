@@ -37,7 +37,7 @@ The shortest path, as the name suggests, finds the quickest way (if there is one
 The basic syntax for the shortest path query is
 
 ```graql-skip-test
-compute path from CONCEPT_ID1 to CONCEPT_ID2 in TYPES;
+compute path from CONCEPT_ID1, to CONCEPT_ID2, in TYPES;
 ```
 
 In the query `CONCEPT_ID1` and `CONCEPT_ID2` refer to concept ids. These are identifiers that are assigned internally by the Grakn system. When you query for a concept in the Dashboard or the Graql Console, concept IDs will be returned in the response (they look like `V123456`). If you are querying through the Graph visualiser, a click on any concept node will open a detail box on the top right corner of the dashboard containing the node id (and other useful information).
@@ -63,7 +63,7 @@ After this, you can right click one of the nodes and you will be able to select 
 
   ![Shortest path GUI](/images/academy/6-analytics/path-gui.png)
 
-Runnning a path query in the Graph visualiser actually lets you see the path between the two nodes, as shown in the following screenshot:
+Running a path query in the Graph visualiser actually lets you see the path between the two nodes, as shown in the following screenshot:
 
   ![Shortest path in the Visualiser](/images/academy/6-analytics/path-visualiser.png)
 
@@ -100,20 +100,20 @@ A word of caution: depending on your knowledge graph the response of a compute d
 In graph theory, a _cluster_ (using the connected component algorithm) is formally defined as a maximal set of nodes where every two nodes are connected by a path. To explain the definition, let us use an example: consider the query
 
 ```graql-skip-test
-compute cluster in company, located-in, country, region; using connected-component;
+compute cluster in [oil-company, located-in, country, region];
 ```
 
 If two concepts are in the same cluster according to this query, say having IDs `123` and `234`, it means that the query
 
 ```graql-skip-test
-compute path from 123 to 234 in company, located-in, country, region;
+compute path from 123, to 234, in [oil-company, located-in, country, region];
 ```
 
 must have a result.
 
 Or, in other words, there is a path between the two concepts that passes only through instances of the types `company`, `locate-in`, `country`, and `region`. If two concepts are in different clusters there will be no path between them.
 
-So we are grouping the oil companies geographically.
+So basically we are grouping the oil companies geographically.
 
 If you try and run the cluster query above in the Dashboard Console, the result will not contain the actual clusters, but the cluster _sizes_:
 

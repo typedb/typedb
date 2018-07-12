@@ -11,44 +11,71 @@ matchPart      : MATCH patterns                             # matchBase
                | matchPart 'order' 'by' VARIABLE order? ';' # matchOrderBy
                ;
 
-getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+getQuery       : matchPart 'get' variables? ';' ;
 insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
 undefineQuery  : UNDEFINE varPatterns ;
 deleteQuery    : matchPart 'delete' variables? ';' ;
 aggregateQuery : matchPart 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | paths
-               | connectedComponent | kCore | degree | coreness ;
+// GRAQL COMPUTE QUERY: OVERALL SYNTAX GRAMMAR =========================================================================
+// Author: Haikal Pribadi
+//
+// A compute query is composed of 3 things:
+// the 'compute' keyword, followed by a compute method, and a set of conditions (that may be optional)
+//
+// A compute method could only be:
+// count                                    (to count the number of concepts in the graph)
+// min, max, median, mean, std and sum      (to calculate statistics functions)
+// path                                     (to compute the paths between concepts)
+// centrality                               (to compute how densely connected concepts are in the graph)
+// cluster                                  (to detect communities in the graph)
+//
+// The compute conditions can be a set of zero or more individual condition separated by a comma
+// A compute condition can either be a FromID, ToID, OfLabels, InLabels, Algorithm or Args
 
-min            : MIN      'of' ofList      ('in' inList)? ';' ;
-max            : MAX      'of' ofList      ('in' inList)? ';' ;
-median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
-mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
-std            : STD      'of' ofList      ('in' inList)? ';' ;
-sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-coreness       : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING 'k-core' (WHERE 'min-k' '=' INTEGER)? ';';
-degree         : CENTRALITY ('of' ofList)? ('in' inList)? ';' USING DEGREE ';';
-connectedComponent    : CLUSTER            ('in' inList)? ';' USING 'connected-component' (WHERE ccParam+)? ';';
-kCore                 : CLUSTER            ('in' inList)? ';' USING 'k-core'              (WHERE kcParam+)? ';';
-path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
-paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
-count          : COUNT                     ('in' inList)? ';' ;
+computeQuery                    : COMPUTE computeMethod computeConditions? ';';
+computeMethod                   : COUNT                                                 // compute count
+                                | MIN | MAX | MEDIAN | MEAN | STD | SUM                 // compute statistics
+                                | PATH                                                  // compute path
+                                | CENTRALITY                                            // compute centrality
+                                | CLUSTER                                               // compute cluster
+                                ;
+computeConditions               : computeCondition (',' computeCondition)* ;
+computeCondition                : FROM      computeFromID
+                                | TO        computeToID
+                                | OF        computeOfLabels
+                                | IN        computeInLabels
+                                | USING     computeAlgorithm
+                                | WHERE     computeArgs
+                                ;
 
-ccParam        : MEMBERS       '='      bool            # ccClusterMembers
-               | SIZE          '='      INTEGER         # ccClusterSize
-               | 'source'      '='      id              # ccStartPoint
-               ;
+// GRAQL COMPUTE QUERY: CONDITIONS GRAMMAR =============================================================================
+// Author: Haikal Pribadi
+//
+// The following are definitions of computeConditions for the Graql Compute Query
+// computeFromID and computeToID takes in a concept ID
+// computeOfLabels and computeInLabels takes in labels, such as types in the schema
+// computeAlgorithm are the different algorithm names that determines how the compute method is performed
+// computeArgs can either be a single argument or an array of arguments
+// computeArgsArray is an arry of arguments
+// computeArg is a single argument
 
-kcParam        : 'k'           '='      INTEGER         # kValue
-               ;
-
-ofList         : labelList ;
-inList         : labelList ;
-labelList      : label (',' label)* ;
+computeFromID                   : id ;
+computeToID                     : id ;
+computeOfLabels                 : labels ;
+computeInLabels                 : labels ;
+computeAlgorithm                : DEGREE | K_CORE | CONNECTED_COMPONENT ;
+computeArgs                     : computeArgsArray | computeArg ;
+computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
+computeArg                      : MIN_K         '='     INTEGER         # computeArgMinK
+                                | K             '='     INTEGER         # computeArgK
+                                | MEMBERS       '='     bool            # computeArgMembers
+                                | SIZE          '='     INTEGER         # computeArgSize
+                                | CONTAINS      '='     id              # computeArgContains
+                                ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -68,13 +95,13 @@ varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                     # isa
-               | 'isa!' variable                    # directIsa
+               | 'isa!' variable                    # isaExplicit
                | 'sub' variable                     # sub
                | 'relates' role=variable ('as' superRole=variable)? # relates
                | 'plays' variable                   # plays
                | 'id' id                            # propId
                | 'label' label                      # propLabel
-               | 'val' predicate                    # propValue
+               |  predicate                         # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
                | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)? # propHas
@@ -92,9 +119,9 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value                     # predicateEq
-               | '=' VARIABLE                   # predicateVariable
-               | '!=' valueOrVar                # predicateNeq
+predicate      : '=='? value                    # predicateEq
+               | '==' VARIABLE                  # predicateVariable
+               | '!==' valueOrVar               # predicateNeq
                | '>' valueOrVar                 # predicateGt
                | '>=' valueOrVar                # predicateGte
                | '<' valueOrVar                 # predicateLt
@@ -113,13 +140,17 @@ value          : STRING   # valueString
                | DATETIME # valueDateTime
                ;
 
+labels         : labelsArray | label ;
+labelsArray    : '[' label (',' label)* ']' ;
 label          : identifier | IMPLICIT_IDENTIFIER;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREE | MEMBERS | SIZE | WHERE
+               | FROM | TO | OF | IN
+               | DEGREE | K_CORE | CONNECTED_COMPONENT
+               | MIN_K | K | CONTAINS | MEMBERS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -135,10 +166,18 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
-PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 CENTRALITY     : 'centrality' ;
+FROM           : 'from' ;
+TO             : 'to' ;
+OF             : 'of' ;
+IN             : 'in' ;
 DEGREE         : 'degree' ;
+K_CORE         : 'k-core' ;
+CONNECTED_COMPONENT : 'connected-component' ;
+MIN_K          : 'min-k' ;
+K              : 'k' ;
+CONTAINS       : 'contains' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 USING          : 'using' ;
@@ -147,6 +186,7 @@ MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
 UNDEFINE       : 'undefine' ;
+COMPUTE        : 'compute' ;
 ASC            : 'asc' ;
 DESC           : 'desc' ;
 LONG_TYPE      : 'long' ;
@@ -159,7 +199,7 @@ FALSE          : 'false' ;
 
 // In StringConverter.java we inspect the lexer to find out which values are keywords.
 // If literals are used in an alternation (e.g. `'true' | 'false'`) in the grammar, then they don't register as keywords.
-// Therefore, we never use an alternation of literals and instead given them proper rule names (e.g. `TRUE | FALSE`).
+// Therefore, we never use an alternation of literals and instead give them proper rule names (e.g. `TRUE | FALSE`).
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
 ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';

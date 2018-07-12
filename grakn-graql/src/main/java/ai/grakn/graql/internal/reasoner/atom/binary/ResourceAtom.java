@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
@@ -111,15 +111,15 @@ public abstract class ResourceAtom extends Binary{
         SchemaConcept type = getSchemaConcept();
         if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
         GraknTx tx = getParentQuery().tx();
-        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.getLabel());
+        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
                 Graql.var()
-                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.getLabel()).getValue(), getVarName())
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.getLabel()).getValue(), getPredicateVariable())
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getPredicateVariable())
                         .isa(typeLabel.getValue())
                 .admin(),
                 getPredicateVariable(),
-                tx.getSchemaConcept(typeLabel).getId(),
+                tx.getSchemaConcept(typeLabel).id(),
                 getParentQuery()
         );
     }
@@ -129,7 +129,7 @@ public abstract class ResourceAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
+        return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
                 getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
                 (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
@@ -259,21 +259,21 @@ public abstract class ResourceAtom extends Binary{
     public Set<String> validateAsRuleHead(Rule rule){
         Set<String> errors = super.validateAsRuleHead(rule);
         if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.then(), rule.label()));
         }
         if (getMultiPredicate().isEmpty()){
             boolean predicateBound = getParentQuery().getAtoms(Atom.class)
                     .filter(at -> !at.equals(this))
                     .anyMatch(at -> at.getVarNames().contains(getPredicateVariable()));
             if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
             }
         }
 
         getMultiPredicate().stream()
                 .filter(p -> !p.getPredicate().isSpecific())
                 .forEach( p ->
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.getThen(), rule.getLabel()))
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
                 );
         return errors;
     }
@@ -293,7 +293,7 @@ public abstract class ResourceAtom extends Binary{
         if (type == null) return errors;
 
         if (!type.isAttributeType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage(type.label()));
             return errors;
         }
 
@@ -301,7 +301,7 @@ public abstract class ResourceAtom extends Binary{
 
         if (ownerType != null
                 && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
-            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage(type.label(), ownerType.label()));
         }
         return errors;
     }
@@ -327,14 +327,6 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public Stream<Predicate> getInnerPredicates(){
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
-    }
-
-    @Override
-    public Set<TypeAtom> getSpecificTypeConstraints() {
-        return getTypeConstraints()
-                .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
-                .collect(Collectors.toSet());
     }
 
     private void attachAttribute(Concept owner, Attribute attribute){
@@ -380,7 +372,7 @@ public abstract class ResourceAtom extends Binary{
     public ResourceAtom rewriteWithRelationVariable(){
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
-        VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
+        VarPattern newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
         return create(newVar.admin(), attributeVariable, relationVariable, getTypeId(), getMultiPredicate(), getParentQuery());
     }
 

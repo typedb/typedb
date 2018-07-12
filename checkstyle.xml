@@ -107,7 +107,6 @@
         <!-- Require JavaDoc on types (classes, interfaces, etc.) -->
         <module name="JavadocType">
             <property name="scope" value="public"/>
-            <property name="authorFormat" value=".*"/>
         </module>
 
     </module>

@@ -88,7 +88,7 @@ rule-11
 when {$x isa applicant;
 $x has considerGPR 'true';
 $x has GPR >2.99;
-$x has specialHonours !='none';},
+$x has specialHonours !== 'none';},
 then {$x has admissionStatus 'full';};
 
 rule-12

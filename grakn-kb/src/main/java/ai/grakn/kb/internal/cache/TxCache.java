@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal.cache;
@@ -210,9 +210,9 @@ public class TxCache{
             newRelationships.remove(concept.asRelationship());
         }
 
-        conceptCache.remove(concept.getId());
+        conceptCache.remove(concept.id());
         if (concept.isSchemaConcept()) {
-            Label label = concept.asSchemaConcept().getLabel();
+            Label label = concept.asSchemaConcept().label();
             schemaConceptCache.remove(label);
             labelCache.remove(label);
         }
@@ -228,11 +228,11 @@ public class TxCache{
      * @param concept The concept to be cached.
      */
     public void cacheConcept(Concept concept){
-        conceptCache.put(concept.getId(), concept);
+        conceptCache.put(concept.id(), concept);
         if(concept.isSchemaConcept()){
             SchemaConcept schemaConcept = concept.asSchemaConcept();
-            schemaConceptCache.put(schemaConcept.getLabel(), schemaConcept);
-            labelCache.put(schemaConcept.getLabel(), schemaConcept.getLabelId());
+            schemaConceptCache.put(schemaConcept.label(), schemaConcept);
+            labelCache.put(schemaConcept.label(), schemaConcept.labelId());
         }
     }
 

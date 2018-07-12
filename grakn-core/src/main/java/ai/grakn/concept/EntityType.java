@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.concept;
@@ -44,7 +44,7 @@ public interface EntityType extends Type{
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    EntityType setLabel(Label label);
+    EntityType label(Label label);
 
     /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
@@ -54,7 +54,7 @@ public interface EntityType extends Type{
      * @return The EntityType itself
      */
     @Override
-    EntityType setAbstract(Boolean isAbstract);
+    EntityType isAbstract(Boolean isAbstract);
 
     /**
      * Sets the direct supertype of the EntityType to be the EntityType specified.
@@ -94,7 +94,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deletePlays(Role role);
+    EntityType unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
@@ -103,7 +103,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deleteAttribute(AttributeType attributeType);
+    EntityType unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link EntityType}
@@ -112,7 +112,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deleteKey(AttributeType attributeType);
+    EntityType unkey(AttributeType attributeType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
@@ -122,7 +122,7 @@ public interface EntityType extends Type{
      *
      * @throws GraknTxOperationException if this is a meta type
      */
-    Entity addEntity();
+    Entity create();
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -140,7 +140,7 @@ public interface EntityType extends Type{
      * @return The Type itself.
      */
     @Override
-    EntityType attribute(AttributeType attributeType);
+    EntityType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

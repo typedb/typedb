@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.parser;
@@ -39,6 +39,15 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.k;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.min_k;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.size;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -125,7 +134,7 @@ public class QueryToStringTest {
 
     @Test
     public void testEscapeStrings() {
-        assertEquals("insert $x val \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
+        assertEquals("insert $x \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
     }
 
     @Test
@@ -151,43 +160,43 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count;", qb.compute().count().toString());
+        assertEquals("compute count;", qb.compute(COUNT).toString());
     }
 
     @Test
     public void testComputeQuerySubgraphToString() {
-        ComputeQuery query = qb.compute().centrality().usingDegree().in("movie", "person");
-        assertEquivalent(query, "compute centrality in movie, person; using degree;");
+        ComputeQuery query = qb.compute(CENTRALITY).using(DEGREE).in("movie", "person");
+        assertEquivalent(query, "compute centrality in [movie, person], using degree;");
     }
 
     @Test
     public void testClusterToString() {
-        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person");
-        assertEquivalent(query, "compute cluster in movie, person; using connected-component;");
+        ComputeQuery connectedcomponent = qb.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person");
+        assertEquivalent(connectedcomponent, "compute cluster in [movie, person], using connected-component;");
 
-        query = qb.compute().cluster().usingKCore().in("movie", "person");
-        assertEquivalent(query, "compute cluster in movie, person; using k-core;");
+        ComputeQuery kcore = qb.compute(CLUSTER).using(K_CORE).in("movie", "person");
+        assertEquivalent(kcore, "compute cluster in [movie, person], using k-core;");
     }
 
     @Test
     public void testCCSizeToString() {
-        ComputeQuery query = qb.compute().cluster().usingConnectedComponent().in("movie", "person").clusterSize(10);
-        assertEquivalent(query, "compute cluster in movie, person; using connected-component where size = 10;");
+        ComputeQuery query = qb.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
+        assertEquivalent(query, "compute cluster in [movie, person], using connected-component, where size=10;");
     }
 
     @Test
     public void testKCoreToString() {
-        ComputeQuery query = qb.compute().cluster().usingKCore().in("movie", "person").kValue(10);
-        assertEquivalent(query, "compute cluster in movie, person; using k-core where k = 10;");
+        ComputeQuery query = qb.compute(CLUSTER).using(K_CORE).in("movie", "person").where(k(10));
+        assertEquivalent(query, "compute cluster in [movie, person], using k-core, where k=10;");
     }
 
     @Test
     public void testCentralityOf() {
-        ComputeQuery query = qb.compute().centrality().usingDegree().in("movie", "person").of("person");
-        assertEquivalent(query, "compute centrality of person in movie, person; using degree;");
+        ComputeQuery query = qb.compute(CENTRALITY).using(DEGREE).in("movie", "person").of("person");
+        assertEquivalent(query, "compute centrality of person, in [movie, person], using degree;");
 
-        query = qb.compute().centrality().usingKCore().in("movie", "person").of("person").minK(5);
-        assertEquivalent(query, "compute centrality of person in movie, person; using k-core where min-k = 5;");
+        query = qb.compute(CENTRALITY).using(K_CORE).in("movie", "person").of("person").where(min_k(5));
+        assertEquivalent(query, "compute centrality of person, in [movie, person], using k-core, where min-k=5;");
     }
 
     @Test
@@ -209,17 +218,17 @@ public class QueryToStringTest {
 
     @Test
     public void testZeroToString() {
-        assertEquals("match $x val 0.0;", qb.match(var("x").val(0.0)).toString());
+        assertEquals("match $x 0.0;", qb.match(var("x").val(0.0)).toString());
     }
 
     @Test
     public void testExponentsToString() {
-        assertEquals("match $x val 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
+        assertEquals("match $x 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
     }
 
     @Test
     public void testDecimalToString() {
-        assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
+        assertEquals("match $x 0.0001;", qb.match(var("x").val(0.0001)).toString());
     }
 
     @Test
@@ -233,7 +242,7 @@ public class QueryToStringTest {
     public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
         Match match = match(var("x").val(contains(var("y"))));
 
-        assertEquals("match $x val contains $y;", match.toString());
+        assertEquals("match $x contains $y;", match.toString());
     }
 
     private void assertSameResults(GetQuery query) {

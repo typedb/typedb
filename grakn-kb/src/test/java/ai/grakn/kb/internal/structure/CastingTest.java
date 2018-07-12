@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal.structure;
@@ -54,10 +54,10 @@ public class CastingTest extends TxTestBase {
 
     @Test
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
-        Entity e1 = entityType.addEntity();
+        Entity e1 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
-                addRolePlayer(role1, e1);
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+                assign(role1, e1);
 
         Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
 
@@ -71,11 +71,11 @@ public class CastingTest extends TxTestBase {
 
     @Test
     public void whenUpdatingRelation_EnsureRolePlayersAreUpdated(){
-        Entity e1 = entityType.addEntity();
-        Entity e3 = entityType.addEntity();
+        Entity e1 = entityType.create();
+        Entity e3 = entityType.create();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
-                addRolePlayer(role1, e1);
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.create().
+                assign(role1, e1);
 
         Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
         Set<Role> roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
@@ -83,7 +83,7 @@ public class CastingTest extends TxTestBase {
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
-        relation.addRolePlayer(role2, e1).addRolePlayer(role3, e3);
+        relation.assign(role2, e1).assign(role3, e3);
 
         things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
         roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.migration.sql;
@@ -151,12 +151,12 @@ public class SQLMigratorTest {
     @Test
     public void whenSQLQueryContainsFunction_MigrationCanAccessResultOfFunction() throws SQLException {
         try(Connection connection = setupExample(factory, "pets")){
-            String template = "insert $x isa count val <COUNT>;";
+            String template = "insert $x isa count <COUNT>;";
             String query = "SELECT count(*) AS count FROM pet";
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknTx graph = factory.open(GraknTxType.WRITE);
+            GraknTx graph = factory.transaction(GraknTxType.WRITE);
             Attribute<Long> count = graph.getAttributesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getAttributeType("count"));

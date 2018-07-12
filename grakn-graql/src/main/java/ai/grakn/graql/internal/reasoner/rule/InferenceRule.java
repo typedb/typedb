@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.rule;
@@ -75,10 +75,10 @@ public class InferenceRule {
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = rule.getId();
+        this.ruleId = rule.id();
         //TODO simplify once changes propagated to rule objects
-        this.body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), tx);
-        this.head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), tx);
+        this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
+        this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
     private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){
@@ -172,19 +172,6 @@ public class InferenceRule {
      * @return head of the rule of the form head :- body
      */
     public ReasonerAtomicQuery getHead(){ return head;}
-
-    /**
-     * @param sub substitution to be added to the rule
-     * @return inference rule with added substitution
-     */
-    public InferenceRule withSubstitution(Answer sub){
-        return new InferenceRule(
-                getHead().withSubstitution(sub),
-                getBody().withSubstitution(sub),
-                ruleId,
-                tx
-        );
-    }
 
     /**
      * @return reasoner query formed of combining head and body queries
