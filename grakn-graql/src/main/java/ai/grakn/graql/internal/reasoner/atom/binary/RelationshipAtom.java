@@ -957,7 +957,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Multimap<Role, Var> roleVarMap = getRoleVarMap();
         Answer substitution = getParentQuery().getSubstitution();
 
-        Relationship relationship = RelationshipTypeImpl.from(relationType).addRelationshipInferred();
+        //if the relation already exists, only assign roleplayers, otherwise create a new relation
+        Relationship relationship = substitution.containsVar(getVarName())?
+                substitution.get(getVarName()).asRelationship() :
+                RelationshipTypeImpl.from(relationType).addRelationshipInferred();
+
         roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.addRolePlayer(key, substitution.get(var).asThing())));
 
         Answer relationSub = getRoleSubstitution().merge(
@@ -965,6 +969,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         new QueryAnswer(ImmutableMap.of(getVarName(), relationship)) :
                         new QueryAnswer()
         );
+
         return Stream.of(substitution.merge(relationSub));
     }
 
@@ -997,7 +1002,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @return new relation atom with user defined name if necessary or this
      */
     private RelationshipAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (!parentAtom.getVarName().isUserDefinedName()) return this;
+        if (this.getVarName().isUserDefinedName() || !parentAtom.getVarName().isUserDefinedName()) return this;
         return rewriteWithRelationVariable();
     }
 
