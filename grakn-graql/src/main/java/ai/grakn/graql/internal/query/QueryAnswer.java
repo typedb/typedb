@@ -142,7 +142,7 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
-    public void forEach(BiConsumer<? super Var, ? super Concept> consumer) {
+    public void forEach(BiConsumer<Var, Concept> consumer) {
         map.forEach(consumer);
     }
 

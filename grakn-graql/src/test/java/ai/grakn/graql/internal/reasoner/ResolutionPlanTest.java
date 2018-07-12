@@ -66,7 +66,7 @@ public class ResolutionPlanTest {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "$x isa someEntity;" +
-                "$y isa resource;$y val 'value';" +
+                "$y isa resource; $y 'value';" +
                 "$z isa relation;" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
