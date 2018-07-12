@@ -265,9 +265,9 @@ workflows:
       - distribution-e2e:
           requires:
             - build
-       - snb-e2e:
-           requires:
-             - build
+      - snb-e2e:
+          requires:
+            - build
       - biomed-e2e:
           requires:
             - build
