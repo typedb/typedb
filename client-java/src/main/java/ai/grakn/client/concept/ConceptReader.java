@@ -35,13 +35,13 @@ public class ConceptReader {
         switch (concept.getBaseType()) {
             case ENTITY:
                 return RemoteEntity.construct(tx, id);
-            case RELATIONSHIP:
+            case RELATION:
                 return RemoteRelationship.construct(tx, id);
             case ATTRIBUTE:
                 return RemoteAttribute.construct(tx, id);
             case ENTITY_TYPE:
                 return RemoteEntityType.construct(tx, id);
-            case RELATIONSHIP_TYPE:
+            case RELATION_TYPE:
                 return RemoteRelationshipType.construct(tx, id);
             case ATTRIBUTE_TYPE:
                 return RemoteAttributeType.construct(tx, id);

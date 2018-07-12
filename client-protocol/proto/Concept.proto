@@ -45,7 +45,7 @@ message Method {
             // EntityType method requests
             EntityType.Create.Req entityType_create_req = 600;
 
-            // RelationshipType method requests
+            // RelationType method requests
             RelationType.Create.Req relationType_create_req = 700;
             RelationType.Roles.Req relationType_roles_req = 701;
             RelationType.Relates.Req relationType_relates_req = 702;
@@ -68,7 +68,7 @@ message Method {
             Thing.Relhas.Req thing_relhas_req = 906;
             Thing.Unhas.Req thing_unhas_req = 907;
 
-            // Relationship method requests
+            // Relation method requests
             Relation.RolePlayersMap.Req relation_rolePlayersMap_req = 1000;
             Relation.RolePlayers.Req relation_rolePlayers_req = 1001;
             Relation.Assign.Req relation_assign_req = 1002;
@@ -118,7 +118,7 @@ message Method {
             // EntityType method responses
             EntityType.Create.Res entityType_create_res = 600;
 
-            // RelationshipType method responses
+            // RelationType method responses
             RelationType.Create.Res relationType_create_res = 700;
             RelationType.Roles.Iter relationType_roles_iter = 701;
             RelationType.Relates.Res relationType_relates_res = 702;
@@ -141,7 +141,7 @@ message Method {
             Thing.Relhas.Res thing_relhas_res = 906;
             Thing.Unhas.Res thing_unhas_res = 907;
 
-            // Relationship method responses
+            // Relation method responses
             Relation.RolePlayersMap.Iter relation_rolePlayersMap_iter = 1000;
             Relation.RolePlayers.Iter relation_rolePlayers_iter = 1001;
             Relation.Assign.Res relation_assign_res = 1002;
@@ -199,10 +199,10 @@ message Concept {
     enum BASE_TYPE {
         META_TYPE = 0; // This represents the top-level meta type only
         ENTITY_TYPE = 1;
-        RELATIONSHIP_TYPE = 3;
+        RELATION_TYPE = 3;
         ATTRIBUTE_TYPE = 4;
         ENTITY = 5;
-        RELATIONSHIP = 6;
+        RELATION = 6;
         ATTRIBUTE = 7;
         ROLE = 8;
         RULE = 9;
@@ -445,7 +445,7 @@ message EntityType {
 }
 
 
-// RelationshipType methods
+// RelationType methods
 
 message RelationType {
 
@@ -487,13 +487,13 @@ message RelationType {
 message AttributeType {
 
     enum DATA_TYPE {
-        String = 0;
-        Boolean = 1;
-        Integer = 2;
-        Long = 3;
-        Float = 4;
-        Double = 5;
-        Date = 6;
+        STRING = 0;
+        BOOLEAN = 1;
+        INTEGER = 2;
+        LONG = 3;
+        FLOAT = 4;
+        DOUBLE = 5;
+        DATE = 6;
     }
 
     message Create {
@@ -625,7 +625,7 @@ message Thing {
 }
 
 
-// Relationship methods
+// Relation methods
 
 message Relation {
 

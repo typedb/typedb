@@ -48,8 +48,8 @@ import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
@@ -97,8 +97,8 @@ public final class Grakn {
             this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        SessionGrpc.SessionStub sessionStub() {
-            return SessionGrpc.newStub(channel);
+        SessionServiceGrpc.SessionServiceStub sessionStub() {
+            return SessionServiceGrpc.newStub(channel);
         }
 
         KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub() {
@@ -319,7 +319,7 @@ public final class Grakn {
         @Override
         public RelationshipType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptReader.concept(responseOrThrow().getPutRelationshipTypeRes().getConcept(), this).asRelationshipType();
+            return ConceptReader.concept(responseOrThrow().getPutRelationTypeRes().getConcept(), this).asRelationshipType();
         }
 
         @Override

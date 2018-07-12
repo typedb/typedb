@@ -19,8 +19,8 @@
 package ai.grakn.client.rpc;
 
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -57,7 +57,7 @@ public class Transceiver implements AutoCloseable {
         this.responseListener = responseListener;
     }
 
-    public static Transceiver create(SessionGrpc.SessionStub stub) {
+    public static Transceiver create(SessionServiceGrpc.SessionServiceStub stub) {
         ResponseListener responseListener = new ResponseListener();
         StreamObserver<Transaction.Req> requestSender = stub.transaction(responseListener);
         return new Transceiver(requestSender, responseListener);

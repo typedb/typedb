@@ -117,9 +117,9 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res putRelationshipType(ai.grakn.concept.Concept concept) {
-            SessionProto.Transaction.PutRelationshipType.Res.Builder res = SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
+            SessionProto.Transaction.PutRelationType.Res.Builder res = SessionProto.Transaction.PutRelationType.Res.newBuilder()
                     .setConcept(ResponseBuilder.Concept.concept(concept));
-            return SessionProto.Transaction.Res.newBuilder().setPutRelationshipTypeRes(res).build();
+            return SessionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRole(ai.grakn.concept.Concept concept) {
@@ -177,13 +177,13 @@ public class ResponseBuilder {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
             } else if (concept.isRelationshipType()) {
-                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE;
+                return ConceptProto.Concept.BASE_TYPE.RELATION_TYPE;
             } else if (concept.isAttributeType()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
             } else if (concept.isEntity()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY;
             } else if (concept.isRelationship()) {
-                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP;
+                return ConceptProto.Concept.BASE_TYPE.RELATION;
             } else if (concept.isAttribute()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;
             } else if (concept.isRole()) {
@@ -199,19 +199,19 @@ public class ResponseBuilder {
 
         static ConceptProto.AttributeType.DATA_TYPE DATA_TYPE(AttributeType.DataType<?> dataType) {
             if (dataType.equals(AttributeType.DataType.STRING)) {
-                return ConceptProto.AttributeType.DATA_TYPE.String;
+                return ConceptProto.AttributeType.DATA_TYPE.STRING;
             } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Boolean;
+                return ConceptProto.AttributeType.DATA_TYPE.BOOLEAN;
             } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Integer;
+                return ConceptProto.AttributeType.DATA_TYPE.INTEGER;
             } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Long;
+                return ConceptProto.AttributeType.DATA_TYPE.LONG;
             } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Float;
+                return ConceptProto.AttributeType.DATA_TYPE.FLOAT;
             } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Double;
+                return ConceptProto.AttributeType.DATA_TYPE.DOUBLE;
             } else if (dataType.equals(AttributeType.DataType.DATE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Date;
+                return ConceptProto.AttributeType.DATA_TYPE.DATE;
             } else {
                 throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
             }
@@ -219,19 +219,19 @@ public class ResponseBuilder {
 
         public static AttributeType.DataType<?> DATA_TYPE(ConceptProto.AttributeType.DATA_TYPE dataType) {
             switch (dataType) {
-                case String:
+                case STRING:
                     return AttributeType.DataType.STRING;
-                case Boolean:
+                case BOOLEAN:
                     return AttributeType.DataType.BOOLEAN;
-                case Integer:
+                case INTEGER:
                     return AttributeType.DataType.INTEGER;
-                case Long:
+                case LONG:
                     return AttributeType.DataType.LONG;
-                case Float:
+                case FLOAT:
                     return AttributeType.DataType.FLOAT;
-                case Double:
+                case DOUBLE:
                     return AttributeType.DataType.DOUBLE;
-                case Date:
+                case DATE:
                     return AttributeType.DataType.DATE;
                 default:
                 case UNRECOGNIZED:

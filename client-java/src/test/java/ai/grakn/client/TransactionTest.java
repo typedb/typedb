@@ -42,9 +42,9 @@ import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -92,7 +92,7 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.sessionStub()).thenReturn(SessionGrpc.newStub(server.channel()));
+        when(session.sessionStub()).thenReturn(SessionServiceGrpc.newStub(server.channel()));
         when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
@@ -308,10 +308,10 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
-                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE).build();
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRelationshipTypeRes(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
+                    .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
