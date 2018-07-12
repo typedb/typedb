@@ -33,23 +33,23 @@ import java.util.stream.Stream;
 /**
  * Client implementation of {@link ai.grakn.concept.SchemaConcept}
  *
- * @param <SomeType> The exact type of this class
+ * @param <SomeSchemaConcept> The exact type of this class
  */
-abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends RemoteConcept<SomeType> implements SchemaConcept {
+abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> extends RemoteConcept<SomeSchemaConcept> implements SchemaConcept {
 
-    public final SomeType sup(SomeType type) {
+    public final SomeSchemaConcept sup(SomeSchemaConcept type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetSupReq(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(type))).build();
+                        .setSchemaConcept(RequestBuilder.Concept.concept(type))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
     }
 
-    public final SomeType sub(SomeType type) {
+    public final SomeSchemaConcept sub(SomeSchemaConcept type) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetSupReq(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(this))).build();
+                        .setSchemaConcept(RequestBuilder.Concept.concept(this))).build();
 
         runMethod(type.id(), method);
         return asCurrentBaseType(this);
@@ -72,7 +72,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     @Override
-    public final SomeType label(Label label) {
+    public final SomeSchemaConcept label(Label label) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSetLabelReq(ConceptProto.SchemaConcept.SetLabel.Req.newBuilder()
                         .setLabel(label.getValue())).build();
@@ -83,7 +83,7 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
 
     @Nullable
     @Override
-    public final SomeType sup() {
+    public final SomeSchemaConcept sup() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptGetSupReq(ConceptProto.SchemaConcept.GetSup.Req.getDefaultInstance()).build();
 
@@ -92,8 +92,8 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
         switch (response.getResCase()) {
             case NULL:
                 return null;
-            case CONCEPT:
-                Concept concept = ConceptReader.concept(response.getConcept(), tx());
+            case SCHEMACONCEPT:
+                Concept concept = ConceptReader.concept(response.getSchemaConcept(), tx());
                 return equalsCurrentBaseType(concept) ? asCurrentBaseType(concept) : null;
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
@@ -102,17 +102,17 @@ abstract class RemoteSchemaConcept<SomeType extends SchemaConcept> extends Remot
     }
 
     @Override
-    public final Stream<SomeType> sups() {
+    public final Stream<SomeSchemaConcept> sups() {
         return tx().admin().sups(this).filter(this::equalsCurrentBaseType).map(this::asCurrentBaseType);
     }
 
     @Override
-    public final Stream<SomeType> subs() {
+    public final Stream<SomeSchemaConcept> subs() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setSchemaConceptSubsReq(ConceptProto.SchemaConcept.Subs.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getSchemaConceptSubsIter().getId();
-        return conceptStream(iteratorId, res -> res.getSchemaConceptSubsIterRes().getConcept()).map(this::asCurrentBaseType);
+        return conceptStream(iteratorId, res -> res.getSchemaConceptSubsIterRes().getSchemaConcept()).map(this::asCurrentBaseType);
     }
 
     @Override

@@ -83,7 +83,7 @@ public class ResponseBuilder {
             if (concept == null) {
                 res.setNull(ConceptProto.Null.getDefaultInstance());
             } else {
-                res.setConcept(ResponseBuilder.Concept.concept(concept));
+                res.setSchemaConcept(ResponseBuilder.Concept.concept(concept));
             }
             return SessionProto.Transaction.Res.newBuilder().setGetSchemaConceptRes(res).build();
         }
@@ -106,31 +106,31 @@ public class ResponseBuilder {
 
         static SessionProto.Transaction.Res putEntityType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutEntityType.Res.Builder res = SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setConcept(ResponseBuilder.Concept.concept(concept));
+                    .setEntityType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putAttributeType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutAttributeType.Res.Builder res = SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                    .setConcept(ResponseBuilder.Concept.concept(concept));
+                    .setAttributeType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRelationshipType(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRelationType.Res.Builder res = SessionProto.Transaction.PutRelationType.Res.newBuilder()
-                    .setConcept(ResponseBuilder.Concept.concept(concept));
+                    .setRelationType(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRole(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRole.Res.Builder res = SessionProto.Transaction.PutRole.Res.newBuilder()
-                    .setConcept(ResponseBuilder.Concept.concept(concept));
+                    .setRole(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRoleRes(res).build();
         }
 
         static SessionProto.Transaction.Res putRule(ai.grakn.concept.Concept concept) {
             SessionProto.Transaction.PutRule.Res.Builder res = SessionProto.Transaction.PutRule.Res.newBuilder()
-                    .setConcept(ResponseBuilder.Concept.concept(concept));
+                    .setRule(ResponseBuilder.Concept.concept(concept));
             return SessionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
         }
 
@@ -150,7 +150,7 @@ public class ResponseBuilder {
                 return SessionProto.Transaction.Res.newBuilder()
                         .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                                 .setGetAttributesIterRes(SessionProto.Transaction.GetAttributes.Iter.Res.newBuilder()
-                                        .setConcept(Concept.concept(concept)))).build();
+                                        .setAttribute(Concept.concept(concept)))).build();
             }
 
             static SessionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {

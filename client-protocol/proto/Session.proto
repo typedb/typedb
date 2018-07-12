@@ -109,7 +109,7 @@ message Transaction {
         }
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
                 Null null = 2;
             }
         }
@@ -134,7 +134,7 @@ message Transaction {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
@@ -144,7 +144,7 @@ message Transaction {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept entityType = 1;
         }
     }
 
@@ -154,7 +154,7 @@ message Transaction {
             AttributeType.DATA_TYPE dataType = 2;
         }
         message Res {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
     }
 
@@ -163,7 +163,7 @@ message Transaction {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept relationType = 1;
         }
     }
 
@@ -172,7 +172,7 @@ message Transaction {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept role = 1;
         }
     }
 
@@ -183,7 +183,7 @@ message Transaction {
             string then = 3;
         }
         message Res {
-            Concept concept = 1;
+            Concept rule = 1;
         }
     }
 

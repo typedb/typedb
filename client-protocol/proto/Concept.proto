@@ -243,7 +243,7 @@ message SchemaConcept {
         message Req {}
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
                 Null null = 2;
             }
         }
@@ -251,7 +251,7 @@ message SchemaConcept {
 
     message SetSup {
         message Req {
-            Concept concept = 1;
+            Concept schemaConcept = 1;
         }
         message Res {}
     }
@@ -261,7 +261,7 @@ message SchemaConcept {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
             }
         }
     }
@@ -271,7 +271,7 @@ message SchemaConcept {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
             }
         }
     }
@@ -313,7 +313,7 @@ message Role {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept relationType = 1;
             }
         }
     }
@@ -323,7 +323,7 @@ message Role {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept type = 1;
             }
         }
     }
@@ -353,7 +353,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }
@@ -363,7 +363,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attributeType = 1;
             }
         }
     }
@@ -373,7 +373,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attributeType = 1;
             }
         }
     }
@@ -383,49 +383,49 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
-    message Has {
-        message Req {
-            Concept concept = 1;
-        }
-        message Res {}
-    }
-
-    message Unhas {
-        message Req {
-            Concept concept = 1;
-        }
-        message Res {}
-    }
-
     message Key {
         message Req {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
-    message Unkey {
+    message Has {
         message Req {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
     message Plays {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
+        }
+        message Res {}
+    }
+
+    message Unkey {
+        message Req {
+            Concept attributeType = 1;
+        }
+        message Res {}
+    }
+
+    message Unhas {
+        message Req {
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
     message Unplay {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
@@ -439,7 +439,7 @@ message EntityType {
     message Create {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept entity = 1;
         }
     }
 }
@@ -452,7 +452,7 @@ message RelationType {
     message Create {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept relation = 1;
         }
     }
 
@@ -461,21 +461,21 @@ message RelationType {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
     message Relates {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
 
     message Unrelate {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
@@ -501,7 +501,7 @@ message AttributeType {
             ValueObject value = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
     }
 
@@ -511,7 +511,7 @@ message AttributeType {
         }
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept attribute = 1;
                 Null null = 2;
             }
         }
@@ -557,42 +557,42 @@ message Thing {
     message Type {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept type = 1;
         }
     }
 
     message Keys {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept attributeTypes = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
 
     message Attributes {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept attributeTypes = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
 
     message Relations {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept roles = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept relation = 1;
             }
         }
     }
@@ -602,23 +602,23 @@ message Thing {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
     message Relhas {
         message Req {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept relation = 1;
         }
     }
 
     message Unhas {
         message Req {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
         message Res {}
     }
@@ -642,12 +642,12 @@ message Relation {
 
     message RolePlayers {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept roles = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }
@@ -685,7 +685,7 @@ message Attribute {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }

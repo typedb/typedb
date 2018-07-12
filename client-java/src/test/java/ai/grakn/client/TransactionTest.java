@@ -292,7 +292,7 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder().setPutEntityTypeRes(SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setConcept(protoConcept)).build();
+                    .setEntityType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
             assertEquals(ConceptReader.concept(protoConcept, tx), tx.putEntityType(label));
@@ -312,7 +312,7 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setRelationType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
             assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRelationshipType(label));
@@ -333,7 +333,7 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutAttributeTypeRes(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setAttributeType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
             assertEquals(ConceptReader.concept(protoConcept, tx), tx.putAttributeType(label, dataType));
@@ -353,7 +353,7 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRoleRes(SessionProto.Transaction.PutRole.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setRole(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
             assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRole(label));
@@ -375,7 +375,7 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRuleRes(SessionProto.Transaction.PutRule.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setRule(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
             assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRule(label, when, then));
@@ -431,7 +431,7 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
-                            .setConcept(protoConcept))
+                            .setSchemaConcept(protoConcept))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
