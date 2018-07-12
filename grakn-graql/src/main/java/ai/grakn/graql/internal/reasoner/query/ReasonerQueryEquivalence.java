@@ -68,6 +68,19 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         return query.getAtoms(Atom.class).anyMatch(atom2 -> equivalenceFunction.apply(atom, atom2));
     }
 
+    public final static Equivalence<ReasonerQuery> Equality = new ReasonerQueryEquivalence(){
+
+        @Override
+        protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
+            return equivalence(q1, q2, Atomic::equals);
+        }
+
+        @Override
+        protected int doHash(ReasonerQuery q) {
+            return equivalenceHash(q, Atomic.class, Atomic::hashCode);
+        }
+    };
+
     public final static Equivalence<ReasonerQuery> AlphaEquivalence = new ReasonerQueryEquivalence(){
 
         @Override

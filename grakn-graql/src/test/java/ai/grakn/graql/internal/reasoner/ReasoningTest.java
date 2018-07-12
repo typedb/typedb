@@ -28,7 +28,11 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -164,6 +168,9 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
+
+    @ClassRule
+    public static final SampleKBContext appendingRPsContext = SampleKBContext.load("appendingRPsTest.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -830,7 +837,8 @@ public class ReasoningTest {
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
-    /* Should find the possible relation configurations:
+    /**
+       Should find the possible relation configurations:
          (x, z) - (z, z1) - (z1, z)
                 - (z, z2) - (z2, z)
                 - (z, y)  - { (y,z) (y, x) }
@@ -863,6 +871,33 @@ public class ReasoningTest {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
+    }
+
+    @Test //when rule are defined to append new RPs no new relation instances should be created
+    public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
+        QueryBuilder qb = appendingRPsContext.tx().graql();
+
+        List<Answer> answers = qb.infer(false).<GetQuery>parse("match $r isa relation; get;").execute();
+        List<Answer> inferredAnswers = qb.infer(true).<GetQuery>parse("match $r isa relation; get;").execute();
+        assertEquals(answers, inferredAnswers);
+    }
+
+    //TODO fix in another PR
+    @Ignore
+    @Test
+    public void whenQueryingAppendedRelations_ruleAreMatchedCorrectly(){
+        QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
+        Set<Answer> variants = Stream.of(
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;").execute())
+        )
+                .map(ans-> ans.project(Sets.newHashSet(var("r"))))
+                .collect(Collectors.toSet());
+
+        List<Answer> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
+        assertEquals(variants, answers);
     }
 
     @Test //tests a query containing a neq predicate bound to a recursive relation
