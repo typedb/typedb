@@ -36,9 +36,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -61,7 +61,7 @@ import java.util.stream.Stream;
 /**
  *  Grakn RPC Session Service
  */
-public class SessionService extends SessionGrpc.SessionImplBase {
+public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
     private PostProcessor postProcessor;
 
@@ -160,8 +160,8 @@ public class SessionService extends SessionGrpc.SessionImplBase {
                 case PUTATTRIBUTETYPE_REQ:
                     putAttributeType(request.getPutAttributeTypeReq());
                     break;
-                case PUTRELATIONSHIPTYPE_REQ:
-                    putRelationshipType(request.getPutRelationshipTypeReq());
+                case PUTRELATIONTYPE_REQ:
+                    putRelationshipType(request.getPutRelationTypeReq());
                     break;
                 case PUTROLE_REQ:
                     putRole(request.getPutRoleReq());
@@ -216,7 +216,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    GraknTxType.of(request.getTxType())
+                    GraknTxType.of(request.getType().getNumber())
             );
 
             tx = requestOpener.open(args);
@@ -284,7 +284,7 @@ public class SessionService extends SessionGrpc.SessionImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.putAttributeType(attributeType));
         }
 
-        private void putRelationshipType(SessionProto.Transaction.PutRelationshipType.Req request) {
+        private void putRelationshipType(SessionProto.Transaction.PutRelationType.Req request) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
             responseSender.onNext(ResponseBuilder.Transaction.putRelationshipType(relationshipType));
         }

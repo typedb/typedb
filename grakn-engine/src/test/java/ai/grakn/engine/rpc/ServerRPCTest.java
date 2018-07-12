@@ -49,9 +49,9 @@ import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -72,7 +72,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
@@ -123,7 +122,7 @@ public class ServerRPCTest {
     public final ExpectedException exception = ExpectedException.none();
 
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
-    private final SessionGrpc.SessionStub stub = SessionGrpc.newStub(channel);
+    private final SessionServiceGrpc.SessionServiceStub stub = SessionServiceGrpc.newStub(channel);
     private final KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
 
     @Before
@@ -243,7 +242,10 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         String keyspace = "not!@akeyspace";
-        Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(GraknTxType.WRITE.getId()).build();
+        Open.Req openRequest = Open.Req.newBuilder()
+                .setKeyspace(keyspace)
+                .setType(Transaction.Type.valueOf(GraknTxType.WRITE.getId()))
+                .build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(Transaction.Req.newBuilder().setOpenReq(openRequest).build());
@@ -316,7 +318,7 @@ public class ServerRPCTest {
             Transaction.Res response1 = tx.receive().ok();
 
             ConceptProto.Concept rpcX =
-                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP).build();
+                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION).build();
             AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
             Transaction.Res resX = Transaction.Res.newBuilder()
@@ -600,7 +602,7 @@ public class ServerRPCTest {
             ConceptProto.Concept response = tx.receive().ok().getGetConceptRes().getConcept();
 
             assertEquals(id.getValue(), response.getId());
-            assertEquals(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP, response.getBaseType());
+            assertEquals(ConceptProto.Concept.BASE_TYPE.RELATION, response.getBaseType());
         }
     }
 

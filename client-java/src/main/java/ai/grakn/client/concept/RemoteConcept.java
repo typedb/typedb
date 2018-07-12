@@ -36,6 +36,34 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
 
+    public static Concept of(ConceptProto.Concept concept, Grakn.Transaction tx) {
+        ConceptId id = ConceptId.of(concept.getId());
+
+        switch (concept.getBaseType()) {
+            case ENTITY:
+                return RemoteEntity.construct(tx, id);
+            case RELATION:
+                return RemoteRelationship.construct(tx, id);
+            case ATTRIBUTE:
+                return RemoteAttribute.construct(tx, id);
+            case ENTITY_TYPE:
+                return RemoteEntityType.construct(tx, id);
+            case RELATION_TYPE:
+                return RemoteRelationshipType.construct(tx, id);
+            case ATTRIBUTE_TYPE:
+                return RemoteAttributeType.construct(tx, id);
+            case ROLE:
+                return RemoteRole.construct(tx, id);
+            case RULE:
+                return RemoteRule.construct(tx, id);
+            case META_TYPE:
+                return RemoteMetaType.construct(tx, id);
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
+    }
+
     abstract Grakn.Transaction tx();
 
     @Override
@@ -64,7 +92,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
         Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptReader.concept(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
+                tx(), iteratorId, res -> of(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

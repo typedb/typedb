@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
-import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.client.rpc.Transceiver;
@@ -48,8 +48,8 @@ import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
@@ -97,8 +97,8 @@ public final class Grakn {
             this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
-        SessionGrpc.SessionStub sessionStub() {
-            return SessionGrpc.newStub(channel);
+        SessionServiceGrpc.SessionServiceStub sessionStub() {
+            return SessionServiceGrpc.newStub(channel);
         }
 
         KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub() {
@@ -276,7 +276,7 @@ public final class Grakn {
                 case NULL:
                     return null;
                 default:
-                    return (T) ConceptReader.concept(response.getGetSchemaConceptRes().getConcept(), this);
+                    return (T) RemoteConcept.of(response.getGetSchemaConceptRes().getSchemaConcept(), this);
             }
         }
 
@@ -289,7 +289,7 @@ public final class Grakn {
                 case NULL:
                     return null;
                 default:
-                    return (T) ConceptReader.concept(response.getGetConceptRes().getConcept(), this);
+                    return (T) RemoteConcept.of(response.getGetConceptRes().getConcept(), this);
             }
         }
 
@@ -298,7 +298,7 @@ public final class Grakn {
             transceiver.send(RequestBuilder.Transaction.getAttributes(value));
             int iteratorId = responseOrThrow().getGetAttributesIter().getId();
             Iterable<Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, response -> ConceptReader.concept(response.getGetAttributesIterRes().getConcept(), this)
+                    this, iteratorId, response -> RemoteConcept.of(response.getGetAttributesIterRes().getAttribute(), this)
             );
 
             return StreamSupport.stream(iterable.spliterator(), false).map(Concept::<V>asAttribute).collect(toImmutableSet());
@@ -307,31 +307,31 @@ public final class Grakn {
         @Override
         public EntityType putEntityType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putEntityType(label));
-            return ConceptReader.concept(responseOrThrow().getPutEntityTypeRes().getConcept(), this).asEntityType();
+            return RemoteConcept.of(responseOrThrow().getPutEntityTypeRes().getEntityType(), this).asEntityType();
         }
 
         @Override
         public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
             transceiver.send(RequestBuilder.Transaction.putAttributeType(label, dataType));
-            return ConceptReader.concept(responseOrThrow().getPutAttributeTypeRes().getConcept(), this).asAttributeType();
+            return RemoteConcept.of(responseOrThrow().getPutAttributeTypeRes().getAttributeType(), this).asAttributeType();
         }
 
         @Override
         public RelationshipType putRelationshipType(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRelationshipType(label));
-            return ConceptReader.concept(responseOrThrow().getPutRelationshipTypeRes().getConcept(), this).asRelationshipType();
+            return RemoteConcept.of(responseOrThrow().getPutRelationTypeRes().getRelationType(), this).asRelationshipType();
         }
 
         @Override
         public Role putRole(Label label) {
             transceiver.send(RequestBuilder.Transaction.putRole(label));
-            return ConceptReader.concept(responseOrThrow().getPutRoleRes().getConcept(), this).asRole();
+            return RemoteConcept.of(responseOrThrow().getPutRoleRes().getRole(), this).asRole();
         }
 
         @Override
         public Rule putRule(Label label, Pattern when, Pattern then) {
             transceiver.send(RequestBuilder.Transaction.putRule(label, when, then));
-            return ConceptReader.concept(responseOrThrow().getPutRuleRes().getConcept(), this).asRule();
+            return RemoteConcept.of(responseOrThrow().getPutRuleRes().getRule(), this).asRule();
         }
 
         @Override
@@ -343,7 +343,7 @@ public final class Grakn {
             int iteratorId = response.getConceptMethodRes().getResponse().getSchemaConceptSupsIter().getId();
 
             Iterable<? extends Concept> iterable = () -> new Iterator<>(
-                    this, iteratorId, res -> ConceptReader.concept(res.getConceptMethodIterRes().getSchemaConceptSupsIterRes().getConcept(), this)
+                    this, iteratorId, res -> RemoteConcept.of(res.getConceptMethodIterRes().getSchemaConceptSupsIterRes().getSchemaConcept(), this)
             );
 
             Stream<? extends Concept> sups = StreamSupport.stream(iterable.spliterator(), false);

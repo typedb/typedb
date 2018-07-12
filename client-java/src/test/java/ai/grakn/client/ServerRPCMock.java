@@ -21,9 +21,9 @@ package ai.grakn.client;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
-import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -70,7 +70,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-    private final SessionImplBase sessionService = mock(SessionImplBase.class);
+    private final SessionServiceImplBase sessionService = mock(SessionServiceImplBase.class);
     private final KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
 
     private @Nullable StreamObserver<Transaction.Res> serverResponses = null;
@@ -89,7 +89,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRule.getChannel();
     }
 
-    SessionImplBase sessionService() {
+    SessionServiceImplBase sessionService() {
         return sessionService;
     }
 
