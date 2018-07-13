@@ -12,7 +12,7 @@ const methods = {
   attribute: function (attributeType) { return this.txService.setAttributeType(this.id, attributeType); },
   attributes: function () { return this.txService.getAttributeTypes(this.id); },
   keys: function () { return this.txService.getKeyTypes(this.id); },
-  instances: function () { return this.txService.getInstances(this.id); },
+  instances: function () { return this.txService.instances(this.id); },
   isAbstract: function () { return this.txService.isAbstract(this.id); },
   deletePlays: function (role) { return this.txService.unsetRolePlayedByType(this.id, role); },
   deleteAttribute: function (attributeType) { return this.txService.unsetAttributeType(this.id, attributeType); },

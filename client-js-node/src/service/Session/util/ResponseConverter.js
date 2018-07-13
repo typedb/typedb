@@ -51,6 +51,34 @@ ResponseConverter.prototype.executeResponse = async function (resp) {
     }
     return resultArray;
 };
+//Type
+ResponseConverter.prototype.instances = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getTypeInstancesIter().getId();
+    const getterMethod = "getTypeInstancesIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+
+ResponseConverter.prototype.getAttributeTypes = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getTypeAttributesIter().getId();
+    const getterMethod = "getTypeAttributesIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+
+ResponseConverter.prototype.getKeyTypes = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getTypeKeysIter().getId();
+    const getterMethod = "getTypeKeysIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+
+ResponseConverter.prototype.isAbstract = function (resp) {
+    return resp.getConceptmethodRes().getResponse().getTypeIsabstractRes().getAbstract();
+}
+
+ResponseConverter.prototype.getRolesPlayedByType = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getTypePlayingIter().getId();
+    const getterMethod = "getTypePlayingIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
 
 // Entity type
 ResponseConverter.prototype.addEntity = function (resp) {
