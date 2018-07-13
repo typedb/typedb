@@ -19,11 +19,15 @@ All applications which use **Grakn 1.3.0** will require the `client-java` depend
   </repository>
 </repositories>
 
+<properties>
+    <grakn.version>1.3.0</grakn.version>
+</properties>
+
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
     <artifactId>client-java</artifactId>
-    <version>1.3.0</version>
+    <version>${grakn.version}</version>
   </dependency>
 </dependencies>
 ```
@@ -41,11 +45,15 @@ Alternatively, applications which are still using **Grakn 1.2.0** will instead r
   </repository>
 </repositories>
 
+<properties>
+    <grakn.version>1.2.0</grakn.version>
+</properties>
+
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
     <artifactId>grakn-client</artifactId>
-    <version>1.2.0</version>
+    <version>${grakn.version}</version>
   </dependency>
 </dependencies>
 ```
