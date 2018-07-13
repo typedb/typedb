@@ -112,13 +112,13 @@ const methods = {
   },
 
   // Rule
-  when: function (conceptId) {
+  getWhen: function (conceptId) {
     const whenReq = new messages.Rule.When.Req();
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRuleWhenReq(whenReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
-  then: function (conceptId) {
+  getThen: function (conceptId) {
     const thenReq = new messages.Rule.Then.Req();
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRuleThenReq(thenReq);
@@ -237,21 +237,26 @@ const methods = {
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   getRelatedRoles: function (conceptId) {
-    const conceptMethod = new messages.ConceptMethod();
-    conceptMethod.setGetrelatedroles(UNIT_MESSAGE);
-    return RunConceptMethodRequest(conceptId, conceptMethod);
+    const roleReq = new messages.RelationType.Roles.Req();
+    const conceptMethodReq = new messages.Method.Req();
+    conceptMethodReq.setRelationtypeRolesReq(roleReq);
+    return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
 
   setRelatedRole: function (conceptId, role) {
-    const conceptMethod = new messages.ConceptMethod();
-    conceptMethod.setSetrelatedrole(toGrpcConcept(role));
-    return RunConceptMethodRequest(conceptId, conceptMethod);
+    const relatesReq = new messages.RelationType.Relates.Req();
+    relatesReq.setConcept(toGrpcConcept(role))
+    const conceptMethodReq = new messages.Method.Req();
+    conceptMethodReq.setRelationtypeRelatesReq(relatesReq);
+    return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
 
   unsetRelatedRole: function (conceptId, role) {
-    const conceptMethod = new messages.ConceptMethod();
-    conceptMethod.setUnsetrelatedrole(toGrpcConcept(role));
-    return RunConceptMethodRequest(conceptId, conceptMethod);
+    const unrelateReq = new messages.RelationType.Unrelate.Req();
+    unrelateReq.setConcept(toGrpcConcept(role))
+    const conceptMethodReq = new messages.Method.Req();
+    conceptMethodReq.setRelationtypeUnrelateReq(unrelateReq);
+    return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
 
   // Attribute type
@@ -312,7 +317,7 @@ const methods = {
   getRelationshipsByRoles: function (conceptId, roles) {
     const relationsReq = new messages.Thing.Relations.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (roles) relationsReq.setConcepts(roles.map(role => toGrpcConcept(role)));
+    if (roles.length) relationsReq.setConceptsList(roles.map(role => toGrpcConcept(role)));
     conceptMethodReq.setThingRelationsReq(relationsReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -320,14 +325,14 @@ const methods = {
   getRolesPlayedByThing: function (conceptId) {
     const rolesReq = new messages.Thing.Roles.Req();
     const conceptMethodReq = new messages.Method.Req();
-    conceptMethodReq.setThingTypeReq(rolesReq);
+    conceptMethodReq.setThingRolesReq(rolesReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
 
   getAttributesByTypes: function (conceptId, types) {
     const attributesReq = new messages.Thing.Attributes.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (types) attributesReq.setConcepts(types.map(type => toGrpcConcept(type)));
+    if (types.length) attributesReq.setConceptsList(types.map(type => toGrpcConcept(type)));
     conceptMethodReq.setThingAttributesReq(attributesReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -335,7 +340,7 @@ const methods = {
   getKeysByTypes: function (conceptId, types) {
     const keysReq = new messages.Thing.Keys.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (types) keysReq.setConcepts(types.map(type => toGrpcConcept(type)));
+    if (types.length) keysReq.setConceptsList(types.map(type => toGrpcConcept(type)));
     conceptMethodReq.setThingKeysReq(keysReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -355,21 +360,21 @@ const methods = {
   },
 
   // Relationship
-  getRolePlayersMap: function (conceptId) {
+  rolePlayersMap: function (conceptId) {
     const rolePlayersMapReq = new messages.Relation.RolePlayersMap.Req();
     const conceptMethodReq = new messages.Method.Req();
-    conceptMethodReq.setRelationUnassignReq(rolePlayersMapReq);
-    return RunConceptMethodRequest(conceptId, rolePlayersMapReq);
+    conceptMethodReq.setRelationRoleplayersmapReq(rolePlayersMapReq);
+    return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
-  getRolePlayers: function (conceptId, roles) {
+  rolePlayers: function (conceptId, roles) {
     const rolePlayersReq = new messages.Relation.RolePlayers.Req();
-    if (roles) rolePlayersReq.setConcepts(roles.map(role => toGrpcConcept(role)))
+    if (roles.length) rolePlayersReq.setConceptsList(roles.map(role => toGrpcConcept(role)))
     const conceptMethodReq = new messages.Method.Req();
-    conceptMethodReq.setRelationUnassignReq(rolePlayersReq);
+    conceptMethodReq.setRelationRoleplayersReq(rolePlayersReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   setRolePlayer: function (conceptId, role, thing) {
-    const assignReq = new messages.Relation.Unassign.Req();
+    const assignReq = new messages.Relation.Assign.Req();
     assignReq.setRole(toGrpcConcept(role));
     assignReq.setPlayer(toGrpcConcept(thing));
     const conceptMethodReq = new messages.Method.Req();

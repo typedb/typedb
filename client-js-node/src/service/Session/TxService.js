@@ -63,14 +63,14 @@ TxService.prototype.setSup = function (id, superConcept) {
 
 // Rule 
 TxService.prototype.getWhen = function (id) {
-    const txRequest = TxRequestBuilder.when(id);
+    const txRequest = TxRequestBuilder.getWhen(id);
     return this.communicator.send(txRequest)
-        .then(resp => this.respConverter.when(resp));
+        .then(resp => this.respConverter.getWhen(resp));
 };
 TxService.prototype.getThen = function (id) {
-    const txRequest = TxRequestBuilder.then(id);
+    const txRequest = TxRequestBuilder.getThen(id);
     return this.communicator.send(txRequest)
-        .then(resp => this.respConverter.then(resp));
+        .then(resp => this.respConverter.getThen(resp));
 };
 
 // Role
@@ -210,11 +210,6 @@ TxService.prototype.getDirectType = function (id) {
     return this.communicator.send(txRequest)
         .then(response => this.respConverter.getDirectType(response));
 };
-TxService.prototype.getRelationships = function (id) {
-    const txRequest = TxRequestBuilder.getRelationships(id);
-    return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getRelationships(response));
-}
 TxService.prototype.getRelationshipsByRoles = function (id, roles) {
     const txRequest = TxRequestBuilder.getRelationshipsByRoles(id, roles);
     return this.communicator.send(txRequest)
@@ -225,20 +220,10 @@ TxService.prototype.getRolesPlayedByThing = function (id) {
     return this.communicator.send(txRequest)
         .then(response => this.respConverter.getRolesPlayedByThing(response));
 };
-TxService.prototype.getAttributes = function (id) {
-    const txRequest = TxRequestBuilder.getAttributes(id);
-    return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getAttributes(response));
-};
 TxService.prototype.getAttributesByTypes = function (id, types) {
     const txRequest = TxRequestBuilder.getAttributesByTypes(id, types);
     return this.communicator.send(txRequest)
         .then(response => this.respConverter.getAttributesByTypes(response));
-};
-TxService.prototype.getKeys = function (id) {
-    const txRequest = TxRequestBuilder.getKeys(id);
-    return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getKeys(response));
 };
 TxService.prototype.getKeysByTypes = function (id, types) {
     const txRequest = TxRequestBuilder.getKeysByTypes(id, types);
@@ -255,15 +240,15 @@ TxService.prototype.unsetAttribute = function (id, attribute) {
 };
 
 // Relationship
-TxService.prototype.getRolePlayers = function (id) {
-    const txRequest = TxRequestBuilder.getRolePlayers(id);
+TxService.prototype.rolePlayersMap = function (id) {
+    const txRequest = TxRequestBuilder.rolePlayersMap(id);
     return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getRolePlayers(response));
+        .then(response => this.respConverter.rolePlayersMap(response));
 };
-TxService.prototype.getRolePlayersByRoles = function (id, roles) {
-    const txRequest = TxRequestBuilder.getRolePlayersByRoles(id, roles);
+TxService.prototype.rolePlayers = function (id, roles) {
+    const txRequest = TxRequestBuilder.rolePlayers(id, roles);
     return this.communicator.send(txRequest)
-        .then(response => this.respConverter.getRolePlayersByRoles(response));
+        .then(response => this.respConverter.rolePlayers(response));
 };
 TxService.prototype.setRolePlayer = function (id, role, thing) {
     const txRequest = TxRequestBuilder.setRolePlayer(id, role, thing);

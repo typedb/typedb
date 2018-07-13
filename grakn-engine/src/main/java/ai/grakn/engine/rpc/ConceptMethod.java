@@ -359,20 +359,26 @@ public class ConceptMethod {
 
             private Transaction.Res when() {
                 Pattern pattern = concept.asRule().when();
+                ConceptProto.Rule.When.Res.Builder whenRes = ConceptProto.Rule.When.Res.newBuilder();
+
+                if (pattern == null) whenRes.setNull(ConceptProto.Null.getDefaultInstance());
+                else whenRes.setPattern(pattern.toString());
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleWhenRes(ConceptProto.Rule.When.Res.newBuilder()
-                                .setPattern(pattern.toString())).build();
+                        .setRuleWhenRes(whenRes).build();
 
                 return transactionRes(response);
             }
 
             private Transaction.Res then() {
                 Pattern pattern = concept.asRule().then();
+                ConceptProto.Rule.Then.Res.Builder thenRes = ConceptProto.Rule.Then.Res.newBuilder();
+
+                if (pattern == null) thenRes.setNull(ConceptProto.Null.getDefaultInstance());
+                else thenRes.setPattern(pattern.toString());
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleThenRes(ConceptProto.Rule.Then.Res.newBuilder()
-                                .setPattern(pattern.toString())).build();
+                        .setRuleThenRes(thenRes).build();
 
                 return transactionRes(response);
             }

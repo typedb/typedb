@@ -5,14 +5,14 @@ function GrpcIteratorFactory(conceptFactory, communicator) {
   this.conceptFactory = conceptFactory;
 }
 
-GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
-  return new GrpcQueryIterator(this.communicator, TxRequestBuilder.next(iteratorId));
+GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId, method) {
+  return new GrpcQueryIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
 };
 GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId, method) {
   return new GrpcConceptIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
 };
-GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId) {
-  return new GrpcRolePlayerIterator(this.communicator, TxRequestBuilder.next(iteratorId));
+GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId, method) {
+  return new GrpcRolePlayerIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
 };
 
 // -- Query Iterator -- // 
@@ -38,47 +38,59 @@ function handleQueryResponse(response) {
 
 function GrpcConceptIterator(conceptFactory, communicator, nextRequest, getterMethod) {
 
-  handleConceptResponse = (response) => {
+  mapResponse = (response) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
-    debugger;
-    return iterRes.getConceptmethodIterRes()[getterMethod]().getConcept();
+    const grpcConcept = iterRes.getConceptmethodIterRes()[getterMethod]().getConcept();
+    return conceptFactory.createConcept(grpcConcept);
   }
 
   this.next = () => {
     return communicator.send(nextRequest)
-      .then(handleConceptResponse)
+      .then(mapResponse)
       .catch(e => { throw e; });
   }
 
   this.collectAll = async () => {
-    const concepts = [];
-    let concept = await this.next();
-    while (concept) {
-      concepts.push(conceptFactory.createConcept(concept));
-      concept = await this.next();
+    const results = [];
+    let result = await this.next();
+    while (result) {
+      results.push(result);
+      result = await this.next();
     }
-    return concepts;
+    return results;
   }
 }
 
 // -- RolePlayer Iterator -- //
 
-function GrpcRolePlayerIterator(communicator, nextRequest) {
-  this.nextRequest = nextRequest;
-  this.communicator = communicator;
-}
+function GrpcRolePlayerIterator(conceptFactory, communicator, nextRequest, getterMethod) {
 
-GrpcRolePlayerIterator.prototype.next = function () {
-  return this.communicator.send(this.nextRequest)
-    .then(handleRolePlayerResponse)
-    .catch(e => { throw e; });
-};
+  mapResponse = (response) => {
+    const iterRes = response.getIterateRes();
+    if (iterRes.getDone()) return null;
+    const resContent = iterRes.getConceptmethodIterRes()[getterMethod]();
+    return {
+      role: conceptFactory.createConcept(resContent.getRole()),
+      player: conceptFactory.createConcept(resContent.getPlayer())
+    };
+  }
 
-function handleRolePlayerResponse(response) {
-  if (response.hasDone()) return null;
-  if (response.hasRoleplayer()) return response.getRoleplayer();
-  throw "Unexpected response from server.";
+  this.next = () => {
+    return communicator.send(nextRequest)
+      .then(mapResponse)
+      .catch(e => { throw e; });
+  }
+
+  this.collectAll = async () => {
+    const results = [];
+    let result = await this.next();
+    while (result) {
+      results.push(result);
+      result = await this.next();
+    }
+    return results;
+  }
 }
 
 module.exports = GrpcIteratorFactory;

@@ -356,7 +356,7 @@ public class ResponseBuilder {
         }
     }
 
-    public static StatusRuntimeException exception(RuntimeException e) {
+    public static StatusRuntimeException exception(Throwable e) {
 
         if (e instanceof GraknException) {
             GraknException ge = (GraknException) e;

@@ -30,14 +30,14 @@ describe("Relationship type methods", () => {
         const relationshipType = await tx.putRelationshipType("parenthood");
         const parentRole = await tx.putRole('parent');
         const childRole = await tx.putRole('child');
-        const relates = await relationshipType.relates();
+        const relates = await (await relationshipType.relates()).collectAll();
         expect(relates.length).toBe(0);
         await relationshipType.relates(parentRole);
         await relationshipType.relates(childRole);
-        const populateRelates = await relationshipType.relates();
+        const populateRelates = await (await relationshipType.relates()).collectAll();
         expect(populateRelates.length).toBe(2);
         await relationshipType.deleteRelates(parentRole);
-        const oneRole = await relationshipType.relates();
+        const oneRole = await (await relationshipType.relates()).collectAll();
         expect(oneRole.length).toBe(1);
         expect(oneRole[0].baseType).toBe('ROLE');
     });
