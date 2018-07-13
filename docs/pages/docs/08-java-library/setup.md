@@ -10,9 +10,27 @@ folder: docs
 
 ## Basic Setup
 
-This section will discuss how to start developing with Grakn using the Java API.
-All Grakn applications require the following Maven dependency:
+This section will discuss how to develop an application with Grakn, using the Java API.
+All applications which use **Grakn 1.3.0** will require the `client-java` dependency to be declared on the `pom.xml` of your application.
 
+```xml
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
+
+<dependencies>
+  <dependency>
+    <groupId>ai.grakn</groupId>
+    <artifactId>client-java</artifactId>
+    <version>1.3.0</version>
+  </dependency>
+</dependencies>
+```
+
+Alternatively, applications which are still using **Grakn 1.2.0** will instead require the `grakn-client` dependency.
 ```xml
 <repositories>
   <repository>
@@ -28,29 +46,17 @@ All Grakn applications require the following Maven dependency:
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>client-java</artifactId>
+    <artifactId>grakn-client</artifactId>
     <version>1.2.0</version>
   </dependency>
 </dependencies>
 ```
 
-This dependency will give you access to the Core API as well as an in-memory knowledge graph, which serves as a toy knowledge graph, should you wish to use the stack without having to have an instance of the Grakn server running.
-
-## Server Dependent Setup
-
-If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
-Please see the [Setup Guide](../get-started/setup-guide) on more details on how to set up a Grakn server.
-
-Here are some links to guides for adding external jars using different IDEs:
-
-- [IntelliJ](https://www.jetbrains.com/help/idea/2016.1/configuring-module-dependencies-and-libraries.html)
-- [Eclipse](http://www.tutorialspoint.com/eclipse/eclipse_java_build_path.htm)
-- [Netbeans](http://oopbook.com/java-classpath-2/classpath-in-netbeans/)
-
+Please be noted that most of the materials in the documentation will use the syntax of Grakn 1.3.0.
 
 ## Connecting to Grakn
 
-{% include note.html content="Before proceeding, make sure that Grakn has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai)." %}
+{% include note.html content="Before proceeding, make sure that the Grakn database has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
 
 First, make sure to import the following classes:
 ```java-test-ignore
