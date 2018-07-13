@@ -14,9 +14,9 @@ To get set up to use this API, please read through our [Setup Guide](../get-star
 
 ## Core API
 
-On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient.
+On this page we will focus primarily on the methods provided by the `Grakn.Transaction` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `Grakn.Transaction` interface will be sufficient.
 
-It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
+It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `Grakn.Transaction::graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
 
 ## Building a Schema with the Core API
 
@@ -274,7 +274,7 @@ Pattern rule2when = and(
 Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
-If we have a specific `GraknTx tx` already defined, we can use the Graql pattern parser:
+If we have a specific `Grakn.Transaction tx` already defined, we can use the Graql pattern parser:
 
 ```java-test-ignore
 rule1when = and(tx.graql().parser().parsePatterns("(parent: $p, child: $c) isa Parent;"));
