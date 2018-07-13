@@ -26,7 +26,8 @@ First we need a knowledge graph. For this example we will just use an
 [in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java-test-ignore
-Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).transaction(GraknTxType.WRITE);
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
@@ -160,7 +161,8 @@ insert $x isa person has firstname "John";
 Now the equivalent Core API:    
 
 ```java-test-ignore
-tx = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).transaction(GraknTxType.WRITE);
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute
 person.create().has(johnName); //Link it to an entity
