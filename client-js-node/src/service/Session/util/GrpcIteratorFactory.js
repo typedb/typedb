@@ -1,14 +1,15 @@
 const TxRequestBuilder = require("./TxRequestBuilder");
 
-function GrpcIteratorFactory(communicator) {
+function GrpcIteratorFactory(conceptFactory, communicator) {
   this.communicator = communicator;
+  this.conceptFactory = conceptFactory;
 }
 
 GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
   return new GrpcQueryIterator(this.communicator, TxRequestBuilder.next(iteratorId));
 };
-GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId) {
-  return new GrpcConceptIterator(this.communicator, TxRequestBuilder.next(iteratorId));
+GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId, method) {
+  return new GrpcConceptIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
 };
 GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId) {
   return new GrpcRolePlayerIterator(this.communicator, TxRequestBuilder.next(iteratorId));
@@ -21,8 +22,8 @@ function GrpcQueryIterator(communicator, nextRequest) {
   this.communicator = communicator;
 };
 
-GrpcQueryIterator.prototype.nextResult = async function () {
-  return await this.communicator.send(this.nextRequest)
+GrpcQueryIterator.prototype.next = function () {
+  return this.communicator.send(this.nextRequest)
     .then(handleQueryResponse)
     .catch(e => { throw e; });
 };
@@ -35,21 +36,30 @@ function handleQueryResponse(response) {
 
 // -- Concept Iterator -- //
 
-function GrpcConceptIterator(communicator, nextRequest) {
-  this.nextRequest = nextRequest;
-  this.communicator = communicator;
-}
+function GrpcConceptIterator(conceptFactory, communicator, nextRequest, getterMethod) {
 
-GrpcConceptIterator.prototype.nextResult = async function () {
-  return await this.communicator.send(this.nextRequest)
-    .then(handleConceptResponse)
-    .catch(e => { throw e; });
-};
+  handleConceptResponse = (response) => {
+    const iterRes = response.getIterateRes();
+    if (iterRes.getDone()) return null;
+    debugger;
+    return iterRes.getConceptmethodIterRes()[getterMethod]().getConcept();
+  }
 
-function handleConceptResponse(response) {
-  if (response.hasDone()) return null;
-  if (response.hasConcept()) return response.getConcept();
-  throw "Unexpected response from server.";
+  this.next = () => {
+    return communicator.send(nextRequest)
+      .then(handleConceptResponse)
+      .catch(e => { throw e; });
+  }
+
+  this.collectAll = async () => {
+    const concepts = [];
+    let concept = await this.next();
+    while (concept) {
+      concepts.push(conceptFactory.createConcept(concept));
+      concept = await this.next();
+    }
+    return concepts;
+  }
 }
 
 // -- RolePlayer Iterator -- //
@@ -59,8 +69,8 @@ function GrpcRolePlayerIterator(communicator, nextRequest) {
   this.communicator = communicator;
 }
 
-GrpcRolePlayerIterator.prototype.nextResult = async function () {
-  return await this.communicator.send(this.nextRequest)
+GrpcRolePlayerIterator.prototype.next = function () {
+  return this.communicator.send(this.nextRequest)
     .then(handleRolePlayerResponse)
     .catch(e => { throw e; });
 };

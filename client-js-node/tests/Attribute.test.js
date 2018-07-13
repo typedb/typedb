@@ -54,7 +54,7 @@ describe("Attribute methods", () => {
         await person.attribute(name);
         await dog.attribute(name);
 
-        const owners = await name.ownerInstances();
+        const owners = await (await name.ownerInstances()).collectAll();
         expect(owners.length).toBe(2);
         const ids = [person.id, dog.id];
         const ownersIds = owners.map(x => x.id);
