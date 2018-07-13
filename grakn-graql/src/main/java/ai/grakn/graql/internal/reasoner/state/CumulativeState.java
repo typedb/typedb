@@ -61,13 +61,8 @@ public class CumulativeState extends QueryStateBase{
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         Answer answer = getSubstitution().merge(state.getSubstitution(), true);
-        //TODO check this doesn't happen
-        if (answer.isEmpty()){
-            return null;
-        }
-        if (subQueries.isEmpty()){
-            return new AnswerState(answer, getUnifier(), getParentState());
-        }
+        if (answer.isEmpty()) return null;
+        if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals(), getCache());
     }
 

@@ -186,16 +186,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
-    public RelationshipAtom merge(RelationshipAtom atom){
-        Set<RelationPlayer> rps = Stream.concat(
-                this.getRelationPlayers().stream(),
-                atom.getRelationPlayers().stream()
-        ).collect(toSet());
-
-        VarPattern relationPattern = relationPattern(getVarName(), rps);
-        return create(relationPattern, getPredicateVariable(), getTypeId(), null, this.getParentQuery());
-    }
-
     public Set<Atom> rewriteToAtoms(){
         if (this.getPotentialRules().map(r -> new InferenceRule(r, tx())).noneMatch(InferenceRule::isAppendRule)) return super.rewriteToAtoms();
         return this.getRelationPlayers().stream()
