@@ -33,14 +33,14 @@ Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
 //Create sample schema
-GraknTx tx = session.open(GraknTxType.WRITE);
+Grakn.Transaction tx = session.open(GraknTxType.WRITE);
 EntityType entityType = tx.putEntityType("Some Entity Type");
 tx.commit();
 
 //Load the data concurrently
 for(int i = 0; i < 100; i ++){
     futures.add(pool.submit(() -> {
-        GraknTx innerTx = session.open(GraknTxType.WRITE);
+        Grakn.Transaction innerTx = session.open(GraknTxType.WRITE);
         entityType.addEntity();
         innerTx.commit();
     }));
