@@ -2,15 +2,13 @@
 title: Java Development Setup
 keywords: java
 tags: [java]
-summary: "Overview and setup guide for Java developers."
+summary: "This section will discuss how to develop an application with Grakn, using the Java API."
 sidebar: documentation_sidebar
 permalink: /docs/java-library/setup
 folder: docs
 ---
 
-## Basic Setup
-
-This section will discuss how to develop an application with Grakn, using the Java API.
+## Declaring The Dependency In Maven
 All applications which use **Grakn 1.3.0** will require the `client-java` dependency to be declared on the `pom.xml` of your application.
 
 ```xml
@@ -54,54 +52,42 @@ Alternatively, applications which are still using **Grakn 1.2.0** will instead r
 
 Please be noted that most of the materials in the documentation will use the syntax of Grakn 1.3.0.
 
-## Connecting to Grakn
+## Opening A Session And Transaction
 
-{% include note.html content="Before proceeding, make sure that the Grakn database has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
+{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
 
-First, make sure to import the following classes:
+A **session** object is responsible for maintaining a connection to a specific keyspace in the knowledge graph. Opening a session is performed by invoking the `Grakn.session` method.
+Once the session is open, you can proceed by creating a **transaction** in order to manipulate the data in the keyspace.
+
+The following snippet shows how to open a Grakn session and transaction:
+
 ```java-test-ignore
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.remote.RemoteGrakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.util.SimpleURI;
-```
 
-
-Now, connect to Grakn with:
-
-```java-test-ignore
-GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
-try (GraknTx tx = session.open(GraknTxType.READ)) {
-  // ...
+public class App {
+  public static void main(String[] args) {
+    SimpleURI localGrakn = new SimpleURI("localhost", 48555);
+    Keyspace keyspace = Keyspace.of("grakn");
+    try (Grakn.Session session = Grakn.session(localGrakn, keyspace)) {
+      try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+        // ...
+        transaction.commit();
+      }
+    }
+  }
 }
-
 ```
 
+## Keyspace Uniqueness
 A "Keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
 
-Please note that keyspaces are **not** case sensitive, so the following two keyspaces are actually the same:
+Please note that keyspaces are **not** case sensitive. This means that these `grakn`, `Grakn`, and `GrAkn` names refer to the same keyspace.
 
-```java-test-ignore
-    GraknTx tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-    GraknTx tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-```
-
-All knowledge graphs are also singletons specific to their keyspaces so be aware that in the following case:
-
-```java-test-ignore
-   tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-   tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-   tx3 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-```
-
-any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge graph.
-
-## Controlling The Behaviour of Knowledge Graph Transactions
-
-When initialising a transaction on a knowledge graph it is possible to define the type of transaction with `GraknTxType`.
-We currently support three types of transactions:
+## Transaction Types
+We currently support three transaction types:
 
 * `GraknTxType.WRITE` - A transaction that allows mutations to be performed on the knowledge graph
 * `GraknTxType.READ` - Prohibits any mutations to be performed to the knowledge graph
