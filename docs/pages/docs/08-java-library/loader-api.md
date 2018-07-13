@@ -13,15 +13,15 @@ The Grakn loader is a Java API for loading large quantities of data into a Grakn
 
 It is possible for batches of insert queries to fail upon insertion. By default, the client will not log the status of the batch execution. The user can specify a callback function to operate on the result of the batch operation and print and accumulate status information.
 
-If you are using the [Graql shell](../get-started/graql-console), batch loading is available using the `-b` option.
+{% include note.html content="If you are using the [Graql shell](../get-started/graql-console), batch loading is available using the `-b` option." %}
 
 To use the loader client API, add the following to your imports:
 
-```
+```java
 import ai.grakn.client.BatchExecutorClient;
 ```
 
-# Basic Usage
+## Basic Usage
 
 The loader client can be instantiated by giving the engine URI.
 
@@ -38,8 +38,6 @@ for(int i = 0; i < 100; i++){
     loader.add(insert, keyspace);
 }
 ```
-
-## Close
 
 The loader should be closed as follows
 
